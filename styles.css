@@ -225,7 +225,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .mode-header {
   display: grid;
-  grid-template-columns: minmax(0, 0.75fr) minmax(38rem, 54rem);
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem);
   gap: 1rem;
   align-items: center;
   width: 100%;
@@ -269,10 +269,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   justify-self: end;
   align-self: center;
   display: grid;
-  grid-template-columns: 4rem minmax(0, 1fr);
+  grid-template-columns: 4rem minmax(0, 24rem);
   gap: 1rem;
   align-items: center;
-  width: min(100%, 54rem);
+  width: min(100%, 30rem);
   margin-top: 0;
   padding: 0.9rem;
   border: 1px solid var(--line);
@@ -370,7 +370,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   min-height: 2.45rem;
   width: 100%;
   padding: 0.45rem 0.75rem;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
 }
 
@@ -378,6 +378,12 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.profile-customize-button:disabled,
+.profile-custom-upload[data-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .profile-name-editor {
@@ -412,7 +418,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .profile-actions {
   display: grid;
-  grid-template-columns: minmax(8.75rem, 0.95fr) repeat(3, minmax(8rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
   align-items: stretch;
 }

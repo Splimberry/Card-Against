@@ -431,8 +431,30 @@ function clampNumber(value, min, max, fallback) {
 const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, 5);
 const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds"), 10, 60, 30);
 const DEFAULT_OWNER_IDS = ["player", "opponent", "bot1", "bot2"];
-const savedProfileName = String(localStorage.getItem("cardsAgainstAiProfileName") || "You").replace(/[\r\n\t]/g, " ").slice(0, 16) || "You";
-const savedProfileAvatar = localStorage.getItem("cardsAgainstAiProfileAvatar") || "";
+
+function createGuestName() {
+  const fallback = Math.floor(Math.random() * 1000000);
+  if (globalThis.crypto?.getRandomValues) {
+    const values = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(values);
+    return `guest${String(values[0] % 1000000).padStart(6, "0")}`;
+  }
+  return `guest${String(fallback).padStart(6, "0")}`;
+}
+
+function loadGuestName() {
+  const saved = String(localStorage.getItem("cardsAgainstAiGuestName") || "").trim();
+  if (/^guest\d{6}$/.test(saved)) {
+    return saved;
+  }
+  const guestName = createGuestName();
+  localStorage.setItem("cardsAgainstAiGuestName", guestName);
+  return guestName;
+}
+
+const savedGuestName = loadGuestName();
+const savedProfileName = savedGuestName;
+const savedProfileAvatar = "";
 const savedEquippedAchievementId = achievementTitleMap[localStorage.getItem(equippedAchievementStorageKey) || ""]
   ? localStorage.getItem(equippedAchievementStorageKey)
   : "";
@@ -5579,6 +5601,7 @@ function renderProfile() {
   if (elements.profileNameInput && document.activeElement !== elements.profileNameInput) {
     elements.profileNameInput.value = state.profile.name;
   }
+  syncProfileEditControls();
   if (elements.profileCurrencyValue) {
     elements.profileCurrencyValue.textContent = loadCurrencyBalance().toLocaleString();
   }
@@ -5600,6 +5623,29 @@ function renderProfile() {
   renderSupabaseAuthControls();
 }
 
+function isPlayerSignedIn() {
+  return Boolean(state.supabaseUser);
+}
+
+function syncProfileEditControls() {
+  const signedIn = isPlayerSignedIn();
+  if (elements.profileCustomizeButton) {
+    elements.profileCustomizeButton.disabled = !signedIn;
+    elements.profileCustomizeButton.title = signedIn ? "" : "Sign in with Google to customize your card.";
+  }
+  if (elements.profileNameInput) {
+    elements.profileNameInput.disabled = !signedIn;
+    elements.profileNameInput.title = signedIn ? "" : "Sign in with Google to edit your username.";
+  }
+  if (elements.profileAvatarInput) {
+    elements.profileAvatarInput.disabled = !signedIn;
+  }
+  const uploadLabel = document.querySelector(".profile-custom-upload");
+  if (uploadLabel) {
+    uploadLabel.dataset.disabled = String(!signedIn);
+  }
+}
+
 function renderSupabaseAuthControls() {
   if (!elements.profileAuthButton || !elements.profileSignOutButton || !elements.profileAuthStatus) {
     return;
@@ -5613,6 +5659,7 @@ function renderSupabaseAuthControls() {
   elements.profileAuthStatus.textContent = signedIn
     ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
     : "";
+  syncProfileEditControls();
 }
 
 async function initSupabaseAuth() {
@@ -5649,8 +5696,24 @@ function applySupabaseSession(session) {
   state.supabaseUser = session?.user || null;
   if (state.supabaseUser) {
     applySupabaseProfile(state.supabaseUser);
+  } else {
+    applyGuestProfile();
   }
   renderSupabaseAuthControls();
+}
+
+function applyGuestProfile() {
+  state.profile.name = savedGuestName;
+  state.profile.avatar = "";
+  localStorage.setItem("cardsAgainstAiProfileName", savedGuestName);
+  localStorage.removeItem("cardsAgainstAiProfileAvatar");
+  if (getPlayer("player")) {
+    getPlayer("player").label = state.profile.name;
+    getPlayer("player").avatar = state.profile.avatar;
+  }
+  renderProfile();
+  renderRoomPlayers();
+  renderRoomChat();
 }
 
 function applySupabaseProfile(user) {
@@ -5704,10 +5767,16 @@ async function signOutSupabase() {
   }
   state.supabaseSession = null;
   state.supabaseUser = null;
-  renderSupabaseAuthControls();
+  applyGuestProfile();
 }
 
 function updateProfileName(value) {
+  if (!isPlayerSignedIn()) {
+    if (elements.profileNameInput) {
+      elements.profileNameInput.value = state.profile.name;
+    }
+    return;
+  }
   state.profile.name = String(value ?? "").replace(/[\r\n\t]/g, " ").slice(0, 16) || "You";
   localStorage.setItem("cardsAgainstAiProfileName", state.profile.name);
   if (getPlayer("player")) {
@@ -5728,6 +5797,12 @@ function updateProfileName(value) {
 }
 
 function updateProfileAvatar(file) {
+  if (!isPlayerSignedIn()) {
+    if (elements.profileAvatarInput) {
+      elements.profileAvatarInput.value = "";
+    }
+    return;
+  }
   if (!file || !file.type.startsWith("image/")) {
     return;
   }
@@ -8003,6 +8078,13 @@ function renderProfileCustomizationModal() {
 }
 
 function openProfileCustomization() {
+  if (!isPlayerSignedIn()) {
+    if (elements.profileAuthStatus) {
+      setHidden(elements.profileAuthStatus, false);
+      elements.profileAuthStatus.textContent = "Sign in with Google to customize your card.";
+    }
+    return;
+  }
   const draft = {
     ...normalizeProfileCustomization(state.profile.cardCustomization),
     equippedTitleId: state.profile.equippedTitleId || ""
