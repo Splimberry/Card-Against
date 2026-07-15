@@ -13479,10 +13479,6 @@ async function startGame(mode) {
   clearRoomAutoResolve();
   stopRoomDirectoryPolling();
   resetMatch(mode);
-  if (mode === "room" && isCurrentHost() && !state.joiningRoom) {
-    state.currentRoomStatus = "in-progress";
-    upsertHostedRoom("in-progress");
-  }
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
   setHidden(elements.joinScreen, true);
@@ -14139,10 +14135,13 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
     if (setup) {
       return setup;
     }
-    await refreshHostedRooms();
-    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
-    if (room) {
-      applyRoomDirectoryRoom(room);
+    const lookup = await fetchRoomByCode(state.roomSettings.code);
+    if (lookup.status === "found" && lookup.room) {
+      mergeHostedRoom(lookup.room);
+      applyRoomDirectoryRoom(lookup.room);
+    } else if (lookup.status === "closed") {
+      handleCurrentRoomClosed("The room was closed by the host or an admin.");
+      break;
     }
     await sleep(650);
   }
@@ -14441,9 +14440,17 @@ function getRoomModeLabel(settings = state.roomSettings) {
 }
 
 async function joinHostedRoom(code, options = {}) {
-  await refreshHostedRooms();
   const normalizedCode = String(code || "").trim().toUpperCase();
-  const room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
+  let room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
+  const lookup = await fetchRoomByCode(normalizedCode);
+  if (lookup.status === "closed") {
+    addSystemChat(`Room ${normalizedCode || "code"} was closed.`, { private: true });
+    return;
+  }
+  if (lookup.status === "found" && lookup.room) {
+    room = lookup.room;
+    mergeHostedRoom(room);
+  }
   if (!room) {
     addSystemChat(`Room ${normalizedCode || "code"} was not found.`, { private: true });
     return;
@@ -14630,7 +14637,6 @@ async function beginRoomMatch() {
   }
   state.currentRoomStatus = "in-progress";
   state.roomGame = null;
-  upsertHostedRoom("in-progress");
   addSystemChat("The host started the match.");
   startGame("room");
 }

@@ -277,7 +277,7 @@ function loadEnv() {
 async function handleListRooms(res) {
   const rooms = (await listRoomsForDirectory())
     .filter((room) => room.status !== "complete")
-    .filter(hasActiveRealPlayers)
+    .filter((room) => Number(room.activePlayers || 0) > 0)
     .sort((a, b) => b.updatedAt - a.updatedAt);
   sendJson(res, 200, { rooms });
 }

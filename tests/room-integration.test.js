@@ -242,7 +242,7 @@ async function testBrowserExitDeletesRoomWhenNoRealPlayersRemain() {
   assert.equal(directRoom.payload.close.reason, "empty-room");
 }
 
-async function testRoomListHidesRoomsWithoutRealPlayers() {
+async function testRoomListHidesRoomsWithoutActivePlayers() {
   const code = makeCode(8107);
   await upsertRoom(makeRoom(code, {
     participants: [
@@ -262,7 +262,7 @@ async function testRoomListHidesRoomsWithoutRealPlayers() {
         host: false,
         spectator: false,
         bot: true,
-        active: true,
+        active: false,
         muted: false,
         status: "bot"
       }
@@ -368,7 +368,7 @@ async function main() {
   await testHostLeaveDeletesRoom();
   await testBrowserExitRemovesJoinedPlayer();
   await testBrowserExitDeletesRoomWhenNoRealPlayersRemain();
-  await testRoomListHidesRoomsWithoutRealPlayers();
+  await testRoomListHidesRoomsWithoutActivePlayers();
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
