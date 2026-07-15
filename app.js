@@ -13955,6 +13955,11 @@ async function fetchRoomByCode(code = state.roomSettings.code) {
   }
   try {
     const response = await fetch(`/api/rooms/${encodeURIComponent(code)}`, { cache: "no-store" });
+    if (response.status === 410) {
+      const data = await response.json().catch(() => ({}));
+      state.roomDirectoryOnline = true;
+      return { status: "closed", room: null, close: data.close || null };
+    }
     if (response.status === 404) {
       state.roomDirectoryOnline = true;
       return { status: "missing", room: null };
@@ -14220,7 +14225,9 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
     }
     if (directRoom.status === "found" && directRoom.room) {
       mergeHostedRoom(directRoom.room);
-      if (directRoom.room.status === "complete") {
+      const closeEvent = Array.isArray(directRoom.room.events)
+        && directRoom.room.events.some((event) => event.type === "room_closed");
+      if (directRoom.room.closed || closeEvent) {
         handleCurrentRoomClosed("The room was closed by the host or an admin.");
         return;
       }
@@ -14229,6 +14236,9 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
     }
     if (directRoom.status === "missing") {
       state.roomMissingSince = 0;
+    }
+    if (directRoom.status === "closed") {
+      handleCurrentRoomClosed("The room was closed by the host or an admin.");
     }
   }
 }

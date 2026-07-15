@@ -286,6 +286,11 @@ async function handleGetRoom(res, code) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   const room = await backendStore.getRoom(normalizedCode);
   if (!room) {
+    const close = await backendStore.getRoomClose(normalizedCode);
+    if (close) {
+      sendJson(res, 410, { closed: true, close });
+      return;
+    }
     sendJson(res, 404, { error: "Room not found.", code: normalizedCode });
     return;
   }
@@ -364,10 +369,11 @@ async function handleAdminDeleteRoom(req, res, code) {
     return;
   }
 
-  const deleted = await backendStore.deleteRoom(code);
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const deleted = await closeStoredRoom(normalizedCode, "admin-delete");
   sendJson(res, deleted ? 200 : 404, {
     deleted,
-    code: String(code || "").trim().toUpperCase()
+    code: normalizedCode
   });
 }
 
@@ -383,9 +389,11 @@ async function handleAdminCloseRoom(req, res, code) {
   }
 
   room.status = "complete";
+  room.closed = createRoomClosePayload(code, "admin");
   finalizeRoom(room);
   stampRoomEvent(room, "room_closed", { reason: "admin" });
   const storedRoom = await backendStore.upsertRoom(room);
+  await backendStore.upsertRoomClose(room.closed);
   sendJson(res, 200, { room: storedRoom });
 }
 
@@ -880,6 +888,20 @@ function hasActiveRealPlayers(room) {
     && room.participants.some((participant) => participant.active && !participant.bot && !participant.spectator);
 }
 
+function createRoomClosePayload(code, reason) {
+  return {
+    code: String(code || "").trim().toUpperCase(),
+    reason: String(reason || "closed").slice(0, 60),
+    closedAt: Date.now()
+  };
+}
+
+async function closeStoredRoom(code, reason) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  await backendStore.upsertRoomClose(createRoomClosePayload(normalizedCode, reason));
+  return backendStore.deleteRoom(normalizedCode);
+}
+
 async function listRoomsForDirectory() {
   return backendStore.listRooms();
 }
@@ -1128,7 +1150,7 @@ async function handleRoomLeave(req, res, code) {
         sendJson(res, 200, { room: storedRoom, closed: false, reason: "page-exit-ignored" });
         return;
       }
-      await backendStore.deleteRoom(normalizedCode);
+      await closeStoredRoom(normalizedCode, "host-left");
       sendJson(res, 200, { closed: true, code: normalizedCode, reason: "host-left" });
       return;
     }
@@ -1136,7 +1158,7 @@ async function handleRoomLeave(req, res, code) {
     room.participants = room.participants.filter((participant) => participant.id !== participantId);
     finalizeRoom(room);
     if (!hasActiveRealPlayers(room)) {
-      await backendStore.deleteRoom(normalizedCode);
+      await closeStoredRoom(normalizedCode, "empty-room");
       sendJson(res, 200, { closed: true, code: normalizedCode, reason: "empty-room" });
       return;
     }

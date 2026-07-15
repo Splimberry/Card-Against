@@ -139,7 +139,9 @@ async function testHostLeaveDeletesRoom() {
   const rooms = await listRooms();
   assert.equal(rooms.some((room) => room.code === code), false);
   const directRoom = await getRoom(code);
-  assert.equal(directRoom.response.status, 404);
+  assert.equal(directRoom.response.status, 410);
+  assert.equal(directRoom.payload.closed, true);
+  assert.equal(directRoom.payload.close.reason, "host-left");
 }
 
 async function testDirectRoomLookupIncludesCompleteRooms() {
@@ -235,7 +237,9 @@ async function testBrowserExitDeletesRoomWhenNoRealPlayersRemain() {
   assert.equal(payload.closed, true);
   assert.equal(payload.reason, "empty-room");
   const directRoom = await getRoom(code);
-  assert.equal(directRoom.response.status, 404);
+  assert.equal(directRoom.response.status, 410);
+  assert.equal(directRoom.payload.closed, true);
+  assert.equal(directRoom.payload.close.reason, "empty-room");
 }
 
 async function testRoomListHidesRoomsWithoutRealPlayers() {
