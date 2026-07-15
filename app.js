@@ -35,6 +35,7 @@ const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
 const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
 const userQuestionSubmissionCost = 250;
 const roomChatHistoryLimit = 50;
+const roomMissingGraceMs = 10000;
 const achievementTitles = [
   { id: "accurate-sniper", name: "Answer Sniper", rarity: "purple", description: "Get the Exact Answer tag on at least 75% of your answers in a match." },
   { id: "all-planned", name: "All planned", rarity: "purple", description: "Win 1st place by using Last Laugh and getting over 10,000 points in that round." },
@@ -622,6 +623,7 @@ const state = {
   roomGame: null,
   joiningRoom: null,
   roomExitLeaveSent: false,
+  roomMissingSince: 0,
   error404Owners: {},
   error404Schedule: [],
   currentRoomStatus: "draft",
@@ -13508,6 +13510,7 @@ function openRoomScreen() {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomExitLeaveSent = false;
+  state.roomMissingSince = 0;
   state.roomGame = null;
   state.currentOwner = "player";
   state.currentRoomStatus = "draft";
@@ -13563,7 +13566,10 @@ function leavePublishedRoom(options = {}) {
   if (!code || code === "CAI-0000") {
     return Promise.resolve(null);
   }
-  const payload = JSON.stringify({ participantId: state.clientId });
+  const payload = JSON.stringify({
+    participantId: state.clientId,
+    reason: options.reason || "manual"
+  });
   const url = `/api/rooms/${encodeURIComponent(code)}/leave`;
   if (options.keepalive && navigator.sendBeacon) {
     navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
@@ -13590,6 +13596,7 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   state.currentRoomStatus = "draft";
   state.joiningRoom = null;
   state.roomGame = null;
+  state.roomMissingSince = 0;
   state.roomParticipants = [];
   state.roomClosedNotice = reason;
   addSystemChat(reason, { private: true, sync: false });
@@ -13992,6 +13999,7 @@ async function refreshCurrentRoomDirectory() {
   await refreshHostedRooms();
   const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (room) {
+    state.roomMissingSince = 0;
     applyRoomDirectoryRoom(room);
     if (shouldStartJoinedRoomMatch(room)) {
       startJoinedRoomMatchFromDirectory(room);
@@ -14000,7 +14008,19 @@ async function refreshCurrentRoomDirectory() {
     if (isRoomLobbyActive()) {
       renderRoomLobby();
     }
+    if (isCurrentHost() && !state.joiningRoom) {
+      state.roomExitLeaveSent = false;
+      upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+    }
   } else if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
+    const now = Date.now();
+    if (!state.roomMissingSince) {
+      state.roomMissingSince = now;
+      return;
+    }
+    if (now - state.roomMissingSince < roomMissingGraceMs) {
+      return;
+    }
     handleCurrentRoomClosed("The room was closed by the host or an admin.");
   }
 }
@@ -14229,6 +14249,7 @@ async function joinHostedRoom(code, options = {}) {
   state.joiningRoom = room;
   state.isSpectator = options.spectate || room.status !== "lobby";
   state.roomExitLeaveSent = false;
+  state.roomMissingSince = 0;
   state.currentOwner = state.isSpectator ? "spectator" : "opponent";
   state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
   await updateRoomPresence(room, {
@@ -14425,7 +14446,7 @@ function handleRoomPageExit(event) {
   }
   if ((isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft") && state.roomSettings.code !== "CAI-0000") {
     state.roomExitLeaveSent = true;
-    leavePublishedRoom({ keepalive: true });
+    leavePublishedRoom({ keepalive: true, reason: "page-exit" });
   }
 }
 
@@ -14707,6 +14728,7 @@ function startRoomGame() {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomGame = null;
+  state.roomMissingSince = 0;
   state.currentRoomStatus = "lobby";
   state.roomModeration.voteBans = {};
   if (!state.roomModeration.bannedByRoom[state.roomSettings.code]) {
