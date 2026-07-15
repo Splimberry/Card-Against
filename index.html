@@ -28,7 +28,10 @@
                 </div>
                 <button type="button" class="secondary-button profile-customize-button" id="profileCustomizeButton">Customize Card</button>
                 <button type="button" class="secondary-button profile-shop-button" id="profileShopButton">Shop</button>
+                <button type="button" class="secondary-button profile-auth-button" id="profileAuthButton">Sign in with Google</button>
+                <button type="button" class="secondary-button profile-auth-button hidden" id="profileSignOutButton">Sign out</button>
               </div>
+              <small class="profile-auth-status" id="profileAuthStatus">Local profile</small>
             </div>
           </section>
           <div class="menu-actions">
@@ -689,6 +692,7 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="./app.js" defer></script>
   </body>
 </html>

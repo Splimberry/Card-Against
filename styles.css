@@ -365,12 +365,19 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .profile-customize-button,
-.profile-shop-button {
+.profile-shop-button,
+.profile-auth-button {
   min-height: 2.45rem;
   width: 100%;
   padding: 0.45rem 0.75rem;
   font-size: 0.72rem;
   text-transform: uppercase;
+}
+
+.profile-auth-status {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .profile-name-editor {

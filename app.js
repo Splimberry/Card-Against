@@ -950,6 +950,10 @@ const state = {
   userQuestionSubmissionPollId: null,
   devQuestionSubmissions: [],
   devSelectedSubmissionId: "",
+  supabaseClient: null,
+  supabaseEnabled: false,
+  supabaseSession: null,
+  supabaseUser: null,
   adminAuthenticated: false,
   adminUser: null
 };
@@ -975,6 +979,9 @@ const elements = {
   profileCurrencyValue: document.querySelector("#profileCurrencyValue"),
   profileCustomizeButton: document.querySelector("#profileCustomizeButton"),
   profileShopButton: document.querySelector("#profileShopButton"),
+  profileAuthButton: document.querySelector("#profileAuthButton"),
+  profileSignOutButton: document.querySelector("#profileSignOutButton"),
+  profileAuthStatus: document.querySelector("#profileAuthStatus"),
   roomProfileAvatarPreview: document.querySelector("#roomProfileAvatarPreview"),
   roomProfileNamePreview: document.querySelector("#roomProfileNamePreview"),
   startBotsButton: document.querySelector("#startBotsButton"),
@@ -5590,6 +5597,113 @@ function renderProfile() {
   }, state.profile.name || "You");
   renderAvatar(elements.roomProfileAvatarPreview, state.profile);
   applyProfileCustomizationSurface(elements.roomHostProfile, state.profile.cardCustomization);
+  renderSupabaseAuthControls();
+}
+
+function renderSupabaseAuthControls() {
+  if (!elements.profileAuthButton || !elements.profileSignOutButton || !elements.profileAuthStatus) {
+    return;
+  }
+  const signedIn = Boolean(state.supabaseUser);
+  const configured = Boolean(state.supabaseEnabled);
+  setHidden(elements.profileAuthButton, signedIn || !configured);
+  setHidden(elements.profileSignOutButton, !signedIn);
+  elements.profileAuthButton.disabled = !configured;
+  elements.profileAuthStatus.textContent = signedIn
+    ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
+    : configured
+      ? "Supabase account ready"
+      : "Local profile";
+}
+
+async function initSupabaseAuth() {
+  if (!elements.profileAuthButton || !window.supabase?.createClient) {
+    renderSupabaseAuthControls();
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/auth/supabase-config", { cache: "no-store" });
+    const config = await response.json();
+    if (!response.ok || !config.enabled || !config.url || !config.anonKey) {
+      state.supabaseEnabled = false;
+      renderSupabaseAuthControls();
+      return;
+    }
+
+    state.supabaseEnabled = true;
+    state.supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+    const { data } = await state.supabaseClient.auth.getSession();
+    applySupabaseSession(data?.session || null);
+    state.supabaseClient.auth.onAuthStateChange((_event, session) => {
+      applySupabaseSession(session || null);
+    });
+  } catch (error) {
+    console.warn("Supabase auth init failed:", error.message || error);
+    state.supabaseEnabled = false;
+    renderSupabaseAuthControls();
+  }
+}
+
+function applySupabaseSession(session) {
+  state.supabaseSession = session;
+  state.supabaseUser = session?.user || null;
+  if (state.supabaseUser) {
+    applySupabaseProfile(state.supabaseUser);
+  }
+  renderSupabaseAuthControls();
+}
+
+function applySupabaseProfile(user) {
+  const metadata = user.user_metadata || {};
+  const name = String(metadata.full_name || metadata.name || user.email?.split("@")[0] || "").trim();
+  const avatar = String(metadata.avatar_url || metadata.picture || "").trim();
+  if (name) {
+    state.profile.name = name.replace(/[\r\n\t]/g, " ").slice(0, 16) || state.profile.name;
+    localStorage.setItem("cardsAgainstAiProfileName", state.profile.name);
+  }
+  if (avatar) {
+    state.profile.avatar = avatar;
+    localStorage.setItem("cardsAgainstAiProfileAvatar", avatar);
+  }
+  renderProfile();
+  renderRoomPlayers();
+  renderRoomChat();
+}
+
+async function signInWithSupabaseGoogle() {
+  if (!state.supabaseClient) {
+    renderSupabaseAuthControls();
+    return;
+  }
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const { error } = await state.supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo }
+  });
+  if (error) {
+    console.warn("Google sign-in failed:", error.message || error);
+    if (elements.profileAuthStatus) {
+      elements.profileAuthStatus.textContent = error.message || "Google sign-in failed.";
+    }
+  }
+}
+
+async function signOutSupabase() {
+  if (!state.supabaseClient) {
+    return;
+  }
+  const { error } = await state.supabaseClient.auth.signOut();
+  if (error) {
+    console.warn("Supabase sign-out failed:", error.message || error);
+    if (elements.profileAuthStatus) {
+      elements.profileAuthStatus.textContent = error.message || "Sign out failed.";
+    }
+    return;
+  }
+  state.supabaseSession = null;
+  state.supabaseUser = null;
+  renderSupabaseAuthControls();
 }
 
 function updateProfileName(value) {
@@ -17286,6 +17400,8 @@ elements.profileNameInput?.addEventListener("input", (event) => updateProfileNam
 elements.profileNameInput?.addEventListener("change", (event) => updateProfileName(event.target.value));
 elements.profileNameInput?.addEventListener("blur", (event) => updateProfileName(event.target.value));
 elements.profileAvatarInput.addEventListener("change", (event) => updateProfileAvatar(event.target.files?.[0]));
+elements.profileAuthButton?.addEventListener("click", signInWithSupabaseGoogle);
+elements.profileSignOutButton?.addEventListener("click", signOutSupabase);
 elements.backToMenuButton.addEventListener("click", closeRoomScreen);
 elements.backFromJoinButton.addEventListener("click", closeJoinScreen);
 elements.startRoomButton.addEventListener("click", startRoomGame);
@@ -17624,6 +17740,7 @@ updateSoundButton();
 syncSettingsControls();
 syncRoomControls();
 renderProfile();
+initSupabaseAuth();
 updateAchievementNotificationDot();
 loadUserQuestionSubmissions();
 if (elements.menuCreateQuestionsButton) {

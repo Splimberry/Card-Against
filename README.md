@@ -64,6 +64,8 @@ Set these extra environment variables before deploying:
 ADMIN_TOKEN=use_a_long_random_secret
 UPSTASH_REDIS_REST_URL=your_redis_rest_url
 UPSTASH_REDIS_REST_TOKEN=your_redis_rest_token
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
 ROOM_TTL_SECONDS=21600
 ```
 
@@ -91,12 +93,20 @@ The main-menu Dev Tool is locked behind an admin session.
 
 The server creates a signed HttpOnly admin session cookie. The `/api/debug/questions` routes require either that admin session cookie or an `Authorization: Bearer ADMIN_TOKEN` header.
 
-This is the first admin-only gate. Full public accounts with Google login, usernames, and passwords should use an auth provider such as Clerk, Supabase Auth, Firebase Auth, or Auth.js rather than storing passwords directly in this app.
+Supabase Auth is optional but supported for public player login:
+
+1. Create a Supabase project.
+2. In Supabase Auth providers, enable Google.
+3. Add the deployed app URL to Supabase Auth redirect URLs.
+4. Add `SUPABASE_URL` and `SUPABASE_ANON_KEY` to Vercel environment variables.
+5. Redeploy.
+
+When configured, the profile card shows Google sign-in and sign-out controls. When not configured, the app keeps using the local profile.
 
 Notes for public hosting:
 
 - Hosted room directory state is persistent only when Redis REST environment variables are configured.
-- Debug question editing writes to `data/questions.json`, which is not persistent on serverless hosting.
+- Debug question editing saves to backend storage on serverless hosting when the app cannot write to `data/questions.json`.
 - Solo and local gameplay routes that call `/api/setup` and `/api/round` are the best fit for the first public deployment.
 
 ## Current Loop

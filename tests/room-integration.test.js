@@ -4,6 +4,8 @@ const { Readable } = require("node:stream");
 process.env.BACKEND_STORE = "memory";
 process.env.ADMIN_TOKEN = "room-test-admin-token";
 process.env.QUESTION_FILE_WRITES = "disabled";
+process.env.SUPABASE_URL = "https://example.supabase.co";
+process.env.SUPABASE_ANON_KEY = "test-anon-key";
 
 const handleRequest = require("../server");
 
@@ -151,6 +153,14 @@ async function getDebugQuestions() {
   const { response, payload } = await request("GET", "/api/debug/questions", undefined, adminHeaders());
   assert.equal(response.status, 200, payload.error);
   return payload.questions;
+}
+
+async function testSupabaseConfigEndpoint() {
+  const { response, payload } = await request("GET", "/api/auth/supabase-config");
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.enabled, true);
+  assert.equal(payload.url, process.env.SUPABASE_URL);
+  assert.equal(payload.anonKey, process.env.SUPABASE_ANON_KEY);
 }
 
 async function testHostLeaveDeletesRoom() {
@@ -453,6 +463,7 @@ async function testDebugQuestionDeleteUsesBackendStorage() {
 }
 
 async function main() {
+  await testSupabaseConfigEndpoint();
   await testDirectRoomLookupIncludesCompleteRooms();
   await testHostLeaveDeletesRoom();
   await testBrowserExitRemovesJoinedPlayer();

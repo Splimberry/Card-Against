@@ -73,6 +73,11 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/auth/supabase-config") {
+      handleSupabaseConfig(res);
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/auth/admin/login") {
       await handleAdminLogin(req, res);
       return;
@@ -568,6 +573,16 @@ function handleAuthSession(req, res) {
   sendJson(res, 200, {
     authenticated: Boolean(session),
     user: session ? { role: "admin", name: "Admin" } : null
+  });
+}
+
+function handleSupabaseConfig(res) {
+  const url = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
+  sendJson(res, 200, {
+    enabled: Boolean(url && anonKey),
+    url,
+    anonKey
   });
 }
 
@@ -2412,6 +2427,14 @@ function requireAdmin(req, res) {
 
 function getAdminToken() {
   return String(process.env.ADMIN_TOKEN || "").trim();
+}
+
+function getSupabaseUrl() {
+  return String(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+}
+
+function getSupabaseAnonKey() {
+  return String(process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
 }
 
 function createAdminSessionCookie(expiresAt) {
