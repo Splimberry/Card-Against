@@ -3988,7 +3988,7 @@ function renderAchievementLibrary() {
             saveUnlockedAchievements(nextRecords);
             clearUnseenAchievements();
             playSound("reveal");
-            renderAchievementLibrary();
+            renderAchievementLibraryPreservingScroll();
           }, { once: true });
         }
       }
@@ -4009,6 +4009,22 @@ function renderAchievementLibrary() {
     section.append(heading, grid);
     elements.achievementLibrary.appendChild(section);
   });
+  updateAchievementNotificationDot();
+}
+
+function getAchievementScrollContainer() {
+  return elements.achievementLibrary?.closest(".achievements-panel") || elements.achievementLibrary;
+}
+
+function renderAchievementLibraryPreservingScroll() {
+  const scroller = getAchievementScrollContainer();
+  const scrollTop = scroller?.scrollTop || 0;
+  renderAchievementLibrary();
+  if (scroller) {
+    window.requestAnimationFrame(() => {
+      scroller.scrollTop = Math.min(scrollTop, Math.max(0, scroller.scrollHeight - scroller.clientHeight));
+    });
+  }
 }
 
 function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
@@ -4095,10 +4111,11 @@ function claimAchievementMilestone(id) {
     addCurrency(milestone.coins);
   }
   renderProfile();
-  renderAchievementLibrary();
+  renderAchievementLibraryPreservingScroll();
   if (isModalOpen(elements.profileCustomModal)) {
     renderProfileCustomizationModal();
   }
+  updateAchievementNotificationDot();
   playSound("reveal");
 }
 
