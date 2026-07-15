@@ -5609,11 +5609,10 @@ function renderSupabaseAuthControls() {
   setHidden(elements.profileAuthButton, signedIn || !configured);
   setHidden(elements.profileSignOutButton, !signedIn);
   elements.profileAuthButton.disabled = !configured;
+  setHidden(elements.profileAuthStatus, !signedIn);
   elements.profileAuthStatus.textContent = signedIn
     ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
-    : configured
-      ? "Supabase account ready"
-      : "Local profile";
+    : "";
 }
 
 async function initSupabaseAuth() {
@@ -5684,6 +5683,7 @@ async function signInWithSupabaseGoogle() {
   if (error) {
     console.warn("Google sign-in failed:", error.message || error);
     if (elements.profileAuthStatus) {
+      setHidden(elements.profileAuthStatus, false);
       elements.profileAuthStatus.textContent = error.message || "Google sign-in failed.";
     }
   }
@@ -5697,6 +5697,7 @@ async function signOutSupabase() {
   if (error) {
     console.warn("Supabase sign-out failed:", error.message || error);
     if (elements.profileAuthStatus) {
+      setHidden(elements.profileAuthStatus, false);
       elements.profileAuthStatus.textContent = error.message || "Sign out failed.";
     }
     return;
