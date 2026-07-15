@@ -962,7 +962,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .game-stage.room-active .room-chat {
   position: sticky;
   top: 7.35rem;
-  min-height: calc(100vh - 8.5rem);
+  height: calc(100vh - 8.5rem);
+  min-height: 0;
 }
 
 .top-bar > div:first-child {
@@ -2324,6 +2325,48 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   background: rgba(15, 13, 24, 0.76);
 }
 
+.dev-room-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dev-room-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(15, 13, 24, 0.86);
+}
+
+.dev-room-card strong,
+.dev-room-card span,
+.dev-room-card p {
+  display: block;
+  margin: 0;
+}
+
+.dev-room-card strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.dev-room-card span,
+.dev-room-card p {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.dev-room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .dev-submission-review-layout {
   display: grid;
   grid-template-columns: minmax(14rem, 0.32fr) minmax(28rem, 1fr);
@@ -3506,7 +3549,8 @@ input:focus {
   border-color: rgba(139, 144, 154, 0.72);
 }
 
-.white-card.bot-answer-card {
+.white-card.bot-answer-card,
+.white-card[data-owner="player"][data-card-custom="false"] {
   border-color: rgba(84, 90, 104, 0.88);
   background:
     radial-gradient(circle at 18% 16%, rgba(34, 211, 238, 0.08), transparent 34%),
@@ -3520,12 +3564,16 @@ input:focus {
 
 .white-card.bot-answer-card .answer-owner .name-with-title-text,
 .white-card.bot-answer-card .answer-owner > span:last-child,
-.white-card.bot-answer-card p {
+.white-card.bot-answer-card p,
+.white-card[data-owner="player"][data-card-custom="false"] .answer-owner .name-with-title-text,
+.white-card[data-owner="player"][data-card-custom="false"] .answer-owner > span:last-child,
+.white-card[data-owner="player"][data-card-custom="false"] p {
   color: rgba(246, 242, 238, 0.94);
   text-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.42);
 }
 
-.white-card.bot-answer-card .answer-avatar {
+.white-card.bot-answer-card .answer-avatar,
+.white-card[data-owner="player"][data-card-custom="false"] .answer-avatar {
   border: 1px solid rgba(255, 255, 255, 0.18);
   background:
     linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(255, 77, 125, 0.16)),
@@ -3533,7 +3581,8 @@ input:focus {
   color: var(--ink);
 }
 
-.white-card.bot-answer-card .rating-badge {
+.white-card.bot-answer-card .rating-badge,
+.white-card[data-owner="player"][data-card-custom="false"] .rating-badge {
   background:
     linear-gradient(135deg, rgba(255, 77, 125, 0.28), rgba(255, 77, 125, 0.12)),
     rgba(9, 10, 16, 0.66);
@@ -7859,8 +7908,10 @@ input:focus {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.75rem;
+  height: min(34rem, calc(100vh - 10rem));
   min-height: 0;
   padding: 0.85rem;
+  overflow: hidden;
 }
 
 .room-chat-header {
@@ -7887,7 +7938,7 @@ input:focus {
 
 .chat-log {
   min-height: 0;
-  max-height: none;
+  max-height: 100%;
   overflow: auto;
   display: grid;
   align-content: start;
@@ -7927,20 +7978,6 @@ input:focus {
   color: var(--muted);
 }
 
-.chat-message.own-message {
-  grid-template-columns: minmax(0, 1fr) 2.25rem;
-  text-align: right;
-}
-
-.chat-message.own-message .chat-avatar {
-  grid-column: 2;
-}
-
-.chat-message.own-message strong,
-.chat-message.own-message span {
-  grid-column: 1;
-}
-
 .chat-message.system-message strong {
   color: var(--muted);
 }
@@ -7976,7 +8013,7 @@ input:focus {
 }
 
 .chat-message.own-message .chat-options {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .chat-form {

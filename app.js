@@ -34,6 +34,7 @@ const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
 const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
 const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
 const userQuestionSubmissionCost = 250;
+const roomChatHistoryLimit = 50;
 const achievementTitles = [
   { id: "accurate-sniper", name: "Answer Sniper", rarity: "purple", description: "Get the Exact Answer tag on at least 75% of your answers in a match." },
   { id: "all-planned", name: "All planned", rarity: "purple", description: "Win 1st place by using Last Laugh and getting over 10,000 points in that round." },
@@ -596,9 +597,9 @@ const state = {
   randomUsernames: [],
   randomUsernamesPromise: null,
   roomSettings: {
-    rounds: savedMaxRounds,
-    timerSeconds: savedTimerSeconds,
-    maxPlayers: 6,
+    rounds: 10,
+    timerSeconds: 30,
+    maxPlayers: 5,
     harsh: false,
 	    chaos: false,
 	    timeMoney: false,
@@ -613,14 +614,18 @@ const state = {
   },
   roomChat: [],
   hostedRooms: [],
+  devRooms: [],
   roomParticipants: [],
   roomDirectoryPollId: null,
+  joinDirectoryPollId: null,
   roomDirectoryOnline: true,
   roomGame: null,
   joiningRoom: null,
   error404Owners: {},
   error404Schedule: [],
   currentRoomStatus: "draft",
+  publishedDraftRoomCode: "",
+  roomClosedNotice: "",
   isSpectator: false,
   currentOwner: "player",
   roomSubmissions: {},
@@ -1002,6 +1007,9 @@ const elements = {
   devSubmissionStatus: null,
   devSubmissionList: null,
   devSubmissionReviewPanel: null,
+  devRoomStatus: null,
+  devRoomList: null,
+  devRoomRefreshButton: null,
   backToMenuButton: document.querySelector("#backToMenuButton"),
   backFromJoinButton: document.querySelector("#backFromJoinButton"),
   roomSoundToggleButton: document.querySelector("#roomSoundToggleButton"),
@@ -4621,7 +4629,7 @@ function isCurrentHost() {
 }
 
 function getRoomMaxPlayers(settings = state.roomSettings) {
-  return clampNumber(settings.maxPlayers, 2, 10, 6);
+  return clampNumber(settings.maxPlayers, 2, 10, 5);
 }
 
 function isMatchModifierEnabled(modifier) {
@@ -5048,6 +5056,44 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
   return participants;
 }
 
+function pushRoomChatMessage(message) {
+  const source = message && typeof message === "object" ? message : {};
+  const cleanMessage = {
+    sender: String(source.sender || "System").slice(0, 32),
+    avatar: source.avatar || "",
+    equippedTitleId: source.equippedTitleId || "",
+    text: cleanChatInput(source.text || "").slice(0, 220),
+    owner: source.owner || "",
+    own: Boolean(source.own),
+    host: Boolean(source.host),
+    private: Boolean(source.private),
+    audience: source.audience || "",
+    createdAt: Number(source.createdAt) || Date.now()
+  };
+  if (!cleanMessage.text) {
+    return;
+  }
+  state.roomChat.push(cleanMessage);
+  state.roomChat = state.roomChat.slice(-roomChatHistoryLimit);
+}
+
+function publishRoomChat() {
+  if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return Promise.resolve(null);
+  }
+  if (!(isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft")) {
+    return Promise.resolve(null);
+  }
+  const status = state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby";
+  const room = buildRoomDirectoryPayload(status);
+  return publishRoomDirectory(room).then((serverRoom) => {
+    if (serverRoom) {
+      mergeHostedRoom(serverRoom);
+    }
+    return serverRoom;
+  });
+}
+
 function setButtonHint(button, hint = "") {
   if (!button) {
     return;
@@ -5061,15 +5107,18 @@ function setButtonHint(button, hint = "") {
 }
 
 function addSystemChat(text, options = {}) {
-  state.roomChat.push({
+  pushRoomChatMessage({
     sender: options.sender || "System",
     text,
     private: Boolean(options.private),
     host: Boolean(options.host),
-    audience: options.audience || ""
+    audience: options.audience || "",
+    createdAt: Date.now()
   });
-  state.roomChat = state.roomChat.slice(-40);
   renderRoomChat();
+  if (!options.private && options.sync !== false) {
+    publishRoomChat();
+  }
 }
 
 function clearRoomAutoResolve() {
@@ -10669,6 +10718,7 @@ function buildDevToolScreen() {
     </div>
     <div class="dev-tool-tabs" id="devToolTabs" role="tablist" aria-label="Dev tool sections">
       <button type="button" class="selected" data-dev-tab="questions">Question Debug</button>
+      <button type="button" data-dev-tab="rooms">Rooms</button>
       <button type="button" data-dev-tab="submissions">Review Cards</button>
       <button type="button" data-dev-tab="create">Question Creation</button>
       <button type="button" data-dev-tab="achievements">Achievement Debug</button>
@@ -10735,6 +10785,17 @@ function buildDevToolScreen() {
           <div class="debug-status" id="devQuestionStatus">Loading question bank...</div>
         </aside>
       </div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="rooms">
+      <div class="dev-panel-heading">
+        <div>
+          <p class="eyebrow">Hosted room directory</p>
+          <h2>Rooms</h2>
+        </div>
+        <button type="button" class="icon-button" id="devRoomRefreshButton">Refresh</button>
+      </div>
+      <div class="debug-status" id="devRoomStatus">Load hosted rooms for moderation.</div>
+      <div class="dev-room-list" id="devRoomList"></div>
     </section>
     <section class="dev-tool-panel hidden" data-dev-panel="submissions">
       <div class="dev-panel-heading">
@@ -10916,6 +10977,9 @@ function buildDevToolScreen() {
   elements.devQuestionCheckImagesButton = screen.querySelector("#devQuestionCheckImagesButton");
   elements.devQuestionLeastSeenButton = screen.querySelector("#devQuestionLeastSeenButton");
   elements.devQuestionMostRepeatedButton = screen.querySelector("#devQuestionMostRepeatedButton");
+  elements.devRoomStatus = screen.querySelector("#devRoomStatus");
+  elements.devRoomList = screen.querySelector("#devRoomList");
+  elements.devRoomRefreshButton = screen.querySelector("#devRoomRefreshButton");
   elements.devSubmissionStatus = screen.querySelector("#devSubmissionStatus");
   elements.devSubmissionList = screen.querySelector("#devSubmissionList");
   elements.devSubmissionReviewPanel = screen.querySelector("#devSubmissionReviewPanel");
@@ -11002,6 +11066,8 @@ function bindDevToolEvents() {
       focusQuestionDebugById(button.dataset.questionToolFocus);
     }
   });
+  elements.devRoomRefreshButton.addEventListener("click", loadDevRooms);
+  elements.devRoomList.addEventListener("click", handleDevRoomClick);
   elements.devSubmissionRefreshButton.addEventListener("click", loadDevQuestionSubmissions);
   elements.devSubmissionList.addEventListener("click", handleDevSubmissionListClick);
   elements.devSubmissionReviewPanel.addEventListener("click", handleDevSubmissionClick);
@@ -11738,6 +11804,90 @@ function getRequiredDenyReason(card) {
   return reason;
 }
 
+async function loadDevRooms() {
+  if (!elements.devRoomStatus) return;
+  try {
+    elements.devRoomStatus.textContent = "Loading rooms...";
+    const response = await fetch("/api/admin/rooms", { credentials: "same-origin", cache: "no-store" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `Room load failed with status ${response.status}.`);
+    state.devRooms = Array.isArray(result.rooms) ? result.rooms : [];
+    renderDevRooms();
+  } catch (error) {
+    elements.devRoomStatus.textContent = error.message || "Could not load rooms.";
+    playSound("error");
+  }
+}
+
+function renderDevRooms() {
+  elements.devRoomList.replaceChildren();
+  if (!state.devRooms.length) {
+    const empty = document.createElement("p");
+    empty.className = "debug-status";
+    empty.textContent = "No rooms are currently stored.";
+    elements.devRoomList.appendChild(empty);
+    elements.devRoomStatus.textContent = "0 rooms stored.";
+    return;
+  }
+  state.devRooms.forEach((room) => {
+    const card = document.createElement("article");
+    card.className = "dev-room-card";
+    card.dataset.roomCode = room.code;
+    const summary = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = room.code;
+    const meta = document.createElement("span");
+    meta.textContent = `${room.status} | ${room.activePlayers || 0}/${room.settings?.maxPlayers || 0} players | host ${room.host?.name || "Host"}`;
+    const participants = document.createElement("p");
+    participants.textContent = (room.participants || [])
+      .map((participant) => `${participant.host ? "Host " : ""}${participant.name}${participant.bot ? " bot" : ""}${participant.spectator ? " spectator" : ""}`)
+      .join(", ") || "No participants.";
+    summary.append(title, meta, participants);
+    const actions = document.createElement("div");
+    actions.className = "dev-room-actions";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "icon-button";
+    close.dataset.devRoomAction = "close";
+    close.textContent = "Close";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "icon-button danger-button";
+    remove.dataset.devRoomAction = "delete";
+    remove.textContent = "Delete";
+    actions.append(close, remove);
+    card.append(summary, actions);
+    elements.devRoomList.appendChild(card);
+  });
+  elements.devRoomStatus.textContent = `${state.devRooms.length} room${state.devRooms.length === 1 ? "" : "s"} stored.`;
+}
+
+async function handleDevRoomClick(event) {
+  const button = event.target.closest("[data-dev-room-action]");
+  if (!button) return;
+  const card = button.closest("[data-room-code]");
+  const code = card?.dataset.roomCode;
+  if (!code) return;
+  const action = button.dataset.devRoomAction;
+  button.disabled = true;
+  try {
+    const response = await fetch(`/api/admin/rooms/${encodeURIComponent(code)}${action === "close" ? "/close" : ""}`, {
+      method: action === "delete" ? "DELETE" : "POST",
+      credentials: "same-origin"
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `${action} failed with status ${response.status}.`);
+    elements.devRoomStatus.textContent = action === "delete" ? `Deleted ${code}.` : `Closed ${code}.`;
+    await loadDevRooms();
+    playSound("reveal");
+  } catch (error) {
+    elements.devRoomStatus.textContent = error.message || "Room action failed.";
+    playSound("error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function getCurrentDevToolTab() {
   const selected = elements.devToolTabs?.querySelector("[data-dev-tab].selected");
   return selected?.dataset.devTab || "questions";
@@ -11758,7 +11908,7 @@ async function requestDevToolTab(tab) {
 }
 
 function setDevToolTab(tab) {
-  const selectedTab = ["questions", "submissions", "create", "achievements", "profile", "overlays"].includes(tab) ? tab : "questions";
+  const selectedTab = ["questions", "rooms", "submissions", "create", "achievements", "profile", "overlays"].includes(tab) ? tab : "questions";
   elements.devToolTabs.querySelectorAll("[data-dev-tab]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.devTab === selectedTab);
   });
@@ -11767,6 +11917,9 @@ function setDevToolTab(tab) {
   });
   if (selectedTab === "questions") {
     loadQuestionDebugBank();
+  }
+  if (selectedTab === "rooms") {
+    loadDevRooms();
   }
   if (selectedTab === "submissions") {
     loadDevQuestionSubmissions();
@@ -13349,6 +13502,7 @@ function syncRoomControls() {
 }
 
 function openRoomScreen() {
+  stopJoinDirectoryPolling();
   state.mode = null;
   state.joiningRoom = null;
   state.isSpectator = false;
@@ -13357,7 +13511,11 @@ function openRoomScreen() {
   state.currentRoomStatus = "draft";
   state.roomParticipants = [];
   state.roomSettings.code = generateRoomCode();
+  state.publishedDraftRoomCode = state.roomSettings.code;
+  state.roomChat = [];
   syncRoomControls();
+  publishDraftRoom();
+  startRoomDirectoryPolling();
   setHidden(elements.modeScreen, true);
   setHidden(elements.joinScreen, true);
   setHidden(elements.gameStage, true);
@@ -13368,6 +13526,11 @@ function openRoomScreen() {
 
 function closeRoomScreen() {
   const returnToLobby = state.currentRoomStatus === "lobby";
+  if (state.currentRoomStatus === "draft" && state.publishedDraftRoomCode === state.roomSettings.code) {
+    leavePublishedRoom({ keepalive: true });
+    state.publishedDraftRoomCode = "";
+    stopRoomDirectoryPolling();
+  }
   setHidden(elements.roomScreen, true);
   setHidden(elements.roomLobbyScreen, !returnToLobby);
   setHidden(elements.modeScreen, returnToLobby);
@@ -13377,9 +13540,78 @@ function closeRoomScreen() {
   playSound("click");
 }
 
+function publishDraftRoom() {
+  if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return;
+  }
+  const room = buildRoomDirectoryPayload("lobby");
+  publishRoomDirectory(room).then((serverRoom) => {
+    if (serverRoom) {
+      mergeHostedRoom(serverRoom);
+      if (state.currentRoomStatus === "draft" && state.roomSettings.code === serverRoom.code) {
+        state.roomParticipants = Array.isArray(serverRoom.participants) ? serverRoom.participants : state.roomParticipants;
+        renderRoomPlayers();
+      }
+    }
+  });
+}
+
+function leavePublishedRoom(options = {}) {
+  const code = state.roomSettings.code;
+  if (!code || code === "CAI-0000") {
+    return Promise.resolve(null);
+  }
+  const payload = JSON.stringify({ participantId: state.clientId });
+  const url = `/api/rooms/${encodeURIComponent(code)}/leave`;
+  if (options.keepalive && navigator.sendBeacon) {
+    navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
+    return Promise.resolve(null);
+  }
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: Boolean(options.keepalive)
+  }).catch(() => null);
+}
+
+function handleCurrentRoomClosed(reason = "Room closed.") {
+  if (!(isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft")) {
+    return;
+  }
+  clearRoomAutoResolve();
+  stopRoomDirectoryPolling();
+  stopNextRoundCountdown();
+  resetTimerDisplay();
+  stopLoadingMessages();
+  state.matchEnded = true;
+  state.currentRoomStatus = "draft";
+  state.joiningRoom = null;
+  state.roomGame = null;
+  state.roomParticipants = [];
+  state.roomClosedNotice = reason;
+  addSystemChat(reason, { private: true, sync: false });
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomChat, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  elements.gameStage.classList.remove("room-active");
+  setHidden(elements.modeScreen, false);
+  showAppConfirm({
+    eyebrow: "Room closed",
+    title: "Room closed",
+    copy: reason,
+    confirmLabel: "OK",
+    cancelLabel: "Close",
+    danger: false
+  });
+}
+
 async function openJoinScreen() {
   await refreshHostedRooms();
   renderHostedRooms();
+  startJoinDirectoryPolling();
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
   setHidden(elements.roomLobbyScreen, true);
@@ -13389,17 +13621,39 @@ async function openJoinScreen() {
 }
 
 function closeJoinScreen() {
+  stopJoinDirectoryPolling();
   setHidden(elements.joinScreen, true);
   setHidden(elements.modeScreen, false);
   playSound("click");
 }
 
+function startJoinDirectoryPolling() {
+  stopJoinDirectoryPolling();
+  state.joinDirectoryPollId = window.setInterval(async () => {
+    if (elements.joinScreen.classList.contains("hidden")) {
+      stopJoinDirectoryPolling();
+      return;
+    }
+    await refreshHostedRooms();
+    renderHostedRooms();
+  }, 1800);
+}
+
+function stopJoinDirectoryPolling() {
+  if (state.joinDirectoryPollId) {
+    window.clearInterval(state.joinDirectoryPollId);
+    state.joinDirectoryPollId = null;
+  }
+}
+
 function updateRoomRounds(value) {
-  state.roomSettings.rounds = clampNumber(value, 1, 10, 5);
+  state.roomSettings.rounds = clampNumber(value, 1, 10, 10);
   elements.roomRoundsValue.textContent = `${state.roomSettings.rounds}`;
   if (state.currentRoomStatus === "lobby") {
     upsertHostedRoom("lobby");
     renderRoomLobby();
+  } else if (state.currentRoomStatus === "draft") {
+    publishDraftRoom();
   }
 }
 
@@ -13409,17 +13663,21 @@ function updateRoomTimer(value) {
   if (state.currentRoomStatus === "lobby") {
     upsertHostedRoom("lobby");
     renderRoomLobby();
+  } else if (state.currentRoomStatus === "draft") {
+    publishDraftRoom();
   }
 }
 
 function updateRoomPlayerLimit(value) {
-  state.roomSettings.maxPlayers = clampNumber(value, 2, 10, 6);
+  state.roomSettings.maxPlayers = clampNumber(value, 2, 10, 5);
   elements.roomPlayerLimitSlider.value = state.roomSettings.maxPlayers;
   elements.roomPlayerLimitValue.textContent = `${state.roomSettings.maxPlayers}`;
   renderRoomPlayers();
   if (state.currentRoomStatus === "lobby") {
     upsertHostedRoom("lobby");
     renderRoomLobby();
+  } else if (state.currentRoomStatus === "draft") {
+    publishDraftRoom();
   }
 }
 
@@ -13463,6 +13721,8 @@ function updateRoomVariants() {
   if (state.currentRoomStatus === "lobby") {
     upsertHostedRoom("lobby");
     renderRoomLobby();
+  } else if (state.currentRoomStatus === "draft") {
+    publishDraftRoom();
   }
 }
 
@@ -13488,22 +13748,32 @@ async function handleClassicModeToggle() {
 function buildRoomDirectoryPayload(status = "lobby") {
   const participants = getRoomParticipantsFromPlayers(status);
   const existing = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
-  return {
-    code: state.roomSettings.code,
-    status,
-    settings: { ...state.roomSettings },
-    host: {
+  const hostSource = (!state.joiningRoom && isCurrentHost())
+    ? {
       id: state.clientId,
       name: state.profile.name || "Host",
       avatar: state.profile.avatar,
       equippedTitleId: state.profile.equippedTitleId || "",
       cardCustomization: state.profile.cardCustomization
+    }
+    : (existing?.host || state.joiningRoom?.host || participants.find((participant) => participant.host) || {});
+  return {
+    code: state.roomSettings.code,
+    status,
+    settings: { ...state.roomSettings },
+    host: {
+      id: hostSource.id || state.clientId,
+      name: hostSource.name || "Host",
+      avatar: hostSource.avatar || "",
+      equippedTitleId: hostSource.equippedTitleId || "",
+      cardCustomization: hostSource.cardCustomization || null
     },
     participants,
     activePlayers: participants.filter((participant) => participant.active && !participant.spectator).length || 1,
     spectators: participants.filter((participant) => participant.active && participant.spectator).length,
     banned: [...getRoomBanList()],
-    game: status === "in-progress" ? (state.roomGame || existing?.game || null) : null
+    game: status === "in-progress" ? (state.roomGame || existing?.game || null) : null,
+    chat: state.roomChat.slice(-roomChatHistoryLimit)
   };
 }
 
@@ -13612,6 +13882,12 @@ function applyRoomDirectoryRoom(room) {
   }
   state.roomSettings = { ...state.roomSettings, ...room.settings, code: room.code };
   state.roomParticipants = Array.isArray(room.participants) ? room.participants : [];
+  if (Array.isArray(room.chat)) {
+    state.roomChat = room.chat.slice(-roomChatHistoryLimit).map((message) => ({
+      ...message,
+      own: Boolean(message.owner && message.owner === state.currentOwner)
+    }));
+  }
   state.roomGame = room.game && typeof room.game === "object" ? room.game : null;
   state.joiningRoom = state.joiningRoom ? room : state.joiningRoom;
   syncRoomSubmissionsFromParticipants();
@@ -13722,6 +13998,8 @@ async function refreshCurrentRoomDirectory() {
     if (isRoomLobbyActive()) {
       renderRoomLobby();
     }
+  } else if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
+    handleCurrentRoomClosed("The room was closed by the host or an admin.");
   }
 }
 
@@ -13954,18 +14232,15 @@ async function joinHostedRoom(code, options = {}) {
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined"
   });
-  state.roomChat = [
-    {
-      sender: "System",
-      text: `${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`
-    }
-  ];
+  state.roomChat = Array.isArray(room.chat) ? room.chat.slice(-roomChatHistoryLimit) : [];
+  addSystemChat(`${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
   if (room.status === "lobby") {
     state.mode = "room";
     setPlayersForMode("room");
     applyRoomDirectoryRoom(state.hostedRooms.find((entry) => entry.code === normalizedCode) || room);
     renderRoomLobby();
     startRoomDirectoryPolling();
+    stopJoinDirectoryPolling();
     setHidden(elements.modeScreen, true);
     setHidden(elements.roomScreen, true);
     setHidden(elements.joinScreen, true);
@@ -13975,6 +14250,7 @@ async function joinHostedRoom(code, options = {}) {
     return;
   }
 
+  stopJoinDirectoryPolling();
   startGame("room");
 }
 
@@ -14123,9 +14399,8 @@ function leaveCurrentRoom() {
   resetTimerDisplay();
   stopLoadingMessages();
   state.matchEnded = true;
-  if (isLeavingRoom && isCurrentHost() && !state.joiningRoom) {
-    state.currentRoomStatus = "complete";
-    upsertHostedRoom("complete");
+  if (isLeavingRoom) {
+    leavePublishedRoom({ keepalive: true });
   }
 
   setHidden(elements.gameStage, true);
@@ -14136,6 +14411,12 @@ function leaveCurrentRoom() {
   elements.gameStage.classList.remove("room-active");
   setHidden(elements.modeScreen, false);
   playSound("click");
+}
+
+function handleRoomPageExit() {
+  if ((isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft") && state.roomSettings.code !== "CAI-0000") {
+    leavePublishedRoom({ keepalive: true });
+  }
 }
 
 function animateRoomPlayerListChange(target, renderList) {
@@ -14153,8 +14434,7 @@ function animateRoomPlayerListChange(target, renderList) {
   target.classList.add("room-player-list-resizing");
   target.style.height = `${previousHeight}px`;
   renderList();
-  target.style.height = "auto";
-  const nextHeight = target.getBoundingClientRect().height;
+  const nextHeight = target.scrollHeight;
   if (Math.abs(nextHeight - previousHeight) < 2) {
     target.classList.remove("room-player-list-resizing");
     target.style.height = "";
@@ -14423,12 +14703,9 @@ function startRoomGame() {
     state.roomModeration.bannedByRoom[state.roomSettings.code] = [];
   }
   setPlayersForMode("room");
-  state.roomChat = [
-    {
-      sender: "System",
-      text: `Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`
-    }
-  ];
+  if (!state.roomChat.length) {
+    addSystemChat(`Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`);
+  }
   upsertHostedRoom("lobby");
   openRoomLobby();
 }
@@ -14529,22 +14806,23 @@ function sendChatMessage(text, input = elements.chatInput) {
     return;
   }
 
-  state.roomChat.push({
+  pushRoomChatMessage({
     sender: state.profile.name || "Host",
     avatar: state.profile.avatar,
     equippedTitleId: state.profile.equippedTitleId || "",
     text: cleaned,
     owner: state.currentOwner,
     own: true,
-    host: isCurrentHost()
+    host: isCurrentHost(),
+    createdAt: Date.now()
   });
   const chatStat = getAchievementStat(state.currentOwner);
   if (chatStat) {
     chatStat.chatMessages += 1;
   }
-  state.roomChat = state.roomChat.slice(-40);
   input.value = "";
   renderRoomChat();
+  publishRoomChat();
   playSound("click");
 }
 
@@ -16810,7 +17088,7 @@ elements.joinCodeForm.addEventListener("submit", (event) => {
 elements.createFromJoinButton.addEventListener("click", openRoomScreen);
 elements.rematchButton.addEventListener("click", () => {
   if (isRoomMode()) {
-    state.roomChat.push({ sender: "System", text: "Rematch started in the same room." });
+    addSystemChat("Rematch started in the same room.");
   }
   startGame(state.mode);
 });
@@ -17072,6 +17350,8 @@ elements.lobbyChatForm.addEventListener("submit", (event) => {
 elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
+window.addEventListener("pagehide", handleRoomPageExit);
+window.addEventListener("beforeunload", handleRoomPageExit);
 
 updateSoundButton();
 syncSettingsControls();

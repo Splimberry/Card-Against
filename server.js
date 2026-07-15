@@ -141,6 +141,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomLeaveMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/leave$/);
+    if (roomLeaveMatch && req.method === "POST") {
+      await handleRoomLeave(req, res, roomLeaveMatch[1]);
+      return;
+    }
+
     if (url.pathname === "/api/admin/status" && req.method === "GET") {
       await handleAdminStatus(req, res);
       return;
@@ -298,9 +304,11 @@ async function handleAdminRooms(req, res) {
           spectator: Boolean(participant.spectator),
           active: Boolean(participant.active),
           muted: Boolean(participant.muted),
-          status: participant.status
+          status: participant.status,
+          bot: Boolean(participant.bot)
         }))
         : [],
+      chat: Array.isArray(room.chat) ? room.chat : [],
       activePlayers: room.activePlayers || 0,
       spectators: room.spectators || 0,
       updatedAt: room.updatedAt || 0
@@ -827,9 +835,9 @@ function normalizeRoom(room) {
     code,
     status: ["draft", "lobby", "in-progress", "complete"].includes(room.status) ? room.status : "lobby",
     settings: {
-      rounds: clampServerNumber(settings.rounds, 1, 10, 5),
+      rounds: clampServerNumber(settings.rounds, 1, 10, 10),
       timerSeconds: clampServerNumber(settings.timerSeconds, 10, 60, 30),
-      maxPlayers: clampServerNumber(settings.maxPlayers, 2, 10, 6),
+      maxPlayers: clampServerNumber(settings.maxPlayers, 2, 10, 5),
       harsh: classicMode ? false : Boolean(settings.harsh),
       chaos: classicMode ? false : Boolean(settings.chaos),
       timeMoney: classicMode ? false : Boolean(settings.timeMoney),
@@ -852,6 +860,7 @@ function normalizeRoom(room) {
     participants,
     banned: Array.isArray(room.banned) ? room.banned.map((entry) => String(entry).slice(0, 80)) : [],
     game: normalizeRoomGame(room.game),
+    chat: normalizeRoomChat(room.chat),
     updatedAt: Date.now()
   };
   finalizeRoom(normalizedRoom);
@@ -880,6 +889,63 @@ function normalizeParticipant(participant) {
     submittedRound: clampServerNumber(participant.submittedRound, 0, 100, 0),
     remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0)
   };
+}
+
+async function handleRoomLeave(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 200, { closed: true, code: normalizedCode });
+      return;
+    }
+
+    const body = await readRequestJson(req);
+    const participantId = String(body.participantId || "").slice(0, 80);
+    const isHostLeaving = participantId && participantId === room.host?.id
+      || room.participants.some((participant) => participant.id === participantId && participant.host);
+    if (isHostLeaving) {
+      await backendStore.deleteRoom(normalizedCode);
+      sendJson(res, 200, { closed: true, code: normalizedCode, reason: "host-left" });
+      return;
+    }
+
+    room.participants = room.participants.filter((participant) => participant.id !== participantId);
+    room.updatedAt = Date.now();
+    finalizeRoom(room);
+    const activeRealPlayers = room.participants.filter((participant) => participant.active && !participant.bot && !participant.spectator);
+    if (!activeRealPlayers.length) {
+      await backendStore.deleteRoom(normalizedCode);
+      sendJson(res, 200, { closed: true, code: normalizedCode, reason: "empty-room" });
+      return;
+    }
+
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, { room: storedRoom, closed: false });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room leave failed." });
+  }
+}
+
+function normalizeRoomChat(chat) {
+  const messages = Array.isArray(chat) ? chat : [];
+  return messages
+    .map((message) => {
+      const source = message && typeof message === "object" ? message : {};
+      return {
+        sender: String(source.sender || "System").slice(0, 32),
+        avatar: String(source.avatar || "").slice(0, 250000),
+        equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
+        text: String(source.text || "").trim().slice(0, 220),
+        owner: String(source.owner || "").slice(0, 80),
+        host: Boolean(source.host),
+        private: Boolean(source.private),
+        audience: String(source.audience || "").slice(0, 80),
+        createdAt: clampServerNumber(source.createdAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+      };
+    })
+    .filter((message) => message.text)
+    .slice(-50);
 }
 
 function normalizeCardCustomization(customization) {
