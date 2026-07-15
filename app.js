@@ -5076,26 +5076,42 @@ function pushRoomChatMessage(message) {
     createdAt: Number(source.createdAt) || Date.now()
   };
   if (!cleanMessage.text) {
-    return;
+    return null;
   }
   state.roomChat.push(cleanMessage);
   state.roomChat = state.roomChat.slice(-roomChatHistoryLimit);
+  return cleanMessage;
 }
 
-function publishRoomChat() {
+function publishRoomChat(message = state.roomChat.at(-1)) {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
   }
   if (!(isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft")) {
     return Promise.resolve(null);
   }
-  const status = state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby";
-  const room = buildRoomDirectoryPayload(status);
-  return publishRoomDirectory(room).then((serverRoom) => {
-    if (serverRoom) {
-      mergeHostedRoom(serverRoom);
+  if (!message) {
+    return Promise.resolve(null);
+  }
+  return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  }).then(async (response) => {
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return null;
     }
-    return serverRoom;
+    const data = await response.json();
+    state.roomDirectoryOnline = true;
+    if (data.room) {
+      mergeHostedRoom(data.room);
+      applyRoomDirectoryRoom(data.room);
+    }
+    return data.room || null;
+  }).catch(() => {
+    state.roomDirectoryOnline = false;
+    return null;
   });
 }
 
@@ -5112,7 +5128,7 @@ function setButtonHint(button, hint = "") {
 }
 
 function addSystemChat(text, options = {}) {
-  pushRoomChatMessage({
+  const message = pushRoomChatMessage({
     sender: options.sender || "System",
     text,
     private: Boolean(options.private),
@@ -5121,8 +5137,8 @@ function addSystemChat(text, options = {}) {
     createdAt: Date.now()
   });
   renderRoomChat();
-  if (!options.private && options.sync !== false) {
-    publishRoomChat();
+  if (message && !options.private && options.sync !== false) {
+    publishRoomChat(message);
   }
 }
 
@@ -13472,6 +13488,9 @@ async function startGame(mode) {
   setHidden(elements.joinScreen, true);
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, false);
+  if (mode === "room") {
+    startRoomDirectoryPolling();
+  }
   resetRoundUiForLoading();
   try {
     const enabledThemes = getEnabledTriviaThemes();
@@ -13932,22 +13951,30 @@ async function refreshHostedRooms() {
 
 async function updateRoomPresence(room, options = {}) {
   try {
+    const participant = getCurrentParticipant({
+      host: Boolean(options.host),
+      spectator: Boolean(options.spectator),
+      active: options.active !== false,
+      status: options.status || (options.spectator ? "spectating" : "joined"),
+      answer: options.answer || "",
+      submittedRound: options.submittedRound || 0,
+      remainingTime: options.remainingTime || 0
+    });
+    if (!Object.hasOwn(options, "answer")) {
+      delete participant.answer;
+    }
+    if (!Object.hasOwn(options, "submittedRound")) {
+      delete participant.submittedRound;
+    }
+    if (!Object.hasOwn(options, "remainingTime")) {
+      delete participant.remainingTime;
+    }
     const response = await fetch(`/api/rooms/${encodeURIComponent(room.code)}/presence`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        participant: getCurrentParticipant({
-          host: Boolean(options.host),
-          spectator: Boolean(options.spectator),
-          active: options.active !== false,
-          status: options.status || (options.spectator ? "spectating" : "joined"),
-          answer: options.answer || "",
-          submittedRound: options.submittedRound || 0,
-          remainingTime: options.remainingTime || 0
-        })
-      })
+      body: JSON.stringify({ participant })
     });
     if (!response.ok) {
       return room;
@@ -14033,7 +14060,48 @@ function publishRoomRoundSetup(setup) {
     setup,
     updatedAt: Date.now()
   };
-  upsertHostedRoom("in-progress");
+  fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/game`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ game: state.roomGame })
+  }).then(async (response) => {
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return;
+    }
+    const data = await response.json();
+    state.roomDirectoryOnline = true;
+    if (data.room) {
+      mergeHostedRoom(data.room);
+      applyRoomDirectoryRoom(data.room);
+    }
+  }).catch(() => {
+    state.roomDirectoryOnline = false;
+  });
+}
+
+function publishRoomHeartbeat(status = "host") {
+  if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return Promise.resolve(null);
+  }
+  return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/heartbeat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      participantId: state.clientId,
+      status
+    })
+  }).then(async (response) => {
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    if (data.room) {
+      mergeHostedRoom(data.room);
+      applyRoomDirectoryRoom(data.room);
+    }
+    return data.room || null;
+  }).catch(() => null);
 }
 
 async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 12000) {
@@ -14099,10 +14167,7 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
     }
     if (isCurrentHost() && !state.joiningRoom) {
       state.roomExitLeaveSent = false;
-      updateRoomPresence(room, {
-        host: true,
-        status: state.currentRoomStatus === "in-progress" ? "playing" : "host"
-      });
+      publishRoomHeartbeat(state.currentRoomStatus === "in-progress" ? "playing" : "host");
     }
   } else if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
     const now = Date.now();
@@ -14938,7 +15003,7 @@ function sendChatMessage(text, input = elements.chatInput) {
     return;
   }
 
-  pushRoomChatMessage({
+  const message = pushRoomChatMessage({
     sender: state.profile.name || "Host",
     avatar: state.profile.avatar,
     equippedTitleId: state.profile.equippedTitleId || "",
@@ -14954,7 +15019,7 @@ function sendChatMessage(text, input = elements.chatInput) {
   }
   input.value = "";
   renderRoomChat();
-  publishRoomChat();
+  publishRoomChat(message);
   playSound("click");
 }
 

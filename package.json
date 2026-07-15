@@ -5,6 +5,7 @@
   "description": "A single-player AI-powered party game prototype.",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check app.js && node --check server.js"
+    "check": "node --check app.js && node --check server.js",
+    "test:rooms": "node tests/room-integration.test.js"
   }
 }

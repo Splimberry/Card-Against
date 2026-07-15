@@ -17,6 +17,7 @@ const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
 const adminCookieName = "cai_admin_session";
 const adminSessionTtlSeconds = 60 * 60 * 12;
+const maxRoomEvents = 100;
 const triviaThemes = [
   "Pop Culture",
   "Gaming and Geek Culture",
@@ -139,6 +140,30 @@ async function handleRequest(req, res) {
     const roomPresenceMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/presence$/);
     if (roomPresenceMatch && req.method === "POST") {
       await handleRoomPresence(req, res, roomPresenceMatch[1]);
+      return;
+    }
+
+    const roomHeartbeatMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/heartbeat$/);
+    if (roomHeartbeatMatch && req.method === "POST") {
+      await handleRoomHeartbeat(req, res, roomHeartbeatMatch[1]);
+      return;
+    }
+
+    const roomChatMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/chat$/);
+    if (roomChatMatch && req.method === "POST") {
+      await handleRoomChat(req, res, roomChatMatch[1]);
+      return;
+    }
+
+    const roomGameMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/game$/);
+    if (roomGameMatch && req.method === "PUT") {
+      await handleRoomGame(req, res, roomGameMatch[1]);
+      return;
+    }
+
+    const roomEventsMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/events$/);
+    if (roomEventsMatch && req.method === "GET") {
+      await handleRoomEvents(url, res, roomEventsMatch[1]);
       return;
     }
 
@@ -342,8 +367,8 @@ async function handleAdminCloseRoom(req, res, code) {
   }
 
   room.status = "complete";
-  room.updatedAt = Date.now();
   finalizeRoom(room);
+  stampRoomEvent(room, "room_closed", { reason: "admin" });
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, { room: storedRoom });
 }
@@ -788,12 +813,50 @@ function normalizeAnswerList(value, limit) {
 async function handleUpsertRoom(req, res) {
   try {
     const body = await readRequestJson(req);
+    const existingRoom = await backendStore.getRoom((body.room || body).code);
     const room = normalizeRoom(body.room || body);
+    room.events = normalizeRoomEvents(existingRoom?.events);
+    room.revision = clampServerNumber(existingRoom?.revision, 0, Number.MAX_SAFE_INTEGER, 0);
+    stampRoomEvent(room, existingRoom ? "room_updated" : "room_created", { status: room.status });
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, { room: storedRoom });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room update failed." });
   }
+}
+
+function getRoomRevision(room) {
+  return clampServerNumber(room?.revision, 0, Number.MAX_SAFE_INTEGER, 0);
+}
+
+function normalizeRoomEvents(events) {
+  return (Array.isArray(events) ? events : [])
+    .map((event) => ({
+      id: String(event.id || "").slice(0, 120),
+      revision: clampServerNumber(event.revision, 0, Number.MAX_SAFE_INTEGER, 0),
+      type: String(event.type || "room_updated").slice(0, 60),
+      payload: event.payload && typeof event.payload === "object" ? event.payload : {},
+      createdAt: clampServerNumber(event.createdAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+    }))
+    .filter((event) => event.revision > 0 && event.type)
+    .slice(-maxRoomEvents);
+}
+
+function stampRoomEvent(room, type, payload = {}) {
+  const revision = getRoomRevision(room) + 1;
+  room.revision = revision;
+  room.updatedAt = Date.now();
+  room.events = [
+    ...normalizeRoomEvents(room.events),
+    {
+      id: `${room.code}-${revision}`,
+      revision,
+      type: String(type || "room_updated").slice(0, 60),
+      payload: payload && typeof payload === "object" ? payload : {},
+      createdAt: Date.now()
+    }
+  ].slice(-maxRoomEvents);
+  return room;
 }
 
 async function listRoomsWithHostExitPrune() {
@@ -823,10 +886,18 @@ async function handleRoomPresence(req, res, code) {
     }
 
     const body = await readRequestJson(req);
-    const participant = normalizeParticipant(body.participant || {});
+    const rawParticipant = body.participant || {};
+    const participant = normalizeParticipant(rawParticipant);
     const existingIndex = room.participants.findIndex((entry) => entry.id === participant.id);
     if (existingIndex >= 0) {
-      room.participants[existingIndex] = { ...room.participants[existingIndex], ...participant };
+      const existingParticipant = room.participants[existingIndex];
+      room.participants[existingIndex] = {
+        ...existingParticipant,
+        ...participant,
+        answer: Object.hasOwn(rawParticipant, "answer") ? participant.answer : existingParticipant.answer,
+        submittedRound: Object.hasOwn(rawParticipant, "submittedRound") ? participant.submittedRound : existingParticipant.submittedRound,
+        remainingTime: Object.hasOwn(rawParticipant, "remainingTime") ? participant.remainingTime : existingParticipant.remainingTime
+      };
     } else {
       room.participants.push(participant);
     }
@@ -834,13 +905,128 @@ async function handleRoomPresence(req, res, code) {
     if (participant.host || participant.id === room.host?.id) {
       room.hostExitPendingAt = 0;
     }
-    room.updatedAt = Date.now();
     finalizeRoom(room);
+    stampRoomEvent(room, existingIndex >= 0 ? "participant_updated" : "participant_joined", {
+      participantId: participant.id,
+      host: Boolean(participant.host),
+      spectator: Boolean(participant.spectator),
+      status: participant.status
+    });
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, { room: storedRoom });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room presence update failed." });
   }
+}
+
+async function handleRoomHeartbeat(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req);
+    const participantId = String(body.participantId || "").slice(0, 80);
+    const participant = room.participants.find((entry) => entry.id === participantId);
+    const isHostHeartbeat = participantId && (participantId === room.host?.id || participant?.host);
+    if (!isHostHeartbeat) {
+      sendJson(res, 403, { error: "Only the host can heartbeat this room." });
+      return;
+    }
+
+    const hadPendingExit = Boolean(room.hostExitPendingAt);
+    room.hostExitPendingAt = 0;
+    if (participant) {
+      participant.active = true;
+      participant.status = String(body.status || participant.status || "host").slice(0, 32);
+    }
+    finalizeRoom(room);
+    if (hadPendingExit) {
+      stampRoomEvent(room, "host_resumed", { participantId });
+    } else {
+      room.updatedAt = Date.now();
+    }
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, { room: storedRoom });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room heartbeat failed." });
+  }
+}
+
+async function handleRoomChat(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req);
+    const [message] = normalizeRoomChat([body.message || body]);
+    if (!message) {
+      sendJson(res, 400, { error: "Chat message is empty." });
+      return;
+    }
+    room.chat = normalizeRoomChat([...(Array.isArray(room.chat) ? room.chat : []), message]);
+    stampRoomEvent(room, "chat_message", {
+      owner: message.owner,
+      sender: message.sender,
+      private: Boolean(message.private)
+    });
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, { room: storedRoom, message });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room chat update failed." });
+  }
+}
+
+async function handleRoomGame(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req);
+    const game = normalizeRoomGame(body.game || body);
+    if (!game?.setup) {
+      sendJson(res, 400, { error: "Room game update needs a setup payload." });
+      return;
+    }
+    room.status = "in-progress";
+    room.game = game;
+    stampRoomEvent(room, "round_started", {
+      round: game.round,
+      matchId: game.matchId
+    });
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, { room: storedRoom });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room game update failed." });
+  }
+}
+
+async function handleRoomEvents(url, res, code) {
+  const room = await backendStore.getRoom(String(code || "").trim().toUpperCase());
+  if (!room) {
+    sendJson(res, 404, { error: "Room not found." });
+    return;
+  }
+  const since = clampServerNumber(url.searchParams.get("since"), 0, Number.MAX_SAFE_INTEGER, 0);
+  const events = normalizeRoomEvents(room.events).filter((event) => event.revision > since);
+  sendJson(res, 200, {
+    code: room.code,
+    revision: getRoomRevision(room),
+    events
+  });
 }
 
 function normalizeRoom(room) {
@@ -884,6 +1070,8 @@ function normalizeRoom(room) {
     game: normalizeRoomGame(room.game),
     chat: normalizeRoomChat(room.chat),
     hostExitPendingAt: clampServerNumber(room.hostExitPendingAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    revision: clampServerNumber(room.revision, 0, Number.MAX_SAFE_INTEGER, 0),
+    events: normalizeRoomEvents(room.events),
     updatedAt: Date.now()
   };
   finalizeRoom(normalizedRoom);
@@ -931,8 +1119,8 @@ async function handleRoomLeave(req, res, code) {
     if (isHostLeaving) {
       if (reason === "page-exit") {
         room.hostExitPendingAt = Date.now();
-        room.updatedAt = Date.now();
         finalizeRoom(room);
+        stampRoomEvent(room, "host_exit_pending", { participantId });
         const storedRoom = await backendStore.upsertRoom(room);
         sendJson(res, 200, { room: storedRoom, closed: false, reason: "host-exit-pending" });
         return;
@@ -943,7 +1131,6 @@ async function handleRoomLeave(req, res, code) {
     }
 
     room.participants = room.participants.filter((participant) => participant.id !== participantId);
-    room.updatedAt = Date.now();
     finalizeRoom(room);
     const activeRealPlayers = room.participants.filter((participant) => participant.active && !participant.bot && !participant.spectator);
     if (!activeRealPlayers.length) {
@@ -952,6 +1139,7 @@ async function handleRoomLeave(req, res, code) {
       return;
     }
 
+    stampRoomEvent(room, "participant_left", { participantId });
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, { room: storedRoom, closed: false });
   } catch (error) {
