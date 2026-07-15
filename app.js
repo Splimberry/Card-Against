@@ -5029,11 +5029,15 @@ function getActiveRoomPlayerCount(players = state.players) {
   return players.filter((player) => player.active && !player.spectator).length;
 }
 
+function getRoomSyncAvatar(avatar = "") {
+  return String(avatar || "").slice(0, 240000);
+}
+
 function getCurrentParticipant(options = {}) {
   return {
     id: state.clientId,
     name: state.profile.name || "Guest",
-    avatar: state.profile.avatar,
+    avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
     cardCustomization: state.profile.cardCustomization,
     host: Boolean(options.host),
@@ -5057,7 +5061,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
       return {
         id,
         name: player.label,
-        avatar: player.avatar || "",
+        avatar: getRoomSyncAvatar(player.avatar),
         equippedTitleId: player.equippedTitleId || "",
         cardCustomization: player.cardCustomization || null,
         host: Boolean(player.host),
@@ -5080,7 +5084,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
     participants.push({
       id: participant.id,
       name: participant.name,
-      avatar: participant.avatar || "",
+      avatar: getRoomSyncAvatar(participant.avatar),
       equippedTitleId: participant.equippedTitleId || "",
       cardCustomization: participant.cardCustomization || null,
       host: Boolean(participant.host),
@@ -14252,7 +14256,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
     ? {
       id: state.clientId,
       name: state.profile.name || "Host",
-      avatar: state.profile.avatar,
+      avatar: getRoomSyncAvatar(state.profile.avatar),
       equippedTitleId: state.profile.equippedTitleId || "",
       cardCustomization: state.profile.cardCustomization
     }
@@ -14264,7 +14268,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
     host: {
       id: hostSource.id || state.clientId,
       name: hostSource.name || "Host",
-      avatar: hostSource.avatar || "",
+      avatar: getRoomSyncAvatar(hostSource.avatar),
       equippedTitleId: hostSource.equippedTitleId || "",
       cardCustomization: hostSource.cardCustomization || null
     },
@@ -14288,7 +14292,8 @@ async function publishRoomDirectory(room) {
     });
     if (!response.ok) {
       state.roomDirectoryOnline = false;
-      return room;
+      console.warn("Room directory update failed:", response.status);
+      return null;
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
@@ -14298,7 +14303,8 @@ async function publishRoomDirectory(room) {
     return data.room || room;
   } catch {
     state.roomDirectoryOnline = false;
-    return room;
+    console.warn("Room directory update failed.");
+    return null;
   }
 }
 
