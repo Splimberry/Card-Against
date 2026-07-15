@@ -2314,11 +2314,76 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .dev-submission-list {
   display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  max-height: 42rem;
+  overflow: auto;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(15, 13, 24, 0.76);
+}
+
+.dev-submission-review-layout {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.32fr) minmax(28rem, 1fr);
   gap: 0.85rem;
+  align-items: start;
+}
+
+.dev-submission-list-button {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+  min-height: 3.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.055), transparent),
+    rgba(12, 11, 18, 0.94);
+  color: var(--ink);
+  text-align: left;
+}
+
+.dev-submission-list-button[data-selected="true"],
+.dev-submission-list-button:hover {
+  border-color: rgba(34, 211, 238, 0.54);
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.16), rgba(255, 77, 125, 0.05)),
+    rgba(13, 13, 20, 0.98);
+}
+
+.dev-submission-list-button strong,
+.dev-submission-list-button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dev-submission-list-button strong {
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
+.dev-submission-list-button span {
+  color: var(--muted);
+  font-size: 0.76rem;
 }
 
 .dev-submission-card {
+  grid-template-columns: minmax(24rem, 1fr) minmax(20rem, 0.46fr);
   padding: 0.9rem;
+}
+
+.dev-submission-card > .dev-panel-heading {
+  grid-column: 1 / -1;
+}
+
+.dev-submission-editor {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .dev-submission-edit-grid,
@@ -2355,6 +2420,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .dev-submission-deny-reason {
   grid-column: 1 / -1;
+}
+
+.dev-submission-preview-shell {
+  min-height: 100%;
 }
 
 .achievement-debug-layout {
@@ -9225,6 +9294,7 @@ input:focus {
   .dev-question-debug-layout,
   .dev-create-layout,
   .dev-create-grid,
+  .dev-submission-card,
   .dev-submission-edit-grid,
   .dev-submission-body,
   .overlay-debug-layout,
@@ -9375,6 +9445,8 @@ input:focus {
   .dev-create-grid,
   .dev-create-answer-grid,
   .dev-create-actions,
+  .dev-submission-review-layout,
+  .dev-submission-card,
   .dev-submission-edit-grid,
   .dev-submission-body,
   .profile-custom-layout,

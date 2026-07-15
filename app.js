@@ -940,6 +940,7 @@ const state = {
   userQuestionSubmissions: [],
   userQuestionSubmissionPollId: null,
   devQuestionSubmissions: [],
+  devSelectedSubmissionId: "",
   adminAuthenticated: false,
   adminUser: null
 };
@@ -1000,6 +1001,7 @@ const elements = {
   userQuestionPreviewText: null,
   devSubmissionStatus: null,
   devSubmissionList: null,
+  devSubmissionReviewPanel: null,
   backToMenuButton: document.querySelector("#backToMenuButton"),
   backFromJoinButton: document.querySelector("#backFromJoinButton"),
   roomSoundToggleButton: document.querySelector("#roomSoundToggleButton"),
@@ -10743,7 +10745,10 @@ function buildDevToolScreen() {
         <button type="button" class="icon-button" id="devSubmissionRefreshButton">Refresh</button>
       </div>
       <div class="debug-status" id="devSubmissionStatus">Load pending player-created cards for review.</div>
-      <div class="dev-submission-list" id="devSubmissionList"></div>
+      <div class="dev-submission-review-layout">
+        <div class="dev-submission-list" id="devSubmissionList"></div>
+        <div class="dev-submission-review-panel" id="devSubmissionReviewPanel"></div>
+      </div>
     </section>
     <section class="dev-tool-panel hidden" data-dev-panel="overlays">
       <div class="overlay-debug-layout">
@@ -10913,6 +10918,7 @@ function buildDevToolScreen() {
   elements.devQuestionMostRepeatedButton = screen.querySelector("#devQuestionMostRepeatedButton");
   elements.devSubmissionStatus = screen.querySelector("#devSubmissionStatus");
   elements.devSubmissionList = screen.querySelector("#devSubmissionList");
+  elements.devSubmissionReviewPanel = screen.querySelector("#devSubmissionReviewPanel");
   elements.devSubmissionRefreshButton = screen.querySelector("#devSubmissionRefreshButton");
   elements.devOverlayGrid = screen.querySelector("#devOverlayGrid");
   elements.devOverlayStatus = screen.querySelector("#devOverlayStatus");
@@ -10997,7 +11003,10 @@ function bindDevToolEvents() {
     }
   });
   elements.devSubmissionRefreshButton.addEventListener("click", loadDevQuestionSubmissions);
-  elements.devSubmissionList.addEventListener("click", handleDevSubmissionClick);
+  elements.devSubmissionList.addEventListener("click", handleDevSubmissionListClick);
+  elements.devSubmissionReviewPanel.addEventListener("click", handleDevSubmissionClick);
+  elements.devSubmissionReviewPanel.addEventListener("input", updateDevSubmissionReviewPreview);
+  elements.devSubmissionReviewPanel.addEventListener("change", updateDevSubmissionReviewPreview);
   elements.devOverlayGrid.addEventListener("click", (event) => {
     const button = event.target.closest("[data-overlay-debug]");
     if (button) {
@@ -11435,17 +11444,61 @@ async function loadDevQuestionSubmissions() {
 
 function renderDevQuestionSubmissions() {
   elements.devSubmissionList.replaceChildren();
+  elements.devSubmissionReviewPanel.replaceChildren();
   const pending = state.devQuestionSubmissions.filter((submission) => submission.status === "pending");
   if (!pending.length) {
     const empty = document.createElement("p");
     empty.className = "debug-status";
     empty.textContent = "No pending player-created cards.";
     elements.devSubmissionList.appendChild(empty);
+    state.devSelectedSubmissionId = "";
     elements.devSubmissionStatus.textContent = `${state.devQuestionSubmissions.length} total submission${state.devQuestionSubmissions.length === 1 ? "" : "s"}, 0 pending.`;
     return;
   }
-  pending.forEach((submission) => elements.devSubmissionList.appendChild(createDevSubmissionCard(submission)));
+  if (!pending.some((submission) => submission.id === state.devSelectedSubmissionId)) {
+    state.devSelectedSubmissionId = "";
+  }
+  pending.forEach((submission) => elements.devSubmissionList.appendChild(createDevSubmissionButton(submission)));
+  renderDevSubmissionReviewPanel();
   elements.devSubmissionStatus.textContent = `${pending.length} pending player-created card${pending.length === 1 ? "" : "s"} need review.`;
+}
+
+function createDevSubmissionButton(submission) {
+  const question = submission.question || {};
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "dev-submission-list-button";
+  button.dataset.submissionSelect = submission.id;
+  button.dataset.selected = String(submission.id === state.devSelectedSubmissionId);
+  const id = document.createElement("strong");
+  id.textContent = `ID:${question.id || submission.id}`;
+  const meta = document.createElement("span");
+  meta.textContent = `${submission.creator?.name || "Player"} | ${question.canonicalAnswer || "No answer yet"}`;
+  button.append(id, meta);
+  return button;
+}
+
+function handleDevSubmissionListClick(event) {
+  const button = event.target.closest("[data-submission-select]");
+  if (!button) return;
+  state.devSelectedSubmissionId = button.dataset.submissionSelect || "";
+  renderDevQuestionSubmissions();
+  playSound("click");
+}
+
+function renderDevSubmissionReviewPanel() {
+  elements.devSubmissionReviewPanel.replaceChildren();
+  const submission = state.devQuestionSubmissions.find((entry) => entry.id === state.devSelectedSubmissionId && entry.status === "pending");
+  if (!submission) {
+    const empty = document.createElement("p");
+    empty.className = "debug-status";
+    empty.textContent = "Select a submitted card to review.";
+    elements.devSubmissionReviewPanel.appendChild(empty);
+    return;
+  }
+
+  elements.devSubmissionReviewPanel.appendChild(createDevSubmissionCard(submission));
+  updateDevSubmissionReviewPreview();
 }
 
 function createDevSubmissionCard(submission) {
@@ -11500,7 +11553,29 @@ function createDevSubmissionCard(submission) {
   deny.dataset.submissionAction = "deny";
   deny.textContent = "Deny";
   actions.append(approve, deny);
-  card.append(header, grid, body, denyReason, actions);
+
+  const previewShell = document.createElement("aside");
+  previewShell.className = "dev-create-preview-shell dev-submission-preview-shell";
+  previewShell.innerHTML = `
+    <p class="eyebrow">Review preview</p>
+    <section class="black-card dev-create-preview-card text-only" data-review-preview-card aria-label="Submitted card preview">
+      <div class="question-meta">
+        <p>Submitted card</p>
+        <div class="question-badges" data-review-preview-meta></div>
+      </div>
+      <figure class="question-image">
+        <img data-review-preview-image alt="">
+        <div class="question-image-placeholder" data-review-preview-placeholder>Image preview</div>
+        <figcaption data-review-preview-credit></figcaption>
+      </figure>
+      <h2 data-review-preview-question>Question preview</h2>
+    </section>
+  `;
+
+  const editor = document.createElement("div");
+  editor.className = "dev-submission-editor";
+  editor.append(grid, body, denyReason, actions);
+  card.append(header, editor, previewShell);
   return card;
 }
 
@@ -11557,6 +11632,60 @@ function getReviewCardPayload(card) {
     };
   }
   return payload;
+}
+
+function updateDevSubmissionReviewPreview() {
+  const card = elements.devSubmissionReviewPanel?.querySelector("[data-submission-id]");
+  if (!card) return;
+  const payload = getReviewCardPayload(card);
+  const preview = card.querySelector("[data-review-preview-card]");
+  const meta = card.querySelector("[data-review-preview-meta]");
+  const question = card.querySelector("[data-review-preview-question]");
+  const image = card.querySelector("[data-review-preview-image]");
+  const placeholder = card.querySelector("[data-review-preview-placeholder]");
+  const credit = card.querySelector("[data-review-preview-credit]");
+  if (!preview || !meta || !question || !image || !placeholder || !credit) return;
+
+  const isImage = payload.type === "image";
+  preview.classList.toggle("text-only", !isImage);
+  meta.replaceChildren();
+  [payload.theme || "Theme", isImage ? "Image" : "Text", payload.difficulty].forEach((text) => {
+    const badge = document.createElement("span");
+    badge.textContent = text;
+    meta.appendChild(badge);
+  });
+
+  question.textContent = payload.question || "Question preview";
+  credit.textContent = payload.image?.credit || "";
+  setHidden(credit, !credit.textContent);
+  image.onload = () => {
+    setHidden(image, false);
+    setHidden(placeholder, true);
+  };
+  image.onerror = () => {
+    placeholder.textContent = "Image failed to load.";
+    setHidden(image, true);
+    setHidden(placeholder, false);
+  };
+
+  if (isImage && payload.image?.url) {
+    image.alt = payload.image.alt || "Submitted question image";
+    if (image.dataset.previewUrl !== payload.image.url) {
+      image.dataset.previewUrl = payload.image.url;
+      image.removeAttribute("src");
+      placeholder.textContent = "Loading image...";
+      setHidden(image, true);
+      setHidden(placeholder, false);
+      image.src = payload.image.url;
+    }
+  } else {
+    image.removeAttribute("src");
+    delete image.dataset.previewUrl;
+    image.alt = "";
+    placeholder.textContent = isImage ? "Image URL preview" : "Text-only question";
+    setHidden(image, true);
+    setHidden(placeholder, isImage);
+  }
 }
 
 async function handleDevSubmissionClick(event) {
