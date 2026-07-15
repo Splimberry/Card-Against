@@ -2416,7 +2416,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .dev-submission-card {
-  grid-template-columns: minmax(24rem, 1fr) minmax(20rem, 0.46fr);
+  grid-template-columns: minmax(22rem, 0.95fr) minmax(28rem, 0.72fr);
   padding: 0.9rem;
 }
 
@@ -2466,7 +2466,36 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .dev-submission-preview-shell {
+  align-self: stretch;
+  justify-items: stretch;
   min-height: 100%;
+}
+
+.dev-submission-preview-shell .dev-create-preview-card {
+  width: 100%;
+  max-width: 42rem;
+  min-height: 18rem;
+  margin: 0;
+  overflow: visible;
+  transform: none;
+}
+
+.dev-submission-preview-shell .question-meta {
+  align-items: flex-start;
+}
+
+.dev-submission-preview-shell .question-badges {
+  max-width: 72%;
+}
+
+.dev-submission-preview-shell .question-meta span {
+  max-width: 100%;
+}
+
+.dev-submission-preview-shell .black-card h2 {
+  font-size: clamp(1.18rem, 1.85vw, 1.85rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
 }
 
 .achievement-debug-layout {
