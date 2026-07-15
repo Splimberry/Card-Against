@@ -622,6 +622,7 @@ const state = {
   roomDirectoryOnline: true,
   roomGame: null,
   joiningRoom: null,
+  roomSessionId: 0,
   roomExitLeaveSent: false,
   roomMissingSince: 0,
   error404Owners: {},
@@ -10716,6 +10717,7 @@ function buildDevToolScreen() {
         <h1 id="devToolTitle">DEV TOOL</h1>
       </div>
       <div class="lobby-actions">
+        <button type="button" class="icon-button danger-button" id="adminLogoutButton">Log Out</button>
         <button type="button" class="icon-button" id="devToolBackButton">Back</button>
       </div>
     </div>
@@ -10953,6 +10955,7 @@ function buildDevToolScreen() {
   elements.devToolScreen = screen;
   elements.devToolTabs = screen.querySelector("#devToolTabs");
   elements.devToolBackButton = screen.querySelector("#devToolBackButton");
+  elements.adminLogoutButton = screen.querySelector("#adminLogoutButton");
   elements.devQuestionSearchInput = screen.querySelector("#devQuestionSearchInput");
   elements.devQuestionThemeFilter = screen.querySelector("#devQuestionThemeFilter");
   elements.devQuestionTypeFilter = screen.querySelector("#devQuestionTypeFilter");
@@ -11040,6 +11043,7 @@ function populateDevToolThemeSelects() {
 
 function bindDevToolEvents() {
   elements.devToolBackButton.addEventListener("click", closeDevToolScreen);
+  elements.adminLogoutButton.addEventListener("click", logoutAdmin);
   elements.devToolTabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-dev-tab]");
     if (button) {
@@ -12261,6 +12265,9 @@ function updateAdminControls() {
     elements.menuDevToolButton.textContent = state.adminAuthenticated ? "Dev Tool" : "Admin Login";
     elements.menuDevToolButton.dataset.adminState = state.adminAuthenticated ? "authenticated" : "locked";
   }
+  if (elements.adminLogoutButton) {
+    setHidden(elements.adminLogoutButton, !state.adminAuthenticated);
+  }
 }
 
 async function refreshAdminSession() {
@@ -12325,6 +12332,25 @@ async function submitAdminLogin(event) {
     elements.adminAuthStatus.textContent = error.message || "Admin login failed.";
     playSound("error");
   }
+}
+
+async function logoutAdmin() {
+  try {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin"
+    });
+  } catch (error) {
+    console.warn(error);
+  }
+  state.adminAuthenticated = false;
+  state.adminUser = null;
+  updateAdminControls();
+  if (elements.devToolScreen) {
+    setHidden(elements.devToolScreen, true);
+  }
+  setHidden(elements.modeScreen, false);
+  playSound("click");
 }
 
 async function handleDevToolButtonClick() {
@@ -13506,11 +13532,13 @@ function syncRoomControls() {
 
 function openRoomScreen() {
   stopJoinDirectoryPolling();
+  state.roomSessionId += 1;
   state.mode = null;
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomExitLeaveSent = false;
   state.roomMissingSince = 0;
+  state.roomClosedNotice = "";
   state.roomGame = null;
   state.currentOwner = "player";
   state.currentRoomStatus = "draft";
@@ -13533,7 +13561,7 @@ function closeRoomScreen() {
   const returnToLobby = state.currentRoomStatus === "lobby";
   if (state.currentRoomStatus === "draft" && state.publishedDraftRoomCode === state.roomSettings.code) {
     leavePublishedRoom({ keepalive: true });
-    state.publishedDraftRoomCode = "";
+    clearLocalRoomState();
     stopRoomDirectoryPolling();
   }
   setHidden(elements.roomScreen, true);
@@ -13583,8 +13611,28 @@ function leavePublishedRoom(options = {}) {
   }).catch(() => null);
 }
 
+function clearLocalRoomState(options = {}) {
+  state.roomSessionId += 1;
+  state.mode = null;
+  state.currentRoomStatus = "draft";
+  state.joiningRoom = null;
+  state.isSpectator = false;
+  state.roomGame = null;
+  state.roomParticipants = [];
+  state.roomSubmissions = {};
+  state.roomMissingSince = 0;
+  state.roomExitLeaveSent = false;
+  state.publishedDraftRoomCode = "";
+  if (options.resetCode !== false) {
+    state.roomSettings.code = "CAI-0000";
+  }
+}
+
 function handleCurrentRoomClosed(reason = "Room closed.") {
   if (!(isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft")) {
+    return;
+  }
+  if (state.roomClosedNotice) {
     return;
   }
   clearRoomAutoResolve();
@@ -13593,12 +13641,8 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   resetTimerDisplay();
   stopLoadingMessages();
   state.matchEnded = true;
-  state.currentRoomStatus = "draft";
-  state.joiningRoom = null;
-  state.roomGame = null;
-  state.roomMissingSince = 0;
-  state.roomParticipants = [];
   state.roomClosedNotice = reason;
+  clearLocalRoomState();
   addSystemChat(reason, { private: true, sync: false });
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -13995,8 +14039,19 @@ function startJoinedRoomMatchFromDirectory(room) {
   startGame("room");
 }
 
-async function refreshCurrentRoomDirectory() {
+function hasActiveRoomContext() {
+  return state.roomSettings.code !== "CAI-0000"
+    && (isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft");
+}
+
+async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSessionId) {
+  if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
+    return;
+  }
   await refreshHostedRooms();
+  if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
+    return;
+  }
   const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (room) {
     state.roomMissingSince = 0;
@@ -14027,7 +14082,8 @@ async function refreshCurrentRoomDirectory() {
 
 function startRoomDirectoryPolling() {
   stopRoomDirectoryPolling();
-  state.roomDirectoryPollId = window.setInterval(refreshCurrentRoomDirectory, 1800);
+  const sessionId = state.roomSessionId;
+  state.roomDirectoryPollId = window.setInterval(() => refreshCurrentRoomDirectory(sessionId), 1400);
 }
 
 function stopRoomDirectoryPolling() {
@@ -14248,8 +14304,10 @@ async function joinHostedRoom(code, options = {}) {
   state.roomSettings = { ...room.settings };
   state.joiningRoom = room;
   state.isSpectator = options.spectate || room.status !== "lobby";
+  state.roomSessionId += 1;
   state.roomExitLeaveSent = false;
   state.roomMissingSince = 0;
+  state.roomClosedNotice = "";
   state.currentOwner = state.isSpectator ? "spectator" : "opponent";
   state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
   await updateRoomPresence(room, {
@@ -14406,7 +14464,7 @@ async function beginRoomMatch() {
   startGame("room");
 }
 
-function leaveCurrentRoom() {
+async function leaveCurrentRoom() {
   const isLeavingRoom = isRoomMode() || state.currentRoomStatus === "lobby";
   const isLeavingActiveMatch = !elements.gameStage.classList.contains("hidden");
   if (!isLeavingRoom && !isLeavingActiveMatch) {
@@ -14423,9 +14481,12 @@ function leaveCurrentRoom() {
   resetTimerDisplay();
   stopLoadingMessages();
   state.matchEnded = true;
+  state.roomSessionId += 1;
+  state.roomExitLeaveSent = true;
   if (isLeavingRoom) {
-    leavePublishedRoom({ keepalive: true });
+    await leavePublishedRoom({ reason: "manual" });
   }
+  clearLocalRoomState();
 
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -14728,7 +14789,9 @@ function startRoomGame() {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomGame = null;
+  state.roomSessionId += 1;
   state.roomMissingSince = 0;
+  state.roomClosedNotice = "";
   state.currentRoomStatus = "lobby";
   state.roomModeration.voteBans = {};
   if (!state.roomModeration.bannedByRoom[state.roomSettings.code]) {
@@ -17383,7 +17446,6 @@ elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
 window.addEventListener("pagehide", handleRoomPageExit);
-window.addEventListener("beforeunload", handleRoomPageExit);
 
 updateSoundButton();
 syncSettingsControls();

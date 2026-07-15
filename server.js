@@ -12,7 +12,7 @@ const host = process.env.HOST || "127.0.0.1";
 const backendStore = createBackendStore({
   roomTtlSeconds: process.env.ROOM_TTL_SECONDS || 60 * 60 * 6
 });
-const hostExitGraceMs = Number(process.env.HOST_EXIT_GRACE_SECONDS || 180) * 1000;
+const hostExitGraceMs = Number(process.env.HOST_EXIT_GRACE_SECONDS || 30) * 1000;
 const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
 const adminCookieName = "cai_admin_session";
@@ -79,7 +79,7 @@ async function handleRequest(req, res) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/logout") {
-      handleLogout(res);
+      handleLogout(req, res);
       return;
     }
 
@@ -559,13 +559,14 @@ async function handleAdminLogin(req, res) {
   }
 }
 
-function handleLogout(res) {
+function handleLogout(req, res) {
   res.writeHead(200, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "Set-Cookie": serializeCookie(adminCookieName, "", {
       httpOnly: true,
       sameSite: "Strict",
+      secure: isSecureRequest(req),
       path: "/",
       maxAge: 0
     })
