@@ -621,6 +621,7 @@ const state = {
   roomDirectoryOnline: true,
   roomGame: null,
   joiningRoom: null,
+  roomExitLeaveSent: false,
   error404Owners: {},
   error404Schedule: [],
   currentRoomStatus: "draft",
@@ -13506,6 +13507,7 @@ function openRoomScreen() {
   state.mode = null;
   state.joiningRoom = null;
   state.isSpectator = false;
+  state.roomExitLeaveSent = false;
   state.roomGame = null;
   state.currentOwner = "player";
   state.currentRoomStatus = "draft";
@@ -14226,6 +14228,7 @@ async function joinHostedRoom(code, options = {}) {
   state.roomSettings = { ...room.settings };
   state.joiningRoom = room;
   state.isSpectator = options.spectate || room.status !== "lobby";
+  state.roomExitLeaveSent = false;
   state.currentOwner = state.isSpectator ? "spectator" : "opponent";
   state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
   await updateRoomPresence(room, {
@@ -14413,8 +14416,15 @@ function leaveCurrentRoom() {
   playSound("click");
 }
 
-function handleRoomPageExit() {
+function handleRoomPageExit(event) {
+  if (event?.type === "pagehide" && event.persisted) {
+    return;
+  }
+  if (state.roomExitLeaveSent) {
+    return;
+  }
   if ((isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft") && state.roomSettings.code !== "CAI-0000") {
+    state.roomExitLeaveSent = true;
     leavePublishedRoom({ keepalive: true });
   }
 }
