@@ -2,6 +2,7 @@ const { createServer } = require("node:http");
 const { readFile, writeFile } = require("node:fs/promises");
 const { existsSync, readFileSync } = require("node:fs");
 const { extname, join, normalize } = require("node:path");
+const { createHmac, timingSafeEqual } = require("node:crypto");
 const { createBackendStore } = require("./lib/backend-store");
 
 const root = __dirname;
@@ -13,6 +14,8 @@ const backendStore = createBackendStore({
 });
 const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
+const adminCookieName = "cai_admin_session";
+const adminSessionTtlSeconds = 60 * 60 * 12;
 const triviaThemes = [
   "Pop Culture",
   "Gaming and Geek Culture",
@@ -64,23 +67,50 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/auth/session") {
+      handleAuthSession(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/admin/login") {
+      await handleAdminLogin(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/logout") {
+      handleLogout(res);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/debug/questions") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
       handleDebugQuestions(res);
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/debug/questions") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
       await handleCreateDebugQuestion(req, res);
       return;
     }
 
     const debugQuestionMatch = url.pathname.match(/^\/api\/debug\/questions\/([^/]+)$/);
     if (debugQuestionMatch && req.method === "PUT") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
       await handleUpdateDebugQuestion(req, res, decodeURIComponent(debugQuestionMatch[1]));
       return;
     }
 
     if (debugQuestionMatch && req.method === "DELETE") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
       await handleDeleteDebugQuestion(res, decodeURIComponent(debugQuestionMatch[1]));
       return;
     }
@@ -306,6 +336,65 @@ async function handleImageProxy(url, res) {
   } catch {
     sendText(res, 502, "Image fetch failed");
   }
+}
+
+function handleAuthSession(req, res) {
+  const session = getAdminSession(req);
+  sendJson(res, 200, {
+    authenticated: Boolean(session),
+    user: session ? { role: "admin", name: "Admin" } : null
+  });
+}
+
+async function handleAdminLogin(req, res) {
+  const configuredToken = getAdminToken();
+  if (!configuredToken) {
+    sendJson(res, 503, { error: "ADMIN_TOKEN is not configured." });
+    return;
+  }
+
+  try {
+    const body = await readRequestJson(req);
+    const token = String(body.token || body.password || "").trim();
+    if (!secureEqual(token, configuredToken)) {
+      sendJson(res, 401, { error: "Invalid admin token." });
+      return;
+    }
+
+    const expiresAt = Date.now() + adminSessionTtlSeconds * 1000;
+    const value = createAdminSessionCookie(expiresAt);
+    res.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Set-Cookie": serializeCookie(adminCookieName, value, {
+        httpOnly: true,
+        sameSite: "Strict",
+        secure: isSecureRequest(req),
+        path: "/",
+        maxAge: adminSessionTtlSeconds
+      })
+    });
+    res.end(JSON.stringify({
+      authenticated: true,
+      user: { role: "admin", name: "Admin" }
+    }));
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Admin login failed." });
+  }
+}
+
+function handleLogout(res) {
+  res.writeHead(200, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Set-Cookie": serializeCookie(adminCookieName, "", {
+      httpOnly: true,
+      sameSite: "Strict",
+      path: "/",
+      maxAge: 0
+    })
+  });
+  res.end(JSON.stringify({ authenticated: false }));
 }
 
 function handleDebugQuestions(res) {
@@ -1644,7 +1733,11 @@ function normalizeBotCards(cards) {
 }
 
 function requireAdmin(req, res) {
-  const configuredToken = String(process.env.ADMIN_TOKEN || "").trim();
+  if (getAdminSession(req)) {
+    return true;
+  }
+
+  const configuredToken = getAdminToken();
   if (!configuredToken) {
     sendJson(res, 503, { error: "ADMIN_TOKEN is not configured." });
     return false;
@@ -1653,12 +1746,99 @@ function requireAdmin(req, res) {
   const authorization = String(req.headers.authorization || "");
   const bearerToken = authorization.replace(/^Bearer\s+/i, "").trim();
   const headerToken = String(req.headers["x-admin-token"] || "").trim();
-  if (bearerToken === configuredToken || headerToken === configuredToken) {
+  if (secureEqual(bearerToken, configuredToken) || secureEqual(headerToken, configuredToken)) {
     return true;
   }
 
   sendJson(res, 401, { error: "Unauthorized." });
   return false;
+}
+
+function getAdminToken() {
+  return String(process.env.ADMIN_TOKEN || "").trim();
+}
+
+function createAdminSessionCookie(expiresAt) {
+  const payload = Buffer.from(JSON.stringify({
+    role: "admin",
+    exp: expiresAt
+  })).toString("base64url");
+  const signature = signAdminPayload(payload);
+  return `${payload}.${signature}`;
+}
+
+function getAdminSession(req) {
+  const token = getCookie(req, adminCookieName);
+  if (!token) {
+    return null;
+  }
+
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature || !secureEqual(signature, signAdminPayload(payload))) {
+    return null;
+  }
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (session.role !== "admin" || Number(session.exp) <= Date.now()) {
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function signAdminPayload(payload) {
+  return createHmac("sha256", getAdminToken() || "missing-admin-token")
+    .update(payload)
+    .digest("base64url");
+}
+
+function secureEqual(left, right) {
+  const leftValue = String(left || "");
+  const rightValue = String(right || "");
+  if (!leftValue || !rightValue) {
+    return false;
+  }
+
+  const leftBuffer = Buffer.from(leftValue);
+  const rightBuffer = Buffer.from(rightValue);
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function getCookie(req, name) {
+  const cookies = String(req.headers.cookie || "").split(";").map((entry) => entry.trim());
+  const prefix = `${name}=`;
+  const cookie = cookies.find((entry) => entry.startsWith(prefix));
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : "";
+}
+
+function serializeCookie(name, value, options = {}) {
+  const parts = [`${name}=${encodeURIComponent(value)}`];
+  if (options.maxAge !== undefined) {
+    parts.push(`Max-Age=${Math.max(0, Math.floor(Number(options.maxAge) || 0))}`);
+  }
+  if (options.path) {
+    parts.push(`Path=${options.path}`);
+  }
+  if (options.httpOnly) {
+    parts.push("HttpOnly");
+  }
+  if (options.secure) {
+    parts.push("Secure");
+  }
+  if (options.sameSite) {
+    parts.push(`SameSite=${options.sameSite}`);
+  }
+  return parts.join("; ");
+}
+
+function isSecureRequest(req) {
+  return String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim() === "https";
 }
 
 function sendJson(res, status, payload) {

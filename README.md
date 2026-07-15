@@ -80,6 +80,19 @@ Available management endpoints:
 - `POST /api/admin/rooms/:code/close` marks a room complete.
 - `DELETE /api/admin/rooms/:code` removes a room from the room directory.
 
+## Admin Dev Tool Access
+
+The main-menu Dev Tool is locked behind an admin session.
+
+1. Set `ADMIN_TOKEN` in Vercel.
+2. Open the public app.
+3. Click `Admin Login`.
+4. Paste the private `ADMIN_TOKEN`.
+
+The server creates a signed HttpOnly admin session cookie. The `/api/debug/questions` routes require either that admin session cookie or an `Authorization: Bearer ADMIN_TOKEN` header.
+
+This is the first admin-only gate. Full public accounts with Google login, usernames, and passwords should use an auth provider such as Clerk, Supabase Auth, Firebase Auth, or Auth.js rather than storing passwords directly in this app.
+
 Notes for public hosting:
 
 - Hosted room directory state is persistent only when Redis REST environment variables are configured.

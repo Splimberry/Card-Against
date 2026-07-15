@@ -933,12 +933,20 @@ const state = {
   questionDebugImageIssues: [],
   questionDebugToolMode: "duplicates",
   questionEditOriginalId: "",
-  questionEditReturnId: ""
+  questionEditReturnId: "",
+  adminAuthenticated: false,
+  adminUser: null
 };
 
 const elements = {
   modeScreen: document.querySelector("#modeScreen"),
   devToolScreen: null,
+  adminAuthModal: null,
+  adminAuthForm: null,
+  adminTokenInput: null,
+  adminAuthStatus: null,
+  adminAuthCancelButton: null,
+  adminLogoutButton: null,
   roomScreen: document.querySelector("#roomScreen"),
   joinScreen: document.querySelector("#joinScreen"),
   roomLobbyScreen: document.querySelector("#roomLobbyScreen"),
@@ -11270,6 +11278,131 @@ function openDevToolScreen(tab = "questions") {
   setDevToolTab(tab);
 }
 
+function buildAdminAuthModal() {
+  if (elements.adminAuthModal) {
+    return;
+  }
+
+  const modal = document.createElement("div");
+  modal.className = "admin-auth-modal hidden";
+  modal.id = "adminAuthModal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "adminAuthTitle");
+  modal.innerHTML = `
+    <section class="admin-auth-panel">
+      <div class="settings-header">
+        <div>
+          <p class="eyebrow">Admin access</p>
+          <h2 id="adminAuthTitle">Unlock Dev Tool</h2>
+        </div>
+        <button type="button" class="icon-button" id="adminAuthCancelButton" aria-label="Close admin login">Close</button>
+      </div>
+      <form class="admin-auth-form" id="adminAuthForm">
+        <label for="adminTokenInput">
+          <span>Admin token</span>
+          <input id="adminTokenInput" type="password" autocomplete="current-password" placeholder="Paste ADMIN_TOKEN">
+        </label>
+        <button type="submit">Sign In</button>
+      </form>
+      <p class="debug-status" id="adminAuthStatus">Use the private ADMIN_TOKEN from Vercel. This unlocks local browser access only for this session.</p>
+    </section>
+  `;
+  document.body.appendChild(modal);
+  elements.adminAuthModal = modal;
+  elements.adminAuthForm = modal.querySelector("#adminAuthForm");
+  elements.adminTokenInput = modal.querySelector("#adminTokenInput");
+  elements.adminAuthStatus = modal.querySelector("#adminAuthStatus");
+  elements.adminAuthCancelButton = modal.querySelector("#adminAuthCancelButton");
+  elements.adminAuthForm.addEventListener("submit", submitAdminLogin);
+  elements.adminAuthCancelButton.addEventListener("click", closeAdminAuthModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      closeAdminAuthModal();
+    }
+  });
+}
+
+function updateAdminControls() {
+  if (elements.menuDevToolButton) {
+    elements.menuDevToolButton.textContent = state.adminAuthenticated ? "Dev Tool" : "Admin Login";
+    elements.menuDevToolButton.dataset.adminState = state.adminAuthenticated ? "authenticated" : "locked";
+  }
+}
+
+async function refreshAdminSession() {
+  try {
+    const response = await fetch("/api/auth/session", { credentials: "same-origin" });
+    const payload = await response.json().catch(() => ({}));
+    state.adminAuthenticated = Boolean(response.ok && payload.authenticated);
+    state.adminUser = state.adminAuthenticated ? payload.user || { role: "admin", name: "Admin" } : null;
+  } catch {
+    state.adminAuthenticated = false;
+    state.adminUser = null;
+  }
+  updateAdminControls();
+}
+
+function openAdminAuthModal(message = "") {
+  buildAdminAuthModal();
+  elements.adminAuthStatus.textContent = message || "Use the private ADMIN_TOKEN from Vercel. This unlocks local browser access only for this session.";
+  elements.adminTokenInput.value = "";
+  setHidden(elements.adminAuthModal, false);
+  window.setTimeout(() => elements.adminTokenInput.focus(), 0);
+}
+
+function closeAdminAuthModal() {
+  if (!elements.adminAuthModal) {
+    return;
+  }
+  setHidden(elements.adminAuthModal, true);
+}
+
+async function submitAdminLogin(event) {
+  event.preventDefault();
+  const token = elements.adminTokenInput.value.trim();
+  if (!token) {
+    elements.adminAuthStatus.textContent = "Paste your ADMIN_TOKEN first.";
+    playSound("error");
+    return;
+  }
+
+  try {
+    elements.adminAuthStatus.textContent = "Checking admin access...";
+    const response = await fetch("/api/auth/admin/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || `Admin login failed with status ${response.status}.`);
+    }
+    state.adminAuthenticated = true;
+    state.adminUser = payload.user || { role: "admin", name: "Admin" };
+    updateAdminControls();
+    closeAdminAuthModal();
+    openDevToolScreen("questions");
+  } catch (error) {
+    console.warn(error);
+    state.adminAuthenticated = false;
+    state.adminUser = null;
+    updateAdminControls();
+    elements.adminAuthStatus.textContent = error.message || "Admin login failed.";
+    playSound("error");
+  }
+}
+
+async function handleDevToolButtonClick() {
+  await refreshAdminSession();
+  if (!state.adminAuthenticated) {
+    openAdminAuthModal("Sign in as admin before using the Dev Tool.");
+    return;
+  }
+  openDevToolScreen("questions");
+}
+
 async function closeDevToolScreen() {
   if (getCurrentDevToolTab() === "create" && !(await confirmDiscardDevCreateProgress())) {
     return;
@@ -11292,7 +11425,13 @@ async function loadQuestionDebugBank(force = false) {
   try {
     ensureServerMode();
     elements.devQuestionStatus.textContent = "Loading question bank...";
-    const response = await fetch("/api/debug/questions");
+    const response = await fetch("/api/debug/questions", { credentials: "same-origin" });
+    if (response.status === 401) {
+      state.adminAuthenticated = false;
+      state.adminUser = null;
+      updateAdminControls();
+      openAdminAuthModal("Your admin session expired. Sign in again to load Dev Tool data.");
+    }
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.error || `Question debug failed with status ${response.status}.`);
@@ -11900,7 +12039,8 @@ async function deleteSelectedDebugQuestion() {
     ensureServerMode();
     elements.devQuestionStatus.textContent = `Deleting ${question.id}...`;
     const response = await fetch(`/api/debug/questions/${encodeURIComponent(question.id)}`, {
-      method: "DELETE"
+      method: "DELETE",
+      credentials: "same-origin"
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -12004,6 +12144,7 @@ async function saveDevQuestionPayload(options = {}) {
     elements.devCreateStatus.textContent = `${actionLabel} ${editId || payload.id}...`;
     const response = await fetch(editId ? `/api/debug/questions/${encodeURIComponent(editId)}` : "/api/debug/questions", {
       method: editId ? "PUT" : "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
@@ -15814,7 +15955,9 @@ elements.startLocalButton.addEventListener("click", () => startGame("local"));
 elements.createRoomButton.addEventListener("click", openRoomScreen);
 elements.joinRoomButton.addEventListener("click", openJoinScreen);
 buildDevToolScreen();
-elements.menuDevToolButton?.addEventListener("click", () => openDevToolScreen("questions"));
+updateAdminControls();
+refreshAdminSession();
+elements.menuDevToolButton?.addEventListener("click", handleDevToolButtonClick);
 elements.profileCustomizeButton?.addEventListener("click", openProfileCustomization);
 elements.profileShopButton?.addEventListener("click", openProfileShop);
 elements.profileNameInput?.addEventListener("input", (event) => updateProfileName(event.target.value));
