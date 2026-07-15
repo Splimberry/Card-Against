@@ -153,6 +153,124 @@ async function testDirectRoomLookupIncludesCompleteRooms() {
   assert.equal(payload.room.status, "complete");
 }
 
+async function testBrowserExitRemovesJoinedPlayer() {
+  const code = makeCode(8105);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/leave`, {
+    participantId: "guest-client",
+    reason: "browser-exit"
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.closed, false);
+  assert.equal(payload.room.participants.some((participant) => participant.id === "guest-client"), false);
+  assert.equal(payload.room.participants.some((participant) => participant.id === "host-client"), true);
+}
+
+async function testBrowserExitDeletesRoomWhenNoRealPlayersRemain() {
+  const code = makeCode(8106);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: false,
+        muted: false,
+        status: "left"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      },
+      {
+        id: "bot-client",
+        name: "Bot",
+        host: false,
+        spectator: false,
+        bot: true,
+        active: true,
+        muted: false,
+        status: "bot"
+      }
+    ]
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/leave`, {
+    participantId: "guest-client",
+    reason: "browser-exit"
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.closed, true);
+  assert.equal(payload.reason, "empty-room");
+  const directRoom = await getRoom(code);
+  assert.equal(directRoom.response.status, 404);
+}
+
+async function testRoomListPrunesRoomsWithoutRealPlayers() {
+  const code = makeCode(8107);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: false,
+        muted: false,
+        status: "left"
+      },
+      {
+        id: "bot-client",
+        name: "Bot",
+        host: false,
+        spectator: false,
+        bot: true,
+        active: true,
+        muted: false,
+        status: "bot"
+      }
+    ]
+  }));
+
+  const rooms = await listRooms();
+  assert.equal(rooms.some((room) => room.code === code), false);
+  const directRoom = await getRoom(code);
+  assert.equal(directRoom.response.status, 404);
+}
+
 async function testBackgroundTabDoesNotDeleteRoom() {
   const code = makeCode(8102);
   await upsertRoom(makeRoom(code));
@@ -243,6 +361,9 @@ async function testLateJoinerReceivesRoundState() {
 async function main() {
   await testDirectRoomLookupIncludesCompleteRooms();
   await testHostLeaveDeletesRoom();
+  await testBrowserExitRemovesJoinedPlayer();
+  await testBrowserExitDeletesRoomWhenNoRealPlayersRemain();
+  await testRoomListPrunesRoomsWithoutRealPlayers();
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();

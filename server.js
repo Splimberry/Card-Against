@@ -874,8 +874,24 @@ function stampRoomEvent(room, type, payload = {}) {
   return room;
 }
 
+function hasActiveRealPlayers(room) {
+  return Array.isArray(room?.participants)
+    && room.participants.some((participant) => participant.active && !participant.bot && !participant.spectator);
+}
+
 async function listRoomsForDirectory() {
-  return backendStore.listRooms();
+  const rooms = await backendStore.listRooms();
+  const visibleRooms = [];
+
+  for (const room of rooms) {
+    if (room.status !== "complete" && !hasActiveRealPlayers(room)) {
+      await backendStore.deleteRoom(room.code);
+      continue;
+    }
+    visibleRooms.push(room);
+  }
+
+  return visibleRooms;
 }
 
 async function handleRoomPresence(req, res, code) {
@@ -1129,8 +1145,7 @@ async function handleRoomLeave(req, res, code) {
 
     room.participants = room.participants.filter((participant) => participant.id !== participantId);
     finalizeRoom(room);
-    const activeRealPlayers = room.participants.filter((participant) => participant.active && !participant.bot && !participant.spectator);
-    if (!activeRealPlayers.length) {
+    if (!hasActiveRealPlayers(room)) {
       await backendStore.deleteRoom(normalizedCode);
       sendJson(res, 200, { closed: true, code: normalizedCode, reason: "empty-room" });
       return;

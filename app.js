@@ -14245,10 +14245,8 @@ function handleRoomBrowserExit() {
   if (state.roomExitLeaveSent || !hasActiveRoomContext()) {
     return;
   }
-  if (isCurrentHost() && !state.joiningRoom) {
-    state.roomExitLeaveSent = true;
-    leavePublishedRoom({ keepalive: true, reason: "browser-exit" });
-  }
+  state.roomExitLeaveSent = true;
+  leavePublishedRoom({ keepalive: true, reason: "browser-exit" });
 }
 
 function startRoomDirectoryPolling() {
