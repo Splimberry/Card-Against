@@ -277,7 +277,7 @@ function loadEnv() {
 async function handleListRooms(res) {
   const rooms = (await listRoomsForDirectory())
     .filter((room) => room.status !== "complete")
-    .filter((room) => Number(room.activePlayers || 0) > 0)
+    .filter((room) => getRoomActivePlayerCount(room) > 0)
     .sort((a, b) => b.updatedAt - a.updatedAt);
   sendJson(res, 200, { rooms });
 }
@@ -1013,6 +1013,13 @@ function stampRoomEvent(room, type, payload = {}) {
 function hasActiveRealPlayers(room) {
   return Array.isArray(room?.participants)
     && room.participants.some((participant) => participant.active && !participant.bot && !participant.spectator);
+}
+
+function getRoomActivePlayerCount(room) {
+  if (Array.isArray(room?.participants) && room.participants.length) {
+    return room.participants.filter((participant) => participant.active !== false && !participant.spectator).length;
+  }
+  return Number(room?.activePlayers || 0);
 }
 
 function createRoomClosePayload(code, reason) {

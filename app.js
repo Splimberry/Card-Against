@@ -14354,7 +14354,7 @@ function handleKickableBotClick(event) {
 
 function renderHostedRooms() {
   elements.joinRoomList.replaceChildren();
-  const visibleRooms = state.hostedRooms.filter((room) => room.status !== "complete" && room.activePlayers > 0);
+  const visibleRooms = state.hostedRooms.filter((room) => room.status !== "complete" && getHostedRoomActivePlayerCount(room) > 0);
   if (!visibleRooms.length) {
     const empty = document.createElement("section");
     empty.className = "join-room-card";
@@ -14391,7 +14391,8 @@ function renderHostedRooms() {
     host.append(avatar, hostName);
     const meta = document.createElement("div");
     meta.className = "join-room-meta";
-    [room.settings.private ? "Private" : "Public", getRoomModeLabel(room.settings), `${room.activePlayers}/${getRoomMaxPlayers(room.settings)} players`, `${room.spectators} spectators`, room.status].forEach((label) => {
+    const activePlayers = getHostedRoomActivePlayerCount(room);
+    [room.settings.private ? "Private" : "Public", getRoomModeLabel(room.settings), `${activePlayers}/${getRoomMaxPlayers(room.settings)} players`, `${room.spectators} spectators`, room.status].forEach((label) => {
       const chip = document.createElement("span");
       chip.textContent = label;
       meta.appendChild(chip);
@@ -14404,7 +14405,7 @@ function renderHostedRooms() {
     joinButton.dataset.roomAction = "join";
     joinButton.dataset.joinRoom = room.code;
     joinButton.textContent = "Join Game";
-    const roomIsFull = room.activePlayers >= getRoomMaxPlayers(room.settings);
+    const roomIsFull = activePlayers >= getRoomMaxPlayers(room.settings);
     joinButton.disabled = room.status !== "lobby" || roomIsFull;
     const joinHint = room.status === "lobby"
       ? roomIsFull
@@ -14423,6 +14424,13 @@ function renderHostedRooms() {
     card.append(details, actions);
     elements.joinRoomList.appendChild(card);
   });
+}
+
+function getHostedRoomActivePlayerCount(room) {
+  if (Array.isArray(room?.participants) && room.participants.length) {
+    return room.participants.filter((participant) => participant.active !== false && !participant.spectator).length;
+  }
+  return Number(room?.activePlayers || 0);
 }
 
 function getRoomModeLabel(settings = state.roomSettings) {
@@ -14464,7 +14472,7 @@ async function joinHostedRoom(code, options = {}) {
     addSystemChat("That match already started. Join as a spectator instead.", { private: true });
     return;
   }
-  if (!options.spectate && room.activePlayers >= getRoomMaxPlayers(room.settings)) {
+  if (!options.spectate && getHostedRoomActivePlayerCount(room) >= getRoomMaxPlayers(room.settings)) {
     addSystemChat(`${normalizedCode} is full. Join as a spectator instead.`, { private: true });
     return;
   }

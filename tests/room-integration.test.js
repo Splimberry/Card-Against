@@ -303,6 +303,18 @@ async function testRoomListHidesRoomsWithoutActivePlayers() {
   assert.equal(payload.room.code, code);
 }
 
+async function testRoomListUsesParticipantsWhenActiveCountIsMissing() {
+  const code = makeCode(8108);
+  const room = makeRoom(code);
+  delete room.activePlayers;
+  await upsertRoom(room);
+
+  const rooms = await listRooms();
+  const listedRoom = rooms.find((entry) => entry.code === code);
+  assert.ok(listedRoom);
+  assert.equal(listedRoom.participants.some((participant) => participant.id === "host-client" && participant.active), true);
+}
+
 async function testBackgroundTabDoesNotDeleteRoom() {
   const code = makeCode(8102);
   await upsertRoom(makeRoom(code));
@@ -446,6 +458,7 @@ async function main() {
   await testBrowserExitRemovesJoinedPlayer();
   await testBrowserExitDeletesRoomWhenNoRealPlayersRemain();
   await testRoomListHidesRoomsWithoutActivePlayers();
+  await testRoomListUsesParticipantsWhenActiveCountIsMissing();
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
