@@ -2,6 +2,8 @@ const assert = require("node:assert/strict");
 const { Readable } = require("node:stream");
 
 process.env.BACKEND_STORE = "memory";
+process.env.ADMIN_TOKEN = "room-test-admin-token";
+process.env.QUESTION_FILE_WRITES = "disabled";
 
 const handleRequest = require("../server");
 
@@ -71,14 +73,15 @@ function makeRoom(code, overrides = {}) {
   };
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, headers = {}) {
   const chunks = body === undefined ? [] : [JSON.stringify(body)];
   const req = Readable.from(chunks);
   req.method = method;
   req.url = path;
   req.headers = {
     host: "test.local",
-    ...(body === undefined ? {} : { "content-type": "application/json" })
+    ...(body === undefined ? {} : { "content-type": "application/json" }),
+    ...headers
   };
 
   const result = await new Promise((resolve, reject) => {
@@ -124,6 +127,30 @@ async function listRooms() {
 
 async function getRoom(code) {
   return request("GET", `/api/rooms/${code}`);
+}
+
+function makeQuestion(id, overrides = {}) {
+  return {
+    id,
+    type: "text",
+    theme: "Science",
+    difficulty: "easy",
+    question: `What is the test answer for ${id}?`,
+    canonicalAnswer: "Answer",
+    acceptedAnswers: ["answer"],
+    botCards: ["Wrong one", "Wrong two"],
+    ...overrides
+  };
+}
+
+function adminHeaders() {
+  return { authorization: `Bearer ${process.env.ADMIN_TOKEN}` };
+}
+
+async function getDebugQuestions() {
+  const { response, payload } = await request("GET", "/api/debug/questions", undefined, adminHeaders());
+  assert.equal(response.status, 200, payload.error);
+  return payload.questions;
 }
 
 async function testHostLeaveDeletesRoom() {
@@ -363,6 +390,56 @@ async function testLateJoinerReceivesRoundState() {
   assert.ok(presence.payload.room.events.some((event) => event.type === "round_started"));
 }
 
+async function testDebugQuestionCreateUsesBackendStorage() {
+  const question = makeQuestion("science-backend-create-test");
+  const { response, payload } = await request("POST", "/api/debug/questions", question, adminHeaders());
+  assert.equal(response.status, 201, payload.error);
+  assert.equal(payload.question.id, question.id);
+  assert.equal(payload.storage, "backend");
+  assert.equal(payload.fileSaved, false);
+
+  const questions = await getDebugQuestions();
+  const saved = questions.find((entry) => entry.id === question.id);
+  assert.ok(saved);
+  assert.equal(saved.question, question.question);
+}
+
+async function testDebugQuestionUpdateUsesBackendStorage() {
+  const original = makeQuestion("science-backend-update-test");
+  const created = await request("POST", "/api/debug/questions", original, adminHeaders());
+  assert.equal(created.response.status, 201, created.payload.error);
+
+  const updated = makeQuestion("science-backend-update-renamed-test", {
+    question: "What updated question is stored in backend storage?",
+    canonicalAnswer: "Updated",
+    acceptedAnswers: ["updated"]
+  });
+  const { response, payload } = await request("PUT", `/api/debug/questions/${original.id}`, updated, adminHeaders());
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.question.id, updated.id);
+  assert.equal(payload.storage, "backend");
+
+  const questions = await getDebugQuestions();
+  assert.equal(questions.some((entry) => entry.id === original.id), false);
+  const saved = questions.find((entry) => entry.id === updated.id);
+  assert.ok(saved);
+  assert.equal(saved.canonicalAnswer, "Updated");
+}
+
+async function testDebugQuestionDeleteUsesBackendStorage() {
+  const question = makeQuestion("science-backend-delete-test");
+  const created = await request("POST", "/api/debug/questions", question, adminHeaders());
+  assert.equal(created.response.status, 201, created.payload.error);
+
+  const { response, payload } = await request("DELETE", `/api/debug/questions/${question.id}`, undefined, adminHeaders());
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.question.id, question.id);
+  assert.equal(payload.storage, "backend");
+
+  const questions = await getDebugQuestions();
+  assert.equal(questions.some((entry) => entry.id === question.id), false);
+}
+
 async function main() {
   await testDirectRoomLookupIncludesCompleteRooms();
   await testHostLeaveDeletesRoom();
@@ -372,6 +449,9 @@ async function main() {
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
+  await testDebugQuestionCreateUsesBackendStorage();
+  await testDebugQuestionUpdateUsesBackendStorage();
+  await testDebugQuestionDeleteUsesBackendStorage();
   console.log("Room integration tests passed.");
 }
 

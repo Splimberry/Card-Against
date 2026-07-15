@@ -672,25 +672,15 @@ async function handleCreateDebugQuestion(req, res) {
   try {
     const body = await readRequestJson(req);
     const created = normalizeCreatedQuestion(body);
-    const filePath = join(root, "data", "questions.json");
-    const current = JSON.parse(readFileSync(filePath, "utf8"));
-    if (!Array.isArray(current)) {
-      throw new Error("Question bank is not an array.");
-    }
-
     const normalizedId = normalizeQuestionText(created.id);
-    if (current.some((question) => normalizeQuestionText(question.id) === normalizedId)) {
+    const runtimeQuestionBank = await getRuntimeQuestionBank();
+    if (runtimeQuestionBank.some((question) => normalizeQuestionText(question.id) === normalizedId)) {
       sendJson(res, 409, { error: `Question id already exists: ${created.id}` });
       return;
     }
 
-    current.push(created);
-    await writeFile(filePath, `${JSON.stringify(current, null, 2)}\n`);
-    const normalized = normalizeSeedQuestion(created);
-    if (normalized) {
-      questionBank.push(normalized);
-    }
-    sendJson(res, 201, { question: created, total: current.length });
+    const saved = await createRuntimeQuestion(created);
+    sendJson(res, 201, saved);
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Could not create question." });
   }
@@ -700,36 +690,25 @@ async function handleUpdateDebugQuestion(req, res, originalId) {
   try {
     const body = await readRequestJson(req);
     const updated = normalizeCreatedQuestion(body);
-    const filePath = join(root, "data", "questions.json");
-    const current = JSON.parse(readFileSync(filePath, "utf8"));
-    if (!Array.isArray(current)) {
-      throw new Error("Question bank is not an array.");
-    }
-
     const normalizedOriginalId = normalizeQuestionText(originalId);
-    const index = current.findIndex((question) => normalizeQuestionText(question.id) === normalizedOriginalId);
-    if (index < 0) {
+    const runtimeQuestionBank = await getRuntimeQuestionBank();
+    if (!runtimeQuestionBank.some((question) => normalizeQuestionText(question.id) === normalizedOriginalId)) {
       sendJson(res, 404, { error: `Question id not found: ${originalId}` });
       return;
     }
 
     const normalizedUpdatedId = normalizeQuestionText(updated.id);
-    const duplicate = current.some((question, questionIndex) => questionIndex !== index && normalizeQuestionText(question.id) === normalizedUpdatedId);
+    const duplicate = runtimeQuestionBank.some((question) => (
+      normalizeQuestionText(question.id) !== normalizedOriginalId
+      && normalizeQuestionText(question.id) === normalizedUpdatedId
+    ));
     if (duplicate) {
       sendJson(res, 409, { error: `Question id already exists: ${updated.id}` });
       return;
     }
 
-    current[index] = updated;
-    await writeFile(filePath, `${JSON.stringify(current, null, 2)}\n`);
-    const normalized = normalizeSeedQuestion(updated);
-    const bankIndex = questionBank.findIndex((question) => normalizeQuestionText(question.id) === normalizedOriginalId);
-    if (normalized && bankIndex >= 0) {
-      questionBank[bankIndex] = normalized;
-    } else if (normalized) {
-      questionBank.push(normalized);
-    }
-    sendJson(res, 200, { question: updated, total: current.length });
+    const saved = await updateRuntimeQuestion(originalId, updated);
+    sendJson(res, 200, saved);
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Could not update question." });
   }
@@ -737,29 +716,177 @@ async function handleUpdateDebugQuestion(req, res, originalId) {
 
 async function handleDeleteDebugQuestion(res, id) {
   try {
-    const filePath = join(root, "data", "questions.json");
-    const current = JSON.parse(readFileSync(filePath, "utf8"));
-    if (!Array.isArray(current)) {
-      throw new Error("Question bank is not an array.");
-    }
-
     const normalizedId = normalizeQuestionText(id);
-    const index = current.findIndex((question) => normalizeQuestionText(question.id) === normalizedId);
-    if (index < 0) {
+    const runtimeQuestionBank = await getRuntimeQuestionBank();
+    const existing = runtimeQuestionBank.find((question) => normalizeQuestionText(question.id) === normalizedId);
+    if (!existing) {
       sendJson(res, 404, { error: `Question id not found: ${id}` });
       return;
     }
 
-    const [deleted] = current.splice(index, 1);
-    await writeFile(filePath, `${JSON.stringify(current, null, 2)}\n`);
-    const bankIndex = questionBank.findIndex((question) => normalizeQuestionText(question.id) === normalizedId);
-    if (bankIndex >= 0) {
-      questionBank.splice(bankIndex, 1);
-    }
-    sendJson(res, 200, { question: deleted, total: current.length });
+    const saved = await deleteRuntimeQuestion(id, existing);
+    sendJson(res, 200, saved);
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Could not delete question." });
   }
+}
+
+function isReadOnlyFileSystemError(error) {
+  return ["EROFS", "EACCES", "EPERM"].includes(error?.code);
+}
+
+function assertQuestionFileWritesEnabled() {
+  if (process.env.QUESTION_FILE_WRITES === "disabled") {
+    const error = new Error("Question file writes are disabled.");
+    error.code = "EROFS";
+    throw error;
+  }
+}
+
+function readQuestionFile() {
+  const filePath = join(root, "data", "questions.json");
+  const current = JSON.parse(readFileSync(filePath, "utf8"));
+  if (!Array.isArray(current)) {
+    throw new Error("Question bank is not an array.");
+  }
+  return current;
+}
+
+async function writeQuestionFile(questions) {
+  assertQuestionFileWritesEnabled();
+  const filePath = join(root, "data", "questions.json");
+  await writeFile(filePath, `${JSON.stringify(questions, null, 2)}\n`);
+}
+
+function syncQuestionBankUpsert(question, originalId = question.id) {
+  const normalized = normalizeSeedQuestion(question);
+  if (!normalized) {
+    return;
+  }
+
+  const normalizedOriginalId = normalizeQuestionText(originalId);
+  const existingIndex = questionBank.findIndex((entry) => normalizeQuestionText(entry.id) === normalizedOriginalId);
+  if (existingIndex >= 0) {
+    questionBank[existingIndex] = normalized;
+    return;
+  }
+
+  const normalizedId = normalizeQuestionText(question.id);
+  const duplicateIndex = questionBank.findIndex((entry) => normalizeQuestionText(entry.id) === normalizedId);
+  if (duplicateIndex >= 0) {
+    questionBank[duplicateIndex] = normalized;
+  } else {
+    questionBank.push(normalized);
+  }
+}
+
+function syncQuestionBankDelete(id) {
+  const normalizedId = normalizeQuestionText(id);
+  const index = questionBank.findIndex((entry) => normalizeQuestionText(entry.id) === normalizedId);
+  if (index >= 0) {
+    questionBank.splice(index, 1);
+  }
+}
+
+async function upsertQuestionOverride(question) {
+  await backendStore.upsertQuestionOverride({
+    id: question.id,
+    question,
+    deleted: false,
+    source: "debug"
+  });
+}
+
+async function markQuestionOverrideDeleted(id) {
+  await backendStore.upsertQuestionOverride({
+    id,
+    question: null,
+    deleted: true,
+    source: "debug"
+  });
+}
+
+async function createRuntimeQuestion(question) {
+  let fileSaved = false;
+  try {
+    const current = readQuestionFile();
+    current.push(question);
+    await writeQuestionFile(current);
+    fileSaved = true;
+    syncQuestionBankUpsert(question);
+  } catch (error) {
+    if (!isReadOnlyFileSystemError(error)) {
+      throw error;
+    }
+    console.warn("Could not write created question to data/questions.json; saving it to persistent question overrides.", error.message || error);
+  }
+
+  if (!fileSaved) {
+    await upsertQuestionOverride(question);
+  }
+
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
+  return { question, total: runtimeQuestionBank.length, fileSaved, storage: fileSaved ? "file" : "backend" };
+}
+
+async function updateRuntimeQuestion(originalId, question) {
+  const normalizedOriginalId = normalizeQuestionText(originalId);
+  let fileSaved = false;
+
+  try {
+    const current = readQuestionFile();
+    const index = current.findIndex((entry) => normalizeQuestionText(entry.id) === normalizedOriginalId);
+    if (index >= 0) {
+      current[index] = question;
+      await writeQuestionFile(current);
+      fileSaved = true;
+      syncQuestionBankUpsert(question, originalId);
+    }
+  } catch (error) {
+    if (!isReadOnlyFileSystemError(error)) {
+      throw error;
+    }
+    console.warn("Could not update data/questions.json; saving question edit to persistent overrides.", error.message || error);
+  }
+
+  if (!fileSaved) {
+    if (normalizeQuestionText(originalId) !== normalizeQuestionText(question.id)) {
+      await markQuestionOverrideDeleted(originalId);
+    }
+    await upsertQuestionOverride(question);
+  }
+
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
+  return { question, total: runtimeQuestionBank.length, fileSaved, storage: fileSaved ? "file" : "backend" };
+}
+
+async function deleteRuntimeQuestion(id, existingQuestion) {
+  const normalizedId = normalizeQuestionText(id);
+  let fileSaved = false;
+  let deleted = existingQuestion;
+
+  try {
+    const current = readQuestionFile();
+    const index = current.findIndex((entry) => normalizeQuestionText(entry.id) === normalizedId);
+    if (index >= 0) {
+      [deleted] = current.splice(index, 1);
+      await writeQuestionFile(current);
+      fileSaved = true;
+      syncQuestionBankDelete(id);
+    }
+  } catch (error) {
+    if (!isReadOnlyFileSystemError(error)) {
+      throw error;
+    }
+    console.warn("Could not delete from data/questions.json; saving delete marker to persistent overrides.", error.message || error);
+  }
+
+  if (!fileSaved) {
+    await markQuestionOverrideDeleted(id);
+  }
+
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
+  return { question: deleted, total: runtimeQuestionBank.length, fileSaved, storage: fileSaved ? "file" : "backend" };
 }
 
 function normalizeCreatedQuestion(body) {
@@ -1399,6 +1526,26 @@ async function getRuntimeQuestionBank() {
       });
   } catch (error) {
     console.warn("Could not load approved player questions:", error.message || error);
+  }
+
+  try {
+    const overrides = await backendStore.listQuestionOverrides();
+    overrides.forEach((override) => {
+      const normalizedId = normalizeQuestionText(override.id);
+      if (!normalizedId) {
+        return;
+      }
+      if (override.deleted) {
+        merged.delete(normalizedId);
+        return;
+      }
+      const normalized = normalizeSeedQuestion(override.question);
+      if (normalized) {
+        merged.set(normalizeQuestionText(normalized.id), { ...normalized, source: "debug" });
+      }
+    });
+  } catch (error) {
+    console.warn("Could not load debug question overrides:", error.message || error);
   }
 
   return [...merged.values()];

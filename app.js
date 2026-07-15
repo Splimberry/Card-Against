@@ -4297,7 +4297,7 @@ function showEditSaveChoice() {
       action: "saveQuestionChoice",
       eyebrow: "Save edit",
       title: "Overwrite this question?",
-      copy: "Overwrite replaces the original question in data/questions.json. Save as New keeps the original and creates a separate question.",
+      copy: "Overwrite replaces the original question in the persistent question bank. Save as New keeps the original and creates a separate question.",
       confirmLabel: "Overwrite",
       cancelLabel: "Save as New",
       danger: true
@@ -10947,7 +10947,7 @@ function buildDevToolScreen() {
             <button type="button" class="icon-button hidden" id="devCreateSaveAsNewButton">Save as New</button>
             <button type="button" class="icon-button hidden" id="devCreateExitButton">Exit Edit</button>
             <button type="button" class="icon-button danger-button" id="devCreateClearButton">Clear</button>
-            <div class="debug-status" id="devCreateStatus">Ready. Created questions are permanently saved to data/questions.json.</div>
+            <div class="debug-status" id="devCreateStatus">Ready. Created questions are saved to the persistent question bank.</div>
           </div>
         </form>
         <aside class="dev-create-preview-shell">
@@ -12857,7 +12857,7 @@ function resetDevQuestionCreateForm(options = {}) {
   updateDevCreateImageFields();
   setHidden(elements.devCreateExitButton, true);
   if (!keepStatus) {
-    elements.devCreateStatus.textContent = "Ready. Created questions are permanently saved to data/questions.json.";
+    elements.devCreateStatus.textContent = "Ready. Created questions are saved to the persistent question bank.";
   }
   updateDevCreatePreview();
 }
@@ -13003,7 +13003,7 @@ async function deleteSelectedDebugQuestion() {
   const confirmed = await showAppConfirm({
     eyebrow: "Delete question",
     title: `Delete ${question.id}?`,
-    copy: "This permanently removes the question from data/questions.json.",
+    copy: "This permanently removes the question from the persistent question bank.",
     confirmLabel: "Delete",
     danger: true
   });
@@ -13129,7 +13129,7 @@ async function saveDevQuestionPayload(options = {}) {
       throw new Error(result.error || `${editId ? "Update" : "Create"} failed with status ${response.status}.`);
     }
     const savedId = result.question?.id || payload.id;
-    elements.devCreateStatus.textContent = `${editId ? "Updated" : "Created"} ${savedId}. Permanently saved to data/questions.json. Bank total: ${result.total}.`;
+    elements.devCreateStatus.textContent = `${editId ? "Updated" : "Created"} ${savedId}. Saved to ${result.storage === "backend" ? "backend storage" : "the question file"}. Bank total: ${result.total}.`;
     resetDevQuestionCreateForm({ keepStatus: true });
     state.questionDebugBank = [];
     await loadQuestionDebugBank(true);
