@@ -585,8 +585,8 @@ const soundState = {
   muted: false,
   lastSfxAt: 0,
   activeAudioNodes: new Set(),
-  sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume"), 0, 100, 70) / 100,
-  musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume"), 0, 100, 18) / 100
+  sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume"), 0, 100, 50) / 100,
+  musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume"), 0, 100, 50) / 100
 };
 
 const state = {
@@ -1018,6 +1018,7 @@ const elements = {
   backFromJoinButton: document.querySelector("#backFromJoinButton"),
   roomSoundToggleButton: document.querySelector("#roomSoundToggleButton"),
   joinSoundToggleButton: document.querySelector("#joinSoundToggleButton"),
+  refreshJoinRoomsButton: document.querySelector("#refreshJoinRoomsButton"),
   createFromJoinButton: document.querySelector("#createFromJoinButton"),
   startRoomButton: document.querySelector("#startRoomButton"),
   roomRoundsSlider: document.querySelector("#roomRoundsSlider"),
@@ -13503,6 +13504,25 @@ function generateRoomCode() {
   return `CAI-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+function getDefaultRoomSettings(code = "CAI-0000") {
+  return {
+    rounds: 10,
+    timerSeconds: 30,
+    maxPlayers: 5,
+    harsh: false,
+    chaos: false,
+    timeMoney: false,
+    amplified: false,
+    wildFire: false,
+    partyMayhem: false,
+    classicMode: false,
+    enabledThemes: [...triviaThemes],
+    private: false,
+    password: "",
+    code
+  };
+}
+
 function syncRoomControls() {
   state.roomSettings.maxPlayers = getRoomMaxPlayers();
   state.roomSettings.enabledThemes = getEnabledTriviaThemes();
@@ -13543,7 +13563,7 @@ function openRoomScreen() {
   state.currentOwner = "player";
   state.currentRoomStatus = "draft";
   state.roomParticipants = [];
-  state.roomSettings.code = generateRoomCode();
+  state.roomSettings = getDefaultRoomSettings(generateRoomCode());
   state.publishedDraftRoomCode = state.roomSettings.code;
   state.roomChat = [];
   syncRoomControls();
@@ -13670,6 +13690,20 @@ async function openJoinScreen() {
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, true);
   setHidden(elements.joinScreen, false);
+  playSound("click");
+}
+
+async function refreshJoinRooms() {
+  if (!elements.refreshJoinRoomsButton) {
+    return;
+  }
+  const previousLabel = elements.refreshJoinRoomsButton.textContent;
+  elements.refreshJoinRoomsButton.disabled = true;
+  elements.refreshJoinRoomsButton.textContent = "Refreshing...";
+  await refreshHostedRooms();
+  renderHostedRooms();
+  elements.refreshJoinRoomsButton.textContent = previousLabel || "Refresh";
+  elements.refreshJoinRoomsButton.disabled = false;
   playSound("click");
 }
 
@@ -13882,7 +13916,7 @@ function mergeHostedRoom(room) {
 
 async function refreshHostedRooms() {
   try {
-    const response = await fetch("/api/rooms");
+    const response = await fetch("/api/rooms", { cache: "no-store" });
     if (!response.ok) {
       state.roomDirectoryOnline = false;
       return;
@@ -14065,7 +14099,10 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
     }
     if (isCurrentHost() && !state.joiningRoom) {
       state.roomExitLeaveSent = false;
-      upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+      updateRoomPresence(room, {
+        host: true,
+        status: state.currentRoomStatus === "in-progress" ? "playing" : "host"
+      });
     }
   } else if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
     const now = Date.now();
@@ -17245,6 +17282,7 @@ elements.changeModeButton.addEventListener("click", () => {
 elements.menuSoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
 elements.roomSoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
 elements.joinSoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
+elements.refreshJoinRoomsButton.addEventListener("click", refreshJoinRooms);
 elements.lobbySoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
 elements.soundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
 elements.leaveGameButton.addEventListener("click", openLeaveConfirm);
