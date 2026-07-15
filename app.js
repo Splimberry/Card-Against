@@ -14241,7 +14241,10 @@ function handleRoomVisibilityChange() {
   refreshCurrentRoomDirectory(state.roomSessionId);
 }
 
-function handleRoomBrowserExit() {
+function handleRoomBrowserExit(event) {
+  if (event?.persisted) {
+    return;
+  }
   if (state.roomExitLeaveSent || !hasActiveRoomContext()) {
     return;
   }
@@ -17603,7 +17606,7 @@ elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
 document.addEventListener("visibilitychange", handleRoomVisibilityChange);
-window.addEventListener("beforeunload", handleRoomBrowserExit);
+window.addEventListener("pagehide", handleRoomBrowserExit);
 
 updateSoundButton();
 syncSettingsControls();
