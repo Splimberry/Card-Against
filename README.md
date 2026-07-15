@@ -50,9 +50,39 @@ AI_API_STYLE=chat
 
 Do not add `PORT` in Vercel. Vercel provides the runtime port automatically.
 
+## Backend Management
+
+The app now has a backend storage layer for hosted rooms:
+
+- Local development uses in-memory storage.
+- Production uses Redis over REST when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are configured.
+- The legacy Vercel KV names `KV_REST_API_URL` and `KV_REST_API_TOKEN` also work.
+
+Set these extra environment variables before deploying:
+
+```text
+ADMIN_TOKEN=use_a_long_random_secret
+UPSTASH_REDIS_REST_URL=your_redis_rest_url
+UPSTASH_REDIS_REST_TOKEN=your_redis_rest_token
+ROOM_TTL_SECONDS=21600
+```
+
+Protected admin endpoints require:
+
+```text
+Authorization: Bearer your_admin_token
+```
+
+Available management endpoints:
+
+- `GET /api/admin/status` checks backend health, storage mode, room counts, and question counts.
+- `GET /api/admin/rooms` lists hosted rooms without exposing room passwords or full avatars.
+- `POST /api/admin/rooms/:code/close` marks a room complete.
+- `DELETE /api/admin/rooms/:code` removes a room from the room directory.
+
 Notes for public hosting:
 
-- The multiplayer room list currently uses in-memory server state, so rooms may reset across Vercel function cold starts or multiple regions.
+- Hosted room directory state is persistent only when Redis REST environment variables are configured.
 - Debug question editing writes to `data/questions.json`, which is not persistent on serverless hosting.
 - Solo and local gameplay routes that call `/api/setup` and `/api/round` are the best fit for the first public deployment.
 
@@ -116,4 +146,3 @@ Rebalance power-ups around trivia scoring.
 
 
 ## bug fix
-

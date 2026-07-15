@@ -2,12 +2,15 @@ const { createServer } = require("node:http");
 const { readFile, writeFile } = require("node:fs/promises");
 const { existsSync, readFileSync } = require("node:fs");
 const { extname, join, normalize } = require("node:path");
+const { createBackendStore } = require("./lib/backend-store");
 
 const root = __dirname;
 loadEnv();
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
-const hostedRooms = new Map();
+const backendStore = createBackendStore({
+  roomTtlSeconds: process.env.ROOM_TTL_SECONDS || 60 * 60 * 6
+});
 const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
 const triviaThemes = [
@@ -83,7 +86,7 @@ async function handleRequest(req, res) {
     }
 
     if (url.pathname === "/api/rooms" && req.method === "GET") {
-      handleListRooms(res);
+      await handleListRooms(res);
       return;
     }
 
@@ -95,6 +98,28 @@ async function handleRequest(req, res) {
     const roomPresenceMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/presence$/);
     if (roomPresenceMatch && req.method === "POST") {
       await handleRoomPresence(req, res, roomPresenceMatch[1]);
+      return;
+    }
+
+    if (url.pathname === "/api/admin/status" && req.method === "GET") {
+      await handleAdminStatus(req, res);
+      return;
+    }
+
+    if (url.pathname === "/api/admin/rooms" && req.method === "GET") {
+      await handleAdminRooms(req, res);
+      return;
+    }
+
+    const adminRoomMatch = url.pathname.match(/^\/api\/admin\/rooms\/([^/]+)$/);
+    if (adminRoomMatch && req.method === "DELETE") {
+      await handleAdminDeleteRoom(req, res, adminRoomMatch[1]);
+      return;
+    }
+
+    const adminCloseRoomMatch = url.pathname.match(/^\/api\/admin\/rooms\/([^/]+)\/close$/);
+    if (adminCloseRoomMatch && req.method === "POST") {
+      await handleAdminCloseRoom(req, res, adminCloseRoomMatch[1]);
       return;
     }
 
@@ -161,11 +186,105 @@ function loadEnv() {
   }
 }
 
-function handleListRooms(res) {
-  const rooms = [...hostedRooms.values()]
+async function handleListRooms(res) {
+  const rooms = (await backendStore.listRooms())
     .filter((room) => room.status !== "complete")
     .sort((a, b) => b.updatedAt - a.updatedAt);
   sendJson(res, 200, { rooms });
+}
+
+async function handleAdminStatus(req, res) {
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+
+  const rooms = await backendStore.listRooms();
+  sendJson(res, 200, {
+    ok: true,
+    storage: {
+      mode: backendStore.mode,
+      persistent: backendStore.persistent
+    },
+    rooms: {
+      total: rooms.length,
+      active: rooms.filter((room) => room.status !== "complete").length,
+      complete: rooms.filter((room) => room.status === "complete").length
+    },
+    questions: {
+      total: questionBank.length,
+      themes: triviaThemes
+    }
+  });
+}
+
+async function handleAdminRooms(req, res) {
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+
+  const rooms = (await backendStore.listRooms())
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map((room) => ({
+      code: room.code,
+      status: room.status,
+      host: {
+        id: room.host?.id || "",
+        name: room.host?.name || "Host"
+      },
+      settings: {
+        rounds: room.settings?.rounds,
+        timerSeconds: room.settings?.timerSeconds,
+        maxPlayers: room.settings?.maxPlayers,
+        private: Boolean(room.settings?.private),
+        classicMode: Boolean(room.settings?.classicMode)
+      },
+      participants: Array.isArray(room.participants)
+        ? room.participants.map((participant) => ({
+          id: participant.id,
+          name: participant.name,
+          host: Boolean(participant.host),
+          spectator: Boolean(participant.spectator),
+          active: Boolean(participant.active),
+          muted: Boolean(participant.muted),
+          status: participant.status
+        }))
+        : [],
+      activePlayers: room.activePlayers || 0,
+      spectators: room.spectators || 0,
+      updatedAt: room.updatedAt || 0
+    }));
+
+  sendJson(res, 200, { rooms });
+}
+
+async function handleAdminDeleteRoom(req, res, code) {
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+
+  const deleted = await backendStore.deleteRoom(code);
+  sendJson(res, deleted ? 200 : 404, {
+    deleted,
+    code: String(code || "").trim().toUpperCase()
+  });
+}
+
+async function handleAdminCloseRoom(req, res, code) {
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+
+  const room = await backendStore.getRoom(code);
+  if (!room) {
+    sendJson(res, 404, { error: "Room not found." });
+    return;
+  }
+
+  room.status = "complete";
+  room.updatedAt = Date.now();
+  finalizeRoom(room);
+  const storedRoom = await backendStore.upsertRoom(room);
+  sendJson(res, 200, { room: storedRoom });
 }
 
 async function handleImageProxy(url, res) {
@@ -403,8 +522,8 @@ async function handleUpsertRoom(req, res) {
   try {
     const body = await readRequestJson(req);
     const room = normalizeRoom(body.room || body);
-    hostedRooms.set(room.code, room);
-    sendJson(res, 200, { room });
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, { room: storedRoom });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room update failed." });
   }
@@ -413,7 +532,7 @@ async function handleUpsertRoom(req, res) {
 async function handleRoomPresence(req, res, code) {
   try {
     const normalizedCode = String(code || "").trim().toUpperCase();
-    const room = hostedRooms.get(normalizedCode);
+    const room = await backendStore.getRoom(normalizedCode);
     if (!room) {
       sendJson(res, 404, { error: "Room not found." });
       return;
@@ -430,8 +549,8 @@ async function handleRoomPresence(req, res, code) {
 
     room.updatedAt = Date.now();
     finalizeRoom(room);
-    hostedRooms.set(room.code, room);
-    sendJson(res, 200, { room });
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, { room: storedRoom });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room presence update failed." });
   }
@@ -1522,6 +1641,24 @@ function normalizeBotCards(cards) {
   }
 
   return normalized;
+}
+
+function requireAdmin(req, res) {
+  const configuredToken = String(process.env.ADMIN_TOKEN || "").trim();
+  if (!configuredToken) {
+    sendJson(res, 503, { error: "ADMIN_TOKEN is not configured." });
+    return false;
+  }
+
+  const authorization = String(req.headers.authorization || "");
+  const bearerToken = authorization.replace(/^Bearer\s+/i, "").trim();
+  const headerToken = String(req.headers["x-admin-token"] || "").trim();
+  if (bearerToken === configuredToken || headerToken === configuredToken) {
+    return true;
+  }
+
+  sendJson(res, 401, { error: "Unauthorized." });
+  return false;
 }
 
 function sendJson(res, status, payload) {
