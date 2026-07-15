@@ -136,6 +136,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomGetMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)$/);
+    if (roomGetMatch && req.method === "GET") {
+      await handleGetRoom(res, roomGetMatch[1]);
+      return;
+    }
+
     const roomPresenceMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/presence$/);
     if (roomPresenceMatch && req.method === "POST") {
       await handleRoomPresence(req, res, roomPresenceMatch[1]);
@@ -273,6 +279,16 @@ async function handleListRooms(res) {
     .filter((room) => room.status !== "complete")
     .sort((a, b) => b.updatedAt - a.updatedAt);
   sendJson(res, 200, { rooms });
+}
+
+async function handleGetRoom(res, code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const room = await backendStore.getRoom(normalizedCode);
+  if (!room) {
+    sendJson(res, 404, { error: "Room not found.", code: normalizedCode });
+    return;
+  }
+  sendJson(res, 200, { room });
 }
 
 async function handleAdminStatus(req, res) {

@@ -13949,6 +13949,29 @@ async function refreshHostedRooms() {
   }
 }
 
+async function fetchRoomByCode(code = state.roomSettings.code) {
+  if (!code || code === "CAI-0000") {
+    return { status: "missing", room: null };
+  }
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(code)}`, { cache: "no-store" });
+    if (response.status === 404) {
+      state.roomDirectoryOnline = true;
+      return { status: "missing", room: null };
+    }
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return { status: "unknown", room: null };
+    }
+    const data = await response.json();
+    state.roomDirectoryOnline = true;
+    return { status: "found", room: data.room || null };
+  } catch {
+    state.roomDirectoryOnline = false;
+    return { status: "unknown", room: null };
+  }
+}
+
 async function updateRoomPresence(room, options = {}) {
   try {
     const participant = getCurrentParticipant({
@@ -14146,6 +14169,27 @@ function hasActiveRoomContext() {
     && (isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft");
 }
 
+function isRoomTabBackgrounded() {
+  return document.visibilityState === "hidden";
+}
+
+function syncActiveRoomFromDirectory(room) {
+  state.roomMissingSince = 0;
+  applyRoomDirectoryRoom(room);
+  if (shouldStartJoinedRoomMatch(room)) {
+    startJoinedRoomMatchFromDirectory(room);
+    return true;
+  }
+  if (isRoomLobbyActive()) {
+    renderRoomLobby();
+  }
+  if (isCurrentHost() && !state.joiningRoom) {
+    state.roomExitLeaveSent = false;
+    publishRoomHeartbeat(state.currentRoomStatus === "in-progress" ? "playing" : "host");
+  }
+  return false;
+}
+
 async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSessionId) {
   if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
     return;
@@ -14156,20 +14200,12 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
   }
   const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (room) {
-    state.roomMissingSince = 0;
-    applyRoomDirectoryRoom(room);
-    if (shouldStartJoinedRoomMatch(room)) {
-      startJoinedRoomMatchFromDirectory(room);
+    syncActiveRoomFromDirectory(room);
+  } else if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
+    if (isRoomTabBackgrounded()) {
+      state.roomMissingSince = 0;
       return;
     }
-    if (isRoomLobbyActive()) {
-      renderRoomLobby();
-    }
-    if (isCurrentHost() && !state.joiningRoom) {
-      state.roomExitLeaveSent = false;
-      publishRoomHeartbeat(state.currentRoomStatus === "in-progress" ? "playing" : "host");
-    }
-  } else if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
     const now = Date.now();
     if (!state.roomMissingSince) {
       state.roomMissingSince = now;
@@ -14178,7 +14214,40 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
     if (now - state.roomMissingSince < roomMissingGraceMs) {
       return;
     }
-    handleCurrentRoomClosed("The room was closed by the host or an admin.");
+    const directRoom = await fetchRoomByCode(state.roomSettings.code);
+    if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
+      return;
+    }
+    if (directRoom.status === "found" && directRoom.room) {
+      mergeHostedRoom(directRoom.room);
+      if (directRoom.room.status === "complete") {
+        handleCurrentRoomClosed("The room was closed by the host or an admin.");
+        return;
+      }
+      syncActiveRoomFromDirectory(directRoom.room);
+      return;
+    }
+    if (directRoom.status === "missing") {
+      handleCurrentRoomClosed("The room was closed by the host or an admin.");
+    }
+  }
+}
+
+function handleRoomVisibilityChange() {
+  if (document.visibilityState !== "visible" || !hasActiveRoomContext()) {
+    return;
+  }
+  state.roomMissingSince = 0;
+  refreshCurrentRoomDirectory(state.roomSessionId);
+}
+
+function handleRoomBrowserExit() {
+  if (state.roomExitLeaveSent || !hasActiveRoomContext()) {
+    return;
+  }
+  if (isCurrentHost() && !state.joiningRoom) {
+    state.roomExitLeaveSent = true;
+    leavePublishedRoom({ keepalive: true, reason: "browser-exit" });
   }
 }
 
@@ -17535,6 +17604,8 @@ elements.lobbyChatForm.addEventListener("submit", (event) => {
 elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
+document.addEventListener("visibilitychange", handleRoomVisibilityChange);
+window.addEventListener("beforeunload", handleRoomBrowserExit);
 
 updateSoundButton();
 syncSettingsControls();

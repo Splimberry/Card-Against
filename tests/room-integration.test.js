@@ -122,6 +122,10 @@ async function listRooms() {
   return payload.rooms;
 }
 
+async function getRoom(code) {
+  return request("GET", `/api/rooms/${code}`);
+}
+
 async function testHostLeaveDeletesRoom() {
   const code = makeCode(8101);
   await upsertRoom(makeRoom(code));
@@ -134,6 +138,19 @@ async function testHostLeaveDeletesRoom() {
   assert.equal(payload.reason, "host-left");
   const rooms = await listRooms();
   assert.equal(rooms.some((room) => room.code === code), false);
+  const directRoom = await getRoom(code);
+  assert.equal(directRoom.response.status, 404);
+}
+
+async function testDirectRoomLookupIncludesCompleteRooms() {
+  const code = makeCode(8100);
+  await upsertRoom(makeRoom(code, { status: "complete" }));
+  const rooms = await listRooms();
+  assert.equal(rooms.some((room) => room.code === code), false);
+  const { response, payload } = await getRoom(code);
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.room.code, code);
+  assert.equal(payload.room.status, "complete");
 }
 
 async function testBackgroundTabDoesNotDeleteRoom() {
@@ -224,6 +241,7 @@ async function testLateJoinerReceivesRoundState() {
 }
 
 async function main() {
+  await testDirectRoomLookupIncludesCompleteRooms();
   await testHostLeaveDeletesRoom();
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
