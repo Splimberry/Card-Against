@@ -42,7 +42,7 @@ const mimeTypes = {
   ".avif": "image/avif"
 };
 
-const server = createServer(async (req, res) => {
+async function handleRequest(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
@@ -108,25 +108,31 @@ const server = createServer(async (req, res) => {
     console.error(error);
     sendJson(res, 500, { error: "Something went wrong." });
   }
-});
+}
 
-server.on("error", (error) => {
-  if (error.code === "EADDRINUSE") {
-    console.error(`Port ${port} is already in use. Stop the other server or run with PORT=3001 npm start.`);
-    process.exit(1);
-  }
+if (require.main === module) {
+  const server = createServer(handleRequest);
 
-  if (error.code === "EACCES" || error.code === "EPERM") {
-    console.error(`Cannot listen on ${host}:${port}. Try another port or check local permissions.`);
-    process.exit(1);
-  }
+  server.on("error", (error) => {
+    if (error.code === "EADDRINUSE") {
+      console.error(`Port ${port} is already in use. Stop the other server or run with PORT=3001 npm start.`);
+      process.exit(1);
+    }
 
-  throw error;
-});
+    if (error.code === "EACCES" || error.code === "EPERM") {
+      console.error(`Cannot listen on ${host}:${port}. Try another port or check local permissions.`);
+      process.exit(1);
+    }
 
-server.listen(port, host, () => {
-  console.log(`Cards Against AI running at http://${host}:${port}`);
-});
+    throw error;
+  });
+
+  server.listen(port, host, () => {
+    console.log(`Cards Against AI running at http://${host}:${port}`);
+  });
+}
+
+module.exports = handleRequest;
 
 function loadEnv() {
   const envPath = join(root, ".env");

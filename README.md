@@ -31,6 +31,31 @@ Use the exact base URL from your Computinger dashboard. The app will call `POST 
 - `npm start` runs the local web server plus `/api/setup` and `/api/round`.
 - `npm run check` checks JavaScript syntax.
 
+## Deploy to Vercel
+
+This app is prepared for Vercel with `api/index.js` and `vercel.json`. The same `server.js` handler runs locally with `npm start` and on Vercel as a serverless function.
+
+1. Push this repository to GitHub.
+2. In Vercel, create a new project and import `Splimberry/Card-Against`.
+3. Use the project root as the root directory.
+4. Leave build settings empty/default; this app does not need a build command.
+5. Add these Vercel environment variables before deploying:
+
+```text
+COMPUTINGER_API_KEY=your_key_here
+AI_BASE_URL=https://your-computinger-base-url/v1
+AI_MODEL=gpt-5.4-mini
+AI_API_STYLE=chat
+```
+
+Do not add `PORT` in Vercel. Vercel provides the runtime port automatically.
+
+Notes for public hosting:
+
+- The multiplayer room list currently uses in-memory server state, so rooms may reset across Vercel function cold starts or multiple regions.
+- Debug question editing writes to `data/questions.json`, which is not persistent on serverless hosting.
+- Solo and local gameplay routes that call `/api/setup` and `/api/round` are the best fit for the first public deployment.
+
 ## Current Loop
 
 - Choose Solo vs Bots, Local 1v1, Create Room, or Join Game.
@@ -91,5 +116,4 @@ Rebalance power-ups around trivia scoring.
 
 
 ## bug fix
-
 
