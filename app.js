@@ -1,0 +1,16165 @@
+const BASE_WIN_POINTS = 1000;
+const STREAK_BONUS_POINTS = 500;
+const UNDERDOG_BONUS_POINTS = 500;
+const UNDERDOG_BONUS_THRESHOLD = 2000;
+const DIFFICULTY_BONUSES = {
+  easy: 250,
+  medium: 500,
+  hard: 1000
+};
+const LOADING_MESSAGE_INTERVAL_MS = 2800;
+const QUESTION_RESERVE_LIMIT = 6;
+const BACKGROUND_PREFETCH_DELAY_MS = 1200;
+const BACKGROUND_IMAGE_PRELOAD_LIMIT = 80;
+const TABLE_EVENT_CHANCE_DEFAULT = 0.15;
+const TABLE_EVENT_CHANCE_MAYHEM = 0.8;
+const rarityInfo = {
+  grey: { label: "Common", weight: 48 },
+  blue: { label: "Rare", weight: 30 },
+  purple: { label: "Epic", weight: 16 },
+  gold: { label: "Legendary", weight: 6 }
+};
+const achievementRarityOrder = ["grey", "blue", "purple", "gold"];
+const achievementStorageKey = "cardsAgainstAiAchievements";
+const achievementProgressStorageKey = "cardsAgainstAiAchievementProgress";
+const unseenAchievementStorageKey = "cardsAgainstAiUnseenAchievements";
+const disabledAchievementStorageKey = "cardsAgainstAiDebugDisabledAchievements";
+const equippedAchievementStorageKey = "cardsAgainstAiEquippedAchievement";
+const profileCustomizationStorageKey = "cardsAgainstAiProfileCustomization";
+const profileCustomizationDebugStorageKey = "cardsAgainstAiDebugProfileCustomizations";
+const profileShopPurchasesStorageKey = "cardsAgainstAiProfileShopPurchases";
+const questionUsageStorageKey = "cardsAgainstAiQuestionUsageStats";
+const currencyStorageKey = "cardsAgainstAiCurrency";
+const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
+const achievementTitles = [
+  { id: "accurate-sniper", name: "Answer Sniper", rarity: "purple", description: "Get the Exact Answer tag on at least 75% of your answers in a match." },
+  { id: "all-planned", name: "All planned", rarity: "purple", description: "Win 1st place by using Last Laugh and getting over 10,000 points in that round." },
+  { id: "arsonist", name: "Arsonist", rarity: "blue", description: "Finish a match with more win streak than the total number of rounds played." },
+  { id: "button-masher", name: "Button masher", rarity: "grey", description: "Use power-ups in at least 50% of the rounds, rounded up." },
+  { id: "bro-dozed-off", name: "Bro dozed off", rarity: "grey", description: "Forget to submit an answer more than 2 times in one match." },
+  { id: "buff-addict", name: "Buff addict", rarity: "blue", description: "Have buff or debuff rolls trigger more than 5 times in one match." },
+  { id: "chatterbox", name: "Chatterbox", rarity: "grey", description: "If no other title triggers, send more than 20 room chat messages in one match." },
+  { id: "chaos-enjoyer", name: "Chaos Enjoyer", rarity: "blue", description: "Use at least one power-up every round of a match." },
+  { id: "combo-artist", name: "Combo Artist", rarity: "purple", description: "Have at least 3 active effects on you at once." },
+  { id: "comeback-king", name: "Comeback King", rarity: "gold", description: "Win 1st place after being 3rd place or lower in the second-to-last round." },
+  { id: "criminal", name: "Criminal", rarity: "grey", description: "Steal points from another player at least twice in one match." },
+  { id: "dealer", name: "Dealer", rarity: "grey", description: "Buy from Ability Merchant, Black Market, or Vending Machine at least 3 times in one match." },
+  { id: "dummie", name: "Dummie", rarity: "grey", description: "Get every question wrong in a match." },
+  { id: "fake-genius", name: "Fake Genius", rarity: "blue", description: "Use Auto-Pilot Answer and win 1st place." },
+  { id: "final-boss", name: "Final boss", rarity: "gold", description: "Be in 1st place every round since round two, then win 1st place." },
+  { id: "flawless", name: "Flawless", rarity: "gold", description: "Never lose points this game while having a shield save you from point loss at least once." },
+  { id: "how", name: "How?", rarity: "purple", description: "Win 1st place in a power-up enabled match without using any power-ups." },
+  { id: "invincible", name: "Invincible", rarity: "gold", description: "Lose an average of at least 3,000 points per round and still win 1st place." },
+  { id: "monopoly", name: "Monopoly", rarity: "gold", description: "Win with a score at least 20% higher than 2nd place." },
+  { id: "npc", name: "NPC", rarity: "grey", description: "If no other title triggers, finish in the middle place on the leaderboard." },
+  { id: "participation-award", name: "Participation award", rarity: "grey", description: "If no other title triggers, use the Participation Award power-up during the match." },
+  { id: "perfectly-balanced", name: "Perfectly balanced", rarity: "purple", description: "Win 1st place within 250 points of another player." },
+  { id: "preplaned", name: "Preplaned", rarity: "blue", description: "Win 1st place after successfully triggering any Insurance power-up." },
+  { id: "psychopath", name: "Psycopath", rarity: "blue", description: "Target other players at least 3 times in one match." },
+  { id: "sharing-is-caring", name: "sharing is caring", rarity: "blue", description: "Use point sharing skills at least 3 times in one match: Communism, Soul Link, Bartender, Airdrop, or Score Heist." },
+  { id: "straight-a-student", name: "Straight A student?", rarity: "blue", description: "Use the Copy Answer power-up and get that question correct." },
+  { id: "the-actual-nerd", name: "The Actual Nerd", rarity: "gold", description: "Get every answer exactly correct in a match with 10 or more rounds." },
+  { id: "the-chosen-one", name: "The chosen one", rarity: "purple", description: "Use at least 3 Legendary power-ups in one match." },
+  { id: "the-clown", name: "The clown", rarity: "grey", description: "Be in 1st place in the second-to-last round, then fail to win the match." },
+  { id: "the-fraud", name: "The Fraud", rarity: "purple", description: "Win 1st place after triggering Insurance Fraud." },
+  { id: "the-host", name: "The Host", rarity: "grey", description: "Ofcourse the host gets a tag cus they are the host." },
+  { id: "the-sleeper", name: "The Sleeper", rarity: "grey", description: "Spend more than 50% of the rounds in last place." },
+  { id: "the-unluck", name: "The Unluck", rarity: "purple", description: "Have your own Hot Potato explode on you in a match with at least 5 players." },
+  { id: "too-wealthy", name: "Too Wealthy", rarity: "gold", description: "Finish with more than 10,000 points per round played." },
+  { id: "the-cook", name: "The cook", rarity: "gold", description: "Finish a 10-round match with 20 or more streak." },
+  { id: "trivia-king", name: "Trivia King", rarity: "purple", description: "Get every question correct in a match." },
+  { id: "undercover", name: "Undercover", rarity: "purple", description: "Win 1st place with Red Herring still active at match end." },
+  { id: "underdog", name: "Underdog", rarity: "gold", description: "Answer less than 50% of questions correctly and still win 1st place." },
+  { id: "one-hit-wonder", name: "One hit wonder", rarity: "purple", description: "Obtain more than 30,000 points in a single round." },
+  { id: "overachiever-title", name: "Overachiever", rarity: "gold", description: "Obtain the most points in every round of a 10-round public non-selfhosted match." },
+  { id: "big-load", name: "Big Load", rarity: "purple", target: 10000, progressKey: "bestMerchantBlackMarketSpend", description: "Spend over 10,000 points buying power-ups from Ability Merchant or Black Market in one match.", hidden: true },
+  { id: "yo-what", name: "Yo what?", rarity: "blue", description: "Trigger 3 power-ups in one non-Black Market round." },
+  { id: "you-hacking", name: "You hacking?", rarity: "gold", description: "Trigger at least 6 power-ups in one non-Black Market round." },
+  { id: "zeus", name: "Zeus", rarity: "gold", description: "Use Zap Strike, Lightning Strike, or Typhoon Season at least 3 times in one match." },
+  { id: "the-simp", name: "The simp", rarity: "gold", description: "Give out more than 20,000 points in one match by using Soul Link.", hidden: true }
+];
+const achievementTitleMap = Object.fromEntries(achievementTitles.map((title) => [title.id, title]));
+const longTermAchievements = [
+  { id: "familiar", name: "Familiar", rarity: "grey", target: 100, progressKey: "powerUpsUsed", description: "Use power-ups 100 times." },
+  { id: "smartie", name: "Smartie", rarity: "grey", target: 100, progressKey: "correctAnswers", description: "Answer 100 questions correctly." },
+  { id: "fourth-place", name: "4th place", rarity: "grey", target: 1, completionRarity: "grey", description: "Obtain every Common achievement." },
+  { id: "tis-but-a-scratch", name: "Tis but a scratch", rarity: "grey", target: 100, progressKey: "debuffsReceived", description: "Have debuffs trigger on you 100 times." },
+  { id: "femboy", name: "Femboy", rarity: "grey", target: 1, progressKey: "femboyAnswer", description: "Type \"I am a cute femboy\" in the answer box in a non-selfhosted public match." },
+  { id: "click-me", name: "Click me", rarity: "grey", target: 1, progressKey: "clickMe", description: "Click this achievement in the achievement menu.", hidden: true },
+  { id: "in-pain", name: "In pain", rarity: "grey", target: 100000, progressKey: "pointsLostTotal", description: "Lose over 100,000 points in total.", hidden: true },
+
+  { id: "spender", name: "Spender", rarity: "blue", target: 50, progressKey: "powerPurchases", description: "Buy power-ups 50 times." },
+  { id: "air-strike", name: "Air Strike", rarity: "blue", target: 100, progressKey: "targetsPicked", description: "Target players 100 times." },
+  { id: "winner", name: "winner", rarity: "blue", target: 50, progressKey: "publicWinsFivePlus", description: "Win 50 non-selfhosted online games with at least 5 people." },
+  { id: "built-different", name: "Built different", rarity: "blue", target: 100, progressKey: "epicBadgesTriggered", description: "Trigger Epic rarity badges 100 times." },
+  { id: "menace", name: "Menace", rarity: "blue", target: 100000, progressKey: "pointsStolenTotal", description: "Steal 100,000 points in total." },
+  { id: "third-place", name: "3rd place", rarity: "blue", target: 1, completionRarity: "blue", description: "Obtain every Rare achievement." },
+  { id: "terminator", name: "Terminator", rarity: "blue", target: 25, progressKey: "executionTriggers", description: "Successfully trigger Execution on someone 25 times.", hidden: true },
+
+  { id: "my-fav-colour-is", name: "My Fav Colour is:", rarity: "purple", target: 250, progressKey: "purplePowerUses", description: "Play Epic power-ups 250 times." },
+  { id: "explosive", name: "Explosive", rarity: "purple", target: 100, progressKey: "bombPowerUses", description: "Play bomb-related power-ups 100 times." },
+  { id: "philanthropist", name: "philanthropist", rarity: "purple", target: 250000, progressKey: "pointsGivenTotal", description: "Give out 250,000 points in total with point-sharing skills." },
+  { id: "the-annoying", name: "The Annoying", rarity: "purple", target: 200, progressKey: "publicActiveEffectsPlayed", description: "Play public active effects at least 200 times." },
+  { id: "cheater", name: "Cheater", rarity: "purple", target: 50, progressKey: "cheatSheetCorrect", description: "Get 50 answers correct by using Cheat Sheet." },
+  { id: "the-lucky", name: "The Lucky", rarity: "purple", target: 15, progressKey: "bestBuffStreak", description: "Have 15 buffs trigger on you in a row. The streak resets after receiving a debuff." },
+  { id: "second-place", name: "2nd place", rarity: "purple", target: 1, completionRarity: "purple", description: "Obtain every Epic achievement." },
+  { id: "realestate", name: "Realestate", rarity: "gold", target: 500, progressKey: "hostFinishedRounds", description: "Host and fully finish 500 rounds." },
+  { id: "luxerious", name: "Luxerious", rarity: "gold", target: 250, progressKey: "goldPowerUses", description: "Play 250 Legendary power-ups." },
+  { id: "the-pro", name: "The pro", rarity: "gold", target: 10, progressKey: "publicWinStreak", description: "Win non-selfhosted public games 10 times in a row. Progress resets after losing a public game." },
+  { id: "the-millionair", name: "The Millionair", rarity: "gold", target: 1000000, progressKey: "pointsGainedTotal", description: "Obtain a total of 1,000,000 points." },
+  { id: "first-place", name: "1st place", rarity: "gold", target: 1, completionAll: true, description: "Obtain every achievement." }
+];
+const achievementCatalog = [...achievementTitles, ...longTermAchievements];
+const achievementCatalogMap = Object.fromEntries(achievementCatalog.map((achievement) => [achievement.id, achievement]));
+const defaultProfileCustomization = {
+  styleId: "default",
+  gradientTop: "blue",
+  gradientBottom: "pink",
+  effectIds: [],
+  patternId: "none",
+  fontId: "default",
+  equippedTitleId: "",
+  titleColourId: "rarity",
+  titleRgb: false,
+  titlePastel: false
+};
+const profileCardColours = [
+  { id: "pink", name: "Pink", value: "#ff4d7d", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-25" },
+  { id: "orange", name: "Orange", value: "#ff9f2f", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-20" },
+  { id: "gold", name: "Gold", value: "#facc15", condition: "Unlock 10 Legendary achievements.", unlockType: "rarityAchievements", rarity: "gold", target: 10 },
+  { id: "green", name: "Green", value: "#40dea4", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-15" },
+  { id: "blue", name: "Blue", value: "#22d3ee", condition: "Unlock 10 Rare achievements.", unlockType: "rarityAchievements", rarity: "blue", target: 10 },
+  { id: "purple", name: "Purple", value: "#a78bfa", condition: "Unlock 10 Epic achievements.", unlockType: "rarityAchievements", rarity: "purple", target: 10 },
+  { id: "white", name: "White", value: "#f6f2ee", unlockedByDefault: true, condition: "Always unlocked." },
+  { id: "grey", name: "Grey", value: "#8b909a", unlockedByDefault: true, condition: "Always unlocked." },
+  { id: "black", name: "Black", value: "#20232c", unlockedByDefault: true, condition: "Always unlocked as the default background colour." }
+];
+const profileCardColourMap = Object.fromEntries(profileCardColours.map((colour) => [colour.id, colour]));
+const profileCardStyles = [
+  { id: "default", name: "Classic", kind: "solid", colorId: "grey", unlockedByDefault: true, condition: "Always unlocked." },
+  { id: "blue", name: "Blue", kind: "solid", colorId: "blue", condition: "Unlock 10 Rare achievements.", unlockType: "rarityAchievements", rarity: "blue", target: 10 },
+  { id: "purple", name: "Purple", kind: "solid", colorId: "purple", condition: "Unlock 10 Epic achievements.", unlockType: "rarityAchievements", rarity: "purple", target: 10 },
+  { id: "gold", name: "Gold", kind: "solid", colorId: "gold", condition: "Unlock 10 Legendary achievements.", unlockType: "rarityAchievements", rarity: "gold", target: 10 },
+  { id: "green", name: "Green", kind: "solid", colorId: "green", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-15" },
+  { id: "orange", name: "Orange", kind: "solid", colorId: "orange", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-20" },
+  { id: "pink", name: "Pink", kind: "solid", colorId: "pink", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-25" },
+  { id: "gradient", name: "Gradient", kind: "gradient", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-30" },
+  { id: "black", name: "Black", kind: "black", colorId: "black", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-35" },
+  { id: "burning", name: "Burning", kind: "burning", colorId: "orange", condition: "Unlock The cook achievement.", unlockType: "achievement", achievementId: "the-cook", target: 1 },
+  { id: "chaos", name: "Chaos", kind: "chaos", condition: "Win 50 public non-selfhosted Chaos matches.", unlockType: "progress", progressKey: "publicChaosWins", target: 50 },
+  { id: "black-market", name: "Black Market", kind: "blackMarket", condition: "Spend 250,000 points buying power-ups.", unlockType: "progress", progressKey: "powerPurchaseSpendTotal", target: 250000 }
+];
+const profileCardStyleMap = Object.fromEntries(profileCardStyles.map((style) => [style.id, style]));
+const profileCardEffects = [
+  { id: "neon", name: "Neon", kind: "neon", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-40" },
+  { id: "rgb", name: "RGB", kind: "rgb", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-55" },
+  { id: "hover", name: "Hover", kind: "hover", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-60" },
+  { id: "text-glow", name: "Text Glow", kind: "textGlow", condition: "Always unlocked.", unlockedByDefault: true },
+  { id: "pastel", name: "Pastel", kind: "pastel", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-65" },
+  { id: "metallic", name: "Metalic", kind: "metallic", condition: "Unlock the Luxerious achievement.", unlockType: "achievement", achievementId: "luxerious", target: 1 }
+];
+const profileCardEffectMap = Object.fromEntries(profileCardEffects.map((effect) => [effect.id, effect]));
+const profileCardPatterns = [
+  { id: "none", name: "None", kind: "none", unlockedByDefault: true, condition: "Always unlocked." },
+  { id: "hexagon", name: "Hexagon", kind: "hexagon", condition: "Unlock the Flawless achievement.", unlockType: "achievement", achievementId: "flawless", target: 1 },
+  { id: "slants", name: "Slants", kind: "slants", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-45" },
+  { id: "digital", name: "Digital", kind: "digital", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-50" },
+  { id: "waves", name: "Waves", kind: "waves", condition: "Buy in Profile Shop for 200 coins.", unlockType: "shop", cost: 200 },
+  { id: "geometric", name: "Geometric", kind: "geometric", condition: "Buy in Profile Shop for 200 coins.", unlockType: "shop", cost: 200 },
+  { id: "scales", name: "Scales", kind: "scales", condition: "Buy in Profile Shop for 200 coins.", unlockType: "shop", cost: 200 },
+  { id: "carbon", name: "Carbon Fibre", kind: "carbon", condition: "Buy in Profile Shop for 300 coins.", unlockType: "shop", cost: 300 },
+  { id: "circuit", name: "Circuit Board", kind: "circuit", condition: "Buy in Profile Shop for 200 coins.", unlockType: "shop", cost: 200 },
+  { id: "hearts", name: "Hearts", kind: "hearts", condition: "Buy in Profile Shop for 200 coins.", unlockType: "shop", cost: 200 }
+];
+const profileCardPatternMap = Object.fromEntries(profileCardPatterns.map((pattern) => [pattern.id, pattern]));
+const profileCardPatternAliases = {
+  "svg-test-dots": "waves"
+};
+const profileFonts = [
+  { id: "default", name: "Default", kind: "default", family: "", unlockedByDefault: true, condition: "Always unlocked." },
+  { id: "techno", name: "Techno", kind: "techno", family: "\"ProfileFontTechno\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "pop", name: "Pop", kind: "pop", family: "\"ProfileFontPop\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "comic", name: "Comic", kind: "comic", family: "\"ProfileFontComic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "cursive", name: "Cursive", kind: "cursive", family: "\"ProfileFontCursive\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "minimalistic", name: "Minimalistic", kind: "minimalistic", family: "\"ProfileFontMinimalistic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "neon", name: "Neon", kind: "neon", family: "\"ProfileFontNeon\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 }
+];
+const profileFontMap = Object.fromEntries(profileFonts.map((font) => [font.id, font]));
+const profileShopItems = [
+  ...profileCardStyles
+    .filter((style) => style.unlockType === "shop")
+    .map((style) => ({
+      id: style.id,
+      type: "style",
+      typeLabel: "Themes",
+      name: style.name,
+      kind: style.kind,
+      cost: style.cost,
+      description: style.condition
+    })),
+  ...profileCardEffects
+    .filter((effect) => effect.unlockType === "shop")
+    .map((effect) => ({
+      id: effect.id,
+      type: "effect",
+      typeLabel: "Effects",
+      name: effect.name,
+      kind: effect.kind,
+      cost: effect.cost,
+      description: effect.condition
+    })),
+  ...profileCardPatterns
+    .filter((pattern) => pattern.unlockType === "shop")
+    .map((pattern) => ({
+      id: pattern.id,
+      type: "pattern",
+      typeLabel: "Patterns",
+      name: pattern.name,
+      kind: pattern.kind,
+      cost: pattern.cost,
+      description: pattern.condition
+    })),
+  ...profileFonts
+    .filter((font) => font.unlockType === "shop")
+    .map((font) => ({
+      id: font.id,
+      type: "font",
+      typeLabel: "Fonts",
+      name: font.name,
+      kind: font.kind,
+      cost: font.cost,
+      description: font.condition
+    }))
+];
+const profileTitleColourCustomization = {
+  id: "custom",
+  name: "Custom Prefix Colour",
+  condition: "Claim in Achievement Milestones.",
+  unlockType: "milestone",
+  milestoneId: "achievements-70"
+};
+const achievementMilestones = [
+  { id: "achievements-5", target: 5, name: "First Steps", rewardText: "100 coins", coins: 100 },
+  { id: "achievements-10", target: 10, name: "Warming Up", rewardText: "200 coins", coins: 200 },
+  { id: "achievements-15", target: 15, name: "Green Theme", rewardText: "Green theme + 50 coins", coins: 50, unlocks: [{ type: "style", id: "green" }, { type: "color", id: "green" }] },
+  { id: "achievements-20", target: 20, name: "Orange Theme", rewardText: "Orange theme + 100 coins", coins: 100, unlocks: [{ type: "style", id: "orange" }, { type: "color", id: "orange" }] },
+  { id: "achievements-25", target: 25, name: "Pink Theme", rewardText: "Pink theme + 100 coins", coins: 100, unlocks: [{ type: "style", id: "pink" }, { type: "color", id: "pink" }] },
+  { id: "achievements-30", target: 30, name: "Gradient Theme", rewardText: "Gradient theme + 300 coins", coins: 300, unlocks: [{ type: "style", id: "gradient" }] },
+  { id: "achievements-35", target: 35, name: "Black Theme", rewardText: "Black theme + 100 coins", coins: 100, unlocks: [{ type: "style", id: "black" }, { type: "color", id: "black" }] },
+  { id: "achievements-40", target: 40, name: "Neon Style", rewardText: "Neon style + 100 coins", coins: 100, unlocks: [{ type: "effect", id: "neon" }] },
+  { id: "achievements-45", target: 45, name: "Slant Style", rewardText: "Slant style + 100 coins", coins: 100, unlocks: [{ type: "pattern", id: "slants" }] },
+  { id: "achievements-50", target: 50, name: "Digital Style", rewardText: "Digital style + 10% match coin boost", coinBoost: 0.1, unlocks: [{ type: "pattern", id: "digital" }] },
+  { id: "achievements-55", target: 55, name: "RGB Style", rewardText: "RGB + 100 coins", coins: 100, unlocks: [{ type: "effect", id: "rgb" }] },
+  { id: "achievements-60", target: 60, name: "Hover Style", rewardText: "Hover + 100 coins", coins: 100, unlocks: [{ type: "effect", id: "hover" }] },
+  { id: "achievements-65", target: 65, name: "Pastel Style", rewardText: "Pastel style effect + 200 coins", coins: 200, unlocks: [{ type: "effect", id: "pastel" }] },
+  { id: "achievements-70", target: 70, name: "Custom Prefix Colour", rewardText: "Custom prefix tag colour + 15% match coin boost", coinBoost: 0.15, unlocks: [{ type: "titleColor", id: "custom" }] }
+];
+const achievementMilestoneMap = Object.fromEntries(achievementMilestones.map((milestone) => [milestone.id, milestone]));
+const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket"]);
+const pointSharingPowerTypes = new Set(["communism", "soul_link", "bartender", "airdrop", "robin_hood"]);
+const zeusPowerTypes = new Set(["zap_strike", "lightning_strike", "typhoon_season"]);
+const pointStealPowerTypes = new Set(["shameless", "robin_hood", "tax_collector", "hitman", "haha_you_lose"]);
+const bombPowerTypes = new Set(["time_bomb", "hot_potato", "void_bomb", "shock_bomb"]);
+const publicActiveEffectPowerTypes = new Set(["world_burn", "soul_link", "arsonist", "bartender", "virus_factory", "typhoon_season", "thorns", "hot_in_here", "law_mower", "crawler_virus"]);
+const maxAchievementProgressKeys = new Set(["bestBuffStreak", "bestMerchantBlackMarketSpend"]);
+const powerDeck = [
+  { id: "small_bounty", name: "Pocket Bounty", rarity: "grey", short: "+5%", description: "If you win this round, gain 5% of your current total score.", type: "bounty", percent: 0.05 },
+  { id: "basic_bounty", name: "Clean Bounty", rarity: "blue", short: "+10%", description: "If you win this round, gain 10% of your current total score.", type: "bounty", percent: 0.1 },
+  { id: "heavy_bounty", name: "Heavy Bounty", rarity: "purple", short: "+15%", description: "If you win this round, gain 15% of your current total score.", type: "bounty", percent: 0.15 },
+  { id: "ultimate_bounty", name: "Golden Bounty", rarity: "gold", short: "+20%", description: "If you win this round, gain 20% of your current total score.", type: "bounty", percent: 0.2 },
+  { id: "double_jeopardy", name: "Double Jeopardy", rarity: "purple", short: "x2/-10%", description: "Double your win points, but lose 10% of your total score if you lose.", type: "double_jeopardy" },
+  { id: "streak_retainer", name: "Streak Anchor", rarity: "blue", short: "1x anchor", description: "Prevent streak loss against you 1 time. Persists until consumed.", type: "streak_retainer" },
+  { id: "streak_bonus", name: "Streak Injector", rarity: "purple", short: "steal streak", description: "Pick a player with an unprotected streak. Steal up to 3 streak from them instantly.", type: "streak_bonus", targeted: true },
+  { id: "basic_sabotage", name: "Petty Sabotage", rarity: "grey", short: "-500", description: "Pick an opponent. If they win, cut 500 points from that win.", type: "sabotage", amount: 500, targeted: true },
+  { id: "big_sabotage", name: "Major Sabotage", rarity: "blue", short: "-650/no streak", description: "Pick an opponent. If they win, cut 650 points from that win and block the streak gain for that win.", type: "sabotage", amount: 650, blockStreak: true, targeted: true },
+  { id: "bribe", name: "Side Pot Bribe", rarity: "purple", short: "33%", description: "Gain 33% of the largest individual winner payout this round, rounded down.", type: "bribe" },
+  { id: "no_one_wins", name: "Table Flip", rarity: "gold", short: "wipe/refill", description: "No one gets points this round. Remove all prolonged power-up effects and refill all your power-ups.", type: "no_one_wins" },
+  { id: "ai_answer", name: "Auto-Pilot Answer", rarity: "grey", short: "AI answer", description: "Auto-fill an answer for you.", type: "ai_answer" },
+  { id: "speed_answer", name: "Speed Demon", rarity: "blue", short: "timer x20", description: "If you win, gain remaining seconds x 20 points.", type: "speed_answer" }
+  ,
+  { id: "next_question", name: "Next Question Is?", rarity: "grey", short: "pick theme", description: "Choose the next question's theme from enabled trivia themes.", type: "next_question", targeted: true, immediate: true },
+  { id: "ability_merchant", name: "Ability Merchant", rarity: "grey", short: "shop", description: "Open a shop and buy a random Common, Rare, or Epic power-up. Common costs 3% of your total score +100, Rare costs 5% +250, and Epic costs 8% +500.", type: "ability_merchant", immediate: true },
+  { id: "freeze_ray", name: "Freeze Ray", rarity: "grey", short: "freeze streak", description: "Pick a player. Their win streak cannot go up or down for 3 rounds.", type: "freeze_ray", targeted: true },
+  { id: "power_heist", name: "Power Heist", rarity: "grey", short: "steal power", description: "Pick a player and steal a random power-up into your hand. You cannot use another power this round.", type: "power_heist", targeted: true, immediate: true },
+  { id: "all_out", name: "All Out", rarity: "grey", short: "multi play", description: "Use as many power-ups as you want this round.", type: "all_out", immediate: true },
+  { id: "last_chance", name: "Last Laugh", rarity: "grey", short: "x2 gains", description: "Only usable in last place during the last round. Double the points you gained this round, even if you did not win.", type: "last_chance" },
+  { id: "small_insurance", name: "Cheap Insurance", rarity: "grey", short: "pay 5%/+10%", description: "Pay 5% of your total score immediately. If you lose this round or within the next 2 rounds, gain 10% of your total score and keep your win streak. Winning does nothing. Disappears once triggered.", type: "insurance", costPercent: 0.05, payoutPercent: 0.1, immediate: true },
+  { id: "big_insurance", name: "Premium Insurance", rarity: "blue", short: "pay 10%/+15%", description: "Pay 10% of your total score immediately. If you lose this round or within the next 2 rounds, gain 15% of your total score, keep your win streak, and refill all ability slots. Winning does nothing. Disappears once triggered.", type: "insurance", costPercent: 0.1, payoutPercent: 0.15, refillOnTrigger: true, immediate: true },
+  { id: "robin_hood", name: "Score Heist", rarity: "blue", short: "steal/share", description: "Only usable outside first place. Steal 2.5% of first place's score per other active player and share it with everyone else.", type: "robin_hood" },
+  { id: "tax_collector", name: "Tax Collector", rarity: "purple", short: "15%", description: "Only usable outside first place. Take 15% from first place.", type: "tax_collector" },
+  { id: "reverse", name: "Reverse Verdict", rarity: "gold", short: "transfer", description: "Pick a player. All points they obtain this round are transferred to you, and they get nothing from those gains.", type: "reverse", targeted: true },
+  { id: "time_bender", name: "Time Bender", rarity: "grey", short: "+time/-time", description: "Instantly gain 10 seconds for each other active player. In local mode, the other player starts with 10 fewer seconds this round.", type: "time_bender", immediate: true },
+  { id: "bribe_judge", name: "Backroom Bribe", rarity: "gold", short: "-1000 win", description: "Pay 1000 points and force yourself to win this round.", type: "bribe_judge" },
+  { id: "shuffle", name: "Panic Shuffle", rarity: "grey", short: "reroll hand", description: "Instantly refresh your remaining power-ups without refilling empty slots. The new cards cannot be used this round.", type: "shuffle", immediate: true },
+  { id: "world_burn", name: "Let the World Burn", rarity: "purple", short: "leader -5%", description: "Lasts the entire game. At the start of every round, first place loses 5% of their total score.", type: "world_burn" },
+  { id: "loose_cannon", name: "Loose Cannon", rarity: "blue", short: "random -10%", description: "A random active player, including you, loses 10% of their total score.", type: "loose_cannon" },
+  { id: "blessing", name: "Blessing", rarity: "purple", short: "+500+10%", description: "Gain 500 points plus 10% of your current score.", type: "blessing" },
+  { id: "heaven_hell", name: "Heaven or Hell", rarity: "purple", short: "+3/+750/curse", description: "If you win, gain 3 streak and 750 points. If you lose, lose 250 points every round for the rest of the game.", type: "heaven_hell" },
+  { id: "shield", name: "Pocket Shield", rarity: "grey", short: "1x shield", description: "Prevent point deductions against you 1 time. Persists until consumed.", type: "shield" },
+  { id: "deep_freeze", name: "Deep Freeze", rarity: "blue", short: "3 round shield", description: "Prevent point deductions against you this round and the next 2 rounds.", type: "deep_freeze" },
+  { id: "permafrost", name: "Permafrost", rarity: "gold", short: "game shield", description: "Prevent point deductions against you for the rest of the game.", type: "permafrost" },
+  { id: "lightning_strike", name: "Lightning Strike", rarity: "blue", short: "zap streak", description: "Pick a player. Immediately deduct 500 x (their streak + 1) points if they have a win streak.", type: "lightning_strike", targeted: true, immediate: true },
+  { id: "hot_potato", name: "Hot Potato", rarity: "purple", short: "final -20%", description: "At the end of the final round, a random player loses 20% of their current total score.", type: "hot_potato" },
+  { id: "gamblers_dream", name: "Gambler's Dream", rarity: "blue", short: "all +2 streak", description: "Instantly give everyone 2 win streak.", type: "gamblers_dream", immediate: true },
+  { id: "hard_reset", name: "Hard Reset", rarity: "blue", short: "wipe streaks", description: "Everyone loses their win streak.", type: "hard_reset", immediate: true },
+  { id: "rocket", name: "Rocket Fuel", rarity: "purple", short: "next +3", description: "Gain 3 win streak at the start of next round.", type: "rocket" },
+  { id: "participation", name: "Participation Award", rarity: "grey", short: "safe loss", description: "You cannot lose points this round. If you lose, gain 1 streak and 100 points.", type: "participation" },
+  { id: "bottom_feeder", name: "Bottom Feeder", rarity: "grey", short: "stack +100", description: "Stackable. For the rest of the game, gain 100 points per Bottom Feeder stack whenever you lose the round.", type: "bottom_feeder" },
+  { id: "overachiever", name: "Overachiever", rarity: "grey", short: "next +buff", description: "If you gain more than 2000 points this round, receive 500 points and a random Cocktail Mix buff next round.", type: "overachiever" },
+  { id: "eternal_flame", name: "Eternal Flame", rarity: "gold", short: "save streak", description: "Prevent losses to your win streak for the rest of the game.", type: "eternal_flame" },
+  { id: "loser_tax", name: "Loser Tax", rarity: "grey", short: "losers -250", description: "Make every loser this round lose 250 points.", type: "loser_tax" },
+  { id: "sin_envy", name: "Sin of Envy", rarity: "blue", short: "-20% all", description: "Lose 20% of your total score. Everyone else loses that same amount too.", type: "sin_envy" },
+  { id: "reign_chaos", name: "Reign of Chaos", rarity: "gold", short: "chaos end", description: "At round end, everyone swings between -15% and +15% of their total, rerolls remaining power-ups, and rolls a 50/50 buff or debuff.", type: "reign_chaos" },
+  { id: "hitman", name: "Hitman", rarity: "gold", short: "steal streak", description: "Only usable outside first place. Deduct 1000 + 500 per first-place streak from first place, remove that streak, and take the removed streak.", type: "hitman" },
+  { id: "red_herring", name: "Red Herring", rarity: "purple", short: "hide +10%", description: "Secretly gain 10% of your current total score and hide your displayed score. Only you see this active effect; hover it to check your real score.", type: "red_herring" },
+  { id: "penalty_cloud", name: "Penalty Cloud", rarity: "purple", short: "3x loser tax", description: "For this round and the next 2 rounds, all losers lose 5% of their current total score.", type: "penalty_cloud" },
+  { id: "zap_strike", name: "Zap Strike", rarity: "grey", short: "streak zap", description: "Pick a player. Immediately deduct 250 x (their streak + 1) points if they have a win streak.", type: "zap_strike", targeted: true, immediate: true },
+  { id: "sin_gluttony", name: "Sin of Gluttony", rarity: "grey", short: "2.5%/streak", description: "Gain 2.5% of your total score for every streak you have, then lose all your streaks.", type: "sin_gluttony" },
+  { id: "sin_pride", name: "Sin of Pride", rarity: "grey", short: "+250/+1", description: "If you are in first place, gain 250 points and 1 streak immediately.", type: "sin_pride", immediate: true },
+  { id: "sin_wrath", name: "Sin of Wrath", rarity: "grey", short: "wrath", description: "If you lose, a random other player loses 350 per streak you had before losing. If you win, gain an extra win streak.", type: "sin_wrath" },
+  { id: "sin_sloth", name: "Sin of Sloth", rarity: "grey", short: "cap streaks", description: "No one can have a higher win streak than you. Any higher streak becomes equal to yours.", type: "sin_sloth", immediate: true },
+  { id: "lawsuit", name: "Lawsuit", rarity: "grey", short: "effect tax", description: "Pick a player. If they have active effects, they lose 5% of their score per active effect and lose one random active effect, including Legendary ones.", type: "lawsuit", targeted: true },
+  { id: "crawler_virus", name: "Error 404", rarity: "grey", short: "chaos ticks", description: "Lasts the entire game. Each player has a 33% chance each round to get hit by Chaos at a random timer moment.", type: "crawler_virus", immediate: true },
+  { id: "virus_deployment", name: "Virus Deployment", rarity: "grey", short: "chaos target", description: "Pick a player and immediately trigger the Chaos debuff on them.", type: "virus_deployment", targeted: true, immediate: true },
+  { id: "antivirus", name: "Antivirus", rarity: "grey", short: "debuff shield", description: "Gain a persistent shield that blocks the next debuff applied to you, then disappears.", type: "antivirus", immediate: true },
+  { id: "curse", name: "Curse", rarity: "grey", short: "random debuff", description: "Pick a player and immediately trigger a random debuff on them.", type: "curse", targeted: true, immediate: true },
+  { id: "get_good", name: "Get Good", rarity: "grey", short: "-3%/wrong", description: "Pick a player. They lose 3% of their total score for every question they got wrong this match.", type: "get_good", targeted: true, immediate: true },
+  { id: "time_bomb", name: "Time Bomb", rarity: "grey", short: "3 round boom", description: "After 3 rounds including this one, players ahead of you lose 10% of their points.", type: "time_bomb" },
+  { id: "mirror", name: "Mirror", rarity: "grey", short: "copy rarity", description: "Instantly obtain a random power-up matching the highest rarity in your hand. You cannot use another power this round.", type: "mirror", immediate: true },
+  { id: "dead_weight", name: "Dead Weight", rarity: "grey", short: "pass junk", description: "Immediately passes to a random other player, replacing a skill or filling an empty slot.", type: "dead_weight", immediate: true },
+  { id: "recycle_bin", name: "Recycle Bin", rarity: "grey", short: "last power", description: "Return the last power-up you used to your hand.", type: "recycle_bin", immediate: true },
+  { id: "shameless", name: "Shameless", rarity: "blue", short: "steal 5%", description: "Pick a player. Instantly steal 5% of their current total score.", type: "shameless", targeted: true, immediate: true },
+  { id: "magic_8", name: "Magic 8", rarity: "blue", short: "+888", description: "If your current total score contains the number 8, gain 888 points.", type: "magic_8" },
+  { id: "premium_shuffle", name: "Premium Shuffle", rarity: "blue", short: "reroll+", description: "Instantly refresh your remaining power-ups without refilling empty slots, then use another power this round.", type: "premium_shuffle", immediate: true },
+  { id: "vending_machine", name: "Vending Machine", rarity: "blue", short: "refill -100", description: "Instantly refill every empty power-up slot, including this card's slot, for 100 points per slot.", type: "vending_machine", immediate: true },
+  { id: "cocktail_mix", name: "Cocktail Mix", rarity: "blue", short: "random mix", description: "Instantly rolls a 75% buff or 25% debuff.", type: "cocktail_mix", immediate: true },
+  { id: "afterparty", name: "Afterparty", rarity: "blue", short: "+250 refill", description: "If you won last round, instantly gain 250 points and refill a power-up.", type: "afterparty", immediate: true },
+  { id: "cheat_sheet", name: "Cheat Sheet", rarity: "blue", short: "copy answer", description: "Pick a player. Copy their answer before grading.", type: "cheat_sheet", targeted: true },
+  { id: "xray_hacks", name: "X-Ray Hacks", rarity: "blue", short: "peek hand", description: "Pick a player and reveal the power-ups in their hand. Using this disables your other ability use this round.", type: "xray_hacks", targeted: true, immediate: true },
+  { id: "software_downgrade", name: "Software Downgrade", rarity: "blue", short: "delete best", description: "Pick a player. Delete their highest-rarity power-up, or a random one if tied.", type: "software_downgrade", targeted: true, immediate: true },
+  { id: "virus_factory", name: "Virus Factory", rarity: "blue", short: "33% debuff", description: "Lasts the entire game. At the start of every round, each player has a 33% chance to activate a debuff on themself.", type: "virus_factory" },
+  { id: "lucky_side", name: "Luck Will Be On My Side", rarity: "blue", short: "buff luck", description: "Only usable if you lost last round. For 3 rounds, buff/debuff rolls can only give you buffs, and refreshed or received power-ups are Rare or better.", type: "lucky_side", immediate: true },
+  { id: "nail_coffin", name: "Nail in the Coffin", rarity: "blue", short: "double loss", description: "Anyone who loses points this round loses double.", type: "nail_coffin" },
+  { id: "haha_you_lose", name: "Haha You Lose", rarity: "purple", short: "take 500", description: "Pick a player. If they lose this round, take 500 points from them and gain 1 streak.", type: "haha_you_lose", targeted: true },
+  { id: "shock_bomb", name: "Shock Bomb", rarity: "purple", short: "disable low", description: "Disable all grey and blue power-ups this round.", type: "shock_bomb" },
+  { id: "multiple_choice", name: "Is This Question Multiple Choice?", rarity: "purple", short: "3 choices", description: "Open a panel with 3 answer choices: 1 correct answer and 2 bot answers. Your chosen answer is autofilled.", type: "multiple_choice", immediate: true },
+  { id: "typhoon_season", name: "Typhoon Season", rarity: "purple", short: "self zap", description: "Lasts the entire game. At the start of every round, each player has a 33% chance to activate either Zap Strike or Lightning Strike on themself.", type: "typhoon_season" },
+  { id: "blue_pill", name: "Blue Pill", rarity: "purple", short: "3 buffs", description: "Immediately gain 3 random buffs.", type: "blue_pill", immediate: true },
+  { id: "thorns", name: "Thorns", rarity: "purple", short: "loss reflect", description: "Lasts the entire game. Whenever you lose points during round scoring, everyone else loses 33% of what you lost.", type: "thorns" },
+  { id: "vulture", name: "Vulture", rarity: "purple", short: "loss cash", description: "Gain 350 points for every round you have lost this game.", type: "vulture" },
+  { id: "insurance_fraud", name: "Insurance Fraud", rarity: "purple", short: "secret 4500", description: "Secretly arm a payout. If you lose this round and the next 2 rounds, gain 4500 points, 3 streak, and a random buff.", type: "insurance_fraud" },
+  { id: "void_bomb", name: "Void Bomb", rarity: "purple", short: "void target", description: "Pick a player. They cannot gain more than 1,000 points this round, their power is disabled, and their active effects are removed. You lose 250.", type: "void_bomb", targeted: true },
+  { id: "gamblers_dice", name: "Gambler's Dice", rarity: "purple", short: "2 random", description: "Instantly rolls and plays 2 random usable power-ups from the full deck. They do not need to be in your hand.", type: "gamblers_dice", immediate: true },
+  { id: "arsonist", name: "Arsonist", rarity: "purple", short: "round streak", description: "Lasts the entire game. Immediately and at the start of every round, you and a random other player gain 1 streak.", type: "arsonist" },
+  { id: "airdrop", name: "Airdrop", rarity: "purple", short: "+500 buff", description: "Pick any player. They gain 500 points and a random buff immediately.", type: "airdrop", targeted: true, immediate: true },
+  { id: "communism", name: "Communism", rarity: "gold", short: "share gains", description: "Pool all positive points gained this round, split them equally, and gain 500 extra.", type: "communism" },
+  { id: "execution", name: "Execution", rarity: "gold", short: "target wipe", description: "Pick an opponent. If you win, they lose 20% of their points, all remaining power-ups, and cannot gain points this round.", type: "execution", targeted: true },
+  { id: "monopoly", name: "Monopoly", rarity: "gold", short: "gold only", description: "Every non-gold power-up has no effect. Take 200 points from everyone who played a power-up.", type: "monopoly" },
+  { id: "hoarder", name: "Hoarder", rarity: "gold", short: "refill rare+", description: "Refresh and refill all power-ups with blue rarity or higher, prevent point loss this round, then use another power.", type: "hoarder", immediate: true },
+  { id: "soul_link", name: "Soul Link", rarity: "gold", short: "10% link", description: "Lasts the entire game. Pick a player; at the start of every round, you gain 10% of their score and they gain 10% of yours. No points are deducted.", type: "soul_link", targeted: true },
+  { id: "law_mower", name: "Lawn Mower", rarity: "gold", short: "ahead -12%", description: "Lasts the entire game. Every round, players ahead of you lose points equal to 12% of your current total.", type: "law_mower" },
+  { id: "bartender", name: "Bartender", rarity: "gold", short: "auto mix", description: "Lasts the entire game. At the start of every round, automatically activates Cocktail Mix for you without using a power-up.", type: "bartender" },
+  { id: "hot_in_here", name: "It's Getting Hot", rarity: "gold", short: "streak burn", description: "Lasts the entire game. At the start of every round, everyone else loses 5% x (your streak - 1). No loss if your streak is below 2.", type: "hot_in_here" }
+];
+const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
+const triviaThemes = [
+  "Pop Culture",
+  "Gaming and Geek Culture",
+  "Geo and History",
+  "Animals",
+  "Food and Drinks",
+  "Sports",
+  "Internet Culture",
+  "Science",
+  "Mythology",
+  "Art and Music"
+];
+const loadingMessages = {
+  setup: [
+    "Loading the next trivia card...",
+    "Preparing the question image...",
+    "Checking accepted answers...",
+    "Setting the card on the table..."
+  ],
+  round: [
+    "Checking the answers...",
+    "Comparing aliases and nicknames...",
+    "Forgiving tiny spelling crimes...",
+    "Scoring the trivia round..."
+  ],
+  judge: [
+    "The trivia grader is checking aliases...",
+    "Looking for close spellings...",
+    "Comparing against accepted answers...",
+    "Preparing the score changes..."
+  ],
+  next: [
+    "Finishing the next question...",
+    "Loading the next topic...",
+    "Checking tomorrow's answer key early...",
+    "Almost done preloading the next round..."
+  ]
+};
+
+const winnerBadgeTiers = [
+  { minScore: 118, label: "Exact Answer", bonus: 250 },
+  { minScore: 96, label: "Accurate", bonus: 200 },
+  { minScore: 76, label: "Nice", bonus: 150 },
+  { minScore: 55, label: "Accepted Alias", bonus: 100 },
+  { minScore: 0, label: "Correct", bonus: 50 }
+];
+const loserBadgeTiers = [
+  { minScore: 96, label: "Nearly There", bonus: 0 },
+  { minScore: 74, label: "Close Guess", bonus: 0 },
+  { minScore: 48, label: "Wrong Category", bonus: 0 },
+  { minScore: 0, label: "Incorrect", bonus: 0 }
+];
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, number));
+}
+
+const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, 5);
+const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds"), 10, 60, 30);
+const DEFAULT_OWNER_IDS = ["player", "opponent", "bot1", "bot2"];
+const savedProfileName = String(localStorage.getItem("cardsAgainstAiProfileName") || "You").replace(/[\r\n\t]/g, " ").slice(0, 16) || "You";
+const savedProfileAvatar = localStorage.getItem("cardsAgainstAiProfileAvatar") || "";
+const savedEquippedAchievementId = achievementTitleMap[localStorage.getItem(equippedAchievementStorageKey) || ""]
+  ? localStorage.getItem(equippedAchievementStorageKey)
+  : "";
+const savedProfileCustomization = loadProfileCustomization();
+const savedClientId = localStorage.getItem("cardsAgainstAiClientId") || `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+localStorage.setItem("cardsAgainstAiClientId", savedClientId);
+const fallbackBotUsernames = [
+  "michael_scott",
+  "ghost84",
+  "techlife",
+  "gamer166",
+  "spark_quest",
+  "moon283"
+];
+const audioAssets = {
+  music: "assets/bg-music.mp3",
+  warning: "assets/warning.mp3",
+  ticking: "assets/ticking.wav",
+  genericClick: "assets/generic_click.wav",
+  selectTarget: "assets/select_target.mp3",
+  gainPoints: "assets/gain_points.mp3",
+  correctAnswer: "assets/correct_answer.wav",
+  wrongAnswer: "assets/wrong_answer.wav",
+  genericLosePoint: "assets/generic_lose_point.wav",
+  burningLosePoints: "assets/burning_lose_points.wav",
+  glitchOverlay: "assets/glitch_overlay.wav",
+  explodeLosePoints: "assets/explode_lose_points.wav",
+  zapLosePoints: "assets/zap_lose_points.wav",
+  bountyRound: "assets/bounty_round.wav",
+  suddenDeath: "assets/sudden_death.wav",
+  lightOff: "assets/light_off.wav",
+  noMercy: "assets/no_mercy.wav",
+  blackMarket: "assets/black_market.wav",
+  dice: "assets/dice.wav",
+  roulette: "assets/roulette.wav"
+};
+
+const tableEvents = [
+  {
+    id: "double_bounty",
+    name: "Double Bounty",
+    short: "final gains x2",
+    description: "Every positive final point gain this round is doubled at the very end.",
+    overlayKind: "bounty",
+    detail: "Final Gains x2",
+    soundName: "bountyRound",
+    triggerChance: 0.1
+  },
+  {
+    id: "jackpot_round",
+    name: "Jackpot Round",
+    short: "correct +15%",
+    description: "All correct players gain 15% of their current score.",
+    overlayKind: "bounty",
+    detail: "Correct Players +15%",
+    soundName: "bountyRound",
+    triggerChance: 0.1
+  },
+  {
+    id: "sudden_death",
+    name: "Sudden Death",
+    short: "losers -25%",
+    description: "Second half only. Losing costs 25% of your total score.",
+    overlayKind: "sudden-death",
+    detail: "Losers Lose 25%",
+    soundName: "suddenDeath",
+    triggerChance: 0.15
+  },
+  {
+    id: "power_outage",
+    name: "Power Outage",
+    short: "no powers",
+    description: "No power-ups can be used this round.",
+    overlayKind: "outage",
+    detail: "Power-Ups Offline",
+    soundName: "lightOff",
+    triggerChance: 0.05
+  },
+  {
+    id: "no_mercy",
+    name: "No Mercy",
+    short: "losers -15%",
+    description: "Losing this round costs 15% of your total score.",
+    overlayKind: "no-mercy",
+    detail: "Losers Lose 15%",
+    soundName: "noMercy",
+    triggerChance: 0.1
+  },
+  {
+    id: "black_market",
+    name: "Black Market",
+    short: "unlimited shop",
+    description: "Open an unlimited power-up shop above Submit and use any number of power-ups this round.",
+    overlayKind: "black-market",
+    detail: "Unlimited Shop Open",
+    soundName: "blackMarket",
+    triggerChance: 0.2
+  },
+  {
+    id: "gamblers_dice",
+    name: "Gambler's Dice",
+    short: "everyone rolls",
+    description: "Every player has Gambler's Dice activate on them.",
+    overlayKind: "casino",
+    detail: "Everyone Rolls",
+    soundName: "dice",
+    triggerChance: 0.05
+  },
+  {
+    id: "sabotage",
+    name: "Sabotage",
+    short: "target -5% + debuff",
+    description: "A Sabotage button appears above Submit. Pick a player to make them lose 5% and take a random debuff.",
+    overlayKind: "sabotage",
+    detail: "Sabotage Armed",
+    soundName: "noMercy",
+    triggerChance: 0.1
+  },
+  {
+    id: "roulette",
+    name: "Roulette",
+    short: "one player +50%",
+    description: "One random player gains 50% more on their positive final point gain.",
+    overlayKind: "casino",
+    detail: "Lucky Player +50%",
+    soundName: "dice",
+    triggerChance: 0.05
+  },
+  {
+    id: "coin_shower",
+    name: "Coin Shower",
+    short: "coins x2",
+    description: "Coins earned from correct answers this round are doubled.",
+    overlayKind: "coin",
+    detail: "Bonus Round",
+    soundName: "bountyRound",
+    triggerChance: 0.1
+  }
+];
+const tableEventMap = Object.fromEntries(tableEvents.map((event) => [event.id, event]));
+
+const soundState = {
+  ctx: null,
+  musicAudio: null,
+  timerTickAudio: null,
+  timerWarningAudio: null,
+  timerWarningRampId: null,
+  musicDuckFrame: null,
+  musicUnlocked: false,
+  muted: false,
+  lastSfxAt: 0,
+  activeAudioNodes: new Set(),
+  sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume"), 0, 100, 70) / 100,
+  musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume"), 0, 100, 18) / 100
+};
+
+const state = {
+  mode: null,
+  players: [],
+  playerScore: 0,
+  opponentScore: 0,
+  botTwoScore: 0,
+  randomUsernames: [],
+  randomUsernamesPromise: null,
+  roomSettings: {
+    rounds: savedMaxRounds,
+    timerSeconds: savedTimerSeconds,
+    maxPlayers: 6,
+    harsh: false,
+	    chaos: false,
+	    timeMoney: false,
+	    amplified: false,
+	    wildFire: false,
+	    partyMayhem: false,
+	    classicMode: false,
+	    enabledThemes: [...triviaThemes],
+    private: false,
+    password: "",
+    code: "CAI-0000"
+  },
+  roomChat: [],
+  hostedRooms: [],
+  roomParticipants: [],
+  roomDirectoryPollId: null,
+  roomDirectoryOnline: true,
+  roomGame: null,
+  joiningRoom: null,
+  error404Owners: {},
+  error404Schedule: [],
+  currentRoomStatus: "draft",
+  isSpectator: false,
+  currentOwner: "player",
+  roomSubmissions: {},
+  roomAutoResolveId: null,
+  pendingConfirmAction: "end",
+  pendingConfirmResolver: null,
+  roomModeration: {
+    bannedByRoom: {},
+    voteBans: {}
+  },
+  profile: {
+    name: savedProfileName,
+    avatar: savedProfileAvatar,
+    equippedTitleId: savedEquippedAchievementId,
+    cardCustomization: savedProfileCustomization
+  },
+  profileCustomizationDraft: null,
+  clientId: savedClientId,
+  nextRoundAutoTimerId: null,
+  nextRoundCountdown: 0,
+  pendingPowerBonuses: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  freezeProtection: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  pocketShieldCharges: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  permafrostProtection: {
+    player: false,
+    opponent: false,
+    bot1: false,
+    bot2: false
+  },
+  eternalFlameProtection: {
+    player: false,
+    opponent: false,
+    bot1: false,
+    bot2: false
+  },
+  streakAnchorCharges: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  pendingStreakBonuses: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  heavenHellCurses: {
+    player: false,
+    opponent: false,
+    bot1: false,
+    bot2: false
+  },
+  secretPointBonuses: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  fakePointDebts: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  redHerringMasks: {},
+  bottomFeederRounds: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  streakFreezeRounds: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  streakLossProtectionRounds: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  cocktailPenaltyRounds: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  debuffShieldCharges: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  failedInvestmentDebuffs: {
+    player: false,
+    opponent: false,
+    bot1: false,
+    bot2: false
+  },
+  timeDilationRounds: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  pendingCocktailBuffs: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  insuranceFrauds: {},
+  insurancePolicies: {},
+  virusFactories: {},
+  luckRounds: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  typhoonOwners: {},
+  thornOwners: {},
+  timeBombs: [],
+  debuffTimeBombs: [],
+  pendingDeadWeights: [],
+  chaosInputLockId: "",
+  allOutRounds: {},
+  extraPowerUses: {},
+  botPowerSchedule: {},
+  nextPreferredTheme: "",
+  soulLinks: [],
+  arsonists: {},
+  bartenders: {},
+  hotInHereOwners: {},
+  roundAmplifiedMultiplier: 1,
+  worldBurnOwners: {},
+  lawnMowerOwners: {},
+  lastPlayedPowerUps: {
+    player: null,
+    opponent: null,
+    bot1: null,
+    bot2: null
+  },
+  loserPenaltyRounds: 0,
+  timerPenalties: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  hotPotatoCount: 0,
+  hotPotatoOwners: [],
+  forcedWinnerOwner: null,
+	  matchModifiers: {
+	    harsh: false,
+	    chaos: false,
+	    amplified: false,
+	    timeMoney: false,
+	    wildFire: false,
+	    partyMayhem: false
+	  },
+	  currentTableEvent: null,
+	  tableEventSabotageUsed: {},
+	  blackMarketPurchases: {},
+  freshPowerUps: {},
+  round: 1,
+  maxRounds: savedMaxRounds,
+  streaks: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
+  biggestStreak: 0,
+  bestWinningCard: "",
+  bestWinningScore: 0,
+  finalEffectSummary: "",
+  matchHistory: [],
+  matchCoinsEarned: 0,
+  achievementStats: {},
+  pendingAchievementProgress: {},
+  pendingAchievementProgressResets: {},
+  achievementRankSnapshots: [],
+  finalTitlesByOwner: {},
+  profileCustomizationHistory: [],
+  profileCustomizationHistoryIndex: 0,
+  roundProgress: [],
+  matchEnded: false,
+  timerId: null,
+  timerSessionId: 0,
+  timerRemaining: savedTimerSeconds,
+  timerSeconds: savedTimerSeconds,
+  timerWarned: false,
+  localEntryStep: 1,
+  localAnswers: {
+    playerOne: "",
+    playerTwo: ""
+  },
+  roundAnswers: {
+    player: "",
+    opponent: "",
+    bot1: "",
+    bot2: ""
+  },
+  roundCardOwners: [],
+  visibleAnswerCardIndexes: [],
+  answerCardCycleCursor: 0,
+  currentRoundCards: [],
+  currentRoundCardRatings: [],
+  currentRoundCorrectIndexes: [],
+  answerRemainingTimes: {
+    player: savedTimerSeconds,
+    opponent: savedTimerSeconds,
+    bot1: savedTimerSeconds,
+    bot2: savedTimerSeconds
+  },
+  recentJudgeNames: [],
+  recentBlackCards: [],
+  recentTriviaThemes: [],
+  botCards: [],
+  activePowerUp: null,
+  selectedPowerUps: {
+    player: [],
+    opponent: [],
+    bot1: [],
+    bot2: []
+  },
+  selectedPowerMeta: {
+    player: {},
+    opponent: {},
+    bot1: {},
+    bot2: {}
+  },
+  powerHands: {
+    player: [],
+    opponent: [],
+    bot1: [],
+    bot2: []
+  },
+  playedPowerUps: {
+    player: null,
+    opponent: null,
+    bot1: null,
+    bot2: null
+  },
+  playedPowerStacks: {
+    player: [],
+    opponent: [],
+    bot1: [],
+    bot2: []
+  },
+  playedPowerMeta: {
+    player: null,
+    opponent: null,
+    bot1: null,
+    bot2: null
+  },
+  pendingPowerPillAnimations: new Set(),
+  nextSetup: null,
+  nextSetupPromise: null,
+  nextSetupStatus: "idle",
+  setupStack: [],
+  questionReserve: [],
+  backgroundSetupTimerId: null,
+  backgroundImagePreloads: {},
+  backgroundImagePreloadOrder: [],
+  warmSetup: null,
+  warmSetupPromise: null,
+  warmSetupSignature: "",
+  warmSetupVersion: 0,
+  gradingActive: false,
+  gradingWaiters: [],
+  setupVersion: 0,
+  loadingLineId: null,
+  blackCard: "",
+  questionId: "",
+  questionType: "image",
+  questionDifficulty: "medium",
+  triviaTheme: "",
+  questionImage: null,
+  questionImageLoadId: 0,
+  canonicalAnswer: "",
+  acceptedAnswers: [],
+  enabledThemes: [...triviaThemes],
+  judge: null,
+  statFlashQueue: [],
+  statFlashActive: false,
+  statFlashTimerId: null,
+  statFlashTextTimerId: null,
+  pointLossSoundToken: 0,
+  questionDebugBank: [],
+  questionDebugFiltered: [],
+  questionDebugIndex: 0,
+  questionDebugThemes: [...triviaThemes],
+  questionDebugImageIssues: [],
+  questionDebugToolMode: "duplicates",
+  questionEditOriginalId: "",
+  questionEditReturnId: ""
+};
+
+const elements = {
+  modeScreen: document.querySelector("#modeScreen"),
+  devToolScreen: null,
+  roomScreen: document.querySelector("#roomScreen"),
+  joinScreen: document.querySelector("#joinScreen"),
+  roomLobbyScreen: document.querySelector("#roomLobbyScreen"),
+  gameStage: document.querySelector("#gameStage"),
+  profileCard: document.querySelector(".profile-card"),
+  profileAvatarPreview: document.querySelector("#profileAvatarPreview"),
+  profileNameDisplay: document.querySelector("#profileNameDisplay"),
+  profileNameInput: document.querySelector("#profileNameInput"),
+  profileAvatarInput: document.querySelector("#profileAvatarInput"),
+  profileCurrencyValue: document.querySelector("#profileCurrencyValue"),
+  profileCustomizeButton: document.querySelector("#profileCustomizeButton"),
+  profileShopButton: document.querySelector("#profileShopButton"),
+  roomProfileAvatarPreview: document.querySelector("#roomProfileAvatarPreview"),
+  roomProfileNamePreview: document.querySelector("#roomProfileNamePreview"),
+  startBotsButton: document.querySelector("#startBotsButton"),
+  startLocalButton: document.querySelector("#startLocalButton"),
+  createRoomButton: document.querySelector("#createRoomButton"),
+  joinRoomButton: document.querySelector("#joinRoomButton"),
+  backToMenuButton: document.querySelector("#backToMenuButton"),
+  backFromJoinButton: document.querySelector("#backFromJoinButton"),
+  roomSoundToggleButton: document.querySelector("#roomSoundToggleButton"),
+  joinSoundToggleButton: document.querySelector("#joinSoundToggleButton"),
+  createFromJoinButton: document.querySelector("#createFromJoinButton"),
+  startRoomButton: document.querySelector("#startRoomButton"),
+  roomRoundsSlider: document.querySelector("#roomRoundsSlider"),
+  roomRoundsValue: document.querySelector("#roomRoundsValue"),
+  roomTimerSlider: document.querySelector("#roomTimerSlider"),
+  roomTimerValue: document.querySelector("#roomTimerValue"),
+  roomPlayerLimitSlider: document.querySelector("#roomPlayerLimitSlider"),
+  roomPlayerLimitValue: document.querySelector("#roomPlayerLimitValue"),
+  selectThemesButton: document.querySelector("#selectThemesButton"),
+  themeSummary: document.querySelector("#themeSummary"),
+  harshModeToggle: document.querySelector("#harshModeToggle"),
+  chaosModeToggle: document.querySelector("#chaosModeToggle"),
+  timeMoneyModeToggle: document.querySelector("#timeMoneyModeToggle"),
+  amplifiedModeToggle: document.querySelector("#amplifiedModeToggle"),
+  wildFireModeToggle: document.querySelector("#wildFireModeToggle"),
+  partyMayhemModeToggle: document.querySelector("#partyMayhemModeToggle"),
+  classicModeToggle: document.querySelector("#classicModeToggle"),
+  privateRoomToggle: document.querySelector("#privateRoomToggle"),
+  roomPasswordRow: document.querySelector("#roomPasswordRow"),
+  roomPasswordInput: document.querySelector("#roomPasswordInput"),
+  roomCodePreview: document.querySelector("#roomCodePreview"),
+  roomHostProfile: document.querySelector("#roomHostProfile"),
+  roomPlayerList: document.querySelector("#roomPlayerList"),
+  roomLobbyPlayerList: document.querySelector("#roomLobbyPlayerList"),
+  lobbyHostProfile: document.querySelector("#lobbyHostProfile"),
+  lobbyHostAvatarPreview: document.querySelector("#lobbyHostAvatarPreview"),
+  lobbyHostNamePreview: document.querySelector("#lobbyHostNamePreview"),
+  lobbyRoomCode: document.querySelector("#lobbyRoomCode"),
+  lobbyRoomSummary: document.querySelector("#lobbyRoomSummary"),
+  beginRoomButton: document.querySelector("#beginRoomButton"),
+  lobbyAddBotButton: document.querySelector("#lobbyAddBotButton"),
+  lobbySettingsButton: document.querySelector("#lobbySettingsButton"),
+  lobbySoundToggleButton: document.querySelector("#lobbySoundToggleButton"),
+  leaveLobbyButton: document.querySelector("#leaveLobbyButton"),
+  joinRoomList: document.querySelector("#joinRoomList"),
+  joinCodeForm: document.querySelector("#joinCodeForm"),
+  joinRoomCodeInput: document.querySelector("#joinRoomCodeInput"),
+  joinRoomPasswordInput: document.querySelector("#joinRoomPasswordInput"),
+  menuSettingsButton: document.querySelector("#menuSettingsButton"),
+  menuSoundToggleButton: document.querySelector("#menuSoundToggleButton"),
+  menuAbilitiesButton: document.querySelector("#menuAbilitiesButton"),
+  menuAchievementsButton: document.querySelector("#menuAchievementsButton"),
+  menuDevToolButton: document.querySelector("#menuDevToolButton"),
+  menuHelpButton: document.querySelector("#menuHelpButton"),
+  devToolTabs: null,
+  devToolBackButton: null,
+  devQuestionSearchInput: null,
+  devQuestionThemeFilter: null,
+  devQuestionTypeFilter: null,
+  devQuestionCounts: null,
+  devQuestionResults: null,
+  devQuestionCounter: null,
+  devQuestionPrevButton: null,
+  devQuestionNextButton: null,
+  devQuestionPreview: null,
+  devQuestionPreviewControls: null,
+  devQuestionImage: null,
+  devQuestionPlaceholder: null,
+  devQuestionCredit: null,
+  devQuestionMeta: null,
+  devQuestionText: null,
+  devQuestionAnswer: null,
+  devQuestionAccepted: null,
+  devQuestionRejected: null,
+  devQuestionStatus: null,
+  devQuestionEditButton: null,
+  devQuestionDeleteButton: null,
+  devQuestionToolsStatus: null,
+  devQuestionToolsResults: null,
+  devQuestionFindDuplicatesButton: null,
+  devQuestionCheckImagesButton: null,
+  devQuestionLeastSeenButton: null,
+  devQuestionMostRepeatedButton: null,
+  devOverlayGrid: null,
+  devOverlayStatus: null,
+  devOverlayClearButton: null,
+  devProfileGrid: null,
+  devProfileStatus: null,
+  devProfileUnlockAllButton: null,
+  devProfileLockAllButton: null,
+  devProfileResetButton: null,
+  devQuestionCreateForm: null,
+  devCreateTheme: null,
+  devCreateDifficulty: null,
+  devCreateType: null,
+  devCreateId: null,
+  devCreateQuestion: null,
+  devCreateCanonical: null,
+  devCreateAccepted: null,
+  devCreateBots: null,
+  devCreateRejected: null,
+  devCreateImageFields: null,
+  devCreateImageUrl: null,
+  devCreateImageAlt: null,
+  devCreateImageCredit: null,
+  devCreateSubmitButton: null,
+  devCreateSaveAsNewButton: null,
+  devCreateExitButton: null,
+  devCreateClearButton: null,
+  devCreateStatus: null,
+  devCreatePreview: null,
+  devCreatePreviewMeta: null,
+  devCreatePreviewImage: null,
+  devCreatePreviewPlaceholder: null,
+  devCreatePreviewCredit: null,
+  devCreatePreviewQuestion: null,
+  soundToggleButton: document.querySelector("#soundToggleButton"),
+  gameSettingsButton: document.querySelector("#gameSettingsButton"),
+  leaveGameButton: document.querySelector("#leaveGameButton"),
+  exitGameButton: document.querySelector("#exitGameButton"),
+  settingsModal: document.querySelector("#settingsModal"),
+  closeSettingsButton: document.querySelector("#closeSettingsButton"),
+  abilitiesModal: document.querySelector("#abilitiesModal"),
+  closeAbilitiesButton: document.querySelector("#closeAbilitiesButton"),
+  abilityLibrary: document.querySelector("#abilityLibrary"),
+  achievementsModal: document.querySelector("#achievementsModal"),
+  closeAchievementsButton: document.querySelector("#closeAchievementsButton"),
+  achievementLibrary: document.querySelector("#achievementLibrary"),
+  roundHelpButton: document.querySelector("#roundHelpButton"),
+  roundHelpModal: document.querySelector("#roundHelpModal"),
+  closeRoundHelpButton: document.querySelector("#closeRoundHelpButton"),
+  profileCustomModal: document.querySelector("#profileCustomModal"),
+  closeProfileCustomButton: document.querySelector("#closeProfileCustomButton"),
+  profileCardStyleGrid: document.querySelector("#profileCardStyleGrid"),
+  profileEffectGrid: document.querySelector("#profileEffectGrid"),
+  profilePatternGrid: document.querySelector("#profilePatternGrid"),
+  profileFontGrid: document.querySelector("#profileFontGrid"),
+  profileGradientPicker: document.querySelector("#profileGradientPicker"),
+  profileGradientTopGrid: document.querySelector("#profileGradientTopGrid"),
+  profileGradientBottomGrid: document.querySelector("#profileGradientBottomGrid"),
+  profileTitleGrid: document.querySelector("#profileTitleGrid"),
+  profileTitleColourGrid: document.querySelector("#profileTitleColourGrid"),
+  profileTitleRgbToggle: document.querySelector("#profileTitleRgbToggle"),
+  profileTitlePastelToggle: document.querySelector("#profileTitlePastelToggle"),
+  profilePreviewCard: document.querySelector("#profilePreviewCard"),
+  profilePreviewAvatar: document.querySelector("#profilePreviewAvatar"),
+  profilePreviewName: document.querySelector("#profilePreviewName"),
+  profileCustomStatus: document.querySelector("#profileCustomStatus"),
+  profileCustomUndoButton: document.querySelector("#profileCustomUndoButton"),
+  profileCustomRedoButton: document.querySelector("#profileCustomRedoButton"),
+  profileCustomResetButton: document.querySelector("#profileCustomResetButton"),
+  profileCustomSaveButton: document.querySelector("#profileCustomSaveButton"),
+  profileShopModal: document.querySelector("#profileShopModal"),
+  closeProfileShopButton: document.querySelector("#closeProfileShopButton"),
+  profileShopBalance: document.querySelector("#profileShopBalance"),
+  profileShopLibrary: document.querySelector("#profileShopLibrary"),
+  profileShopStatus: document.querySelector("#profileShopStatus"),
+  themeModal: document.querySelector("#themeModal"),
+  closeThemeButton: document.querySelector("#closeThemeButton"),
+  themeList: document.querySelector("#themeList"),
+  enableAllThemesButton: document.querySelector("#enableAllThemesButton"),
+  confirmEndModal: document.querySelector("#confirmEndModal"),
+  confirmEndEyebrow: document.querySelector("#confirmEndEyebrow"),
+  confirmEndTitle: document.querySelector("#confirmEndTitle"),
+  confirmEndCopy: document.querySelector("#confirmEndCopy"),
+  cancelEndButton: document.querySelector("#cancelEndButton"),
+  confirmEndButton: document.querySelector("#confirmEndButton"),
+  targetModal: document.querySelector("#targetModal"),
+  targetTitle: document.querySelector("#targetTitle"),
+  targetList: document.querySelector("#targetList"),
+  cancelTargetButton: document.querySelector("#cancelTargetButton"),
+  sfxVolumeSlider: document.querySelector("#sfxVolumeSlider"),
+  musicVolumeSlider: document.querySelector("#musicVolumeSlider"),
+  timerSecondsSlider: document.querySelector("#timerSecondsSlider"),
+  roundsSlider: document.querySelector("#roundsSlider"),
+  sfxVolumeValue: document.querySelector("#sfxVolumeValue"),
+  musicVolumeValue: document.querySelector("#musicVolumeValue"),
+  timerSecondsValue: document.querySelector("#timerSecondsValue"),
+  roundsValue: document.querySelector("#roundsValue"),
+  modeLabel: document.querySelector("#modeLabel"),
+  leaderboard: document.querySelector("#leaderboard"),
+  roundCount: document.querySelector("#roundCount"),
+  timerScoreBox: document.querySelector("#timerScoreBox"),
+  timerCount: document.querySelector("#timerCount"),
+  dangerFlash: document.querySelector("#dangerFlash"),
+  judgeAvatar: document.querySelector("#judgeAvatar"),
+  judgeName: document.querySelector("#judgeName"),
+  judgeBio: document.querySelector("#judgeBio"),
+  judgeTags: document.querySelector("#judgeTags"),
+  blackCardText: document.querySelector("#blackCardText"),
+  questionThemeBadge: document.querySelector("#questionThemeBadge"),
+  questionDifficultyBadge: document.querySelector("#questionDifficultyBadge"),
+  questionImageWrap: document.querySelector("#questionImageWrap"),
+  questionImage: document.querySelector("#questionImage"),
+  questionImagePlaceholder: document.querySelector("#questionImagePlaceholder"),
+  questionImageCredit: document.querySelector("#questionImageCredit"),
+  powerPanel: document.querySelector("#powerPanel"),
+  effectPanel: document.querySelector("#effectPanel"),
+  answerForm: document.querySelector("#answerForm"),
+  answerInput: document.querySelector("#answerInput"),
+  playerTwoInput: document.querySelector("#playerTwoInput"),
+  submitButton: document.querySelector("#submitButton"),
+  roomSubmitStatus: document.querySelector("#roomSubmitStatus"),
+  answerProgressPanel: document.querySelector("#answerProgressPanel"),
+  answerProgressGrid: document.querySelector("#answerProgressGrid"),
+  answerProgressSummary: document.querySelector("#answerProgressSummary"),
+  inputPanel: document.querySelector("#inputPanel"),
+  tableEventActionPanel: document.querySelector("#tableEventActionPanel"),
+  loadingPanel: document.querySelector("#loadingPanel"),
+  loadingText: document.querySelector("#loadingText"),
+  cardsArea: document.querySelector("#cardsArea"),
+  playerCardLabel: document.querySelector("#playerCardLabel"),
+  playerCardAvatar: document.querySelector("#playerCardAvatar"),
+  botOneLabel: document.querySelector("#botOneLabel"),
+  botOneCardAvatar: document.querySelector("#botOneCardAvatar"),
+  botTwoLabel: document.querySelector("#botTwoLabel"),
+  botTwoCardAvatar: document.querySelector("#botTwoCardAvatar"),
+  botTwoCard: document.querySelector("#botTwoCard"),
+  playerCardText: document.querySelector("#playerCardText"),
+  botOneText: document.querySelector("#botOneText"),
+  botTwoText: document.querySelector("#botTwoText"),
+  playerCardBadge: document.querySelector("#playerCardBadge"),
+  botOneBadge: document.querySelector("#botOneBadge"),
+  botTwoBadge: document.querySelector("#botTwoBadge"),
+  answerStackButton: document.querySelector("#answerStackButton"),
+  answerStackCount: document.querySelector("#answerStackCount"),
+  verdictPanel: document.querySelector("#verdictPanel"),
+  winnerText: document.querySelector("#winnerText"),
+  powerLogToggle: document.querySelector("#powerLogToggle"),
+  powerLog: document.querySelector("#powerLog"),
+  roundRecap: document.querySelector("#roundRecap"),
+  verdictAbilitiesButton: document.querySelector("#verdictAbilitiesButton"),
+  nextRoundButton: document.querySelector("#nextRoundButton"),
+  errorPanel: document.querySelector("#errorPanel"),
+  errorText: document.querySelector("#errorText"),
+  retryButton: document.querySelector("#retryButton"),
+  endPanel: document.querySelector("#endPanel"),
+  matchWinnerText: document.querySelector("#matchWinnerText"),
+  matchStats: document.querySelector("#matchStats"),
+  matchTimelineButton: document.querySelector("#matchTimelineButton"),
+  matchTimeline: document.querySelector("#matchTimeline"),
+  rematchButton: document.querySelector("#rematchButton"),
+  continueAsPlayerButton: document.querySelector("#continueAsPlayerButton"),
+  spectateAgainButton: document.querySelector("#spectateAgainButton"),
+  changeModeButton: document.querySelector("#changeModeButton"),
+  finalLeaderboard: document.querySelector("#finalLeaderboard"),
+  roomChat: document.querySelector("#roomChat"),
+  roomCodeLabel: document.querySelector("#roomCodeLabel"),
+  roomVariantLabel: document.querySelector("#roomVariantLabel"),
+  chatLog: document.querySelector("#chatLog"),
+  chatForm: document.querySelector("#chatForm"),
+  chatInput: document.querySelector("#chatInput"),
+  lobbyRoomCodeLabel: document.querySelector("#lobbyRoomCodeLabel"),
+  lobbyRoomVariantLabel: document.querySelector("#lobbyRoomVariantLabel"),
+  lobbyChatLog: document.querySelector("#lobbyChatLog"),
+  lobbyChatForm: document.querySelector("#lobbyChatForm"),
+  lobbyChatInput: document.querySelector("#lobbyChatInput")
+};
+
+function initAudio() {
+  if (soundState.ctx) {
+    return;
+  }
+
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) {
+    soundState.muted = true;
+    return;
+  }
+
+  soundState.ctx = new AudioContext();
+}
+
+function setMuted(isMuted) {
+  soundState.muted = isMuted;
+  localStorage.setItem("cardsAgainstAiMuted", String(isMuted));
+  updateSoundButton();
+  if (!isMuted) {
+    initAudio();
+    startMusic();
+    playSound("click");
+  } else {
+    soundState.musicUnlocked = false;
+    disarmMusicUnlockListeners();
+    stopMusic();
+    stopTimerTick();
+  }
+}
+
+function updateSoundButton() {
+  [
+    elements.soundToggleButton,
+    elements.menuSoundToggleButton,
+    elements.roomSoundToggleButton,
+    elements.joinSoundToggleButton,
+    elements.lobbySoundToggleButton
+  ].forEach((button) => {
+    if (!button) {
+      return;
+    }
+    button.textContent = soundState.muted ? "Sound Off" : "Sound On";
+    button.setAttribute("aria-pressed", String(!soundState.muted));
+  });
+}
+
+function primeAudioPlayback() {
+  if (soundState.muted) {
+    return;
+  }
+
+  initAudio();
+  if (soundState.ctx?.state === "suspended") {
+    soundState.ctx.resume().catch(() => {});
+  }
+  startMusic();
+}
+
+function armMusicUnlockListeners() {
+  window.addEventListener("pointerdown", primeAudioPlayback, { passive: true });
+  window.addEventListener("click", primeAudioPlayback, { passive: true });
+  window.addEventListener("touchstart", primeAudioPlayback, { passive: true });
+  window.addEventListener("keydown", primeAudioPlayback);
+}
+
+function disarmMusicUnlockListeners() {
+  window.removeEventListener("pointerdown", primeAudioPlayback);
+  window.removeEventListener("click", primeAudioPlayback);
+  window.removeEventListener("touchstart", primeAudioPlayback);
+  window.removeEventListener("keydown", primeAudioPlayback);
+}
+
+function playTone(frequency, duration = 0.12, type = "sine", gainValue = 0.05, delay = 0) {
+  if (soundState.muted) {
+    return;
+  }
+
+  initAudio();
+  const ctx = soundState.ctx;
+  if (!ctx) {
+    return;
+  }
+
+  const start = ctx.currentTime + delay;
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const effectiveGain = Math.max(0.0001, gainValue * getScaledSfxVolume());
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(effectiveGain, start + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + 0.02);
+}
+
+function getScaledSfxVolume() {
+  const raw = Math.max(0, Math.min(1, soundState.sfxVolume || 0));
+  if (raw <= 0) {
+    return 0;
+  }
+  return Math.min(2.2, Math.pow(raw, 0.72) * 1.65);
+}
+
+function playAudioFile(src, volume = 1, options = {}) {
+  if (soundState.muted) {
+    return null;
+  }
+
+  const audio = new Audio(src);
+  audio.preload = "auto";
+  audio.loop = Boolean(options.loop);
+  const effectiveVolume = options.ignoreSettings ? volume : volume * getScaledSfxVolume();
+  if (!options.ignoreSettings && effectiveVolume > 1) {
+    initAudio();
+    if (soundState.ctx) {
+      const source = soundState.ctx.createMediaElementSource(audio);
+      const gain = soundState.ctx.createGain();
+      gain.gain.value = Math.min(2.2, effectiveVolume);
+      source.connect(gain);
+      gain.connect(soundState.ctx.destination);
+      soundState.activeAudioNodes.add({ audio, source, gain });
+      audio.addEventListener("ended", () => {
+        soundState.activeAudioNodes.forEach((entry) => {
+          if (entry.audio === audio) {
+            soundState.activeAudioNodes.delete(entry);
+          }
+        });
+      }, { once: true });
+      audio.volume = 1;
+    } else {
+      audio.volume = 1;
+    }
+  } else {
+    audio.volume = Math.max(0, Math.min(1, effectiveVolume));
+  }
+  audio.play().catch(() => {
+    // Browser audio permissions can block playback before a user gesture.
+  });
+  return audio;
+}
+
+function getScaledMusicVolume(volume = soundState.musicVolume) {
+  const raw = Math.max(0, Math.min(1, volume || 0));
+  return Math.min(0.26, Math.pow(raw, 1.2) * 0.26);
+}
+
+function setMusicElementVolume(volume) {
+  if (soundState.musicAudio) {
+    soundState.musicAudio.volume = getScaledMusicVolume(volume);
+  }
+}
+
+function cancelMusicDuck() {
+  if (soundState.musicDuckFrame) {
+    cancelAnimationFrame(soundState.musicDuckFrame);
+    soundState.musicDuckFrame = null;
+  }
+}
+
+function duckMusicForTimer() {
+  if (soundState.muted || !soundState.musicAudio || soundState.musicVolume <= 0) {
+    return;
+  }
+
+  cancelMusicDuck();
+  const normalVolume = soundState.musicVolume;
+  const startVolume = normalVolume * 0.45;
+  const duration = 6000;
+  const startedAt = performance.now();
+  setMusicElementVolume(startVolume);
+
+  const step = (now) => {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = 1 - ((1 - progress) ** 3);
+    setMusicElementVolume(startVolume + ((normalVolume - startVolume) * eased));
+    if (progress < 1 && !soundState.muted) {
+      soundState.musicDuckFrame = requestAnimationFrame(step);
+    } else {
+      soundState.musicDuckFrame = null;
+      setMusicElementVolume(soundState.musicVolume);
+    }
+  };
+
+  soundState.musicDuckFrame = requestAnimationFrame(step);
+}
+
+function stopTimerTick() {
+  if (soundState.timerWarningRampId) {
+    cancelAnimationFrame(soundState.timerWarningRampId);
+    soundState.timerWarningRampId = null;
+  }
+
+  if (soundState.timerTickAudio) {
+    soundState.timerTickAudio.pause();
+    soundState.timerTickAudio.currentTime = 0;
+    soundState.timerTickAudio = null;
+  }
+
+  if (soundState.timerWarningAudio) {
+    soundState.timerWarningAudio.pause();
+    soundState.timerWarningAudio.currentTime = 0;
+    soundState.timerWarningAudio = null;
+  }
+}
+
+function setTimerWarningVolume(volume) {
+  const safeVolume = Math.max(0, Math.min(1, volume));
+  if (soundState.timerWarningAudio) {
+    soundState.timerWarningAudio.volume = safeVolume;
+  }
+  if (soundState.timerTickAudio) {
+    soundState.timerTickAudio.volume = safeVolume;
+  }
+}
+
+function getTimerWarningVolume(remainingSeconds = state.timerRemaining) {
+  const remaining = Math.max(0, Math.min(10, Number(remainingSeconds) || 0));
+  const progress = (10 - remaining) / 10;
+  const eased = progress ** 1.35;
+  return 0.18 + (0.82 * eased);
+}
+
+function updateTimerWarningVolume(remainingSeconds = state.timerRemaining) {
+  if (!soundState.timerWarningAudio && !soundState.timerTickAudio) {
+    return;
+  }
+  setTimerWarningVolume(getTimerWarningVolume(remainingSeconds));
+}
+
+function playTimerWarningAudio() {
+  stopTimerTick();
+  const startVolume = getTimerWarningVolume(10);
+  soundState.timerWarningAudio = playAudioFile(audioAssets.warning, startVolume, { ignoreSettings: true });
+  soundState.timerTickAudio = playAudioFile(audioAssets.ticking, startVolume, { ignoreSettings: true, loop: true });
+  const startedAt = performance.now();
+  const rampDuration = 9500;
+  const ramp = (now) => {
+    const progress = Math.min(1, (now - startedAt) / rampDuration);
+    const eased = progress ** 1.35;
+    setTimerWarningVolume(0.18 + (0.82 * eased));
+    if (progress < 1 && (soundState.timerWarningAudio || soundState.timerTickAudio)) {
+      soundState.timerWarningRampId = requestAnimationFrame(ramp);
+    } else {
+      soundState.timerWarningRampId = null;
+    }
+  };
+  soundState.timerWarningRampId = requestAnimationFrame(ramp);
+  duckMusicForTimer();
+}
+
+function playSound(name) {
+  const sounds = {
+    click: () => playAudioFile(audioAssets.genericClick, 0.9),
+    targetSelect: () => playAudioFile(audioAssets.selectTarget, 0.95),
+    pointGain: () => playAudioFile(audioAssets.gainPoints, 0.9),
+    coin: () => playAudioFile(audioAssets.gainPoints, 0.95),
+    correctAnswer: () => playAudioFile(audioAssets.correctAnswer, 0.95),
+    wrongAnswer: () => playAudioFile(audioAssets.wrongAnswer, 0.95),
+    genericLosePoint: () => playAudioFile(audioAssets.genericLosePoint, 0.9),
+    burnLoss: () => playAudioFile(audioAssets.burningLosePoints, 0.9),
+    glitch: () => playAudioFile(audioAssets.glitchOverlay, 0.9),
+	    bombLoss: () => playAudioFile(audioAssets.explodeLosePoints, 0.9),
+	    zapLoss: () => playAudioFile(audioAssets.zapLosePoints, 0.9),
+	    bountyRound: () => playAudioFile(audioAssets.bountyRound, 0.95),
+	    suddenDeath: () => playAudioFile(audioAssets.suddenDeath, 0.95),
+	    lightOff: () => playAudioFile(audioAssets.lightOff, 0.95),
+	    noMercy: () => playAudioFile(audioAssets.noMercy, 0.95),
+	    blackMarket: () => playAudioFile(audioAssets.blackMarket, 0.95),
+	    dice: () => playAudioFile(audioAssets.dice, 0.95),
+	    roulette: () => playAudioFile(audioAssets.roulette, 0.95),
+    reveal: () => {
+      playTone(240, 0.08, "sine", 0.035);
+      playTone(480, 0.12, "triangle", 0.04, 0.06);
+    },
+    submit: () => {
+      playTone(180, 0.08, "square", 0.025);
+      playTone(340, 0.1, "triangle", 0.035, 0.05);
+    },
+    lock: () => {
+      playTone(440, 0.08, "triangle", 0.035);
+      playTone(220, 0.08, "sine", 0.025, 0.06);
+    },
+    type: () => playTone(720, 0.025, "square", 0.011),
+    timerWarning: () => playTimerWarningAudio(),
+    judge: () => {
+      playTone(160, 0.18, "sawtooth", 0.025);
+      playTone(120, 0.22, "sine", 0.02, 0.08);
+    },
+    fly: () => {
+      playTone(420, 0.1, "triangle", 0.04);
+      playTone(760, 0.16, "triangle", 0.035, 0.08);
+    },
+    score: () => {
+      playAudioFile(audioAssets.gainPoints, 0.9);
+    },
+    streak: () => {
+      playTone(300, 0.08, "sawtooth", 0.035);
+      playTone(600, 0.1, "triangle", 0.04, 0.05);
+      playTone(900, 0.16, "triangle", 0.04, 0.12);
+    },
+    matchEnd: () => {
+      playTone(392, 0.12, "triangle", 0.04);
+      playTone(523, 0.14, "triangle", 0.04, 0.1);
+      playTone(784, 0.2, "sine", 0.04, 0.22);
+    },
+    error: () => playTone(120, 0.18, "sawtooth", 0.025)
+  };
+
+  if (sounds[name]) {
+    soundState.lastSfxAt = performance.now();
+    sounds[name]();
+  }
+}
+
+function playFallbackClickIfSilent(event) {
+  const clickable = event.target.closest("button, .power-card, .target-option, .chat-message.clickable-profile");
+  if (!clickable || clickable.disabled || clickable.getAttribute("aria-disabled") === "true") {
+    return;
+  }
+  const clickStartedAt = performance.now();
+  window.setTimeout(() => {
+    if ((soundState.lastSfxAt || 0) < clickStartedAt) {
+      playSound("click");
+    }
+  }, 0);
+}
+
+function startMusic() {
+  if (soundState.muted || soundState.musicVolume <= 0) {
+    return;
+  }
+
+  if (!soundState.musicAudio) {
+    soundState.musicAudio = new Audio(audioAssets.music);
+    soundState.musicAudio.loop = true;
+    soundState.musicAudio.preload = "auto";
+    soundState.musicAudio.addEventListener("error", () => {
+      soundState.musicUnlocked = false;
+      soundState.musicAudio = null;
+      armMusicUnlockListeners();
+    });
+    soundState.musicAudio.load();
+  }
+
+  setMusicElementVolume(soundState.musicVolume);
+  soundState.musicAudio.play()
+    .then(() => {
+      soundState.musicUnlocked = true;
+      disarmMusicUnlockListeners();
+    })
+    .catch(() => {
+      soundState.musicUnlocked = false;
+      armMusicUnlockListeners();
+    });
+}
+
+function stopMusic() {
+  cancelMusicDuck();
+  if (soundState.musicAudio) {
+    soundState.musicAudio.pause();
+  }
+}
+
+function updateMusicVolume() {
+  cancelMusicDuck();
+  setMusicElementVolume(soundState.musicVolume);
+
+  if (!soundState.muted && soundState.musicVolume > 0) {
+    startMusic();
+  }
+
+  if (soundState.musicVolume === 0) {
+    stopMusic();
+  }
+}
+
+function cleanInput(input) {
+  return input
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[.?!]+$/g, "")
+    .slice(0, 80);
+}
+
+function resetRoundAnswers() {
+  const owners = new Set([...DEFAULT_OWNER_IDS, ...getActiveOwners()]);
+  state.roundAnswers = Object.fromEntries([...owners].map((owner) => [owner, ""]));
+  state.roundCardOwners = [];
+  state.visibleAnswerCardIndexes = [];
+  state.answerCardCycleCursor = 0;
+  state.currentRoundCards = [];
+  state.currentRoundCardRatings = [];
+  state.currentRoundCorrectIndexes = [];
+}
+
+function lockRoundAnswer(owner, input, fallback = "") {
+  const answer = cleanInput(input || fallback || "");
+  if (owner && answer) {
+    state.roundAnswers[owner] = answer;
+  }
+  return answer;
+}
+
+function getLockedRoundAnswer(owner, fallback = "") {
+  return cleanInput(state.roundAnswers?.[owner] || fallback || "");
+}
+
+function cleanChatInput(input) {
+  return input
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 160);
+}
+
+function getEnabledTriviaThemes() {
+  const source = state.mode === "room" || !elements.roomScreen.classList.contains("hidden")
+    ? state.roomSettings.enabledThemes
+    : state.enabledThemes;
+  const enabled = Array.isArray(source) ? source.filter((theme) => triviaThemes.includes(theme)) : [];
+  return enabled.length ? enabled : [...triviaThemes];
+}
+
+function getThemeSignature(themes = getEnabledTriviaThemes()) {
+  return [...new Set(themes.filter((theme) => triviaThemes.includes(theme)))]
+    .sort()
+    .join("|");
+}
+
+function normalizeDifficulty(difficulty) {
+  const value = String(difficulty || "").toLowerCase();
+  return Object.hasOwn(DIFFICULTY_BONUSES, value) ? value : "medium";
+}
+
+function getDifficultyBonus(difficulty = state.questionDifficulty) {
+  return DIFFICULTY_BONUSES[normalizeDifficulty(difficulty)] || DIFFICULTY_BONUSES.medium;
+}
+
+function getDifficultyLabel(difficulty = state.questionDifficulty) {
+  const normalized = normalizeDifficulty(difficulty);
+  return `${normalized[0].toUpperCase()}${normalized.slice(1)} +${getDifficultyBonus(normalized).toLocaleString()}`;
+}
+
+function setupMatchesThemes(setup, enabledThemes = getEnabledTriviaThemes()) {
+  const theme = setup?.triviaTheme || setup?.theme || "";
+  return !theme || theme === "Mixed Trivia" || enabledThemes.includes(theme);
+}
+
+function getThemeSetupOptions(theme = "") {
+  const enabledThemes = getEnabledTriviaThemes();
+  const preferredTheme = enabledThemes.includes(theme) ? theme : "";
+  return {
+    enabledThemes: preferredTheme ? [preferredTheme] : enabledThemes,
+    preferredTheme
+  };
+}
+
+function reserveQuestionSetups(setups) {
+  const existing = new Set(state.questionReserve.map((setup) => normalizePromptText(setup?.blackCard)).filter(Boolean));
+  for (const setup of setups) {
+    const key = normalizePromptText(setup?.blackCard);
+    if (!setup?.blackCard || !key || existing.has(key) || normalizePromptText(state.blackCard) === key) {
+      continue;
+    }
+    existing.add(key);
+    preloadQuestionImageInBackground(setup);
+    state.questionReserve.push(setup);
+  }
+  if (state.questionReserve.length > QUESTION_RESERVE_LIMIT) {
+    state.questionReserve = state.questionReserve.slice(-QUESTION_RESERVE_LIMIT);
+  }
+}
+
+function getQuestionImageUrls(setup) {
+  const image = setup?.image;
+  if (!image?.url) {
+    return [];
+  }
+  return [image.url];
+}
+
+function forgetBackgroundImagePreload(url) {
+  delete state.backgroundImagePreloads[url];
+  state.backgroundImagePreloadOrder = state.backgroundImagePreloadOrder.filter((storedUrl) => storedUrl !== url);
+}
+
+function trackBackgroundImagePreload(url, value) {
+  if (!state.backgroundImagePreloads[url]) {
+    state.backgroundImagePreloadOrder.push(url);
+  }
+  state.backgroundImagePreloads[url] = value;
+  while (state.backgroundImagePreloadOrder.length > BACKGROUND_IMAGE_PRELOAD_LIMIT) {
+    const oldestUrl = state.backgroundImagePreloadOrder.shift();
+    if (oldestUrl && oldestUrl !== url) {
+      delete state.backgroundImagePreloads[oldestUrl];
+    }
+  }
+}
+
+function preloadQuestionImage(setup) {
+  getQuestionImageUrls(setup).slice(0, 3).forEach((url) => {
+    if (state.backgroundImagePreloads[url]) {
+      return;
+    }
+    const image = new Image();
+    trackBackgroundImagePreload(url, image);
+    image.onload = () => {
+      state.backgroundImagePreloads[url] = true;
+    };
+    image.onerror = () => {
+      forgetBackgroundImagePreload(url);
+    };
+    image.decoding = "async";
+    image.src = url;
+  });
+}
+
+function runBackgroundTaskWhenIdle(callback, delay = 0) {
+  window.setTimeout(() => {
+    const run = () => {
+      if (!state.gradingActive) {
+        callback();
+      } else {
+        waitForGradingPriority().then(() => runBackgroundTaskWhenIdle(callback, 250));
+      }
+    };
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(run, { timeout: 1800 });
+    } else {
+      window.setTimeout(run, 0);
+    }
+  }, delay);
+}
+
+function preloadQuestionImageInBackground(setup) {
+  if (!getQuestionImageUrls(setup).length) {
+    return;
+  }
+  runBackgroundTaskWhenIdle(() => preloadQuestionImage(setup), 250);
+}
+
+function takeReservedSetup(enabledThemes = getEnabledTriviaThemes(), previousBlackCard = "") {
+  const previousKey = normalizePromptText(previousBlackCard);
+  const index = state.questionReserve.findIndex((setup) => {
+    const key = normalizePromptText(setup?.blackCard);
+    return key && key !== previousKey && setupMatchesThemes(setup, enabledThemes);
+  });
+  if (index < 0) {
+    return null;
+  }
+  const [setup] = state.questionReserve.splice(index, 1);
+  preloadQuestionImageInBackground(setup);
+  return setup;
+}
+
+function stashUnusedQuestionSetups() {
+  reserveQuestionSetups([
+    ...state.setupStack,
+    state.nextSetup,
+    state.warmSetup
+  ].filter(Boolean));
+  state.setupStack = [];
+  state.nextSetup = null;
+  state.warmSetup = null;
+}
+
+function hasReservedSetupForThemes(enabledThemes = getEnabledTriviaThemes()) {
+  return state.questionReserve.some((setup) => setupMatchesThemes(setup, enabledThemes));
+}
+
+function clearWarmSetup() {
+  state.warmSetup = null;
+  state.warmSetupPromise = null;
+  state.warmSetupSignature = "";
+  state.warmSetupVersion += 1;
+}
+
+function clearBackgroundSetupPrefetch() {
+  if (state.backgroundSetupTimerId) {
+    window.clearTimeout(state.backgroundSetupTimerId);
+    state.backgroundSetupTimerId = null;
+  }
+}
+
+function scheduleWhenIdle(callback, delay = BACKGROUND_PREFETCH_DELAY_MS) {
+  clearBackgroundSetupPrefetch();
+  state.backgroundSetupTimerId = window.setTimeout(() => {
+    state.backgroundSetupTimerId = null;
+    const run = () => {
+      if (!state.gradingActive) {
+        callback();
+      }
+    };
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(run, { timeout: 1800 });
+    } else {
+      window.setTimeout(run, 0);
+    }
+  }, delay);
+}
+
+function startWarmSetupPreload(options = {}) {
+  const activeGameVisible = !elements.gameStage.classList.contains("hidden") && !state.matchEnded;
+  if (window.location.protocol === "file:" || activeGameVisible) {
+    return null;
+  }
+
+  const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
+  const signature = getThemeSignature(enabledThemes);
+  if (hasReservedSetupForThemes(enabledThemes)) {
+    return Promise.resolve(state.questionReserve.find((setup) => setupMatchesThemes(setup, enabledThemes)));
+  }
+  if (state.warmSetup && state.warmSetupSignature === signature) {
+    return Promise.resolve(state.warmSetup);
+  }
+  if (state.warmSetupPromise && state.warmSetupSignature === signature) {
+    return state.warmSetupPromise;
+  }
+
+  const warmVersion = state.warmSetupVersion + 1;
+  state.warmSetup = null;
+  state.warmSetupVersion = warmVersion;
+  state.warmSetupSignature = signature;
+  const promise = requestRoundSetup({
+    recentBlackCards: state.recentBlackCards,
+    enabledThemes,
+    preferredTheme: options.preferredTheme || "",
+    backgroundMode: true
+  });
+  state.warmSetupPromise = promise;
+  promise
+    .then((setup) => {
+      if (state.warmSetupVersion === warmVersion && state.warmSetupSignature === signature) {
+        state.warmSetup = setup;
+        preloadQuestionImageInBackground(setup);
+      }
+      return setup;
+    })
+    .catch((error) => {
+      if (state.warmSetupVersion === warmVersion) {
+        console.warn("Warm question preload failed:", error);
+      }
+      return null;
+    })
+    .finally(() => {
+      if (state.warmSetupVersion === warmVersion && state.warmSetupPromise === promise) {
+        state.warmSetupPromise = null;
+      }
+    });
+  return promise;
+}
+
+function ensureQuestionReserve(options = {}) {
+  const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
+  if (hasReservedSetupForThemes(enabledThemes)) {
+    return null;
+  }
+  return startWarmSetupPreload({ ...options, enabledThemes });
+}
+
+function takeWarmSetup(enabledThemes = getEnabledTriviaThemes()) {
+  const signature = getThemeSignature(enabledThemes);
+  if (!state.warmSetup || state.warmSetupSignature !== signature) {
+    return null;
+  }
+
+  const setup = state.warmSetup;
+  state.warmSetup = null;
+  state.warmSetupPromise = null;
+  state.warmSetupSignature = "";
+  return setup;
+}
+
+function getWarmSetupPromise(enabledThemes = getEnabledTriviaThemes()) {
+  const signature = getThemeSignature(enabledThemes);
+  return state.warmSetupPromise && state.warmSetupSignature === signature
+    ? state.warmSetupPromise
+    : null;
+}
+
+function setGradingActive(isActive) {
+  state.gradingActive = isActive;
+  if (!isActive) {
+    const waiters = state.gradingWaiters.splice(0);
+    waiters.forEach((resolve) => resolve());
+  }
+}
+
+function waitForGradingPriority() {
+  if (!state.gradingActive) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    state.gradingWaiters.push(resolve);
+  });
+}
+
+function ensureServerMode() {
+  if (window.location.protocol === "file:") {
+    throw new Error("Open http://127.0.0.1:3000 instead of opening index.html directly.");
+  }
+}
+
+function normalizeSetupPayload(setup) {
+  if (!setup.blackCard) {
+    throw new Error("AI setup response was incomplete.");
+  }
+  const judge = setup.judge || {
+    name: "Trivia Grader",
+    avatar: "AI",
+    title: "Answer checker",
+    bio: "Checks answers against accepted trivia facts.",
+    likes: ["accuracy"],
+    dislikes: [],
+    voice: "concise quiz grading",
+    tone: "fair"
+  };
+  const image = setup.image && typeof setup.image === "object" ? setup.image : {};
+
+  return {
+    id: String(setup.id || "").trim(),
+    blackCard: String(setup.blackCard || "").trim(),
+    type: setup.type === "text" ? "text" : "image",
+    difficulty: ["easy", "medium", "hard"].includes(String(setup.difficulty || "").toLowerCase())
+      ? String(setup.difficulty).toLowerCase()
+      : "medium",
+    triviaTheme: String(setup.theme || "Mixed Trivia").trim(),
+    canonicalAnswer: String(setup.canonicalAnswer || "").trim(),
+    acceptedAnswers: Array.isArray(setup.acceptedAnswers)
+      ? setup.acceptedAnswers.map((answer) => String(answer).trim()).filter(Boolean).slice(0, 10)
+      : [],
+    image: {
+      url: String(image.url || "").trim(),
+      alt: String(image.alt || "").trim(),
+      credit: String(image.credit || "").trim(),
+      source: String(image.source || "").trim(),
+      missingReason: String(image.missingReason || "").trim()
+    },
+    botCards: Array.isArray(setup.botCards) ? setup.botCards.map((card) => String(card).trim()).filter(Boolean).slice(0, 2) : [],
+    judge: {
+      name: String(judge.name || "Trivia Grader").trim(),
+      avatar: String(judge.avatar || "AI").trim(),
+      title: String(judge.title || "Answer checker").trim(),
+      bio: String(judge.bio || "Checks answers against accepted trivia facts.").trim(),
+      likes: Array.isArray(judge.likes) ? judge.likes.map((tag) => String(tag).trim()).filter(Boolean) : ["accuracy"],
+      dislikes: Array.isArray(judge.dislikes) ? judge.dislikes.map((tag) => String(tag).trim()).filter(Boolean) : [],
+      voice: String(judge.voice || "").trim(),
+      tone: String(judge.tone || "fair").trim()
+    },
+    debug: setup.debug && typeof setup.debug === "object" ? setup.debug : null
+  };
+}
+
+async function requestRoundSetup(options = {}) {
+  ensureServerMode();
+  await waitForGradingPriority();
+  const setupSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards;
+  const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
+  const preferredTheme = options.preferredTheme || "";
+  const response = await fetch("/api/setup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      recentBlackCards,
+      enabledThemes,
+      preferredTheme,
+      backgroundMode: Boolean(options.backgroundMode),
+      setupSeed,
+      round: state.round
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `AI setup request failed with status ${response.status}.`);
+  }
+
+  return normalizeSetupPayload(await response.json());
+}
+
+function normalizePromptText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[_\W]+/g, " ")
+    .trim();
+}
+
+function getQuestionUsageKey(question) {
+  return String(question?.id || "").trim() || normalizePromptText(question?.blackCard || question?.question || "");
+}
+
+function loadQuestionUsageStats() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(questionUsageStorageKey) || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveQuestionUsageStats(stats) {
+  try {
+    localStorage.setItem(questionUsageStorageKey, JSON.stringify(stats || {}));
+  } catch {
+    // Local stats are nice-to-have; gameplay should keep moving if storage is full.
+  }
+}
+
+function recordQuestionUsage(setup) {
+  const key = getQuestionUsageKey(setup);
+  if (!key) {
+    return;
+  }
+  const stats = loadQuestionUsageStats();
+  const current = stats[key] && typeof stats[key] === "object" ? stats[key] : {};
+  stats[key] = {
+    count: Math.max(0, Number(current.count) || 0) + 1,
+    lastSeenAt: new Date().toISOString(),
+    id: String(setup.id || current.id || "").trim(),
+    question: String(setup.blackCard || current.question || "").trim(),
+    theme: String(setup.triviaTheme || setup.theme || current.theme || "").trim()
+  };
+  saveQuestionUsageStats(stats);
+}
+
+function isRepeatedBlackCard(setup, previousBlackCard = state.blackCard) {
+  const nextPrompt = normalizePromptText(setup && setup.blackCard);
+  if (!nextPrompt) {
+    return true;
+  }
+
+  const recentPrompts = [previousBlackCard, ...state.recentBlackCards]
+    .map(normalizePromptText)
+    .filter(Boolean);
+  return recentPrompts.includes(nextPrompt);
+}
+
+async function requestAiRound(rawInput) {
+  ensureServerMode();
+  const roundSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const cardOwners = prepareRoundCardOwners(rawInput);
+  const roomMode = isRoomMode();
+  const duelMode = isDuelMode() && !roomMode;
+  const apiMode = roomMode ? "room" : duelMode ? "local" : "bots";
+  const playerAnswer = getLockedRoundAnswer("player", rawInput);
+  const opponentAnswer = duelMode ? getLockedRoundAnswer("opponent", state.localAnswers.playerTwo) : "";
+  const answerCards = cardOwners.map((owner) => ({
+    owner,
+    label: getOwnerLabel(owner),
+    answer: getRoundAnswerForOwner(owner)
+  }));
+  const response = await fetch("/api/round", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      answer: playerAnswer,
+      opponentAnswer,
+      blackCard: state.blackCard,
+      triviaTheme: state.triviaTheme,
+      canonicalAnswer: state.canonicalAnswer,
+      acceptedAnswers: state.acceptedAnswers,
+      image: state.questionImage,
+      mode: apiMode,
+      answerCards: roomMode ? answerCards : [],
+      botCards: state.mode === "bots" ? state.botCards : [],
+      botLabels: state.mode === "bots" ? [getOwnerLabel("bot1"), getOwnerLabel("bot2")] : [],
+      matchContext: {
+        playerScore: getScore("player"),
+        opponentScore: state.mode === "bots" ? Math.max(getScore("bot1"), getScore("bot2")) : getScore("opponent"),
+        playerWins: state.matchHistory.filter((round) => round.winner === getOwnerLabel("player")).length,
+        opponentWins: state.mode === "bots"
+          ? state.matchHistory.filter((round) => round.winner === getOwnerLabel("bot1") || round.winner === getOwnerLabel("bot2")).length
+          : state.matchHistory.filter((round) => round.winner === getOwnerLabel("opponent")).length,
+        round: state.round,
+        maxRounds: state.maxRounds
+      },
+      roundSeed
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `AI round request failed with status ${response.status}.`);
+  }
+
+  const result = await response.json();
+  const expectedCards = roomMode ? cardOwners.length : duelMode ? 2 : 3;
+  if (!Array.isArray(result.cards) || result.cards.length !== expectedCards) {
+    throw new Error(`AI round response did not include ${expectedCards} cards.`);
+  }
+
+  return {
+    cards: result.cards.map((card) => String(card).trim()),
+    winner: {
+      index: Number(result.winnerIndex)
+    },
+    correctIndexes: Array.isArray(result.correctIndexes)
+      ? result.correctIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < expectedCards)
+      : [],
+    source: result.source || "api"
+  };
+}
+
+function setHidden(element, isHidden) {
+  if (!isHidden) {
+    element.classList.remove("closing");
+  }
+  element.classList.toggle("hidden", isHidden);
+}
+
+function ensureStatFlashElement() {
+  let flash = document.querySelector("#statFlash");
+  if (flash) {
+    return flash;
+  }
+
+  flash = document.createElement("div");
+  flash.id = "statFlash";
+  flash.className = "stat-flash hidden";
+  flash.setAttribute("aria-live", "polite");
+  flash.setAttribute("aria-atomic", "true");
+  flash.innerHTML = `
+    <div class="stat-flash-panel">
+      <strong class="stat-flash-title"></strong>
+      <span class="stat-flash-detail"></span>
+    </div>
+  `;
+  document.body.appendChild(flash);
+  return flash;
+}
+
+function normalizeStatFlashKind(kind) {
+  return [
+    "positive",
+    "negative",
+    "mixed",
+    "shield",
+    "chaos",
+    "burning",
+    "lightning",
+    "bomb",
+    "bounty",
+    "sudden-death",
+    "outage",
+    "no-mercy",
+    "black-market",
+    "casino",
+    "sabotage",
+    "coin"
+  ].includes(kind) ? kind : "positive";
+}
+
+function getFocusedOwner() {
+  return getCurrentPowerOwner();
+}
+
+function isStatFlashRelevant(owners = null) {
+  if (!Array.isArray(owners) || owners.length === 0) {
+    return true;
+  }
+  return owners.includes(getFocusedOwner());
+}
+
+function queueStatFlash(kind, title, detail, options = {}) {
+  if (!isStatFlashRelevant(options.owners)) {
+    return;
+  }
+  const cleanTitle = String(title || "").trim();
+  const cleanDetail = Array.isArray(detail)
+    ? detail.map((line) => String(line || "").trim()).filter(Boolean).join("\n")
+    : String(detail || "").trim();
+  if (!cleanTitle || !cleanDetail) {
+    return;
+  }
+  const focusedOwner = getFocusedOwner();
+  const sourceOwner = options.sourceOwner || "";
+  const sourceAttribution = sourceOwner && sourceOwner !== focusedOwner
+    ? `${getOwnerLabel(sourceOwner)} used ${cleanTitle}`
+    : "";
+
+  const flashEntry = {
+    kind: normalizeStatFlashKind(kind),
+    title: sourceAttribution || cleanTitle,
+    detail: cleanDetail,
+    durationMs: getStatFlashDuration(cleanDetail, { ...options, sourceAttribution: Boolean(sourceAttribution) }),
+    soundName: options.soundName || getStatFlashSoundName(kind, cleanDetail, options),
+    flickerText: Boolean(options.flickerText || shouldFlickerStatFlashText(kind, cleanDetail)),
+    onTextChange: typeof options.onTextChange === "function" ? options.onTextChange : null
+  };
+  if (isPointLossSoundName(flashEntry.soundName)) {
+    state.pointLossSoundToken += 1;
+  }
+  if (options.priority) {
+    state.statFlashQueue.unshift(flashEntry);
+  } else {
+    state.statFlashQueue.push(flashEntry);
+  }
+  playNextStatFlash();
+}
+
+function isPointLossSoundName(soundName) {
+  return ["genericLosePoint", "burnLoss", "bombLoss", "zapLoss"].includes(soundName);
+}
+
+function playUnassignedPointLossSound(deltas, tokenBefore = state.pointLossSoundToken) {
+  const focusedOwner = getFocusedOwner();
+  if ((deltas?.[focusedOwner] || 0) < 0 && state.pointLossSoundToken === tokenBefore) {
+    playSound("genericLosePoint");
+    state.pointLossSoundToken += 1;
+  }
+}
+
+function shouldFlickerStatFlashText(kind, detail) {
+  if (normalizeStatFlashKind(kind) !== "chaos") {
+    return false;
+  }
+  const cleanDetail = String(detail || "").replace(/\s+/g, "");
+  return cleanDetail.length >= 8 && /^[^A-Za-z]+$/.test(cleanDetail);
+}
+
+function getStatFlashSoundName(kind, detail, options = {}) {
+  if (options.silent) {
+    return "";
+  }
+  const normalizedKind = normalizeStatFlashKind(kind);
+  if (normalizedKind === "chaos") {
+    return "glitch";
+  }
+  if (normalizedKind === "burning") {
+    return "burnLoss";
+  }
+  if (normalizedKind === "lightning") {
+    return "zapLoss";
+  }
+  if (normalizedKind === "bomb") {
+    return "bombLoss";
+  }
+  if (options.unit === "Point" && normalizedKind === "positive") {
+    return "pointGain";
+  }
+  if (options.unit === "Point" && normalizedKind === "negative") {
+    return "genericLosePoint";
+  }
+  if (/\+\d[\d,.\s%]*\s*Points?/i.test(String(detail || ""))) {
+    return "pointGain";
+  }
+  if (/-\d[\d,.\s%]*\s*Points?/i.test(String(detail || ""))) {
+    return "genericLosePoint";
+  }
+  return "";
+}
+
+function getStatFlashDuration(detail, options = {}) {
+  const explicitDuration = Number(options.durationMs);
+  if (Number.isFinite(explicitDuration)) {
+    return clampNumber(explicitDuration, 900, 3200, 1150);
+  }
+
+  const lineCount = String(detail || "").split("\n").filter(Boolean).length;
+  let duration = 1150;
+  if (options.complex || lineCount > 1) {
+    duration = 2300;
+  } else if (String(detail || "").length > 44) {
+    duration = 2050;
+  } else if (String(detail || "").length > 24) {
+    duration = 1700;
+  }
+  return options.sourceAttribution ? Math.min(3200, Math.max(1650, duration + 350)) : duration;
+}
+
+function getTargetedFlashOptions(sourceOwner, targetOwner, options = {}) {
+  return {
+    ...options,
+    owners: [targetOwner],
+    sourceOwner
+  };
+}
+
+function playNextStatFlash() {
+  if (state.statFlashActive || !state.statFlashQueue.length) {
+    return;
+  }
+
+  const flash = ensureStatFlashElement();
+  const next = state.statFlashQueue.shift();
+  const title = flash.querySelector(".stat-flash-title");
+  const detail = flash.querySelector(".stat-flash-detail");
+  title.textContent = next.title;
+  detail.textContent = next.detail;
+  if (next.onTextChange) {
+    next.onTextChange(next.detail);
+  }
+  flash.style.setProperty("--stat-flash-duration", `${next.durationMs}ms`);
+  flash.classList.remove("positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "sabotage", "coin", "hidden", "stat-flash-playing");
+  void flash.offsetWidth;
+  flash.classList.add(next.kind, "stat-flash-playing");
+  if (next.soundName) {
+    playSound(next.soundName);
+  }
+  if (next.flickerText) {
+    const updateFlickerText = () => {
+      const text = randomChaosText(getRandomInt(12, 20));
+      detail.textContent = text;
+      if (next.onTextChange) {
+        next.onTextChange(text);
+      }
+    };
+    updateFlickerText();
+    state.statFlashTextTimerId = window.setInterval(updateFlickerText, 90);
+  }
+  state.statFlashActive = true;
+
+  if (state.statFlashTimerId) {
+    window.clearTimeout(state.statFlashTimerId);
+  }
+  state.statFlashTimerId = window.setTimeout(() => {
+    if (state.statFlashTextTimerId) {
+      window.clearInterval(state.statFlashTextTimerId);
+      state.statFlashTextTimerId = null;
+    }
+    flash.classList.add("hidden");
+    flash.classList.remove("stat-flash-playing");
+    state.statFlashActive = false;
+    state.statFlashTimerId = null;
+    playNextStatFlash();
+  }, next.durationMs);
+}
+
+function clearStatFlashes() {
+  state.statFlashQueue = [];
+  state.statFlashActive = false;
+  if (state.statFlashTimerId) {
+    window.clearTimeout(state.statFlashTimerId);
+    state.statFlashTimerId = null;
+  }
+  if (state.statFlashTextTimerId) {
+    window.clearInterval(state.statFlashTextTimerId);
+    state.statFlashTextTimerId = null;
+  }
+  const flash = document.querySelector("#statFlash");
+  if (flash) {
+    flash.classList.add("hidden");
+    flash.classList.remove("stat-flash-playing", "positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "sabotage", "coin");
+  }
+}
+
+function formatSignedStat(amount, unit) {
+  const rounded = Math.round(amount || 0);
+  return `${rounded > 0 ? "+" : ""}${rounded.toLocaleString()} ${unit}${Math.abs(rounded) === 1 ? "" : "s"}`;
+}
+
+function getStatFlashKindFromAmounts(amounts) {
+  const cleanAmounts = amounts.filter((amount) => amount !== 0);
+  const hasPositive = cleanAmounts.some((amount) => amount > 0);
+  const hasNegative = cleanAmounts.some((amount) => amount < 0);
+  if (hasPositive && hasNegative) {
+    return "mixed";
+  }
+  return hasNegative ? "negative" : "positive";
+}
+
+function queueDeltaStatFlash(title, deltas, unit = "Point", options = {}) {
+  const entries = Object.entries(deltas || {}).filter(([, amount]) => amount !== 0);
+  if (!entries.length) {
+    return;
+  }
+
+  const focusOwner = getFocusedOwner();
+  const focusEntry = entries.find(([owner]) => owner === focusOwner);
+  if (!focusEntry) {
+    return;
+  }
+
+  const kind = options.kind || getStatFlashKindFromAmounts([focusEntry[1]]);
+  const detail = formatSignedStat(focusEntry[1], unit);
+  queueStatFlash(kind, title, detail, { ...options, unit });
+}
+
+function getCocktailFlashKind(result) {
+  const normalized = String(result || "").toLowerCase();
+  if (normalized.includes("blocked")) {
+    return "positive";
+  }
+  if (normalized.includes("lose")
+    || normalized.includes("debt")
+    || normalized.includes("dead weight")
+    || normalized.includes("chaos")
+    || normalized.includes("failed investment")
+    || normalized.includes("combustion")
+    || normalized.includes("time bomb")) {
+    return "negative";
+  }
+  return "positive";
+}
+
+function ensureFloatingDescriptionTooltip() {
+  let tooltip = document.querySelector("#floatingDescriptionTooltip");
+  if (tooltip) {
+    return tooltip;
+  }
+  tooltip = document.createElement("div");
+  tooltip.id = "floatingDescriptionTooltip";
+  tooltip.className = "floating-description-tooltip hidden";
+  document.body.appendChild(tooltip);
+  return tooltip;
+}
+
+function positionFloatingDescriptionTooltip(target, tooltip) {
+  const rect = target.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const gap = 8;
+  const left = Math.min(
+    Math.max(8, rect.left + (rect.width / 2) - (tooltipRect.width / 2)),
+    Math.max(8, window.innerWidth - tooltipRect.width - 8)
+  );
+  const topCandidate = rect.top - tooltipRect.height - gap;
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${Math.max(8, topCandidate)}px`;
+}
+
+function attachFloatingDescriptionTooltip(element) {
+  if (!element?.dataset?.description) {
+    return;
+  }
+  const show = () => {
+    const tooltip = ensureFloatingDescriptionTooltip();
+    tooltip.textContent = element.dataset.description;
+    setHidden(tooltip, false);
+    positionFloatingDescriptionTooltip(element, tooltip);
+  };
+  const hide = () => {
+    setHidden(ensureFloatingDescriptionTooltip(), true);
+  };
+  element.addEventListener("mouseenter", show);
+  element.addEventListener("focus", show);
+  element.addEventListener("mousemove", () => {
+    const tooltip = ensureFloatingDescriptionTooltip();
+    if (!tooltip.classList.contains("hidden")) {
+      positionFloatingDescriptionTooltip(element, tooltip);
+    }
+  });
+  element.addEventListener("mouseleave", hide);
+  element.addEventListener("blur", hide);
+}
+
+function setCollapsed(element, isCollapsed) {
+  element.classList.toggle("collapsed", isCollapsed);
+  element.setAttribute("aria-hidden", String(isCollapsed));
+}
+
+function hideModalWithMotion(element) {
+  if (!element || element.classList.contains("hidden")) {
+    return;
+  }
+  element.classList.add("closing");
+  window.setTimeout(() => {
+    element.classList.remove("closing");
+    setHidden(element, true);
+  }, 240);
+}
+
+function normalizeTriviaAnswer(answer) {
+  return String(answer || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(the|a|an)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function levenshteinDistance(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  const current = new Array(b.length + 1);
+  for (let i = 1; i <= a.length; i += 1) {
+    current[0] = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      current[j] = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return previous[b.length];
+}
+
+function isNearTriviaMatch(answer, acceptedAnswer) {
+  const normalized = normalizeTriviaAnswer(answer);
+  const accepted = normalizeTriviaAnswer(acceptedAnswer);
+  if (!normalized || !accepted) return false;
+  if (normalized === accepted) return true;
+  if (accepted.length >= 5 && (normalized.includes(accepted) || accepted.includes(normalized))) return true;
+  const distance = levenshteinDistance(normalized, accepted);
+  const allowedDistance = accepted.length >= 10 ? 2 : 1;
+  return distance <= allowedDistance;
+}
+
+function scoreTriviaAnswer(card, isCorrect = false) {
+  const answerKey = [state.canonicalAnswer, ...state.acceptedAnswers].filter(Boolean);
+  const normalized = normalizeTriviaAnswer(card);
+  const canonical = normalizeTriviaAnswer(state.canonicalAnswer);
+  const words = normalized ? normalized.split(" ") : [];
+  let score = isCorrect ? 64 : 18;
+
+  if (canonical && normalized === canonical) {
+    score += 60;
+  } else if (answerKey.some((answer) => normalizeTriviaAnswer(answer) === normalized)) {
+    score += 42;
+  } else if (answerKey.some((answer) => isNearTriviaMatch(card, answer))) {
+    score += 28;
+  }
+
+  if (isCorrect && /[A-Z][a-z]{5,}/.test(card)) {
+    score += 14;
+  }
+
+  if (isCorrect && words.length >= 2 && words.length <= 5) {
+    score += 10;
+  }
+
+  if (isCorrect && /[0-9]/.test(card)) {
+    score += 6;
+  }
+
+  if (!isCorrect && words.length <= 1) {
+    score -= 8;
+  }
+
+  return Math.max(0, Math.min(140, score));
+}
+
+function pickBadgeForScore(score, isWinner) {
+  const tiers = isWinner ? winnerBadgeTiers : loserBadgeTiers;
+  return tiers.find((tier) => score >= tier.minScore) || tiers[tiers.length - 1];
+}
+
+function getCardRatings(cards, winnerIndex, correctIndexes = [winnerIndex]) {
+  const correctSet = new Set(correctIndexes);
+  return cards.map((card, index) => {
+    const isCorrect = correctSet.has(index);
+    const score = scoreTriviaAnswer(card, isCorrect);
+    const badge = pickBadgeForScore(score, isCorrect);
+    return {
+      label: badge.label,
+      bonus: isCorrect ? badge.bonus : 0,
+      correct: isCorrect,
+      score
+    };
+  });
+}
+
+function getRoundCardOwners() {
+  if (Array.isArray(state.roundCardOwners) && state.roundCardOwners.length) {
+    return state.roundCardOwners;
+  }
+  if (isRoomMode()) {
+    return getActiveOwners();
+  }
+  return isDuelMode() ? ["player", "opponent"] : ["player", "bot1", "bot2"];
+}
+
+function getAnswerCardNodes() {
+  return [...elements.cardsArea.querySelectorAll(".white-card")];
+}
+
+function createAnswerCardNode(owner, cardIndex = 0) {
+  const card = document.createElement("article");
+  card.className = "white-card";
+  card.dataset.owner = owner;
+  card.dataset.cardIndex = String(cardIndex);
+  const ownerPlayer = getPlayer(owner);
+  card.classList.toggle("bot-answer-card", Boolean(ownerPlayer?.bot || ownerPlayer?.type === "bot"));
+  card.tabIndex = 0;
+  const answerOwner = document.createElement("div");
+  answerOwner.className = "answer-owner";
+  const avatar = document.createElement("span");
+  avatar.className = "answer-avatar";
+  avatar.setAttribute("aria-hidden", "true");
+  renderAvatar(avatar, ownerPlayer || { label: getOwnerLabel(owner) });
+  const label = document.createElement("span");
+  renderPlayerNameWithTitle(label, owner, getOwnerLabel(owner));
+  answerOwner.append(avatar, label);
+  const badge = document.createElement("strong");
+  badge.className = "rating-badge hidden";
+  const text = document.createElement("p");
+  card.append(answerOwner, badge, text);
+  if (shouldUseAnswerCardCustomization(owner)) {
+    applyCardCustomizationToElement(card, getProfileCardCustomizationForOwner(owner));
+  }
+  return card;
+}
+
+function renderAnswerCardsForOwners(owners = getRoundCardOwners(), indexes = owners.map((_, index) => index)) {
+  const cardOwners = owners.length ? owners : getRoundCardOwners();
+  getAnswerCardNodes().forEach((card) => card.remove());
+  const anchor = elements.answerStackButton || null;
+  cardOwners.forEach((owner, position) => {
+    const card = createAnswerCardNode(owner, indexes[position] ?? position);
+    card.style.order = String(position + 1);
+    elements.cardsArea.insertBefore(card, anchor);
+  });
+  elements.cardsArea.classList.toggle("two-card-mode", cardOwners.length === 2);
+  elements.cardsArea.style.setProperty("--answer-card-count", String(Math.min(Math.max(cardOwners.length, 1), 3)));
+  if (elements.answerStackButton) {
+    elements.cardsArea.appendChild(elements.answerStackButton);
+  }
+}
+
+function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, winnerIndex)) {
+  getAnswerCardNodes().forEach((card) => {
+    const badge = card.querySelector(".rating-badge");
+    const cardIndex = Number(card.dataset.cardIndex);
+    const rating = ratings[cardIndex];
+    if (!badge) {
+      return;
+    }
+    badge.textContent = rating ? `${rating.label}${rating.bonus ? ` +${rating.bonus}` : ""}` : "";
+    setHidden(badge, !rating);
+  });
+}
+
+function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
+  const cardIndex = Number(card.dataset.cardIndex);
+  const text = card.querySelector("p");
+  if (text) {
+    text.textContent = cards[cardIndex] || "";
+  }
+  const badge = card.querySelector(".rating-badge");
+  const rating = ratings?.[cardIndex];
+  if (badge) {
+    badge.textContent = rating ? `${rating.label}${rating.bonus ? ` +${rating.bonus}` : ""}` : "";
+    setHidden(badge, !rating);
+  }
+  card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
+}
+
+function getOwnAnswerCardIndex(cards) {
+  const owners = getRoundCardOwners();
+  const ownOwner = isRoomMode() && state.currentOwner !== "spectator" ? state.currentOwner : "player";
+  const ownIndex = owners.indexOf(ownOwner);
+  return ownIndex >= 0 && ownIndex < cards.length ? ownIndex : 0;
+}
+
+function getBestOtherAnswerIndex(cards, correctIndexes = [], preferredIndex = -1, ownIndex = getOwnAnswerCardIndex(cards)) {
+  let picked = -1;
+  const add = (index) => {
+    if (picked < 0 && Number.isInteger(index) && index >= 0 && index < cards.length && index !== ownIndex) {
+      picked = index;
+    }
+  };
+  add(preferredIndex);
+  correctIndexes.forEach(add);
+  cards.forEach((_, index) => add(index));
+  return picked;
+}
+
+function getAnswerStackCycleIndexes(cards) {
+  const ownIndex = getOwnAnswerCardIndex(cards);
+  return cards.map((_, index) => index).filter((index) => index !== ownIndex);
+}
+
+function getAnswerStackHiddenCount(cards) {
+  if ((cards || []).length <= 3) {
+    return 0;
+  }
+  const cycleIndexes = getAnswerStackCycleIndexes(cards);
+  const currentSecondIndex = state.visibleAnswerCardIndexes?.[1];
+  return cycleIndexes.filter((index) => index !== currentSecondIndex).length;
+}
+
+function fillVisibleAnswerCards(cards, ratings) {
+  getAnswerCardNodes().forEach((card) => {
+    applyAnswerCardContent(card, cards, ratings, state.currentRoundCorrectIndexes || []);
+  });
+}
+
+function cycleAnswerStack() {
+  const cards = state.currentRoundCards || [];
+  const owners = getRoundCardOwners();
+  const ratings = state.currentRoundCardRatings || [];
+  const cycleIndexes = getAnswerStackCycleIndexes(cards);
+  const currentSecondIndex = state.visibleAnswerCardIndexes?.[1];
+  const nextIndexes = cycleIndexes.filter((index) => index !== currentSecondIndex);
+  if (!nextIndexes.length) {
+    return;
+  }
+
+  const card = getAnswerCardNodes()[1];
+  if (!card) {
+    return;
+  }
+  const nextIndex = nextIndexes[state.answerCardCycleCursor % nextIndexes.length];
+  state.answerCardCycleCursor += 1;
+  state.visibleAnswerCardIndexes[1] = nextIndex;
+
+  card.classList.remove("answer-card-cycle-in");
+  card.classList.add("answer-card-cycle-out");
+  window.setTimeout(() => {
+    const owner = owners[nextIndex] || "player";
+    const nextCard = createAnswerCardNode(owner, nextIndex);
+    nextCard.style.order = "2";
+    applyAnswerCardContent(nextCard, cards, ratings, state.currentRoundCorrectIndexes || []);
+    nextCard.classList.add("answer-card-cycle-in");
+    card.replaceWith(nextCard);
+    window.setTimeout(() => nextCard.classList.remove("answer-card-cycle-in"), 360);
+    const hiddenAnswerCount = getAnswerStackHiddenCount(cards);
+    if (elements.answerStackButton && elements.answerStackCount) {
+      elements.answerStackCount.textContent = `+${hiddenAnswerCount}`;
+      setHidden(elements.answerStackButton, hiddenAnswerCount === 0);
+    }
+  }, 130);
+  playSound("coin");
+}
+
+function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1) {
+  const owners = getRoundCardOwners().slice(0, cards.length);
+  const ownIndex = getOwnAnswerCardIndex(cards);
+  const bestOtherIndex = getBestOtherAnswerIndex(cards, correctIndexes, preferredIndex, ownIndex);
+  if (cards.length <= 3) {
+    const directIndexes = [ownIndex];
+    if (bestOtherIndex >= 0 && !directIndexes.includes(bestOtherIndex)) {
+      directIndexes.push(bestOtherIndex);
+    }
+    cards.forEach((_, index) => {
+      if (!directIndexes.includes(index)) {
+        directIndexes.push(index);
+      }
+    });
+    state.visibleAnswerCardIndexes = directIndexes;
+  } else {
+    state.visibleAnswerCardIndexes = bestOtherIndex >= 0 ? [ownIndex, bestOtherIndex] : [ownIndex];
+  }
+  state.answerCardCycleCursor = 0;
+  renderAnswerCardsForOwners(
+    state.visibleAnswerCardIndexes.map((index) => owners[index]),
+    state.visibleAnswerCardIndexes
+  );
+  const cardNodes = getAnswerCardNodes();
+  const correctSet = new Set(correctIndexes);
+  cardNodes.forEach((node) => {
+    if (!node) {
+      return;
+    }
+    const cardIndex = Number(node.dataset.cardIndex);
+    node.style.order = String((state.visibleAnswerCardIndexes.indexOf(cardIndex) + 1) || 1);
+    node.classList.toggle("answer-priority", correctSet.has(cardIndex));
+  });
+
+  const hiddenAnswerCount = getAnswerStackHiddenCount(cards);
+  if (elements.answerStackButton && elements.answerStackCount) {
+    elements.answerStackButton.style.order = "3";
+    elements.answerStackCount.textContent = `+${hiddenAnswerCount}`;
+    setHidden(elements.answerStackButton, hiddenAnswerCount === 0);
+    elements.cardsArea.classList.toggle("answer-stack-mode", hiddenAnswerCount > 0);
+    elements.cardsArea.classList.toggle("two-card-mode", hiddenAnswerCount === 0 && state.visibleAnswerCardIndexes.length === 2);
+    elements.cardsArea.style.setProperty("--answer-card-count", String(hiddenAnswerCount > 0 ? 3 : Math.max(1, state.visibleAnswerCardIndexes.length)));
+  }
+}
+
+function clearCardBadges() {
+  document.querySelectorAll(".white-card .rating-badge").forEach((badge) => {
+    badge.textContent = "";
+    setHidden(badge, true);
+  });
+  getAnswerCardNodes().forEach((card) => {
+    card.style.order = "";
+    card.classList.remove("answer-priority", "winner");
+  });
+  if (elements.answerStackButton) {
+    setHidden(elements.answerStackButton, true);
+  }
+  elements.cardsArea.classList.remove("answer-stack-mode");
+}
+
+function renderQuestionImagePlaceholder(message = "Waiting for image...", options = {}) {
+  state.questionImageLoadId += 1;
+  setHidden(elements.questionImageWrap, false);
+  elements.questionImage.onload = null;
+  elements.questionImage.onerror = null;
+  elements.questionImage.removeAttribute("src");
+  elements.questionImage.alt = "";
+  setHidden(elements.questionImage, true);
+  elements.questionImagePlaceholder.textContent = message;
+  setHidden(elements.questionImagePlaceholder, false);
+  elements.questionImageCredit.textContent = "";
+  setHidden(elements.questionImageCredit, true);
+  if (!options.skipFit) {
+    scheduleBlackCardFit();
+  }
+}
+
+function renderQuestionImage(image = state.questionImage, options = {}) {
+  if (!image?.url && state.questionType === "text") {
+    state.questionImageLoadId += 1;
+    elements.questionImage.onload = null;
+    elements.questionImage.onerror = null;
+    elements.questionImage.removeAttribute("src");
+    elements.questionImage.alt = "";
+    elements.questionImageCredit.textContent = "";
+    setHidden(elements.questionImageWrap, true);
+    setHidden(elements.questionImage, true);
+    setHidden(elements.questionImagePlaceholder, true);
+    setHidden(elements.questionImageCredit, true);
+    if (!options.skipFit) {
+      scheduleBlackCardFit();
+    }
+    return;
+  }
+
+  const safeImage = image && image.url ? image : null;
+  const hasImage = Boolean(safeImage && safeImage.url);
+  if (!hasImage) {
+    state.questionImageLoadId += 1;
+    setHidden(elements.questionImageWrap, false);
+    elements.questionImage.onload = null;
+    elements.questionImage.onerror = null;
+    elements.questionImage.removeAttribute("src");
+    elements.questionImage.alt = "";
+    setHidden(elements.questionImage, true);
+    elements.questionImagePlaceholder.textContent = "Image not retrieved";
+    setHidden(elements.questionImagePlaceholder, false);
+    elements.questionImageCredit.textContent = "";
+    setHidden(elements.questionImageCredit, true);
+    if (!options.skipFit) {
+      scheduleBlackCardFit();
+    }
+    return;
+  }
+
+  const loadId = state.questionImageLoadId + 1;
+  state.questionImageLoadId = loadId;
+  setHidden(elements.questionImageWrap, false);
+  elements.questionImage.onload = () => {
+    if (state.questionImageLoadId !== loadId) return;
+    setHidden(elements.questionImage, false);
+    setHidden(elements.questionImagePlaceholder, true);
+    if (!options.skipFit) {
+      scheduleBlackCardFit();
+    }
+  };
+  elements.questionImage.onerror = () => {
+    if (state.questionImageLoadId !== loadId) return;
+    renderQuestionImagePlaceholder("Image not retrieved", options);
+  };
+  elements.questionImage.alt = safeImage.alt || "Trivia question reference image";
+  elements.questionImageCredit.textContent = safeImage.credit || "";
+  setHidden(elements.questionImageCredit, !safeImage.credit);
+  elements.questionImage.removeAttribute("src");
+  setHidden(elements.questionImage, true);
+  elements.questionImagePlaceholder.textContent = "Waiting for image...";
+  setHidden(elements.questionImagePlaceholder, false);
+  elements.questionImage.src = safeImage.url;
+  if (!options.skipFit) {
+    scheduleBlackCardFit();
+  }
+}
+
+function renderPowerLog(awarded) {
+  elements.powerLog.replaceChildren();
+  const events = (awarded.events || []).filter((event) => typeof event === "string" || !event.secret);
+  setHidden(elements.powerLogToggle, events.length === 0);
+  if (!events.length) {
+    setHidden(elements.powerLog, true);
+    return;
+  }
+
+  elements.powerLogToggle.textContent = `Power Effects (${events.length})`;
+  elements.powerLogToggle.setAttribute("aria-expanded", "false");
+  setHidden(elements.powerLog, true);
+
+  events.forEach((event) => {
+    const item = document.createElement("span");
+    item.className = "power-play";
+    const text = typeof event === "string" ? event : event.text;
+    const power = typeof event === "string" ? null : getPowerById(event.powerId);
+    item.textContent = text;
+    if (power) {
+      item.dataset.rarity = power.rarity;
+      item.dataset.description = power.description;
+      item.title = `${rarityInfo[power.rarity].label}: ${power.description}`;
+      attachFloatingDescriptionTooltip(item);
+    }
+    elements.powerLog.appendChild(item);
+  });
+}
+
+function createActiveEffect(owner, powerId, name, description, options = {}) {
+  const power = getPowerById(powerId);
+  return {
+    owner,
+    label: owner === "table" ? "Table" : getOwnerLabel(owner),
+    name,
+    description,
+    rarity: power?.rarity || "grey",
+    private: Boolean(options.private)
+  };
+}
+
+function getActiveEffectEntries() {
+  const entries = [];
+  const owners = getActiveOwners();
+
+  owners.forEach((owner) => {
+    const effects = [
+      [state.permafrostProtection[owner], createActiveEffect(owner, "permafrost", "Permafrost", "Blocks deductions for the rest of the match.")],
+      [state.eternalFlameProtection[owner], createActiveEffect(owner, "eternal_flame", "Eternal Flame", "Protects win streak for the rest of the match.")],
+      [(state.pocketShieldCharges[owner] || 0) > 0, createActiveEffect(owner, "shield", `Pocket Shield x${state.pocketShieldCharges[owner]}`, "Blocks the next point deduction against this player.")],
+      [(state.streakAnchorCharges[owner] || 0) > 0, createActiveEffect(owner, "streak_retainer", `Streak Anchor x${state.streakAnchorCharges[owner]}`, "Blocks the next streak loss against this player.")],
+      [state.freezeProtection[owner] > 0, createActiveEffect(owner, "deep_freeze", `Deep Freeze x${state.freezeProtection[owner]}`, "Blocks deductions for remaining rounds.")],
+      [state.streakFreezeRounds[owner] > 0, createActiveEffect(owner, "freeze_ray", `Freeze Ray x${state.streakFreezeRounds[owner]}`, "Blocks streak gains and losses.")],
+      [state.streakLossProtectionRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Streak Guard x${state.streakLossProtectionRounds[owner]}`, "Blocks streak losses.")],
+      [(state.debuffShieldCharges[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Antivirus x${state.debuffShieldCharges[owner]}`, "Blocks the next debuff applied to this player.")],
+      [state.cocktailPenaltyRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Cocktail Debt x${state.cocktailPenaltyRounds[owner]}`, "Loses 2.5% of total score after wrong answers.")],
+      [state.failedInvestmentDebuffs[owner], createActiveEffect(owner, "cocktail_mix", "Failed Investment", "Next correct answer only pays 80% of gained points.")],
+      [state.timeDilationRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Time Dilation x${state.timeDilationRounds[owner]}`, "Adds 10 seconds to this player's answer timer.")],
+      [state.pendingStreakBonuses[owner] > 0, createActiveEffect(owner, "rocket", `Rocket Fuel +${state.pendingStreakBonuses[owner]}`, "Adds streak at the start of next round.")],
+      [state.pendingPowerBonuses[owner] > 0, createActiveEffect(owner, "small_insurance", `Pending Bonus +${state.pendingPowerBonuses[owner]}`, "Adds points next round.")],
+      [state.insurancePolicies[owner], createActiveEffect(
+        owner,
+        state.insurancePolicies[owner]?.powerId || "small_insurance",
+        `${getPowerById(state.insurancePolicies[owner]?.powerId)?.name || "Insurance"} x${state.insurancePolicies[owner]?.remaining || 0}`,
+        `Triggers on your next loss within ${state.insurancePolicies[owner]?.remaining || 0} round${(state.insurancePolicies[owner]?.remaining || 0) === 1 ? "" : "s"}: keeps your streak and pays ${Math.round((state.insurancePolicies[owner]?.payoutPercent || 0) * 100)}% of your total score${state.insurancePolicies[owner]?.refillOnTrigger ? ", then refills all ability slots" : ""}.`
+      )],
+      [state.pendingCocktailBuffs[owner] > 0, createActiveEffect(owner, "overachiever", `Overachiever Buff x${state.pendingCocktailBuffs[owner]}`, "Adds a random Cocktail Mix buff next round.")],
+      [state.luckRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Lucky Side x${state.luckRounds[owner]}`, "Buff/debuff rolls become buffs, and new power-ups are Rare or better.")],
+      [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", "Heaven/Hell Curse", "Loses 250 points each round.")],
+      [state.bottomFeederRounds[owner] > 0, createActiveEffect(owner, "bottom_feeder", `Bottom Feeder x${state.bottomFeederRounds[owner]}`, `Gains ${(state.bottomFeederRounds[owner] * 100).toLocaleString()} points after every loss for the rest of the game.`)],
+      [state.worldBurnOwners[owner], createActiveEffect(owner, "world_burn", "Let the World Burn", "First place loses 5% each round.")],
+      [state.lawnMowerOwners[owner], createActiveEffect(owner, "law_mower", "Lawn Mower", "Players ahead lose 12% of this player's total each round.")],
+      [state.arsonists[owner], createActiveEffect(owner, "arsonist", "Arsonist", "Adds streaks at round start.")],
+      [state.bartenders[owner], createActiveEffect(owner, "bartender", "Bartender", "Serves Cocktail Mix at round start.")],
+      [state.virusFactories[owner], createActiveEffect(owner, "virus_factory", "Virus Factory", "Each player may roll a debuff at round start.")],
+      [state.error404Owners[owner], createActiveEffect(owner, "crawler_virus", "Error 404", "Each player has a 33% chance each round to get scrambled at a random timer moment.")],
+      [state.typhoonOwners[owner], createActiveEffect(owner, "typhoon_season", "Typhoon Season", "Each player may self-zap at round start.")],
+      [state.thornOwners[owner], createActiveEffect(owner, "thorns", "Thorns", "Reflects 33% of this player's scoring losses to everyone else.")],
+      [state.hotInHereOwners[owner], createActiveEffect(owner, "hot_in_here", "It's Getting Hot", "Burns other players at round start.")],
+      [state.redHerringMasks[owner] && owner === getFocusedOwner(), createActiveEffect(
+        owner,
+        "red_herring",
+        "Red Herring - hover for real score",
+        `Only you can see this effect. Your real score is ${getScore(owner).toLocaleString()} points; other score displays show ???.`,
+        { private: true }
+      )]
+    ];
+
+    effects.forEach(([active, entry]) => {
+      if (active) {
+        entries.push(entry);
+      }
+    });
+  });
+
+  if (isMatchModifierEnabled("wildFire")) {
+    entries.push(createActiveEffect("table", "hot_in_here", "Wild Fire", "Everyone permanently carries It's Getting Hot. This cannot be removed by power-ups."));
+  }
+
+  state.timeBombs.forEach((bomb) => {
+    const roundsLeft = Math.max(0, bomb.round - state.round);
+    entries.push(createActiveEffect(
+      bomb.owner,
+      "time_bomb",
+      `Time Bomb x${roundsLeft}`,
+      "Players ahead of this player lose 10% when it detonates."
+    ));
+  });
+
+  (state.debuffTimeBombs || []).forEach((bomb) => {
+    const roundsLeft = Math.max(0, bomb.round - state.round);
+    entries.push(createActiveEffect(
+      bomb.owner,
+      "cocktail_mix",
+      `Debuff Time Bomb x${roundsLeft}`,
+      "This player loses 10% of their score when it detonates."
+    ));
+  });
+
+  (state.soulLinks || []).forEach((link) => {
+    if (owners.includes(link.owner) && owners.includes(link.targetOwner)) {
+      entries.push(createActiveEffect(link.owner, "soul_link", `Soul Link -> ${getOwnerLabel(link.targetOwner)}`, "Both linked players gain 10% of the other's score each round."));
+    }
+  });
+
+  if (state.hotPotatoCount > 0) {
+    entries.push(createActiveEffect("table", "hot_potato", `Hot Potato x${state.hotPotatoCount}`, "Random final-round 20% score penalty armed."));
+  }
+
+  if (state.loserPenaltyRounds > 0) {
+    entries.push(createActiveEffect("table", "penalty_cloud", `Penalty Cloud x${state.loserPenaltyRounds}`, "Losers lose 5% of their current total for remaining rounds."));
+  }
+
+  return entries;
+}
+
+function shouldRenderEffectPanel() {
+  return !state.gradingActive
+    && !state.matchEnded
+    && !elements.gameStage.classList.contains("hidden")
+    && !elements.inputPanel.classList.contains("hidden")
+    && elements.cardsArea.classList.contains("hidden")
+    && elements.verdictPanel.classList.contains("hidden")
+    && elements.endPanel.classList.contains("hidden");
+}
+
+function renderEffectPanel() {
+  if (!shouldRenderEffectPanel()) {
+    elements.effectPanel.replaceChildren();
+    elements.effectPanel.classList.add("empty");
+    setHidden(elements.effectPanel, true);
+    return;
+  }
+
+  const entries = getActiveEffectEntries();
+  elements.effectPanel.replaceChildren();
+  elements.effectPanel.classList.toggle("empty", entries.length === 0);
+
+  if (!entries.length) {
+    const header = document.createElement("div");
+    header.className = "effect-panel-header";
+    header.textContent = "Active effects";
+    const empty = document.createElement("span");
+    empty.className = "effect-empty";
+    empty.textContent = "None";
+    elements.effectPanel.append(header, empty);
+    setHidden(elements.effectPanel, false);
+    return;
+  }
+
+  const header = document.createElement("div");
+  header.className = "effect-panel-header";
+  header.textContent = "Active effects";
+  elements.effectPanel.appendChild(header);
+
+  entries.forEach((entry) => {
+    const badge = document.createElement("span");
+    badge.className = "effect-badge";
+    badge.dataset.rarity = entry.rarity;
+    badge.dataset.description = entry.description;
+    badge.title = entry.description;
+    badge.innerHTML = `<strong>${entry.label}</strong> ${entry.name}`;
+    elements.effectPanel.appendChild(badge);
+  });
+}
+
+function renderRoundRecap(awarded, winnerOwner, rating) {
+  elements.roundRecap.replaceChildren();
+  if (!awarded) {
+    setHidden(elements.roundRecap, true);
+    return;
+  }
+
+  const title = document.createElement("h3");
+  title.textContent = "Score changes";
+  elements.roundRecap.appendChild(title);
+
+  const results = document.createElement("div");
+  results.className = "trivia-results-list";
+  results.classList.toggle("room-results-list", isRoomMode());
+  const winningSet = new Set(awarded.winningOwners || [winnerOwner]);
+  getActiveOwners()
+    .map((owner) => ({
+      owner,
+      label: getOwnerLabel(owner),
+      score: getScore(owner),
+      displayScore: getDisplayScoreText(owner),
+      hiddenScore: isScoreHidden(owner),
+      delta: awarded.deltas?.[owner] || 0,
+      powers: getPlayedPowerEntries([owner])
+        .map((entry) => entry.power)
+        .filter((power) => power && !isSecretPower(power)),
+      streak: getOwnerStreak(owner),
+      correct: winningSet.has(owner)
+    }))
+    .sort(compareScoreRowsForLeaderboard)
+    .forEach((row, index) => {
+      const item = document.createElement("div");
+      item.className = "trivia-result-row";
+      item.dataset.owner = row.owner;
+      item.dataset.participantId = getPlayer(row.owner)?.participantId || "";
+      item.classList.toggle("correct", row.correct);
+      item.classList.toggle("incorrect", !row.correct);
+      applyOwnerCustomizationSurface(item, row.owner);
+      item.classList.toggle("kickable-bot", canKickRoomBot(row.owner, item.dataset.participantId));
+      if (canKickRoomBot(row.owner, item.dataset.participantId)) {
+        item.dataset.tooltip = "Click to kick this bot from the room.";
+      }
+      const rank = document.createElement("span");
+      rank.textContent = `#${index + 1}`;
+      const avatar = document.createElement("span");
+      avatar.className = "result-player-avatar";
+      renderAvatar(avatar, getPlayer(row.owner) || { label: row.label });
+      const name = document.createElement("strong");
+      renderPlayerNameWithTitle(name, row.owner, row.label);
+      const score = document.createElement("em");
+      score.textContent = row.hiddenScore ? "??? pts" : `${row.score.toLocaleString()} pts`;
+      score.className = row.hiddenScore ? "score-hidden" : "";
+      const delta = document.createElement("small");
+      delta.className = `result-delta ${row.delta < 0 ? "negative" : row.delta > 0 ? "positive" : "neutral"}`;
+      delta.textContent = `${row.delta >= 0 ? "+" : ""}${row.delta.toLocaleString()}`;
+      const powerList = document.createElement("div");
+      powerList.className = "result-power-list";
+      if (row.powers.length) {
+        row.powers.forEach((rowPower) => {
+          const power = document.createElement("small");
+          power.className = "result-power-pill";
+          power.textContent = rowPower.name;
+          power.dataset.rarity = rowPower.rarity;
+          power.dataset.description = rowPower.description;
+          power.title = `${rarityInfo[rowPower.rarity].label}: ${rowPower.description}`;
+          attachFloatingDescriptionTooltip(power);
+          powerList.appendChild(power);
+        });
+      } else {
+        const power = document.createElement("small");
+        power.className = "result-power-pill";
+        power.textContent = "No power";
+        power.dataset.rarity = "none";
+        power.title = "No power-up used this round.";
+        powerList.appendChild(power);
+      }
+      const streak = document.createElement("small");
+      streak.className = "result-streak-pill";
+      streak.textContent = `${row.streak}x streak`;
+      item.append(rank, avatar, name, score, delta, powerList, streak);
+      results.appendChild(item);
+    });
+  elements.roundRecap.appendChild(results);
+  setHidden(elements.roundRecap, false);
+}
+
+function resetReactionPanel() {
+  return;
+}
+
+function createPowerEvent(owner, power, text) {
+  return {
+    owner,
+    powerId: power.id,
+    text,
+    secret: isSecretPower(power)
+  };
+}
+
+function isSecretPower(power) {
+  return power?.type === "red_herring" || power?.type === "insurance_fraud";
+}
+
+function applyPlayedPowerDisables(playedEntries, events) {
+  const voidBombEntries = playedEntries.filter((entry) => entry.power.type === "void_bomb");
+  const voidTargets = new Set();
+  voidBombEntries.forEach((entry) => {
+    const target = getEntryTarget(entry);
+    if (!target || !getActiveOwners().includes(target)) {
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+      return;
+    }
+    voidTargets.add(target);
+    removeActiveEffectsForOwner(target);
+    queueStatFlash("bomb", entry.power.name, "Power Disabled\nEffects Removed", getTargetedFlashOptions(entry.owner, target, { complex: true }));
+    events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stripped ${getOwnerLabel(target)}'s active effects and disabled their power this round.`));
+  });
+
+  let filteredEntries = playedEntries.filter((entry) => !voidTargets.has(entry.owner) || entry.power.type === "void_bomb");
+  const monopolyEntries = filteredEntries.filter((entry) => entry.power.type === "monopoly");
+  const shockBombEntries = filteredEntries.filter((entry) => entry.power.type === "shock_bomb");
+  const disabledEntries = filteredEntries.filter((entry) =>
+    (monopolyEntries.length && entry.power.rarity !== "gold" && entry.power.type !== "monopoly")
+    || (shockBombEntries.length && ["grey", "blue"].includes(entry.power.rarity))
+  );
+  filteredEntries = filteredEntries.filter((entry) => !disabledEntries.includes(entry));
+
+  monopolyEntries.forEach((entry) => {
+    events.push(createPowerEvent(entry.owner, entry.power, "Monopoly disabled every non-gold power-up this round."));
+  });
+  shockBombEntries.forEach((entry) => {
+    events.push(createPowerEvent(entry.owner, entry.power, "Shock Bomb disabled all grey and blue power-ups this round."));
+  });
+  disabledEntries.forEach((entry) => {
+    events.push(`${getOwnerLabel(entry.owner)}'s ${entry.power.name} fizzled out.`);
+  });
+
+  return { playedEntries: filteredEntries, voidBombEntries, voidTargets };
+}
+
+function applyNewPersistentPowerEntries(playedEntries, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "shield")
+    .forEach((entry) => {
+      state.pocketShieldCharges[entry.owner] = Math.max(state.pocketShieldCharges[entry.owner] || 0, 1);
+      queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will block the next point deduction against ${getOwnerLabel(entry.owner)}.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "streak_retainer")
+    .forEach((entry) => {
+      state.streakAnchorCharges[entry.owner] = Math.max(state.streakAnchorCharges[entry.owner] || 0, 1);
+      queueStatFlash("shield", entry.power.name, "Streak Shield Armed", { owners: [entry.owner], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will block the next streak loss against ${getOwnerLabel(entry.owner)}.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "freeze_ray")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !getActiveOwners().includes(target)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+        return;
+      }
+      state.streakFreezeRounds[target] = Math.max(state.streakFreezeRounds[target] || 0, 3);
+      queueStatFlash("shield", entry.power.name, "Streaks Locked", getTargetedFlashOptions(entry.owner, target, { complex: true }));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} froze ${getOwnerLabel(target)}'s streak changes for 3 rounds.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "world_burn")
+    .forEach((entry) => {
+      state.worldBurnOwners[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will burn first place by 5% every round.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "law_mower")
+    .forEach((entry) => {
+      state.lawnMowerOwners[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will trim players ahead every round.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "soul_link")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !getActiveOwners().includes(target)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+        return;
+      }
+      state.soulLinks = [...(state.soulLinks || []).filter((link) => link.owner !== entry.owner), { owner: entry.owner, targetOwner: target }];
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} linked ${getOwnerLabel(entry.owner)} with ${getOwnerLabel(target)}.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "arsonist")
+    .forEach((entry) => {
+      state.arsonists[entry.owner] = true;
+      const target = getRandomOtherOwner(entry.owner);
+      setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 1);
+      if (target) {
+        setOwnerStreak(target, getOwnerStreak(target) + 1);
+      }
+      queueStatFlash("positive", entry.power.name, "+1 Streak", { owners: [entry.owner, target].filter(Boolean) });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} lit a round-start streak engine.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "bartender")
+    .forEach((entry) => {
+      state.bartenders[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will serve Cocktail Mix every round.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "virus_factory")
+    .forEach((entry) => {
+      state.virusFactories[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will roll debuffs at round start.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "typhoon_season")
+    .forEach((entry) => {
+      state.typhoonOwners[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will roll self-zaps at round start.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "thorns")
+    .forEach((entry) => {
+      state.thornOwners[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will reflect scoring losses for the rest of the game.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "hot_in_here")
+    .forEach((entry) => {
+      state.hotInHereOwners[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} turned streaks into round-start burn.`));
+    });
+}
+
+function applyNewPointPowerEntries(playedEntries, deltas, owners, events, winnerSet = new Set()) {
+  playedEntries
+    .filter((entry) => entry.power.type === "void_bomb")
+    .forEach((entry) => {
+      deltas[entry.owner] -= 250;
+      queueStatFlash("negative", entry.power.name, formatSignedStat(-250, "Point"), { owners: [entry.owner] });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} cost ${getOwnerLabel(entry.owner)} 250 points.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "cocktail_mix")
+    .forEach((entry) => {
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} resolved instantly.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "afterparty")
+    .forEach((entry) => {
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} paid instantly after last round's win.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "airdrop")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry) || entry.owner;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} dropped supplies on ${getOwnerLabel(target)} instantly.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "shameless")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      const amount = getEntryMeta(entry).stolenAmount || 0;
+      events.push(createPowerEvent(entry.owner, entry.power, amount && target
+        ? `${entry.power.name} instantly stole ${amount.toLocaleString()} points from ${getOwnerLabel(target)}.`
+        : `${entry.power.name} found no points to steal.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "software_downgrade")
+    .forEach((entry) => {
+      const meta = getEntryMeta(entry);
+      const deleted = getPowerById(meta.deletedPowerId);
+      events.push(createPowerEvent(entry.owner, entry.power, deleted
+        ? `${entry.power.name} deleted ${deleted.name} (${rarityInfo[deleted.rarity].label}).`
+        : `${entry.power.name} found no power-up to delete.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "xray_hacks")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} revealed ${target ? getOwnerLabel(target) : "a target"}'s hand.`));
+    });
+
+  playedEntries
+    .filter((entry) => ["ability_merchant", "sin_sloth", "crawler_virus", "multiple_choice", "lucky_side", "blue_pill", "antivirus", "virus_deployment", "curse", "get_good", "lightning_strike", "zap_strike"].includes(entry.power.type))
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      const meta = getEntryMeta(entry);
+      if (entry.power.type === "lightning_strike" || entry.power.type === "zap_strike") {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} hit ${target ? getOwnerLabel(target) : "a target"} immediately for ${Number(meta.appliedLoss || 0).toLocaleString()} points.`));
+        return;
+      }
+      if (entry.power.type === "get_good") {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} hit ${target ? getOwnerLabel(target) : "a target"} for ${Number(meta.appliedLoss || 0).toLocaleString()} points from ${Number(meta.wrongCount || 0)} wrong answer${Number(meta.wrongCount || 0) === 1 ? "" : "s"}.`));
+        return;
+      }
+      if (target) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} targeted ${getOwnerLabel(target)} instantly.`));
+        return;
+      }
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} resolved instantly.`));
+    });
+
+  owners.forEach((owner) => {
+    if ((state.cocktailPenaltyRounds[owner] || 0) > 0 && !winnerSet.has(owner)) {
+      const currentTotal = Math.max(0, getScore(owner) + (deltas[owner] || 0));
+      const loss = Math.floor(currentTotal * 0.025);
+      deltas[owner] -= loss;
+      events.push(`${getOwnerLabel(owner)} lost ${loss.toLocaleString()} points from Cocktail Debt.`);
+    }
+  });
+}
+
+function applyReignChaosEndRound(playedEntries, deltas, owners, events) {
+  const chaosEntries = playedEntries.filter((entry) => entry.power.type === "reign_chaos");
+  if (!chaosEntries.length) {
+    return;
+  }
+
+  chaosEntries.forEach((entry) => {
+    queueStatFlash("mixed", entry.power.name, "+/-15% Roll\nHand Reroll", { owners });
+    owners.forEach((participant) => {
+      const currentTotal = Math.max(0, getScore(participant) + (deltas[participant] || 0));
+      const percent = getRandomInt(-150, 150) / 1000;
+      const amount = Math.round(currentTotal * percent);
+      deltas[participant] += amount;
+      const handCount = state.powerHands[participant]?.length || 0;
+      if (handCount > 0) {
+        rerollPowerHand(participant, handCount);
+      }
+      const isBuff = Math.random() < 0.5;
+      const cocktailResult = applyCocktailMix(participant, isBuff ? { buffsOnly: true } : { debuffsOnly: true });
+      queueStatFlash(isBuff ? "positive" : "negative", entry.power.name, cocktailResult, { owners: [participant], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} swung ${getOwnerLabel(participant)} by ${percent >= 0 ? "+" : ""}${(percent * 100).toFixed(1)}% (${amount >= 0 ? "+" : ""}${amount.toLocaleString()}), rerolled their remaining hand, and served a ${isBuff ? "buff" : "debuff"}: ${cocktailResult}.`));
+    });
+  });
+}
+
+function applyLeaderBurnDeltas(deltas, owners, events) {
+  Object.keys(state.worldBurnOwners || {})
+    .filter((owner) => owners.includes(owner))
+    .forEach((owner) => {
+      const currentScores = Object.fromEntries(owners.map((participant) => [participant, Math.max(0, getScore(participant) + (deltas[participant] || 0))]));
+      const highScore = Math.max(...Object.values(currentScores));
+      owners
+        .filter((participant) => currentScores[participant] === highScore && highScore > 0)
+        .forEach((leader) => {
+          const amount = Math.floor(currentScores[leader] * 0.05);
+          deltas[leader] -= amount;
+          events.push(`Let the World Burn from ${getOwnerLabel(owner)} burned ${getOwnerLabel(leader)} for ${amount.toLocaleString()} points.`);
+        });
+    });
+}
+
+function applyLawnMowerDeltas(deltas, owners, events) {
+  Object.keys(state.lawnMowerOwners || {})
+    .filter((owner) => owners.includes(owner))
+    .forEach((owner) => {
+      const ownerTotal = Math.max(0, getScore(owner) + (deltas[owner] || 0));
+      const amount = Math.floor(ownerTotal * 0.12);
+      if (amount <= 0) {
+        return;
+      }
+      owners
+        .filter((participant) => participant !== owner && getScore(participant) + (deltas[participant] || 0) > ownerTotal)
+        .forEach((participant) => {
+          deltas[participant] -= amount;
+          events.push(`Lawn Mower from ${getOwnerLabel(owner)} trimmed ${getOwnerLabel(participant)} for ${amount.toLocaleString()} points.`);
+        });
+    });
+}
+
+function applyPersistentRoundDeltas(deltas, owners, events) {
+  applyLeaderBurnDeltas(deltas, owners, events);
+  applyLawnMowerDeltas(deltas, owners, events);
+}
+
+function getHotInHereEffectOwners(owners = getActiveOwners()) {
+  const cardOwners = Object.keys(state.hotInHereOwners || {}).filter((owner) => owners.includes(owner));
+  return [...new Set([
+    ...cardOwners,
+    ...(isMatchModifierEnabled("wildFire") ? owners : [])
+  ])];
+}
+
+function refillPowerHandToLimit(owner, reason = "to full") {
+  const limit = getPowerHandLimit(owner);
+  const hand = [...(state.powerHands[owner] || [])];
+  const added = [];
+  while (hand.length < limit) {
+    const powerId = drawPowerCard([...hand, ...added], getPowerDrawOptions(owner));
+    if (!powerId) {
+      break;
+    }
+    added.push(powerId);
+    hand.push(powerId);
+  }
+  state.powerHands[owner] = hand;
+  markFreshPowerUps(owner, added);
+  return added.length ? `${getOwnerLabel(owner)} refilled ${added.length} power-up slot${added.length === 1 ? "" : "s"} ${reason}.` : null;
+}
+
+function armInsurancePolicy(owner, power) {
+  if (!owner || !power) {
+    return null;
+  }
+  const cost = Math.floor(Math.max(0, getScore(owner)) * (power.costPercent || 0));
+  if (cost > 0) {
+    addScore(owner, -cost);
+  }
+  state.insurancePolicies[owner] = {
+    powerId: power.id,
+    remaining: 3,
+    payoutPercent: power.payoutPercent || 0,
+    refillOnTrigger: Boolean(power.refillOnTrigger)
+  };
+  queueStatFlash(
+    "mixed",
+    power.name,
+    [
+      cost > 0 ? formatSignedStat(-cost, "Point") : "No Cost",
+      `Armed for 3 rounds`
+    ],
+    { owners: [owner], complex: true }
+  );
+  return cost;
+}
+
+function resolveInsurancePolicies(losingOwners, deltas, startingScores, events) {
+  const triggeredOwners = new Set();
+  const losers = new Set(losingOwners || []);
+  getActiveOwners().forEach((owner) => {
+    const policy = state.insurancePolicies[owner];
+    if (!policy) {
+      return;
+    }
+
+    if (losers.has(owner)) {
+      const projectedScore = Math.max(0, (startingScores[owner] || 0) + (deltas[owner] || 0));
+      const payout = Math.floor(projectedScore * (policy.payoutPercent || 0));
+      deltas[owner] += payout;
+      triggeredOwners.add(owner);
+      markAchievementInsuranceTrigger(owner, "insurance");
+      const refillEvent = policy.refillOnTrigger ? refillPowerHandToLimit(owner, "from Premium Insurance") : null;
+      const power = getPowerById(policy.powerId) || getPowerById("small_insurance");
+      events.push(createPowerEvent(
+        owner,
+        power,
+        `${power.name} triggered on the loss, paid ${payout.toLocaleString()} points, and kept ${getOwnerLabel(owner)}'s streak.`
+      ));
+      if (refillEvent) {
+        events.push(refillEvent);
+      }
+      delete state.insurancePolicies[owner];
+      return;
+    }
+
+    policy.remaining -= 1;
+    if (policy.remaining <= 0) {
+      delete state.insurancePolicies[owner];
+      events.push(`${getOwnerLabel(owner)}'s insurance expired.`);
+    } else {
+      state.insurancePolicies[owner] = policy;
+    }
+  });
+  return triggeredOwners;
+}
+
+function activateRedHerring(owner) {
+  state.redHerringMasks[owner] = true;
+}
+
+function applyNailInCoffin(playedEntries, deltas, events) {
+  if (!playedEntries.some((entry) => entry.power.type === "nail_coffin")) {
+    return;
+  }
+  Object.keys(deltas).forEach((owner) => {
+    if (deltas[owner] < 0) {
+      deltas[owner] *= 2;
+    }
+  });
+  playedEntries
+    .filter((entry) => entry.power.type === "nail_coffin")
+    .forEach((entry) => events.push(createPowerEvent(entry.owner, entry.power, "Nail in the Coffin doubled point losses this round.")));
+}
+
+function applyLawsuitEntries(playedEntries, deltas, owners, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "lawsuit")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+        return;
+      }
+      const effectCount = getRemovableActiveEffects(target).length;
+      if (effectCount <= 0) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(target)} had no active effects to sue over.`));
+        return;
+      }
+      const currentTotal = Math.max(0, getScore(target) + (deltas[target] || 0));
+      const amount = Math.floor(currentTotal * 0.05 * effectCount);
+      const removed = removeRandomActiveEffect(target);
+      deltas[target] -= amount;
+      queueStatFlash(
+        "negative",
+        entry.power.name,
+        [formatSignedStat(-amount, "Point"), `${removed || "Effect"} Removed`],
+        getTargetedFlashOptions(entry.owner, target, { complex: true })
+      );
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} charged ${getOwnerLabel(target)} for ${effectCount} active effect${effectCount === 1 ? "" : "s"} (${amount.toLocaleString()} points) and removed ${removed || "one effect"}.`));
+    });
+}
+
+function applyThornsDeltas(deltas, owners, events) {
+  const thornOwners = owners.filter((owner) => state.thornOwners[owner] && (deltas[owner] || 0) < 0);
+  thornOwners.forEach((owner) => {
+    const reflected = Math.floor(Math.abs(deltas[owner]) * 0.33);
+    if (reflected <= 0) {
+      return;
+    }
+    owners
+      .filter((participant) => participant !== owner)
+      .forEach((participant) => {
+        deltas[participant] -= reflected;
+      });
+    events.push(`Thorns reflected ${reflected.toLocaleString()} points from ${getOwnerLabel(owner)} to everyone else.`);
+  });
+}
+
+function applyVoidBombCaps(playedEntries, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "void_bomb")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (target && deltas[target] > 1000) {
+        const blocked = deltas[target] - 1000;
+        deltas[target] = 1000;
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} capped ${getOwnerLabel(target)} and blocked ${blocked.toLocaleString()} points.`));
+      }
+    });
+}
+
+function applyHotPotatoHit(target, deltas, events, sourceOwner = "") {
+  if (!target) {
+    return;
+  }
+  const currentTotal = Math.max(0, getScore(target) + (deltas[target] || 0));
+  const amount = Math.floor(currentTotal * 0.2);
+  deltas[target] -= amount;
+  if (sourceOwner && sourceOwner === target && getActiveOwners().length >= 5) {
+    const stat = getAchievementStat(target);
+    if (stat) {
+      stat.ownHotPotatoSelfHitFivePlus = true;
+    }
+  }
+  queueStatFlash("bomb", "Hot Potato", formatSignedStat(-amount, "Point"), { owners: [target] });
+  events.push(`Hot Potato exploded on ${getOwnerLabel(target)} for ${amount.toLocaleString()} points (20% of their total).`);
+}
+
+function applyFailedInvestmentDebuffs(deltas, winnerSet, events) {
+  getActiveOwners().forEach((owner) => {
+    if (!state.failedInvestmentDebuffs[owner] || !winnerSet.has(owner)) {
+      return;
+    }
+    const gained = Math.max(0, deltas[owner] || 0);
+    if (gained <= 0) {
+      return;
+    }
+    const penalty = Math.ceil(gained * 0.2);
+    deltas[owner] -= penalty;
+    state.failedInvestmentDebuffs[owner] = false;
+    queueStatFlash("negative", "Failed Investment", formatSignedStat(-penalty, "Point"), { owners: [owner] });
+    events.push(`${getOwnerLabel(owner)} lost ${penalty.toLocaleString()} points to Failed Investment, receiving 80% of their correct-answer payout.`);
+  });
+}
+
+function applyOverachieverRewards(playedEntries, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "overachiever" && (deltas[entry.owner] || 0) > 2000 && state.round < state.maxRounds)
+    .forEach((entry) => {
+      state.pendingPowerBonuses[entry.owner] = (state.pendingPowerBonuses[entry.owner] || 0) + 500;
+      state.pendingCocktailBuffs[entry.owner] = (state.pendingCocktailBuffs[entry.owner] || 0) + 1;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} banked 500 points and a Cocktail Mix buff for next round after final scoring.`));
+    });
+}
+
+function applyTableEventLoserDeltas(deltas, owners, winnerSet, startingScores, events) {
+  const event = getCurrentTableEvent();
+  if (!event || !["sudden_death", "no_mercy"].includes(event.id)) {
+    return;
+  }
+  const percent = event.id === "sudden_death" ? 0.25 : 0.15;
+  const kind = event.id === "sudden_death" ? "sudden-death" : "no-mercy";
+  owners
+    .filter((owner) => !winnerSet.has(owner))
+    .forEach((owner) => {
+      const currentTotal = Math.max(0, (startingScores[owner] || 0) + (deltas[owner] || 0));
+      const amount = Math.floor(currentTotal * percent);
+      deltas[owner] -= amount;
+      queueStatFlash(kind, event.name, formatSignedStat(-amount, "Point"), { owners: [owner], complex: true, soundName: event.soundName });
+    });
+  events.push(`${event.name} made every loser lose ${Math.round(percent * 100)}% of their current total.`);
+}
+
+function applyTableEventWinnerDeltas(deltas, owners, winnerSet, startingScores, events) {
+  const event = getCurrentTableEvent();
+  if (!event || event.id !== "jackpot_round") {
+    return;
+  }
+  owners
+    .filter((owner) => winnerSet.has(owner))
+    .forEach((owner) => {
+      const amount = Math.floor(Math.max(0, startingScores[owner] || 0) * 0.15);
+      deltas[owner] += amount;
+      queueStatFlash("bounty", event.name, formatSignedStat(amount, "Point"), { owners: [owner], complex: true, soundName: event.soundName });
+    });
+  events.push("Jackpot Round gave every correct player 15% of their current score.");
+}
+
+function applyFinalTableEventGainMultipliers(deltas, owners, events) {
+  const event = getCurrentTableEvent();
+  if (!event) {
+    return;
+  }
+  if (event.id === "double_bounty") {
+    owners.forEach((owner) => {
+      const gained = Math.max(0, deltas[owner] || 0);
+      if (gained > 0) {
+        deltas[owner] += gained;
+      }
+    });
+    events.push("Double Bounty doubled every positive final point gain.");
+  }
+  if (event.id === "roulette" && event.targetOwner && owners.includes(event.targetOwner)) {
+    const gained = Math.max(0, deltas[event.targetOwner] || 0);
+    if (gained > 0) {
+      const bonus = Math.floor(gained * 0.5);
+      deltas[event.targetOwner] += bonus;
+      queueStatFlash("casino", event.name, formatSignedStat(bonus, "Point"), { owners: [event.targetOwner], complex: true, soundName: event.soundName });
+      events.push(`Roulette gave ${getOwnerLabel(event.targetOwner)} 50% more on their final point gain.`);
+    } else {
+      events.push(`Roulette picked ${getOwnerLabel(event.targetOwner)}, but they had no positive final gain.`);
+    }
+  }
+}
+
+function decrementRoundEffectCounters(owners) {
+  owners.forEach((owner) => {
+    state.streakFreezeRounds[owner] = Math.max(0, (state.streakFreezeRounds[owner] || 0) - 1);
+    state.streakLossProtectionRounds[owner] = Math.max(0, (state.streakLossProtectionRounds[owner] || 0) - 1);
+    state.cocktailPenaltyRounds[owner] = Math.max(0, (state.cocktailPenaltyRounds[owner] || 0) - 1);
+    state.timeDilationRounds[owner] = Math.max(0, (state.timeDilationRounds[owner] || 0) - 1);
+    state.luckRounds[owner] = Math.max(0, (state.luckRounds[owner] || 0) - 1);
+  });
+}
+
+function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
+  const section = document.createElement("section");
+  section.className = "ability-section";
+  section.dataset.rarity = rarity;
+  section.dataset.open = String(open);
+
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "ability-section-toggle";
+  toggle.setAttribute("aria-expanded", String(open));
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  const count = document.createElement("span");
+  count.className = "ability-section-count";
+  count.textContent = `${entries.length}`;
+  const arrow = document.createElement("i");
+  arrow.className = "ability-section-arrow";
+  arrow.setAttribute("aria-hidden", "true");
+  toggle.append(heading, count, arrow);
+  toggle.addEventListener("click", () => {
+    const isOpen = section.dataset.open !== "true";
+    section.dataset.open = String(isOpen);
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  });
+
+  const body = document.createElement("div");
+  body.className = "ability-section-body";
+  const grid = document.createElement("div");
+  grid.className = "ability-grid";
+  entries.forEach((entry) => {
+    const card = document.createElement("article");
+    card.className = "ability-card";
+    card.dataset.rarity = entry.rarity || rarity;
+    card.dataset.description = entry.description;
+    card.innerHTML = `<span>${entry.name}</span><strong>${entry.short}</strong><small>${entry.description}</small>`;
+    grid.appendChild(card);
+  });
+  body.appendChild(grid);
+  section.append(toggle, body);
+  return section;
+}
+
+function renderAbilityLibrary() {
+  const rarityOrder = ["grey", "blue", "purple", "gold"];
+  elements.abilityLibrary.replaceChildren();
+
+  rarityOrder.forEach((rarity, index) => {
+    const powers = powerDeck.filter((power) => power.rarity === rarity);
+    if (!powers.length) {
+      return;
+    }
+
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: `${rarityInfo[rarity].label} abilities`,
+      rarity,
+      open: index === 0,
+      entries: powers.map((power) => ({
+        name: power.name,
+        short: power.short,
+        description: getDisplayedPowerDescription(power, null),
+        rarity: power.rarity
+      }))
+    }));
+  });
+
+  const rollSections = [
+    {
+      title: "Buff rolls",
+      rarity: "blue",
+      entries: [
+        ["Gain 1 streak", "Adds 1 win streak immediately."],
+        ["Point loss shield", "Blocks point deductions for 2 rounds."],
+        ["Streak guard", "Prevents streak loss for 2 rounds."],
+        ["Upgrade rarity", "Upgrades a random power-up in your hand, or gives 1 streak if none can upgrade."],
+        ["Refill", "Refills an empty power-up slot, or gives 1 streak if your hand is full."],
+        ["Rich Gets Richer", "Gain 5% to 10% of your current total score immediately."],
+        ["Time Dilation", "Increase your answer timer by 10 seconds for this round and the next 2 rounds."],
+        ["Bonus points", "Gain 300 to 500 points immediately."]
+      ]
+    },
+    {
+      title: "Debuff rolls",
+      rarity: "debuff",
+      entries: [
+        ["Cocktail debt", "Lose 2.5% of your total score after wrong answers for 2 rounds."],
+        ["Lose 1 streak", "Immediately lose 1 win streak."],
+        ["Lose 3%", "Immediately lose 3% of your total score unless protected by a shield."],
+        ["Time bomb", "After 3 rounds, lose 10% of your total score."],
+        ["Self combustion", "Immediately lose 200 points for every win streak you have."],
+        ["Failed investment", "Your next correct answer only pays 80% of the points it would have paid."],
+        ["Dead Weight", "Receive a Dead Weight power-up, replacing a slot if your hand is full."],
+        ["Chaos", "Your answer box becomes flickering gibberish and locks for 3 seconds."]
+      ]
+    }
+  ];
+
+  rollSections.forEach((rollSection) => {
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: rollSection.title,
+      rarity: rollSection.rarity,
+      entries: rollSection.entries.map(([name, description]) => ({
+        name,
+        short: "Roll effect",
+        description,
+        rarity: rollSection.rarity
+      }))
+    }));
+  });
+
+  elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+    title: "Table events",
+    rarity: "gold",
+    entries: tableEvents.map((event) => ({
+      name: event.name,
+      short: event.short,
+      description: event.description,
+      rarity: event.id === "sudden_death" || event.id === "no_mercy" || event.id === "sabotage" ? "debuff" : "gold"
+    }))
+  }));
+}
+
+function openAbilities() {
+  renderAbilityLibrary();
+  setHidden(elements.abilitiesModal, false);
+  playSound("click");
+}
+
+function renderAchievementLibrary() {
+  const records = loadUnlockedAchievements();
+  const progress = loadAchievementProgress();
+  refreshLongTermAchievementUnlocks(records, progress);
+  const unseenIds = loadUnseenAchievements();
+  const equippedTitle = isAchievementUnlocked(state.profile.equippedTitleId, records)
+    ? getEquippedAchievementTitle()
+    : null;
+  elements.achievementLibrary.replaceChildren();
+  elements.achievementLibrary.appendChild(createAchievementMilestoneRoad(records));
+  const equipBar = document.createElement("div");
+  equipBar.className = "achievement-equip-bar";
+  const current = document.createElement("div");
+  current.className = "achievement-equipped-current";
+  const currentLabel = document.createElement("span");
+  currentLabel.textContent = "Equipped title";
+  const currentValue = document.createElement("strong");
+  if (equippedTitle) {
+    currentValue.append(createEquippedTitlePill(equippedTitle));
+  } else {
+    currentValue.textContent = "None";
+  }
+  current.append(currentLabel, currentValue);
+  const clearButton = document.createElement("button");
+  clearButton.type = "button";
+  clearButton.className = "secondary-button";
+  clearButton.textContent = "Clear Title";
+  clearButton.disabled = !equippedTitle;
+  clearButton.addEventListener("click", () => {
+    setEquippedAchievement("");
+    playSound("click");
+  });
+  equipBar.append(current, clearButton);
+  elements.achievementLibrary.appendChild(equipBar);
+
+  achievementRarityOrder.forEach((rarity) => {
+    const achievements = achievementCatalog
+      .filter((achievement) => achievement.rarity === rarity)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (!achievements.length) {
+      return;
+    }
+    const section = document.createElement("section");
+    section.className = "achievement-section";
+    section.dataset.rarity = rarity;
+    const heading = document.createElement("h3");
+    heading.textContent = `${rarityInfo[rarity].label} achievements`;
+    const grid = document.createElement("div");
+    grid.className = "achievement-grid";
+    achievements.forEach((achievement) => {
+      const unlocked = Boolean(records[achievement.id]);
+      const isTitle = Boolean(achievementTitleMap[achievement.id]);
+      const isProgressAchievement = Boolean(achievement.progressKey || achievement.completionRarity || achievement.completionAll);
+      const isHiddenLocked = Boolean(achievement.hidden && !unlocked);
+      const descriptionText = isHiddenLocked ? "???" : achievement.description;
+      const tooltipText = isHiddenLocked ? "A secret obtaining method must be found." : achievement.description;
+      const card = document.createElement("article");
+      card.className = "achievement-card";
+      card.dataset.rarity = achievement.rarity;
+      card.dataset.unlocked = String(unlocked);
+      card.dataset.equipped = String(state.profile.equippedTitleId === achievement.id);
+      card.dataset.unseen = String(unseenIds.includes(achievement.id));
+      card.dataset.description = tooltipText;
+      card.dataset.kind = isProgressAchievement
+        ? "progress-title"
+        : isTitle ? "title" : "progress";
+      card.tabIndex = 0;
+      const imageSlot = document.createElement("div");
+      imageSlot.className = "achievement-image-slot";
+      imageSlot.setAttribute("aria-hidden", "true");
+      const name = document.createElement("strong");
+      name.textContent = achievement.name;
+      const meta = document.createElement("span");
+      meta.textContent = unlocked ? "Title unlocked" : (isHiddenLocked ? "Secret" : "Locked");
+      const description = document.createElement("small");
+      description.textContent = descriptionText;
+      card.append(imageSlot, name, meta, description);
+      if (unseenIds.includes(achievement.id)) {
+        const dot = document.createElement("i");
+        dot.className = "achievement-new-dot";
+        dot.setAttribute("aria-hidden", "true");
+        card.appendChild(dot);
+      }
+      if (isProgressAchievement) {
+        const target = getLongTermProgressTarget(achievement);
+        const value = Math.min(target, getLongTermProgressValue(achievement, records, progress));
+        const percent = Math.max(0, Math.min(100, (value / target) * 100));
+        const progressWrap = document.createElement("div");
+        progressWrap.className = "achievement-progress";
+        const progressBar = document.createElement("span");
+        progressBar.style.width = `${percent}%`;
+        const progressLabel = document.createElement("em");
+        progressLabel.textContent = target === 1
+          ? (unlocked ? "Complete" : "Not complete")
+          : `${Math.floor(value).toLocaleString()}/${target.toLocaleString()}`;
+        progressWrap.appendChild(progressBar);
+        card.append(progressWrap, progressLabel);
+        if (achievement.id === "click-me" && !unlocked) {
+          card.classList.add("achievement-clickable");
+          card.addEventListener("click", () => {
+            if (!isCompletedPublicAchievementMatch(false)) {
+              playSound("error");
+              return;
+            }
+            const nextRecords = loadUnlockedAchievements();
+            const nextProgress = loadAchievementProgress();
+            setProgressValue(nextProgress, "clickMe", 1);
+            unlockAchievementRecord(nextRecords, "click-me");
+            saveAchievementProgress(nextProgress);
+            saveUnlockedAchievements(nextRecords);
+            clearUnseenAchievements();
+            playSound("reveal");
+            renderAchievementLibrary();
+          }, { once: true });
+        }
+      }
+      const action = document.createElement("button");
+      action.type = "button";
+      action.className = "achievement-equip-button";
+      action.textContent = state.profile.equippedTitleId === achievement.id ? "Equipped" : "Equip";
+      action.disabled = !unlocked || state.profile.equippedTitleId === achievement.id;
+      action.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setEquippedAchievement(achievement.id);
+        playSound("reveal");
+      });
+      card.appendChild(action);
+      attachFloatingDescriptionTooltip(card);
+      grid.appendChild(card);
+    });
+    section.append(heading, grid);
+    elements.achievementLibrary.appendChild(section);
+  });
+}
+
+function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
+  const claimed = loadClaimedAchievementMilestones();
+  const unlockedCount = getUnlockedAchievementCount(records);
+  const maxTarget = Math.max(...achievementMilestones.map((milestone) => milestone.target), 1);
+  const road = document.createElement("section");
+  road.className = "achievement-milestones";
+  road.setAttribute("aria-labelledby", "achievementMilestonesTitle");
+
+  const heading = document.createElement("div");
+  heading.className = "achievement-milestones-heading";
+  const title = document.createElement("div");
+  const eyebrow = document.createElement("p");
+  eyebrow.className = "eyebrow";
+  eyebrow.textContent = "Reward road";
+  const h3 = document.createElement("h3");
+  h3.id = "achievementMilestonesTitle";
+  h3.textContent = "Achievement Milestones";
+  title.append(eyebrow, h3);
+  const progress = document.createElement("strong");
+  progress.textContent = `${unlockedCount.toLocaleString()} achievements`;
+  heading.append(title, progress);
+
+  const scroller = document.createElement("div");
+  scroller.className = "achievement-milestone-scroller";
+  const track = document.createElement("div");
+  track.className = "achievement-milestone-track";
+  const fill = document.createElement("span");
+  fill.className = "achievement-milestone-fill";
+  fill.style.width = `${Math.max(0, Math.min(100, (unlockedCount / maxTarget) * 100))}%`;
+  track.appendChild(fill);
+
+  achievementMilestones.forEach((milestone) => {
+    const isClaimed = claimed.includes(milestone.id);
+    const isReady = unlockedCount >= milestone.target;
+    const node = document.createElement("article");
+    node.className = "achievement-milestone";
+    node.dataset.ready = String(isReady);
+    node.dataset.claimed = String(isClaimed);
+    node.style.setProperty("--milestone-position", `${Math.max(0, Math.min(100, (milestone.target / maxTarget) * 100))}%`);
+
+    const marker = document.createElement("div");
+    marker.className = "achievement-milestone-marker";
+    marker.textContent = milestone.target;
+    const name = document.createElement("strong");
+    name.textContent = milestone.name;
+    const reward = document.createElement("span");
+    reward.textContent = milestone.rewardText;
+    const progressText = document.createElement("small");
+    progressText.textContent = isClaimed ? "Claimed" : getMilestoneProgressText(milestone, unlockedCount);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "achievement-milestone-claim";
+    button.textContent = isClaimed ? "Claimed" : isReady ? "Claim" : "Locked";
+    button.disabled = isClaimed || !isReady;
+    button.dataset.milestoneClaim = milestone.id;
+    node.append(marker, name, reward, progressText, button);
+    track.appendChild(node);
+  });
+
+  scroller.appendChild(track);
+  road.append(heading, scroller);
+  road.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-milestone-claim]");
+    if (button) {
+      claimAchievementMilestone(button.dataset.milestoneClaim);
+    }
+  });
+  return road;
+}
+
+function claimAchievementMilestone(id) {
+  const milestone = achievementMilestoneMap[id];
+  const records = loadUnlockedAchievements();
+  const unlockedCount = getUnlockedAchievementCount(records);
+  const claimed = loadClaimedAchievementMilestones();
+  if (!milestone || claimed.includes(id) || unlockedCount < milestone.target) {
+    playSound("error");
+    return;
+  }
+  saveClaimedAchievementMilestones([...claimed, id]);
+  if (milestone.coins) {
+    addCurrency(milestone.coins);
+  }
+  renderProfile();
+  renderAchievementLibrary();
+  if (isModalOpen(elements.profileCustomModal)) {
+    renderProfileCustomizationModal();
+  }
+  playSound("reveal");
+}
+
+function openAchievements() {
+  renderAchievementLibrary();
+  clearUnseenAchievements();
+  setHidden(elements.achievementsModal, false);
+  playSound("click");
+}
+
+function closeAchievements() {
+  hideModalWithMotion(elements.achievementsModal);
+  playSound("click");
+}
+
+
+function closeAbilities() {
+  hideModalWithMotion(elements.abilitiesModal);
+  playSound("click");
+}
+
+function renderThemeSummary() {
+  const enabled = Array.isArray(state.roomSettings.enabledThemes)
+    ? state.roomSettings.enabledThemes.filter((theme) => triviaThemes.includes(theme))
+    : [...triviaThemes];
+  if (enabled.length === triviaThemes.length) {
+    elements.themeSummary.textContent = "All trivia themes enabled.";
+    return;
+  }
+
+  elements.themeSummary.textContent = `${enabled.length}/${triviaThemes.length} themes enabled: ${enabled.join(", ")}.`;
+}
+
+function renderThemePicker() {
+  const enabled = new Set(getEnabledTriviaThemes());
+  elements.themeList.replaceChildren(
+    ...triviaThemes.map((theme) => {
+      const label = document.createElement("label");
+      label.className = "theme-option";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = enabled.has(theme);
+      checkbox.dataset.theme = theme;
+      const name = document.createElement("span");
+      name.textContent = theme;
+      label.append(checkbox, name);
+      return label;
+    })
+  );
+  renderThemeSummary();
+}
+
+function openThemeSelector() {
+  renderThemePicker();
+  setHidden(elements.themeModal, false);
+  playSound("click");
+}
+
+function closeThemeSelector() {
+  hideModalWithMotion(elements.themeModal);
+  playSound("click");
+}
+
+function updateEnabledThemesFromPicker() {
+  const checked = [...elements.themeList.querySelectorAll("input[type='checkbox']:checked")]
+    .map((input) => input.dataset.theme)
+    .filter((theme) => triviaThemes.includes(theme));
+  state.roomSettings.enabledThemes = checked.length ? checked : [...triviaThemes];
+  if (!checked.length) {
+    renderThemePicker();
+  } else {
+    renderThemeSummary();
+  }
+  updateRoomVariants();
+  clearWarmSetup();
+  ensureQuestionReserve({ enabledThemes: state.roomSettings.enabledThemes });
+}
+
+function enableAllThemes() {
+  state.roomSettings.enabledThemes = [...triviaThemes];
+  renderThemePicker();
+  updateRoomVariants();
+  clearWarmSetup();
+  ensureQuestionReserve({ enabledThemes: state.roomSettings.enabledThemes });
+  playSound("click");
+}
+
+function openConfirmDialog(options = "end") {
+  const config = typeof options === "string" ? { action: options } : (options || {});
+  const action = config.action || "end";
+  state.pendingConfirmAction = action;
+  const isLeave = action === "leave";
+  const isLeavingRoom = isRoomMode() || state.currentRoomStatus === "lobby";
+  elements.confirmEndEyebrow.textContent = config.eyebrow || (isLeave ? (isLeavingRoom ? "Leave room" : "Leave game") : "End game");
+  elements.confirmEndTitle.textContent = config.title || (isLeave ? (isLeavingRoom ? "Leave this room?" : "Leave this match?") : "Leave this match?");
+  elements.confirmEndCopy.textContent = config.copy || (isLeave
+    ? isLeavingRoom
+      ? "You will return to the main menu and a leave message will be posted in chat."
+      : "You will return to the main menu without showing the results screen."
+    : "Your current match will end immediately and show the results screen.");
+  elements.confirmEndButton.textContent = config.confirmLabel || (isLeave ? "Leave" : "End Game");
+  elements.cancelEndButton.textContent = config.cancelLabel || "Cancel";
+  elements.confirmEndButton.classList.toggle("danger-button", config.danger !== false);
+  elements.confirmEndButton.classList.toggle("primary-button", config.danger === false);
+  setHidden(elements.confirmEndModal, false);
+  playSound("click");
+}
+
+function showAppConfirm(options = {}) {
+  return new Promise((resolve) => {
+    state.pendingConfirmResolver = resolve;
+    openConfirmDialog({
+      action: "custom",
+      eyebrow: options.eyebrow || "Confirm",
+      title: options.title || "Are you sure?",
+      copy: options.copy || "This action cannot be undone.",
+      confirmLabel: options.confirmLabel || "Confirm",
+      cancelLabel: options.cancelLabel || "Cancel",
+      danger: options.danger !== false
+    });
+  });
+}
+
+function showEditSaveChoice() {
+  return new Promise((resolve) => {
+    state.pendingConfirmResolver = resolve;
+    openConfirmDialog({
+      action: "saveQuestionChoice",
+      eyebrow: "Save edit",
+      title: "Overwrite this question?",
+      copy: "Overwrite replaces the original question in data/questions.json. Save as New keeps the original and creates a separate question.",
+      confirmLabel: "Overwrite",
+      cancelLabel: "Save as New",
+      danger: true
+    });
+  });
+}
+
+function openEndConfirm() {
+  openConfirmDialog("end");
+}
+
+function openLeaveConfirm() {
+  openConfirmDialog("leave");
+}
+
+function closeEndConfirm(confirmed = false, options = {}) {
+  hideModalWithMotion(elements.confirmEndModal);
+  if (state.pendingConfirmResolver) {
+    const resolve = state.pendingConfirmResolver;
+    state.pendingConfirmResolver = null;
+    resolve(confirmed);
+  }
+  if (!options.silent) {
+    playSound("click");
+  }
+}
+
+function restartAnimation(element, className) {
+  element.classList.remove(className);
+  void element.offsetWidth;
+  element.classList.add(className);
+}
+
+function animateTableLayoutChange(mutator) {
+  const table = document.querySelector(".table-surface");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!table || !Element.prototype.animate || reduceMotion) {
+    mutator();
+    return;
+  }
+
+  const selectors = [
+    ".black-card",
+    ".power-panel",
+    ".effect-panel",
+    ".input-panel",
+    ".answer-progress",
+    ".cards-area",
+    ".verdict-panel",
+    ".loading-panel",
+    ".error-panel"
+  ].join(", ");
+  const before = new Map(
+    [...table.querySelectorAll(selectors)]
+      .filter((element) => !element.classList.contains("hidden"))
+      .map((element) => [element, element.getBoundingClientRect()])
+  );
+
+  mutator();
+
+  window.requestAnimationFrame(() => {
+    before.forEach((oldRect, element) => {
+      if (!element.isConnected || element.classList.contains("hidden")) {
+        return;
+      }
+      const newRect = element.getBoundingClientRect();
+      const dx = oldRect.left - newRect.left;
+      const dy = oldRect.top - newRect.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+        return;
+      }
+      element.animate(
+        [
+          { translate: `${dx}px ${dy}px` },
+          { translate: "0 0" }
+        ],
+        {
+          duration: 360,
+          easing: "cubic-bezier(0.16, 1, 0.3, 1)"
+        }
+      );
+    });
+  });
+}
+
+function stopLoadingMessages() {
+  if (state.loadingLineId) {
+    clearInterval(state.loadingLineId);
+    state.loadingLineId = null;
+  }
+}
+
+function startLoadingMessages(kind, firstLine) {
+  const messages = loadingMessages[kind] || loadingMessages.round;
+  let index = Math.floor(Math.random() * messages.length);
+  stopLoadingMessages();
+  elements.loadingText.textContent = firstLine || messages[index];
+  state.loadingLineId = setInterval(() => {
+    index = (index + 1) % messages.length;
+    elements.loadingText.textContent = messages[index];
+  }, LOADING_MESSAGE_INTERVAL_MS);
+}
+
+function createPlayer(owner, label, options = {}) {
+  return {
+    owner,
+    label,
+    type: options.type || "human",
+    active: options.active !== false,
+    score: 0,
+    streak: 0,
+    handLimit: options.handLimit ?? 3,
+    avatar: options.avatar || "",
+    participantId: options.participantId || owner,
+    host: Boolean(options.host),
+    spectator: Boolean(options.spectator),
+    bot: Boolean(options.bot || options.type === "bot"),
+    muted: Boolean(options.muted),
+    equippedTitleId: options.equippedTitleId || "",
+    cardCustomization: options.cardCustomization ? normalizeProfileCustomization(options.cardCustomization) : null,
+    connectionStatus: options.connectionStatus || "local"
+  };
+}
+
+function cleanBotUsername(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .slice(0, 24);
+}
+
+function getRandomBotUsernames(count) {
+  const avoid = new Set([state.profile.name, "You", "Player 1", "Player 2"].map((name) => String(name || "").toLowerCase()));
+  const source = (state.randomUsernames.length ? state.randomUsernames : fallbackBotUsernames)
+    .map(cleanBotUsername)
+    .filter((name) => name && !avoid.has(name.toLowerCase()));
+  const pool = [...new Set(source)];
+  const chosen = [];
+
+  while (chosen.length < count && pool.length) {
+    const index = Math.floor(Math.random() * pool.length);
+    chosen.push(pool.splice(index, 1)[0]);
+  }
+
+  while (chosen.length < count) {
+    chosen.push(`bot_${chosen.length + 1}`);
+  }
+
+  return chosen;
+}
+
+async function loadRandomUsernames() {
+  if (state.randomUsernames.length) {
+    return state.randomUsernames;
+  }
+  if (!state.randomUsernamesPromise) {
+    state.randomUsernamesPromise = (async () => {
+      try {
+        const response = await fetch("/data/random_usernames.txt", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const text = await response.text();
+        state.randomUsernames = text
+          .split(/\r?\n/)
+          .map(cleanBotUsername)
+          .filter(Boolean);
+      } catch (error) {
+        console.warn("Could not load data/random_usernames.txt:", error.message || error);
+        state.randomUsernames = [...fallbackBotUsernames];
+      } finally {
+        state.randomUsernamesPromise = null;
+      }
+      return state.randomUsernames;
+    })();
+  }
+  return state.randomUsernamesPromise;
+}
+
+async function startBotsGame() {
+  if (!state.randomUsernames.length) {
+    try {
+      await loadRandomUsernames();
+    } catch (error) {
+      console.warn("Username preload failed:", error.message || error);
+    }
+  }
+  startGame("bots");
+}
+
+function getPlayersForMode(mode) {
+  if (mode === "bots") {
+    const [botOneName, botTwoName] = getRandomBotUsernames(2);
+    return [
+      createPlayer("player", state.profile.name || "You", { type: "human", handLimit: 3, avatar: state.profile.avatar, equippedTitleId: state.profile.equippedTitleId, cardCustomization: state.profile.cardCustomization }),
+      createPlayer("bot1", botOneName, { type: "bot", handLimit: 3, avatar: "" }),
+      createPlayer("bot2", botTwoName, { type: "bot", handLimit: 3, avatar: "" })
+    ];
+  }
+
+  if (mode === "room") {
+    return getRoomPlayersForMode();
+  }
+
+  return [
+    createPlayer("player", "Player 1", { type: "human", handLimit: 3 }),
+    createPlayer("opponent", "Player 2", { type: "human", handLimit: 3 })
+  ];
+}
+
+function getRoomOwnerForParticipant(participant, fallbackIndex = 0) {
+  if (participant?.host) {
+    return "player";
+  }
+  if (participant?.id === state.clientId && !state.isSpectator) {
+    return "opponent";
+  }
+  const rawId = String(participant?.id || participant?.name || fallbackIndex);
+  const safeId = rawId.replace(/[^a-z0-9]+/gi, "").slice(-12) || String(fallbackIndex + 1);
+  return participant?.bot ? `roomBot${safeId}` : `roomUser${safeId}`;
+}
+
+function getRoomPlayersForMode() {
+  const participantSource = state.roomParticipants.length
+    ? state.roomParticipants
+    : state.joiningRoom?.participants?.length
+      ? state.joiningRoom.participants
+      : [];
+  const activeParticipants = participantSource
+    .filter((participant) => participant.active !== false && !participant.spectator)
+    .sort((a, b) => Number(!a.host) - Number(!b.host));
+  const players = [];
+
+  const addParticipantPlayer = (participant, fallback = {}, index = 0) => {
+    const owner = getRoomOwnerForParticipant(participant, index);
+    players.push(createPlayer(owner, participant.name || fallback.name || "Room Player", {
+      type: participant.bot ? "bot" : "human",
+      handLimit: participant.spectator ? 0 : 3,
+      avatar: participant.avatar || "",
+      participantId: participant.id || owner,
+      host: Boolean(participant.host),
+      spectator: Boolean(participant.spectator),
+      bot: Boolean(participant.bot),
+      equippedTitleId: participant.equippedTitleId || "",
+      cardCustomization: participant.cardCustomization || null,
+      muted: Boolean(participant.muted),
+      active: participant.active !== false,
+      connectionStatus: participant.status || (participant.host ? "host" : participant.bot ? "bot" : "joined")
+    }));
+  };
+
+  if (activeParticipants.length) {
+    activeParticipants.forEach((participant, index) => addParticipantPlayer(participant, {}, index));
+  } else {
+    const host = state.joiningRoom?.host || {};
+    addParticipantPlayer({
+      id: host.id || state.clientId,
+      name: host.name || state.profile.name || "Host",
+      avatar: host.avatar || state.profile.avatar,
+      equippedTitleId: host.equippedTitleId || state.profile.equippedTitleId,
+      cardCustomization: host.cardCustomization || state.profile.cardCustomization,
+      host: true,
+      active: true,
+      status: "host"
+    }, {}, 0);
+  }
+
+  if (state.isSpectator) {
+    players.push(createPlayer("spectator", state.profile.name || "Spectator", {
+      type: "spectator",
+      handLimit: 0,
+      avatar: state.profile.avatar,
+      participantId: state.clientId,
+      spectator: true,
+      equippedTitleId: state.profile.equippedTitleId,
+      cardCustomization: state.profile.cardCustomization,
+      connectionStatus: "spectating"
+    }));
+  }
+
+  if (!players.some((player) => player.owner === "opponent") && !state.isSpectator) {
+    players.push(createPlayer("opponent", "Waiting", {
+      type: "human",
+      handLimit: 3,
+      active: false,
+      connectionStatus: "waiting"
+    }));
+  }
+
+  return players;
+}
+
+function setPlayersForMode(mode) {
+  state.players = getPlayersForMode(mode);
+  syncLegacyScoresFromPlayers();
+}
+
+function getPlayer(owner) {
+  return state.players.find((player) => player.owner === owner) || null;
+}
+
+function syncLegacyScoresFromPlayers() {
+  state.playerScore = getPlayer("player")?.score || 0;
+  state.opponentScore = getPlayer("opponent")?.score || getPlayer("bot1")?.score || 0;
+  state.botTwoScore = getPlayer("bot2")?.score || 0;
+}
+
+function isDuelMode() {
+  return state.mode === "local" || state.mode === "room";
+}
+
+function isRoomMode() {
+  return state.mode === "room";
+}
+
+function isPublicNonSelfHostedRoom() {
+  return isRoomMode() && Boolean(state.joiningRoom) && !state.roomSettings.private;
+}
+
+function isPublicAchievementMatch() {
+  return isRoomMode() && !state.roomSettings.private && state.maxRounds >= 10;
+}
+
+function isCompletedPublicAchievementMatch(wasExited = false) {
+  return !wasExited && isPublicAchievementMatch() && state.matchHistory.length >= state.maxRounds;
+}
+
+function isRoomLobbyActive() {
+  return !elements.roomLobbyScreen.classList.contains("hidden");
+}
+
+function isCurrentHost() {
+  return !isRoomMode() || state.currentOwner === "player";
+}
+
+function getRoomMaxPlayers(settings = state.roomSettings) {
+  return clampNumber(settings.maxPlayers, 2, 10, 6);
+}
+
+function isMatchModifierEnabled(modifier) {
+  if (isRoomMode()) {
+    return Boolean(state.roomSettings[modifier]);
+  }
+  if (state.mode === "bots" || state.mode === "local") {
+    return Boolean(state.matchModifiers[modifier]);
+  }
+  return false;
+}
+
+function isClassicModeEnabled() {
+  return isRoomMode() && Boolean(state.roomSettings.classicMode);
+}
+
+function rollMatchModifiers(mode) {
+  if (mode !== "bots" && mode !== "local") {
+    return { harsh: false, chaos: false, amplified: false, timeMoney: false, wildFire: false, partyMayhem: false };
+  }
+
+  return {
+    harsh: Math.random() < 0.5,
+    chaos: Math.random() < 0.5,
+    amplified: Math.random() < 0.5,
+    timeMoney: mode === "local" ? Math.random() < 0.5 : false,
+    wildFire: Math.random() < 0.5,
+    partyMayhem: Math.random() < 0.5
+  };
+}
+
+function hashStringToUnit(value) {
+  let hash = 2166136261;
+  String(value || "").split("").forEach((char) => {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  });
+  return (hash >>> 0) / 4294967296;
+}
+
+function getRoundRandom(label = "event") {
+  if (isRoomMode()) {
+    return hashStringToUnit(`${state.roomSettings.code}:${state.round}:${label}`);
+  }
+  return Math.random();
+}
+
+function getRoundRandomIndex(length, label = "pick") {
+  return length ? Math.floor(getRoundRandom(label) * length) % length : 0;
+}
+
+function loadCurrencyBalance() {
+  return Math.max(0, Math.floor(Number(localStorage.getItem(currencyStorageKey)) || 0));
+}
+
+function saveCurrencyBalance(value) {
+  const cleanValue = Math.max(0, Math.floor(Number(value) || 0));
+  localStorage.setItem(currencyStorageKey, String(cleanValue));
+  return cleanValue;
+}
+
+function addCurrency(amount) {
+  const cleanAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!cleanAmount) {
+    return loadCurrencyBalance();
+  }
+  return saveCurrencyBalance(loadCurrencyBalance() + cleanAmount);
+}
+
+function formatCoins(amount) {
+  const value = Math.max(0, Math.floor(Number(amount) || 0));
+  return `${value.toLocaleString()} Coin${value === 1 ? "" : "s"}`;
+}
+
+function getTableEventChance() {
+  return isMatchModifierEnabled("partyMayhem") ? TABLE_EVENT_CHANCE_MAYHEM : TABLE_EVENT_CHANCE_DEFAULT;
+}
+
+function getEligibleTableEvents() {
+  if (isClassicModeEnabled()) {
+    return [];
+  }
+  return tableEvents.filter((event) => {
+    if (event.id === "black_market" && state.round <= 1) {
+      return false;
+    }
+    if (event.id !== "sudden_death") {
+      return true;
+    }
+    return isSuddenDeathTableEventAvailable();
+  });
+}
+
+function isFinalRound() {
+  return state.round >= state.maxRounds;
+}
+
+function isSuddenDeathTableEventAvailable() {
+  return state.round > Math.floor(state.maxRounds / 2);
+}
+
+function getCurrentTableEvent() {
+  return state.currentTableEvent?.id ? state.currentTableEvent : null;
+}
+
+function isTableEventActive(eventId) {
+  return getCurrentTableEvent()?.id === eventId;
+}
+
+function getTableEventOverlayDetail(event) {
+  if (event?.id === "roulette" && event.targetOwner) {
+    return `${getOwnerLabel(event.targetOwner)} Gets +50%`;
+  }
+  return event?.detail || "";
+}
+
+function queueTableEventOverlay(event, options = {}) {
+  if (!event) {
+    return;
+  }
+  queueStatFlash(event.overlayKind, event.name, getTableEventOverlayDetail(event), {
+    owners: getActiveOwners(),
+    priority: options.priority !== false,
+    complex: true,
+    durationMs: options.durationMs || 2700,
+    soundName: event.soundName
+  });
+}
+
+function applyTableEventStageClasses() {
+  const event = getCurrentTableEvent();
+  const eventClasses = [
+    "table-event-double-bounty",
+    "table-event-power-outage",
+    "table-event-sudden-death",
+    "table-event-no-mercy",
+    "table-event-black-market",
+    "table-event-casino",
+    "table-event-sabotage",
+    "table-event-coin-shower"
+  ];
+  elements.gameStage.classList.remove(...eventClasses);
+  if (!event) {
+    return;
+  }
+  if (event.id === "double_bounty") elements.gameStage.classList.add("table-event-double-bounty");
+  if (event.id === "power_outage") elements.gameStage.classList.add("table-event-power-outage");
+  if (event.id === "sudden_death") elements.gameStage.classList.add("table-event-sudden-death");
+  if (event.id === "no_mercy") elements.gameStage.classList.add("table-event-no-mercy");
+  if (event.id === "black_market") elements.gameStage.classList.add("table-event-black-market");
+  if (event.id === "gamblers_dice" || event.id === "roulette") elements.gameStage.classList.add("table-event-casino");
+  if (event.id === "sabotage") elements.gameStage.classList.add("table-event-sabotage");
+  if (event.id === "coin_shower") elements.gameStage.classList.add("table-event-coin-shower");
+}
+
+function resolveRolledTableEvent(eligible) {
+  if (isFinalRound() && eligible.some((event) => event.id === "sudden_death")) {
+    return { ...tableEventMap.sudden_death };
+  }
+
+  const hits = eligible.filter((event) => {
+    const chance = clampNumber(event.triggerChance, 0, 1, 0);
+    return chance > 0 && getRoundRandom(`table-event-${event.id}`) < chance;
+  });
+  if (hits.length) {
+    return { ...hits[getRoundRandomIndex(hits.length, "table-event-hit-pick")] };
+  }
+
+  return eligible.some((event) => event.id === "jackpot_round")
+    ? { ...tableEventMap.jackpot_round }
+    : null;
+}
+
+function rollRoundTableEvent() {
+  state.currentTableEvent = null;
+  state.tableEventSabotageUsed = {};
+  state.blackMarketPurchases = {};
+  applyTableEventStageClasses();
+  if (getRoundRandom("table-event-chance") >= getTableEventChance()) {
+    return;
+  }
+  const eligible = getEligibleTableEvents();
+  if (!eligible.length) {
+    return;
+  }
+  const event = resolveRolledTableEvent(eligible);
+  if (!event) {
+    return;
+  }
+  if (event.id === "roulette") {
+    const owners = getActiveOwners().sort();
+    event.targetOwner = owners[getRoundRandomIndex(owners.length, "roulette-target")];
+  }
+  state.currentTableEvent = event;
+  applyTableEventStageClasses();
+  queueTableEventOverlay(event, { priority: true });
+}
+
+function applyRoundStartTableEventEffects() {
+  const event = getCurrentTableEvent();
+  if (event?.id === "gamblers_dice") {
+    const sourcePower = { id: "table_gamblers_dice", name: "Gambler's Dice", type: "gamblers_dice", tableEvent: true };
+    getActiveOwners().forEach((owner) => {
+      playGamblersDiceRolls(owner, sourcePower);
+    });
+  }
+  renderTableEventControls();
+}
+
+function getCurrencyOwner() {
+  if (isRoomMode()) {
+    return state.currentOwner !== "spectator" && getActiveOwners().includes(state.currentOwner)
+      ? state.currentOwner
+      : "";
+  }
+  return state.mode === "bots" ? "player" : "";
+}
+
+function getCoinRewardRange() {
+  if (state.mode === "local") {
+    return null;
+  }
+  if (state.mode === "bots") {
+    return [2, 5];
+  }
+  if (!isRoomMode()) {
+    return null;
+  }
+  const owner = getCurrencyOwner();
+  if (!owner) {
+    return null;
+  }
+  const hasRealOpponent = getActiveOwners().some((participant) => {
+    const player = getPlayer(participant);
+    return participant !== owner && player?.type !== "bot" && !player?.bot;
+  });
+  return hasRealOpponent ? [6, 10] : [2, 5];
+}
+
+function rollCoinReward(owner, min, max) {
+  const low = Math.ceil(min);
+  const high = Math.floor(max);
+  if (high <= low) {
+    return Math.max(0, low);
+  }
+  return low + Math.floor(getRoundRandom(`coin-reward-${owner}`) * (high - low + 1));
+}
+
+function awardRoundCoins(correctOwners, awarded) {
+  const owner = getCurrencyOwner();
+  const correctOwnerSet = new Set(correctOwners || []);
+  const range = getCoinRewardRange();
+  if (!owner || !range || !correctOwnerSet.has(owner)) {
+    return 0;
+  }
+
+  const baseCoins = rollCoinReward(owner, range[0], range[1]);
+  const multiplier = isTableEventActive("coin_shower") ? 2 : 1;
+  const boostMultiplier = 1 + getClaimedMatchCoinBoost();
+  const coins = Math.max(1, Math.floor(baseCoins * multiplier * boostMultiplier));
+  if (!coins) {
+    return 0;
+  }
+
+  addCurrency(coins);
+  state.matchCoinsEarned += coins;
+  awarded.coinsEarned = coins;
+  renderProfile();
+  return coins;
+}
+
+function getBlackMarketCost(owner, rarity) {
+  const roundPassed = Math.max(0, state.round - 1);
+  const [percent, flatPerRound] = {
+    grey: [0.02, 50],
+    blue: [0.04, 75],
+    purple: [0.08, 100],
+    gold: [0.1, 150]
+  }[rarity] || [0.02, 50];
+  return Math.floor(Math.max(0, getScore(owner)) * percent) + (flatPerRound * roundPassed);
+}
+
+function renderTableEventControls() {
+  if (!elements.tableEventActionPanel) {
+    return;
+  }
+  elements.tableEventActionPanel.replaceChildren();
+  const event = getCurrentTableEvent();
+  const owner = getCurrentPowerOwner();
+  if (!event || state.isSpectator || elements.inputPanel.classList.contains("hidden")) {
+    setHidden(elements.tableEventActionPanel, true);
+    return;
+  }
+  if (event.id === "black_market") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "table-event-button black-market-button";
+    button.textContent = "Black Market";
+    button.addEventListener("click", () => openBlackMarketSelector(owner));
+    elements.tableEventActionPanel.appendChild(button);
+  }
+  if (event.id === "sabotage") {
+    const used = Boolean(state.tableEventSabotageUsed[owner]);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "table-event-button sabotage-button";
+    button.textContent = used ? "Sabotage Used" : "Sabotage";
+    button.disabled = used;
+    button.addEventListener("click", () => openTableSabotageSelector(owner));
+    elements.tableEventActionPanel.appendChild(button);
+  }
+  setHidden(elements.tableEventActionPanel, elements.tableEventActionPanel.childElementCount === 0);
+}
+
+function rollRoundAmplifiedMultiplier() {
+  state.roundAmplifiedMultiplier = isMatchModifierEnabled("amplified") ? getRandomMultiplier(1, 2) : 1;
+  if (isMatchModifierEnabled("amplified")) {
+    queueStatFlash("mixed", "Amplified", `x${state.roundAmplifiedMultiplier.toFixed(3)} Multiplier`, { owners: getActiveOwners() });
+  }
+}
+
+function applyRoundAmplifiedMultiplier(deltas, owners, events) {
+  if (!isMatchModifierEnabled("amplified")) {
+    return 1;
+  }
+  const amplifiedMultiplier = state.roundAmplifiedMultiplier || 1;
+  queueStatFlash("mixed", "Amplified", `x${amplifiedMultiplier.toFixed(3)} Multiplier`, { owners });
+  owners.forEach((participant) => {
+    deltas[participant] = Math.round(deltas[participant] * amplifiedMultiplier);
+  });
+  events.push(`Amplified applied the round's x${amplifiedMultiplier.toFixed(3)} multiplier to every point change.`);
+  return amplifiedMultiplier;
+}
+
+function getActiveMatchModifierNames() {
+  const names = [];
+  if (isMatchModifierEnabled("amplified")) names.push("Amplified");
+  if (isMatchModifierEnabled("harsh")) names.push("Brutal");
+  if (isMatchModifierEnabled("chaos")) names.push("Chaos");
+  if (isMatchModifierEnabled("timeMoney")) names.push("Time Is Money");
+  if (isMatchModifierEnabled("wildFire")) names.push("Wild Fire");
+  if (isMatchModifierEnabled("partyMayhem")) names.push("Party Mayhem");
+  return names.length ? names : ["No Modifiers"];
+}
+
+function getActiveRoomPlayerCount(players = state.players) {
+  if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomParticipants.length) {
+    return state.roomParticipants.filter((participant) => participant.active && !participant.spectator).length;
+  }
+  return players.filter((player) => player.active && !player.spectator).length;
+}
+
+function getCurrentParticipant(options = {}) {
+  return {
+    id: state.clientId,
+    name: state.profile.name || "Guest",
+    avatar: state.profile.avatar,
+    equippedTitleId: state.profile.equippedTitleId || "",
+    cardCustomization: state.profile.cardCustomization,
+    host: Boolean(options.host),
+    spectator: Boolean(options.spectator),
+    bot: false,
+    active: options.active !== false,
+    muted: false,
+    status: options.status || (options.spectator ? "spectating" : options.host ? "host" : "joined"),
+    answer: cleanInput(options.answer || ""),
+    submittedRound: Number(options.submittedRound) || 0,
+    remainingTime: Math.max(0, Number(options.remainingTime) || 0)
+  };
+}
+
+function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
+  const participants = state.players
+    .filter((player) => player.active || player.spectator)
+    .map((player) => {
+      const id = player.participantId || player.owner;
+      const existingParticipant = state.roomParticipants.find((participant) => participant.id === id);
+      return {
+        id,
+        name: player.label,
+        avatar: player.avatar || "",
+        equippedTitleId: player.equippedTitleId || "",
+        cardCustomization: player.cardCustomization || null,
+        host: Boolean(player.host),
+        spectator: Boolean(player.spectator),
+        bot: Boolean(player.bot || player.type === "bot"),
+        active: player.active !== false,
+        muted: Boolean(player.muted),
+        status: player.connectionStatus || existingParticipant?.status || (player.host ? "host" : player.bot || player.type === "bot" ? "bot" : "ready"),
+        answer: cleanInput(existingParticipant?.answer || ""),
+        submittedRound: Number(existingParticipant?.submittedRound) || 0,
+        remainingTime: Math.max(0, Number(existingParticipant?.remainingTime) || 0)
+      };
+    });
+
+  const participantIds = new Set(participants.map((participant) => participant.id));
+  state.roomParticipants.forEach((participant) => {
+    if (participantIds.has(participant.id) || (!participant.active && !participant.spectator) || status === "complete") {
+      return;
+    }
+    participants.push({
+      id: participant.id,
+      name: participant.name,
+      avatar: participant.avatar || "",
+      equippedTitleId: participant.equippedTitleId || "",
+      cardCustomization: participant.cardCustomization || null,
+      host: Boolean(participant.host),
+      spectator: Boolean(participant.spectator),
+      bot: Boolean(participant.bot),
+      active: participant.active !== false,
+      muted: Boolean(participant.muted),
+      status: participant.status || (participant.bot ? "bot" : participant.spectator ? "spectating" : "joined"),
+      answer: cleanInput(participant.answer || ""),
+      submittedRound: Number(participant.submittedRound) || 0,
+      remainingTime: Math.max(0, Number(participant.remainingTime) || 0)
+    });
+    participantIds.add(participant.id);
+  });
+
+  if (!participants.some((participant) => participant.id === state.clientId) && status !== "complete") {
+    participants.push(getCurrentParticipant({ host: isCurrentHost(), spectator: state.isSpectator, status: isCurrentHost() ? "host" : "joined" }));
+  }
+
+  return participants;
+}
+
+function setButtonHint(button, hint = "") {
+  if (!button) {
+    return;
+  }
+  button.title = hint;
+  if (hint) {
+    button.dataset.tooltip = hint;
+  } else {
+    delete button.dataset.tooltip;
+  }
+}
+
+function addSystemChat(text, options = {}) {
+  state.roomChat.push({
+    sender: options.sender || "System",
+    text,
+    private: Boolean(options.private),
+    host: Boolean(options.host),
+    audience: options.audience || ""
+  });
+  state.roomChat = state.roomChat.slice(-40);
+  renderRoomChat();
+}
+
+function clearRoomAutoResolve() {
+  if (state.roomAutoResolveId) {
+    clearTimeout(state.roomAutoResolveId);
+    state.roomAutoResolveId = null;
+  }
+}
+
+function getRoomBanList() {
+  const code = state.roomSettings.code;
+  if (!state.roomModeration.bannedByRoom[code]) {
+    state.roomModeration.bannedByRoom[code] = [];
+  }
+  return state.roomModeration.bannedByRoom[code];
+}
+
+function setRoomSubmission(owner, submitted) {
+  state.roomSubmissions[owner] = Boolean(submitted);
+  if (submitted && isRoomMode() && isCurrentHost() && !state.joiningRoom) {
+    upsertHostedRoom("in-progress");
+  }
+  const player = getPlayer(owner);
+  if (player && player.active && !player.muted) {
+    player.connectionStatus = submitted ? "submitted" : player.owner === "player" ? "host" : "waiting";
+  }
+  renderRoomPlayers();
+  renderSubmissionStatus();
+}
+
+function resetRoomSubmissions() {
+  state.roomSubmissions = Object.fromEntries(getActiveOwners().map((owner) => [owner, false]));
+  state.players.forEach((player) => {
+    if (player.active && !player.muted) {
+      player.connectionStatus = player.owner === "player" ? "host" : "waiting";
+    }
+  });
+  renderRoomPlayers();
+  renderSubmissionStatus();
+}
+
+function publishCurrentRoomSubmission(answer) {
+  if (!isRoomMode() || state.isSpectator) {
+    return Promise.resolve(null);
+  }
+  const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || buildRoomDirectoryPayload("in-progress");
+  return updateRoomPresence(room, {
+    active: true,
+    status: "submitted",
+    answer,
+    submittedRound: state.round,
+    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0
+  });
+}
+
+async function waitForRoomSubmissionsThenPlay(localFallback = "") {
+  const timeoutMs = Math.max(3200, (state.timerRemaining + 1) * 1000);
+  const startedAt = Date.now();
+  while (!state.matchEnded && Date.now() - startedAt < timeoutMs) {
+    await refreshCurrentRoomDirectory();
+    if (getPendingSubmitters().length === 0) {
+      break;
+    }
+    await sleep(550);
+  }
+
+  getRemoteActiveOwners().forEach((remoteOwner) => {
+    if (state.roomSubmissions[remoteOwner]) {
+      return;
+    }
+    state.answerRemainingTimes[remoteOwner] = Math.max(0, state.timerRemaining - getRandomInt(2, 8));
+    if (!getLockedRoundAnswer(remoteOwner) && shouldAutoGenerateRoomAnswer(remoteOwner)) {
+      const answer = lockRoundAnswer(remoteOwner, generateAutoAnswer(remoteOwner));
+      if (remoteOwner === "player") {
+        state.localAnswers.playerOne = answer;
+      }
+      if (remoteOwner === "opponent") {
+        state.localAnswers.playerTwo = answer;
+      }
+    }
+    setRoomSubmission(remoteOwner, true);
+  });
+
+  state.roomAutoResolveId = null;
+  playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback));
+}
+
+function getPendingSubmitters() {
+  return getActiveOwners().filter((owner) => !state.roomSubmissions[owner]);
+}
+
+function getRemoteActiveOwners() {
+  if (!isRoomMode()) {
+    return [];
+  }
+
+  return getActiveOwners().filter((owner) => owner !== state.currentOwner);
+}
+
+function getRoomVariantNames() {
+  if (state.roomSettings.classicMode) {
+    return ["Classic"];
+  }
+  const variants = [];
+  if (state.roomSettings.amplified) {
+    variants.push("Amplified");
+  }
+  if (state.roomSettings.harsh) {
+    variants.push("Brutal");
+  }
+  if (state.roomSettings.chaos) {
+    variants.push("Chaos");
+  }
+  if (state.roomSettings.timeMoney) {
+    variants.push("Time Is Money");
+  }
+  if (state.roomSettings.wildFire) {
+    variants.push("Wild Fire");
+  }
+  if (state.roomSettings.partyMayhem) {
+    variants.push("Party Mayhem");
+  }
+  return variants.length ? variants : ["No Modifiers"];
+}
+
+function getInitials(name) {
+  return String(name || "Y")
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "Y";
+}
+
+function renderAvatar(element, playerOrProfile) {
+  const avatar = playerOrProfile.avatar || "";
+  const label = playerOrProfile.label || playerOrProfile.name || "You";
+  element.textContent = "";
+  element.style.backgroundImage = avatar ? `url("${avatar}")` : "";
+  element.classList.toggle("has-image", Boolean(avatar));
+  if (!avatar) {
+    element.textContent = getInitials(label);
+  }
+  element.setAttribute("aria-label", `${label} avatar`);
+}
+
+function hexToRgbParts(value) {
+  const match = String(value || "").trim().match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!match) {
+    return "34 211 238";
+  }
+  return `${parseInt(match[1], 16)} ${parseInt(match[2], 16)} ${parseInt(match[3], 16)}`;
+}
+
+function parseRgbParts(value) {
+  const parts = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .map((part) => Math.max(0, Math.min(255, Number(part) || 0)));
+  return parts.length === 3 ? parts : [34, 211, 238];
+}
+
+function rgbPartsToHsl([red, green, blue]) {
+  const r = red / 255;
+  const g = green / 255;
+  const b = blue / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+  if (max === min) {
+    return [0, 0, lightness];
+  }
+  const delta = max - min;
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+  let hue = 0;
+  if (max === r) {
+    hue = (g - b) / delta + (g < b ? 6 : 0);
+  } else if (max === g) {
+    hue = (b - r) / delta + 2;
+  } else {
+    hue = (r - g) / delta + 4;
+  }
+  return [hue * 60, saturation, lightness];
+}
+
+function hslToRgbParts([hue, saturation, lightness]) {
+  const normalizedHue = ((hue % 360) + 360) % 360;
+  const chroma = (1 - Math.abs((2 * lightness) - 1)) * saturation;
+  const x = chroma * (1 - Math.abs(((normalizedHue / 60) % 2) - 1));
+  const match = lightness - (chroma / 2);
+  let rgb = [0, 0, 0];
+  if (normalizedHue < 60) {
+    rgb = [chroma, x, 0];
+  } else if (normalizedHue < 120) {
+    rgb = [x, chroma, 0];
+  } else if (normalizedHue < 180) {
+    rgb = [0, chroma, x];
+  } else if (normalizedHue < 240) {
+    rgb = [0, x, chroma];
+  } else if (normalizedHue < 300) {
+    rgb = [x, 0, chroma];
+  } else {
+    rgb = [chroma, 0, x];
+  }
+  return rgb.map((channel) => Math.round((channel + match) * 255));
+}
+
+function hueShiftedRgbParts(value, degrees) {
+  const hsl = rgbPartsToHsl(parseRgbParts(value));
+  hsl[0] += degrees;
+  return hslToRgbParts(hsl).join(" ");
+}
+
+function pastelRgbParts(value) {
+  const hex = String(value || "").trim().replace(/^#/, "").toLowerCase();
+  if (hex === "ff4d7d") {
+    return "255 130 161";
+  }
+  const channels = parseRgbParts(hexToRgbParts(value));
+  const maxChannel = Math.max(...channels, 1);
+  const brightened = channels.map((channel) => Math.min(255, Math.round((channel / maxChannel) * 255)));
+  const saturationScale = 0.7;
+  return brightened
+    .map((channel) => Math.round(255 - ((255 - channel) * saturationScale)))
+    .join(" ");
+}
+
+function clampPercent(value, fallback, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
+}
+
+function rgbPartsWithLightness(value, lightnessPercent, options = {}) {
+  const hsl = rgbPartsToHsl(parseRgbParts(value));
+  hsl[1] = options.saturationScale ? Math.max(0, Math.min(1, hsl[1] * options.saturationScale)) : hsl[1];
+  hsl[2] = Math.max(0, Math.min(1, Number(lightnessPercent) / 100));
+  return hslToRgbParts(hsl).join(" ");
+}
+
+function rgbPartsToCss(rgbParts) {
+  return `rgb(${rgbParts})`;
+}
+
+function shouldSkipPastelForGradientColour(colour) {
+  return ["white", "grey", "black"].includes(colour?.id);
+}
+
+function syncRgbAnimationPhase(element, style) {
+  const durationMs = style?.kind === "gradient" ? 9600 : 8600;
+  const now = Date.now();
+  element.style.setProperty("--card-rgb-duration", `${durationMs}ms`);
+  element.style.setProperty("--card-rgb-delay", `${-(now % durationMs)}ms`);
+}
+
+function setRgbPartVariables(element, prefix, rgbParts) {
+  const [red, green, blue] = parseRgbParts(rgbParts);
+  element.style.setProperty(`${prefix}-r`, red);
+  element.style.setProperty(`${prefix}-g`, green);
+  element.style.setProperty(`${prefix}-b`, blue);
+}
+
+function getProfileCardColour(colourId) {
+  return profileCardColourMap[colourId] || profileCardColourMap.blue;
+}
+
+function getProfileGradientRimColour(colour) {
+  if (colour?.id === "black") {
+    return "#4b5262";
+  }
+  return colour?.value || getProfileCardColour("blue").value;
+}
+
+function getProfileCardCustomizationForOwner(owner) {
+  const player = getPlayer(owner);
+  if (owner === state.currentOwner || (owner === "player" && !isRoomMode())) {
+    return state.profile.cardCustomization;
+  }
+  return player?.cardCustomization || null;
+}
+
+function shouldUseAnswerCardCustomization(owner) {
+  const player = getPlayer(owner);
+  return !player?.bot && player?.type !== "bot";
+}
+
+function applyProfileCustomizationSurface(element, customization, options = {}) {
+  if (!element) {
+    return;
+  }
+  applyCardCustomizationToElement(element, customization || defaultProfileCustomization, options);
+}
+
+function applyPlayerCustomizationSurface(element, player) {
+  if (!element || !player || player.bot || player.type === "bot" || player.active === false) {
+    return;
+  }
+  applyProfileCustomizationSurface(element, player.cardCustomization || defaultProfileCustomization);
+}
+
+function applyOwnerCustomizationSurface(element, owner) {
+  const player = getPlayer(owner);
+  if (!element || !player || player.bot || player.type === "bot" || player.active === false) {
+    return;
+  }
+  applyProfileCustomizationSurface(element, getProfileCardCustomizationForOwner(owner) || defaultProfileCustomization);
+}
+
+function applyBlackCardCustomizationForOwner(owner) {
+  const blackCard = elements.blackCardText?.closest(".black-card");
+  if (!blackCard) {
+    return;
+  }
+  const player = getPlayer(owner);
+  if (!player || player.bot || player.type === "bot") {
+    applyProfileCustomizationSurface(blackCard, defaultProfileCustomization);
+    return;
+  }
+  applyProfileCustomizationSurface(blackCard, getProfileCardCustomizationForOwner(owner));
+}
+
+function applyCardCustomizationToElement(card, customization, options = {}) {
+  if (!card) {
+    return;
+  }
+  const normalized = normalizeProfileCustomization(customization || {});
+  const style = profileCardStyleMap[normalized.styleId] || profileCardStyleMap.default;
+  const isSpecialStyle = specialProfileCardStyleKinds.has(style.kind);
+  const activeEffectIds = isSpecialStyle
+    ? []
+    : normalized.effectIds.filter((id) => (
+      profileCardEffectMap[id]
+      && !(id === "rgb" && style.id === "black")
+      && !(id === "pastel" && (style.id === "default" || style.id === "black"))
+    ));
+  const activePatternId = isSpecialStyle ? "none" : normalized.patternId;
+  card.dataset.cardStyle = style.id;
+  const hasStyleLayers = activeEffectIds.length > 0 || activePatternId !== "none";
+  card.dataset.cardCustom = style.id === "default" && !options.preview && !hasStyleLayers ? "false" : "true";
+  card.dataset.cardSpecial = String(isSpecialStyle);
+  card.dataset.cardEffects = activeEffectIds.length ? activeEffectIds.join(" ") : "none";
+  card.dataset.cardPattern = activePatternId;
+  card.classList.toggle("profile-preview-card", Boolean(options.preview));
+  if (activeEffectIds.includes("rgb")) {
+    syncRgbAnimationPhase(card, style);
+  } else {
+    card.style.removeProperty("--card-rgb-duration");
+    card.style.removeProperty("--card-rgb-delay");
+  }
+  const isGradientStyle = style.kind === "gradient";
+  const gradientTop = getProfileCardColour(normalized.gradientTop);
+  const gradientBottom = getProfileCardColour(normalized.gradientBottom);
+  let primary = getProfileCardColour(style.colorId || normalized.gradientTop);
+  let secondary = getProfileCardColour(normalized.gradientBottom);
+  if (isGradientStyle) {
+    primary = gradientTop;
+    secondary = gradientBottom;
+  } else if (style.kind === "chaos") {
+    primary = getProfileCardColour("green");
+    secondary = getProfileCardColour("pink");
+  } else if (style.kind === "blackMarket") {
+    primary = getProfileCardColour("green");
+    secondary = getProfileCardColour("gold");
+  } else if (style.kind === "black") {
+    primary = getProfileCardColour("black");
+    secondary = getProfileCardColour("grey");
+  } else if (style.kind === "burning") {
+    primary = getProfileCardColour("orange");
+    secondary = getProfileCardColour("gold");
+  }
+  const pastelActive = activeEffectIds.includes("pastel");
+  const primaryRgb = pastelActive && !(isGradientStyle && shouldSkipPastelForGradientColour(primary)) ? pastelRgbParts(primary.value) : hexToRgbParts(primary.value);
+  const secondaryRgb = pastelActive && !(isGradientStyle && shouldSkipPastelForGradientColour(secondary)) ? pastelRgbParts(secondary.value) : hexToRgbParts(secondary.value);
+  const gradientTopRgb = pastelActive && !shouldSkipPastelForGradientColour(gradientTop) ? pastelRgbParts(gradientTop.value) : hexToRgbParts(gradientTop.value);
+  const gradientBottomRgb = pastelActive && !shouldSkipPastelForGradientColour(gradientBottom) ? pastelRgbParts(gradientBottom.value) : hexToRgbParts(gradientBottom.value);
+  const patternRgb = style.kind === "black" || style.kind === "solid" && style.id === "default" ? "88 92 102" : primaryRgb;
+  const primaryCss = rgbPartsToCss(primaryRgb);
+  const secondaryCss = rgbPartsToCss(secondaryRgb);
+  const gradientTopCss = rgbPartsToCss(gradientTopRgb);
+  const gradientBottomCss = rgbPartsToCss(gradientBottomRgb);
+  const defaultBackgroundLayer = isGradientStyle
+    ? "linear-gradient(#08090d, #08090d)"
+    : style.kind === "black"
+      ? "linear-gradient(135deg, rgb(8 10 15), rgb(13 15 22))"
+      : `radial-gradient(circle at 18% 0%, rgb(${primaryRgb} / 0.2), transparent 52%), linear-gradient(145deg, rgb(9 10 16), rgb(15 14 22) 62%, rgb(8 9 14))`;
+  const themeBackground = style.kind === "chaos"
+      ? `radial-gradient(circle at 18% 18%, rgb(255 77 125 / 0.2), transparent 38%), radial-gradient(circle at 82% 12%, rgb(64 222 164 / 0.18), transparent 36%), linear-gradient(135deg, rgb(40 12 32 / 0.92), rgb(8 28 34 / 0.92) 54%, rgb(10 18 24 / 0.95))`
+      : style.kind === "blackMarket"
+        ? `radial-gradient(circle at 50% 0%, rgb(64 222 164 / 0.26), transparent 48%), repeating-linear-gradient(135deg, rgb(64 222 164 / 0.08) 0 0.35rem, transparent 0.35rem 1rem), linear-gradient(135deg, rgb(5 20 18), rgb(10 11 18))`
+        : style.kind === "burning"
+            ? `radial-gradient(circle at 50% 96%, rgb(255 210 88 / 0.18), rgb(255 94 38 / 0.12) 30%, transparent 64%), linear-gradient(0deg, rgb(255 68 31 / 0.12), transparent 62%), repeating-linear-gradient(88deg, rgb(255 173 66 / 0.035) 0 0.2rem, transparent 0.2rem 1.65rem), linear-gradient(180deg, rgb(40 10 9), rgb(58 15 11) 50%, rgb(22 12 14))`
+            : defaultBackgroundLayer;
+  const background = themeBackground;
+  const rgbBackground = themeBackground;
+  card.style.setProperty("--custom-card-bg", background);
+  card.style.setProperty("--custom-card-rgb-bg", rgbBackground);
+  card.style.setProperty("--custom-card-rim", primaryCss);
+  card.style.setProperty("--custom-card-rim-rgb", primaryRgb);
+  card.style.setProperty("--custom-card-secondary-rgb", secondaryRgb);
+  setRgbPartVariables(card, "--custom-card-rgb-base", primaryRgb);
+  setRgbPartVariables(card, "--custom-card-rgb-warm", hueShiftedRgbParts(primaryRgb, 30));
+  setRgbPartVariables(card, "--custom-card-rgb-cool", hueShiftedRgbParts(primaryRgb, -30));
+  setRgbPartVariables(card, "--custom-card-rgb2-base", secondaryRgb);
+  setRgbPartVariables(card, "--custom-card-rgb2-warm", hueShiftedRgbParts(secondaryRgb, 30));
+  setRgbPartVariables(card, "--custom-card-rgb2-cool", hueShiftedRgbParts(secondaryRgb, -30));
+  card.style.setProperty("--custom-card-gradient-top-rgb", gradientTopRgb);
+  card.style.setProperty("--custom-card-gradient-bottom-rgb", gradientBottomRgb);
+  card.style.setProperty("--custom-card-rim-gradient", `linear-gradient(180deg, ${gradientTopCss} 0%, ${gradientBottomCss} 100%)`);
+  card.style.setProperty("--custom-card-rgb-rim-gradient", `linear-gradient(180deg, rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b)) 0%, rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b)) 100%)`);
+  card.style.setProperty("--custom-card-pattern-secondary-rgb", secondaryRgb);
+  const effectivePatternRgb = patternRgb;
+  card.style.setProperty("--custom-card-pattern-rgb", effectivePatternRgb);
+  const patternBackground = isGradientStyle
+    ? `linear-gradient(180deg, rgb(${gradientTopRgb} / 0.58) 0%, rgb(${gradientBottomRgb} / 0.24) 100%)`
+    : style.kind === "black" || style.id === "default"
+      ? `linear-gradient(180deg, rgb(${effectivePatternRgb} / 0.4), rgb(${effectivePatternRgb} / 0.24))`
+      : `linear-gradient(180deg, rgb(${effectivePatternRgb} / 0.54), rgb(${secondaryRgb} / 0.22))`;
+  card.style.setProperty("--custom-card-pattern-bg", patternBackground);
+}
+
+function applyAnswerCardCustomizations() {
+  getAnswerCardNodes().forEach((card) => {
+    const owner = card.dataset.owner || "player";
+    if (shouldUseAnswerCardCustomization(owner)) {
+      applyCardCustomizationToElement(card, getProfileCardCustomizationForOwner(owner));
+    }
+  });
+}
+
+function renderProfile() {
+  if (elements.profileNameInput && document.activeElement !== elements.profileNameInput) {
+    elements.profileNameInput.value = state.profile.name;
+  }
+  if (elements.profileCurrencyValue) {
+    elements.profileCurrencyValue.textContent = loadCurrencyBalance().toLocaleString();
+  }
+  renderAvatar(elements.profileAvatarPreview, state.profile);
+  applyProfileCustomizationSurface(elements.profileCard, state.profile.cardCustomization);
+  renderPlayerNameWithTitle(elements.profileNameDisplay, {
+    owner: state.currentOwner || "player",
+    label: state.profile.name || "You",
+    equippedTitleId: state.profile.equippedTitleId,
+    cardCustomization: state.profile.cardCustomization
+  }, state.profile.name || "You");
+  renderPlayerNameWithTitle(elements.roomProfileNamePreview, {
+    owner: state.currentOwner || "player",
+    label: state.profile.name || "You",
+    equippedTitleId: state.profile.equippedTitleId
+  }, state.profile.name || "You");
+  renderAvatar(elements.roomProfileAvatarPreview, state.profile);
+  applyProfileCustomizationSurface(elements.roomHostProfile, state.profile.cardCustomization);
+}
+
+function updateProfileName(value) {
+  state.profile.name = String(value ?? "").replace(/[\r\n\t]/g, " ").slice(0, 16) || "You";
+  localStorage.setItem("cardsAgainstAiProfileName", state.profile.name);
+  if (getPlayer("player")) {
+    getPlayer("player").label = state.profile.name;
+    getPlayer("player").equippedTitleId = state.profile.equippedTitleId;
+    getPlayer("player").cardCustomization = state.profile.cardCustomization;
+  }
+  renderProfile();
+  renderLeaderboard();
+  renderRoomPlayers();
+  renderRoomChat();
+  if (isModalOpen(elements.profileCustomModal)) {
+    renderProfileCustomizationPreview();
+    elements.profileFontGrid?.querySelectorAll(".profile-font-preview").forEach((preview) => {
+      preview.textContent = state.profile.name;
+    });
+  }
+}
+
+function updateProfileAvatar(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    state.profile.avatar = String(reader.result || "");
+    localStorage.setItem("cardsAgainstAiProfileAvatar", state.profile.avatar);
+    if (getPlayer("player")) {
+      getPlayer("player").avatar = state.profile.avatar;
+    }
+    renderProfile();
+    renderRoomPlayers();
+    renderRoomChat();
+  });
+  reader.readAsDataURL(file);
+}
+
+function renderQuestionProgress() {
+  if (!elements.answerProgressGrid || !elements.answerProgressSummary) {
+    return;
+  }
+
+  const total = Math.max(1, state.maxRounds || 1);
+  const progress = Array.from({ length: total }, (_, index) => state.roundProgress[index] || "unanswered");
+  const answered = progress.filter((status) => status !== "unanswered").length;
+  const correct = progress.filter((status) => status === "correct").length;
+  elements.answerProgressGrid.style.setProperty("--progress-count", String(total));
+  elements.answerProgressSummary.textContent = `${answered}/${total} answered - ${correct} correct`;
+  elements.answerProgressGrid.replaceChildren(
+    ...progress.map((status, index) => {
+      const marker = document.createElement("span");
+      marker.className = "answer-progress-box";
+      marker.dataset.status = status;
+      marker.dataset.active = String(index === state.round - 1 && status === "unanswered");
+      marker.title = `Round ${index + 1}: ${status === "unanswered" ? "unanswered" : status}`;
+      marker.textContent = String(index + 1);
+      return marker;
+    })
+  );
+}
+
+function setCurrentQuestionProgress(isCorrect) {
+  const index = Math.max(0, state.round - 1);
+  if (!state.roundProgress.length) {
+    state.roundProgress = Array.from({ length: state.maxRounds }, () => "unanswered");
+  }
+  state.roundProgress[index] = isCorrect ? "correct" : "incorrect";
+  renderQuestionProgress();
+}
+
+function renderScore() {
+  getActiveOwners().forEach(updateAchievementActiveEffectPeak);
+  renderLeaderboard();
+  renderEffectPanel();
+  renderQuestionProgress();
+  updateWildFireBurningState();
+  elements.roundCount.textContent = `${state.round}/${state.maxRounds}`;
+  renderTimer();
+}
+
+function updateWildFireBurningState() {
+  const shouldBurn = isMatchModifierEnabled("wildFire")
+    && !elements.gameStage.classList.contains("hidden")
+    && getActiveOwners().some((owner) => getOwnerStreak(owner) > 1);
+  elements.gameStage.classList.toggle("wild-fire-burning", shouldBurn);
+}
+
+function renderSubmissionStatus() {
+  if (!isRoomMode() || !elements.roomSubmitStatus || elements.inputPanel.classList.contains("hidden")) {
+    setHidden(elements.roomSubmitStatus, true);
+    return;
+  }
+
+  const owners = getActiveOwners();
+  const pending = getPendingSubmitters();
+  const submitted = owners.filter((owner) => state.roomSubmissions[owner]);
+  elements.roomSubmitStatus.replaceChildren();
+  const title = document.createElement("strong");
+  title.textContent = pending.length ? `Waiting for ${pending.map(getOwnerLabel).join(", ")}` : "All answers submitted";
+  const chipRow = document.createElement("div");
+  submitted.forEach((owner) => {
+    const chip = document.createElement("span");
+    chip.className = "submitted";
+    chip.textContent = `${getOwnerLabel(owner)} submitted`;
+    chipRow.appendChild(chip);
+  });
+  pending.forEach((owner) => {
+    const chip = document.createElement("span");
+    chip.textContent = `${getOwnerLabel(owner)} waiting`;
+    chipRow.appendChild(chip);
+  });
+  elements.roomSubmitStatus.append(title, chipRow);
+  setHidden(elements.roomSubmitStatus, false);
+}
+
+function applyRoundStartEffects() {
+  const owners = getActiveOwners();
+  const events = [];
+  const pointLossSoundToken = state.pointLossSoundToken;
+  const timeBombDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  const debuffTimeBombDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  const soulLinkDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  const hotInHereDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  const totalDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  getActiveOwners().forEach((owner) => {
+    const pendingStreak = state.pendingStreakBonuses[owner] || 0;
+    if (pendingStreak > 0) {
+      setOwnerStreak(owner, getOwnerStreak(owner) + pendingStreak);
+      queueStatFlash("positive", "Round Start", formatSignedStat(pendingStreak, "Streak"), { owners: [owner] });
+      state.pendingStreakBonuses[owner] = 0;
+    }
+    const pendingBuffs = state.pendingCocktailBuffs[owner] || 0;
+    for (let index = 0; index < pendingBuffs; index += 1) {
+      const result = applyCocktailMix(owner, { buffsOnly: true });
+      if (result) {
+        queueStatFlash("positive", "Overachiever", result, { owners: [owner], complex: true });
+        events.push(`Overachiever served ${getOwnerLabel(owner)} a buff: ${result}.`);
+      }
+    }
+    state.pendingCocktailBuffs[owner] = 0;
+  });
+
+  state.pendingDeadWeights
+    .filter((transfer) => transfer.round <= state.round)
+    .forEach((transfer) => {
+      passDeadWeight(transfer.owner);
+    });
+  state.pendingDeadWeights = state.pendingDeadWeights.filter((transfer) => transfer.round > state.round);
+  scheduleError404Effects(events);
+
+  const detonating = state.timeBombs.filter((bomb) => bomb.round <= state.round);
+  detonating.forEach((bomb) => {
+    const ownerScore = getScore(bomb.owner);
+    owners
+      .filter((participant) => participant !== bomb.owner && getScore(participant) > ownerScore)
+      .forEach((participant) => {
+        const loss = Math.floor(getScore(participant) * 0.1);
+        const appliedLoss = applyProtectedScoreLoss(participant, loss, "Time Bomb", events);
+        timeBombDeltas[participant] -= appliedLoss;
+      });
+  });
+  queueDeltaStatFlash("Time Bomb", timeBombDeltas, "Point", { kind: "bomb" });
+  state.timeBombs = state.timeBombs.filter((bomb) => bomb.round > state.round);
+
+  const detonatingDebuffs = (state.debuffTimeBombs || []).filter((bomb) => bomb.round <= state.round);
+  detonatingDebuffs.forEach((bomb) => {
+    if (!owners.includes(bomb.owner)) {
+      return;
+    }
+    const loss = Math.floor(getScore(bomb.owner) * 0.1);
+    const appliedLoss = applyProtectedScoreLoss(bomb.owner, loss, "Debuff Time Bomb", events);
+    debuffTimeBombDeltas[bomb.owner] -= appliedLoss;
+    events.push(`Debuff Time Bomb hit ${getOwnerLabel(bomb.owner)} for ${appliedLoss.toLocaleString()} points.`);
+  });
+  queueDeltaStatFlash("Debuff Time Bomb", debuffTimeBombDeltas, "Point", { kind: "bomb" });
+  state.debuffTimeBombs = (state.debuffTimeBombs || []).filter((bomb) => bomb.round > state.round);
+
+  Object.keys(state.arsonists || {}).forEach((owner) => {
+    if (!owners.includes(owner)) {
+      return;
+    }
+    const target = getRandomOtherOwner(owner);
+    setOwnerStreak(owner, getOwnerStreak(owner) + 1);
+    if (target) {
+      setOwnerStreak(target, getOwnerStreak(target) + 1);
+    }
+    queueStatFlash("positive", "Arsonist", "+1 Streak", { owners: [owner, target].filter(Boolean) });
+    events.push(`Arsonist gave ${getOwnerLabel(owner)}${target ? ` and ${getOwnerLabel(target)}` : ""} 1 streak.`);
+  });
+
+  Object.keys(state.bartenders || {}).forEach((owner) => {
+    if (!owners.includes(owner)) {
+      return;
+    }
+    const result = applyCocktailMix(owner, { buffsOnly: false });
+    if (result) {
+      queueStatFlash(getCocktailFlashKind(result), "Bartender", result, { owners: [owner], complex: true });
+      events.push(`Bartender served ${getOwnerLabel(owner)}: ${result}.`);
+    }
+  });
+
+  if (Object.keys(state.virusFactories || {}).some((owner) => owners.includes(owner))) {
+    owners.forEach((owner) => {
+      if (Math.random() >= 0.33) {
+        return;
+      }
+      const result = applyCocktailMix(owner, { debuffsOnly: true });
+      queueStatFlash(getCocktailFlashKind(result), "Virus Factory", result, { owners: [owner], complex: true });
+      events.push(`Virus Factory hit ${getOwnerLabel(owner)} with a debuff: ${result}.`);
+    });
+  }
+
+  if (Object.keys(state.typhoonOwners || {}).some((owner) => owners.includes(owner))) {
+    owners.forEach((owner) => {
+      if (Math.random() >= 0.33) {
+        return;
+      }
+      const strike = Math.random() < 0.5 ? getPowerById("zap_strike") : getPowerById("lightning_strike");
+      const amount = (strike.type === "lightning_strike" ? 500 : 250) * (getOwnerStreak(owner) + 1);
+      const appliedLoss = applyProtectedScoreLoss(owner, amount, "Typhoon Season", events);
+      queueStatFlash(appliedLoss > 0 ? "lightning" : "positive", "Typhoon Season", appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", { owners: [owner], complex: true });
+      events.push(`Typhoon Season made ${getOwnerLabel(owner)} self-cast ${strike.name} for ${appliedLoss.toLocaleString()} points.`);
+    });
+  }
+
+  (state.soulLinks || []).forEach((link) => {
+    if (!owners.includes(link.owner) || !owners.includes(link.targetOwner)) {
+      return;
+    }
+    const ownerGain = Math.floor(getScore(link.targetOwner) * 0.1);
+    const targetGain = Math.floor(getScore(link.owner) * 0.1);
+    soulLinkDeltas[link.owner] += ownerGain;
+    soulLinkDeltas[link.targetOwner] += targetGain;
+    markAchievementPointGift(link.owner, targetGain, { soulLink: true });
+    markAchievementPointGift(link.targetOwner, ownerGain, { soulLink: true });
+    addScore(link.owner, ownerGain);
+    addScore(link.targetOwner, targetGain);
+    events.push(`Soul Link gave ${getOwnerLabel(link.owner)} ${ownerGain.toLocaleString()} and ${getOwnerLabel(link.targetOwner)} ${targetGain.toLocaleString()} points.`);
+  });
+  queueDeltaStatFlash("Soul Link", soulLinkDeltas);
+
+  getHotInHereEffectOwners(owners).forEach((owner) => {
+    if (!owners.includes(owner)) {
+      return;
+    }
+    const burnPercent = Math.max(0, 5 * (getOwnerStreak(owner) - 1));
+    if (!burnPercent) {
+      return;
+    }
+    const source = isMatchModifierEnabled("wildFire") && !state.hotInHereOwners[owner] ? "Wild Fire" : "It's Getting Hot";
+    owners.filter((participant) => participant !== owner).forEach((participant) => {
+      const loss = Math.floor(getScore(participant) * (burnPercent / 100));
+      const appliedLoss = applyProtectedScoreLoss(participant, loss, source, events);
+      hotInHereDeltas[participant] -= appliedLoss;
+    });
+    events.push(`${source} burned everyone except ${getOwnerLabel(owner)} for ${burnPercent}%.`);
+  });
+  queueDeltaStatFlash("It's Getting Hot", hotInHereDeltas, "Point", { kind: "burning" });
+
+  const persistentDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  applyPersistentRoundDeltas(persistentDeltas, owners, events);
+  protectNegativeDeltasNow(persistentDeltas, owners, "Round Effects", events);
+  owners.forEach((owner) => {
+    if (persistentDeltas[owner]) {
+      addScore(owner, persistentDeltas[owner]);
+    }
+  });
+  queueDeltaStatFlash("Round Effects", persistentDeltas);
+  owners.forEach((owner) => {
+    totalDeltas[owner] = (timeBombDeltas[owner] || 0)
+      + (debuffTimeBombDeltas[owner] || 0)
+      + (hotInHereDeltas[owner] || 0)
+      + (persistentDeltas[owner] || 0);
+  });
+  playUnassignedPointLossSound(totalDeltas, pointLossSoundToken);
+
+  if (detonating.length || detonatingDebuffs.length || events.length || Object.values(persistentDeltas).some((amount) => amount !== 0)) {
+    if (events.length) {
+      console.info(events.join(" "));
+    }
+    renderScore();
+  }
+}
+
+function getActiveOwners() {
+  return state.players.filter((player) => player.active && !player.spectator).map((player) => player.owner);
+}
+
+function getOwnerStreak(owner) {
+  const player = getPlayer(owner);
+  return player ? player.streak : state.streaks?.[owner] || 0;
+}
+
+function setOwnerStreak(owner, value, options = {}) {
+  if (!options.force && (state.streakFreezeRounds[owner] || 0) > 0) {
+    queueStatFlash("shield", "Freeze Ray", "Streak Locked", { owners: [owner], complex: true });
+    return;
+  }
+  if (!options.force && value < getOwnerStreak(owner) && (state.streakLossProtectionRounds[owner] || 0) > 0) {
+    queueStatFlash("shield", "Streak Guard", "Streak Protected", { owners: [owner], complex: true });
+    return;
+  }
+  if (!options.force && value < getOwnerStreak(owner) && (state.streakAnchorCharges[owner] || 0) > 0) {
+    state.streakAnchorCharges[owner] = Math.max(0, (state.streakAnchorCharges[owner] || 0) - 1);
+    queueStatFlash("shield", "Streak Anchor", "Streak Protected", { owners: [owner], complex: true });
+    return;
+  }
+  const normalized = Math.max(0, Math.round(value));
+  const player = getPlayer(owner);
+  if (player) {
+    player.streak = normalized;
+  }
+  state.streaks[owner] = normalized;
+}
+
+function shouldKeepStreakAfterRoundLoss(owner) {
+  return Boolean(state.eternalFlameProtection[owner] || isMatchModifierEnabled("wildFire"));
+}
+
+function compareScoreRowsForLeaderboard(a, b) {
+  if (a.hiddenScore !== b.hiddenScore) {
+    return a.hiddenScore ? 1 : -1;
+  }
+  return b.score - a.score || getActiveOwners().indexOf(a.owner) - getActiveOwners().indexOf(b.owner);
+}
+
+function renderLeaderboard() {
+  const leaders = getActiveOwners()
+    .map((owner) => ({
+      owner,
+      label: getOwnerLabel(owner),
+      score: getScore(owner),
+      displayScore: getDisplayScoreText(owner),
+      hiddenScore: isScoreHidden(owner),
+      streak: getOwnerStreak(owner)
+    }))
+    .sort(compareScoreRowsForLeaderboard);
+
+  elements.leaderboard.replaceChildren();
+  leaders.forEach((entry, index) => {
+    const chip = document.createElement("div");
+    chip.className = "leaderboard-player";
+    chip.dataset.owner = entry.owner;
+    chip.dataset.participantId = getPlayer(entry.owner)?.participantId || "";
+    const isKickableBot = canKickRoomBot(entry.owner, chip.dataset.participantId);
+    chip.classList.toggle("leader", index === 0);
+    chip.classList.toggle("streaking", entry.streak > 0);
+    chip.classList.toggle("score-hidden", entry.hiddenScore);
+    chip.classList.toggle("kickable-bot", isKickableBot);
+    applyOwnerCustomizationSurface(chip, entry.owner);
+    if (isKickableBot) {
+      chip.setAttribute("aria-label", "Click to kick this bot from the room.");
+    }
+    const rank = document.createElement("span");
+    rank.className = "leaderboard-rank";
+    rank.textContent = `#${index + 1}`;
+    const avatar = document.createElement("span");
+    avatar.className = "leaderboard-avatar";
+    renderAvatar(avatar, getPlayer(entry.owner) || { label: entry.label });
+    const name = document.createElement("span");
+    name.className = "leaderboard-name";
+    renderPlayerNameWithTitle(name, entry.owner, entry.label);
+    const powers = document.createElement("div");
+    powers.className = "leaderboard-power-list";
+    const visiblePowers = getPlayedPowerEntries([entry.owner])
+      .filter((playedEntry) => playedEntry.power && !isSecretPower(playedEntry.power));
+    visiblePowers.forEach((playedEntry) => {
+      const playedPower = playedEntry.power;
+      const pill = document.createElement("span");
+      pill.className = "leaderboard-power-pill";
+      pill.dataset.rarity = playedPower.rarity;
+      pill.dataset.description = playedPower.description;
+      pill.textContent = playedPower.name;
+      if (playedEntry.revealId && state.pendingPowerPillAnimations?.has(playedEntry.revealId)) {
+        pill.classList.add("just-played");
+        state.pendingPowerPillAnimations.delete(playedEntry.revealId);
+      }
+      attachFloatingDescriptionTooltip(pill);
+      powers.appendChild(pill);
+    });
+    const score = document.createElement("strong");
+    score.textContent = entry.displayScore;
+    const streak = document.createElement("span");
+    streak.className = "leaderboard-streak";
+    streak.textContent = entry.streak > 0 ? `${entry.streak}x streak` : "0x streak";
+    chip.append(rank, avatar, name, powers, score, streak);
+    if (isKickableBot) {
+      const kickHint = document.createElement("span");
+      kickHint.className = "leaderboard-kick-hint";
+      kickHint.textContent = "Click to kick bot";
+      chip.appendChild(kickHint);
+    }
+    elements.leaderboard.appendChild(chip);
+  });
+}
+
+function getScore(owner) {
+  return getPlayer(owner)?.score || 0;
+}
+
+function isScoreHidden(owner) {
+  return Boolean(state.redHerringMasks?.[owner]);
+}
+
+function getDisplayScoreText(owner) {
+  return isScoreHidden(owner) ? "??? points" : `${getScore(owner).toLocaleString()} points`;
+}
+
+function setScore(owner, value) {
+  const normalized = Math.max(0, Math.round(value));
+  const player = getPlayer(owner);
+  if (player) {
+    player.score = normalized;
+  }
+  syncLegacyScoresFromPlayers();
+}
+
+function addScore(owner, amount) {
+  markAchievementPointLoss(owner, amount);
+  if ((Number(amount) || 0) > 0) {
+    incrementAchievementProgress(owner, "pointsGainedTotal", amount);
+  }
+  setScore(owner, getScore(owner) + amount);
+}
+
+function hasImmediateDeductionProtection(owner) {
+  return Boolean(state.playedPowerMeta[owner]?.hoarderShield)
+    || Boolean(state.permafrostProtection[owner])
+    || (state.freezeProtection[owner] || 0) > 0
+    || (state.pocketShieldCharges[owner] || 0) > 0;
+}
+
+function consumeImmediateDeductionProtection(owner) {
+  if ((state.pocketShieldCharges[owner] || 0) > 0) {
+    state.pocketShieldCharges[owner] = Math.max(0, (state.pocketShieldCharges[owner] || 0) - 1);
+  }
+}
+
+function getProtectedPointLoss(owner, amount, source = "Shield", events = null) {
+  const loss = Math.max(0, Math.round(amount));
+  if (loss <= 0) {
+    return 0;
+  }
+  if (!hasImmediateDeductionProtection(owner)) {
+    return loss;
+  }
+
+  consumeImmediateDeductionProtection(owner);
+  markAchievementShieldSave(owner);
+  const message = `${getOwnerLabel(owner)} blocked ${loss.toLocaleString()} points from ${source}.`;
+  if (events) {
+    events.push(message);
+  }
+  queueStatFlash("shield", "Shield", `Blocked ${loss.toLocaleString()} Points`, { owners: [owner], complex: true });
+  return 0;
+}
+
+function applyProtectedScoreLoss(owner, amount, source = "Shield", events = null) {
+  const loss = getProtectedPointLoss(owner, amount, source, events);
+  if (loss > 0) {
+    addScore(owner, -loss);
+  }
+  return loss;
+}
+
+function protectNegativeDeltasNow(deltas, owners, source, events) {
+  owners.forEach((owner) => {
+    const loss = Math.abs(Math.min(0, deltas[owner] || 0));
+    if (loss <= 0) {
+      return;
+    }
+    deltas[owner] = -getProtectedPointLoss(owner, loss, source, events);
+  });
+}
+
+function getLeaders() {
+  const owners = getActiveOwners();
+  const highScore = Math.max(...owners.map((owner) => getScore(owner)));
+  return owners.filter((owner) => getScore(owner) === highScore);
+}
+
+function getLastPlaceOwners() {
+  const owners = getActiveOwners();
+  const lowScore = Math.min(...owners.map((owner) => getScore(owner)));
+  return owners.filter((owner) => getScore(owner) === lowScore);
+}
+
+function isFirstPlace(owner) {
+  return getLeaders().includes(owner);
+}
+
+function isLastPlace(owner) {
+  return getLastPlaceOwners().includes(owner);
+}
+
+function getCurrentPowerOwner() {
+  if (isRoomMode()) {
+    return state.currentOwner;
+  }
+
+  if (!isDuelMode()) {
+    return "player";
+  }
+
+  return state.localEntryStep === 1 ? "player" : "opponent";
+}
+
+function getPowerById(powerId) {
+  return powerMap[powerId] || null;
+}
+
+function hasAllOut(owner) {
+  return state.allOutRounds[owner] === state.round || isTableEventActive("black_market");
+}
+
+function hasPlayedPowerThisRound(owner) {
+  return Boolean(state.playedPowerUps[owner] || (state.playedPowerStacks[owner] || []).length);
+}
+
+function canPlayPower(owner) {
+  if (isClassicModeEnabled() || isTableEventActive("power_outage")) {
+    return false;
+  }
+  return !hasPlayedPowerThisRound(owner) || hasAllOut(owner) || (state.extraPowerUses[owner] || 0) > 0;
+}
+
+function createEmptyPowerSelectionMap() {
+  return Object.fromEntries(DEFAULT_OWNER_IDS.map((owner) => [owner, []]));
+}
+
+function createEmptyPowerSelectionMetaMap() {
+  return Object.fromEntries(DEFAULT_OWNER_IDS.map((owner) => [owner, {}]));
+}
+
+function ensurePowerSelectionState(owner) {
+  state.selectedPowerUps = state.selectedPowerUps || createEmptyPowerSelectionMap();
+  state.selectedPowerMeta = state.selectedPowerMeta || createEmptyPowerSelectionMetaMap();
+  if (owner && !Array.isArray(state.selectedPowerUps[owner])) {
+    state.selectedPowerUps[owner] = [];
+  }
+  if (owner && !state.selectedPowerMeta[owner]) {
+    state.selectedPowerMeta[owner] = {};
+  }
+}
+
+function getSelectedPowerIds(owner) {
+  ensurePowerSelectionState(owner);
+  return [...new Set(state.selectedPowerUps[owner] || [])];
+}
+
+function isPowerSelected(owner, powerId) {
+  return getSelectedPowerIds(owner).includes(powerId);
+}
+
+function clearSelectedPowerUps(owner) {
+  ensurePowerSelectionState(owner);
+  state.selectedPowerUps[owner] = [];
+  state.selectedPowerMeta[owner] = {};
+  state.activePowerUp = null;
+}
+
+function setSelectedPowerIds(owner, powerIds) {
+  ensurePowerSelectionState(owner);
+  const hand = state.powerHands[owner] || [];
+  const uniqueIds = [...new Set(powerIds)].filter((powerId) => hand.includes(powerId));
+  state.selectedPowerUps[owner] = uniqueIds;
+  Object.keys(state.selectedPowerMeta[owner] || {}).forEach((powerId) => {
+    if (!uniqueIds.includes(powerId)) {
+      delete state.selectedPowerMeta[owner][powerId];
+    }
+  });
+  state.activePowerUp = uniqueIds[0] || null;
+}
+
+function updateSelectedPowerUp(owner, powerId, meta = {}, options = {}) {
+  ensurePowerSelectionState(owner);
+  const selected = getSelectedPowerIds(owner);
+  const alreadySelected = selected.includes(powerId);
+  let nextSelected;
+
+  if (hasAllOut(owner)) {
+    nextSelected = alreadySelected && !options.forceSelect
+      ? selected.filter((selectedPowerId) => selectedPowerId !== powerId)
+      : [...selected, powerId];
+  } else {
+    nextSelected = alreadySelected && !options.forceSelect ? [] : [powerId];
+  }
+
+  setSelectedPowerIds(owner, nextSelected);
+  if (nextSelected.includes(powerId)) {
+    state.selectedPowerMeta[owner][powerId] = {
+      ...(state.selectedPowerMeta[owner][powerId] || {}),
+      ...meta
+    };
+  } else {
+    delete state.selectedPowerMeta[owner][powerId];
+  }
+}
+
+function resetPlayedPowersForRound() {
+  const owners = [...new Set([...DEFAULT_OWNER_IDS, ...getActiveOwners()])];
+  state.activePowerUp = null;
+  state.selectedPowerUps = createEmptyPowerSelectionMap();
+  state.selectedPowerMeta = createEmptyPowerSelectionMetaMap();
+  state.playedPowerUps = Object.fromEntries(owners.map((owner) => [owner, null]));
+  state.playedPowerStacks = Object.fromEntries(owners.map((owner) => [owner, []]));
+  state.playedPowerMeta = Object.fromEntries(owners.map((owner) => [owner, null]));
+  state.pendingPowerPillAnimations = new Set();
+  state.extraPowerUses = {};
+  state.botPowerSchedule = {};
+}
+
+function recordPlayedPower(owner, powerId, meta = {}) {
+  if (!owner || !powerId) {
+    return;
+  }
+  const power = getPowerById(powerId);
+  const alreadyPlayed = hasPlayedPowerThisRound(owner);
+  const revealId = `${state.round || 0}-${owner}-${powerId}-${state.playedPowerStacks[owner]?.length || 0}`;
+  const entry = {
+    powerId,
+    revealId,
+    meta: {
+      ...(state.playedPowerMeta[owner] || {}),
+      ...meta
+    }
+  };
+  state.playedPowerStacks[owner] = [...(state.playedPowerStacks[owner] || []), entry];
+  if (!state.playedPowerUps[owner]) {
+    state.playedPowerUps[owner] = powerId;
+  }
+  if (power && !isSecretPower(power)) {
+    if (!(state.pendingPowerPillAnimations instanceof Set)) {
+      state.pendingPowerPillAnimations = new Set();
+    }
+    state.pendingPowerPillAnimations.add(revealId);
+  }
+  state.playedPowerMeta[owner] = entry.meta;
+  if (alreadyPlayed && !hasAllOut(owner) && (state.extraPowerUses[owner] || 0) > 0 && !meta.grantsExtraPower) {
+    state.extraPowerUses[owner] = Math.max(0, state.extraPowerUses[owner] - 1);
+  }
+  markAchievementPowerUse(owner, power, entry.meta);
+  if (state.mode && !state.matchEnded) {
+    renderLeaderboard();
+  }
+}
+
+function getEntryMeta(entry) {
+  return {
+    ...(state.playedPowerMeta[entry.owner] || {}),
+    ...(entry.meta || {})
+  };
+}
+
+function getEntryTarget(entry) {
+  return getEntryMeta(entry).targetOwner;
+}
+
+function rememberLastPlayedPowers(owners = getActiveOwners()) {
+  owners.forEach((owner) => {
+    const stack = (state.playedPowerStacks[owner] || []).filter((entry) => !entry.meta?.skipLastPower);
+    const lastEntry = stack[stack.length - 1];
+    if (lastEntry?.powerId) {
+      state.lastPlayedPowerUps[owner] = lastEntry.powerId;
+    }
+  });
+}
+
+function getPlayedPowerEntries(owners = getActiveOwners()) {
+  return owners.flatMap((owner) => {
+    const stacked = state.playedPowerStacks[owner] || [];
+    if (stacked.length) {
+      return stacked
+        .map((entry) => ({
+          owner,
+          power: getPowerById(entry.powerId),
+          meta: entry.meta || {},
+          revealId: entry.revealId || ""
+        }))
+        .filter((entry) => entry.power);
+    }
+    const power = getPowerById(state.playedPowerUps[owner]);
+    return power ? [{ owner, power, meta: state.playedPowerMeta[owner] || {} }] : [];
+  });
+}
+
+function getPowerHandLimit(owner) {
+  return getPlayer(owner)?.handLimit || 0;
+}
+
+function getVendingMachineRefillCost(owner) {
+  const limit = getPowerHandLimit(owner);
+  const hand = state.powerHands[owner] || [];
+  const handAfterUse = Math.max(0, hand.length - (hand.includes("vending_machine") ? 1 : 0));
+  const slotsToRefill = Math.max(0, limit - handAfterUse);
+  return slotsToRefill * 100;
+}
+
+function markFreshPowerUps(owner, powerIds = []) {
+  const freshIds = powerIds.filter(Boolean);
+  if (!freshIds.length) {
+    return;
+  }
+  state.freshPowerUps[owner] = [...(state.freshPowerUps[owner] || []), ...freshIds];
+}
+
+function passDeadWeight(owner) {
+  const target = getRandomOtherOwner(owner);
+  if (!target) {
+    return null;
+  }
+
+  const limit = getPowerHandLimit(target);
+  const hand = state.powerHands[target] || [];
+  if (hand.length < limit) {
+    state.powerHands[target] = [...hand, "dead_weight"];
+  } else if (hand.length) {
+    const replaceAt = Math.floor(Math.random() * hand.length);
+    state.powerHands[target] = hand.map((powerId, index) => index === replaceAt ? "dead_weight" : powerId);
+  } else {
+    return null;
+  }
+  markFreshPowerUps(target, ["dead_weight"]);
+  return target;
+}
+
+function giveDeadWeightToOwner(owner) {
+  if (!owner) {
+    return false;
+  }
+
+  const limit = getPowerHandLimit(owner);
+  const hand = state.powerHands[owner] || [];
+  if (hand.length < limit) {
+    state.powerHands[owner] = [...hand, "dead_weight"];
+  } else if (hand.length) {
+    const replaceAt = Math.floor(Math.random() * hand.length);
+    state.powerHands[owner] = hand.map((powerId, index) => index === replaceAt ? "dead_weight" : powerId);
+  } else {
+    return false;
+  }
+  markFreshPowerUps(owner, ["dead_weight"]);
+  if (owner === getCurrentPowerOwner()) {
+    renderPowerUps();
+  }
+  return true;
+}
+
+function drawPowerCard(existing = [], options = {}) {
+  const allowedDeck = powerDeck.filter((power) => {
+    if (options.excludeAi && power.id === "ai_answer") {
+      return false;
+    }
+    if (options.excludeImmediate && power.immediate) {
+      return false;
+    }
+    if (options.minRarity && getRarityRank(power.rarity) < getRarityRank(options.minRarity)) {
+      return false;
+    }
+    return true;
+  });
+  const pool = allowedDeck.filter((power) => !existing.includes(power.id));
+  if (!pool.length) {
+    return null;
+  }
+
+  const totalWeight = pool.reduce((total, power) => total + rarityInfo[power.rarity].weight, 0);
+  let roll = Math.random() * totalWeight;
+  const picked = pool.find((power) => {
+    roll -= rarityInfo[power.rarity].weight;
+    return roll <= 0;
+  }) || pool[pool.length - 1];
+  return picked.id;
+}
+
+function drawPowerHand(count, options = {}) {
+  const hand = [];
+  for (let index = 0; index < count; index += 1) {
+    const powerId = drawPowerCard(hand, options);
+    if (powerId) {
+      hand.push(powerId);
+    }
+  }
+  return hand;
+}
+
+function getPowerDrawOptions(owner) {
+  return {
+    excludeAi: getPlayer(owner)?.type === "bot",
+    minRarity: (state.luckRounds[owner] || 0) > 0 ? "blue" : null
+  };
+}
+
+function rerollPowerHand(owner, count, options = {}) {
+  const hand = [];
+  for (let index = 0; index < count; index += 1) {
+    const powerId = drawPowerCard(hand, { ...getPowerDrawOptions(owner), ...options });
+    if (powerId) {
+      hand.push(powerId);
+    }
+  }
+  state.powerHands[owner] = hand;
+  markFreshPowerUps(owner, hand);
+}
+
+function getRandomActiveOwner() {
+  const owners = getActiveOwners();
+  return owners[Math.floor(Math.random() * owners.length)];
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * ((max - min) + 1)) + min;
+}
+
+function getRandomMultiplier(min = 1, max = 2) {
+  return getRandomInt(Math.round(min * 1000), Math.round(max * 1000)) / 1000;
+}
+
+function getRandomOtherOwner(owner) {
+  const candidates = getActiveOwners().filter((participant) => participant !== owner);
+  return candidates[Math.floor(Math.random() * candidates.length)] || null;
+}
+
+function hasStreakStealProtection(owner) {
+  return Boolean(state.eternalFlameProtection[owner])
+    || (state.streakFreezeRounds[owner] || 0) > 0
+    || (state.streakLossProtectionRounds[owner] || 0) > 0
+    || (state.streakAnchorCharges[owner] || 0) > 0
+    || getPowerById(state.playedPowerUps[owner])?.type === "streak_retainer";
+}
+
+function didOwnerWinLastRound(owner) {
+  const lastRound = state.matchHistory[state.matchHistory.length - 1];
+  if (!lastRound) {
+    return false;
+  }
+  return (lastRound.winners || [lastRound.winner]).includes(getOwnerLabel(owner));
+}
+
+function didOwnerLoseLastRound(owner) {
+  const lastRound = state.matchHistory[state.matchHistory.length - 1];
+  if (!lastRound) {
+    return false;
+  }
+  return !(lastRound.winners || [lastRound.winner]).includes(getOwnerLabel(owner));
+}
+
+function getRarityRank(rarity) {
+  return ["grey", "blue", "purple", "gold"].indexOf(rarity);
+}
+
+function createAchievementStat() {
+  return {
+    targetedCount: 0,
+    powerRounds: {},
+    totalPowerUses: 0,
+    legendaryPowerUses: 0,
+    zeusUses: 0,
+    pointSharingUses: 0,
+    usedParticipation: false,
+    usedCopyAnswerRounds: {},
+    usedCopyAnswerCorrect: false,
+    exactAnswers: 0,
+    correctAnswers: 0,
+    roundsAnswered: 0,
+    timedOut: 0,
+    chatMessages: 0,
+    buffDebuffTriggers: 0,
+    lostPoints: 0,
+    actualPointLoss: 0,
+    shieldSaves: 0,
+    shopPurchases: 0,
+    merchantBlackMarketSpend: 0,
+    pointSteals: 0,
+    pointsStolen: 0,
+    pointsGiven: 0,
+    soulLinkPointsGiven: 0,
+    usedAutoPilot: false,
+    insuranceTriggered: false,
+    insuranceFraudTriggered: false,
+    ownHotPotatoSelfHitFivePlus: false,
+    maxActiveEffects: 0,
+    powerCountsByRound: {},
+    maxPowersNonBlackMarketRound: 0,
+    maxSingleRoundGain: 0,
+    mostPointRounds: 0,
+    lastLaughOver10000: false,
+    redHerringActiveAtEnd: false
+  };
+}
+
+function resetAchievementStats() {
+  state.achievementStats = {};
+  getActiveOwners().forEach((owner) => {
+    state.achievementStats[owner] = createAchievementStat();
+  });
+  state.achievementRankSnapshots = [];
+  state.finalTitlesByOwner = {};
+}
+
+function getAchievementStat(owner) {
+  if (!owner) {
+    return null;
+  }
+  if (!state.achievementStats) {
+    state.achievementStats = {};
+  }
+  if (!state.achievementStats[owner]) {
+    state.achievementStats[owner] = createAchievementStat();
+  }
+  return state.achievementStats[owner];
+}
+
+function markAchievementPowerUse(owner, power, meta = {}) {
+  const stat = getAchievementStat(owner);
+  if (!stat || !power) {
+    return;
+  }
+  stat.totalPowerUses += 1;
+  incrementAchievementProgress(owner, "powerUpsUsed");
+  stat.powerRounds[state.round] = true;
+  stat.powerCountsByRound[state.round] = (stat.powerCountsByRound[state.round] || 0) + 1;
+  if (!isTableEventActive("black_market")) {
+    stat.maxPowersNonBlackMarketRound = Math.max(stat.maxPowersNonBlackMarketRound || 0, stat.powerCountsByRound[state.round]);
+  }
+  if (power.rarity === "gold") {
+    stat.legendaryPowerUses += 1;
+    incrementAchievementProgress(owner, "goldPowerUses");
+  }
+  if (power.rarity === "purple") {
+    incrementAchievementProgress(owner, "purplePowerUses");
+  }
+  if (bombPowerTypes.has(power.type)) {
+    incrementAchievementProgress(owner, "bombPowerUses");
+  }
+  if (publicActiveEffectPowerTypes.has(power.type)) {
+    incrementAchievementProgress(owner, "publicActiveEffectsPlayed");
+  }
+  if (zeusPowerTypes.has(power.type)) {
+    stat.zeusUses += 1;
+  }
+  if (pointSharingPowerTypes.has(power.type)) {
+    stat.pointSharingUses += 1;
+  }
+  if (power.type === "participation") {
+    stat.usedParticipation = true;
+  }
+  if (power.type === "ai_answer") {
+    stat.usedAutoPilot = true;
+  }
+  if (pointStealPowerTypes.has(power.type)) {
+    stat.pointSteals += 1;
+  }
+  if (power.type === "cheat_sheet") {
+    stat.usedCopyAnswerRounds[state.round] = true;
+  }
+  if (meta.targetOwner && meta.targetOwner !== owner) {
+    stat.targetedCount += 1;
+    incrementAchievementProgress(owner, "targetsPicked");
+  }
+}
+
+function markAchievementTarget(owner, targetOwner) {
+  if (!owner || !targetOwner || owner === targetOwner) {
+    return;
+  }
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.targetedCount += 1;
+  }
+  incrementAchievementProgress(owner, "targetsPicked");
+}
+
+function markAchievementBuffDebuff(owner, kind = "mixed") {
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.buffDebuffTriggers += 1;
+  }
+  if (kind === "buff") {
+    if (!isAccountAchievementOwner(owner)) {
+      return;
+    }
+    const nextStreak = getEffectiveProgressValue("currentBuffStreak") + 1;
+    if (hasActiveAchievementProgressContext(owner)) {
+      setPendingProgressValue("currentBuffStreak", nextStreak - getProgressValue(loadAchievementProgress(), "currentBuffStreak"));
+      setPendingProgressValue("bestBuffStreak", Math.max(getPendingProgressValue("bestBuffStreak"), nextStreak));
+      return;
+    }
+    incrementAchievementProgress(owner, "currentBuffStreak", 1, { persistNow: true });
+    incrementAchievementProgress(owner, "bestBuffStreak", nextStreak, { max: true, persistNow: true });
+  } else if (kind === "debuff") {
+    incrementAchievementProgress(owner, "debuffsReceived");
+    resetAchievementProgressValue(owner, "currentBuffStreak");
+  }
+}
+
+function markAchievementTimeout(owner) {
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.timedOut += 1;
+  }
+}
+
+function markAchievementPointLoss(owner, amount) {
+  const loss = Math.abs(Math.min(0, Number(amount) || 0));
+  if (loss <= 0 || !state.achievementStats?.[owner]) {
+    return;
+  }
+  state.achievementStats[owner].lostPoints += loss;
+  state.achievementStats[owner].actualPointLoss += loss;
+  incrementAchievementProgress(owner, "pointsLostTotal", loss);
+}
+
+function markAchievementShieldSave(owner) {
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.shieldSaves += 1;
+  }
+}
+
+function markAchievementShopPurchase(owner, amount = 0, options = {}) {
+  const stat = getAchievementStat(owner);
+  const spend = Math.max(0, Math.floor(amount || 0));
+  if (stat) {
+    stat.shopPurchases += 1;
+    if (options.merchantOrBlackMarket) {
+      stat.merchantBlackMarketSpend += spend;
+    }
+  }
+  incrementAchievementProgress(owner, "powerPurchases");
+  if (spend > 0) {
+    incrementAchievementProgress(owner, "powerPurchaseSpendTotal", spend);
+  }
+  if (options.merchantOrBlackMarket) {
+    incrementAchievementProgress(owner, "bestMerchantBlackMarketSpend", stat?.merchantBlackMarketSpend || 0, { max: true });
+  }
+}
+
+function markAchievementInsuranceTrigger(owner, type = "insurance") {
+  const stat = getAchievementStat(owner);
+  if (!stat) {
+    return;
+  }
+  if (type === "fraud") {
+    stat.insuranceFraudTriggered = true;
+  } else {
+    stat.insuranceTriggered = true;
+  }
+}
+
+function updateAchievementActiveEffectPeak(owner) {
+  const stat = getAchievementStat(owner);
+  if (!stat) {
+    return;
+  }
+  stat.maxActiveEffects = Math.max(stat.maxActiveEffects || 0, getRemovableActiveEffects(owner).length);
+}
+
+function markAchievementPointSteal(owner, amount = 0) {
+  const stolen = Math.max(0, Math.floor(amount || 0));
+  if (!stolen) {
+    return;
+  }
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.pointsStolen += stolen;
+  }
+  incrementAchievementProgress(owner, "pointsStolenTotal", stolen);
+}
+
+function markAchievementPointGift(owner, amount = 0, options = {}) {
+  const given = Math.max(0, Math.floor(amount || 0));
+  if (!given) {
+    return;
+  }
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.pointsGiven += given;
+    if (options.soulLink) {
+      stat.soulLinkPointsGiven += given;
+    }
+  }
+  incrementAchievementProgress(owner, "pointsGivenTotal", given);
+}
+
+function getScoreRankRows(owners = getActiveOwners()) {
+  return owners
+    .map((owner) => ({
+      owner,
+      label: getOwnerLabel(owner),
+      score: getScore(owner),
+      streak: getOwnerStreak(owner)
+    }))
+    .sort((a, b) => b.score - a.score || owners.indexOf(a.owner) - owners.indexOf(b.owner))
+    .map((row, index) => ({ ...row, rank: index + 1 }));
+}
+
+function recordAchievementRankSnapshot() {
+  state.achievementRankSnapshots.push({
+    round: state.round,
+    rows: getScoreRankRows().map((row) => ({
+      owner: row.owner,
+      score: row.score,
+      streak: row.streak,
+      rank: row.rank
+    }))
+  });
+}
+
+function getSecondToLastRank(owner, roundsPlayed) {
+  if (roundsPlayed < 2) {
+    return null;
+  }
+  const snapshot = state.achievementRankSnapshots.find((entry) => entry.round === roundsPlayed - 1);
+  return snapshot?.rows.find((row) => row.owner === owner)?.rank ?? null;
+}
+
+function getLastPlaceRoundCount(owner) {
+  return (state.achievementRankSnapshots || []).filter((snapshot) => {
+    const row = snapshot.rows.find((entry) => entry.owner === owner);
+    if (!row) {
+      return false;
+    }
+    const lastRank = Math.max(...snapshot.rows.map((entry) => entry.rank));
+    return row.rank === lastRank;
+  }).length;
+}
+
+function wasFirstPlaceSinceRoundTwo(owner) {
+  const snapshots = (state.achievementRankSnapshots || []).filter((snapshot) => snapshot.round >= 2);
+  return snapshots.length > 0 && snapshots.every((snapshot) => snapshot.rows.find((row) => row.owner === owner)?.rank === 1);
+}
+
+function isPowerUpAchievementEnabled() {
+  return !isClassicModeEnabled() && getActiveOwners().some((owner) => getPowerHandLimit(owner) > 0);
+}
+
+function loadUnlockedAchievements() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(achievementStorageKey) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveUnlockedAchievements(records) {
+  localStorage.setItem(achievementStorageKey, JSON.stringify(records || {}));
+}
+
+function loadAchievementProgress() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(achievementProgressStorageKey) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveAchievementProgress(progress) {
+  localStorage.setItem(achievementProgressStorageKey, JSON.stringify(progress || {}));
+}
+
+function loadClaimedAchievementMilestones() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(achievementMilestonesStorageKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveClaimedAchievementMilestones(ids) {
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+  if (uniqueIds.length) {
+    localStorage.setItem(achievementMilestonesStorageKey, JSON.stringify(uniqueIds));
+  } else {
+    localStorage.removeItem(achievementMilestonesStorageKey);
+  }
+  updateAchievementNotificationDot();
+}
+
+function isAchievementMilestoneClaimed(id, claimed = loadClaimedAchievementMilestones()) {
+  return claimed.includes(id);
+}
+
+function isMilestoneUnlockClaimed(milestoneId) {
+  return Boolean(milestoneId && isAchievementMilestoneClaimed(milestoneId));
+}
+
+function getClaimedMatchCoinBoost(claimed = loadClaimedAchievementMilestones()) {
+  return achievementMilestones
+    .filter((milestone) => claimed.includes(milestone.id))
+    .reduce((total, milestone) => total + (Number(milestone.coinBoost) || 0), 0);
+}
+
+function getMilestoneProgressText(milestone, unlockedCount = getUnlockedAchievementCount()) {
+  return `${Math.min(unlockedCount, milestone.target).toLocaleString()}/${milestone.target.toLocaleString()}`;
+}
+
+function getClaimableAchievementMilestones(records = loadUnlockedAchievements(), claimed = loadClaimedAchievementMilestones()) {
+  const unlockedCount = getUnlockedAchievementCount(records);
+  return achievementMilestones.filter((milestone) => unlockedCount >= milestone.target && !claimed.includes(milestone.id));
+}
+
+function loadUnseenAchievements() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(unseenAchievementStorageKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((id) => id && !String(id).startsWith("milestone:")) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUnseenAchievements(ids) {
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+  if (uniqueIds.length) {
+    localStorage.setItem(unseenAchievementStorageKey, JSON.stringify(uniqueIds));
+  } else {
+    localStorage.removeItem(unseenAchievementStorageKey);
+  }
+  updateAchievementNotificationDot();
+}
+
+function markAchievementUnseen(id) {
+  if (!id) {
+    return;
+  }
+  saveUnseenAchievements([...loadUnseenAchievements(), id]);
+}
+
+function clearUnseenAchievements() {
+  saveUnseenAchievements([]);
+}
+
+function updateAchievementNotificationDot() {
+  if (!elements.menuAchievementsButton) {
+    return;
+  }
+  const unseenCount = loadUnseenAchievements().length;
+  const claimableCount = getClaimableAchievementMilestones().length;
+  const count = unseenCount + claimableCount;
+  elements.menuAchievementsButton.classList.toggle("has-notification", count > 0);
+  elements.menuAchievementsButton.dataset.notificationCount = count ? String(count) : "";
+  elements.menuAchievementsButton.setAttribute("aria-label", count ? `Achievements, ${count} new item${count === 1 ? "" : "s"}` : "Achievements");
+}
+
+function loadDebugDisabledAchievements() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(disabledAchievementStorageKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDebugDisabledAchievements(ids) {
+  const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+  if (uniqueIds.length) {
+    localStorage.setItem(disabledAchievementStorageKey, JSON.stringify(uniqueIds));
+  } else {
+    localStorage.removeItem(disabledAchievementStorageKey);
+  }
+}
+
+function normalizeProfileCustomization(value = {}) {
+  const styleId = profileCardStyleMap[value.styleId] ? value.styleId : "default";
+  const gradientTop = profileCardColourMap[value.gradientTop] ? value.gradientTop : "blue";
+  const gradientBottom = profileCardColourMap[value.gradientBottom] ? value.gradientBottom : "pink";
+  const effectIds = [...new Set((Array.isArray(value.effectIds) ? value.effectIds : []).filter((id) => profileCardEffectMap[id]))];
+  const rawPatternId = profileCardPatternAliases[value.patternId] || value.patternId;
+  const patternId = profileCardPatternMap[rawPatternId] ? rawPatternId : "none";
+  const fontId = profileFontMap[value.fontId] ? value.fontId : "default";
+  const equippedTitleId = achievementCatalogMap[value.equippedTitleId] ? value.equippedTitleId : "";
+  const titleColourId = value.titleColourId === "rarity" || profileCardColourMap[value.titleColourId] ? value.titleColourId : "rarity";
+  const titleRgb = Boolean(value.titleRgb);
+  const titlePastel = Boolean(value.titlePastel);
+  return {
+    styleId,
+    gradientTop,
+    gradientBottom,
+    effectIds,
+    patternId,
+    fontId,
+    equippedTitleId,
+    titleColourId,
+    titleRgb,
+    titlePastel
+  };
+}
+
+function loadProfileCustomization() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(profileCustomizationStorageKey) || "{}");
+    return normalizeProfileCustomization(parsed);
+  } catch {
+    return { ...defaultProfileCustomization };
+  }
+}
+
+function saveProfileCustomization(customization) {
+  const normalized = normalizeProfileCustomization(customization);
+  localStorage.setItem(profileCustomizationStorageKey, JSON.stringify(normalized));
+  return normalized;
+}
+
+function loadDebugProfileCustomizations() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(profileCustomizationDebugStorageKey) || "{}");
+    return {
+      enabled: Array.isArray(parsed?.enabled) ? parsed.enabled.filter(Boolean) : [],
+      disabled: Array.isArray(parsed?.disabled) ? parsed.disabled.filter(Boolean) : []
+    };
+  } catch {
+    return { enabled: [], disabled: [] };
+  }
+}
+
+function saveDebugProfileCustomizations(value) {
+  const normalized = {
+    enabled: [...new Set((value?.enabled || []).filter(Boolean))],
+    disabled: [...new Set((value?.disabled || []).filter(Boolean))]
+  };
+  if (normalized.enabled.length || normalized.disabled.length) {
+    localStorage.setItem(profileCustomizationDebugStorageKey, JSON.stringify(normalized));
+  } else {
+    localStorage.removeItem(profileCustomizationDebugStorageKey);
+  }
+}
+
+function getProfileShopKey(type, id) {
+  return `${type}:${id}`;
+}
+
+function loadProfileShopPurchases() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(profileShopPurchasesStorageKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveProfileShopPurchases(keys) {
+  const uniqueKeys = [...new Set((keys || []).filter(Boolean))];
+  if (uniqueKeys.length) {
+    localStorage.setItem(profileShopPurchasesStorageKey, JSON.stringify(uniqueKeys));
+  } else {
+    localStorage.removeItem(profileShopPurchasesStorageKey);
+  }
+}
+
+function isProfileShopItemPurchased(type, id, purchases = loadProfileShopPurchases()) {
+  return purchases.includes(getProfileShopKey(type, id));
+}
+
+function getProfileShopItem(type, id) {
+  return profileShopItems.find((item) => item.type === type && item.id === id) || null;
+}
+
+function isProfileShopUnlockPurchased(item, type) {
+  return Boolean(item?.unlockType === "shop" && isProfileShopItemPurchased(type, item.id));
+}
+
+function setProfileCustomizationDebugState(key, mode) {
+  const debug = loadDebugProfileCustomizations();
+  debug.enabled = debug.enabled.filter((entry) => entry !== key);
+  debug.disabled = debug.disabled.filter((entry) => entry !== key);
+  if (mode === "enabled") {
+    debug.enabled.push(key);
+  }
+  if (mode === "disabled") {
+    debug.disabled.push(key);
+  }
+  saveDebugProfileCustomizations(debug);
+}
+
+function getProfileCustomizationKey(type, id) {
+  return `${type}:${id}`;
+}
+
+function getUnlockedAchievementCount(records = loadUnlockedAchievements(), rarity = "") {
+  return Object.keys(records || {}).filter((id) => {
+    const achievement = achievementCatalogMap[id];
+    return achievement && (!rarity || achievement.rarity === rarity);
+  }).length;
+}
+
+function getProfileUnlockStatus(item, type = "style", records = loadUnlockedAchievements(), progress = loadAchievementProgress()) {
+  const key = getProfileCustomizationKey(type, item.id);
+  const debug = loadDebugProfileCustomizations();
+  if (item.unlockedByDefault) {
+    return { unlocked: true, value: 1, target: 1, text: "Unlocked" };
+  }
+  if (debug.disabled.includes(key)) {
+    return { unlocked: false, value: 0, target: 1, text: "Disabled in debug" };
+  }
+  if (debug.enabled.includes(key)) {
+    return { unlocked: true, value: 1, target: 1, text: "Enabled in debug" };
+  }
+  if (item.unlockType === "shop") {
+    const purchased = isProfileShopUnlockPurchased(item, type);
+    return {
+      unlocked: purchased,
+      value: purchased ? 1 : 0,
+      target: 1,
+      text: purchased ? "Purchased" : `${formatCoins(item.cost || 0)} in Profile Shop`
+    };
+  }
+  let value = 0;
+  const target = Math.max(1, Number(item.target) || 1);
+  if (item.unlockType === "rarityAchievements") {
+    value = getUnlockedAchievementCount(records, item.rarity);
+  } else if (item.unlockType === "totalAchievements") {
+    value = getUnlockedAchievementCount(records);
+  } else if (item.unlockType === "achievement") {
+    value = isAchievementUnlocked(item.achievementId, records) ? 1 : 0;
+  } else if (item.unlockType === "progress") {
+    value = getProgressValue(progress, item.progressKey);
+  } else if (item.unlockType === "milestone") {
+    const milestone = achievementMilestoneMap[item.milestoneId];
+    value = milestone ? getUnlockedAchievementCount(records) : 0;
+    return {
+      unlocked: Boolean(milestone && isMilestoneUnlockClaimed(item.milestoneId)),
+      value,
+      target: milestone?.target || target,
+      text: milestone && isMilestoneUnlockClaimed(item.milestoneId)
+        ? "Claimed"
+        : `${Math.min(value, milestone?.target || target).toLocaleString()}/${(milestone?.target || target).toLocaleString()} · Claim in Achievement Milestones`
+    };
+  }
+  return {
+    unlocked: value >= target,
+    value,
+    target,
+    text: `${Math.min(value, target).toLocaleString()}/${target.toLocaleString()}`
+  };
+}
+
+function isProfileStyleUnlocked(styleId, records, progress) {
+  const style = profileCardStyleMap[styleId] || profileCardStyleMap.default;
+  return getProfileUnlockStatus(style, "style", records, progress).unlocked;
+}
+
+function isProfileColourUnlocked(colourId, records, progress) {
+  const colour = profileCardColourMap[colourId] || profileCardColourMap.blue;
+  return getProfileUnlockStatus(colour, "color", records, progress).unlocked;
+}
+
+function isProfileEffectUnlocked(effectId, records, progress) {
+  const effect = profileCardEffectMap[effectId];
+  return Boolean(effect && getProfileUnlockStatus(effect, "effect", records, progress).unlocked);
+}
+
+function isProfilePatternUnlocked(patternId, records, progress) {
+  const pattern = profileCardPatternMap[patternId] || profileCardPatternMap.none;
+  return getProfileUnlockStatus(pattern, "pattern", records, progress).unlocked;
+}
+
+function isProfileFontUnlocked(fontId, records, progress) {
+  const font = profileFontMap[fontId] || profileFontMap.default;
+  return getProfileUnlockStatus(font, "font", records, progress).unlocked;
+}
+
+function isAchievementDebugDisabled(id) {
+  return loadDebugDisabledAchievements().includes(id);
+}
+
+function setAchievementDebugDisabled(id, disabled) {
+  const ids = loadDebugDisabledAchievements();
+  saveDebugDisabledAchievements(disabled ? [...ids, id] : ids.filter((entry) => entry !== id));
+}
+
+function isAccountAchievementOwner(owner) {
+  return getAccountAchievementOwners().includes(owner);
+}
+
+function getProgressValue(progress, key) {
+  return Math.max(0, Number(progress?.[key]) || 0);
+}
+
+function setProgressValue(progress, key, value) {
+  progress[key] = Math.max(0, Math.floor(Number(value) || 0));
+}
+
+function hasActiveAchievementProgressContext(owner) {
+  return Boolean(state.mode)
+    && !state.matchEnded
+    && getActiveOwners().includes(owner)
+    && isAccountAchievementOwner(owner);
+}
+
+function getPendingProgressValue(key) {
+  return Math.max(0, Number(state.pendingAchievementProgress?.[key]) || 0);
+}
+
+function setPendingProgressValue(key, value) {
+  state.pendingAchievementProgress = state.pendingAchievementProgress || {};
+  state.pendingAchievementProgress[key] = Math.max(0, Math.floor(Number(value) || 0));
+}
+
+function getEffectiveProgressValue(key) {
+  const saved = getProgressValue(loadAchievementProgress(), key);
+  const pending = getPendingProgressValue(key);
+  if (state.pendingAchievementProgressResets?.[key]) {
+    return pending;
+  }
+  return maxAchievementProgressKeys.has(key) ? Math.max(saved, pending) : saved + pending;
+}
+
+function commitPendingAchievementProgress(progress = loadAchievementProgress()) {
+  Object.keys(state.pendingAchievementProgressResets || {}).forEach((key) => {
+    setProgressValue(progress, key, 0);
+  });
+  Object.entries(state.pendingAchievementProgress || {}).forEach(([key, value]) => {
+    if (maxAchievementProgressKeys.has(key)) {
+      setProgressValue(progress, key, Math.max(getProgressValue(progress, key), value));
+    } else {
+      setProgressValue(progress, key, getProgressValue(progress, key) + value);
+    }
+  });
+  state.pendingAchievementProgress = {};
+  state.pendingAchievementProgressResets = {};
+  return progress;
+}
+
+function discardPendingAchievementProgress() {
+  state.pendingAchievementProgress = {};
+  state.pendingAchievementProgressResets = {};
+}
+
+function unlockAchievementRecord(records, id) {
+  if (!id || records[id] || isAchievementDebugDisabled(id)) {
+    return false;
+  }
+  records[id] = {
+    unlockedAt: new Date().toISOString()
+  };
+  markAchievementUnseen(id);
+  return true;
+}
+
+function getLongTermProgressValue(achievement, records = loadUnlockedAchievements(), progress = loadAchievementProgress()) {
+  const target = getLongTermProgressTarget(achievement);
+  if (records[achievement.id]) {
+    return target;
+  }
+  if (achievement.completionRarity) {
+    const required = getCompletionAchievementIdsForRarity(achievement.completionRarity, achievement.id);
+    return required.filter((id) => records[id]).length;
+  }
+  if (achievement.completionAll) {
+    return getCompletionAchievementIdsForAll(achievement.id).filter((id) => records[id]).length;
+  }
+  return getProgressValue(progress, achievement.progressKey);
+}
+
+function getLongTermProgressTarget(achievement) {
+  if (achievement.completionRarity) {
+    return Math.max(1, getCompletionAchievementIdsForRarity(achievement.completionRarity, achievement.id).length);
+  }
+  if (achievement.completionAll) {
+    return Math.max(1, getCompletionAchievementIdsForAll(achievement.id).length);
+  }
+  return Math.max(1, achievement.target || 1);
+}
+
+function getCompletionAchievementIdsForRarity(rarity, excludeId = "") {
+  return achievementCatalog
+    .filter((entry) => entry.rarity === rarity && entry.id !== excludeId)
+    .filter((entry) => !entry.completionRarity && !entry.completionAll)
+    .map((entry) => entry.id);
+}
+
+function getCompletionAchievementIdsForAll(excludeId = "") {
+  return achievementCatalog
+    .filter((entry) => entry.id !== excludeId)
+    .map((entry) => entry.id);
+}
+
+function refreshLongTermAchievementUnlocks(records = loadUnlockedAchievements(), progress = loadAchievementProgress()) {
+  let changed = false;
+  achievementCatalog.filter(isAchievementProgressBased).forEach((achievement) => {
+    if (records[achievement.id]) {
+      return;
+    }
+    const value = getLongTermProgressValue(achievement, records, progress);
+    if (value >= getLongTermProgressTarget(achievement)) {
+      changed = unlockAchievementRecord(records, achievement.id) || changed;
+    }
+  });
+
+  if (changed) {
+    saveUnlockedAchievements(records);
+  }
+  return changed;
+}
+
+function incrementAchievementProgress(owner, key, amount = 1, options = {}) {
+  if (!key || !isAccountAchievementOwner(owner)) {
+    return;
+  }
+  if (!options.persistNow) {
+    if (!hasActiveAchievementProgressContext(owner)) {
+      return;
+    }
+    if (options.max) {
+      setPendingProgressValue(key, Math.max(getPendingProgressValue(key), Math.floor(amount || 0)));
+    } else {
+      setPendingProgressValue(key, getPendingProgressValue(key) + Math.max(0, Math.floor(amount || 0)));
+    }
+    return;
+  }
+  const progress = loadAchievementProgress();
+  const current = getProgressValue(progress, key);
+  const next = options.max ? Math.max(current, Math.floor(amount || 0)) : current + Math.max(0, Math.floor(amount || 0));
+  setProgressValue(progress, key, next);
+  saveAchievementProgress(progress);
+  const records = loadUnlockedAchievements();
+  refreshLongTermAchievementUnlocks(records, progress);
+}
+
+function resetAchievementProgressValue(owner, key) {
+  if (!key || !isAccountAchievementOwner(owner)) {
+    return;
+  }
+  if (hasActiveAchievementProgressContext(owner)) {
+    state.pendingAchievementProgressResets = state.pendingAchievementProgressResets || {};
+    state.pendingAchievementProgressResets[key] = true;
+    setPendingProgressValue(key, 0);
+    return;
+  }
+  const progress = loadAchievementProgress();
+  setProgressValue(progress, key, 0);
+  saveAchievementProgress(progress);
+}
+
+function isAchievementUnlocked(id, records = loadUnlockedAchievements()) {
+  return Boolean(id && records[id]);
+}
+
+function getEquippedAchievementTitle(id = state.profile.equippedTitleId) {
+  return achievementCatalogMap[id] || null;
+}
+
+function getTitlePillCustomization(player) {
+  if (player?.cardCustomization) {
+    return normalizeProfileCustomization(player.cardCustomization);
+  }
+  if (player?.owner === "preview") {
+    return getProfileCustomizationDraft();
+  }
+  if (player?.owner === state.currentOwner || (player?.owner === "player" && !isRoomMode())) {
+    return normalizeProfileCustomization(state.profile.cardCustomization);
+  }
+  return normalizeProfileCustomization(player?.cardCustomization || {});
+}
+
+function getProfileFont(fontId) {
+  return profileFontMap[fontId] || profileFontMap.default;
+}
+
+function getProfileFontForPlayer(player) {
+  const customization = player?.cardCustomization
+    ? normalizeProfileCustomization(player.cardCustomization)
+    : player?.owner === "preview"
+      ? getProfileCustomizationDraft()
+      : player?.owner === state.currentOwner || (player?.owner === "player" && !isRoomMode())
+        ? normalizeProfileCustomization(state.profile.cardCustomization)
+        : normalizeProfileCustomization(player?.cardCustomization || {});
+  return getProfileFont(customization.fontId || "default");
+}
+
+function applyProfileFontToElement(element, font) {
+  if (!element) {
+    return;
+  }
+  if (font?.family) {
+    element.style.fontFamily = font.family;
+    element.dataset.profileFont = font.id;
+  } else {
+    element.style.removeProperty("font-family");
+    delete element.dataset.profileFont;
+  }
+}
+
+function getTitleColourRgbParts(customization, fallbackRarity = "grey") {
+  if (!customization || customization.titleColourId === "rarity" || !isTitleColourCustomizationUnlocked()) {
+    return "";
+  }
+  const colour = getProfileCardColour(customization.titleColourId);
+  return customization.titlePastel ? pastelRgbParts(colour.value) : hexToRgbParts(colour.value);
+}
+
+function getTitleColourValue(customization, fallbackRarity = "grey") {
+  const rgbParts = getTitleColourRgbParts(customization, fallbackRarity);
+  return rgbParts ? rgbPartsToCss(rgbParts) : "";
+}
+
+function getTitleRgbSyncStyle(customization) {
+  const normalized = normalizeProfileCustomization(customization || {});
+  const style = profileCardStyleMap[normalized.styleId] || profileCardStyleMap.default;
+  const hasMainRgb = normalized.effectIds.includes("rgb")
+    && !specialProfileCardStyleKinds.has(style.kind)
+    && style.id !== "black";
+  return hasMainRgb ? style : { kind: "solid" };
+}
+
+function createEquippedTitlePill(title, customization = null) {
+  const pill = document.createElement("span");
+  pill.className = "equipped-title-pill";
+  pill.dataset.rarity = title.rarity;
+  const customColour = getTitleColourValue(customization, title.rarity);
+  const customColourRgb = getTitleColourRgbParts(customization, title.rarity);
+  if (customColour) {
+    pill.dataset.customColour = "true";
+    pill.style.setProperty("--title-pill-colour", customColour);
+  }
+  if (customColourRgb && customization?.titleRgb) {
+    pill.dataset.titleRgb = "true";
+    setRgbPartVariables(pill, "--custom-card-rgb-base", customColourRgb);
+    setRgbPartVariables(pill, "--custom-card-rgb-warm", hueShiftedRgbParts(customColourRgb, 16));
+    setRgbPartVariables(pill, "--custom-card-rgb-cool", hueShiftedRgbParts(customColourRgb, -16));
+    syncRgbAnimationPhase(pill, getTitleRgbSyncStyle(customization));
+  }
+  if (customization?.titlePastel) {
+    pill.dataset.pastel = "true";
+  }
+  pill.dataset.description = title.description;
+  pill.tabIndex = 0;
+  pill.textContent = title.name;
+  attachFloatingDescriptionTooltip(pill);
+  return pill;
+}
+
+function getDisplayTitleIdForPlayer(player) {
+  if (!player) {
+    return "";
+  }
+  if (player.owner === state.currentOwner || (player.owner === "player" && !isRoomMode())) {
+    return state.profile.equippedTitleId || player.equippedTitleId || "";
+  }
+  return player.equippedTitleId || "";
+}
+
+function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
+  if (!element) {
+    return;
+  }
+  const player = typeof playerOrOwner === "string" ? getPlayer(playerOrOwner) : playerOrOwner;
+  const label = player?.label || fallbackLabel || (typeof playerOrOwner === "string" ? getOwnerLabel(playerOrOwner) : "Player");
+  const hostPrefix = player?.host ? "♕ " : "";
+  const title = getEquippedAchievementTitle(getDisplayTitleIdForPlayer(player));
+  element.replaceChildren();
+  element.classList.add("name-with-title");
+  if (title) {
+    element.appendChild(createEquippedTitlePill(title, getTitlePillCustomization(player)));
+  }
+  const name = document.createElement("span");
+  name.className = "name-with-title-text";
+  name.textContent = `${hostPrefix}${label}`;
+  applyProfileFontToElement(name, getProfileFontForPlayer(player));
+  element.appendChild(name);
+}
+
+function setEquippedAchievement(id) {
+  const records = loadUnlockedAchievements();
+  const nextId = id && isAchievementUnlocked(id, records) ? id : "";
+  state.profile.equippedTitleId = nextId;
+  if (nextId) {
+    localStorage.setItem(equippedAchievementStorageKey, nextId);
+  } else {
+    localStorage.removeItem(equippedAchievementStorageKey);
+  }
+  state.players.forEach((player) => {
+    if (player.owner === state.currentOwner || (player.owner === "player" && !isRoomMode())) {
+      player.equippedTitleId = nextId;
+    }
+  });
+  renderProfile();
+  renderLeaderboard();
+  renderRoomPlayers();
+  renderRoomChat();
+  if (state.joiningRoom && (state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress")) {
+    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
+    updateRoomPresence(room, {
+      spectator: state.isSpectator,
+      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined"
+    });
+  } else if (state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress") {
+    upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  }
+  renderAchievementLibrary();
+}
+
+function getProfileCustomizationDraft() {
+  if (!state.profileCustomizationDraft) {
+    state.profileCustomizationDraft = {
+      ...normalizeProfileCustomization(state.profile.cardCustomization),
+      equippedTitleId: state.profile.equippedTitleId || ""
+    };
+  }
+  return state.profileCustomizationDraft;
+}
+
+function cloneProfileCustomizationDraft(draft = getProfileCustomizationDraft()) {
+  const normalized = normalizeProfileCustomization(draft);
+  return {
+    ...normalized,
+    effectIds: [...normalized.effectIds],
+    equippedTitleId: achievementCatalogMap[draft.equippedTitleId] ? draft.equippedTitleId : ""
+  };
+}
+
+function setProfileCustomizationDraftWithHistory(nextDraft, options = {}) {
+  const normalized = cloneProfileCustomizationDraft(nextDraft);
+  state.profileCustomizationDraft = normalized;
+  if (options.replace) {
+    state.profileCustomizationHistory[state.profileCustomizationHistoryIndex] = cloneProfileCustomizationDraft(normalized);
+    return;
+  }
+  const current = state.profileCustomizationHistory[state.profileCustomizationHistoryIndex];
+  if (current && JSON.stringify(current) === JSON.stringify(normalized)) {
+    return;
+  }
+  state.profileCustomizationHistory = state.profileCustomizationHistory.slice(0, state.profileCustomizationHistoryIndex + 1);
+  state.profileCustomizationHistory.push(cloneProfileCustomizationDraft(normalized));
+  state.profileCustomizationHistoryIndex = state.profileCustomizationHistory.length - 1;
+}
+
+function commitProfileCustomizationDraft(mutator) {
+  const next = cloneProfileCustomizationDraft();
+  mutator(next);
+  setProfileCustomizationDraftWithHistory(next);
+  renderProfileCustomizationModal();
+}
+
+function updateProfileHistoryButtons() {
+  const canUndo = state.profileCustomizationHistoryIndex > 0;
+  const canRedo = state.profileCustomizationHistoryIndex < state.profileCustomizationHistory.length - 1;
+  if (elements.profileCustomUndoButton) {
+    elements.profileCustomUndoButton.disabled = !canUndo;
+    elements.profileCustomUndoButton.dataset.tooltip = canUndo ? "Go back one profile edit." : "No profile edits to undo.";
+  }
+  if (elements.profileCustomRedoButton) {
+    elements.profileCustomRedoButton.disabled = !canRedo;
+    elements.profileCustomRedoButton.dataset.tooltip = canRedo ? "Restore the next undone profile edit." : "No profile edits to redo.";
+  }
+}
+
+function stepProfileCustomizationHistory(direction) {
+  const nextIndex = state.profileCustomizationHistoryIndex + direction;
+  if (nextIndex < 0 || nextIndex >= state.profileCustomizationHistory.length) {
+    return;
+  }
+  state.profileCustomizationHistoryIndex = nextIndex;
+  state.profileCustomizationDraft = cloneProfileCustomizationDraft(state.profileCustomizationHistory[nextIndex]);
+  renderProfileCustomizationModal();
+  playSound("click");
+}
+
+function getProfileCustomizationStatusText(item, type, records = loadUnlockedAchievements(), progress = loadAchievementProgress()) {
+  const status = getProfileUnlockStatus(item, type, records, progress);
+  return `${item.condition || "Always unlocked."} ${status.text ? `Progress: ${status.text}.` : ""}`;
+}
+
+function getProfileUnlockPercent(status) {
+  return `${Math.max(0, Math.min(100, ((status.value || 0) / Math.max(1, status.target || 1)) * 100))}%`;
+}
+
+function shouldShowProfileOptionProgress(item, status, disabledByTheme = false) {
+  if (disabledByTheme || !item || item.unlockedByDefault || item.unlockType === "shop" || item.unlockType === "achievement") {
+    return false;
+  }
+  return Math.max(1, Number(status?.target) || 1) > 1;
+}
+
+function getProfileOptionSummary(item, status, disabledByTheme = false) {
+  if (disabledByTheme) {
+    return "Theme blocked";
+  }
+  if (item?.unlockedByDefault) {
+    return "Always available";
+  }
+  if (status?.text === "Enabled in debug" || status?.text === "Disabled in debug") {
+    return status.text;
+  }
+  if (item?.unlockType === "shop") {
+    return status.unlocked ? "Purchased" : `Buy for ${formatCoins(item.cost || 0)}`;
+  }
+  if (item?.unlockType === "achievement") {
+    const achievement = achievementCatalogMap[item.achievementId];
+    return status.unlocked ? `${achievement?.name || "Achievement"} achievement` : `Requires ${achievement?.name || "achievement"}`;
+  }
+  if (item?.unlockType === "milestone") {
+    return status.unlocked ? "Claimed in Milestones" : "Claim in Achievement Milestones";
+  }
+  if (status?.unlocked) {
+    return status?.target > 1 && status?.text ? status.text : (item?.condition || "Available");
+  }
+  return status?.text || item?.condition || "Locked";
+}
+
+function getProfileOptionLockMarkup(status, disabledByTheme = false) {
+  return "";
+}
+
+function getProfileOptionProgressMarkup(item, status, disabledByTheme = false) {
+  if (!shouldShowProfileOptionProgress(item, status, disabledByTheme)) {
+    return "";
+  }
+  return `<i class="profile-option-progress" aria-label="${status.text}"><b style="width: ${getProfileUnlockPercent(status)}"></b></i>`;
+}
+
+function isSpecialProfileStyleId(styleId) {
+  const style = profileCardStyleMap[styleId] || profileCardStyleMap.default;
+  return specialProfileCardStyleKinds.has(style.kind);
+}
+
+function getProfileStyleSwatch(style, draft = getProfileCustomizationDraft()) {
+  if (style.kind === "chaos") {
+    return {
+      primary: getProfileCardColour("pink"),
+      secondary: getProfileCardColour("blue")
+    };
+  }
+  if (style.kind === "blackMarket") {
+    return {
+      primary: getProfileCardColour("green"),
+      secondary: getProfileCardColour("gold")
+    };
+  }
+  if (style.kind === "black") {
+    return {
+      primary: getProfileCardColour("black"),
+      secondary: getProfileCardColour("grey")
+    };
+  }
+  if (style.kind === "burning") {
+    return {
+      primary: getProfileCardColour("orange"),
+      secondary: getProfileCardColour("gold")
+    };
+  }
+  return {
+    primary: getProfileCardColour(style.colorId || draft.gradientTop),
+    secondary: getProfileCardColour(draft.gradientBottom)
+  };
+}
+
+function renderProfileCustomizationPreview() {
+  const draft = getProfileCustomizationDraft();
+  applyCardCustomizationToElement(elements.profilePreviewCard, draft, { preview: true });
+  renderAvatar(elements.profilePreviewAvatar, state.profile);
+  renderPlayerNameWithTitle(elements.profilePreviewName, {
+    owner: "preview",
+    label: state.profile.name || "You",
+    equippedTitleId: draft.equippedTitleId
+  }, state.profile.name || "You");
+}
+
+function createProfileStyleButton(style, records, progress) {
+  const draft = getProfileCustomizationDraft();
+  const status = getProfileUnlockStatus(style, "style", records, progress);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "profile-style-option";
+  button.dataset.profileStyle = style.id;
+  button.dataset.profileStyleKind = style.kind;
+  button.dataset.selected = String(draft.styleId === style.id);
+  button.dataset.locked = String(!status.unlocked);
+  button.dataset.description = getProfileCustomizationStatusText(style, "style", records, progress);
+  const swatch = getProfileStyleSwatch(style, draft);
+  button.style.setProperty("--style-swatch", swatch.primary.value);
+  button.style.setProperty("--style-swatch-rgb", hexToRgbParts(swatch.primary.value));
+  button.style.setProperty("--style-swatch-secondary-rgb", hexToRgbParts(swatch.secondary.value));
+  button.innerHTML = `<span>${style.name}</span><small>${getProfileOptionSummary(style, status)}</small>${getProfileOptionLockMarkup(status)}${getProfileOptionProgressMarkup(style, status)}`;
+  attachFloatingDescriptionTooltip(button);
+  return button;
+}
+
+function createProfileColourButton(colour, role, records, progress) {
+  const draft = getProfileCustomizationDraft();
+  const status = getProfileUnlockStatus(colour, "color", records, progress);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "colour-swatch";
+  button.dataset.profileColour = colour.id;
+  button.dataset.profileColourRole = role;
+  button.dataset.selected = String(draft[role] === colour.id);
+  button.dataset.locked = String(!status.unlocked);
+  button.dataset.description = getProfileCustomizationStatusText(colour, "color", records, progress);
+  button.style.setProperty("--swatch-color", colour.value);
+  button.setAttribute("aria-label", `${colour.name}. ${button.dataset.description}`);
+  attachFloatingDescriptionTooltip(button);
+  return button;
+}
+
+function createProfileEffectButton(effect, records, progress) {
+  const draft = getProfileCustomizationDraft();
+  const status = getProfileUnlockStatus(effect, "effect", records, progress);
+  const disabledByTheme = isSpecialProfileStyleId(draft.styleId)
+    || (effect.id === "rgb" && draft.styleId === "black")
+    || (effect.id === "pastel" && (draft.styleId === "default" || draft.styleId === "black"));
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "profile-style-option profile-layer-option";
+  button.dataset.profileEffect = effect.id;
+  button.dataset.profileStyleKind = effect.kind;
+  button.dataset.selected = String(draft.effectIds.includes(effect.id) && !disabledByTheme);
+  button.dataset.locked = String(!status.unlocked || disabledByTheme);
+  button.dataset.description = disabledByTheme
+    ? effect.id === "rgb" && draft.styleId === "black"
+      ? "RGB is disabled on the Black card theme."
+      : effect.id === "pastel" && (draft.styleId === "default" || draft.styleId === "black")
+        ? "Pastel is disabled on Classic and Black card themes."
+        : "Special themes do not allow extra effects."
+    : getProfileCustomizationStatusText(effect, "effect", records, progress);
+  const colour = effect.id === "neon"
+    ? getProfileCardColour(draft.gradientTop)
+    : effect.id === "metallic"
+      ? getProfileCardColour("grey")
+      : getProfileCardColour("pink");
+  const secondary = effect.id === "rgb"
+    ? getProfileCardColour("blue")
+    : effect.id === "metallic"
+      ? getProfileCardColour("gold")
+      : getProfileCardColour(draft.gradientBottom);
+  button.style.setProperty("--style-swatch", colour.value);
+  button.style.setProperty("--style-swatch-rgb", hexToRgbParts(colour.value));
+  button.style.setProperty("--style-swatch-secondary-rgb", hexToRgbParts(secondary.value));
+  button.innerHTML = `<span>${effect.name}</span><small>${getProfileOptionSummary(effect, status, disabledByTheme)}</small>${getProfileOptionLockMarkup(status, disabledByTheme)}${getProfileOptionProgressMarkup(effect, status, disabledByTheme)}`;
+  attachFloatingDescriptionTooltip(button);
+  return button;
+}
+
+function createProfilePatternButton(pattern, records, progress) {
+  const draft = getProfileCustomizationDraft();
+  const status = getProfileUnlockStatus(pattern, "pattern", records, progress);
+  const disabledByTheme = isSpecialProfileStyleId(draft.styleId) && pattern.id !== "none";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "profile-style-option profile-layer-option";
+  button.dataset.profilePattern = pattern.id;
+  button.dataset.profileStyleKind = pattern.kind;
+  button.dataset.selected = String(draft.patternId === pattern.id || (disabledByTheme && pattern.id === "none"));
+  button.dataset.locked = String(!status.unlocked || disabledByTheme);
+  button.dataset.description = disabledByTheme
+    ? "Special themes do not allow extra patterns."
+    : getProfileCustomizationStatusText(pattern, "pattern", records, progress);
+  const colour = getProfileCardColour(draft.gradientTop);
+  const secondary = getProfileCardColour(draft.gradientBottom);
+  button.style.setProperty("--style-swatch", colour.value);
+  button.style.setProperty("--style-swatch-rgb", hexToRgbParts(colour.value));
+  button.style.setProperty("--style-swatch-secondary-rgb", hexToRgbParts(secondary.value));
+  button.innerHTML = `<span>${pattern.name}</span><small>${getProfileOptionSummary(pattern, status, disabledByTheme)}</small>${getProfileOptionLockMarkup(status, disabledByTheme)}${getProfileOptionProgressMarkup(pattern, status, disabledByTheme)}`;
+  attachFloatingDescriptionTooltip(button);
+  return button;
+}
+
+function createProfileFontButton(font, records, progress) {
+  const draft = getProfileCustomizationDraft();
+  const status = getProfileUnlockStatus(font, "font", records, progress);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "profile-style-option profile-layer-option profile-font-option";
+  button.dataset.profileFont = font.id;
+  button.dataset.profileStyleKind = "font";
+  button.dataset.selected = String(draft.fontId === font.id);
+  button.dataset.locked = String(!status.unlocked);
+  button.dataset.description = getProfileCustomizationStatusText(font, "font", records, progress);
+  button.style.setProperty("--style-swatch", getProfileCardColour("pink").value);
+  button.style.setProperty("--style-swatch-rgb", hexToRgbParts(getProfileCardColour("pink").value));
+  button.style.setProperty("--style-swatch-secondary-rgb", hexToRgbParts(getProfileCardColour("blue").value));
+  button.innerHTML = `<span>${font.name}</span><strong class="profile-font-preview">${state.profile.name || "You"}</strong><small>${getProfileOptionSummary(font, status)}</small>${getProfileOptionLockMarkup(status)}${getProfileOptionProgressMarkup(font, status)}`;
+  const preview = button.querySelector(".profile-font-preview");
+  applyProfileFontToElement(preview, font);
+  attachFloatingDescriptionTooltip(button);
+  return button;
+}
+
+function createProfileShopItem(item, purchases = loadProfileShopPurchases()) {
+  const balance = loadCurrencyBalance();
+  const owned = isProfileShopItemPurchased(item.type, item.id, purchases);
+  const canAfford = balance >= item.cost;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "profile-shop-item";
+  button.dataset.profileShopType = item.type;
+  button.dataset.profileShopId = item.id;
+  button.dataset.profileShopKind = item.kind;
+  button.dataset.owned = String(owned);
+  button.dataset.affordable = String(canAfford);
+  button.disabled = owned;
+  button.innerHTML = `
+    <span class="profile-shop-preview" aria-hidden="true"></span>
+    <span class="profile-shop-copy">
+      <strong>${item.name}</strong>
+      <small>${item.typeLabel}</small>
+    </span>
+    <span class="profile-shop-price">
+      <span class="coin-icon" aria-hidden="true"></span>
+      <b>${owned ? "Owned" : item.cost.toLocaleString()}</b>
+    </span>
+  `;
+  button.dataset.description = owned
+    ? `${item.name} is already owned.`
+    : `${item.description || "Profile cosmetic."} Current balance: ${formatCoins(balance)}.`;
+  if (item.type === "font") {
+    const preview = button.querySelector(".profile-shop-preview");
+    preview.textContent = state.profile.name || "You";
+    preview.dataset.profileShopFont = item.id;
+    applyProfileFontToElement(preview, getProfileFont(item.id));
+  }
+  attachFloatingDescriptionTooltip(button);
+  return button;
+}
+
+function renderProfileShop() {
+  if (!elements.profileShopLibrary) {
+    return;
+  }
+  const balance = loadCurrencyBalance();
+  const purchases = loadProfileShopPurchases();
+  if (elements.profileShopBalance) {
+    elements.profileShopBalance.textContent = balance.toLocaleString();
+  }
+  const groups = [...new Set(profileShopItems.map((item) => item.typeLabel))];
+  const sections = groups.map((group) => {
+    const items = profileShopItems
+      .filter((item) => item.typeLabel === group)
+      .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
+    const section = document.createElement("section");
+    section.className = "profile-shop-section";
+    const heading = document.createElement("div");
+    heading.className = "profile-shop-section-heading";
+    heading.innerHTML = `<p class="eyebrow">${group}</p><strong>${items.length} item${items.length === 1 ? "" : "s"}</strong>`;
+    const grid = document.createElement("div");
+    grid.className = "profile-shop-grid";
+    items.forEach((item) => grid.appendChild(createProfileShopItem(item, purchases)));
+    section.append(heading, grid);
+    return section;
+  });
+  elements.profileShopLibrary.replaceChildren(...sections);
+}
+
+function openProfileShop() {
+  renderProfileShop();
+  if (elements.profileShopStatus) {
+    elements.profileShopStatus.textContent = "Buy cosmetics here, then equip them in Customize Card.";
+  }
+  setHidden(elements.profileShopModal, false);
+  playSound("click");
+}
+
+function closeProfileShop() {
+  hideModalWithMotion(elements.profileShopModal);
+  playSound("click");
+}
+
+function buyProfileShopItem(type, id) {
+  const item = getProfileShopItem(type, id);
+  const purchases = loadProfileShopPurchases();
+  if (!item) {
+    return;
+  }
+  if (isProfileShopItemPurchased(type, id, purchases)) {
+    if (elements.profileShopStatus) {
+      elements.profileShopStatus.textContent = `${item.name} is already owned.`;
+    }
+    playSound("error");
+    return;
+  }
+  const balance = loadCurrencyBalance();
+  if (balance < item.cost) {
+    if (elements.profileShopStatus) {
+      elements.profileShopStatus.textContent = `Need ${formatCoins(item.cost - balance)} more for ${item.name}.`;
+    }
+    playSound("error");
+    return;
+  }
+  saveCurrencyBalance(balance - item.cost);
+  saveProfileShopPurchases([...purchases, getProfileShopKey(type, id)]);
+  renderProfile();
+  renderProfileShop();
+  if (isModalOpen(elements.profileCustomModal)) {
+    renderProfileCustomizationModal();
+  }
+  if (elements.profileShopStatus) {
+    elements.profileShopStatus.textContent = `${item.name} purchased. Equip it in Customize Card.`;
+  }
+  playSound("coin");
+}
+
+function renderProfileTitleGrid(records = loadUnlockedAchievements()) {
+  elements.profileTitleGrid.replaceChildren();
+  const draft = getProfileCustomizationDraft();
+  const noneButton = document.createElement("button");
+  noneButton.type = "button";
+  noneButton.className = "profile-title-option";
+  noneButton.dataset.profileTitle = "";
+  noneButton.dataset.selected = String(!draft.equippedTitleId);
+  noneButton.textContent = "No title";
+  elements.profileTitleGrid.appendChild(noneButton);
+  achievementCatalog
+    .filter((achievement) => records[achievement.id])
+    .sort((a, b) => getRarityRank(a.rarity) - getRarityRank(b.rarity) || a.name.localeCompare(b.name))
+    .forEach((achievement) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "profile-title-option";
+      button.dataset.profileTitle = achievement.id;
+      button.dataset.rarity = achievement.rarity;
+      button.dataset.selected = String(draft.equippedTitleId === achievement.id);
+      button.dataset.description = achievement.description;
+      button.textContent = achievement.name;
+      attachFloatingDescriptionTooltip(button);
+      elements.profileTitleGrid.appendChild(button);
+    });
+}
+
+function isTitleColourCustomizationUnlocked() {
+  return getProfileUnlockStatus(profileTitleColourCustomization, "titleColor").unlocked;
+}
+
+function createProfileTitleColourButton(colour) {
+  const draft = getProfileCustomizationDraft();
+  const unlocked = isTitleColourCustomizationUnlocked();
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "colour-swatch profile-title-colour-swatch";
+  button.dataset.profileTitleColour = colour.id;
+  button.dataset.selected = String(draft.titleColourId === colour.id);
+  button.dataset.locked = String(!unlocked && colour.id !== "rarity");
+  button.dataset.description = colour.id === "rarity"
+    ? "Use the title's original rarity colour."
+    : unlocked
+      ? `${colour.name} prefix tag colour.`
+      : "Claim Custom Prefix Colour in Achievement Milestones to save custom title colours.";
+  if (colour.value) {
+    button.style.setProperty("--swatch-color", colour.value);
+  }
+  button.setAttribute("aria-label", `${colour.name}. ${button.dataset.description}`);
+  attachFloatingDescriptionTooltip(button);
+  return button;
+}
+
+function renderProfileTitleColourControls() {
+  const draft = getProfileCustomizationDraft();
+  const colours = [
+    { id: "rarity", name: "Rarity", value: "linear-gradient(135deg, #d1d5db, #67e8f9, #c9a5ff, #facc15)" },
+    ...profileCardColours
+  ];
+  elements.profileTitleColourGrid?.replaceChildren(...colours.map(createProfileTitleColourButton));
+  if (elements.profileTitleRgbToggle) {
+    elements.profileTitleRgbToggle.checked = Boolean(draft.titleRgb);
+    elements.profileTitleRgbToggle.disabled = !isTitleColourCustomizationUnlocked() || draft.titleColourId === "rarity";
+    const label = elements.profileTitleRgbToggle.closest("label");
+    label?.classList.toggle("disabled", elements.profileTitleRgbToggle.disabled);
+    label?.toggleAttribute("data-selected", Boolean(draft.titleRgb));
+  }
+  if (elements.profileTitlePastelToggle) {
+    elements.profileTitlePastelToggle.checked = Boolean(draft.titlePastel);
+    elements.profileTitlePastelToggle.disabled = !isTitleColourCustomizationUnlocked() || draft.titleColourId === "rarity";
+    const label = elements.profileTitlePastelToggle.closest("label");
+    label?.classList.toggle("disabled", elements.profileTitlePastelToggle.disabled);
+    label?.toggleAttribute("data-selected", Boolean(draft.titlePastel));
+  }
+}
+
+function renderProfileCustomizationModal() {
+  const records = loadUnlockedAchievements();
+  const progress = loadAchievementProgress();
+  const draft = getProfileCustomizationDraft();
+  elements.profileCardStyleGrid.replaceChildren(...profileCardStyles.map((style) => createProfileStyleButton(style, records, progress)));
+  elements.profileEffectGrid?.replaceChildren(...profileCardEffects.map((effect) => createProfileEffectButton(effect, records, progress)));
+  elements.profilePatternGrid?.replaceChildren(...profileCardPatterns.map((pattern) => createProfilePatternButton(pattern, records, progress)));
+  elements.profileFontGrid?.replaceChildren(...profileFonts.map((font) => createProfileFontButton(font, records, progress)));
+  elements.profileGradientTopGrid.replaceChildren(...profileCardColours.map((colour) => createProfileColourButton(colour, "gradientTop", records, progress)));
+  elements.profileGradientBottomGrid.replaceChildren(...profileCardColours.map((colour) => createProfileColourButton(colour, "gradientBottom", records, progress)));
+  elements.profileGradientPicker.dataset.open = String(draft.styleId === "gradient");
+  renderProfileTitleGrid(records);
+  renderProfileTitleColourControls();
+  renderProfileCustomizationPreview();
+  const style = profileCardStyleMap[draft.styleId] || profileCardStyleMap.default;
+  const styleStatus = getProfileUnlockStatus(style, "style", records, progress);
+  const specialNotice = isSpecialProfileStyleId(draft.styleId) ? " Special themes ignore effects and patterns." : "";
+  elements.profileCustomStatus.textContent = styleStatus.unlocked
+    ? `Ready to save.${specialNotice}`
+    : `Previewing a locked customization. Locked choices will not be saved.${specialNotice}`;
+  updateProfileHistoryButtons();
+}
+
+function openProfileCustomization() {
+  const draft = {
+    ...normalizeProfileCustomization(state.profile.cardCustomization),
+    equippedTitleId: state.profile.equippedTitleId || ""
+  };
+  state.profileCustomizationDraft = cloneProfileCustomizationDraft(draft);
+  state.profileCustomizationHistory = [cloneProfileCustomizationDraft(draft)];
+  state.profileCustomizationHistoryIndex = 0;
+  renderProfileCustomizationModal();
+  setHidden(elements.profileCustomModal, false);
+  playSound("click");
+}
+
+function isProfileCustomizationDirty() {
+  const draft = getProfileCustomizationDraft();
+  const saved = {
+    ...normalizeProfileCustomization(state.profile.cardCustomization),
+    equippedTitleId: state.profile.equippedTitleId || ""
+  };
+  return JSON.stringify(draft) !== JSON.stringify(saved);
+}
+
+async function closeProfileCustomization(options = {}) {
+  if (!options.force && isProfileCustomizationDirty()) {
+    const confirmed = await showAppConfirm({
+      eyebrow: "Discard changes",
+      title: "Exit customization?",
+      copy: "Your preview changes are not saved yet.",
+      confirmLabel: "Exit",
+      danger: true
+    });
+    if (!confirmed) {
+      return;
+    }
+  }
+  state.profileCustomizationDraft = null;
+  state.profileCustomizationHistory = [];
+  state.profileCustomizationHistoryIndex = 0;
+  hideModalWithMotion(elements.profileCustomModal);
+}
+
+function sanitizeProfileCustomizationForSave(draft) {
+  const records = loadUnlockedAchievements();
+  const progress = loadAchievementProgress();
+  const saved = normalizeProfileCustomization(state.profile.cardCustomization);
+  const next = { ...saved };
+  if (isProfileStyleUnlocked(draft.styleId, records, progress)) {
+    next.styleId = draft.styleId;
+  }
+  if (draft.styleId === "gradient") {
+    if (isProfileColourUnlocked(draft.gradientTop, records, progress)) {
+      next.gradientTop = draft.gradientTop;
+    }
+    if (isProfileColourUnlocked(draft.gradientBottom, records, progress)) {
+      next.gradientBottom = draft.gradientBottom;
+    }
+  } else {
+    next.gradientTop = draft.gradientTop;
+    next.gradientBottom = draft.gradientBottom;
+  }
+  next.effectIds = draft.effectIds.filter((effectId) => (
+    isProfileEffectUnlocked(effectId, records, progress)
+    && !(effectId === "rgb" && draft.styleId === "black")
+    && !(effectId === "pastel" && (draft.styleId === "default" || draft.styleId === "black"))
+  ));
+  next.patternId = isProfilePatternUnlocked(draft.patternId, records, progress) ? draft.patternId : saved.patternId;
+  next.fontId = isProfileFontUnlocked(draft.fontId, records, progress) ? draft.fontId : saved.fontId || "default";
+  if (isTitleColourCustomizationUnlocked()) {
+    next.titleColourId = draft.titleColourId;
+    next.titleRgb = draft.titleColourId !== "rarity" && Boolean(draft.titleRgb);
+    next.titlePastel = draft.titleColourId !== "rarity" && Boolean(draft.titlePastel);
+  } else {
+    next.titleColourId = saved.titleColourId || "rarity";
+    next.titleRgb = Boolean(saved.titleRgb && next.titleColourId !== "rarity");
+    next.titlePastel = Boolean(saved.titlePastel && next.titleColourId !== "rarity");
+  }
+  const titleId = isAchievementUnlocked(draft.equippedTitleId, records) ? draft.equippedTitleId : "";
+  return { customization: normalizeProfileCustomization(next), titleId };
+}
+
+function syncProfileCustomizationToPlayers() {
+  state.players.forEach((player) => {
+    if (player.owner === state.currentOwner || (player.owner === "player" && !isRoomMode())) {
+      player.equippedTitleId = state.profile.equippedTitleId;
+      player.cardCustomization = state.profile.cardCustomization;
+    }
+  });
+}
+
+async function saveProfileCustomizationDraft() {
+  const confirmed = await showAppConfirm({
+    eyebrow: "Save card",
+    title: "Save customization?",
+    copy: "Unlocked selections will be saved. Locked preview selections will be ignored.",
+    confirmLabel: "Save",
+    danger: false
+  });
+  if (!confirmed) {
+    return;
+  }
+  const { customization, titleId } = sanitizeProfileCustomizationForSave(getProfileCustomizationDraft());
+  state.profile.cardCustomization = saveProfileCustomization(customization);
+  setEquippedAchievement(titleId);
+  syncProfileCustomizationToPlayers();
+  applyAnswerCardCustomizations();
+  state.profileCustomizationDraft = {
+    ...state.profile.cardCustomization,
+    equippedTitleId: state.profile.equippedTitleId || ""
+  };
+  state.profileCustomizationHistory = [cloneProfileCustomizationDraft(state.profileCustomizationDraft)];
+  state.profileCustomizationHistoryIndex = 0;
+  renderProfileCustomizationModal();
+  if (state.joiningRoom && (state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress")) {
+    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
+    updateRoomPresence(room, {
+      spectator: state.isSpectator,
+      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined"
+    });
+  } else if (state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress") {
+    upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  }
+  elements.profileCustomStatus.textContent = "Customization saved.";
+}
+
+function handleProfileCustomizationClick(event) {
+  const styleButton = event.target.closest("[data-profile-style]");
+  const effectButton = event.target.closest("[data-profile-effect]");
+  const patternButton = event.target.closest("[data-profile-pattern]");
+  const fontButton = event.target.closest("[data-profile-font]");
+  const colourButton = event.target.closest("[data-profile-colour]");
+  const titleButton = event.target.closest("[data-profile-title]");
+  const titleColourButton = event.target.closest("[data-profile-title-colour]");
+  if (styleButton) {
+    commitProfileCustomizationDraft((draft) => {
+      draft.styleId = styleButton.dataset.profileStyle;
+    });
+    playSound("click");
+    return;
+  }
+  if (effectButton) {
+    commitProfileCustomizationDraft((draft) => {
+      const effectId = effectButton.dataset.profileEffect;
+      if (
+        isSpecialProfileStyleId(draft.styleId)
+        || (effectId === "rgb" && draft.styleId === "black")
+        || (effectId === "pastel" && (draft.styleId === "default" || draft.styleId === "black"))
+      ) {
+        return;
+      }
+      draft.effectIds = draft.effectIds.includes(effectId)
+        ? draft.effectIds.filter((id) => id !== effectId)
+        : [...draft.effectIds, effectId];
+    });
+    playSound("click");
+    return;
+  }
+  if (patternButton) {
+    commitProfileCustomizationDraft((draft) => {
+      if (isSpecialProfileStyleId(draft.styleId)) {
+        return;
+      }
+      draft.patternId = patternButton.dataset.profilePattern || "none";
+    });
+    playSound("click");
+    return;
+  }
+  if (fontButton) {
+    commitProfileCustomizationDraft((draft) => {
+      draft.fontId = fontButton.dataset.profileFont || "default";
+    });
+    playSound("click");
+    return;
+  }
+  if (colourButton) {
+    commitProfileCustomizationDraft((draft) => {
+      draft[colourButton.dataset.profileColourRole] = colourButton.dataset.profileColour;
+    });
+    playSound("click");
+    return;
+  }
+  if (titleButton) {
+    commitProfileCustomizationDraft((draft) => {
+      draft.equippedTitleId = titleButton.dataset.profileTitle || "";
+    });
+    playSound("click");
+    return;
+  }
+  if (titleColourButton) {
+    commitProfileCustomizationDraft((draft) => {
+      draft.titleColourId = titleColourButton.dataset.profileTitleColour || "rarity";
+      if (draft.titleColourId === "rarity") {
+        draft.titleRgb = false;
+        draft.titlePastel = false;
+      }
+    });
+    playSound("click");
+  }
+}
+
+function getAccountAchievementOwners() {
+  if (state.isSpectator) {
+    return [];
+  }
+  if (isRoomMode()) {
+    return getActiveOwners().includes(state.currentOwner) ? [state.currentOwner] : [];
+  }
+  return getActiveOwners().includes("player") ? ["player"] : [];
+}
+
+function unlockAchievementsForOwners(titlesByOwner) {
+  const records = loadUnlockedAchievements();
+  const progress = loadAchievementProgress();
+  let changed = false;
+  getAccountAchievementOwners().forEach((owner) => {
+    const titles = titlesByOwner?.[owner] || [];
+    const epicBadgeCount = titles.filter((title) => title.rarity === "purple").length;
+    if (epicBadgeCount) {
+      setProgressValue(progress, "epicBadgesTriggered", getProgressValue(progress, "epicBadgesTriggered") + epicBadgeCount);
+    }
+    titles.forEach((title) => {
+      changed = unlockAchievementRecord(records, title.id) || changed;
+    });
+  });
+  saveAchievementProgress(progress);
+  changed = refreshLongTermAchievementUnlocks(records, progress) || changed;
+  if (changed) {
+    saveUnlockedAchievements(records);
+  }
+}
+
+function evaluateMatchTitles(redHerringOwnersAtEnd = new Set()) {
+  const owners = getActiveOwners();
+  const roundsPlayed = Math.max(1, state.matchHistory.length);
+  const finalRows = getScoreRankRows(owners);
+  const winnerScore = finalRows[0]?.score ?? 0;
+  const winnerOwners = finalRows.filter((row) => row.score === winnerScore).map((row) => row.owner);
+  const winnerSet = new Set(winnerOwners);
+  const secondScore = finalRows[1]?.score ?? 0;
+  const middleOwner = finalRows[Math.floor((finalRows.length - 1) / 2)]?.owner;
+  const titlesByOwner = {};
+
+  owners.forEach((owner) => {
+    const stat = getAchievementStat(owner) || createAchievementStat();
+    stat.redHerringActiveAtEnd = redHerringOwnersAtEnd.has(owner);
+    const row = finalRows.find((entry) => entry.owner === owner);
+    const rank = row?.rank ?? 999;
+    const finalScore = row?.score ?? 0;
+    const isWinner = winnerSet.has(owner);
+    const secondToLastRank = getSecondToLastRank(owner, roundsPlayed);
+    const primaryTitleIds = [];
+
+    if (isWinner && secondToLastRank !== null && secondToLastRank >= 3) primaryTitleIds.push("comeback-king");
+    if (stat.roundsAnswered > 0 && stat.exactAnswers / stat.roundsAnswered >= 0.75) primaryTitleIds.push("accurate-sniper");
+    if (Object.keys(stat.powerRounds).length >= Math.ceil(roundsPlayed * 0.5)) primaryTitleIds.push("button-masher");
+    if (stat.pointSteals >= 2) primaryTitleIds.push("criminal");
+    if (stat.shopPurchases >= 3) primaryTitleIds.push("dealer");
+    if (stat.roundsAnswered >= roundsPlayed && stat.correctAnswers === 0) primaryTitleIds.push("dummie");
+    if (stat.targetedCount >= 3) primaryTitleIds.push("psychopath");
+    if (roundsPlayed > 0 && Object.keys(stat.powerRounds).length >= roundsPlayed) primaryTitleIds.push("chaos-enjoyer");
+    if (getOwnerStreak(owner) > roundsPlayed) primaryTitleIds.push("arsonist");
+    if (stat.roundsAnswered >= roundsPlayed && stat.correctAnswers >= roundsPlayed) primaryTitleIds.push("trivia-king");
+    if (isWinner && stat.usedAutoPilot) primaryTitleIds.push("fake-genius");
+    if (isWinner && stat.insuranceTriggered) primaryTitleIds.push("preplaned");
+    if ((stat.maxPowersNonBlackMarketRound || 0) >= 3) primaryTitleIds.push("yo-what");
+    if (isWinner && stat.lostPoints >= 3000 * roundsPlayed) primaryTitleIds.push("invincible");
+    if (secondToLastRank === 1 && !isWinner) primaryTitleIds.push("the-clown");
+    if (isWinner && stat.roundsAnswered > 0 && stat.correctAnswers / stat.roundsAnswered < 0.5) primaryTitleIds.push("underdog");
+    if (stat.zeusUses >= 3) primaryTitleIds.push("zeus");
+    if (stat.pointSharingUses >= 3) primaryTitleIds.push("sharing-is-caring");
+    if (stat.legendaryPowerUses >= 3) primaryTitleIds.push("the-chosen-one");
+    if (stat.usedCopyAnswerCorrect) primaryTitleIds.push("straight-a-student");
+    if (getLastPlaceRoundCount(owner) > roundsPlayed / 2) primaryTitleIds.push("the-sleeper");
+    if (stat.buffDebuffTriggers > 5) primaryTitleIds.push("buff-addict");
+    if (stat.timedOut > 2) primaryTitleIds.push("bro-dozed-off");
+    if (stat.ownHotPotatoSelfHitFivePlus) primaryTitleIds.push("the-unluck");
+    if (isWinner && finalRows.some((entry) => entry.owner !== owner && Math.abs(finalScore - entry.score) <= 250)) primaryTitleIds.push("perfectly-balanced");
+    if ((stat.maxActiveEffects || 0) >= 3) primaryTitleIds.push("combo-artist");
+    if (isWinner && stat.insuranceFraudTriggered) primaryTitleIds.push("the-fraud");
+    if (isWinner && stat.lastLaughOver10000) primaryTitleIds.push("all-planned");
+    if (roundsPlayed >= 10 && getOwnerStreak(owner) >= 20) primaryTitleIds.push("the-cook");
+    if ((stat.maxSingleRoundGain || 0) > 30000) primaryTitleIds.push("one-hit-wonder");
+    if (roundsPlayed >= 10 && isPublicNonSelfHostedRoom() && stat.mostPointRounds >= roundsPlayed) primaryTitleIds.push("overachiever-title");
+    if ((stat.merchantBlackMarketSpend || 0) > 10000) primaryTitleIds.push("big-load");
+    if (isWinner && finalRows.length > 1 && finalScore >= secondScore * 1.2) primaryTitleIds.push("monopoly");
+    if (finalScore > 10000 * roundsPlayed) primaryTitleIds.push("too-wealthy");
+    if ((stat.soulLinkPointsGiven || 0) > 20000) primaryTitleIds.push("the-simp");
+    if (roundsPlayed >= 10 && stat.roundsAnswered >= roundsPlayed && stat.exactAnswers >= roundsPlayed) primaryTitleIds.push("the-actual-nerd");
+    if (isWinner && stat.actualPointLoss === 0 && stat.shieldSaves > 0) primaryTitleIds.push("flawless");
+    if (isWinner && wasFirstPlaceSinceRoundTwo(owner)) primaryTitleIds.push("final-boss");
+    if ((stat.maxPowersNonBlackMarketRound || 0) >= 6) primaryTitleIds.push("you-hacking");
+    if (isWinner && isPowerUpAchievementEnabled() && stat.totalPowerUses === 0) primaryTitleIds.push("how");
+    if (isWinner && stat.redHerringActiveAtEnd) primaryTitleIds.push("undercover");
+
+    const fallbackTitleIds = [];
+    if (!primaryTitleIds.length) {
+      if (owner === middleOwner) fallbackTitleIds.push("npc");
+      if (stat.usedParticipation) fallbackTitleIds.push("participation-award");
+      if (stat.chatMessages > 20) fallbackTitleIds.push("chatterbox");
+      if (getPlayer(owner)?.host) fallbackTitleIds.push("the-host");
+    }
+
+    titlesByOwner[owner] = [...new Set([...primaryTitleIds, ...fallbackTitleIds])]
+      .map((id) => achievementTitleMap[id])
+      .filter(Boolean)
+      .sort((a, b) => getRarityRank(a.rarity) - getRarityRank(b.rarity) || a.name.localeCompare(b.name));
+  });
+
+  state.finalTitlesByOwner = titlesByOwner;
+  return titlesByOwner;
+}
+
+function finalizeLongTermAchievements(wasExited = false, titlesByOwner = state.finalTitlesByOwner || {}) {
+  if (!isCompletedPublicAchievementMatch(wasExited)) {
+    discardPendingAchievementProgress();
+    return;
+  }
+
+  const progress = commitPendingAchievementProgress(loadAchievementProgress());
+  const owners = getActiveOwners();
+  const finalRows = getScoreRankRows(owners);
+  const topScore = finalRows[0]?.score ?? 0;
+  const publicNonSelfHosted = isPublicNonSelfHostedRoom();
+
+  getAccountAchievementOwners().forEach((owner) => {
+    const stat = getAchievementStat(owner) || createAchievementStat();
+    const isWinner = finalRows.some((row) => row.owner === owner && row.score === topScore);
+    const activePlayerCount = owners.length;
+
+    if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
+      setProgressValue(progress, "hostFinishedRounds", getProgressValue(progress, "hostFinishedRounds") + state.matchHistory.length);
+    }
+
+    if (publicNonSelfHosted && activePlayerCount >= 5 && isWinner) {
+      setProgressValue(progress, "publicWinsFivePlus", getProgressValue(progress, "publicWinsFivePlus") + 1);
+    }
+    if (publicNonSelfHosted && isWinner && isMatchModifierEnabled("chaos")) {
+      setProgressValue(progress, "publicChaosWins", getProgressValue(progress, "publicChaosWins") + 1);
+    }
+
+    if (publicNonSelfHosted) {
+      setProgressValue(progress, "publicWinStreak", isWinner ? getProgressValue(progress, "publicWinStreak") + 1 : 0);
+    }
+
+    if ((stat.merchantBlackMarketSpend || 0) > 0) {
+      setProgressValue(progress, "bestMerchantBlackMarketSpend", Math.max(getProgressValue(progress, "bestMerchantBlackMarketSpend"), stat.merchantBlackMarketSpend));
+    }
+  });
+
+  saveAchievementProgress(progress);
+  unlockAchievementsForOwners(titlesByOwner);
+}
+
+function drawPowerByRarity(rarity, existing = [], options = {}) {
+  const actualRarity = options.minRarity && getRarityRank(rarity) < getRarityRank(options.minRarity)
+    ? options.minRarity
+    : rarity;
+  const pool = powerDeck.filter((power) => power.rarity === actualRarity && !existing.includes(power.id) && !(options.excludeAi && power.id === "ai_answer"));
+  if (!pool.length) {
+    return null;
+  }
+  return pool[Math.floor(Math.random() * pool.length)].id;
+}
+
+function getTargetCandidates(owner, power = null) {
+  const candidates = power?.type === "airdrop"
+    ? getActiveOwners()
+    : getActiveOwners().filter((participant) => participant !== owner);
+  if (power?.type === "streak_bonus") {
+    return candidates.filter((participant) => getOwnerStreak(participant) > 0 && !hasStreakStealProtection(participant));
+  }
+  if (power?.type === "lightning_strike" || power?.type === "zap_strike") {
+    return candidates.filter((participant) => getOwnerStreak(participant) > 0);
+  }
+  if (power?.type === "power_heist") {
+    return candidates.filter((participant) => (state.powerHands[participant] || []).length > 0);
+  }
+  if (power?.type === "software_downgrade") {
+    return candidates.filter((participant) => (state.powerHands[participant] || []).length > 0);
+  }
+  if (power?.type === "xray_hacks") {
+    return candidates;
+  }
+  if (power?.type === "lawsuit") {
+    return candidates.filter((participant) => getRemovableActiveEffects(participant).length > 0);
+  }
+  return candidates;
+}
+
+function chooseTargetOwner(owner, power) {
+  const candidates = getTargetCandidates(owner, power);
+  if (getPlayer(owner)?.type === "bot") {
+    if (power.type === "streak_bonus") {
+      return candidates.sort((a, b) => getOwnerStreak(b) - getOwnerStreak(a) || getScore(b) - getScore(a))[0];
+    }
+    if (power.type === "zap_strike" || power.type === "lightning_strike") {
+      return candidates.sort((a, b) => getOwnerStreak(b) - getOwnerStreak(a) || getScore(b) - getScore(a))[0];
+    }
+    if (power.type === "haha_you_lose") {
+      return candidates.sort((a, b) => getScore(a) - getScore(b) || getOwnerStreak(a) - getOwnerStreak(b))[0];
+    }
+    if (power.type === "reverse") {
+      return candidates.sort((a, b) => getScore(b) - getScore(a) || getOwnerStreak(b) - getOwnerStreak(a))[0];
+    }
+    return candidates.sort((a, b) => getScore(b) - getScore(a))[0];
+  }
+
+  return null;
+}
+
+function getWrongAnswerCount(owner) {
+  const label = getOwnerLabel(owner);
+  return state.matchHistory.filter((round) => !(round.winners || [round.winner]).includes(label)).length;
+}
+
+function openTargetSelector(owner, power, powerId) {
+  const candidates = getTargetCandidates(owner, power);
+  if (!candidates.length) {
+    return;
+  }
+
+  elements.targetTitle.textContent = power.name;
+  elements.targetModal.dataset.mode = "player";
+  elements.targetList.replaceChildren();
+  candidates.forEach((targetOwner) => {
+    const player = getPlayer(targetOwner);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-option";
+    button.dataset.targetOwner = targetOwner;
+    const avatar = document.createElement("span");
+    avatar.className = "room-player-avatar";
+    renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
+    const copy = document.createElement("span");
+    copy.innerHTML = `<strong>${getOwnerLabel(targetOwner)}</strong><small>${getDisplayScoreText(targetOwner)} - ${getOwnerStreak(targetOwner)}x streak</small>`;
+    button.append(avatar, copy);
+    elements.targetList.appendChild(button);
+  });
+
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = powerId;
+  setHidden(elements.targetModal, false);
+  playSound("click");
+}
+
+function openThemePowerSelector(owner, power, powerId) {
+  const themes = getEnabledTriviaThemes();
+  if (!themes.length) {
+    return;
+  }
+
+  elements.targetTitle.textContent = power.name;
+  elements.targetModal.dataset.mode = "theme";
+  elements.targetList.replaceChildren();
+  themes.forEach((theme) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-option";
+    button.dataset.targetTheme = theme;
+    button.innerHTML = `<span><strong>${theme}</strong></span>`;
+    elements.targetList.appendChild(button);
+  });
+
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = powerId;
+  setHidden(elements.targetModal, false);
+  playSound("click");
+}
+
+function getMerchantCost(owner, rarity) {
+  const percent = rarity === "purple" ? 0.08 : rarity === "blue" ? 0.05 : 0.03;
+  const flat = rarity === "purple" ? 500 : rarity === "blue" ? 250 : 100;
+  return Math.floor(Math.max(0, getScore(owner)) * percent) + flat;
+}
+
+function openMerchantSelector(owner, power, powerId) {
+  const options = ["grey", "blue", "purple"];
+  const score = getScore(owner);
+  elements.targetTitle.textContent = power.name;
+  elements.targetModal.dataset.mode = "merchant";
+  elements.targetList.replaceChildren();
+  options.forEach((rarity) => {
+    const cost = getMerchantCost(owner, rarity);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-option";
+    button.dataset.targetRarity = rarity;
+    button.dataset.tooltip = `${cost.toLocaleString()} points`;
+    button.disabled = score < cost;
+    button.classList.toggle("unusable", score < cost);
+    button.innerHTML = `<span><strong>${rarityInfo[rarity].label}</strong><small>Cost: ${cost.toLocaleString()} points</small></span>`;
+    elements.targetList.appendChild(button);
+  });
+
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = powerId;
+  setHidden(elements.targetModal, false);
+  playSound("click");
+}
+
+function openBlackMarketSelector(owner) {
+  if (!isTableEventActive("black_market") || !owner || state.isSpectator) {
+    return;
+  }
+  const options = ["grey", "blue", "purple", "gold"];
+  const score = getScore(owner);
+  elements.targetTitle.textContent = "Black Market";
+  elements.targetModal.dataset.mode = "black-market";
+  elements.targetList.replaceChildren();
+  options.forEach((rarity) => {
+    const cost = getBlackMarketCost(owner, rarity);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-option";
+    button.dataset.targetRarity = rarity;
+    button.dataset.tooltip = `${cost.toLocaleString()} points`;
+    button.disabled = score < cost;
+    button.classList.toggle("unusable", score < cost);
+    button.innerHTML = `<span><strong>${rarityInfo[rarity].label}</strong><small>Cost: ${cost.toLocaleString()} points</small></span>`;
+    elements.targetList.appendChild(button);
+  });
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = "table_black_market";
+  setHidden(elements.targetModal, false);
+  playSound("click");
+}
+
+function openTableSabotageSelector(owner) {
+  if (!isTableEventActive("sabotage") || !owner || state.tableEventSabotageUsed[owner]) {
+    return;
+  }
+  const candidates = getActiveOwners().filter((participant) => participant !== owner);
+  if (!candidates.length) {
+    return;
+  }
+  elements.targetTitle.textContent = "Sabotage";
+  elements.targetModal.dataset.mode = "table-sabotage";
+  elements.targetList.replaceChildren();
+  candidates.forEach((targetOwner) => {
+    const player = getPlayer(targetOwner);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-option";
+    button.dataset.targetOwner = targetOwner;
+    const avatar = document.createElement("span");
+    avatar.className = "room-player-avatar";
+    renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
+    const copy = document.createElement("span");
+    copy.innerHTML = `<strong>${getOwnerLabel(targetOwner)}</strong><small>${getDisplayScoreText(targetOwner)} - random debuff</small>`;
+    button.append(avatar, copy);
+    elements.targetList.appendChild(button);
+  });
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = "table_sabotage";
+  setHidden(elements.targetModal, false);
+  playSound("click");
+}
+
+function addPurchasedPowerToHand(owner, powerId) {
+  if (!owner || !powerId) {
+    return;
+  }
+  const limit = getPowerHandLimit(owner);
+  const hand = [...(state.powerHands[owner] || [])];
+  if (hand.length >= limit) {
+    hand.shift();
+  }
+  state.powerHands[owner] = [...hand, powerId].slice(-limit);
+  markFreshPowerUps(owner, [powerId]);
+}
+
+function buyBlackMarketPower(owner, rarity) {
+  const cost = getBlackMarketCost(owner, rarity);
+  if (getScore(owner) < cost) {
+    queueStatFlash("negative", "Black Market", "Not enough points", { owners: [owner], complex: true });
+    return null;
+  }
+  addScore(owner, -cost);
+  const powerId = drawPowerByRarity(rarity, state.powerHands[owner] || [], getPowerDrawOptions(owner));
+  const boughtPower = getPowerById(powerId);
+  if (powerId) {
+    addPurchasedPowerToHand(owner, powerId);
+  }
+  markAchievementShopPurchase(owner, cost, { merchantOrBlackMarket: true });
+  state.blackMarketPurchases[owner] = (state.blackMarketPurchases[owner] || 0) + 1;
+  queueStatFlash("black-market", "Black Market", [
+    formatSignedStat(-cost, "Point"),
+    boughtPower ? boughtPower.name : "No power available"
+  ], { owners: [owner], complex: true, soundName: "blackMarket" });
+  renderScore();
+  renderPowerUps();
+  renderTableEventControls();
+  return boughtPower;
+}
+
+function getMultipleChoiceAnswers() {
+  const correctPool = getQuestionCorrectAnswerPool();
+  const correct = cleanInput(state.canonicalAnswer || correctPool[0] || "");
+  const correctNormalized = normalizeTriviaAnswer(correct);
+  const wrong = getQuestionWrongAnswerPool(correctPool)
+    .filter((answer) => normalizeTriviaAnswer(answer) !== normalizeTriviaAnswer(correct))
+    .slice(0, 2);
+  const fallbackWrong = [
+    ...(state.botCards || []),
+    ...(state.rejectedAnswers || []),
+    "Not this one",
+    "Wrong answer"
+  ]
+    .map((answer) => cleanInput(answer))
+    .filter((answer) => {
+      const normalized = normalizeTriviaAnswer(answer);
+      return normalized
+        && normalized !== correctNormalized
+        && scoreAnswerAgainstAcceptedAnswers(answer, correctPool) < 0.82
+        && !wrong.some((existing) => normalizeTriviaAnswer(existing) === normalized);
+    });
+  while (wrong.length < 2) {
+    const fallback = fallbackWrong.shift();
+    wrong.push(fallback || `Not ${correct || "this"}`);
+  }
+  return [correct || correctPool[0] || "Unknown", ...wrong.slice(0, 2)]
+    .sort(() => Math.random() - 0.5);
+}
+
+function openMultipleChoiceSelector(owner, power, powerId) {
+  const answers = getMultipleChoiceAnswers();
+  elements.targetTitle.textContent = power.name;
+  elements.targetModal.dataset.mode = "multiple-choice";
+  elements.targetList.replaceChildren();
+  answers.forEach((answer) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-option";
+    button.dataset.answerChoice = answer;
+    button.innerHTML = `<span><strong>${answer}</strong></span>`;
+    elements.targetList.appendChild(button);
+  });
+
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = powerId;
+  setHidden(elements.targetModal, false);
+  playSound("click");
+}
+
+function renderXrayResult(owner, targetOwner, powerNames) {
+  elements.targetTitle.textContent = `X-Ray Hacks: ${getOwnerLabel(targetOwner)}`;
+  elements.targetModal.dataset.mode = "xray-result";
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = "xray_hacks";
+  elements.targetList.replaceChildren();
+  getActiveOwners()
+    .filter((participant) => participant !== owner)
+    .forEach((participant) => {
+      const player = getPlayer(participant);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "target-option";
+      button.dataset.targetOwner = participant;
+      const avatar = document.createElement("span");
+      avatar.className = "room-player-avatar";
+      renderAvatar(avatar, player || { label: getOwnerLabel(participant) });
+      const copy = document.createElement("span");
+      copy.innerHTML = `<strong>${getOwnerLabel(participant)}</strong><small>${participant === targetOwner ? "Viewing now" : "Click to reveal"}</small>`;
+      button.append(avatar, copy);
+      elements.targetList.appendChild(button);
+    });
+  const list = powerNames.length ? powerNames : ["No power-ups"];
+  const resultHeader = document.createElement("div");
+  resultHeader.className = "target-option readonly xray-result-heading";
+  resultHeader.innerHTML = `<span><strong>${getOwnerLabel(targetOwner)}'s hand</strong></span>`;
+  elements.targetList.appendChild(resultHeader);
+  list.forEach((name) => {
+    const item = document.createElement("div");
+    item.className = "target-option readonly";
+    item.innerHTML = `<span><strong>${name}</strong></span>`;
+    elements.targetList.appendChild(item);
+  });
+  setHidden(elements.targetModal, false);
+  queueStatFlash("positive", "X-Ray Hacks", list, { owners: [owner], complex: true });
+}
+
+function closeTargetSelector() {
+  elements.targetModal.dataset.owner = "";
+  elements.targetModal.dataset.power = "";
+  elements.targetModal.dataset.mode = "";
+  hideModalWithMotion(elements.targetModal);
+}
+
+function completeThemeSelection(theme) {
+  const owner = elements.targetModal.dataset.owner;
+  const powerId = elements.targetModal.dataset.power;
+  const power = getPowerById(powerId);
+  if (!owner || !power || !theme || !getEnabledTriviaThemes().includes(theme)) {
+    closeTargetSelector();
+    return;
+  }
+  consumeImmediatePower(owner, power, { selectedTheme: theme });
+  closeTargetSelector();
+}
+
+function completeMerchantSelection(rarity) {
+  const owner = elements.targetModal.dataset.owner;
+  const powerId = elements.targetModal.dataset.power;
+  const power = getPowerById(powerId);
+  if (!owner || !power || !["grey", "blue", "purple"].includes(rarity) || getScore(owner) < getMerchantCost(owner, rarity)) {
+    closeTargetSelector();
+    return;
+  }
+  consumeImmediatePower(owner, power, { selectedRarity: rarity });
+  closeTargetSelector();
+}
+
+function completeBlackMarketSelection(rarity) {
+  const owner = elements.targetModal.dataset.owner;
+  if (!owner || !["grey", "blue", "purple", "gold"].includes(rarity)) {
+    closeTargetSelector();
+    return;
+  }
+  buyBlackMarketPower(owner, rarity);
+  closeTargetSelector();
+}
+
+function completeTableSabotageSelection(targetOwner) {
+  const owner = elements.targetModal.dataset.owner;
+  if (!isTableEventActive("sabotage") || !owner || !targetOwner || state.tableEventSabotageUsed[owner]) {
+    closeTargetSelector();
+    return;
+  }
+  state.tableEventSabotageUsed[owner] = true;
+  markAchievementTarget(owner, targetOwner);
+  const amount = Math.floor(Math.max(0, getScore(targetOwner)) * 0.05);
+  const appliedLoss = applyProtectedScoreLoss(targetOwner, amount, "Sabotage");
+  const debuffResult = applyRandomDebuff(targetOwner, "Sabotage", { sourceOwner: owner });
+  queueStatFlash(
+    appliedLoss > 0 ? "sabotage" : "positive",
+    "Sabotage",
+    [appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", debuffResult || "Debuff Applied"],
+    getTargetedFlashOptions(owner, targetOwner, { complex: true, priority: true, soundName: "noMercy" })
+  );
+  queueStatFlash("sabotage", "Sabotage", `${getOwnerLabel(targetOwner)} Hit`, { owners: [owner], complex: true, soundName: "noMercy" });
+  renderScore();
+  renderTableEventControls();
+  closeTargetSelector();
+}
+
+function completeAnswerChoice(answer) {
+  const owner = elements.targetModal.dataset.owner;
+  const powerId = elements.targetModal.dataset.power;
+  const power = getPowerById(powerId);
+  if (!owner || !power || !answer) {
+    closeTargetSelector();
+    return;
+  }
+  elements.answerInput.value = answer;
+  elements.answerInput.focus();
+  consumeImmediatePower(owner, power, { chosenAnswer: answer });
+  closeTargetSelector();
+}
+
+function completeTargetSelection(targetOwner) {
+  const owner = elements.targetModal.dataset.owner;
+  const powerId = elements.targetModal.dataset.power;
+  const power = getPowerById(powerId);
+  const mode = elements.targetModal.dataset.mode;
+  if (mode === "table-sabotage") {
+    completeTableSabotageSelection(targetOwner);
+    return;
+  }
+  if (!owner || !power || !targetOwner) {
+    closeTargetSelector();
+    return;
+  }
+
+  if (power.type === "streak_bonus") {
+    closeTargetSelector();
+    activateStreakInjector(owner, power, powerId, targetOwner);
+    return;
+  }
+
+  if (power.type === "xray_hacks") {
+    const powerNames = (state.powerHands[targetOwner] || [])
+      .map((id) => getPowerById(id)?.name)
+      .filter(Boolean);
+    if (state.powerHands[owner]?.includes(powerId) && canPlayPower(owner)) {
+      playSound("targetSelect");
+      consumeImmediatePower(owner, power, { targetOwner, revealedPowers: powerNames, suppressSound: true });
+    } else {
+      state.playedPowerMeta[owner] = {
+        ...(state.playedPowerMeta[owner] || {}),
+        targetOwner,
+        revealedPowers: powerNames
+      };
+    }
+    renderXrayResult(owner, targetOwner, powerNames);
+    return;
+  }
+
+  if (power.immediate) {
+    closeTargetSelector();
+    playSound("targetSelect");
+    consumeImmediatePower(owner, power, { targetOwner, suppressSound: true });
+    return;
+  }
+
+  updateSelectedPowerUp(owner, powerId, { targetOwner }, { forceSelect: true });
+  closeTargetSelector();
+  renderPowerUps();
+  playSound("targetSelect");
+}
+
+function activateStreakInjector(owner, power, powerId, targetOwner) {
+  if (!canPlayPower(owner) || !targetOwner || !getTargetCandidates(owner, power).includes(targetOwner)) {
+    return false;
+  }
+
+  const stolenStreak = Math.min(3, getOwnerStreak(targetOwner));
+  if (stolenStreak <= 0) {
+    return false;
+  }
+
+  setOwnerStreak(targetOwner, getOwnerStreak(targetOwner) - stolenStreak);
+  setOwnerStreak(owner, getOwnerStreak(owner) + stolenStreak);
+  queueStatFlash("positive", power.name, formatSignedStat(stolenStreak, "Streak"), { owners: [owner] });
+  queueStatFlash("negative", power.name, formatSignedStat(-stolenStreak, "Streak"), getTargetedFlashOptions(owner, targetOwner));
+  const meta = {
+    targetOwner,
+    stolenStreak,
+    remainingTime: state.timerRemaining,
+    originalPowerId: powerId
+  };
+  recordPlayedPower(owner, power.id, meta);
+  state.powerHands[owner] = state.powerHands[owner].filter((id) => id !== powerId);
+  clearSelectedPowerUps(owner);
+  renderScore();
+  renderPowerUps();
+  playSound("targetSelect");
+  return true;
+}
+
+function buyMerchantPower(owner, rarity) {
+  const cost = getMerchantCost(owner, rarity);
+  if (getScore(owner) < cost) {
+    queueStatFlash("negative", "Ability Merchant", "Not enough points", { owners: [owner], complex: true });
+    return { cost, power: null };
+  }
+  const actualRarity = (state.luckRounds[owner] || 0) > 0 && getRarityRank(rarity) < getRarityRank("blue")
+    ? "blue"
+    : rarity;
+  if (cost > 0) {
+    addScore(owner, -cost);
+  }
+  markAchievementShopPurchase(owner, cost, { merchantOrBlackMarket: true });
+  const hand = state.powerHands[owner] || [];
+  const powerId = drawPowerByRarity(actualRarity, hand, getPowerDrawOptions(owner));
+  if (powerId) {
+    state.powerHands[owner] = [...hand, powerId].slice(0, getPowerHandLimit(owner));
+    markFreshPowerUps(owner, [powerId]);
+  }
+  const boughtPower = getPowerById(powerId);
+  queueStatFlash("mixed", "Ability Merchant", [
+    formatSignedStat(-cost, "Point"),
+    boughtPower ? boughtPower.name : "No power available"
+  ], { owners: [owner], complex: true });
+  return { cost, power: boughtPower };
+}
+
+function activateImmediateZapStrike(owner, power, meta = {}) {
+  const target = meta.targetOwner;
+  if (!target || !getActiveOwners().includes(target)) {
+    return 0;
+  }
+
+  const targetStreak = getOwnerStreak(target);
+  if (targetStreak <= 0) {
+    queueStatFlash("mixed", power.name, "No Streak", getTargetedFlashOptions(owner, target, { complex: true }));
+    return 0;
+  }
+
+  const amount = (power.type === "lightning_strike" ? 500 : 250) * (targetStreak + 1);
+  const appliedLoss = applyProtectedScoreLoss(target, amount, power.name);
+  queueStatFlash(
+    appliedLoss > 0 ? "lightning" : "positive",
+    power.name,
+    appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked",
+    getTargetedFlashOptions(owner, target, { complex: true })
+  );
+  return appliedLoss;
+}
+
+function deleteHighestRarityPower(targetOwner) {
+  const hand = [...(state.powerHands[targetOwner] || [])];
+  if (!hand.length) {
+    return null;
+  }
+  const entries = hand
+    .map((powerId, index) => ({ powerId, index, power: getPowerById(powerId) }))
+    .filter((entry) => entry.power);
+  const highestRank = Math.max(...entries.map((entry) => getRarityRank(entry.power.rarity)));
+  const tied = entries.filter((entry) => getRarityRank(entry.power.rarity) === highestRank);
+  const picked = tied[Math.floor(Math.random() * tied.length)];
+  state.powerHands[targetOwner] = hand.filter((_, index) => index !== picked.index);
+  setSelectedPowerIds(targetOwner, getSelectedPowerIds(targetOwner).filter((powerId) => powerId !== picked.powerId));
+  if (state.playedPowerUps[targetOwner] === picked.powerId) {
+    state.playedPowerUps[targetOwner] = null;
+  }
+  state.playedPowerStacks[targetOwner] = (state.playedPowerStacks[targetOwner] || [])
+    .filter((entry) => entry.powerId !== picked.powerId);
+  return picked.power;
+}
+
+function armCrawlerVirus(owner) {
+  state.error404Owners[owner] = true;
+  queueStatFlash("mixed", "Error 404", "Chaos routine armed", { owners: [owner], complex: true });
+}
+
+function getTimerChaosTriggerSecond() {
+  const maxTimer = Math.max(5, Math.round(state.timerSeconds || 30));
+  const earlyRemaining = Math.max(1, maxTimer - 5);
+  const lateRemaining = Math.min(earlyRemaining, 10);
+  return getRandomInt(lateRemaining, earlyRemaining);
+}
+
+function scheduleError404Effects(events = []) {
+  state.error404Schedule = [];
+  const owners = getActiveOwners();
+  const activeErrorOwners = Object.keys(state.error404Owners || {})
+    .filter((owner) => state.error404Owners[owner] && owners.includes(owner));
+  if (!activeErrorOwners.length) {
+    return;
+  }
+
+  owners.forEach((target) => {
+    if (Math.random() >= 0.33) {
+      return;
+    }
+    const sourceOwner = activeErrorOwners[Math.floor(Math.random() * activeErrorOwners.length)];
+    state.error404Schedule.push({
+      owner: sourceOwner,
+      target,
+      triggerAt: getTimerChaosTriggerSecond(),
+      used: false
+    });
+  });
+  if (state.error404Schedule.length) {
+    events.push(`Error 404 armed ${state.error404Schedule.length} Chaos trigger${state.error404Schedule.length === 1 ? "" : "s"} for this round.`);
+  }
+}
+
+function commitScheduledError404Effects() {
+  if (!Array.isArray(state.error404Schedule) || !state.error404Schedule.length) {
+    return;
+  }
+  state.error404Schedule.forEach((schedule) => {
+    if (!schedule || schedule.used || state.timerRemaining > schedule.triggerAt) {
+      return;
+    }
+    schedule.used = true;
+    const result = applyRandomDebuff(schedule.target, "Error 404", { debuffType: "chaos", sourceOwner: schedule.owner });
+    if (result.toLowerCase().includes("blocked")) {
+      queueStatFlash("positive", "Error 404", result, getTargetedFlashOptions(schedule.owner, schedule.target, { complex: true, priority: true }));
+    }
+  });
+}
+
+function getRemovableActiveEffects(owner) {
+  const effects = [];
+  const add = (active, label, remove) => {
+    if (active) {
+      effects.push({ label, remove });
+    }
+  };
+  add(state.permafrostProtection[owner], "Permafrost", () => { state.permafrostProtection[owner] = false; });
+  add(state.eternalFlameProtection[owner], "Eternal Flame", () => { state.eternalFlameProtection[owner] = false; });
+  add((state.pocketShieldCharges[owner] || 0) > 0, "Pocket Shield", () => { state.pocketShieldCharges[owner] = 0; });
+  add((state.streakAnchorCharges[owner] || 0) > 0, "Streak Anchor", () => { state.streakAnchorCharges[owner] = 0; });
+  add((state.freezeProtection[owner] || 0) > 0, "Deep Freeze", () => { state.freezeProtection[owner] = 0; });
+  add((state.streakFreezeRounds[owner] || 0) > 0, "Freeze Ray", () => { state.streakFreezeRounds[owner] = 0; });
+  add((state.debuffShieldCharges[owner] || 0) > 0, "Antivirus", () => { state.debuffShieldCharges[owner] = 0; });
+  add((state.failedInvestmentDebuffs[owner] || false), "Failed Investment", () => { state.failedInvestmentDebuffs[owner] = false; });
+  add((state.timeDilationRounds[owner] || 0) > 0, "Time Dilation", () => { state.timeDilationRounds[owner] = 0; });
+  add((state.streakLossProtectionRounds[owner] || 0) > 0, "Streak Guard", () => { state.streakLossProtectionRounds[owner] = 0; });
+  add((state.cocktailPenaltyRounds[owner] || 0) > 0, "Cocktail Debt", () => { state.cocktailPenaltyRounds[owner] = 0; });
+  add((state.debuffTimeBombs || []).some((bomb) => bomb.owner === owner), "Debuff Time Bomb", () => {
+    state.debuffTimeBombs = (state.debuffTimeBombs || []).filter((bomb) => bomb.owner !== owner);
+  });
+  add((state.pendingStreakBonuses[owner] || 0) > 0, "Rocket Fuel", () => { state.pendingStreakBonuses[owner] = 0; });
+  add((state.pendingPowerBonuses[owner] || 0) > 0, "Pending Bonus", () => { state.pendingPowerBonuses[owner] = 0; });
+  add((state.pendingCocktailBuffs[owner] || 0) > 0, "Overachiever Buff", () => { state.pendingCocktailBuffs[owner] = 0; });
+  add((state.luckRounds[owner] || 0) > 0, "Lucky Side", () => { state.luckRounds[owner] = 0; });
+  add(state.heavenHellCurses[owner], "Heaven/Hell Curse", () => { state.heavenHellCurses[owner] = false; });
+  add((state.bottomFeederRounds[owner] || 0) > 0, "Bottom Feeder", () => { state.bottomFeederRounds[owner] = 0; });
+  add(state.worldBurnOwners[owner], "Let the World Burn", () => { delete state.worldBurnOwners[owner]; });
+  add(state.lawnMowerOwners[owner], "Lawn Mower", () => { delete state.lawnMowerOwners[owner]; });
+  add(state.arsonists[owner], "Arsonist", () => { delete state.arsonists[owner]; });
+  add(state.bartenders[owner], "Bartender", () => { delete state.bartenders[owner]; });
+  add(state.virusFactories[owner], "Virus Factory", () => { delete state.virusFactories[owner]; });
+  add(state.error404Owners[owner], "Error 404", () => {
+    delete state.error404Owners[owner];
+    state.error404Schedule = (state.error404Schedule || []).filter((entry) => entry.owner !== owner);
+  });
+  add(state.typhoonOwners[owner], "Typhoon Season", () => { delete state.typhoonOwners[owner]; });
+  add(state.thornOwners[owner], "Thorns", () => { delete state.thornOwners[owner]; });
+  add(state.hotInHereOwners[owner], "It's Getting Hot", () => { delete state.hotInHereOwners[owner]; });
+  add(state.redHerringMasks[owner], "Red Herring", () => { delete state.redHerringMasks[owner]; });
+  add(state.insurancePolicies[owner], "Insurance", () => { delete state.insurancePolicies[owner]; });
+  add(state.insuranceFrauds[owner], "Insurance Fraud", () => { delete state.insuranceFrauds[owner]; });
+  (state.soulLinks || [])
+    .filter((link) => link.owner === owner || link.targetOwner === owner)
+    .forEach((link) => add(true, "Soul Link", () => {
+      state.soulLinks = (state.soulLinks || []).filter((candidate) => candidate !== link);
+    }));
+  return effects;
+}
+
+function removeRandomActiveEffect(owner) {
+  const effects = getRemovableActiveEffects(owner);
+  if (!effects.length) {
+    return null;
+  }
+  const picked = effects[Math.floor(Math.random() * effects.length)];
+  picked.remove();
+  return picked.label;
+}
+
+function getCardIndexFromOwner(owner) {
+  const roundOwners = getRoundCardOwners();
+  const roundIndex = roundOwners.indexOf(owner);
+  if (roundIndex >= 0) {
+    return roundIndex;
+  }
+  if (isDuelMode()) {
+    return owner === "opponent" ? 1 : 0;
+  }
+
+  if (owner === "bot1") {
+    return 1;
+  }
+
+  return owner === "bot2" ? 2 : 0;
+}
+
+function getForcedWinnerOwner() {
+  const briber = getActiveOwners().find((owner) => getPlayedPowerEntries([owner]).some((entry) => entry.power.type === "bribe_judge"));
+  state.forcedWinnerOwner = briber || null;
+  return state.forcedWinnerOwner;
+}
+
+function grantExtraPowerUseFromBuff(owner) {
+  if (hasPlayedPowerThisRound(owner) && !hasAllOut(owner)) {
+    state.extraPowerUses[owner] = (state.extraPowerUses[owner] || 0) + 1;
+  }
+}
+
+function upgradeRandomPowerRarity(owner) {
+  const hand = state.powerHands[owner] || [];
+  const upgradeable = hand
+    .map((powerId, index) => ({ powerId, index, power: getPowerById(powerId) }))
+    .filter((entry) => entry.power && getRarityRank(entry.power.rarity) >= 0 && getRarityRank(entry.power.rarity) < getRarityRank("gold"));
+
+  if (!upgradeable.length) {
+    setOwnerStreak(owner, getOwnerStreak(owner) + 1);
+    grantExtraPowerUseFromBuff(owner);
+    return "upgrade found no lower-rarity card, gain 1 streak";
+  }
+
+  const chosen = upgradeable[Math.floor(Math.random() * upgradeable.length)];
+  const existing = hand.filter((_, index) => index !== chosen.index);
+  const rarityOrder = ["grey", "blue", "purple", "gold"];
+  const startRank = getRarityRank(chosen.power.rarity);
+  let upgradedPowerId = null;
+  for (let rank = startRank + 1; rank < rarityOrder.length && !upgradedPowerId; rank += 1) {
+    upgradedPowerId = drawPowerByRarity(rarityOrder[rank], existing, getPowerDrawOptions(owner));
+  }
+
+  if (!upgradedPowerId) {
+    setOwnerStreak(owner, getOwnerStreak(owner) + 1);
+    grantExtraPowerUseFromBuff(owner);
+    return "upgrade missed the deck, gain 1 streak";
+  }
+
+  state.powerHands[owner] = hand.map((powerId, index) => index === chosen.index ? upgradedPowerId : powerId);
+  markFreshPowerUps(owner, [upgradedPowerId]);
+  grantExtraPowerUseFromBuff(owner);
+  return `upgrade ${chosen.power.name} into ${getPowerById(upgradedPowerId)?.name || "a rarer power-up"}`;
+}
+
+function refillCocktailPowerSlot(owner) {
+  const hand = state.powerHands[owner] || [];
+  const limit = getPowerHandLimit(owner);
+  if (hand.length < limit) {
+    const powerId = drawPowerCard(hand, getPowerDrawOptions(owner));
+    if (powerId) {
+      state.powerHands[owner] = [...hand, powerId];
+      markFreshPowerUps(owner, [powerId]);
+      grantExtraPowerUseFromBuff(owner);
+      return `refill ${getPowerById(powerId)?.name || "a power-up"} into an empty slot`;
+    }
+  }
+
+  setOwnerStreak(owner, getOwnerStreak(owner) + 1);
+  grantExtraPowerUseFromBuff(owner);
+  return "full hand, gain 1 streak instead";
+}
+
+function applyCocktailBuff(owner) {
+  markAchievementBuffDebuff(owner, "buff");
+  const roll = Math.floor(Math.random() * 8);
+  if (roll === 0) {
+    setOwnerStreak(owner, getOwnerStreak(owner) + 1);
+    return "gain 1 streak";
+  }
+  if (roll === 1) {
+    state.freezeProtection[owner] = Math.max(state.freezeProtection[owner] || 0, 2);
+    queueStatFlash("shield", "Cocktail Mix", "Point Shield Armed", { owners: [owner], complex: true });
+    return "point loss shield for 2 rounds";
+  }
+  if (roll === 2) {
+    state.streakLossProtectionRounds[owner] = Math.max(state.streakLossProtectionRounds[owner] || 0, 2);
+    queueStatFlash("shield", "Cocktail Mix", "Streak Guard Armed", { owners: [owner], complex: true });
+    return "streak loss protection for 2 rounds";
+  }
+  if (roll === 3) {
+    return upgradeRandomPowerRarity(owner);
+  }
+  if (roll === 4) {
+    return refillCocktailPowerSlot(owner);
+  }
+  if (roll === 5) {
+    const percent = getRandomInt(50, 100) / 1000;
+    const amount = Math.floor(Math.max(0, getScore(owner)) * percent);
+    addScore(owner, amount);
+    return `Rich Gets Richer: gain ${amount.toLocaleString()} points (${Math.round(percent * 100)}%)`;
+  }
+  if (roll === 6) {
+    grantTimeDilation(owner);
+    return "Time Dilation: +10 seconds for 3 rounds";
+  }
+  const amount = getRandomInt(300, 500);
+  addScore(owner, amount);
+  return `gain ${amount.toLocaleString()} points`;
+}
+
+function consumeDebuffShield(owner, source = "Debuff") {
+  if ((state.debuffShieldCharges[owner] || 0) <= 0) {
+    return false;
+  }
+
+  state.debuffShieldCharges[owner] = Math.max(0, (state.debuffShieldCharges[owner] || 0) - 1);
+  queueStatFlash("shield", "Antivirus", `Blocked ${source}`, { owners: [owner], complex: true });
+  return true;
+}
+
+function randomChaosText(length = 14) {
+  const characters = "$%^&#@$&*@!?0123456789";
+  return Array.from({ length }, () => characters[Math.floor(Math.random() * characters.length)]).join("");
+}
+
+function isAnswerInputLive() {
+  return !state.matchEnded
+    && !elements.gameStage.classList.contains("hidden")
+    && !elements.inputPanel.classList.contains("hidden")
+    && elements.verdictPanel.classList.contains("hidden")
+    && elements.endPanel.classList.contains("hidden");
+}
+
+function applyChaosDebuff(owner, source = "Chaos", options = {}) {
+  if (owner !== getFocusedOwner() || !isAnswerInputLive()) {
+    queueStatFlash("chaos", source, randomChaosText(16), { owners: [owner], durationMs: 3000, complex: true, sourceOwner: options.sourceOwner });
+    return;
+  }
+
+  const lockId = `${owner}-${Date.now()}-${Math.random()}`;
+  state.chaosInputLockId = lockId;
+  const inputs = [elements.answerInput, elements.playerTwoInput].filter((input) => input && !input.classList.contains("hidden"));
+  const previousDisabled = new Map(inputs.map((input) => [input, input.disabled]));
+  const previousSubmitDisabled = elements.submitButton.disabled;
+  const setChaosAnswerText = (text) => {
+    if (state.chaosInputLockId !== lockId) {
+      return;
+    }
+    inputs.forEach((input) => {
+      input.value = text;
+    });
+  };
+  inputs.forEach((input) => {
+    input.disabled = true;
+  });
+  const initialText = randomChaosText(16);
+  setChaosAnswerText(initialText);
+  elements.submitButton.disabled = true;
+  const startedRound = state.round;
+  queueStatFlash("chaos", source, initialText, {
+    owners: [owner],
+    durationMs: 3000,
+    complex: true,
+    priority: true,
+    flickerText: true,
+    onTextChange: setChaosAnswerText,
+    sourceOwner: options.sourceOwner
+  });
+
+  window.setTimeout(() => {
+    if (state.chaosInputLockId !== lockId || state.round !== startedRound) {
+      return;
+    }
+    state.chaosInputLockId = "";
+    if (isAnswerInputLive()) {
+      inputs.forEach((input) => {
+        input.disabled = Boolean(previousDisabled.get(input));
+      });
+      elements.submitButton.disabled = previousSubmitDisabled || state.timerRemaining <= 0;
+      elements.answerInput.focus();
+    }
+  }, 3000);
+}
+
+function applyRandomDebuff(owner, source = "Debuff", options = {}) {
+  if (!owner) {
+    return "";
+  }
+  if (!options.ignoreShield && consumeDebuffShield(owner, source)) {
+    return `Antivirus blocked ${source}`;
+  }
+  markAchievementBuffDebuff(owner, "debuff");
+
+  if (options.debuffType === "chaos") {
+    applyChaosDebuff(owner, source, options);
+    return "Chaos: answer scrambled for 3 seconds";
+  }
+
+  const roll = Math.floor(Math.random() * 8);
+  if (roll === 0) {
+    state.cocktailPenaltyRounds[owner] = Math.max(state.cocktailPenaltyRounds[owner] || 0, 2);
+    return "Cocktail Debt: lose 2.5% after wrong answers for 2 rounds";
+  }
+  if (roll === 1) {
+    setOwnerStreak(owner, Math.max(0, getOwnerStreak(owner) - 1));
+    return "lose 1 streak";
+  }
+  if (roll === 2) {
+    const loss = Math.floor(Math.max(0, getScore(owner)) * 0.03);
+    const appliedLoss = applyProtectedScoreLoss(owner, loss, source);
+    return appliedLoss > 0 ? `Lose 3%: ${formatSignedStat(-appliedLoss, "Point")}` : "blocked 3% point loss";
+  }
+  if (roll === 3) {
+    const triggerRound = state.round + 3;
+    state.debuffTimeBombs = [...(state.debuffTimeBombs || []), { owner, round: triggerRound }];
+    return "Time Bomb: lose 10% after 3 rounds";
+  }
+  if (roll === 4) {
+    const loss = 200 * getOwnerStreak(owner);
+    const appliedLoss = applyProtectedScoreLoss(owner, loss, source);
+    return appliedLoss > 0 ? `Self Combustion: ${formatSignedStat(-appliedLoss, "Point")}` : "Self Combustion blocked";
+  }
+  if (roll === 5) {
+    state.failedInvestmentDebuffs[owner] = true;
+    return "Failed Investment: next correct payout is 80%";
+  }
+  if (roll === 6) {
+    const added = giveDeadWeightToOwner(owner);
+    return added ? "received Dead Weight" : "Dead Weight had no slot";
+  }
+  applyChaosDebuff(owner, source, options);
+  return "Chaos: answer scrambled for 3 seconds";
+}
+
+function grantTimeDilation(owner) {
+  state.timeDilationRounds[owner] = Math.max(state.timeDilationRounds[owner] || 0, 3);
+  if (owner === getFocusedOwner() && state.timerId && isAnswerInputLive()) {
+    state.timerRemaining = Math.min(99, state.timerRemaining + 10);
+    renderTimer();
+  }
+}
+
+function applyCocktailMix(owner, options = {}) {
+  if (!owner) {
+    return "";
+  }
+  const lucky = (state.luckRounds[owner] || 0) > 0;
+  const isBuff = lucky || options.buffsOnly || (!options.debuffsOnly && Math.random() < 0.75);
+  if (isBuff) {
+    return applyCocktailBuff(owner);
+  }
+
+  return applyRandomDebuff(owner, options.source || "Cocktail Mix", options);
+}
+
+function removeActiveEffectsForOwner(owner) {
+  state.pendingPowerBonuses[owner] = 0;
+  state.freezeProtection[owner] = 0;
+  state.pocketShieldCharges[owner] = 0;
+  state.permafrostProtection[owner] = false;
+  state.eternalFlameProtection[owner] = false;
+  state.streakAnchorCharges[owner] = 0;
+  state.pendingStreakBonuses[owner] = 0;
+  state.heavenHellCurses[owner] = false;
+  state.secretPointBonuses[owner] = 0;
+  state.fakePointDebts[owner] = 0;
+  delete state.redHerringMasks[owner];
+  state.bottomFeederRounds[owner] = 0;
+  state.streakFreezeRounds[owner] = 0;
+  state.streakLossProtectionRounds[owner] = 0;
+  state.cocktailPenaltyRounds[owner] = 0;
+  state.debuffShieldCharges[owner] = 0;
+  state.failedInvestmentDebuffs[owner] = false;
+  state.timeDilationRounds[owner] = 0;
+  state.pendingCocktailBuffs[owner] = 0;
+  delete state.insuranceFrauds[owner];
+  delete state.insurancePolicies[owner];
+  delete state.virusFactories[owner];
+  delete state.error404Owners[owner];
+  state.luckRounds[owner] = 0;
+  delete state.typhoonOwners[owner];
+  delete state.thornOwners[owner];
+  delete state.allOutRounds[owner];
+  delete state.arsonists[owner];
+  delete state.bartenders[owner];
+  delete state.hotInHereOwners[owner];
+  delete state.worldBurnOwners[owner];
+  delete state.lawnMowerOwners[owner];
+  state.timeBombs = state.timeBombs.filter((bomb) => bomb.owner !== owner);
+  state.debuffTimeBombs = (state.debuffTimeBombs || []).filter((bomb) => bomb.owner !== owner);
+  state.error404Schedule = (state.error404Schedule || []).filter((entry) => entry.owner !== owner && entry.target !== owner);
+  state.pendingDeadWeights = state.pendingDeadWeights.filter((transfer) => transfer.owner !== owner);
+  state.soulLinks = (state.soulLinks || []).filter((link) => link.owner !== owner && link.targetOwner !== owner);
+}
+
+function playRolledPower(owner, picked, sourcePower) {
+  if (!owner || !picked) {
+    return false;
+  }
+
+  if (picked.type === "ai_answer") {
+    const answer = generateAutoAnswer(owner);
+    if (owner === getCurrentPowerOwner() && !elements.inputPanel.classList.contains("hidden")) {
+      elements.answerInput.value = answer;
+      elements.answerInput.focus();
+    }
+    lockRoundAnswer(owner, answer);
+    recordPlayedPower(owner, picked.id, { remainingTime: state.timerRemaining, originalPowerId: sourcePower.id, diceRoll: true });
+    return true;
+  }
+
+  if (picked.targeted) {
+    if (picked.type === "next_question") {
+      const themes = getEnabledTriviaThemes();
+      consumeImmediatePower(owner, picked, {
+        selectedTheme: themes[Math.floor(Math.random() * themes.length)],
+        originalPowerId: sourcePower.id,
+        diceRoll: true
+      });
+      return true;
+    }
+    const targetOwner = chooseTargetOwner(owner, picked) || getTargetCandidates(owner, picked)[0];
+    if (!targetOwner) {
+      return false;
+    }
+    if (picked.type === "streak_bonus") {
+      return activateStreakInjector(owner, picked, picked.id, targetOwner);
+    }
+    if (picked.immediate) {
+      consumeImmediatePower(owner, picked, { targetOwner, originalPowerId: sourcePower.id, diceRoll: true });
+      return true;
+    }
+    recordPlayedPower(owner, picked.id, { remainingTime: state.timerRemaining, targetOwner, originalPowerId: sourcePower.id, diceRoll: true });
+    return true;
+  }
+
+  if (picked.immediate) {
+    consumeImmediatePower(owner, picked, { originalPowerId: sourcePower.id, diceRoll: true });
+    return true;
+  }
+
+  recordPlayedPower(owner, picked.id, { remainingTime: state.timerRemaining, originalPowerId: sourcePower.id, diceRoll: true });
+  return true;
+}
+
+function playRandomPowerFromDeck(owner, sourcePower, usedPowerIds = new Set()) {
+  const options = powerDeck
+    .filter((power) => power.id !== sourcePower.id && power.type !== "gamblers_dice" && !usedPowerIds.has(power.id))
+    .filter((power) => isPowerUsable(power, owner));
+  if (!options.length) {
+    return null;
+  }
+  const picked = options[Math.floor(Math.random() * options.length)];
+  usedPowerIds.add(picked.id);
+  return playRolledPower(owner, picked, sourcePower) ? picked : null;
+}
+
+function playGamblersDiceRolls(owner, sourcePower) {
+  const usedPowerIds = new Set();
+  state.extraPowerUses[owner] = (state.extraPowerUses[owner] || 0) + 2;
+  const rolledPowers = [];
+  for (let roll = 0; roll < 2; roll += 1) {
+    const picked = playRandomPowerFromDeck(owner, sourcePower, usedPowerIds);
+    if (picked) {
+      rolledPowers.push(picked);
+    }
+  }
+  const played = rolledPowers.length;
+  state.extraPowerUses[owner] = Math.max(0, (state.extraPowerUses[owner] || 0) - Math.max(0, 2 - played));
+  queueStatFlash(
+    played ? "mixed" : "negative",
+    sourcePower.name,
+    played ? rolledPowers.map((power) => power.name) : "No usable powers rolled",
+    { owners: [owner], priority: !sourcePower.tableEvent, complex: true, soundName: sourcePower.tableEvent ? "" : undefined }
+  );
+  return played;
+}
+
+function isRefreshRefillPower(power) {
+  return ["shuffle", "premium_shuffle", "vending_machine", "hoarder", "afterparty", "recycle_bin", "mirror"].includes(power?.type);
+}
+
+function getDisplayedPowerDescription(power, owner = getCurrentPowerOwner()) {
+  if (!power) {
+    return "";
+  }
+
+  let description = power.description;
+  if (isMatchModifierEnabled("chaos") && isRefreshRefillPower(power)) {
+    description = description
+      .replace(/\s*You cannot use another power this round\./i, "")
+      .replace(/\s*The new cards cannot be used this round\./i, "");
+  }
+  if (power.type === "vending_machine" && owner) {
+    description = `${description} Current cost: ${getVendingMachineRefillCost(owner).toLocaleString()} points.`;
+  }
+  if (power.type === "recycle_bin" && owner && !state.lastPlayedPowerUps[owner]) {
+    description = `${description} You need to have used a power-up earlier in this match.`;
+  }
+  return description.trim();
+}
+
+function consumeImmediatePower(owner, power, meta = {}) {
+  const chaosFollowUp = isMatchModifierEnabled("chaos") && isRefreshRefillPower(power);
+  const strikeResolvedImmediately = power.type === "lightning_strike" || power.type === "zap_strike";
+  const allowsFollowUp = power.type === "premium_shuffle" || power.type === "hoarder" || power.type === "all_out" || chaosFollowUp;
+  const recordMeta = {
+    immediateResolved: strikeResolvedImmediately,
+    ...meta
+  };
+  if (!allowsFollowUp) {
+    recordPlayedPower(owner, power.id, {
+      remainingTime: state.timerRemaining,
+      originalPowerId: power.id,
+      skipLastPower: power.type === "recycle_bin",
+      ...recordMeta
+    });
+  } else {
+    recordPlayedPower(owner, power.id, {
+      remainingTime: state.timerRemaining,
+      originalPowerId: power.id,
+      hoarderShield: power.type === "hoarder" || Boolean(state.playedPowerMeta[owner]?.hoarderShield),
+      skipLastPower: power.type === "all_out" || power.type === "recycle_bin",
+      grantsExtraPower: power.type === "premium_shuffle" || power.type === "hoarder" || chaosFollowUp,
+      ...recordMeta
+    });
+    if (power.type === "premium_shuffle" || power.type === "hoarder" || chaosFollowUp) {
+      state.extraPowerUses[owner] = (state.extraPowerUses[owner] || 0) + 1;
+    }
+  }
+  state.powerHands[owner] = state.powerHands[owner].filter((id) => id !== power.id);
+  if (!allowsFollowUp && !hasAllOut(owner)) {
+    clearSelectedPowerUps(owner);
+  } else {
+    state.activePowerUp = null;
+  }
+
+  if (power.type === "next_question") {
+    const theme = meta.selectedTheme || getEnabledTriviaThemes()[0];
+    state.nextPreferredTheme = theme;
+    state.nextSetup = null;
+    state.nextSetupPromise = null;
+  }
+
+  if (power.type === "ability_merchant") {
+    const rarity = meta.selectedRarity || "grey";
+    buyMerchantPower(owner, rarity);
+    renderScore();
+  }
+
+  if (strikeResolvedImmediately) {
+    const appliedLoss = activateImmediateZapStrike(owner, power, meta);
+    state.playedPowerMeta[owner] = {
+      ...(state.playedPowerMeta[owner] || {}),
+      appliedLoss,
+      immediateResolved: true
+    };
+    renderScore();
+  }
+
+  if (power.type === "sin_sloth") {
+    const cap = getOwnerStreak(owner);
+    let changed = 0;
+    getActiveOwners()
+      .filter((participant) => participant !== owner && getOwnerStreak(participant) > cap)
+      .forEach((participant) => {
+        setOwnerStreak(participant, cap, { force: true });
+        changed += 1;
+      });
+    queueStatFlash(changed ? "negative" : "mixed", power.name, changed ? `${changed} Streak${changed === 1 ? "" : "s"} Capped` : "No Higher Streaks", { owners: getActiveOwners(), complex: true });
+    renderScore();
+  }
+
+  if (power.type === "crawler_virus") {
+    armCrawlerVirus(owner);
+  }
+
+  if (power.type === "antivirus") {
+    state.debuffShieldCharges[owner] = (state.debuffShieldCharges[owner] || 0) + 1;
+    queueStatFlash("shield", power.name, "Debuff Shield Armed", { owners: [owner], complex: true });
+    renderScore();
+  }
+
+  if (power.type === "virus_deployment") {
+    const target = meta.targetOwner;
+    const result = applyRandomDebuff(target, power.name, { debuffType: "chaos", sourceOwner: owner });
+    if (result && result.toLowerCase().includes("blocked")) {
+      queueStatFlash("positive", power.name, result, getTargetedFlashOptions(owner, target, { complex: true }));
+    }
+    renderScore();
+  }
+
+  if (power.type === "curse") {
+    const target = meta.targetOwner;
+    const result = applyRandomDebuff(target, power.name, { sourceOwner: owner });
+    queueStatFlash(getCocktailFlashKind(result), power.name, result, getTargetedFlashOptions(owner, target, { complex: true }));
+    renderScore();
+  }
+
+  if (power.type === "get_good") {
+    const target = meta.targetOwner;
+    if (target && getActiveOwners().includes(target)) {
+      const wrongCount = getWrongAnswerCount(target);
+      const amount = Math.floor(Math.max(0, getScore(target)) * 0.03 * wrongCount);
+      const appliedLoss = applyProtectedScoreLoss(target, amount, power.name);
+      state.playedPowerMeta[owner] = {
+        ...(state.playedPowerMeta[owner] || {}),
+        targetOwner: target,
+        wrongCount,
+        appliedLoss
+      };
+      queueStatFlash(
+        appliedLoss > 0 ? "negative" : "mixed",
+        power.name,
+        wrongCount > 0 ? [`${wrongCount} Wrong`, formatSignedStat(-appliedLoss, "Point")] : "No Wrong Answers",
+        getTargetedFlashOptions(owner, target, { complex: true })
+      );
+      renderScore();
+    }
+  }
+
+  if (power.type === "all_out") {
+    state.allOutRounds[owner] = state.round;
+  }
+
+  if (power.type === "sin_pride") {
+    addScore(owner, 250);
+    setOwnerStreak(owner, getOwnerStreak(owner) + 1);
+    queueStatFlash("positive", power.name, ["+250 Points", "+1 Streak"], { owners: [owner] });
+    renderScore();
+  }
+
+  if (power.type === "recycle_bin") {
+    const restoredPowerId = state.lastPlayedPowerUps[owner];
+    const restoredPower = getPowerById(restoredPowerId);
+    const hand = state.powerHands[owner] || [];
+    if (restoredPower && restoredPower.type !== "recycle_bin" && hand.length < getPowerHandLimit(owner)) {
+      const receivedPowerId = (state.luckRounds[owner] || 0) > 0 && getRarityRank(restoredPower.rarity) < getRarityRank("blue")
+        ? drawPowerByRarity("blue", hand, getPowerDrawOptions(owner)) || restoredPower.id
+        : restoredPower.id;
+      state.powerHands[owner] = [...hand, receivedPowerId];
+      markFreshPowerUps(owner, [receivedPowerId]);
+    }
+  }
+
+  if (power.type === "cocktail_mix") {
+    const result = applyCocktailMix(owner);
+    queueStatFlash(getCocktailFlashKind(result), power.name, result, { owners: [owner], complex: true });
+    renderScore();
+  }
+
+  if (power.type === "afterparty") {
+    addScore(owner, 250);
+    refillPowerSlot(owner, "from Afterparty");
+    queueStatFlash("positive", power.name, ["+250 Points", "Power Refilled"], { owners: [owner] });
+    renderScore();
+  }
+
+  if (power.type === "multiple_choice") {
+    const chosenAnswer = meta.chosenAnswer || getMultipleChoiceAnswers()[0];
+    if (getPlayer(owner)?.type === "bot") {
+      lockRoundAnswer(owner, chosenAnswer);
+    }
+    queueStatFlash("positive", power.name, chosenAnswer, { owners: [owner], complex: true });
+  }
+
+  if (power.type === "xray_hacks") {
+    const target = meta.targetOwner;
+    const revealed = meta.revealedPowers || (state.powerHands[target] || []).map((id) => getPowerById(id)?.name).filter(Boolean);
+    delete state.allOutRounds[owner];
+    state.extraPowerUses[owner] = 0;
+    state.playedPowerMeta[owner] = {
+      ...(state.playedPowerMeta[owner] || {}),
+      targetOwner: target,
+      revealedPowers: revealed
+    };
+    if (getPlayer(owner)?.type === "bot") {
+      queueStatFlash("positive", power.name, revealed.length ? revealed : "No power-ups", { owners: [owner], complex: true });
+    }
+  }
+
+  if (power.type === "software_downgrade") {
+    const target = meta.targetOwner;
+    const deletedPower = target ? deleteHighestRarityPower(target) : null;
+    state.playedPowerMeta[owner] = {
+      ...(state.playedPowerMeta[owner] || {}),
+      targetOwner: target,
+      deletedPowerId: deletedPower?.id || "",
+      deletedRarity: deletedPower?.rarity || ""
+    };
+    queueStatFlash(
+      deletedPower ? "negative" : "mixed",
+      power.name,
+      deletedPower ? `${deletedPower.name} (${rarityInfo[deletedPower.rarity].label})` : "No power-up deleted",
+      { owners: [owner], complex: true }
+    );
+    if (target) {
+      queueStatFlash(
+        deletedPower ? "negative" : "mixed",
+        power.name,
+        deletedPower ? `${deletedPower.name} Deleted` : "No power-up deleted",
+        getTargetedFlashOptions(owner, target, { complex: true })
+      );
+    }
+    renderPowerUps();
+  }
+
+  if (power.type === "lucky_side") {
+    state.luckRounds[owner] = Math.max(state.luckRounds[owner] || 0, 3);
+    queueStatFlash("positive", power.name, "3 Rounds of Buff Luck", { owners: [owner], complex: true });
+    renderScore();
+  }
+
+  if (power.type === "blue_pill") {
+    const results = [];
+    for (let index = 0; index < 3; index += 1) {
+      results.push(applyCocktailMix(owner, { buffsOnly: true }));
+    }
+    queueStatFlash("positive", power.name, results, { owners: [owner], complex: true });
+    renderScore();
+  }
+
+  if (power.type === "insurance") {
+    armInsurancePolicy(owner, power);
+    renderScore();
+  }
+
+  if (power.type === "power_heist") {
+    const target = meta.targetOwner;
+    const targetHand = [...(state.powerHands[target] || [])];
+    if (target && targetHand.length) {
+      const stolenIndex = Math.floor(Math.random() * targetHand.length);
+      const [stolenPowerId] = targetHand.splice(stolenIndex, 1);
+      const stolenPower = getPowerById(stolenPowerId);
+      const receivedPowerId = (state.luckRounds[owner] || 0) > 0 && stolenPower && getRarityRank(stolenPower.rarity) < getRarityRank("blue")
+        ? drawPowerByRarity("blue", state.powerHands[owner] || [], getPowerDrawOptions(owner)) || stolenPowerId
+        : stolenPowerId;
+      state.powerHands[target] = targetHand;
+      state.powerHands[owner] = [...(state.powerHands[owner] || []), receivedPowerId].slice(0, getPowerHandLimit(owner));
+      markFreshPowerUps(owner, [receivedPowerId]);
+      state.playedPowerMeta[owner] = {
+        ...(state.playedPowerMeta[owner] || {}),
+        targetOwner: target,
+        stolenPowerId: receivedPowerId
+      };
+      queueStatFlash(
+        "negative",
+        power.name,
+        `${stolenPower?.name || "Power-up"} Stolen`,
+        getTargetedFlashOptions(owner, target, { complex: true })
+      );
+    }
+  }
+
+  if (power.type === "time_bender") {
+    const otherPlayerCount = Math.max(1, getActiveOwners().length - 1);
+    state.timerRemaining = Math.min(99, state.timerRemaining + (10 * otherPlayerCount));
+    if (isDuelMode()) {
+      getActiveOwners()
+        .filter((participant) => participant !== owner)
+        .forEach((participant) => {
+          state.timerPenalties[participant] = (state.timerPenalties[participant] || 0) + 10;
+        });
+    }
+    renderTimer();
+  }
+
+  if (power.type === "shuffle") {
+    rerollPowerHand(owner, state.powerHands[owner].length, { excludeImmediate: true });
+  }
+
+  if (power.type === "premium_shuffle") {
+    rerollPowerHand(owner, state.powerHands[owner].length, { excludeImmediate: true });
+  }
+
+  if (power.type === "vending_machine") {
+    const limit = getPowerHandLimit(owner);
+    const hand = state.powerHands[owner] || [];
+    const emptySlots = Math.max(0, limit - hand.length);
+    const refillCost = getVendingMachineRefillCost(owner);
+    const refill = [];
+    for (let index = 0; index < emptySlots; index += 1) {
+      const powerId = drawPowerCard([...hand, ...refill], getPowerDrawOptions(owner));
+      if (powerId) {
+        refill.push(powerId);
+      }
+    }
+    state.powerHands[owner] = [...hand, ...refill];
+    markFreshPowerUps(owner, refill);
+    const appliedCost = applyProtectedScoreLoss(owner, refillCost, power.name);
+    if (refillCost > 0) {
+      markAchievementShopPurchase(owner, refillCost);
+    }
+    if (refillCost > 0) {
+      queueStatFlash("mixed", power.name, [
+        appliedCost > 0 ? formatSignedStat(-appliedCost, "Point") : "Cost Blocked",
+        `+${refill.length} Power-up${refill.length === 1 ? "" : "s"}`
+      ], { owners: [owner], complex: appliedCost === 0 });
+    }
+    renderScore();
+  }
+
+  if (power.type === "mirror") {
+    const hand = state.powerHands[owner] || [];
+    const highest = hand
+      .map((powerId) => getPowerById(powerId))
+      .filter(Boolean)
+      .sort((a, b) => getRarityRank(b.rarity) - getRarityRank(a.rarity))[0];
+    const copied = drawPowerByRarity(highest?.rarity || "grey", hand, getPowerDrawOptions(owner));
+    if (copied) {
+      state.powerHands[owner] = [...hand, copied].slice(0, getPowerHandLimit(owner));
+      markFreshPowerUps(owner, [copied]);
+    }
+  }
+
+  if (power.type === "hoarder") {
+    const limit = getPowerHandLimit(owner);
+    const hand = [];
+    for (let index = 0; index < limit; index += 1) {
+      const rarityPool = ["blue", "purple", "gold"];
+      const rarity = rarityPool[Math.floor(Math.random() * rarityPool.length)];
+      const powerId = drawPowerByRarity(rarity, hand, getPowerDrawOptions(owner));
+      if (powerId) {
+        hand.push(powerId);
+      }
+    }
+    state.powerHands[owner] = hand;
+    markFreshPowerUps(owner, hand);
+  }
+
+  if (power.type === "gamblers_dream") {
+    getActiveOwners().forEach((participant) => {
+      setOwnerStreak(participant, getOwnerStreak(participant) + 2);
+    });
+    queueStatFlash("positive", power.name, "+2 Streaks", { owners: getActiveOwners() });
+    renderScore();
+  }
+
+  if (power.type === "hard_reset") {
+    getActiveOwners().forEach((participant) => {
+      if (!state.eternalFlameProtection[participant]) {
+        setOwnerStreak(participant, 0);
+      }
+    });
+    queueStatFlash("negative", power.name, "Streaks Reset", { owners: getActiveOwners() });
+    renderScore();
+  }
+
+  if (power.type === "dead_weight") {
+    const target = passDeadWeight(owner);
+    if (target === getCurrentPowerOwner()) {
+      renderPowerUps();
+    }
+  }
+
+  if (power.type === "gamblers_dice") {
+    playGamblersDiceRolls(owner, power);
+  }
+
+  if (power.type === "airdrop") {
+    const target = meta.targetOwner || owner;
+    addScore(target, 500);
+    if (target !== owner) {
+      markAchievementPointGift(owner, 500);
+    }
+    const result = applyCocktailMix(target, { buffsOnly: true });
+    queueStatFlash(
+      "positive",
+      power.name,
+      ["+500 Points", result || "Buff Applied"],
+      target === owner ? { owners: [target], complex: true } : getTargetedFlashOptions(owner, target, { complex: true })
+    );
+    renderScore();
+  }
+
+  if (power.type === "shameless") {
+    const target = meta.targetOwner;
+    if (target && target !== owner && getActiveOwners().includes(target)) {
+      const amount = Math.floor(getScore(target) * 0.05);
+      const stolenAmount = applyProtectedScoreLoss(target, amount, power.name);
+      addScore(owner, stolenAmount);
+      markAchievementPointSteal(owner, stolenAmount);
+      state.playedPowerMeta[owner] = {
+        ...(state.playedPowerMeta[owner] || {}),
+        targetOwner: target,
+        stolenAmount
+      };
+      if (stolenAmount > 0) {
+        queueStatFlash("positive", power.name, formatSignedStat(stolenAmount, "Point"), { owners: [owner] });
+        queueStatFlash("negative", power.name, formatSignedStat(-stolenAmount, "Point"), getTargetedFlashOptions(owner, target));
+      }
+      renderScore();
+    }
+  }
+
+  renderPowerUps();
+  if (!meta.suppressSound) {
+    playSound(power.type === "shuffle" || power.type === "premium_shuffle" || power.type === "mirror" || power.type === "hoarder" || power.type === "recycle_bin" ? "reveal" : "click");
+  }
+}
+
+function refillPowerSlot(owner, reason) {
+  if (state.round >= state.maxRounds) {
+    return null;
+  }
+
+  const hand = state.powerHands[owner] || [];
+  const limit = getPowerHandLimit(owner);
+  if (limit <= 0 || hand.length >= limit) {
+    return null;
+  }
+
+  const powerId = drawPowerCard(hand, getPowerDrawOptions(owner));
+  if (!powerId) {
+    return null;
+  }
+
+  state.powerHands[owner] = [...hand, powerId];
+  markFreshPowerUps(owner, [powerId]);
+  return `${getOwnerLabel(owner)} refilled 1 power-up slot ${reason}.`;
+}
+
+function replenishPowerSlotsForOwners(owners, reason) {
+  return owners
+    .map((owner) => refillPowerSlot(owner, reason))
+    .filter(Boolean);
+}
+
+function replenishLosingPowerSlots(winningOwners) {
+  const winnerSet = new Set(Array.isArray(winningOwners) ? winningOwners : [winningOwners]);
+  return replenishPowerSlotsForOwners(
+    getActiveOwners().filter((owner) => !winnerSet.has(owner)),
+    "after getting the answer wrong"
+  );
+}
+
+function setupPowerHands() {
+  if (isRoomMode()) {
+    state.powerHands = Object.fromEntries(getActiveOwners().map((owner) => [
+      owner,
+      getPowerHandLimit(owner) > 0 ? drawPowerHand(getPowerHandLimit(owner), getPowerDrawOptions(owner)) : []
+    ]));
+  } else {
+    state.powerHands = isDuelMode()
+    ? {
+      player: drawPowerHand(3),
+      opponent: drawPowerHand(3),
+      bot1: [],
+      bot2: []
+    }
+    : {
+      player: drawPowerHand(3),
+      opponent: [],
+      bot1: drawPowerHand(2, getPowerDrawOptions("bot1")),
+      bot2: drawPowerHand(2, getPowerDrawOptions("bot2"))
+    };
+  }
+  state.activePowerUp = null;
+  resetPlayedPowersForRound();
+}
+
+function applyRoomRoundStartModifiers() {
+  if (!isMatchModifierEnabled("chaos")) {
+    return;
+  }
+
+  const owners = getActiveOwners();
+  owners.forEach((owner) => {
+    rerollPowerHand(owner, getPowerHandLimit(owner));
+  });
+  queueStatFlash("chaos", "Chaos Mode", "All Power-Ups\nRefreshed + Refilled", {
+    owners,
+    complex: true,
+    priority: true,
+    durationMs: 2400
+  });
+}
+
+function renderPowerUps() {
+  const owner = getCurrentPowerOwner();
+  const hand = state.powerHands[owner] || [];
+  const freshIds = [...(state.freshPowerUps[owner] || [])];
+  const powersBlocked = isClassicModeEnabled() || isTableEventActive("power_outage");
+  const label = isDuelMode() ? `${getOwnerLabel(owner)} power-ups` : "Your power-ups";
+  const hint = powersBlocked
+    ? isClassicModeEnabled() ? "Disabled in Classic." : "Power Outage this round."
+    : isTableEventActive("black_market") ? "Black Market: unlimited use." : "Pick one before locking in.";
+
+  elements.powerPanel.replaceChildren();
+  const header = document.createElement("div");
+  header.className = "power-panel-header";
+  header.innerHTML = `<span>${label}</span><strong>${hint}</strong>`;
+  elements.powerPanel.appendChild(header);
+
+  if (powersBlocked) {
+    const empty = document.createElement("p");
+    empty.className = "power-empty";
+    empty.textContent = hint;
+    elements.powerPanel.appendChild(empty);
+    return;
+  }
+
+  if (!hand.length) {
+    const empty = document.createElement("p");
+    empty.className = "power-empty";
+    empty.textContent = "No power-ups left.";
+    elements.powerPanel.appendChild(empty);
+    return;
+  }
+
+  hand.forEach((powerId) => {
+    const power = getPowerById(powerId);
+    if (!power) {
+      return;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "power-card";
+    button.dataset.power = power.id;
+    button.dataset.rarity = power.rarity;
+    const description = getDisplayedPowerDescription(power, owner);
+    const hasUseAvailable = canPlayPower(owner);
+    const usable = hasUseAvailable && isPowerUsable(power, owner);
+    button.dataset.usable = String(usable);
+    const unavailableReason = hasUseAvailable ? "Not usable right now" : "Power already used this round";
+    button.dataset.description = `${rarityInfo[power.rarity].label}: ${description}${usable ? "" : ` (${unavailableReason})`}`;
+    const selected = isPowerSelected(owner, power.id);
+    button.setAttribute("aria-pressed", String(selected));
+    button.setAttribute("aria-disabled", String(!usable));
+    button.setAttribute("aria-label", `${power.name}. ${button.dataset.description}`);
+    button.classList.toggle("selected", selected);
+    button.classList.toggle("unusable", !usable);
+    const freshIndex = freshIds.indexOf(power.id);
+    if (freshIndex >= 0) {
+      freshIds.splice(freshIndex, 1);
+      button.classList.add("fresh-power");
+    }
+    button.innerHTML = `<span>${power.name}</span><strong>${power.short}</strong><small>${rarityInfo[power.rarity].label}</small>`;
+    attachFloatingDescriptionTooltip(button);
+    elements.powerPanel.appendChild(button);
+  });
+  state.freshPowerUps[owner] = freshIds;
+}
+
+function selectPowerUp(powerId) {
+  const owner = getCurrentPowerOwner();
+  const power = getPowerById(powerId);
+  if (state.chaosInputLockId && owner === getFocusedOwner()) {
+    return;
+  }
+  if (!canPlayPower(owner)) {
+    return;
+  }
+
+  if (!state.powerHands[owner].includes(powerId) || !power || !isPowerUsable(power, owner)) {
+    return;
+  }
+
+  if (power.type === "ai_answer") {
+    elements.answerInput.value = generateAutoAnswer(owner);
+    elements.answerInput.focus();
+    consumeImmediatePower(owner, power);
+    playSound("reveal");
+    return;
+  }
+
+  if (power.type === "next_question") {
+    if (getPlayer(owner)?.type === "bot") {
+      const themes = getEnabledTriviaThemes();
+      consumeImmediatePower(owner, power, { selectedTheme: themes[Math.floor(Math.random() * themes.length)] });
+      return;
+    }
+    openThemePowerSelector(owner, power, powerId);
+    return;
+  }
+
+  if (power.type === "ability_merchant") {
+    if (getPlayer(owner)?.type === "bot") {
+      consumeImmediatePower(owner, power, { selectedRarity: getScore(owner) > 2500 ? "blue" : "grey" });
+      return;
+    }
+    openMerchantSelector(owner, power, powerId);
+    return;
+  }
+
+  if (power.type === "multiple_choice") {
+    if (getPlayer(owner)?.type === "bot") {
+      consumeImmediatePower(owner, power, { chosenAnswer: getMultipleChoiceAnswers()[0] });
+      return;
+    }
+    openMultipleChoiceSelector(owner, power, powerId);
+    return;
+  }
+
+  if (power.targeted) {
+    const targetOwner = chooseTargetOwner(owner, power);
+    if (!targetOwner && getPlayer(owner)?.type !== "bot") {
+      openTargetSelector(owner, power, powerId);
+      return;
+    }
+    if (!targetOwner) {
+      return;
+    }
+    if (power.immediate) {
+      consumeImmediatePower(owner, power, { targetOwner });
+      return;
+    }
+    updateSelectedPowerUp(owner, powerId, { targetOwner }, { forceSelect: true });
+    renderPowerUps();
+    playSound("click");
+    return;
+  }
+
+  if (power.immediate) {
+    consumeImmediatePower(owner, power);
+    return;
+  }
+
+  updateSelectedPowerUp(owner, powerId);
+  renderPowerUps();
+  playSound("click");
+}
+
+function isPowerUsable(power, owner) {
+  if (!power) {
+    return false;
+  }
+
+  if (power.type === "last_chance") {
+    return state.round === state.maxRounds && isLastPlace(owner);
+  }
+
+  if (power.type === "robin_hood" || power.type === "tax_collector" || power.type === "hitman") {
+    return !isFirstPlace(owner);
+  }
+
+  if (power.type === "bribe_judge") {
+    return getScore(owner) >= 1000;
+  }
+
+  if (power.type === "ability_merchant") {
+    return getScore(owner) >= getMerchantCost(owner, "grey");
+  }
+
+  if (power.type === "recycle_bin") {
+    const copied = getPowerById(state.lastPlayedPowerUps[owner]);
+    return Boolean(copied && copied.type !== "recycle_bin");
+  }
+
+  if (power.type === "vending_machine") {
+    return getScore(owner) >= getVendingMachineRefillCost(owner);
+  }
+
+  if (power.type === "streak_bonus") {
+    return getTargetCandidates(owner, power).length > 0;
+  }
+
+  if (power.type === "sin_pride") {
+    return isFirstPlace(owner);
+  }
+
+  if (power.type === "afterparty") {
+    return didOwnerWinLastRound(owner);
+  }
+
+  if (power.type === "lucky_side") {
+    return didOwnerLoseLastRound(owner);
+  }
+
+  if (power.type === "power_heist") {
+    return getTargetCandidates(owner, power).length > 0;
+  }
+
+  if (power.type === "software_downgrade"
+    || power.type === "xray_hacks"
+    || power.type === "lawsuit"
+    || power.type === "virus_deployment"
+    || power.type === "curse"
+    || power.type === "get_good") {
+    return getTargetCandidates(owner, power).length > 0;
+  }
+
+  if (power.type === "lightning_strike" || power.type === "zap_strike") {
+    return getTargetCandidates(owner, power).length > 0;
+  }
+
+  return true;
+}
+
+function commitActivePowerUp(owner = getCurrentPowerOwner()) {
+  if (!canPlayPower(owner)) {
+    clearSelectedPowerUps(owner);
+    renderPowerUps();
+    return;
+  }
+
+  const selectedPowerIds = getSelectedPowerIds(owner);
+  selectedPowerIds.forEach((powerId) => {
+    if (!canPlayPower(owner)) {
+      return;
+    }
+
+    const power = getPowerById(powerId);
+    if (!state.powerHands[owner].includes(powerId) || !isPowerUsable(power, owner)) {
+      return;
+    }
+
+    recordPlayedPower(owner, powerId, {
+      ...(state.selectedPowerMeta[owner]?.[powerId] || {}),
+      remainingTime: state.timerRemaining,
+      originalPowerId: powerId
+    });
+    state.powerHands[owner] = state.powerHands[owner].filter((handPowerId) => handPowerId !== powerId);
+  });
+  clearSelectedPowerUps(owner);
+  renderPowerUps();
+}
+
+function getBotPowerChoiceScore(owner, power) {
+  if (!power || !isPowerUsable(power, owner)) {
+    return -Infinity;
+  }
+
+  const score = getScore(owner);
+  const leaders = getLeaders();
+  const leaderScore = Math.max(...getActiveOwners().map((participant) => getScore(participant)));
+  const behindBy = leaderScore - score;
+  const isBehind = behindBy > 0;
+  const isLast = isLastPlace(owner);
+  const streak = getOwnerStreak(owner);
+  const lateRound = state.round >= Math.max(1, state.maxRounds - 1);
+  let value = Math.random() * 8;
+
+  if (power.type === "bounty") value += 25 + ((power.percent || 0) * Math.max(500, getScore(owner)) / 80);
+  if (power.type === "speed_answer") value += state.timerRemaining > 12 ? 28 : 8;
+  if (power.type === "bribe_judge") value += isBehind || lateRound ? 88 : 18;
+  if (power.type === "reverse") value += isLast || behindBy > 1500 ? 76 : 15;
+  if (power.type === "hitman") value += isBehind ? 92 + Math.min(35, behindBy / 120) : 5;
+  if (power.type === "robin_hood" || power.type === "tax_collector") value += isBehind ? 70 : 12;
+  if (power.type === "world_burn" || power.type === "loose_cannon" || power.type === "sin_envy") value += isBehind ? 58 : 18;
+  if (power.type === "shameless" || power.type === "magic_8") value += isBehind ? 42 : 18;
+  if (power.type === "sin_gluttony") value += streak > 0 ? 38 + (streak * 8) : 4;
+  if (power.type === "sin_pride") value += leaders.includes(owner) ? 52 : 5;
+  if (power.type === "sin_wrath") value += isBehind ? 46 : 24;
+  if (power.type === "zap_strike") value += getActiveOwners().some((participant) => participant !== owner && getOwnerStreak(participant) > 0) ? 40 : 8;
+  if (power.type === "lightning_strike") value += getActiveOwners().some((participant) => participant !== owner && getOwnerStreak(participant) > 1) ? 64 : 10;
+  if (power.type === "streak_retainer") value += streak > 1 ? 82 : 20;
+  if (power.type === "streak_bonus") {
+    const bestTargetStreak = Math.max(0, ...getTargetCandidates(owner, power).map((participant) => getOwnerStreak(participant)));
+    value += bestTargetStreak > 0 ? 46 + (bestTargetStreak * 12) : 0;
+  }
+  if (power.type === "gamblers_dream") value += streak === 0 ? 42 : 18;
+  if (power.type === "rocket") value += state.round < state.maxRounds ? 46 : 0;
+  if (power.type === "hard_reset") value += getActiveOwners().some((participant) => participant !== owner && getOwnerStreak(participant) > streak) ? 62 : 6;
+  if (power.type === "eternal_flame") value += streak > 0 ? 78 : 35;
+  if (power.type === "shield" || power.type === "deep_freeze" || power.type === "permafrost") value += isBehind ? 22 : 38;
+  if (power.type === "last_chance") value += state.round === state.maxRounds && isLast ? 96 : 0;
+  if (power.type === "bottom_feeder" || power.type === "insurance" || power.type === "participation") value += isBehind ? 42 : 18;
+  if (power.type === "double_jeopardy") value += isBehind ? 46 : 24;
+  if (power.type === "heaven_hell") value += isBehind || streak > 0 ? 52 : 22;
+  if (power.type === "red_herring") value += lateRound ? 20 : 55;
+  if (power.type === "insurance_fraud") value += state.round < state.maxRounds - 2 ? 42 : 5;
+  if (power.type === "haha_you_lose" || power.type === "execution") value += isBehind ? 55 : 25;
+  if (power.type === "vulture") value += state.matchHistory.filter((round) => round.winner !== getOwnerLabel(owner)).length * 18;
+  if (power.type === "time_bomb") value += isBehind ? 45 : 18;
+  if (power.type === "communism") value += isBehind ? 65 : 18;
+  if (power.type === "monopoly" || power.type === "shock_bomb") value += getActiveOwners().some((participant) => participant !== owner && hasPlayedPowerThisRound(participant)) ? 68 : 22;
+  if (power.type === "hoarder") value += isBehind ? 36 : 28;
+  if (power.type === "mirror" || power.type === "premium_shuffle" || power.type === "vending_machine" || power.type === "recycle_bin") value += 18;
+  if (power.type === "dead_weight") value += 2;
+  if (power.type === "penalty_cloud" || power.type === "loser_tax") value += leaders.includes(owner) ? 44 : 30;
+  if (power.type === "antivirus") value += 28;
+  if (power.type === "virus_deployment" || power.type === "curse" || power.type === "get_good") value += isBehind ? 42 : 24;
+  if (power.type === "reign_chaos") value += isBehind ? 86 : 14;
+  if (power.type === "no_one_wins") value += isBehind && lateRound ? 72 : 10;
+  if (power.type === "shuffle") value += 16;
+
+  return value;
+}
+
+function chooseBotPowerUp(owner, usable) {
+  const scored = usable
+    .map((powerId) => ({ powerId, score: getBotPowerChoiceScore(owner, getPowerById(powerId)) }))
+    .sort((a, b) => b.score - a.score);
+
+  if (!scored.length || scored[0].score < 25) {
+    return null;
+  }
+
+  if (scored.length > 1 && Math.random() < 0.18) {
+    return scored[Math.floor(Math.random() * Math.min(3, scored.length))].powerId;
+  }
+
+  return scored[0].powerId;
+}
+
+function getBotPowerTriggerSecond() {
+  const maxTimer = Math.max(5, Math.round(state.timerSeconds || 30));
+  const earlyRemaining = Math.max(1, maxTimer - 5);
+  const lateRemaining = Math.max(1, maxTimer - 15);
+  return getRandomInt(lateRemaining, earlyRemaining);
+}
+
+function scheduleBotPowerUpsForRound() {
+  state.botPowerSchedule = {};
+  if (state.mode !== "bots" && !isRoomMode()) {
+    return;
+  }
+
+  getActiveOwners().filter((owner) => getPlayer(owner)?.bot).forEach((owner) => {
+    if (!state.powerHands[owner]?.length || !canPlayPower(owner)) {
+      return;
+    }
+    const usable = state.powerHands[owner].filter((powerId) => isPowerUsable(getPowerById(powerId), owner));
+    if (!usable.length) {
+      return;
+    }
+    state.botPowerSchedule[owner] = {
+      triggerAt: getBotPowerTriggerSecond(),
+      used: false
+    };
+  });
+}
+
+function commitScheduledBotPowerUps() {
+  if ((state.mode !== "bots" && !isRoomMode()) || !state.botPowerSchedule) {
+    return;
+  }
+
+  Object.entries(state.botPowerSchedule).forEach(([owner, schedule]) => {
+    if (!schedule || schedule.used || state.timerRemaining > schedule.triggerAt) {
+      return;
+    }
+    schedule.used = true;
+    commitSingleBotPowerUp(owner);
+  });
+}
+
+function commitSingleBotPowerUp(owner) {
+  if ((state.mode !== "bots" && !isRoomMode()) || !canPlayPower(owner) || !state.powerHands[owner]?.length) {
+    return false;
+  }
+
+  const usable = state.powerHands[owner].filter((powerId) => isPowerUsable(getPowerById(powerId), owner));
+  if (!usable.length) {
+    return false;
+  }
+
+  const powerId = chooseBotPowerUp(owner, usable);
+  if (!powerId) {
+    return false;
+  }
+
+  const power = getPowerById(powerId);
+  if (power?.targeted) {
+    const targetOwner = chooseTargetOwner(owner, power);
+    if (!targetOwner) {
+      return false;
+    }
+    if (power.type === "streak_bonus") {
+      return activateStreakInjector(owner, power, powerId, targetOwner);
+    }
+    if (power.immediate) {
+      consumeImmediatePower(owner, power, { targetOwner });
+      return true;
+    }
+    state.playedPowerMeta[owner] = { ...(state.playedPowerMeta[owner] || {}), targetOwner };
+  }
+
+  if (power?.immediate) {
+    consumeImmediatePower(owner, power);
+    return true;
+  }
+
+  recordPlayedPower(owner, powerId, {
+    ...(state.playedPowerMeta[owner] || {}),
+    remainingTime: state.timerRemaining
+  });
+  state.powerHands[owner] = state.powerHands[owner].filter((id) => id !== powerId);
+  renderPowerUps();
+  return true;
+}
+
+function getBotCorrectChanceForCurrentQuestion(owner = "") {
+  const difficulty = normalizeDifficulty(state.questionDifficulty);
+  const baseChance = difficulty === "easy" ? 0.58 : difficulty === "hard" ? 0.32 : 0.46;
+  const streakBonus = Math.min(0.22, Math.max(0, getOwnerStreak(owner)) * 0.07);
+  return Math.min(0.78, baseChance + streakBonus);
+}
+
+function getQuestionCorrectAnswerPool() {
+  const correctPool = [state.canonicalAnswer, ...(state.acceptedAnswers || [])]
+    .map((answer) => cleanInput(answer))
+    .filter(Boolean);
+  return [...new Set(correctPool.map((answer) => normalizeTriviaAnswer(answer)).filter(Boolean))]
+    .map((normalized) => correctPool.find((answer) => normalizeTriviaAnswer(answer) === normalized))
+    .filter(Boolean);
+}
+
+function getQuestionWrongAnswerPool(correctPool = getQuestionCorrectAnswerPool()) {
+  const botPool = (state.botCards || [])
+    .map((answer) => cleanInput(answer))
+    .filter((answer) => answer && scoreAnswerAgainstAcceptedAnswers(answer, correctPool) < 0.82)
+    .filter(Boolean);
+  return [...new Set(botPool.map((answer) => normalizeTriviaAnswer(answer)).filter(Boolean))]
+    .map((normalized) => botPool.find((answer) => normalizeTriviaAnswer(answer) === normalized))
+    .filter(Boolean);
+}
+
+function generateAutoAnswer(owner = "player") {
+  const correctPool = getQuestionCorrectAnswerPool();
+  const botPool = getQuestionWrongAnswerPool(correctPool);
+  const preferCorrect = correctPool.length && Math.random() < getBotCorrectChanceForCurrentQuestion(owner);
+  const pool = preferCorrect ? correctPool : botPool.length ? botPool : correctPool;
+  return pool[Math.floor(Math.random() * pool.length)] || state.canonicalAnswer || "not sure";
+}
+
+function shouldAutoGenerateRoomAnswer(owner) {
+  return isRoomMode() && Boolean(getPlayer(owner)?.bot);
+}
+
+function refreshBotAnswersForRound() {
+  if (state.mode !== "bots") {
+    return;
+  }
+  state.botCards = ["bot1", "bot2"].map((owner) => generateAutoAnswer(owner));
+}
+
+function prepareRoundCardOwners(rawInput = "") {
+  if (isRoomMode()) {
+    const owners = getActiveOwners();
+    owners.forEach((owner) => {
+      if (owner === state.currentOwner && rawInput && !getLockedRoundAnswer(owner)) {
+        lockRoundAnswer(owner, rawInput);
+      }
+      if (!getLockedRoundAnswer(owner) && shouldAutoGenerateRoomAnswer(owner)) {
+        lockRoundAnswer(owner, generateAutoAnswer(owner));
+      }
+    });
+    state.roundCardOwners = owners;
+    return owners;
+  }
+
+  if (isDuelMode()) {
+    state.roundCardOwners = ["player", "opponent"];
+    return state.roundCardOwners;
+  }
+
+  refreshBotAnswersForRound();
+  state.roundCardOwners = ["player", "bot1", "bot2"];
+  return state.roundCardOwners;
+}
+
+function updateDangerFlash(activeAnswerTimer, submittedCurrentPlayer) {
+  const shouldShow = !submittedCurrentPlayer
+    && activeAnswerTimer
+    && state.timerRemaining <= 10
+    && state.timerRemaining > 0;
+  setHidden(elements.dangerFlash, !shouldShow);
+  if (!shouldShow) {
+    elements.dangerFlash.style.removeProperty("--danger-pulse-duration");
+    elements.dangerFlash.style.removeProperty("--danger-strength");
+    elements.dangerFlash.style.removeProperty("--danger-edge-strength");
+    elements.dangerFlash.style.removeProperty("--danger-scale");
+    elements.dangerFlash.dataset.remaining = "";
+    elements.dangerFlash.classList.remove("danger-critical");
+    return;
+  }
+
+  const remaining = Math.max(1, Math.min(10, state.timerRemaining));
+  const urgency = (11 - remaining) / 10;
+  const duration = Math.round(1250 - (urgency * 760));
+  const strength = (0.14 + (urgency * 0.27)).toFixed(3);
+  const edgeStrength = (0.075 + (urgency * 0.19)).toFixed(3);
+  const scale = (1 + (urgency * 0.045)).toFixed(3);
+  const previousRemaining = elements.dangerFlash.dataset.remaining;
+  elements.dangerFlash.style.setProperty("--danger-pulse-duration", `${duration}ms`);
+  elements.dangerFlash.style.setProperty("--danger-strength", strength);
+  elements.dangerFlash.style.setProperty("--danger-edge-strength", edgeStrength);
+  elements.dangerFlash.style.setProperty("--danger-scale", scale);
+  if (previousRemaining !== String(remaining)) {
+    elements.dangerFlash.dataset.remaining = String(remaining);
+    elements.dangerFlash.style.animation = "none";
+    elements.dangerFlash.offsetHeight;
+    elements.dangerFlash.style.animation = "";
+  }
+  elements.dangerFlash.classList.toggle("danger-critical", remaining <= 3);
+}
+
+function renderTimer() {
+  elements.timerCount.textContent = `${state.timerRemaining}s`;
+  const submittedCurrentPlayer = isRoomMode() && state.roomSubmissions[state.currentOwner];
+  const activeAnswerTimer = Boolean(state.timerId)
+    && !state.matchEnded
+    && !elements.gameStage.classList.contains("hidden")
+    && !elements.inputPanel.classList.contains("hidden")
+    && elements.verdictPanel.classList.contains("hidden")
+    && elements.endPanel.classList.contains("hidden");
+  updateDangerFlash(activeAnswerTimer, submittedCurrentPlayer);
+  updateTimerWarningVolume(state.timerRemaining);
+  elements.timerScoreBox.classList.toggle("timer-dead", activeAnswerTimer && state.timerRemaining === 0);
+  elements.timerScoreBox.classList.toggle("time-money", isMatchModifierEnabled("timeMoney"));
+}
+
+function stopTimer() {
+  state.timerSessionId += 1;
+  if (state.timerId) {
+    clearInterval(state.timerId);
+    state.timerId = null;
+  }
+  stopTimerTick();
+  elements.timerScoreBox.classList.remove("timer-dead");
+  elements.timerScoreBox.classList.toggle("time-money", isMatchModifierEnabled("timeMoney"));
+  updateDangerFlash(false, false);
+}
+
+function resetTimerDisplay() {
+  stopTimer();
+  state.timerRemaining = state.timerSeconds;
+  state.timerWarned = false;
+  renderTimer();
+}
+
+function startTimer() {
+  stopTimer();
+  const timerSessionId = state.timerSessionId;
+  const owner = getCurrentPowerOwner();
+  const penalty = state.timerPenalties[owner] || 0;
+  const bonus = (state.timeDilationRounds[owner] || 0) > 0 ? 10 : 0;
+  state.timerRemaining = Math.max(5, state.timerSeconds - penalty + bonus);
+  state.timerWarned = false;
+  renderTimer();
+
+  state.timerId = setInterval(() => {
+    if (
+      timerSessionId !== state.timerSessionId
+      || state.matchEnded
+      || elements.gameStage.classList.contains("hidden")
+      || elements.inputPanel.classList.contains("hidden")
+    ) {
+      stopTimer();
+      return;
+    }
+
+    state.timerRemaining = Math.max(0, state.timerRemaining - 1);
+    renderTimer();
+    commitScheduledBotPowerUps();
+    commitScheduledError404Effects();
+
+    const submittedCurrentPlayer = isRoomMode() && state.roomSubmissions[state.currentOwner];
+    if (state.timerRemaining === 10 && !state.timerWarned && !submittedCurrentPlayer) {
+      state.timerWarned = true;
+      playSound("timerWarning");
+    }
+
+    if (state.timerRemaining === 0) {
+      stopTimer();
+      playSound("error");
+      handleTimerExpired();
+    }
+  }, 1000);
+}
+
+function handleTimerExpired() {
+  if (elements.inputPanel.classList.contains("hidden") || state.matchEnded || !state.judge) {
+    return;
+  }
+
+  const fallback = "";
+  if (isRoomMode()) {
+    markAchievementTimeout(state.currentOwner);
+    submitRoomAnswer(lockRoundAnswer(state.currentOwner, elements.answerInput.value, fallback), { allowBlank: true });
+    return;
+  }
+
+  if (isDuelMode() && state.localEntryStep === 1) {
+    markAchievementTimeout("player");
+    commitActivePowerUp("player");
+    state.answerRemainingTimes.player = state.timerRemaining;
+    if (isRoomMode()) {
+      setRoomSubmission("player", true);
+    }
+    state.localAnswers.playerOne = lockRoundAnswer("player", elements.answerInput.value, fallback);
+    state.localEntryStep = 2;
+    elements.answerInput.value = "";
+    updateModeUi();
+    startTimer();
+    elements.answerInput.focus();
+    return;
+  }
+
+  if (isDuelMode()) {
+    markAchievementTimeout("opponent");
+    commitActivePowerUp("opponent");
+    state.answerRemainingTimes.opponent = state.timerRemaining;
+    if (isRoomMode()) {
+      setRoomSubmission("opponent", true);
+    }
+    state.localAnswers.playerTwo = lockRoundAnswer("opponent", elements.answerInput.value, fallback);
+    playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne));
+    return;
+  }
+
+  commitActivePowerUp("player");
+  markAchievementTimeout("player");
+  state.answerRemainingTimes.player = state.timerRemaining;
+  playRound(lockRoundAnswer("player", elements.answerInput.value, fallback));
+}
+
+function resetBlackCardSizing() {
+  const blackCard = elements.blackCardText.closest(".black-card");
+  if (!blackCard) {
+    return;
+  }
+  blackCard.getAnimations?.().forEach((animation) => {
+    if (!("animationName" in animation)) {
+      animation.cancel();
+    }
+  });
+  blackCard.style.height = "";
+  blackCard.style.minHeight = "";
+  blackCard.style.maxHeight = "";
+  blackCard.style.overflow = "";
+}
+
+function fitBlackCardToContent() {
+  const blackCard = elements.blackCardText.closest(".black-card");
+  if (!blackCard || blackCard.classList.contains("answer-reveal")) {
+    return;
+  }
+
+  blackCard.style.height = "";
+  blackCard.style.minHeight = "";
+  blackCard.style.maxHeight = "";
+  blackCard.style.overflow = "";
+}
+
+function scheduleBlackCardFit() {
+  window.requestAnimationFrame(() => fitBlackCardToContent());
+}
+
+function measureBlackCardNaturalHeight(blackCard) {
+  const clone = blackCard.cloneNode(true);
+  const rect = blackCard.getBoundingClientRect();
+  clone.classList.remove("answer-reveal");
+  clone.style.position = "absolute";
+  clone.style.left = "-10000px";
+  clone.style.top = "0";
+  clone.style.width = `${rect.width}px`;
+  clone.style.height = "auto";
+  clone.style.minHeight = "";
+  clone.style.maxHeight = "none";
+  clone.style.overflow = "visible";
+  clone.style.visibility = "hidden";
+  clone.style.pointerEvents = "none";
+  clone.style.transform = "none";
+  clone.style.animation = "none";
+  blackCard.parentElement?.appendChild(clone);
+  const height = Math.ceil(clone.getBoundingClientRect().height);
+  clone.remove();
+  return height;
+}
+
+function animateBlackCardToNaturalHeight(blackCard, beforeHeight, options = {}) {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const canAnimateHeight = Boolean(Element.prototype.animate) && !reduceMotion;
+  const afterHeight = measureBlackCardNaturalHeight(blackCard);
+  const targetHeight = options.allowShrink === false ? Math.max(beforeHeight, afterHeight) : afterHeight;
+
+  if (!canAnimateHeight || !beforeHeight || !targetHeight || Math.abs(targetHeight - beforeHeight) < 2) {
+    resetBlackCardSizing();
+    return null;
+  }
+
+  blackCard.style.height = `${beforeHeight}px`;
+  blackCard.style.overflow = "hidden";
+  const animation = blackCard.animate(
+    [
+      { height: `${beforeHeight}px` },
+      { height: `${targetHeight}px` }
+    ],
+    {
+      duration: options.durationMs || 560,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+      fill: "forwards"
+    }
+  );
+  animation.finished.then(
+    () => resetBlackCardSizing(),
+    () => resetBlackCardSizing()
+  );
+  return animation;
+}
+
+function resetRoundUiForLoading(options = {}) {
+  stopNextRoundCountdown();
+  stopTimer();
+  clearCardBadges();
+  resetBlackCardSizing();
+  elements.blackCardText.closest(".black-card").classList.remove("completed", "answer-reveal");
+  elements.blackCardText.closest(".black-card").classList.remove("dealt");
+  if (options.resetBlackCardTheme) {
+    applyProfileCustomizationSurface(elements.blackCardText.closest(".black-card"), defaultProfileCustomization);
+  }
+  elements.judgeAvatar.closest(".judge-panel").classList.remove("entering");
+  elements.judgeAvatar.textContent = "?";
+  elements.judgeName.textContent = "Trivia Grader";
+  elements.judgeBio.textContent = "Generating a trivia question.";
+  elements.judgeTags.replaceChildren();
+  elements.questionThemeBadge.textContent = "Loading...";
+  renderQuestionImagePlaceholder();
+  elements.blackCardText.textContent = "Loading the next trivia card...";
+  scheduleBlackCardFit();
+  elements.answerInput.value = "";
+  elements.playerTwoInput.value = "";
+  state.localEntryStep = 1;
+  state.localAnswers = { playerOne: "", playerTwo: "" };
+  resetRoundAnswers();
+  state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
+  state.roomSubmissions = {};
+  resetPlayedPowersForRound();
+  state.currentTableEvent = null;
+  state.tableEventSabotageUsed = {};
+  state.blackMarketPurchases = {};
+  state.roundAmplifiedMultiplier = 1;
+  state.timerPenalties = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.forcedWinnerOwner = null;
+  elements.answerInput.disabled = true;
+  elements.playerTwoInput.disabled = true;
+  elements.submitButton.disabled = true;
+
+  getAnswerCardNodes().forEach((card) => card.classList.remove("winner", "launching"));
+  elements.cardsArea.classList.remove("revealed");
+  document.querySelector(".table-surface").classList.remove("winner-moment");
+  setHidden(elements.inputPanel, true);
+  setHidden(elements.tableEventActionPanel, true);
+  setHidden(elements.answerProgressPanel, true);
+  setHidden(elements.powerPanel, true);
+  setHidden(elements.effectPanel, true);
+  setHidden(elements.loadingPanel, false);
+  setHidden(elements.cardsArea, true);
+  setHidden(elements.verdictPanel, true);
+  setHidden(elements.powerLog, true);
+  setHidden(elements.roundRecap, true);
+  resetReactionPanel();
+  setHidden(elements.roomSubmitStatus, true);
+  setHidden(elements.errorPanel, true);
+  setHidden(elements.endPanel, true);
+  renderQuestionImagePlaceholder();
+  startLoadingMessages("setup", "Loading the next trivia card...");
+  renderPowerUps();
+  applyTableEventStageClasses();
+  renderScore();
+}
+
+function renderRound() {
+  stopNextRoundCountdown();
+  stopLoadingMessages();
+  clearCardBadges();
+  const blackCard = elements.blackCardText.closest(".black-card");
+  const judgePanel = elements.judgeAvatar.closest(".judge-panel");
+  const beforeBlackCardHeight = blackCard.getBoundingClientRect().height;
+  blackCard.getAnimations?.().forEach((animation) => {
+    if (!("animationName" in animation)) {
+      animation.cancel();
+    }
+  });
+  blackCard.style.height = `${beforeBlackCardHeight}px`;
+  blackCard.style.overflow = "hidden";
+  blackCard.classList.remove("completed", "answer-reveal", "dealt");
+  const difficulty = normalizeDifficulty(state.questionDifficulty);
+  judgePanel.classList.remove("entering");
+  elements.judgeAvatar.textContent = state.judge.avatar;
+  elements.judgeName.textContent = state.judge.name;
+  elements.judgeBio.textContent = `${state.judge.title}. ${state.judge.bio}`;
+  elements.judgeTags.replaceChildren(
+    ...state.judge.likes.map((tag) => {
+      const chip = document.createElement("span");
+      chip.textContent = tag;
+      return chip;
+    })
+  );
+  elements.blackCardText.textContent = state.blackCard;
+  elements.questionThemeBadge.textContent = state.triviaTheme || "Mixed Trivia";
+  elements.questionDifficultyBadge.textContent = getDifficultyLabel(difficulty);
+  elements.questionDifficultyBadge.className = `difficulty-badge difficulty-${difficulty}`;
+  renderQuestionImage(state.questionImage, { skipFit: true });
+  animateBlackCardToNaturalHeight(blackCard, beforeBlackCardHeight, { allowShrink: true, durationMs: 620 });
+  elements.answerInput.value = "";
+  elements.playerTwoInput.value = "";
+  state.localEntryStep = 1;
+  state.localAnswers = { playerOne: "", playerTwo: "" };
+  resetRoundAnswers();
+  state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
+  resetRoomSubmissions();
+  resetPlayedPowersForRound();
+  rollRoundTableEvent();
+  rollRoundAmplifiedMultiplier();
+  state.timerPenalties = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.forcedWinnerOwner = null;
+  elements.answerInput.disabled = false;
+  elements.playerTwoInput.disabled = false;
+  elements.submitButton.disabled = false;
+  elements.answerInput.focus();
+  applyRoundStartEffects();
+  applyRoundStartTableEventEffects();
+  applyRoomRoundStartModifiers();
+  updateModeUi();
+  scheduleBotPowerUpsForRound();
+  startTimer();
+
+  getAnswerCardNodes().forEach((card) => card.classList.remove("winner", "launching"));
+  elements.cardsArea.classList.remove("revealed");
+  elements.verdictPanel.classList.remove("revealed");
+  document.querySelector(".table-surface").classList.remove("winner-moment");
+  setHidden(elements.inputPanel, false);
+  renderTableEventControls();
+  setHidden(elements.answerProgressPanel, false);
+  setHidden(elements.powerPanel, false);
+  setHidden(elements.effectPanel, false);
+  setHidden(elements.loadingPanel, true);
+  setHidden(elements.cardsArea, true);
+  setHidden(elements.verdictPanel, true);
+  setHidden(elements.powerLog, true);
+  setHidden(elements.roundRecap, true);
+  resetReactionPanel();
+  setHidden(elements.errorPanel, true);
+  setHidden(elements.endPanel, true);
+  restartAnimation(blackCard, "dealt");
+  restartAnimation(judgePanel, "entering");
+  renderPowerUps();
+  renderScore();
+  if (state.isSpectator) {
+    stopTimer();
+    setHidden(elements.inputPanel, true);
+    setHidden(elements.answerProgressPanel, true);
+    setHidden(elements.powerPanel, true);
+    setHidden(elements.roomSubmitStatus, true);
+    addSystemChat("Spectator mode: you can chat and watch the table, but you will join play next match.", { private: true, audience: "spectator" });
+  }
+}
+
+function updateModeUi() {
+  const isDuel = isDuelMode();
+  const modeName = state.mode === "room" ? "multiplayer room" : isDuel ? "local 1v1" : "solo vs bots";
+  const activeModifierNames = state.mode === "room" ? getRoomVariantNames() : getActiveMatchModifierNames();
+  const variants = ` - ${activeModifierNames.join(" + ")}`;
+  const matchSuffix = activeModifierNames.length === 1 && activeModifierNames[0] === "Classic Match" ? "" : " match";
+  elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
+  applyTableEventStageClasses();
+  updateWildFireBurningState();
+  elements.modeLabel.textContent = `${state.maxRounds}-round ${modeName}${variants}${matchSuffix}`;
+  renderAnswerCardsForOwners(getRoundCardOwners());
+  elements.answerInput.placeholder = isRoomMode()
+    ? `${getOwnerLabel(state.currentOwner)} answer`
+    : isDuel
+    ? state.localEntryStep === 1
+      ? `${getOwnerLabel("player")} answer`
+      : `${getOwnerLabel("opponent")} answer`
+    : "Your trivia answer";
+  elements.playerTwoInput.required = false;
+  elements.playerTwoInput.disabled = true;
+  setHidden(elements.playerTwoInput, true);
+  elements.submitButton.textContent = isDuel && !isRoomMode() && state.localEntryStep === 1 ? "Lock In" : "Submit";
+  document.querySelector("#inputTitle").textContent = isRoomMode()
+    ? `${getOwnerLabel(state.currentOwner)}, enter your trivia answer.`
+    : isDuel
+    ? state.localEntryStep === 1
+      ? `${getOwnerLabel("player")}, enter your trivia answer. It disappears after locking.`
+      : `${getOwnerLabel("opponent")}, your turn. ${getOwnerLabel("player")}'s answer is hidden.`
+    : "Answer the trivia question.";
+  setHidden(elements.exitGameButton, isRoomMode() && !isCurrentHost());
+  setHidden(elements.leaveGameButton, false);
+  renderRoomChat();
+  renderPowerUps();
+}
+
+function applyRoundSetup(setup) {
+  state.questionId = setup.id || "";
+  state.blackCard = setup.blackCard;
+  state.questionType = setup.type === "text" ? "text" : "image";
+  state.questionDifficulty = normalizeDifficulty(setup.difficulty);
+  state.triviaTheme = setup.triviaTheme || "Mixed Trivia";
+  state.questionImage = setup.image && setup.image.url ? setup.image : null;
+  state.canonicalAnswer = setup.canonicalAnswer || "";
+  state.acceptedAnswers = setup.acceptedAnswers || [];
+  state.judge = setup.judge;
+  state.botCards = setup.botCards || [];
+  publishRoomRoundSetup(setup);
+  state.recentJudgeNames = [...state.recentJudgeNames, state.judge.name].slice(-5);
+  state.recentBlackCards = [...state.recentBlackCards, state.blackCard].slice(-20);
+  state.recentTriviaThemes = [...state.recentTriviaThemes, state.triviaTheme].filter(Boolean).slice(-triviaThemes.length);
+  recordQuestionUsage(setup);
+  preloadQuestionImage(setup);
+  renderRound();
+  scheduleNextSetupPrefetch();
+  playSound("reveal");
+}
+
+function buildDevToolScreen() {
+  if (elements.devToolScreen) {
+    return;
+  }
+
+  const screen = document.createElement("section");
+  screen.className = "dev-tool-screen hidden";
+  screen.id = "devToolScreen";
+  screen.setAttribute("aria-labelledby", "devToolTitle");
+  screen.innerHTML = `
+    <div class="room-header">
+      <div>
+        <p class="eyebrow">Seed bank and feedback tools</p>
+        <h1 id="devToolTitle">DEV TOOL</h1>
+      </div>
+      <div class="lobby-actions">
+        <button type="button" class="icon-button" id="devToolBackButton">Back</button>
+      </div>
+    </div>
+    <div class="dev-tool-tabs" id="devToolTabs" role="tablist" aria-label="Dev tool sections">
+      <button type="button" class="selected" data-dev-tab="questions">Question Debug</button>
+      <button type="button" data-dev-tab="create">Question Creation</button>
+      <button type="button" data-dev-tab="achievements">Achievement Debug</button>
+      <button type="button" data-dev-tab="profile">Profile Debug</button>
+      <button type="button" data-dev-tab="overlays">Overlay Debug</button>
+    </div>
+    <section class="dev-tool-panel" data-dev-panel="questions">
+      <div class="dev-tool-controls">
+        <label>
+          <span>Search</span>
+          <input id="devQuestionSearchInput" type="search" placeholder="id, answer, keyword, URL">
+        </label>
+        <label>
+          <span>Theme</span>
+          <select id="devQuestionThemeFilter"></select>
+        </label>
+        <label>
+          <span>Type</span>
+          <select id="devQuestionTypeFilter">
+            <option value="all">All questions</option>
+            <option value="image">Image only</option>
+            <option value="text">Text only</option>
+          </select>
+        </label>
+      </div>
+      <div class="dev-question-counts" id="devQuestionCounts"></div>
+      <section class="dev-question-tools" aria-label="Question bank tools">
+        <div class="dev-question-tool-actions">
+          <button type="button" class="icon-button" id="devQuestionFindDuplicatesButton">Duplicate Detector</button>
+          <button type="button" class="icon-button" id="devQuestionCheckImagesButton">Broken Image Check</button>
+          <button type="button" class="icon-button" id="devQuestionLeastSeenButton">Least Seen</button>
+          <button type="button" class="icon-button" id="devQuestionMostRepeatedButton">Most Repeated</button>
+        </div>
+        <div class="debug-status" id="devQuestionToolsStatus">Question tools ready.</div>
+        <div class="dev-question-tool-results" id="devQuestionToolsResults"></div>
+      </section>
+      <div class="dev-question-debug-layout">
+        <section class="dev-question-list" id="devQuestionResults" aria-label="Question results"></section>
+        <div class="dev-question-preview-column">
+          <section class="black-card image-debug-card dev-question-preview" id="devQuestionPreview" aria-labelledby="devQuestionText">
+            <div class="question-meta">
+              <p id="devQuestionCounter">0 questions</p>
+              <div class="question-badges" id="devQuestionMeta"></div>
+            </div>
+            <figure class="question-image">
+              <img id="devQuestionImage" alt="">
+              <div class="question-image-placeholder" id="devQuestionPlaceholder">Select a question.</div>
+              <figcaption id="devQuestionCredit"></figcaption>
+            </figure>
+            <h2 id="devQuestionText">Question preview</h2>
+          </section>
+          <div class="dev-question-preview-controls" id="devQuestionPreviewControls">
+            <button type="button" class="icon-button" id="devQuestionPrevButton">Previous</button>
+            <button type="button" class="icon-button" id="devQuestionNextButton">Next</button>
+            <button type="button" class="icon-button" id="devQuestionEditButton">Edit</button>
+            <button type="button" class="icon-button danger-button" id="devQuestionDeleteButton">Delete</button>
+          </div>
+        </div>
+        <aside class="image-debug-info">
+          <p class="eyebrow">Answer key</p>
+          <h2 id="devQuestionAnswer">-</h2>
+          <p id="devQuestionAccepted">Accepted answers appear here.</p>
+          <p id="devQuestionRejected">Rejected answers appear here.</p>
+          <div class="debug-status" id="devQuestionStatus">Loading question bank...</div>
+        </aside>
+      </div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="overlays">
+      <div class="overlay-debug-layout">
+        <section class="overlay-debug-panel">
+          <div class="dev-panel-heading">
+            <p class="eyebrow">Single overlays</p>
+            <button type="button" class="icon-button" id="devOverlayClearButton">Clear</button>
+          </div>
+          <div class="overlay-debug-grid" id="devOverlayGrid">
+            <button type="button" class="overlay-debug-button overlay-debug-positive" data-overlay-debug="positive"><span>Positive</span><strong>+1,250 Points</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-negative" data-overlay-debug="negative"><span>Negative</span><strong>-750 Points</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-mixed" data-overlay-debug="mixed"><span>Mixed</span><strong>x1.75 Multiplier</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-shield" data-overlay-debug="shield"><span>Shield</span><strong>Blocked Points</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-chaos" data-overlay-debug="chaos"><span>Chaos</span><strong>$%^&#064;#&amp;*@</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-burning" data-overlay-debug="burning"><span>Burning</span><strong>-12% Points</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-lightning" data-overlay-debug="lightning"><span>Lightning</span><strong>-600 Points</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-bomb" data-overlay-debug="bomb"><span>Bomb</span><strong>-20% Total</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-bounty" data-overlay-debug="bounty"><span>Double Bounty</span><strong>Final Gains x2</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-coin" data-overlay-debug="coin-shower"><span>Coin Shower</span><strong>Bonus Round</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-sudden" data-overlay-debug="sudden-death"><span>Sudden Death</span><strong>Losers -25%</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-outage" data-overlay-debug="outage"><span>Power Outage</span><strong>Power Offline</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-no-mercy" data-overlay-debug="no-mercy"><span>No Mercy</span><strong>3 Red Flashes</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-market" data-overlay-debug="black-market"><span>Black Market</span><strong>Shop Open</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-casino" data-overlay-debug="casino-dice"><span>Gambler's Dice</span><strong>Everyone Rolls</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-casino" data-overlay-debug="casino-roulette"><span>Roulette</span><strong>Lucky Player +50%</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-sabotage" data-overlay-debug="sabotage"><span>Sabotage</span><strong>-5% + Debuff</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-complex" data-overlay-debug="complex"><span>Complex Buff</span><strong>Multi-line</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-sequence" data-overlay-debug="sequence"><span>Sequence</span><strong>Queue Test</strong></button>
+          </div>
+        </section>
+        <aside class="overlay-debug-info">
+          <p class="eyebrow">Current test</p>
+          <h2 id="devOverlayStatus">Ready.</h2>
+          <p>Buttons trigger the same overlay queue, animation duration, and sound routing used during gameplay.</p>
+        </aside>
+      </div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="achievements">
+      <div class="achievement-debug-layout">
+        <div class="dev-tool-controls achievement-debug-controls">
+          <label>
+            <span>Search</span>
+            <input id="devAchievementSearchInput" type="search" placeholder="achievement, condition, rarity">
+          </label>
+          <label>
+            <span>Rarity</span>
+            <select id="devAchievementRarityFilter">
+              <option value="all">All rarities</option>
+              <option value="grey">Common</option>
+              <option value="blue">Rare</option>
+              <option value="purple">Epic</option>
+              <option value="gold">Legendary</option>
+            </select>
+          </label>
+          <label>
+            <span>Type</span>
+            <select id="devAchievementTypeFilter">
+              <option value="all">All achievements</option>
+              <option value="title">Tags</option>
+              <option value="progress">Progress</option>
+              <option value="hidden">Hidden</option>
+            </select>
+          </label>
+          <button type="button" class="icon-button danger-button" id="devAchievementResetMilestonesButton">Reset Milestones</button>
+        </div>
+        <div class="debug-status" id="devAchievementStatus">Achievement debug ready.</div>
+        <div class="achievement-debug-grid" id="devAchievementGrid"></div>
+      </div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="profile">
+      <div class="dev-panel-heading">
+        <div>
+          <p class="eyebrow">Profile cosmetics</p>
+          <h2>Profile Debug</h2>
+        </div>
+        <div class="profile-debug-actions">
+          <button type="button" class="icon-button" id="devProfileUnlockAllButton">Unlock All</button>
+          <button type="button" class="icon-button danger-button" id="devProfileLockAllButton">Lock All</button>
+          <button type="button" class="icon-button" id="devProfileResetButton">Reset Debug</button>
+        </div>
+      </div>
+      <div class="debug-status" id="devProfileStatus">Profile customization debug ready.</div>
+      <div class="profile-debug-grid" id="devProfileGrid"></div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="create">
+      <div class="dev-create-layout">
+        <form class="dev-create-form" id="devQuestionCreateForm">
+          <div class="dev-create-grid">
+            <label><span>Theme</span><select id="devCreateTheme"></select></label>
+            <label><span>Difficulty</span><select id="devCreateDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+            <label><span>Question type</span><select id="devCreateType"><option value="text">Text</option><option value="image">Image</option></select></label>
+            <label><span>ID</span><input id="devCreateId" required placeholder="theme-short-unique-id"></label>
+          </div>
+          <label class="dev-create-question-field"><span>Question</span><textarea id="devCreateQuestion" required rows="5" placeholder="Question text"></textarea></label>
+          <div class="dev-create-answer-grid">
+            <label class="dev-create-canonical"><span>Answer</span><input id="devCreateCanonical" required placeholder="Main answer"></label>
+            <label><span>Accepted answers</span><textarea id="devCreateAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
+          </div>
+          <div class="dev-create-answer-grid">
+            <label><span>Bot answers</span><textarea id="devCreateBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
+            <label><span>Rejected answers</span><textarea id="devCreateRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
+          </div>
+          <fieldset class="dev-create-image-fields hidden" id="devCreateImageFields">
+            <legend>Image</legend>
+            <label><span>Image URL</span><input id="devCreateImageUrl" placeholder="https://..."></label>
+            <div class="dev-create-grid">
+              <label><span>Alt text</span><input id="devCreateImageAlt" placeholder="Short image description"></label>
+              <label><span>Credit</span><input id="devCreateImageCredit" placeholder="Wikimedia Commons"></label>
+            </div>
+          </fieldset>
+          <div class="dev-create-actions">
+            <button type="submit" class="primary-button" id="devCreateSubmitButton">Create Question</button>
+            <button type="button" class="icon-button hidden" id="devCreateSaveAsNewButton">Save as New</button>
+            <button type="button" class="icon-button hidden" id="devCreateExitButton">Exit Edit</button>
+            <button type="button" class="icon-button danger-button" id="devCreateClearButton">Clear</button>
+            <div class="debug-status" id="devCreateStatus">Ready. Created questions are permanently saved to data/questions.json.</div>
+          </div>
+        </form>
+        <aside class="dev-create-preview-shell">
+          <p class="eyebrow">Live preview</p>
+          <section class="black-card dev-create-preview-card text-only" id="devCreatePreview" aria-labelledby="devCreatePreviewQuestion">
+            <div class="question-meta">
+              <p>Draft card</p>
+              <div class="question-badges" id="devCreatePreviewMeta"></div>
+            </div>
+            <figure class="question-image">
+              <img id="devCreatePreviewImage" alt="">
+              <div class="question-image-placeholder" id="devCreatePreviewPlaceholder">Image preview</div>
+              <figcaption id="devCreatePreviewCredit"></figcaption>
+            </figure>
+            <h2 id="devCreatePreviewQuestion">Question preview</h2>
+          </section>
+        </aside>
+      </div>
+    </section>
+  `;
+  elements.modeScreen.insertAdjacentElement("afterend", screen);
+  elements.devToolScreen = screen;
+  elements.devToolTabs = screen.querySelector("#devToolTabs");
+  elements.devToolBackButton = screen.querySelector("#devToolBackButton");
+  elements.devQuestionSearchInput = screen.querySelector("#devQuestionSearchInput");
+  elements.devQuestionThemeFilter = screen.querySelector("#devQuestionThemeFilter");
+  elements.devQuestionTypeFilter = screen.querySelector("#devQuestionTypeFilter");
+  elements.devQuestionCounts = screen.querySelector("#devQuestionCounts");
+  elements.devQuestionResults = screen.querySelector("#devQuestionResults");
+  elements.devQuestionCounter = screen.querySelector("#devQuestionCounter");
+  elements.devQuestionPrevButton = screen.querySelector("#devQuestionPrevButton");
+  elements.devQuestionNextButton = screen.querySelector("#devQuestionNextButton");
+  elements.devQuestionPreview = screen.querySelector("#devQuestionPreview");
+  elements.devQuestionPreviewControls = screen.querySelector("#devQuestionPreviewControls");
+  elements.devQuestionImage = screen.querySelector("#devQuestionImage");
+  elements.devQuestionPlaceholder = screen.querySelector("#devQuestionPlaceholder");
+  elements.devQuestionCredit = screen.querySelector("#devQuestionCredit");
+  elements.devQuestionMeta = screen.querySelector("#devQuestionMeta");
+  elements.devQuestionText = screen.querySelector("#devQuestionText");
+  elements.devQuestionAnswer = screen.querySelector("#devQuestionAnswer");
+  elements.devQuestionAccepted = screen.querySelector("#devQuestionAccepted");
+  elements.devQuestionRejected = screen.querySelector("#devQuestionRejected");
+  elements.devQuestionStatus = screen.querySelector("#devQuestionStatus");
+  elements.devQuestionEditButton = screen.querySelector("#devQuestionEditButton");
+  elements.devQuestionDeleteButton = screen.querySelector("#devQuestionDeleteButton");
+  elements.devQuestionToolsStatus = screen.querySelector("#devQuestionToolsStatus");
+  elements.devQuestionToolsResults = screen.querySelector("#devQuestionToolsResults");
+  elements.devQuestionFindDuplicatesButton = screen.querySelector("#devQuestionFindDuplicatesButton");
+  elements.devQuestionCheckImagesButton = screen.querySelector("#devQuestionCheckImagesButton");
+  elements.devQuestionLeastSeenButton = screen.querySelector("#devQuestionLeastSeenButton");
+  elements.devQuestionMostRepeatedButton = screen.querySelector("#devQuestionMostRepeatedButton");
+  elements.devOverlayGrid = screen.querySelector("#devOverlayGrid");
+  elements.devOverlayStatus = screen.querySelector("#devOverlayStatus");
+  elements.devOverlayClearButton = screen.querySelector("#devOverlayClearButton");
+  elements.devAchievementSearchInput = screen.querySelector("#devAchievementSearchInput");
+  elements.devAchievementRarityFilter = screen.querySelector("#devAchievementRarityFilter");
+  elements.devAchievementTypeFilter = screen.querySelector("#devAchievementTypeFilter");
+  elements.devAchievementResetMilestonesButton = screen.querySelector("#devAchievementResetMilestonesButton");
+  elements.devAchievementStatus = screen.querySelector("#devAchievementStatus");
+  elements.devAchievementGrid = screen.querySelector("#devAchievementGrid");
+  elements.devProfileGrid = screen.querySelector("#devProfileGrid");
+  elements.devProfileStatus = screen.querySelector("#devProfileStatus");
+  elements.devProfileUnlockAllButton = screen.querySelector("#devProfileUnlockAllButton");
+  elements.devProfileLockAllButton = screen.querySelector("#devProfileLockAllButton");
+  elements.devProfileResetButton = screen.querySelector("#devProfileResetButton");
+  elements.devQuestionCreateForm = screen.querySelector("#devQuestionCreateForm");
+  elements.devCreateTheme = screen.querySelector("#devCreateTheme");
+  elements.devCreateDifficulty = screen.querySelector("#devCreateDifficulty");
+  elements.devCreateType = screen.querySelector("#devCreateType");
+  elements.devCreateId = screen.querySelector("#devCreateId");
+  elements.devCreateQuestion = screen.querySelector("#devCreateQuestion");
+  elements.devCreateCanonical = screen.querySelector("#devCreateCanonical");
+  elements.devCreateAccepted = screen.querySelector("#devCreateAccepted");
+  elements.devCreateBots = screen.querySelector("#devCreateBots");
+  elements.devCreateRejected = screen.querySelector("#devCreateRejected");
+  elements.devCreateImageFields = screen.querySelector("#devCreateImageFields");
+  elements.devCreateImageUrl = screen.querySelector("#devCreateImageUrl");
+  elements.devCreateImageAlt = screen.querySelector("#devCreateImageAlt");
+  elements.devCreateImageCredit = screen.querySelector("#devCreateImageCredit");
+  elements.devCreateSubmitButton = screen.querySelector("#devCreateSubmitButton");
+  elements.devCreateSaveAsNewButton = screen.querySelector("#devCreateSaveAsNewButton");
+  elements.devCreateExitButton = screen.querySelector("#devCreateExitButton");
+  elements.devCreateClearButton = screen.querySelector("#devCreateClearButton");
+  elements.devCreateStatus = screen.querySelector("#devCreateStatus");
+  elements.devCreatePreview = screen.querySelector("#devCreatePreview");
+  elements.devCreatePreviewMeta = screen.querySelector("#devCreatePreviewMeta");
+  elements.devCreatePreviewImage = screen.querySelector("#devCreatePreviewImage");
+  elements.devCreatePreviewPlaceholder = screen.querySelector("#devCreatePreviewPlaceholder");
+  elements.devCreatePreviewCredit = screen.querySelector("#devCreatePreviewCredit");
+  elements.devCreatePreviewQuestion = screen.querySelector("#devCreatePreviewQuestion");
+
+  populateDevToolThemeSelects();
+  updateDevCreatePreview();
+  bindDevToolEvents();
+}
+
+function populateDevToolThemeSelects() {
+  const themeOptions = triviaThemes.map((theme) => `<option value="${theme}">${theme}</option>`).join("");
+  elements.devQuestionThemeFilter.innerHTML = `<option value="all">All themes</option>${themeOptions}`;
+  elements.devCreateTheme.innerHTML = themeOptions;
+}
+
+function bindDevToolEvents() {
+  elements.devToolBackButton.addEventListener("click", closeDevToolScreen);
+  elements.devToolTabs.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-dev-tab]");
+    if (button) {
+      requestDevToolTab(button.dataset.devTab);
+    }
+  });
+  elements.devQuestionSearchInput.addEventListener("input", filterQuestionDebugBank);
+  elements.devQuestionThemeFilter.addEventListener("change", filterQuestionDebugBank);
+  elements.devQuestionTypeFilter.addEventListener("change", filterQuestionDebugBank);
+  elements.devQuestionPrevButton.addEventListener("click", () => selectQuestionDebugIndex(state.questionDebugIndex - 1));
+  elements.devQuestionNextButton.addEventListener("click", () => selectQuestionDebugIndex(state.questionDebugIndex + 1));
+  elements.devQuestionResults.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-question-debug-index]");
+    if (button) {
+      selectQuestionDebugIndex(Number(button.dataset.questionDebugIndex));
+    }
+  });
+  elements.devQuestionEditButton.addEventListener("click", startEditingDebugQuestion);
+  elements.devQuestionDeleteButton.addEventListener("click", deleteSelectedDebugQuestion);
+  elements.devQuestionFindDuplicatesButton.addEventListener("click", renderDuplicateQuestionReport);
+  elements.devQuestionCheckImagesButton.addEventListener("click", checkQuestionImageUrls);
+  elements.devQuestionLeastSeenButton.addEventListener("click", () => renderQuestionUsageReport("least"));
+  elements.devQuestionMostRepeatedButton.addEventListener("click", () => renderQuestionUsageReport("most"));
+  elements.devQuestionToolsResults.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-question-tool-focus]");
+    if (button) {
+      focusQuestionDebugById(button.dataset.questionToolFocus);
+    }
+  });
+  elements.devOverlayGrid.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-overlay-debug]");
+    if (button) {
+      triggerOverlayDebug(button.dataset.overlayDebug);
+      elements.devOverlayStatus.textContent = `${button.dataset.overlayDebug} overlay triggered.`;
+    }
+  });
+  elements.devOverlayClearButton.addEventListener("click", () => {
+    clearStatFlashes();
+    elements.devOverlayStatus.textContent = "Overlay queue cleared.";
+    playSound("click");
+  });
+  elements.devAchievementSearchInput.addEventListener("input", renderAchievementDebug);
+  elements.devAchievementRarityFilter.addEventListener("change", renderAchievementDebug);
+  elements.devAchievementTypeFilter.addEventListener("change", renderAchievementDebug);
+  elements.devAchievementResetMilestonesButton.addEventListener("click", resetAchievementMilestonesFromDebug);
+  elements.devAchievementGrid.addEventListener("click", handleAchievementDebugClick);
+  elements.devAchievementGrid.addEventListener("change", handleAchievementDebugChange);
+  elements.devProfileGrid.addEventListener("click", handleProfileDebugClick);
+  elements.devProfileUnlockAllButton.addEventListener("click", () => setAllProfileDebugStates("enabled"));
+  elements.devProfileLockAllButton.addEventListener("click", () => setAllProfileDebugStates("disabled"));
+  elements.devProfileResetButton.addEventListener("click", () => setAllProfileDebugStates("reset"));
+  elements.devCreateType.addEventListener("change", updateDevCreateImageFields);
+  elements.devCreateTheme.addEventListener("change", () => {
+    syncDevCreateIdPrefix();
+    updateDevCreatePreview();
+  });
+  elements.devCreateId.addEventListener("input", normalizeDevCreateIdInput);
+  elements.devQuestionCreateForm.addEventListener("input", updateDevCreatePreview);
+  elements.devQuestionCreateForm.addEventListener("change", updateDevCreatePreview);
+  elements.devCreateSaveAsNewButton.addEventListener("click", saveEditedQuestionAsNew);
+  elements.devCreateExitButton.addEventListener("click", exitDevQuestionEdit);
+  elements.devCreateClearButton.addEventListener("click", clearDevQuestionCreateFormWithConfirm);
+  elements.devQuestionCreateForm.addEventListener("submit", submitDevQuestionCreateForm);
+}
+
+function getCurrentDevToolTab() {
+  const selected = elements.devToolTabs?.querySelector("[data-dev-tab].selected");
+  return selected?.dataset.devTab || "questions";
+}
+
+async function requestDevToolTab(tab) {
+  if (getCurrentDevToolTab() === "create" && tab !== "create" && !(await confirmDiscardDevCreateProgress())) {
+    return;
+  }
+  const returnId = getCurrentDevToolTab() === "create" ? (state.questionEditReturnId || state.questionEditOriginalId) : "";
+  if (getCurrentDevToolTab() === "create" && tab !== "create") {
+    resetDevQuestionCreateForm({ keepStatus: false });
+  }
+  setDevToolTab(tab);
+  if (tab === "questions" && returnId) {
+    focusQuestionDebugById(returnId);
+  }
+}
+
+function setDevToolTab(tab) {
+  const selectedTab = ["questions", "create", "achievements", "profile", "overlays"].includes(tab) ? tab : "questions";
+  elements.devToolTabs.querySelectorAll("[data-dev-tab]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.devTab === selectedTab);
+  });
+  elements.devToolScreen.querySelectorAll("[data-dev-panel]").forEach((panel) => {
+    setHidden(panel, panel.dataset.devPanel !== selectedTab);
+  });
+  if (selectedTab === "questions") {
+    loadQuestionDebugBank();
+  }
+  if (selectedTab === "achievements") {
+    renderAchievementDebug();
+  }
+  if (selectedTab === "profile") {
+    renderProfileDebug();
+  }
+}
+
+function isAchievementProgressBased(achievement) {
+  return Boolean(achievement.progressKey || achievement.completionRarity || achievement.completionAll);
+}
+
+function getAchievementDebugRows() {
+  const query = normalizeTriviaAnswer(elements.devAchievementSearchInput?.value || "");
+  const rarityFilter = elements.devAchievementRarityFilter?.value || "all";
+  const typeFilter = elements.devAchievementTypeFilter?.value || "all";
+  return achievementCatalog
+    .filter((achievement) => {
+      const isTitle = Boolean(achievementTitleMap[achievement.id]);
+      const isProgress = isAchievementProgressBased(achievement);
+      const haystack = normalizeTriviaAnswer(`${achievement.name} ${achievement.id} ${achievement.rarity} ${achievement.description}`);
+      if (query && !haystack.includes(query)) {
+        return false;
+      }
+      if (rarityFilter !== "all" && achievement.rarity !== rarityFilter) {
+        return false;
+      }
+      if (typeFilter === "title" && !isTitle) {
+        return false;
+      }
+      if (typeFilter === "progress" && !isProgress) {
+        return false;
+      }
+      if (typeFilter === "hidden" && !achievement.hidden) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => getRarityRank(a.rarity) - getRarityRank(b.rarity) || a.name.localeCompare(b.name));
+}
+
+function renderAchievementDebug() {
+  if (!elements.devAchievementGrid) {
+    return;
+  }
+  const records = loadUnlockedAchievements();
+  const progress = loadAchievementProgress();
+  const rows = getAchievementDebugRows();
+  elements.devAchievementGrid.replaceChildren();
+  rows.forEach((achievement) => {
+    const unlocked = Boolean(records[achievement.id]);
+    const isTitle = Boolean(achievementTitleMap[achievement.id]);
+    const isProgress = isAchievementProgressBased(achievement);
+    const target = getLongTermProgressTarget(achievement);
+    const value = Math.min(target, getLongTermProgressValue(achievement, records, progress));
+    const row = document.createElement("article");
+    row.className = "achievement-debug-card";
+    row.dataset.rarity = achievement.rarity;
+    row.dataset.achievementId = achievement.id;
+    row.dataset.unlocked = String(unlocked);
+    const top = document.createElement("div");
+    top.className = "achievement-debug-card-top";
+    const title = document.createElement("div");
+    title.innerHTML = `<strong>${achievement.name}</strong><span>${rarityInfo[achievement.rarity].label} ${isTitle ? "tag" : "achievement"}${achievement.hidden ? " · hidden" : ""}</span>`;
+    const statePill = document.createElement("em");
+    statePill.textContent = unlocked ? "Unlocked" : "Locked";
+    top.append(title, statePill);
+
+    const condition = document.createElement("p");
+    condition.textContent = achievement.description;
+    if (achievement.hidden) {
+      condition.dataset.hiddenCondition = "true";
+    }
+
+    const progressWrap = document.createElement("div");
+    progressWrap.className = "achievement-debug-progress";
+    if (isProgress) {
+      const bar = document.createElement("span");
+      bar.style.width = `${Math.max(0, Math.min(100, (value / target) * 100))}%`;
+      const label = document.createElement("small");
+      label.textContent = `${Math.floor(value).toLocaleString()}/${target.toLocaleString()}`;
+      progressWrap.append(bar, label);
+    } else {
+      progressWrap.textContent = "No progress counter";
+    }
+
+    const controls = document.createElement("div");
+    controls.className = "achievement-debug-actions";
+    if (achievement.progressKey) {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.step = "1";
+      input.value = String(getProgressValue(progress, achievement.progressKey));
+      input.dataset.achievementProgressInput = achievement.id;
+      input.setAttribute("aria-label", `${achievement.name} progress`);
+      controls.appendChild(input);
+      const setButton = document.createElement("button");
+      setButton.type = "button";
+      setButton.className = "icon-button";
+      setButton.dataset.achievementDebugAction = "set-progress";
+      setButton.textContent = "Set Progress";
+      controls.appendChild(setButton);
+    }
+    const toggleButton = document.createElement("button");
+    toggleButton.type = "button";
+    toggleButton.className = unlocked ? "icon-button danger-button" : "icon-button";
+    toggleButton.dataset.achievementDebugAction = unlocked ? "disable" : "enable";
+    toggleButton.textContent = unlocked ? "Disable" : "Enable";
+    controls.appendChild(toggleButton);
+
+    row.append(top, condition, progressWrap, controls);
+    elements.devAchievementGrid.appendChild(row);
+  });
+  elements.devAchievementStatus.textContent = `${rows.length} achievement${rows.length === 1 ? "" : "s"} shown. Hidden conditions are fully visible here.`;
+}
+
+function resetAchievementMilestonesFromDebug() {
+  saveClaimedAchievementMilestones([]);
+  renderProfile();
+  renderAchievementDebug();
+  if (isModalOpen(elements.achievementsModal)) {
+    renderAchievementLibrary();
+  }
+  if (isModalOpen(elements.profileCustomModal)) {
+    renderProfileCustomizationModal();
+  }
+  elements.devAchievementStatus.textContent = "Achievement milestones reset.";
+  playSound("click");
+}
+
+function handleAchievementDebugClick(event) {
+  const button = event.target.closest("[data-achievement-debug-action]");
+  if (!button) {
+    return;
+  }
+  const card = button.closest("[data-achievement-id]");
+  const achievement = achievementCatalog.find((entry) => entry.id === card?.dataset.achievementId);
+  if (!achievement) {
+    return;
+  }
+  const action = button.dataset.achievementDebugAction;
+  const records = loadUnlockedAchievements();
+  const progress = loadAchievementProgress();
+  if (action === "enable") {
+    setAchievementDebugDisabled(achievement.id, false);
+    records[achievement.id] = records[achievement.id] || { unlockedAt: new Date().toISOString(), debug: true };
+    elements.devAchievementStatus.textContent = `${achievement.name} enabled.`;
+  }
+  if (action === "disable") {
+    delete records[achievement.id];
+    setAchievementDebugDisabled(achievement.id, true);
+    saveUnseenAchievements(loadUnseenAchievements().filter((id) => id !== achievement.id));
+    if (state.profile.equippedTitleId === achievement.id) {
+      setEquippedAchievement("");
+    }
+    elements.devAchievementStatus.textContent = `${achievement.name} disabled.`;
+  }
+  if (action === "set-progress" && achievement.progressKey) {
+    const input = card.querySelector(`[data-achievement-progress-input="${achievement.id}"]`);
+    setProgressValue(progress, achievement.progressKey, input?.value || 0);
+    elements.devAchievementStatus.textContent = `${achievement.name} progress set.`;
+  }
+  saveUnlockedAchievements(records);
+  saveAchievementProgress(progress);
+  refreshLongTermAchievementUnlocks(records, progress);
+  renderAchievementDebug();
+  if (isModalOpen(elements.achievementsModal)) {
+    renderAchievementLibrary();
+  }
+  playSound("click");
+}
+
+function handleAchievementDebugChange(event) {
+  if (event.target.matches("[data-achievement-progress-input]")) {
+    event.target.value = String(Math.max(0, Math.floor(Number(event.target.value) || 0)));
+  }
+}
+
+function getProfileDebugItems() {
+  return [
+    ...profileCardStyles.map((item) => ({ ...item, type: "style", key: getProfileCustomizationKey("style", item.id) })),
+    ...profileCardColours.map((item) => ({ ...item, type: "color", key: getProfileCustomizationKey("color", item.id) })),
+    ...profileCardEffects.map((item) => ({ ...item, type: "effect", key: getProfileCustomizationKey("effect", item.id) })),
+    ...profileCardPatterns.map((item) => ({ ...item, type: "pattern", key: getProfileCustomizationKey("pattern", item.id) })),
+    ...profileFonts.map((item) => ({ ...item, type: "font", key: getProfileCustomizationKey("font", item.id) })),
+    { ...profileTitleColourCustomization, type: "titleColor", key: getProfileCustomizationKey("titleColor", profileTitleColourCustomization.id) }
+  ];
+}
+
+function renderProfileDebug() {
+  if (!elements.devProfileGrid) {
+    return;
+  }
+  const records = loadUnlockedAchievements();
+  const progress = loadAchievementProgress();
+  const debug = loadDebugProfileCustomizations();
+  elements.devProfileGrid.replaceChildren();
+  getProfileDebugItems().forEach((item) => {
+    const status = getProfileUnlockStatus(item, item.type, records, progress);
+    const card = document.createElement("article");
+    card.className = "profile-debug-card";
+    card.dataset.profileDebugKey = item.key;
+    card.dataset.state = debug.enabled.includes(item.key) ? "enabled" : debug.disabled.includes(item.key) ? "disabled" : "natural";
+    const typeLabel = item.type === "style"
+      ? "Card theme"
+      : item.type === "color"
+        ? "Gradient colour"
+        : item.type === "effect"
+          ? "Card effect"
+          : item.type === "pattern"
+            ? "Card pattern"
+            : "Prefix colour";
+    const title = document.createElement("div");
+    title.innerHTML = `<strong>${item.name}</strong><span>${typeLabel}</span>`;
+    const condition = document.createElement("p");
+    condition.textContent = item.condition || "Always unlocked.";
+    const progressText = document.createElement("small");
+    progressText.textContent = `${status.unlocked ? "Unlocked" : "Locked"} · ${status.text}`;
+    const actions = document.createElement("div");
+    actions.className = "profile-debug-card-actions";
+    ["enabled", "disabled", "reset"].forEach((action) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.profileDebugAction = action;
+      button.textContent = action === "enabled" ? "Enable" : action === "disabled" ? "Disable" : "Reset";
+      actions.appendChild(button);
+    });
+    card.append(title, condition, progressText, actions);
+    elements.devProfileGrid.appendChild(card);
+  });
+  elements.devProfileStatus.textContent = `${getProfileDebugItems().length} profile customization items shown.`;
+}
+
+function handleProfileDebugClick(event) {
+  const button = event.target.closest("[data-profile-debug-action]");
+  if (!button) {
+    return;
+  }
+  const key = button.closest("[data-profile-debug-key]")?.dataset.profileDebugKey;
+  if (!key) {
+    return;
+  }
+  setProfileCustomizationDebugState(key, button.dataset.profileDebugAction);
+  renderProfileDebug();
+  if (isModalOpen(elements.profileCustomModal)) {
+    renderProfileCustomizationModal();
+  }
+  elements.devProfileStatus.textContent = `${key} ${button.dataset.profileDebugAction}.`;
+  playSound("click");
+}
+
+function setAllProfileDebugStates(mode) {
+  const keys = getProfileDebugItems().map((item) => item.key);
+  if (mode === "reset") {
+    saveDebugProfileCustomizations({ enabled: [], disabled: [] });
+    elements.devProfileStatus.textContent = "Profile customization debug reset.";
+  } else {
+    saveDebugProfileCustomizations({
+      enabled: mode === "enabled" ? keys : [],
+      disabled: mode === "disabled" ? keys.filter((key) => key !== "style:default" && key !== "pattern:none") : []
+    });
+    elements.devProfileStatus.textContent = mode === "enabled" ? "All profile customizations enabled." : "All profile customizations disabled.";
+  }
+  renderProfileDebug();
+  if (isModalOpen(elements.profileCustomModal)) {
+    renderProfileCustomizationModal();
+  }
+  playSound("click");
+}
+
+function openDevToolScreen(tab = "questions") {
+  buildDevToolScreen();
+  playSound("click");
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomChat, true);
+  setHidden(elements.devToolScreen, false);
+  setDevToolTab(tab);
+}
+
+async function closeDevToolScreen() {
+  if (getCurrentDevToolTab() === "create" && !(await confirmDiscardDevCreateProgress())) {
+    return;
+  }
+  if (getCurrentDevToolTab() === "create") {
+    resetDevQuestionCreateForm({ keepStatus: false });
+  }
+  playSound("click");
+  clearStatFlashes();
+  setHidden(elements.devToolScreen, true);
+  setHidden(elements.modeScreen, false);
+}
+
+async function loadQuestionDebugBank(force = false) {
+  if (state.questionDebugBank.length && !force) {
+    filterQuestionDebugBank();
+    return;
+  }
+
+  try {
+    ensureServerMode();
+    elements.devQuestionStatus.textContent = "Loading question bank...";
+    const response = await fetch("/api/debug/questions");
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `Question debug failed with status ${response.status}.`);
+    }
+    const payload = await response.json();
+    state.questionDebugBank = Array.isArray(payload.questions) ? payload.questions : [];
+    state.questionDebugThemes = Array.isArray(payload.themes) ? payload.themes : triviaThemes;
+    renderQuestionDebugCounts(payload.counts || {});
+    filterQuestionDebugBank();
+  } catch (error) {
+    console.warn(error);
+    elements.devQuestionStatus.textContent = error.message || "Could not load question bank.";
+    playSound("error");
+  }
+}
+
+function renderQuestionDebugCounts(counts = {}) {
+  elements.devQuestionCounts.replaceChildren();
+  const selectedTheme = elements.devQuestionThemeFilter?.value || "all";
+  state.questionDebugThemes.forEach((theme) => {
+    const count = counts[theme] || {};
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "dev-count-chip";
+    item.classList.toggle("selected", selectedTheme === theme);
+    item.dataset.theme = theme;
+    item.innerHTML = `<strong>${theme}</strong><span>${Number(count.total || 0)} total</span><small>${Number(count.image || 0)} image / ${Number(count.text || 0)} text</small>`;
+    item.addEventListener("click", () => {
+      elements.devQuestionThemeFilter.value = theme;
+      filterQuestionDebugBank();
+    });
+    elements.devQuestionCounts.appendChild(item);
+  });
+}
+
+function filterQuestionDebugBank() {
+  const query = normalizeTriviaAnswer(elements.devQuestionSearchInput.value);
+  const theme = elements.devQuestionThemeFilter.value;
+  const type = elements.devQuestionTypeFilter.value;
+  elements.devQuestionCounts.querySelectorAll(".dev-count-chip").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.theme === theme);
+  });
+  state.questionDebugFiltered = state.questionDebugBank.filter((question) => {
+    if (theme !== "all" && question.theme !== theme) {
+      return false;
+    }
+    if (type !== "all" && question.type !== type) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+    const haystack = [
+      question.id,
+      question.theme,
+      question.difficulty,
+      question.type,
+      question.question,
+      question.canonicalAnswer,
+      ...(question.acceptedAnswers || []),
+      ...(question.botCards || []),
+      ...(question.rejectedAnswers || []),
+      question.image?.url
+    ].filter(Boolean).join(" ");
+    return normalizeTriviaAnswer(haystack).includes(query);
+  });
+  state.questionDebugIndex = Math.min(Math.max(0, state.questionDebugIndex), Math.max(0, state.questionDebugFiltered.length - 1));
+  renderQuestionDebugResults();
+  renderQuestionDebugPreview();
+}
+
+function renderQuestionDebugResults() {
+  elements.devQuestionResults.replaceChildren();
+  if (!state.questionDebugFiltered.length) {
+    const empty = document.createElement("div");
+    empty.className = "dev-question-result empty";
+    empty.textContent = "No questions match these filters.";
+    elements.devQuestionResults.appendChild(empty);
+    return;
+  }
+
+  state.questionDebugFiltered.slice(0, 80).forEach((question, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "dev-question-result";
+    button.classList.toggle("selected", index === state.questionDebugIndex);
+    button.dataset.questionDebugIndex = String(index);
+    const answer = document.createElement("span");
+    answer.textContent = question.canonicalAnswer || "-";
+    button.title = `${question.id}\n${question.theme} - ${question.difficulty} - ${question.type}`;
+    button.append(answer);
+    elements.devQuestionResults.appendChild(button);
+  });
+}
+
+function selectQuestionDebugIndex(index) {
+  if (!state.questionDebugFiltered.length) {
+    return;
+  }
+  const total = state.questionDebugFiltered.length;
+  state.questionDebugIndex = ((Math.floor(index) % total) + total) % total;
+  renderQuestionDebugResults();
+  renderQuestionDebugPreview();
+}
+
+function renderQuestionDebugPreview() {
+  const question = state.questionDebugFiltered[state.questionDebugIndex];
+  const total = state.questionDebugFiltered.length;
+  elements.devQuestionCounter.textContent = total ? `${state.questionDebugIndex + 1}/${total} shown` : "0 questions";
+  elements.devQuestionPrevButton.disabled = total <= 1;
+  elements.devQuestionNextButton.disabled = total <= 1;
+  elements.devQuestionEditButton.disabled = !question;
+  elements.devQuestionDeleteButton.disabled = !question;
+  elements.devQuestionMeta.replaceChildren();
+
+  if (!question) {
+    elements.devQuestionPreview?.classList.remove("text-only");
+    elements.devQuestionText.textContent = "Question preview";
+    elements.devQuestionAnswer.textContent = "-";
+    elements.devQuestionAccepted.textContent = "Accepted answers appear here.";
+    elements.devQuestionRejected.textContent = "Rejected answers appear here.";
+    elements.devQuestionStatus.textContent = "No question selected.";
+    elements.devQuestionImage.removeAttribute("src");
+    setHidden(elements.devQuestionImage, true);
+    setHidden(elements.devQuestionPlaceholder, false);
+    elements.devQuestionPlaceholder.textContent = "Select a question.";
+    elements.devQuestionCredit.textContent = "";
+    return;
+  }
+
+  elements.devQuestionPreview?.classList.toggle("text-only", question.type !== "image");
+  [
+    question.theme,
+    question.type === "image" ? "Image" : "Text",
+    normalizeDifficulty(question.difficulty)
+  ].forEach((text) => {
+    const badge = document.createElement("span");
+    badge.textContent = text;
+    elements.devQuestionMeta.appendChild(badge);
+  });
+  elements.devQuestionText.textContent = question.question || "Question preview";
+  elements.devQuestionAnswer.textContent = question.canonicalAnswer || "-";
+  elements.devQuestionAccepted.textContent = (question.acceptedAnswers || []).length
+    ? `Accepted: ${question.acceptedAnswers.join(", ")}`
+    : "No accepted answers listed.";
+  elements.devQuestionRejected.textContent = (question.rejectedAnswers || []).length
+    ? `Rejected: ${question.rejectedAnswers.join(", ")}`
+    : "No explicit rejections listed.";
+  elements.devQuestionStatus.textContent = `Seed id: ${question.id}`;
+  renderDevQuestionImage(question);
+}
+
+function renderDevQuestionImage(question) {
+  elements.devQuestionImage.onload = () => {
+    setHidden(elements.devQuestionImage, false);
+    setHidden(elements.devQuestionPlaceholder, true);
+  };
+  elements.devQuestionImage.onerror = () => {
+    elements.devQuestionPlaceholder.textContent = "Image failed to load.";
+    setHidden(elements.devQuestionImage, true);
+    setHidden(elements.devQuestionPlaceholder, false);
+  };
+  elements.devQuestionCredit.textContent = question.image?.credit || "";
+  setHidden(elements.devQuestionCredit, !question.image?.credit);
+  if (question.type === "image" && question.image?.url) {
+    elements.devQuestionImage.alt = question.image.alt || "Trivia image preview";
+    elements.devQuestionImage.removeAttribute("src");
+    elements.devQuestionPlaceholder.textContent = "Waiting for image...";
+    setHidden(elements.devQuestionImage, true);
+    setHidden(elements.devQuestionPlaceholder, false);
+    elements.devQuestionImage.src = question.image.url;
+  } else {
+    elements.devQuestionImage.removeAttribute("src");
+    elements.devQuestionImage.alt = "";
+    elements.devQuestionPlaceholder.textContent = "Text-only question.";
+    setHidden(elements.devQuestionImage, true);
+    setHidden(elements.devQuestionPlaceholder, false);
+  }
+}
+
+function clearQuestionToolSelection(selectedButton) {
+  [
+    elements.devQuestionFindDuplicatesButton,
+    elements.devQuestionCheckImagesButton,
+    elements.devQuestionLeastSeenButton,
+    elements.devQuestionMostRepeatedButton
+  ].forEach((button) => button?.classList.toggle("selected", button === selectedButton));
+}
+
+function getQuestionToolLabel(question) {
+  return question?.canonicalAnswer || question?.id || "Question";
+}
+
+function createQuestionToolItem(question, metaText, detailText = "") {
+  const item = document.createElement("article");
+  item.className = "dev-question-tool-item";
+  const top = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = getQuestionToolLabel(question);
+  const meta = document.createElement("span");
+  meta.textContent = metaText;
+  top.append(title, meta);
+  const detail = document.createElement("p");
+  detail.textContent = detailText || question?.question || question?.id || "";
+  const action = document.createElement("button");
+  action.type = "button";
+  action.className = "icon-button";
+  action.dataset.questionToolFocus = question?.id || "";
+  action.disabled = !question?.id;
+  action.textContent = "View";
+  item.append(top, detail, action);
+  return item;
+}
+
+function getDuplicateQuestionGroups() {
+  const groups = new Map();
+  state.questionDebugBank.forEach((question) => {
+    const questionKey = normalizePromptText(question.question);
+    const answerKey = normalizePromptText(question.canonicalAnswer);
+    const imageKey = String(question.image?.url || "").trim().toLowerCase();
+    [
+      questionKey ? `Question: ${questionKey}` : "",
+      answerKey ? `Answer: ${answerKey}` : "",
+      imageKey ? `Image URL: ${imageKey}` : ""
+    ].filter(Boolean).forEach((key) => {
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key).push(question);
+    });
+  });
+  return [...groups.entries()]
+    .map(([key, questions]) => ({ key, questions }))
+    .filter((group) => group.questions.length > 1)
+    .sort((a, b) => b.questions.length - a.questions.length || a.key.localeCompare(b.key));
+}
+
+function renderDuplicateQuestionReport() {
+  clearQuestionToolSelection(elements.devQuestionFindDuplicatesButton);
+  const groups = getDuplicateQuestionGroups();
+  elements.devQuestionToolsResults.replaceChildren();
+  if (!groups.length) {
+    elements.devQuestionToolsStatus.textContent = "No obvious duplicate questions, answers, or image URLs found.";
+    return;
+  }
+  groups.slice(0, 24).forEach((group) => {
+    const card = document.createElement("article");
+    card.className = "dev-question-tool-group";
+    const heading = document.createElement("h3");
+    heading.textContent = `${group.questions.length} matches · ${group.key.split(":")[0]}`;
+    const detail = document.createElement("p");
+    detail.textContent = group.key.replace(/^[^:]+:\s*/, "");
+    const list = document.createElement("div");
+    list.className = "dev-question-tool-mini-list";
+    group.questions.forEach((question) => {
+      list.appendChild(createQuestionToolItem(question, `${question.theme} · ${question.difficulty}`, question.id));
+    });
+    card.append(heading, detail, list);
+    elements.devQuestionToolsResults.appendChild(card);
+  });
+  elements.devQuestionToolsStatus.textContent = `${groups.length} possible duplicate group${groups.length === 1 ? "" : "s"} found. Showing top ${Math.min(groups.length, 24)}.`;
+}
+
+function getQuestionUsageCount(question, usage = loadQuestionUsageStats()) {
+  const key = getQuestionUsageKey(question);
+  return Math.max(0, Number(usage[key]?.count) || 0);
+}
+
+function renderQuestionUsageReport(mode) {
+  const usage = loadQuestionUsageStats();
+  const rows = [...state.questionDebugBank]
+    .map((question) => ({ question, count: getQuestionUsageCount(question, usage) }))
+    .sort((a, b) => mode === "most"
+      ? b.count - a.count || String(a.question.id || "").localeCompare(String(b.question.id || ""))
+      : a.count - b.count || String(a.question.id || "").localeCompare(String(b.question.id || "")));
+  clearQuestionToolSelection(mode === "most" ? elements.devQuestionMostRepeatedButton : elements.devQuestionLeastSeenButton);
+  elements.devQuestionToolsResults.replaceChildren();
+  rows.slice(0, 30).forEach(({ question, count }) => {
+    elements.devQuestionToolsResults.appendChild(createQuestionToolItem(
+      question,
+      `${count.toLocaleString()} appearance${count === 1 ? "" : "s"} · ${question.theme}`,
+      question.question
+    ));
+  });
+  elements.devQuestionToolsStatus.textContent = `${mode === "most" ? "Most repeated" : "Least seen"} questions shown from local play history. New or unplayed questions show 0.`;
+}
+
+async function checkImageUrl(question) {
+  const url = String(question.image?.url || "").trim();
+  if (question.type !== "image" || !url) {
+    return { question, ok: false, skipped: true, reason: "No image URL" };
+  }
+  try {
+    ensureServerMode();
+    const response = await fetch(`/api/image?src=${encodeURIComponent(url)}`, { cache: "no-store" });
+    return {
+      question,
+      ok: response.ok,
+      reason: response.ok ? "OK" : `HTTP ${response.status}`
+    };
+  } catch (error) {
+    return { question, ok: false, reason: error.message || "Image check failed" };
+  }
+}
+
+async function checkQuestionImageUrls() {
+  clearQuestionToolSelection(elements.devQuestionCheckImagesButton);
+  const imageQuestions = state.questionDebugBank.filter((question) => question.type === "image");
+  elements.devQuestionToolsResults.replaceChildren();
+  if (!imageQuestions.length) {
+    elements.devQuestionToolsStatus.textContent = "No image questions found.";
+    return;
+  }
+  elements.devQuestionCheckImagesButton.disabled = true;
+  const issues = [];
+  let checked = 0;
+  elements.devQuestionToolsStatus.textContent = `Checking 0/${imageQuestions.length} image URLs...`;
+  for (const question of imageQuestions) {
+    const result = await checkImageUrl(question);
+    checked += 1;
+    if (!result.ok) {
+      issues.push(result);
+    }
+    elements.devQuestionToolsStatus.textContent = `Checking ${checked}/${imageQuestions.length} image URLs... ${issues.length} issue${issues.length === 1 ? "" : "s"} found.`;
+  }
+  elements.devQuestionCheckImagesButton.disabled = false;
+  state.questionDebugImageIssues = issues;
+  if (!issues.length) {
+    elements.devQuestionToolsStatus.textContent = `All ${imageQuestions.length} image URLs loaded through the proxy.`;
+    return;
+  }
+  issues.forEach((issue) => {
+    elements.devQuestionToolsResults.appendChild(createQuestionToolItem(
+      issue.question,
+      `${issue.reason} · ${issue.question.theme}`,
+      issue.question.image?.url || issue.question.id
+    ));
+  });
+  elements.devQuestionToolsStatus.textContent = `${issues.length}/${imageQuestions.length} image question${issues.length === 1 ? "" : "s"} need attention.`;
+}
+
+function getSelectedDebugQuestion() {
+  return state.questionDebugFiltered[state.questionDebugIndex] || null;
+}
+
+function getThemeIdPrefix(theme) {
+  const prefixes = {
+    "Pop Culture": "popculture",
+    "Gaming and Geek Culture": "gaming",
+    "Geo and History": "geohistory",
+    "Animals": "animals",
+    "Food and Drinks": "fooddrinks",
+    "Sports": "sports",
+    "Internet Culture": "internet",
+    "Science": "science",
+    "Mythology": "mythology",
+    "Art and Music": "artmusic"
+  };
+  return prefixes[theme] || normalizeTriviaAnswer(theme).replace(/\s+/g, "");
+}
+
+function getKnownThemeIdPrefixes() {
+  return new Set(triviaThemes.map(getThemeIdPrefix));
+}
+
+function formatDevQuestionId(value, options = {}) {
+  const keepTrailingDash = Boolean(options.keepTrailingDash);
+  const formatted = String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+/g, "")
+    .replace(/-{2,}/g, "-")
+    .slice(0, 120);
+  return keepTrailingDash ? formatted : formatted.replace(/-+$/g, "");
+}
+
+function getFormattedPrefixLength(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+/g, "")
+    .replace(/-{2,}/g, "-")
+    .slice(0, 120)
+    .length;
+}
+
+function normalizeDevCreateIdInput() {
+  const input = elements.devCreateId;
+  const before = input.value;
+  const cursor = input.selectionStart ?? before.length;
+  const formatted = formatDevQuestionId(before, { keepTrailingDash: true });
+  if (before === formatted) {
+    return;
+  }
+  const nextCursor = getFormattedPrefixLength(before.slice(0, cursor));
+  input.value = formatted;
+  input.setSelectionRange(nextCursor, nextCursor);
+}
+
+function syncDevCreateIdPrefix() {
+  const prefix = getThemeIdPrefix(elements.devCreateTheme.value);
+  const current = formatDevQuestionId(elements.devCreateId.value);
+  const parts = current.split("-");
+  const knownPrefixes = getKnownThemeIdPrefixes();
+  let suffix = "";
+  if (current && parts.length > 1) {
+    suffix = knownPrefixes.has(parts[0]) ? parts.slice(1).join("-") : current;
+  } else if (current && !knownPrefixes.has(current)) {
+    suffix = current;
+  }
+  elements.devCreateId.value = suffix ? `${prefix}-${suffix}` : `${prefix}-`;
+}
+
+function hasDevCreateFormProgress() {
+  return Boolean(
+    state.questionEditOriginalId
+    || elements.devCreateId.value.trim()
+    || elements.devCreateQuestion.value.trim()
+    || elements.devCreateCanonical.value.trim()
+    || elements.devCreateAccepted.value.trim()
+    || elements.devCreateBots.value.trim()
+    || elements.devCreateRejected.value.trim()
+    || elements.devCreateImageUrl.value.trim()
+    || elements.devCreateImageAlt.value.trim()
+    || elements.devCreateImageCredit.value.trim()
+  );
+}
+
+async function confirmDiscardDevCreateProgress() {
+  if (!hasDevCreateFormProgress()) {
+    return true;
+  }
+  return showAppConfirm({
+    eyebrow: state.questionEditOriginalId ? "Exit edit" : "Discard draft",
+    title: "Discard unsaved changes?",
+    copy: "Your current question edits are not saved yet. Leaving now will lose the changes on this form.",
+    confirmLabel: "Discard",
+    danger: true
+  });
+}
+
+function resetDevQuestionCreateForm(options = {}) {
+  const keepStatus = Boolean(options.keepStatus);
+  state.questionEditOriginalId = "";
+  state.questionEditReturnId = "";
+  elements.devQuestionCreateForm.reset();
+  updateDevCreateImageFields();
+  setHidden(elements.devCreateExitButton, true);
+  if (!keepStatus) {
+    elements.devCreateStatus.textContent = "Ready. Created questions are permanently saved to data/questions.json.";
+  }
+  updateDevCreatePreview();
+}
+
+function updateDevCreatePreview() {
+  if (!elements.devCreatePreview) {
+    return;
+  }
+  const type = elements.devCreateType.value === "image" ? "image" : "text";
+  const theme = elements.devCreateTheme.value || "Theme";
+  const difficulty = normalizeDifficulty(elements.devCreateDifficulty.value);
+  const question = elements.devCreateQuestion.value.trim() || "Question preview";
+  const imageUrl = elements.devCreateImageUrl.value.trim();
+  const imageAlt = elements.devCreateImageAlt.value.trim() || "Question image preview";
+  const imageCredit = elements.devCreateImageCredit.value.trim();
+
+  elements.devCreatePreview.classList.toggle("text-only", type !== "image");
+  elements.devCreatePreviewMeta.replaceChildren();
+  [theme, type === "image" ? "Image" : "Text", difficulty].forEach((text) => {
+    const badge = document.createElement("span");
+    badge.textContent = text;
+    elements.devCreatePreviewMeta.appendChild(badge);
+  });
+
+  elements.devCreatePreviewQuestion.textContent = question;
+  elements.devCreatePreviewCredit.textContent = imageCredit;
+  setHidden(elements.devCreatePreviewCredit, !imageCredit);
+  elements.devCreatePreviewImage.onload = () => {
+    setHidden(elements.devCreatePreviewImage, false);
+    setHidden(elements.devCreatePreviewPlaceholder, true);
+  };
+  elements.devCreatePreviewImage.onerror = () => {
+    elements.devCreatePreviewPlaceholder.textContent = "Image failed to load.";
+    setHidden(elements.devCreatePreviewImage, true);
+    setHidden(elements.devCreatePreviewPlaceholder, false);
+  };
+
+  if (type === "image" && imageUrl) {
+    elements.devCreatePreviewImage.alt = imageAlt;
+    if (elements.devCreatePreviewImage.dataset.previewUrl !== imageUrl) {
+      elements.devCreatePreviewImage.dataset.previewUrl = imageUrl;
+      elements.devCreatePreviewImage.removeAttribute("src");
+      elements.devCreatePreviewPlaceholder.textContent = "Loading image...";
+      setHidden(elements.devCreatePreviewImage, true);
+      setHidden(elements.devCreatePreviewPlaceholder, false);
+      elements.devCreatePreviewImage.src = imageUrl;
+    }
+  } else {
+    elements.devCreatePreviewImage.removeAttribute("src");
+    delete elements.devCreatePreviewImage.dataset.previewUrl;
+    elements.devCreatePreviewImage.alt = "";
+    elements.devCreatePreviewPlaceholder.textContent = type === "image" ? "Image URL preview" : "Text-only question";
+    setHidden(elements.devCreatePreviewImage, true);
+    setHidden(elements.devCreatePreviewPlaceholder, type === "image");
+  }
+}
+
+function focusQuestionDebugById(id) {
+  const question = state.questionDebugBank.find((entry) => entry.id === id);
+  if (question) {
+    elements.devQuestionThemeFilter.value = question.theme || "all";
+    elements.devQuestionTypeFilter.value = "all";
+  }
+  filterQuestionDebugBank();
+  let index = state.questionDebugFiltered.findIndex((entry) => entry.id === id);
+  if (index < 0 && elements.devQuestionSearchInput.value) {
+    elements.devQuestionSearchInput.value = "";
+    filterQuestionDebugBank();
+    index = state.questionDebugFiltered.findIndex((entry) => entry.id === id);
+  }
+  if (index >= 0) {
+    selectQuestionDebugIndex(index);
+  }
+}
+
+async function exitDevQuestionEdit() {
+  const returnId = state.questionEditReturnId || state.questionEditOriginalId;
+  if (!(await confirmDiscardDevCreateProgress())) {
+    return;
+  }
+  resetDevQuestionCreateForm({ keepStatus: false });
+  setDevToolTab("questions");
+  if (returnId) {
+    focusQuestionDebugById(returnId);
+  }
+  playSound("click");
+}
+
+async function clearDevQuestionCreateFormWithConfirm() {
+  if (!hasDevCreateFormProgress()) {
+    return;
+  }
+  const confirmed = await showAppConfirm({
+    eyebrow: "Clear form",
+    title: "Clear every field?",
+    copy: "This removes everything currently entered on the question form.",
+    confirmLabel: "Clear",
+    danger: true
+  });
+  if (!confirmed) {
+    return;
+  }
+  elements.devQuestionCreateForm.reset();
+  updateDevCreateImageFields();
+  elements.devCreateStatus.textContent = state.questionEditOriginalId
+    ? `Editing ${state.questionEditOriginalId}. Save will overwrite the original question.`
+    : "Question form cleared.";
+  updateDevCreatePreview();
+  playSound("click");
+}
+
+function startEditingDebugQuestion() {
+  const question = getSelectedDebugQuestion();
+  if (!question) {
+    return;
+  }
+  state.questionEditOriginalId = question.id;
+  state.questionEditReturnId = question.id;
+  elements.devCreateTheme.value = question.theme || triviaThemes[0];
+  elements.devCreateDifficulty.value = normalizeDifficulty(question.difficulty);
+  elements.devCreateType.value = question.type === "image" ? "image" : "text";
+  elements.devCreateId.value = question.id || "";
+  elements.devCreateQuestion.value = question.question || "";
+  elements.devCreateCanonical.value = question.canonicalAnswer || "";
+  elements.devCreateAccepted.value = (question.acceptedAnswers || []).join(", ");
+  elements.devCreateBots.value = (question.botCards || []).join(", ");
+  elements.devCreateRejected.value = (question.rejectedAnswers || []).join(", ");
+  elements.devCreateImageUrl.value = question.image?.url || "";
+  elements.devCreateImageAlt.value = question.image?.alt || "";
+  elements.devCreateImageCredit.value = question.image?.credit || "";
+  updateDevCreateImageFields();
+  setHidden(elements.devCreateExitButton, false);
+  elements.devCreateStatus.textContent = `Editing ${question.id}. Save will overwrite the original question.`;
+  setDevToolTab("create");
+  playSound("click");
+}
+
+async function deleteSelectedDebugQuestion() {
+  const question = getSelectedDebugQuestion();
+  if (!question) {
+    return;
+  }
+  const confirmed = await showAppConfirm({
+    eyebrow: "Delete question",
+    title: `Delete ${question.id}?`,
+    copy: "This permanently removes the question from data/questions.json.",
+    confirmLabel: "Delete",
+    danger: true
+  });
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    ensureServerMode();
+    elements.devQuestionStatus.textContent = `Deleting ${question.id}...`;
+    const response = await fetch(`/api/debug/questions/${encodeURIComponent(question.id)}`, {
+      method: "DELETE"
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || `Delete failed with status ${response.status}.`);
+    }
+    elements.devQuestionStatus.textContent = `Deleted ${result.question?.id || question.id}. Bank total: ${result.total}.`;
+    state.questionEditOriginalId = "";
+    state.questionEditReturnId = "";
+    state.questionDebugBank = [];
+    await loadQuestionDebugBank(true);
+    playSound("reveal");
+  } catch (error) {
+    console.warn(error);
+    elements.devQuestionStatus.textContent = error.message || "Could not delete question.";
+    playSound("error");
+  }
+}
+
+function updateDevCreateImageFields() {
+  const isImage = elements.devCreateType.value === "image";
+  setHidden(elements.devCreateImageFields, !isImage);
+  elements.devCreateImageUrl.required = isImage;
+  if (elements.devCreateSubmitButton) {
+    elements.devCreateSubmitButton.textContent = state.questionEditOriginalId ? "Save Question" : "Create Question";
+  }
+  if (elements.devCreateSaveAsNewButton) {
+    setHidden(elements.devCreateSaveAsNewButton, !state.questionEditOriginalId);
+  }
+  if (elements.devCreateExitButton) {
+    setHidden(elements.devCreateExitButton, !state.questionEditOriginalId);
+  }
+  updateDevCreatePreview();
+}
+
+function parseCommaSeparatedAnswers(value) {
+  return String(value || "")
+    .split(",")
+    .map((answer) => answer.trim())
+    .filter(Boolean);
+}
+
+function normalizeDevQuestionIdForComparison(id) {
+  return normalizePromptText(id).replace(/\s+/g, "-");
+}
+
+function getDevQuestionCreatePayload() {
+  const payload = {
+    id: formatDevQuestionId(elements.devCreateId.value),
+    type: elements.devCreateType.value,
+    theme: elements.devCreateTheme.value,
+    difficulty: elements.devCreateDifficulty.value,
+    question: elements.devCreateQuestion.value.trim(),
+    canonicalAnswer: elements.devCreateCanonical.value.trim(),
+    acceptedAnswers: parseCommaSeparatedAnswers(elements.devCreateAccepted.value),
+    botCards: parseCommaSeparatedAnswers(elements.devCreateBots.value),
+    rejectedAnswers: parseCommaSeparatedAnswers(elements.devCreateRejected.value)
+  };
+  if (payload.type === "image") {
+    payload.image = {
+      url: elements.devCreateImageUrl.value.trim(),
+      alt: elements.devCreateImageAlt.value.trim(),
+      credit: elements.devCreateImageCredit.value.trim()
+    };
+  }
+  return payload;
+}
+
+function requireNewDevQuestionId(payload) {
+  const originalId = state.questionEditOriginalId;
+  if (!originalId) {
+    return true;
+  }
+  const sameId = normalizeDevQuestionIdForComparison(payload.id) === normalizeDevQuestionIdForComparison(originalId);
+  if (!sameId) {
+    elements.devCreateId.setCustomValidity("");
+    return true;
+  }
+
+  elements.devCreateId.setCustomValidity("Type a new unique ID before saving as a new question.");
+  elements.devCreateId.reportValidity();
+  elements.devCreateId.focus();
+  elements.devCreateId.select();
+  elements.devCreateStatus.textContent = "Save as New needs a new ID. Change the ID, then try again.";
+  playSound("error");
+  window.setTimeout(() => {
+    elements.devCreateId.setCustomValidity("");
+  }, 0);
+  return false;
+}
+
+async function saveDevQuestionPayload(options = {}) {
+  const payload = getDevQuestionCreatePayload();
+  elements.devCreateId.value = payload.id;
+  if (options.saveAsNew && !requireNewDevQuestionId(payload)) {
+    return;
+  }
+  try {
+    ensureServerMode();
+    const editId = options.saveAsNew ? "" : state.questionEditOriginalId;
+    const actionLabel = editId ? "Saving" : options.saveAsNew ? "Saving new copy" : "Creating";
+    elements.devCreateStatus.textContent = `${actionLabel} ${editId || payload.id}...`;
+    const response = await fetch(editId ? `/api/debug/questions/${encodeURIComponent(editId)}` : "/api/debug/questions", {
+      method: editId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || `${editId ? "Update" : "Create"} failed with status ${response.status}.`);
+    }
+    const savedId = result.question?.id || payload.id;
+    elements.devCreateStatus.textContent = `${editId ? "Updated" : "Created"} ${savedId}. Permanently saved to data/questions.json. Bank total: ${result.total}.`;
+    resetDevQuestionCreateForm({ keepStatus: true });
+    state.questionDebugBank = [];
+    await loadQuestionDebugBank(true);
+    setDevToolTab("questions");
+    focusQuestionDebugById(savedId);
+    elements.devQuestionStatus.textContent = `${editId ? "Updated" : "Created"} ${savedId}. Bank total: ${result.total}.`;
+    playSound("reveal");
+  } catch (error) {
+    console.warn(error);
+    elements.devCreateStatus.textContent = error.message || "Could not create question.";
+    playSound("error");
+  }
+}
+
+async function submitDevQuestionCreateForm(event) {
+  event.preventDefault();
+  if (state.questionEditOriginalId) {
+    const choice = await showEditSaveChoice();
+    if (choice === "overwrite") {
+      await saveDevQuestionPayload();
+    } else if (choice === "saveAsNew") {
+      await saveDevQuestionPayload({ saveAsNew: true });
+    }
+    return;
+  }
+  await saveDevQuestionPayload();
+}
+
+async function saveEditedQuestionAsNew() {
+  if (!state.questionEditOriginalId) {
+    return;
+  }
+  if (!elements.devQuestionCreateForm.reportValidity()) {
+    return;
+  }
+  await saveDevQuestionPayload({ saveAsNew: true });
+}
+
+function triggerOverlayDebug(type) {
+  const debugType = String(type || "").trim();
+  clearStatFlashes();
+  const test = {
+    positive: () => queueStatFlash("positive", "Gain Points", "+1,250 Points", { unit: "Point" }),
+    negative: () => queueStatFlash("negative", "Point Loss", "-750 Points"),
+    mixed: () => queueStatFlash("mixed", "Amplified", "x1.750 Multiplier", { complex: true }),
+    shield: () => queueStatFlash("shield", "Pocket Shield", "Blocked 1,250 Points", { complex: true, durationMs: 2300 }),
+    chaos: () => queueStatFlash("chaos", "Chaos", "$%^&#@$&*@", { durationMs: 3000, complex: true }),
+    burning: () => queueStatFlash("burning", "Wild Fire", "-12% Points", { complex: true }),
+    lightning: () => queueStatFlash("lightning", "Lightning Strike", "-600 Points", { complex: true }),
+    bomb: () => queueStatFlash("bomb", "Hot Potato", "-20% Total", { complex: true }),
+    bounty: () => queueStatFlash("bounty", "Double Bounty", "Final Gains x2", { complex: true, durationMs: 2700, soundName: "bountyRound" }),
+    "coin-shower": () => queueStatFlash("coin", "Coin Shower", "Bonus Round", { complex: true, durationMs: 2700, soundName: "bountyRound" }),
+    "sudden-death": () => queueStatFlash("sudden-death", "Sudden Death", "Losers Lose 25%", { complex: true, durationMs: 2700, soundName: "suddenDeath" }),
+    outage: () => queueStatFlash("outage", "Power Outage", "Power-Ups Offline", { complex: true, durationMs: 2700, soundName: "lightOff" }),
+    "no-mercy": () => queueStatFlash("no-mercy", "No Mercy", "Losers Lose 15%", { complex: true, durationMs: 2500, soundName: "noMercy" }),
+    "black-market": () => queueStatFlash("black-market", "Black Market", "Unlimited Shop Open", { complex: true, durationMs: 2700, soundName: "blackMarket" }),
+    "casino-dice": () => queueStatFlash("casino", "Gambler's Dice", "Everyone Rolls", { complex: true, durationMs: 2700, soundName: "dice" }),
+    "casino-roulette": () => queueStatFlash("casino", "Roulette", "Lucky Player +50%", { complex: true, durationMs: 2700, soundName: "dice" }),
+    sabotage: () => queueStatFlash("sabotage", "Sabotage", "-5% + Debuff", { complex: true, durationMs: 2700, soundName: "noMercy" }),
+    complex: () => queueStatFlash("positive", "Cocktail Mix", ["+1 Streak", "+8% Points", "Point Shield Armed"], { complex: true }),
+    sequence: () => {
+      queueStatFlash("positive", "Gain Points", "+500 Points", { unit: "Point" });
+      queueStatFlash("burning", "Wild Fire", "-5% Points", { complex: true });
+      queueStatFlash("lightning", "Zap Strike", "-300 Points", { complex: true });
+      queueStatFlash("mixed", "Gambler's Dice", ["Airdrop", "Void Bomb"], { complex: true });
+    }
+  };
+  if (!test[debugType]) {
+    return;
+  }
+  test[debugType]();
+  if (elements.devOverlayStatus) {
+    elements.devOverlayStatus.textContent = `${debugType.charAt(0).toUpperCase()}${debugType.slice(1)} overlay triggered.`;
+  }
+}
+
+function prefetchNextSetup() {
+  if (state.matchEnded || state.round >= state.maxRounds || state.gradingActive || state.nextSetup || state.nextSetupPromise) {
+    return;
+  }
+
+  const setupVersion = state.setupVersion;
+  const promise = requestRoundSetup();
+  state.nextSetupPromise = promise;
+  state.nextSetupStatus = "loading";
+  console.info(`Prefetching setup for round ${state.round + 1}...`);
+  promise
+    .then((setup) => {
+      if (state.setupVersion === setupVersion && !state.matchEnded && !isRepeatedBlackCard(setup)) {
+        state.nextSetup = setup;
+        state.nextSetupStatus = "ready";
+        preloadQuestionImageInBackground(setup);
+        console.info(`Prefetched setup for round ${state.round + 1}.`);
+      }
+    })
+    .catch((error) => {
+      if (state.setupVersion === setupVersion) {
+        state.nextSetupStatus = "failed";
+        console.warn("Next round prefetch failed:", error);
+      }
+    })
+    .finally(() => {
+      if (state.setupVersion === setupVersion && state.nextSetupPromise === promise) {
+        state.nextSetupPromise = null;
+        if (!state.nextSetup && state.nextSetupStatus === "loading") {
+          state.nextSetupStatus = "idle";
+        }
+      }
+    });
+}
+
+function scheduleNextSetupPrefetch() {
+  if (isRoomMode() && !isCurrentHost()) {
+    return;
+  }
+  if (state.matchEnded || state.round >= state.maxRounds || state.nextSetup || state.nextSetupPromise) {
+    return;
+  }
+  scheduleWhenIdle(() => {
+    if (!state.gradingActive) {
+      prefetchNextSetup();
+    }
+  });
+}
+
+async function newRound() {
+  const previousBlackCard = state.blackCard;
+  state.questionId = "";
+  state.blackCard = "";
+  state.questionType = "image";
+  state.questionDifficulty = "medium";
+  state.triviaTheme = "";
+  state.questionImage = null;
+  state.canonicalAnswer = "";
+  state.acceptedAnswers = [];
+  state.judge = null;
+  state.botCards = [];
+  if (isRoomMode() && !isCurrentHost()) {
+    resetRoundUiForLoading({ resetBlackCardTheme: true });
+    try {
+      const setup = await waitForSyncedRoomSetupForRound(state.round);
+      if (!state.matchEnded) {
+        applyRoundSetup(setup);
+      }
+    } catch (error) {
+      console.warn(error);
+      stopLoadingMessages();
+      playSound("error");
+      elements.errorText.textContent = `${error.message} Ask the host to keep the room open and make sure both browsers are on the same local server.`;
+      setHidden(elements.loadingPanel, true);
+      setHidden(elements.errorPanel, false);
+    }
+    return;
+  }
+  const preferredTheme = state.nextPreferredTheme;
+  state.nextPreferredTheme = "";
+  if (preferredTheme) {
+    reserveQuestionSetups([state.nextSetup, ...state.setupStack].filter(Boolean));
+    state.setupStack = [];
+    state.nextSetup = null;
+    state.nextSetupPromise = null;
+    state.nextSetupStatus = "idle";
+    resetRoundUiForLoading();
+    try {
+      const setup = await requestRoundSetup(getThemeSetupOptions(preferredTheme));
+      if (!state.matchEnded) {
+        applyRoundSetup(setup);
+      }
+    } catch (error) {
+      console.warn(error);
+      stopLoadingMessages();
+      playSound("error");
+      elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+      setHidden(elements.loadingPanel, true);
+      setHidden(elements.errorPanel, false);
+    }
+    return;
+  }
+
+  const cachedSetup = state.setupStack.length
+    ? state.setupStack.shift()
+    : takeReservedSetup(getEnabledTriviaThemes(), previousBlackCard) || state.nextSetup;
+  state.nextSetup = null;
+  state.nextSetupStatus = "idle";
+
+  if (cachedSetup && !isRepeatedBlackCard(cachedSetup, previousBlackCard)) {
+    applyRoundSetup(cachedSetup);
+    return;
+  }
+
+  resetRoundUiForLoading({ resetBlackCardTheme: true });
+
+  try {
+    const pendingSetup = state.nextSetupPromise;
+    if (pendingSetup) {
+      startLoadingMessages("next", "Finishing the next round...");
+    }
+    let setup = state.setupStack.length
+      ? state.setupStack.shift()
+      : pendingSetup
+        ? await pendingSetup
+        : await requestRoundSetup();
+    if (isRepeatedBlackCard(setup, previousBlackCard)) {
+      setup = state.setupStack.length ? state.setupStack.shift() : await requestRoundSetup();
+    }
+    if (state.matchEnded) {
+      return;
+    }
+    if (state.nextSetup === setup) {
+      state.nextSetup = null;
+    }
+    applyRoundSetup(setup);
+  } catch (error) {
+    console.warn(error);
+    stopLoadingMessages();
+    playSound("error");
+    elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+    setHidden(elements.loadingPanel, true);
+    setHidden(elements.errorPanel, false);
+  }
+}
+
+function resetMatch(mode) {
+  stopTimer();
+  clearStatFlashes();
+  clearBackgroundSetupPrefetch();
+  state.mode = mode;
+  state.matchModifiers = rollMatchModifiers(mode);
+  setPlayersForMode(mode);
+  resetAchievementStats();
+  discardPendingAchievementProgress();
+  state.pendingPowerBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.freezeProtection = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pocketShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.permafrostProtection = { player: false, opponent: false, bot1: false, bot2: false };
+  state.eternalFlameProtection = { player: false, opponent: false, bot1: false, bot2: false };
+  state.streakAnchorCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pendingStreakBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.heavenHellCurses = { player: false, opponent: false, bot1: false, bot2: false };
+  state.secretPointBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.fakePointDebts = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.redHerringMasks = {};
+  state.bottomFeederRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.streakFreezeRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.streakLossProtectionRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.cocktailPenaltyRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.debuffShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.failedInvestmentDebuffs = { player: false, opponent: false, bot1: false, bot2: false };
+  state.timeDilationRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pendingCocktailBuffs = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.insuranceFrauds = {};
+  state.insurancePolicies = {};
+  state.virusFactories = {};
+  state.luckRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.typhoonOwners = {};
+  state.thornOwners = {};
+  state.timeBombs = [];
+  state.debuffTimeBombs = [];
+  state.error404Owners = {};
+  state.error404Schedule = [];
+  state.pendingDeadWeights = [];
+  state.chaosInputLockId = "";
+  state.allOutRounds = {};
+  state.extraPowerUses = {};
+  state.botPowerSchedule = {};
+  state.nextPreferredTheme = "";
+  state.soulLinks = [];
+  state.arsonists = {};
+  state.bartenders = {};
+  state.hotInHereOwners = {};
+  state.worldBurnOwners = {};
+  state.lawnMowerOwners = {};
+  state.lastPlayedPowerUps = { player: null, opponent: null, bot1: null, bot2: null };
+  state.loserPenaltyRounds = 0;
+  state.timerPenalties = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.timerRemaining = state.timerSeconds;
+  state.timerWarned = false;
+  state.hotPotatoCount = 0;
+  state.hotPotatoOwners = [];
+  state.forcedWinnerOwner = null;
+  state.roundAmplifiedMultiplier = 1;
+  state.currentTableEvent = null;
+  state.tableEventSabotageUsed = {};
+  state.blackMarketPurchases = {};
+  state.round = 1;
+  state.maxRounds = mode === "room"
+    ? state.roomSettings.rounds
+    : mode === "bots" || mode === "local"
+      ? 10
+      : clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, state.maxRounds || 5);
+  state.timerSeconds = mode === "room"
+    ? state.roomSettings.timerSeconds
+    : mode === "bots" || mode === "local"
+      ? 30
+      : clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds"), 10, 60, state.timerSeconds || 30);
+  state.timerRemaining = state.timerSeconds;
+  state.timerWarned = false;
+  state.streaks = Object.fromEntries(DEFAULT_OWNER_IDS.map((owner) => [owner, 0]));
+  state.players.forEach((player) => {
+    player.score = 0;
+    player.streak = 0;
+  });
+  syncLegacyScoresFromPlayers();
+  state.biggestStreak = 0;
+  state.bestWinningCard = "";
+  state.bestWinningScore = 0;
+  state.finalEffectSummary = "";
+  state.matchHistory = [];
+  state.matchCoinsEarned = 0;
+  resetAchievementStats();
+  state.roundProgress = Array.from({ length: state.maxRounds }, () => "unanswered");
+  state.matchEnded = false;
+  state.localEntryStep = 1;
+  state.localAnswers = { playerOne: "", playerTwo: "" };
+  resetRoundAnswers();
+  state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
+  state.activePowerUp = null;
+  state.freshPowerUps = {};
+  setupPowerHands();
+  state.recentJudgeNames = [];
+  state.recentBlackCards = [];
+  state.recentTriviaThemes = [];
+  state.botCards = [];
+  state.nextSetup = null;
+  state.nextSetupPromise = null;
+  state.nextSetupStatus = "idle";
+  state.setupStack = [];
+  state.backgroundImagePreloads = {};
+  state.backgroundImagePreloadOrder = [];
+  state.setupVersion += 1;
+  state.blackCard = "";
+  state.questionType = "image";
+  state.questionDifficulty = "medium";
+  state.triviaTheme = "";
+  state.questionImage = null;
+  state.canonicalAnswer = "";
+  state.acceptedAnswers = [];
+  state.judge = null;
+  updateModeUi();
+  renderScore();
+}
+
+async function startGame(mode) {
+  initAudio();
+  startMusic();
+  playSound("click");
+  clearRoomAutoResolve();
+  stopRoomDirectoryPolling();
+  resetMatch(mode);
+  if (mode === "room" && isCurrentHost() && !state.joiningRoom) {
+    state.currentRoomStatus = "in-progress";
+    upsertHostedRoom("in-progress");
+  }
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.gameStage, false);
+  resetRoundUiForLoading();
+  try {
+    const enabledThemes = getEnabledTriviaThemes();
+    const syncedSetup = mode === "room" && !isCurrentHost()
+      ? getSyncedRoomSetupForRound(1) || await waitForSyncedRoomSetupForRound(1)
+      : null;
+    const firstSetup = syncedSetup
+      || takeReservedSetup(enabledThemes)
+      || takeWarmSetup(enabledThemes)
+      || await getWarmSetupPromise(enabledThemes)
+      || await requestRoundSetup();
+    if (state.matchEnded) {
+      return;
+    }
+    if (state.warmSetup === firstSetup) {
+      clearWarmSetup();
+    }
+    applyRoundSetup(firstSetup);
+  } catch (error) {
+    console.warn(error);
+    stopLoadingMessages();
+    playSound("error");
+    elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+    setHidden(elements.loadingPanel, true);
+    setHidden(elements.errorPanel, false);
+  }
+}
+
+function generateRoomCode() {
+  return `CAI-${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+function syncRoomControls() {
+  state.roomSettings.maxPlayers = getRoomMaxPlayers();
+  state.roomSettings.enabledThemes = getEnabledTriviaThemes();
+  elements.roomRoundsSlider.value = state.roomSettings.rounds;
+  elements.roomRoundsValue.textContent = `${state.roomSettings.rounds}`;
+  elements.roomTimerSlider.value = state.roomSettings.timerSeconds;
+  elements.roomTimerValue.textContent = `${state.roomSettings.timerSeconds}s`;
+  elements.roomPlayerLimitSlider.value = state.roomSettings.maxPlayers;
+  elements.roomPlayerLimitValue.textContent = `${state.roomSettings.maxPlayers}`;
+  elements.harshModeToggle.checked = state.roomSettings.harsh;
+  elements.chaosModeToggle.checked = state.roomSettings.chaos;
+  elements.timeMoneyModeToggle.checked = state.roomSettings.timeMoney;
+  elements.amplifiedModeToggle.checked = state.roomSettings.amplified;
+  elements.wildFireModeToggle.checked = state.roomSettings.wildFire;
+  elements.partyMayhemModeToggle.checked = state.roomSettings.partyMayhem;
+  elements.classicModeToggle.checked = state.roomSettings.classicMode;
+  elements.privateRoomToggle.checked = state.roomSettings.private;
+  syncClassicRoomToggleState();
+  elements.roomPasswordInput.value = state.roomSettings.password;
+  setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
+  renderThemeSummary();
+  elements.roomCodePreview.textContent = state.roomSettings.code;
+  elements.startRoomButton.textContent = state.currentRoomStatus === "lobby" ? "Continue" : "Create Room";
+  setHidden(elements.roomHostProfile, Boolean(state.joiningRoom));
+  renderRoomPlayers();
+}
+
+function openRoomScreen() {
+  state.mode = null;
+  state.joiningRoom = null;
+  state.isSpectator = false;
+  state.roomGame = null;
+  state.currentOwner = "player";
+  state.currentRoomStatus = "draft";
+  state.roomParticipants = [];
+  state.roomSettings.code = generateRoomCode();
+  syncRoomControls();
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.roomScreen, false);
+  playSound("click");
+}
+
+function closeRoomScreen() {
+  const returnToLobby = state.currentRoomStatus === "lobby";
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.roomLobbyScreen, !returnToLobby);
+  setHidden(elements.modeScreen, returnToLobby);
+  if (returnToLobby) {
+    renderRoomLobby();
+  }
+  playSound("click");
+}
+
+async function openJoinScreen() {
+  await refreshHostedRooms();
+  renderHostedRooms();
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.gameStage, true);
+  setHidden(elements.joinScreen, false);
+  playSound("click");
+}
+
+function closeJoinScreen() {
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.modeScreen, false);
+  playSound("click");
+}
+
+function updateRoomRounds(value) {
+  state.roomSettings.rounds = clampNumber(value, 1, 10, 5);
+  elements.roomRoundsValue.textContent = `${state.roomSettings.rounds}`;
+  if (state.currentRoomStatus === "lobby") {
+    upsertHostedRoom("lobby");
+    renderRoomLobby();
+  }
+}
+
+function updateRoomTimer(value) {
+  state.roomSettings.timerSeconds = clampNumber(value, 10, 60, 30);
+  elements.roomTimerValue.textContent = `${state.roomSettings.timerSeconds}s`;
+  if (state.currentRoomStatus === "lobby") {
+    upsertHostedRoom("lobby");
+    renderRoomLobby();
+  }
+}
+
+function updateRoomPlayerLimit(value) {
+  state.roomSettings.maxPlayers = clampNumber(value, 2, 10, 6);
+  elements.roomPlayerLimitSlider.value = state.roomSettings.maxPlayers;
+  elements.roomPlayerLimitValue.textContent = `${state.roomSettings.maxPlayers}`;
+  renderRoomPlayers();
+  if (state.currentRoomStatus === "lobby") {
+    upsertHostedRoom("lobby");
+    renderRoomLobby();
+  }
+}
+
+function syncClassicRoomToggleState() {
+  const classic = Boolean(elements.classicModeToggle?.checked);
+  [
+    elements.harshModeToggle,
+    elements.chaosModeToggle,
+    elements.timeMoneyModeToggle,
+    elements.amplifiedModeToggle,
+    elements.wildFireModeToggle,
+    elements.partyMayhemModeToggle
+  ].forEach((toggle) => {
+    if (toggle) {
+      toggle.disabled = classic;
+    }
+  });
+}
+
+function updateRoomVariants() {
+  if (elements.classicModeToggle.checked) {
+    elements.harshModeToggle.checked = false;
+    elements.chaosModeToggle.checked = false;
+    elements.timeMoneyModeToggle.checked = false;
+    elements.amplifiedModeToggle.checked = false;
+    elements.wildFireModeToggle.checked = false;
+    elements.partyMayhemModeToggle.checked = false;
+  }
+  state.roomSettings.harsh = elements.harshModeToggle.checked;
+  state.roomSettings.chaos = elements.chaosModeToggle.checked;
+  state.roomSettings.timeMoney = elements.timeMoneyModeToggle.checked;
+  state.roomSettings.amplified = elements.amplifiedModeToggle.checked;
+  state.roomSettings.wildFire = elements.wildFireModeToggle.checked;
+  state.roomSettings.partyMayhem = elements.partyMayhemModeToggle.checked;
+  state.roomSettings.classicMode = elements.classicModeToggle.checked;
+  state.roomSettings.private = elements.privateRoomToggle.checked;
+  state.roomSettings.password = cleanChatInput(elements.roomPasswordInput.value);
+  setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
+  syncClassicRoomToggleState();
+  elements.roomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  if (state.currentRoomStatus === "lobby") {
+    upsertHostedRoom("lobby");
+    renderRoomLobby();
+  }
+}
+
+async function handleClassicModeToggle() {
+  if (!elements.classicModeToggle.checked) {
+    updateRoomVariants();
+    return;
+  }
+  const confirmed = await showAppConfirm({
+    eyebrow: "Classic mode",
+    title: "Disable modifiers and power-ups?",
+    copy: "Classic mode is multiplayer only. It turns off every other modifier, prevents table events, and disables all power-ups for this room.",
+    confirmLabel: "Enable Classic",
+    cancelLabel: "Cancel",
+    danger: false
+  });
+  if (!confirmed) {
+    elements.classicModeToggle.checked = false;
+  }
+  updateRoomVariants();
+}
+
+function buildRoomDirectoryPayload(status = "lobby") {
+  const participants = getRoomParticipantsFromPlayers(status);
+  const existing = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
+  return {
+    code: state.roomSettings.code,
+    status,
+    settings: { ...state.roomSettings },
+    host: {
+      id: state.clientId,
+      name: state.profile.name || "Host",
+      avatar: state.profile.avatar,
+      equippedTitleId: state.profile.equippedTitleId || "",
+      cardCustomization: state.profile.cardCustomization
+    },
+    participants,
+    activePlayers: participants.filter((participant) => participant.active && !participant.spectator).length || 1,
+    spectators: participants.filter((participant) => participant.active && participant.spectator).length,
+    banned: [...getRoomBanList()],
+    game: status === "in-progress" ? (state.roomGame || existing?.game || null) : null
+  };
+}
+
+async function publishRoomDirectory(room) {
+  try {
+    const response = await fetch("/api/rooms", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ room })
+    });
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return room;
+    }
+    const data = await response.json();
+    state.roomDirectoryOnline = true;
+    return data.room || room;
+  } catch {
+    state.roomDirectoryOnline = false;
+    return room;
+  }
+}
+
+function upsertHostedRoom(status = "lobby") {
+  const existing = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
+  const room = buildRoomDirectoryPayload(status);
+  if (existing) {
+    Object.assign(existing, room);
+  } else {
+    state.hostedRooms.unshift(room);
+  }
+  publishRoomDirectory(room).then((serverRoom) => {
+    if (serverRoom && serverRoom.code === room.code) {
+      mergeHostedRoom(serverRoom);
+      if (state.roomSettings.code === serverRoom.code) {
+        applyRoomDirectoryRoom(serverRoom);
+      }
+    }
+  });
+  return room;
+}
+
+function mergeHostedRoom(room) {
+  const existing = state.hostedRooms.find((entry) => entry.code === room.code);
+  if (existing) {
+    Object.assign(existing, room);
+  } else {
+    state.hostedRooms.unshift(room);
+  }
+}
+
+async function refreshHostedRooms() {
+  try {
+    const response = await fetch("/api/rooms");
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return;
+    }
+    const data = await response.json();
+    state.roomDirectoryOnline = true;
+    state.hostedRooms = Array.isArray(data.rooms) ? data.rooms : [];
+  } catch {
+    state.roomDirectoryOnline = false;
+    // Keep the local fallback list when the server is unavailable.
+  }
+}
+
+async function updateRoomPresence(room, options = {}) {
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(room.code)}/presence`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        participant: getCurrentParticipant({
+          host: Boolean(options.host),
+          spectator: Boolean(options.spectator),
+          active: options.active !== false,
+          status: options.status || (options.spectator ? "spectating" : "joined"),
+          answer: options.answer || "",
+          submittedRound: options.submittedRound || 0,
+          remainingTime: options.remainingTime || 0
+        })
+      })
+    });
+    if (!response.ok) {
+      return room;
+    }
+    const data = await response.json();
+    if (data.room) {
+      mergeHostedRoom(data.room);
+      applyRoomDirectoryRoom(data.room);
+    }
+    return data.room || room;
+  } catch {
+    return room;
+  }
+}
+
+function applyRoomDirectoryRoom(room) {
+  if (!room || room.code !== state.roomSettings.code) {
+    return;
+  }
+  state.roomSettings = { ...state.roomSettings, ...room.settings, code: room.code };
+  state.roomParticipants = Array.isArray(room.participants) ? room.participants : [];
+  state.roomGame = room.game && typeof room.game === "object" ? room.game : null;
+  state.joiningRoom = state.joiningRoom ? room : state.joiningRoom;
+  syncRoomSubmissionsFromParticipants();
+}
+
+function syncRoomSubmissionsFromParticipants() {
+  if (!isRoomMode() || !state.roomParticipants.length || !state.round) {
+    return;
+  }
+  state.roomParticipants.forEach((participant, index) => {
+    if (!participant.active || participant.spectator || Number(participant.submittedRound) !== Number(state.round)) {
+      return;
+    }
+    const player = state.players.find((entry) => entry.participantId === participant.id)
+      || state.players.find((entry) => entry.owner === getRoomOwnerForParticipant(participant, index));
+    const owner = player?.owner || getRoomOwnerForParticipant(participant, index);
+    state.roomSubmissions[owner] = true;
+    if (participant.answer) {
+      lockRoundAnswer(owner, participant.answer);
+      if (owner === "player") {
+        state.localAnswers.playerOne = participant.answer;
+      }
+      if (owner === "opponent") {
+        state.localAnswers.playerTwo = participant.answer;
+      }
+    }
+    if (Number.isFinite(Number(participant.remainingTime))) {
+      state.answerRemainingTimes[owner] = Math.max(0, Number(participant.remainingTime));
+    }
+    if (player && player.active && !player.muted) {
+      player.connectionStatus = "submitted";
+    }
+  });
+}
+
+function getSyncedRoomSetupForRound(round = state.round) {
+  const game = state.roomGame || state.joiningRoom?.game || null;
+  if (!game || Number(game.round) !== Number(round) || !game.setup) {
+    return null;
+  }
+  try {
+    return normalizeSetupPayload(game.setup);
+  } catch {
+    return null;
+  }
+}
+
+function publishRoomRoundSetup(setup) {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !setup) {
+    return;
+  }
+  state.roomGame = {
+    matchId: state.roomGame?.matchId || `${state.roomSettings.code}-${Date.now()}`,
+    status: "playing",
+    round: state.round,
+    setup,
+    updatedAt: Date.now()
+  };
+  upsertHostedRoom("in-progress");
+}
+
+async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 12000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const setup = getSyncedRoomSetupForRound(round);
+    if (setup) {
+      return setup;
+    }
+    await refreshHostedRooms();
+    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
+    if (room) {
+      applyRoomDirectoryRoom(room);
+    }
+    await sleep(650);
+  }
+  throw new Error("Timed out waiting for the host to sync this round.");
+}
+
+function shouldStartJoinedRoomMatch(room) {
+  return Boolean(
+    room
+      && state.joiningRoom
+      && !isCurrentHost()
+      && state.currentRoomStatus === "lobby"
+      && room.status === "in-progress"
+      && room.game?.setup
+      && elements.gameStage.classList.contains("hidden")
+  );
+}
+
+function startJoinedRoomMatchFromDirectory(room) {
+  applyRoomDirectoryRoom(room);
+  state.currentRoomStatus = "in-progress";
+  state.mode = "room";
+  setPlayersForMode("room");
+  startGame("room");
+}
+
+async function refreshCurrentRoomDirectory() {
+  await refreshHostedRooms();
+  const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
+  if (room) {
+    applyRoomDirectoryRoom(room);
+    if (shouldStartJoinedRoomMatch(room)) {
+      startJoinedRoomMatchFromDirectory(room);
+      return;
+    }
+    if (isRoomLobbyActive()) {
+      renderRoomLobby();
+    }
+  }
+}
+
+function startRoomDirectoryPolling() {
+  stopRoomDirectoryPolling();
+  state.roomDirectoryPollId = window.setInterval(refreshCurrentRoomDirectory, 1800);
+}
+
+function stopRoomDirectoryPolling() {
+  if (state.roomDirectoryPollId) {
+    window.clearInterval(state.roomDirectoryPollId);
+    state.roomDirectoryPollId = null;
+  }
+}
+
+function getKickableRoomBotTarget(owner = "", participantId = "") {
+  if (!isRoomMode() || !isCurrentHost()) {
+    return null;
+  }
+
+  const participant = participantId
+    ? state.roomParticipants.find((entry) => entry.id === participantId)
+    : null;
+  const player = owner ? getPlayer(owner) : null;
+  const participantFromPlayer = player?.participantId
+    ? state.roomParticipants.find((entry) => entry.id === player.participantId)
+    : null;
+  const targetParticipant = participant || participantFromPlayer;
+  const targetPlayer = player?.bot
+    ? player
+    : state.players.find((entry) => targetParticipant && entry.participantId === targetParticipant.id) || null;
+  const isBot = Boolean(targetParticipant?.bot || targetPlayer?.bot || targetPlayer?.type === "bot");
+  const isActive = targetParticipant
+    ? targetParticipant.active !== false && !targetParticipant.spectator
+    : Boolean(targetPlayer?.active);
+  const resolvedParticipantId = targetParticipant?.id || targetPlayer?.participantId || "";
+
+  if (!isBot || !isActive || !resolvedParticipantId) {
+    return null;
+  }
+
+  return {
+    owner: targetPlayer?.owner || owner,
+    participantId: resolvedParticipantId,
+    name: targetParticipant?.name || targetPlayer?.label || "Bot"
+  };
+}
+
+function canKickRoomBot(owner = "", participantId = "") {
+  return Boolean(getKickableRoomBotTarget(owner, participantId));
+}
+
+function kickRoomBot(owner = "", participantId = "") {
+  const target = getKickableRoomBotTarget(owner, participantId);
+  if (!target) {
+    return false;
+  }
+
+  state.roomParticipants = state.roomParticipants.filter((participant) => participant.id !== target.participantId);
+  state.players.forEach((player) => {
+    if (player.participantId === target.participantId || player.owner === target.owner) {
+      player.active = false;
+      player.connectionStatus = "kicked";
+    }
+  });
+
+  if (target.owner === "opponent" || getPlayer("opponent")?.participantId === target.participantId) {
+    state.localAnswers.playerTwo = "";
+    delete state.roomSubmissions.opponent;
+  } else if (target.owner) {
+    delete state.roomSubmissions[target.owner];
+  }
+
+  addSystemChat(`${target.name} was kicked from the room.`);
+  const opponent = getPlayer("opponent");
+  if (opponent?.active && state.roomSubmissions.opponent === undefined) {
+    state.roomSubmissions.opponent = false;
+  }
+  renderScore();
+  renderRoomPlayers();
+  renderSubmissionStatus();
+  upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  playSound("click");
+  return true;
+}
+
+function handleKickableBotClick(event) {
+  if (event.target.closest("button, a, input, select, textarea, [data-action], .leaderboard-power-pill, .result-power-pill")) {
+    return false;
+  }
+  const row = event.target.closest("[data-participant-id], [data-owner]");
+  if (!row) {
+    return false;
+  }
+  const owner = row.dataset.owner || "";
+  const participantId = row.dataset.participantId || "";
+  if (!kickRoomBot(owner, participantId)) {
+    return false;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  return true;
+}
+
+function renderHostedRooms() {
+  elements.joinRoomList.replaceChildren();
+  const visibleRooms = state.hostedRooms.filter((room) => room.status !== "complete" && room.activePlayers > 0);
+  if (!visibleRooms.length) {
+    const empty = document.createElement("section");
+    empty.className = "join-room-card";
+    const copy = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = state.roomDirectoryOnline ? "No hosted rooms yet." : "Room server is not connected.";
+    const meta = document.createElement("div");
+    meta.className = "join-room-meta";
+    const chip = document.createElement("span");
+    chip.textContent = state.roomDirectoryOnline ? "Create one first" : "Open the app from npm start on the same address";
+    meta.appendChild(chip);
+    copy.append(title, meta);
+    empty.appendChild(copy);
+    elements.joinRoomList.appendChild(empty);
+    return;
+  }
+
+  visibleRooms.forEach((room) => {
+    const card = document.createElement("section");
+    card.className = "join-room-card";
+    const details = document.createElement("div");
+    const host = document.createElement("div");
+    host.className = "join-room-host";
+    const avatar = document.createElement("span");
+    avatar.className = "room-player-avatar";
+    renderAvatar(avatar, { label: room.host.name, avatar: room.host.avatar });
+    const hostName = document.createElement("strong");
+    renderPlayerNameWithTitle(hostName, {
+      owner: room.host.id === state.clientId ? state.currentOwner : "room-host",
+      label: room.host.name,
+      host: true,
+      equippedTitleId: room.host.equippedTitleId || ""
+    }, room.host.name);
+    host.append(avatar, hostName);
+    const meta = document.createElement("div");
+    meta.className = "join-room-meta";
+    [room.settings.private ? "Private" : "Public", getRoomModeLabel(room.settings), `${room.activePlayers}/${getRoomMaxPlayers(room.settings)} players`, `${room.spectators} spectators`, room.status].forEach((label) => {
+      const chip = document.createElement("span");
+      chip.textContent = label;
+      meta.appendChild(chip);
+    });
+    details.append(host, meta);
+    const actions = document.createElement("div");
+    actions.className = "join-room-actions";
+    const joinButton = document.createElement("button");
+    joinButton.type = "button";
+    joinButton.dataset.roomAction = "join";
+    joinButton.dataset.joinRoom = room.code;
+    joinButton.textContent = "Join Game";
+    const roomIsFull = room.activePlayers >= getRoomMaxPlayers(room.settings);
+    joinButton.disabled = room.status !== "lobby" || roomIsFull;
+    const joinHint = room.status === "lobby"
+      ? roomIsFull
+        ? "This room is full, but you can still watch as a spectator."
+        : room.settings.private ? "Enter the room password to join before the match starts." : "Join this lobby as an active player before the match starts."
+      : "This game already started. You can spectate instead.";
+    setButtonHint(joinButton, joinHint);
+    const spectateButton = document.createElement("button");
+    spectateButton.type = "button";
+    spectateButton.className = "secondary-button";
+    spectateButton.dataset.roomAction = "spectate";
+    spectateButton.dataset.joinRoom = room.code;
+    spectateButton.textContent = "Spectate";
+    setButtonHint(spectateButton, room.settings.private ? "Enter the password to watch this private room." : "Watch the game without taking a player slot.");
+    actions.append(joinButton, spectateButton);
+    card.append(details, actions);
+    elements.joinRoomList.appendChild(card);
+  });
+}
+
+function getRoomModeLabel(settings = state.roomSettings) {
+  if (settings.classicMode) {
+    return "Classic";
+  }
+  const modes = [];
+  if (settings.amplified) modes.push("Amplified");
+  if (settings.harsh) modes.push("Brutal");
+  if (settings.chaos) modes.push("Chaos");
+  if (settings.timeMoney) modes.push("Time Is Money");
+  if (settings.wildFire) modes.push("Wild Fire");
+  if (settings.partyMayhem) modes.push("Party Mayhem");
+  return modes.length ? modes.join(" + ") : "No Modifiers";
+}
+
+async function joinHostedRoom(code, options = {}) {
+  await refreshHostedRooms();
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
+  if (!room) {
+    addSystemChat(`Room ${normalizedCode || "code"} was not found.`, { private: true });
+    return;
+  }
+  const banList = state.roomModeration.bannedByRoom[normalizedCode] || [];
+  if (banList.includes("opponent") || banList.includes(state.profile.name)) {
+    addSystemChat(`You cannot rejoin ${normalizedCode}.`, { private: true });
+    return;
+  }
+  if (room.status !== "lobby" && !options.spectate) {
+    addSystemChat("That match already started. Join as a spectator instead.", { private: true });
+    return;
+  }
+  if (!options.spectate && room.activePlayers >= getRoomMaxPlayers(room.settings)) {
+    addSystemChat(`${normalizedCode} is full. Join as a spectator instead.`, { private: true });
+    return;
+  }
+  if (room.settings.private) {
+    let typedPassword = cleanChatInput(options.password || elements.joinRoomPasswordInput.value);
+    if (!typedPassword) {
+      typedPassword = cleanChatInput(window.prompt(`Password for ${normalizedCode}`) || "");
+    }
+    if (typedPassword !== room.settings.password) {
+      elements.joinRoomPasswordInput.focus();
+      return;
+    }
+  }
+
+  state.roomSettings = { ...room.settings };
+  state.joiningRoom = room;
+  state.isSpectator = options.spectate || room.status !== "lobby";
+  state.currentOwner = state.isSpectator ? "spectator" : "opponent";
+  state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
+  await updateRoomPresence(room, {
+    spectator: state.isSpectator,
+    status: state.isSpectator ? "spectating" : "joined"
+  });
+  state.roomChat = [
+    {
+      sender: "System",
+      text: `${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`
+    }
+  ];
+  if (room.status === "lobby") {
+    state.mode = "room";
+    setPlayersForMode("room");
+    applyRoomDirectoryRoom(state.hostedRooms.find((entry) => entry.code === normalizedCode) || room);
+    renderRoomLobby();
+    startRoomDirectoryPolling();
+    setHidden(elements.modeScreen, true);
+    setHidden(elements.roomScreen, true);
+    setHidden(elements.joinScreen, true);
+    setHidden(elements.gameStage, true);
+    setHidden(elements.roomLobbyScreen, false);
+    playSound("click");
+    return;
+  }
+
+  startGame("room");
+}
+
+function getRoomOpenSlotCount() {
+  return Math.max(0, getRoomMaxPlayers() - getActiveRoomPlayerCount());
+}
+
+function getRandomRoomBotName() {
+  const existingNames = new Set(getRoomParticipantsFromPlayers("lobby").map((participant) => String(participant.name || "").toLowerCase()));
+  const candidates = getRandomBotUsernames(12).filter((name) => !existingNames.has(name.toLowerCase()));
+  if (candidates.length) {
+    return candidates[0];
+  }
+  return `Room_Bot_${state.roomParticipants.filter((participant) => participant.bot).length + 1}`;
+}
+
+async function addBotToRoom() {
+  if (!isCurrentHost() || state.currentRoomStatus !== "lobby") {
+    addSystemChat("Only the host can add bots while the room is in the lobby.", { private: true });
+    return;
+  }
+  if (getRoomOpenSlotCount() <= 0) {
+    addSystemChat("This room is full.", { private: true });
+    renderRoomLobby();
+    return;
+  }
+  if (!state.randomUsernames.length) {
+    await loadRandomUsernames();
+  }
+  const participants = getRoomParticipantsFromPlayers("lobby");
+  const botCount = participants.filter((participant) => participant.bot).length + 1;
+  const botName = getRandomRoomBotName();
+  const bot = {
+    id: `${state.clientId}-room-bot-${Date.now()}-${botCount}`,
+    name: botName,
+    avatar: "",
+    equippedTitleId: "",
+    cardCustomization: null,
+    host: false,
+    spectator: false,
+    bot: true,
+    active: true,
+    muted: false,
+    status: "bot"
+  };
+  state.roomParticipants = [...participants, bot];
+  addSystemChat(`${botName} joined as a bot.`);
+  upsertHostedRoom("lobby");
+  renderRoomLobby();
+  playSound("click");
+}
+
+function renderRoomLobby() {
+  stopTimer();
+  stopNextRoundCountdown();
+  clearRoomAutoResolve();
+  elements.lobbyRoomCode.textContent = state.roomSettings.code;
+  elements.lobbyRoomCodeLabel.textContent = state.roomSettings.code;
+  elements.lobbyRoomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  elements.lobbyRoomSummary.textContent = `${state.roomSettings.private ? "Private" : "Public"} ${getRoomModeLabel()} room. ${state.roomSettings.rounds} rounds, ${state.roomSettings.timerSeconds}s timer, ${getRoomMaxPlayers()} player limit.`;
+  const hostParticipant = state.roomParticipants.find((participant) => participant.host)
+    || getRoomParticipantsFromPlayers("lobby").find((participant) => participant.host)
+    || getCurrentParticipant({ host: true, status: "host" });
+  renderPlayerNameWithTitle(elements.lobbyHostNamePreview, {
+    owner: hostParticipant.id === state.clientId ? state.currentOwner : "room-host",
+    label: hostParticipant.name || "Host",
+    host: Boolean(hostParticipant.host),
+    equippedTitleId: hostParticipant.equippedTitleId || ""
+  }, hostParticipant.name || "Host");
+  renderAvatar(elements.lobbyHostAvatarPreview, { label: hostParticipant.name || "Host", avatar: hostParticipant.avatar || "" });
+  applyProfileCustomizationSurface(elements.lobbyHostProfile, hostParticipant.cardCustomization || defaultProfileCustomization);
+  setHidden(elements.beginRoomButton, !isCurrentHost());
+  elements.beginRoomButton.disabled = isCurrentHost() && getActiveRoomPlayerCount() < 2;
+  setButtonHint(
+    elements.beginRoomButton,
+    getActiveRoomPlayerCount() < 2
+      ? "Waiting for one more active player before the host can start."
+      : "Start the match for everyone in this lobby."
+  );
+  setHidden(elements.lobbyAddBotButton, !isCurrentHost());
+  elements.lobbyAddBotButton.disabled = state.currentRoomStatus !== "lobby" || getRoomOpenSlotCount() <= 0;
+  setButtonHint(
+    elements.lobbyAddBotButton,
+    getRoomOpenSlotCount() <= 0
+      ? "This room is full."
+      : "Add a bot to occupy an empty player slot for multiplayer testing."
+  );
+  setHidden(elements.lobbySettingsButton, !isCurrentHost());
+  renderRoomPlayers();
+  renderRoomChat();
+}
+
+function openRoomLobby() {
+  state.mode = "room";
+  setPlayersForMode("room");
+  state.roomParticipants = getRoomParticipantsFromPlayers("lobby");
+  renderRoomLobby();
+  startRoomDirectoryPolling();
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomLobbyScreen, false);
+}
+
+function openLobbySettings() {
+  syncRoomControls();
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.roomScreen, false);
+  playSound("click");
+}
+
+async function beginRoomMatch() {
+  if (!isCurrentHost()) {
+    addSystemChat("Only the host can begin the match.", { private: true });
+    return;
+  }
+
+  await refreshCurrentRoomDirectory();
+  if (getActiveRoomPlayerCount() < 2) {
+    addSystemChat("Need at least 2 players before starting the match.", { private: true });
+    renderRoomLobby();
+    return;
+  }
+  state.currentRoomStatus = "in-progress";
+  state.roomGame = null;
+  upsertHostedRoom("in-progress");
+  addSystemChat("The host started the match.");
+  startGame("room");
+}
+
+function leaveCurrentRoom() {
+  const isLeavingRoom = isRoomMode() || state.currentRoomStatus === "lobby";
+  const isLeavingActiveMatch = !elements.gameStage.classList.contains("hidden");
+  if (!isLeavingRoom && !isLeavingActiveMatch) {
+    return;
+  }
+
+  if (isLeavingRoom) {
+    const leavingLabel = getOwnerLabel(state.currentOwner) || state.profile.name || "A player";
+    addSystemChat(`${leavingLabel} left the room.`);
+  }
+  clearRoomAutoResolve();
+  stopRoomDirectoryPolling();
+  stopNextRoundCountdown();
+  resetTimerDisplay();
+  stopLoadingMessages();
+  state.matchEnded = true;
+  if (isLeavingRoom && isCurrentHost() && !state.joiningRoom) {
+    state.currentRoomStatus = "complete";
+    upsertHostedRoom("complete");
+  }
+
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomChat, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  elements.gameStage.classList.remove("room-active");
+  setHidden(elements.modeScreen, false);
+  playSound("click");
+}
+
+function animateRoomPlayerListChange(target, renderList) {
+  if (!target || typeof renderList !== "function") {
+    return;
+  }
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  const panelIsVisible = target.isConnected && !target.closest(".hidden");
+  const previousHeight = target.getBoundingClientRect().height;
+  if (reduceMotion || !panelIsVisible || previousHeight <= 0) {
+    renderList();
+    return;
+  }
+
+  target.classList.add("room-player-list-resizing");
+  target.style.height = `${previousHeight}px`;
+  renderList();
+  target.style.height = "auto";
+  const nextHeight = target.getBoundingClientRect().height;
+  if (Math.abs(nextHeight - previousHeight) < 2) {
+    target.classList.remove("room-player-list-resizing");
+    target.style.height = "";
+    return;
+  }
+
+  const resizeToken = `${Date.now()}-${Math.random()}`;
+  target.dataset.resizingRoomList = resizeToken;
+  window.requestAnimationFrame(() => {
+    target.style.height = `${previousHeight}px`;
+    window.requestAnimationFrame(() => {
+      target.style.height = `${nextHeight}px`;
+    });
+  });
+
+  const cleanup = (event) => {
+    if (event.propertyName && event.propertyName !== "height") {
+      return;
+    }
+    target.removeEventListener("transitionend", cleanup);
+    if (target.dataset.resizingRoomList !== resizeToken) {
+      return;
+    }
+    delete target.dataset.resizingRoomList;
+    target.classList.remove("room-player-list-resizing");
+    target.style.height = "";
+  };
+  target.addEventListener("transitionend", cleanup);
+  window.setTimeout(() => cleanup({ propertyName: "height" }), 420);
+}
+
+function renderRoomPlayers() {
+  animateRoomPlayerListChange(elements.roomPlayerList, () => renderRoomPlayerList(elements.roomPlayerList));
+  animateRoomPlayerListChange(elements.roomLobbyPlayerList, () => renderRoomPlayerList(elements.roomLobbyPlayerList));
+}
+
+function createRoomModerationControls(owner, context = "list") {
+  const player = getPlayer(owner);
+  const controls = document.createElement("div");
+  controls.className = context === "chat" ? "chat-options" : "room-player-controls";
+  if (!player || !player.active || player.owner === state.currentOwner) {
+    return controls;
+  }
+
+  if (isCurrentHost()) {
+    const muteButton = document.createElement("button");
+    muteButton.type = "button";
+    muteButton.className = "mini-button";
+    muteButton.dataset.action = "mute";
+    muteButton.dataset.owner = player.owner;
+    muteButton.textContent = player.muted ? "Unmute" : "Mute";
+    const banButton = document.createElement("button");
+    banButton.type = "button";
+    banButton.className = "mini-button danger-button";
+    banButton.dataset.action = "ban";
+    banButton.dataset.owner = player.owner;
+    banButton.textContent = "Ban";
+    controls.append(muteButton, banButton);
+    return controls;
+  }
+
+  const voteButton = document.createElement("button");
+  voteButton.type = "button";
+  voteButton.className = "mini-button";
+  voteButton.dataset.action = "vote-ban";
+  voteButton.dataset.owner = player.owner;
+  voteButton.textContent = "Vote ban";
+  controls.appendChild(voteButton);
+  return controls;
+}
+
+function renderRoomPlayerList(target) {
+  if (!target) {
+    return;
+  }
+
+  const maxPlayers = getRoomMaxPlayers();
+  const isCreationPanel = target === elements.roomPlayerList;
+  const isLobbyPanel = target === elements.roomLobbyPlayerList;
+  const isRoomSetupList = isCreationPanel || isLobbyPanel;
+  const hostProfileIsShown = isCreationPanel && !state.joiningRoom;
+  const participantPlayers = state.roomParticipants
+    .filter((participant) => participant.active)
+    .map((participant, index) => createPlayer(
+      getRoomOwnerForParticipant(participant, index),
+      participant.name,
+      {
+        avatar: participant.avatar,
+        equippedTitleId: participant.equippedTitleId || "",
+        cardCustomization: participant.cardCustomization || null,
+      participantId: participant.id,
+      host: participant.host,
+      spectator: participant.spectator,
+      bot: Boolean(participant.bot),
+      type: participant.bot ? "bot" : participant.spectator ? "spectator" : "human",
+      active: participant.active,
+      muted: participant.muted,
+      connectionStatus: participant.status || (participant.host ? "host" : participant.bot ? "bot" : participant.spectator ? "spectating" : "joined")
+    }
+  ));
+  const basePlayers = participantPlayers.length
+    ? participantPlayers
+    : state.mode === "room" && state.players.length
+    ? state.players
+    : [
+      createPlayer("player", state.profile.name || "You", { avatar: state.profile.avatar, host: true, equippedTitleId: state.profile.equippedTitleId, cardCustomization: state.profile.cardCustomization, connectionStatus: "host" })
+    ];
+  const activePlayers = basePlayers.filter((player) => player.active && !player.spectator);
+  const visiblePlayers = activePlayers.filter((player) => {
+    if (isLobbyPanel && player.host) {
+      return false;
+    }
+    return !(hostProfileIsShown && player.owner === "player");
+  });
+  const openSlotCount = Math.max(0, maxPlayers - activePlayers.length);
+  const openSlots = isRoomSetupList ? [] : Array.from({ length: openSlotCount }, (_, index) => {
+    const slotNumber = activePlayers.length + index + 1;
+    return createPlayer(`slot-${slotNumber}`, `Player ${slotNumber}`, {
+      active: false,
+      connectionStatus: "waiting"
+    });
+  });
+
+  target.replaceChildren();
+  if (isRoomSetupList && !visiblePlayers.length) {
+    const empty = document.createElement("p");
+    empty.className = "room-waiting-copy";
+    empty.textContent = "Waiting for more players to join.";
+    target.appendChild(empty);
+    return;
+  }
+  [...visiblePlayers, ...openSlots].forEach((player) => {
+    const card = document.createElement("div");
+    card.className = "room-player-card";
+    card.classList.toggle("waiting-slot", !player.active);
+    const avatar = document.createElement("span");
+    avatar.className = "room-player-avatar";
+    renderAvatar(avatar, player);
+    const name = document.createElement("strong");
+    renderPlayerNameWithTitle(name, player, player.label);
+    const status = document.createElement("small");
+    status.textContent = player.muted ? "muted" : player.connectionStatus || "ready";
+    card.dataset.owner = player.owner;
+    card.dataset.participantId = player.participantId || "";
+    card.dataset.bot = String(Boolean(player.bot));
+    applyPlayerCustomizationSurface(card, player);
+    card.classList.toggle("kickable-bot", canKickRoomBot(player.owner, player.participantId));
+    if (canKickRoomBot(player.owner, player.participantId)) {
+      card.dataset.tooltip = "Click to kick this bot from the room.";
+    }
+    card.append(avatar, name, status);
+
+    if (state.mode === "room" && player.owner !== state.currentOwner && player.active) {
+      const controls = createRoomModerationControls(player.owner);
+      card.appendChild(controls);
+    }
+    target.appendChild(card);
+  });
+}
+
+function muteRoomPlayer(owner) {
+  if (!isRoomMode() || !isCurrentHost()) {
+    return;
+  }
+
+  const player = getPlayer(owner);
+  if (!player || player.owner === state.currentOwner) {
+    return;
+  }
+
+  player.muted = !player.muted;
+  player.connectionStatus = player.muted ? "muted" : "ready";
+  addSystemChat(`${player.label} was ${player.muted ? "muted" : "unmuted"} by the host.`);
+  renderRoomPlayers();
+}
+
+function banRoomPlayer(owner, reason = "banned by the host") {
+  if (!isRoomMode()) {
+    return;
+  }
+
+  const player = getPlayer(owner);
+  if (!player || player.owner === "player") {
+    return;
+  }
+
+  player.active = false;
+  player.connectionStatus = "banned";
+  const banList = getRoomBanList();
+  if (!banList.includes(owner)) {
+    banList.push(owner);
+  }
+  if (!banList.includes(player.label)) {
+    banList.push(player.label);
+  }
+  state.roomSubmissions[owner] = true;
+  addSystemChat(`${player.label} was kicked and cannot rejoin room ${state.roomSettings.code} (${reason}).`);
+  if (isCurrentHost() && state.currentRoomStatus !== "draft") {
+    upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  }
+  renderRoomPlayers();
+  renderScore();
+  renderSubmissionStatus();
+}
+
+function voteBanRoomPlayer(owner) {
+  if (!isRoomMode()) {
+    return;
+  }
+
+  const activeOwners = getActiveOwners();
+  if (activeOwners.length < 3) {
+    addSystemChat("Vote ban needs at least 3 active players.");
+    return;
+  }
+
+  if (!state.roomModeration.voteBans[owner]) {
+    state.roomModeration.voteBans[owner] = [];
+  }
+  const votes = state.roomModeration.voteBans[owner];
+  if (!votes.includes(state.currentOwner)) {
+    votes.push(state.currentOwner);
+  }
+  const needed = Math.floor(activeOwners.length / 2) + 1;
+  addSystemChat(`${votes.length}/${needed} voted to kick ${getOwnerLabel(owner)}.`);
+  if (votes.length >= needed) {
+    banRoomPlayer(owner, "vote ban passed");
+  }
+}
+
+function handleRoomPlayerAction(action, owner) {
+  if (action === "mute") {
+    muteRoomPlayer(owner);
+  }
+  if (action === "ban") {
+    banRoomPlayer(owner);
+  }
+  if (action === "vote-ban") {
+    voteBanRoomPlayer(owner);
+  }
+}
+
+function startRoomGame() {
+  updateRoomVariants();
+  if (state.roomSettings.private && !state.roomSettings.password) {
+    elements.roomPasswordInput.focus();
+    return;
+  }
+  if (state.currentRoomStatus === "lobby") {
+    upsertHostedRoom("lobby");
+    renderRoomLobby();
+    setHidden(elements.roomScreen, true);
+    setHidden(elements.roomLobbyScreen, false);
+    playSound("click");
+    return;
+  }
+
+  state.mode = "room";
+  state.currentOwner = "player";
+  state.joiningRoom = null;
+  state.isSpectator = false;
+  state.roomGame = null;
+  state.currentRoomStatus = "lobby";
+  state.roomModeration.voteBans = {};
+  if (!state.roomModeration.bannedByRoom[state.roomSettings.code]) {
+    state.roomModeration.bannedByRoom[state.roomSettings.code] = [];
+  }
+  setPlayersForMode("room");
+  state.roomChat = [
+    {
+      sender: "System",
+      text: `Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`
+    }
+  ];
+  upsertHostedRoom("lobby");
+  openRoomLobby();
+}
+
+function renderRoomChat() {
+  const active = isRoomMode();
+  const inGameRoom = active && !elements.gameStage.classList.contains("hidden");
+  setHidden(elements.roomChat, !inGameRoom);
+  elements.gameStage.classList.toggle("room-active", inGameRoom);
+  elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
+  updateWildFireBurningState();
+  if (!active) {
+    return;
+  }
+
+  elements.roomCodeLabel.textContent = state.roomSettings.code;
+  elements.roomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  elements.lobbyRoomCodeLabel.textContent = state.roomSettings.code;
+  elements.lobbyRoomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  renderChatLog(elements.chatLog);
+  renderChatLog(elements.lobbyChatLog);
+}
+
+function renderChatLog(target) {
+  if (!target) {
+    return;
+  }
+
+  target.replaceChildren();
+  state.roomChat.forEach((message) => {
+    const item = document.createElement("div");
+    item.className = "chat-message";
+    item.classList.toggle("own-message", Boolean(message.own));
+    item.classList.toggle("system-message", message.sender === "System");
+    item.classList.toggle("private-message", Boolean(message.private));
+    item.classList.toggle("host-message", Boolean(message.host));
+    if (message.owner && message.sender !== "System") {
+      item.dataset.chatOwner = message.owner;
+      item.classList.add("clickable-profile");
+    }
+    const avatar = document.createElement("span");
+    avatar.className = "chat-avatar";
+    renderAvatar(avatar, {
+      label: message.sender,
+      avatar: message.avatar || ""
+    });
+    const sender = document.createElement("strong");
+    if (message.sender === "System") {
+      sender.textContent = message.sender;
+    } else {
+      renderPlayerNameWithTitle(sender, {
+        owner: message.owner || "",
+        label: message.sender,
+        host: Boolean(message.host),
+        equippedTitleId: message.equippedTitleId || ""
+      }, message.sender);
+    }
+    const text = document.createElement("span");
+    text.textContent = message.text;
+    item.append(avatar, sender, text);
+    target.appendChild(item);
+  });
+  target.scrollTop = target.scrollHeight;
+}
+
+function toggleChatOptions(messageNode, owner) {
+  document.querySelectorAll(".chat-options").forEach((menu) => {
+    if (!messageNode.contains(menu)) {
+      menu.remove();
+    }
+  });
+
+  if (!owner || owner === state.currentOwner || !getPlayer(owner)) {
+    return;
+  }
+
+  const existing = messageNode.querySelector(".chat-options");
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const controls = createRoomModerationControls(owner, "chat");
+  if (controls.childElementCount) {
+    messageNode.appendChild(controls);
+  }
+}
+
+function sendChatMessage(text, input = elements.chatInput) {
+  const cleaned = cleanChatInput(text);
+  if (!cleaned) {
+    return;
+  }
+  const sender = getPlayer(state.currentOwner);
+  if (sender?.muted) {
+    addSystemChat("You are muted and cannot send chat messages.", { private: true });
+    input.value = "";
+    return;
+  }
+
+  state.roomChat.push({
+    sender: state.profile.name || "Host",
+    avatar: state.profile.avatar,
+    equippedTitleId: state.profile.equippedTitleId || "",
+    text: cleaned,
+    owner: state.currentOwner,
+    own: true,
+    host: isCurrentHost()
+  });
+  const chatStat = getAchievementStat(state.currentOwner);
+  if (chatStat) {
+    chatStat.chatMessages += 1;
+  }
+  state.roomChat = state.roomChat.slice(-40);
+  input.value = "";
+  renderRoomChat();
+  playSound("click");
+}
+
+function openSettings() {
+  setHidden(elements.settingsModal, false);
+  syncSettingsControls();
+  playSound("click");
+}
+
+function closeSettings() {
+  hideModalWithMotion(elements.settingsModal);
+  playSound("click");
+}
+
+function isModalOpen(element) {
+  return element && !element.classList.contains("hidden");
+}
+
+function closeTopModal() {
+  if (isModalOpen(elements.targetModal)) {
+    closeTargetSelector();
+    return true;
+  }
+
+  if (isModalOpen(elements.confirmEndModal)) {
+    closeEndConfirm();
+    return true;
+  }
+
+  if (isModalOpen(elements.abilitiesModal)) {
+    closeAbilities();
+    return true;
+  }
+
+  if (isModalOpen(elements.achievementsModal)) {
+    closeAchievements();
+    return true;
+  }
+
+  if (isModalOpen(elements.roundHelpModal)) {
+    hideModalWithMotion(elements.roundHelpModal);
+    return true;
+  }
+
+  if (isModalOpen(elements.profileCustomModal)) {
+    closeProfileCustomization();
+    return true;
+  }
+
+  if (isModalOpen(elements.profileShopModal)) {
+    closeProfileShop();
+    return true;
+  }
+
+  if (isModalOpen(elements.themeModal)) {
+    closeThemeSelector();
+    return true;
+  }
+
+  if (isModalOpen(elements.settingsModal)) {
+    closeSettings();
+    return true;
+  }
+
+  return false;
+}
+
+function closeOverlayMenus() {
+  setHidden(elements.targetModal, true);
+  if (isModalOpen(elements.confirmEndModal) || state.pendingConfirmResolver) {
+    closeEndConfirm(false, { silent: true });
+  } else {
+    setHidden(elements.confirmEndModal, true);
+  }
+  setHidden(elements.abilitiesModal, true);
+  setHidden(elements.profileCustomModal, true);
+  setHidden(elements.profileShopModal, true);
+  setHidden(elements.themeModal, true);
+  setHidden(elements.settingsModal, true);
+}
+
+function syncSettingsControls() {
+  elements.sfxVolumeSlider.value = Math.round(soundState.sfxVolume * 100);
+  elements.musicVolumeSlider.value = Math.round(soundState.musicVolume * 100);
+  elements.timerSecondsSlider.value = state.timerSeconds;
+  elements.roundsSlider.value = state.maxRounds;
+  elements.sfxVolumeValue.textContent = `${elements.sfxVolumeSlider.value}`;
+  elements.musicVolumeValue.textContent = `${elements.musicVolumeSlider.value}`;
+  elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
+  elements.roundsValue.textContent = `${state.maxRounds}`;
+}
+
+function updateSfxVolume(value) {
+  soundState.sfxVolume = Number(value) / 100;
+  localStorage.setItem("cardsAgainstAiSfxVolume", String(value));
+  elements.sfxVolumeValue.textContent = `${value}`;
+  playSound("click");
+}
+
+function updateMusicSetting(value) {
+  soundState.musicVolume = Number(value) / 100;
+  localStorage.setItem("cardsAgainstAiMusicVolume", String(value));
+  elements.musicVolumeValue.textContent = `${value}`;
+  updateMusicVolume();
+}
+
+function updateTimerSetting(value) {
+  state.timerSeconds = Number(value);
+  localStorage.setItem("cardsAgainstAiTimerSeconds", String(state.timerSeconds));
+  elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
+  if (!elements.inputPanel.classList.contains("hidden")) {
+    startTimer();
+  } else {
+    state.timerRemaining = state.timerSeconds;
+    renderTimer();
+  }
+}
+
+function updateRoundsSetting(value) {
+  const requestedRounds = Math.min(10, Math.max(1, Number(value) || 5));
+  const activeGame = !elements.gameStage.classList.contains("hidden") && !state.matchEnded;
+  state.maxRounds = activeGame ? Math.max(requestedRounds, state.round) : requestedRounds;
+  localStorage.setItem("cardsAgainstAiMaxRounds", String(requestedRounds));
+  elements.roundsSlider.value = state.maxRounds;
+  elements.roundsValue.textContent = `${state.maxRounds}`;
+  updateModeUi();
+  renderScore();
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function stopNextRoundCountdown() {
+  if (state.nextRoundAutoTimerId) {
+    clearInterval(state.nextRoundAutoTimerId);
+    state.nextRoundAutoTimerId = null;
+  }
+}
+
+function updateNextRoundButtonLabel() {
+  const base = state.round >= state.maxRounds ? "Show Results" : "Next Round";
+  elements.nextRoundButton.textContent = state.nextRoundCountdown > 0
+    ? `${base} (${state.nextRoundCountdown}s)`
+    : base;
+}
+
+function startNextRoundCountdown() {
+  stopNextRoundCountdown();
+  state.nextRoundCountdown = 15;
+  updateNextRoundButtonLabel();
+  state.nextRoundAutoTimerId = setInterval(() => {
+    state.nextRoundCountdown -= 1;
+    updateNextRoundButtonLabel();
+    if (state.nextRoundCountdown <= 0) {
+      stopNextRoundCountdown();
+      advanceAfterVerdict();
+    }
+  }, 1000);
+}
+
+function advanceAfterVerdict() {
+  stopNextRoundCountdown();
+  closeOverlayMenus();
+  if (state.round >= state.maxRounds) {
+    endMatch();
+    return;
+  }
+
+  state.round += 1;
+  newRound();
+}
+
+function completeBlackCard(answer) {
+  return buildBlackCardAnswerReveal(answer);
+}
+
+function scoreAnswerAgainstAcceptedAnswers(answer, acceptedAnswers) {
+  const normalized = normalizeTriviaAnswer(answer);
+  const accepted = acceptedAnswers.map(normalizeTriviaAnswer).filter(Boolean);
+  if (!normalized || !accepted.length) {
+    return 0;
+  }
+  if (accepted.includes(normalized)) {
+    return 1;
+  }
+  const bestDistance = Math.min(...accepted.map((target) => levenshteinDistance(normalized, target)));
+  const longest = Math.max(normalized.length, ...accepted.map((target) => target.length), 1);
+  return 1 - (bestDistance / longest);
+}
+
+function buildBlackCardAnswerReveal(bestAnswer, options = {}) {
+  const showBestAnswer = options.showBestAnswer !== false;
+  const lines = [state.blackCard];
+  if (showBestAnswer) {
+    lines.push("", `Best Answer: ${bestAnswer || "No accepted answer"}`);
+  }
+  if (lines.length === 1) {
+    lines.push("");
+  }
+  lines.push(`Correct Answer: ${state.canonicalAnswer || state.acceptedAnswers[0] || "Unknown"}`);
+  return lines.join("\n");
+}
+
+function getBestAnswerIndexForReveal(cards, correctIndexes = [], preferredIndex = 0) {
+  if (correctIndexes.includes(preferredIndex)) {
+    return preferredIndex;
+  }
+  if (correctIndexes.length) {
+    return correctIndexes[0];
+  }
+  const accepted = [state.canonicalAnswer, ...state.acceptedAnswers].filter(Boolean);
+  if (!accepted.length) {
+    return preferredIndex;
+  }
+  return cards
+    .map((card, index) => ({ index, score: scoreAnswerAgainstAcceptedAnswers(card, accepted) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)[0]?.index ?? preferredIndex;
+}
+
+async function animateWinnerToBlackCard(winnerIndex, answer) {
+  const cardNodes = getAnswerCardNodes();
+  const winnerCard = cardNodes.find((card) => Number(card.dataset.cardIndex) === winnerIndex) || cardNodes[0];
+  const blackCard = elements.blackCardText.closest(".black-card");
+  const completedText = completeBlackCard(answer);
+  const winnerOwner = getOwnerFromCardIndex(winnerIndex);
+
+  if (!winnerCard || !blackCard || !Element.prototype.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    applyBlackCardCustomizationForOwner(winnerOwner);
+    void blackCard.offsetWidth;
+    await revealBlackCardAnswer(completedText);
+    return;
+  }
+
+  const sourceRect = winnerCard.getBoundingClientRect();
+  const targetRect = blackCard.getBoundingClientRect();
+  const clone = winnerCard.cloneNode(true);
+  clone.classList.add("flying-card");
+  clone.style.left = `${sourceRect.left}px`;
+  clone.style.top = `${sourceRect.top}px`;
+  clone.style.width = `${sourceRect.width}px`;
+  clone.style.height = `${sourceRect.height}px`;
+  winnerCard.classList.add("launching");
+  document.body.appendChild(clone);
+
+  const sourceCenterX = sourceRect.left + sourceRect.width / 2;
+  const sourceCenterY = sourceRect.top + sourceRect.height / 2;
+  const targetCenterX = targetRect.left + targetRect.width / 2;
+  const targetCenterY = targetRect.top + targetRect.height / 2;
+
+  await clone.animate(
+    [
+      {
+        transform: "translate(0, 0) scale(1) rotate(0deg)",
+        opacity: 1
+      },
+      {
+        transform: `translate(${targetCenterX - sourceCenterX}px, ${targetCenterY - sourceCenterY}px) scale(0.52) rotate(-4deg)`,
+        opacity: 0.94
+      }
+    ],
+    {
+      duration: 780,
+      easing: "cubic-bezier(0.2, 0.9, 0.2, 1)",
+      fill: "forwards"
+    }
+  ).finished;
+
+  clone.remove();
+  winnerCard.classList.remove("launching");
+  applyBlackCardCustomizationForOwner(winnerOwner);
+  void blackCard.offsetWidth;
+  await revealBlackCardAnswer(completedText);
+}
+
+async function revealBlackCardAnswer(completedText) {
+  const blackCard = elements.blackCardText.closest(".black-card");
+  if (!blackCard) {
+    elements.blackCardText.textContent = completedText;
+    return;
+  }
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const canAnimateHeight = Boolean(Element.prototype.animate) && !reduceMotion;
+
+  if (!canAnimateHeight) {
+    elements.blackCardText.textContent = completedText;
+    blackCard.classList.add("completed");
+    return;
+  }
+
+  const beforeHeight = blackCard.getBoundingClientRect().height;
+  blackCard.style.height = `${beforeHeight}px`;
+  blackCard.style.overflow = "hidden";
+  elements.blackCardText.textContent = completedText;
+  blackCard.classList.add("completed");
+  restartAnimation(blackCard, "answer-reveal");
+
+  const animation = animateBlackCardToNaturalHeight(blackCard, beforeHeight, { allowShrink: false, durationMs: 560 });
+
+  try {
+    await animation?.finished;
+  } finally {
+    resetBlackCardSizing();
+  }
+}
+
+function submitRoomAnswer(rawInput, options = {}) {
+  if (!isRoomMode() || state.isSpectator || state.roomSubmissions[state.currentOwner]) {
+    return;
+  }
+
+  const owner = state.currentOwner;
+  const lockedInput = lockRoundAnswer(owner, rawInput);
+  if (isPublicNonSelfHostedRoom() && normalizeTriviaAnswer(lockedInput) === "i am a cute femboy") {
+    incrementAchievementProgress(owner, "femboyAnswer");
+  }
+  if (!lockedInput && !options.allowBlank) {
+    elements.answerInput.focus();
+    return;
+  }
+  commitActivePowerUp(owner);
+  state.answerRemainingTimes[owner] = state.timerRemaining;
+  if (owner === "opponent") {
+    state.localAnswers.playerTwo = lockedInput;
+    state.localAnswers.playerOne = shouldAutoGenerateRoomAnswer("player")
+      ? lockRoundAnswer("player", generateAutoAnswer("player"))
+      : getLockedRoundAnswer("player");
+  } else if (owner === "player") {
+    state.localAnswers.playerOne = lockedInput;
+    state.localAnswers.playerTwo = shouldAutoGenerateRoomAnswer("opponent")
+      ? lockRoundAnswer("opponent", generateAutoAnswer("opponent"))
+      : getLockedRoundAnswer("opponent");
+  }
+
+  setRoomSubmission(owner, true);
+  void publishCurrentRoomSubmission(lockedInput);
+  elements.answerInput.disabled = true;
+  elements.submitButton.disabled = true;
+  document.querySelector("#inputTitle").textContent = "Waiting for the other player...";
+  playSound("lock");
+  clearRoomAutoResolve();
+  void waitForRoomSubmissionsThenPlay(lockedInput);
+}
+
+function getRoundAnswerForOwner(owner) {
+  const locked = getLockedRoundAnswer(owner);
+  if (locked) {
+    return locked;
+  }
+  if (shouldAutoGenerateRoomAnswer(owner)) {
+    return lockRoundAnswer(owner, generateAutoAnswer(owner));
+  }
+  if (isRoomMode() && getActiveOwners().includes(owner)) {
+    return "";
+  }
+  if (owner === "bot1") {
+    return cleanInput(state.botCards[0] || "");
+  }
+  if (owner === "bot2") {
+    return cleanInput(state.botCards[1] || "");
+  }
+  if (owner === "opponent") {
+    return getLockedRoundAnswer("opponent", state.localAnswers.playerTwo);
+  }
+  return getLockedRoundAnswer("player", state.localAnswers.playerOne);
+}
+
+function applyCheatSheetPowers() {
+  getPlayedPowerEntries()
+    .filter((entry) => entry.power.type === "cheat_sheet")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      const copiedAnswer = getRoundAnswerForOwner(target);
+      if (target && copiedAnswer) {
+        lockRoundAnswer(entry.owner, copiedAnswer);
+        if (entry.owner === "player") {
+          state.localAnswers.playerOne = copiedAnswer;
+        }
+        if (entry.owner === "opponent") {
+          state.localAnswers.playerTwo = copiedAnswer;
+        }
+      }
+    });
+}
+
+async function playRound(rawInput) {
+  clearRoomAutoResolve();
+  applyCheatSheetPowers();
+  resetTimerDisplay();
+  elements.answerInput.disabled = true;
+  elements.playerTwoInput.disabled = true;
+  elements.submitButton.disabled = true;
+  animateTableLayoutChange(() => {
+    setHidden(elements.inputPanel, true);
+    setHidden(elements.answerProgressPanel, true);
+    setHidden(elements.powerPanel, true);
+    setHidden(elements.effectPanel, true);
+    setHidden(elements.errorPanel, true);
+    setHidden(elements.loadingPanel, false);
+  });
+  startLoadingMessages("round", `${state.judge.name} is checking the answers...`);
+  playSound("submit");
+
+  let roundResult;
+  try {
+    setGradingActive(true);
+    try {
+      roundResult = await requestAiRound(rawInput);
+    } finally {
+      setGradingActive(false);
+    }
+    if (state.matchEnded) {
+      return;
+    }
+  } catch (error) {
+    console.warn(error);
+    playSound("error");
+    stopLoadingMessages();
+    elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+    elements.answerInput.disabled = false;
+    elements.submitButton.disabled = false;
+    setHidden(elements.loadingPanel, true);
+    setHidden(elements.errorPanel, false);
+    return;
+  }
+
+  const cardRatings = getCardRatings(roundResult.cards, roundResult.winner.index, roundResult.correctIndexes);
+  state.currentRoundCards = roundResult.cards;
+  state.currentRoundCardRatings = cardRatings;
+  state.currentRoundCorrectIndexes = roundResult.correctIndexes;
+  clearCardBadges();
+  renderAnswerCardLayout(roundResult.cards, roundResult.correctIndexes, roundResult.winner.index);
+  fillVisibleAnswerCards(roundResult.cards, cardRatings);
+  stopLoadingMessages();
+  animateTableLayoutChange(() => {
+    setHidden(elements.loadingPanel, true);
+    setHidden(elements.cardsArea, false);
+    setHidden(elements.effectPanel, true);
+  });
+  restartAnimation(elements.cardsArea, "revealed");
+  playSound("reveal");
+
+  await sleep(450);
+  animateTableLayoutChange(() => {
+    setHidden(elements.loadingPanel, false);
+  });
+  startLoadingMessages("judge", "Preparing the answer review...");
+  playSound("judge");
+  await sleep(850);
+
+  const forcedWinnerOwner = getForcedWinnerOwner();
+  const winner = forcedWinnerOwner
+    ? { ...roundResult.winner, index: getCardIndexFromOwner(forcedWinnerOwner) }
+    : roundResult.winner;
+  const winnerOwner = getOwnerFromCardIndex(winner.index);
+  const correctIndexes = roundResult.correctIndexes;
+  const revealAnswerIndex = getBestAnswerIndexForReveal(roundResult.cards, correctIndexes, winner.index);
+  const revealAnswer = roundResult.cards[revealAnswerIndex] || roundResult.cards[winner.index] || "No answer";
+  let winningOwners = getUniqueOwnersFromCardIndexes(correctIndexes);
+  if (forcedWinnerOwner && !winningOwners.includes(forcedWinnerOwner)) {
+    winningOwners = [forcedWinnerOwner, ...winningOwners];
+  }
+  const hasCorrectAnswer = winningOwners.length > 0;
+  const progressOwner = isRoomMode() && state.currentOwner !== "spectator" ? state.currentOwner : "player";
+  const focusedAnswerCorrect = correctIndexes.includes(getCardIndexFromOwner(progressOwner));
+  setCurrentQuestionProgress(focusedAnswerCorrect);
+  const ratingsByOwner = getCardRatingsByOwner(cardRatings);
+  const winningRating = cardRatings[winner.index] || { label: "Correct", bonus: 50 };
+  const awarded = hasCorrectAnswer
+    ? awardPoints(winnerOwner, winningRating, winningOwners, ratingsByOwner)
+    : createNoCorrectAward();
+  awardRoundCoins(winningOwners, awarded);
+  recordRoundResult(winnerOwner, awarded, roundResult.cards[winner.index], winningOwners);
+  renderScore();
+  animateScorePop(winnerOwner, awarded);
+  if (progressOwner !== "spectator") {
+    playSound(focusedAnswerCorrect ? "correctAnswer" : "wrongAnswer");
+  }
+  if (!awarded.noPoints) {
+    triggerStreakFire();
+  }
+
+  renderCardBadges(roundResult.cards, winner.index, cardRatings);
+  correctIndexes.forEach((index) => {
+    const card = getAnswerCardNodes().find((node) => Number(node.dataset.cardIndex) === index);
+    if (card) {
+      card.classList.add("answer-priority");
+    }
+  });
+  if (hasCorrectAnswer) {
+    restartAnimation(document.querySelector(".table-surface"), "winner-moment");
+  }
+  elements.winnerText.textContent = "";
+  renderPowerLog(awarded);
+  renderRoundRecap(awarded, winnerOwner, winningRating);
+  resetReactionPanel();
+  elements.nextRoundButton.disabled = true;
+  state.nextRoundCountdown = 0;
+  updateNextRoundButtonLabel();
+  animateTableLayoutChange(() => {
+    setHidden(elements.loadingPanel, true);
+    setHidden(elements.answerProgressPanel, true);
+  });
+  stopLoadingMessages();
+  if (hasCorrectAnswer) {
+    playSound("fly");
+    await animateWinnerToBlackCard(revealAnswerIndex, revealAnswer);
+  } else {
+    await revealBlackCardAnswer(buildBlackCardAnswerReveal("", { showBestAnswer: false }));
+  }
+  animateTableLayoutChange(() => {
+    setHidden(elements.verdictPanel, false);
+  });
+  restartAnimation(elements.verdictPanel, "revealed");
+  elements.nextRoundButton.disabled = false;
+  startNextRoundCountdown();
+}
+
+function getOwnerLabel(owner) {
+  const player = getPlayer(owner);
+  if (!player) {
+    return owner;
+  }
+  return player.host ? `♕ ${player.label}` : player.label;
+}
+
+function getOwnerFromCardIndex(index) {
+  const roundOwners = getRoundCardOwners();
+  if (roundOwners[index]) {
+    return roundOwners[index];
+  }
+  if (isDuelMode()) {
+    return index === 0 ? "player" : "opponent";
+  }
+
+  return index === 0 ? "player" : index === 1 ? "bot1" : "bot2";
+}
+
+function getUniqueOwnersFromCardIndexes(indexes) {
+  return [...new Set(indexes.map(getOwnerFromCardIndex).filter((owner) => getActiveOwners().includes(owner)))];
+}
+
+function getCardRatingsByOwner(ratings) {
+  return Object.fromEntries((ratings || []).map((rating, index) => [getOwnerFromCardIndex(index), rating]));
+}
+
+function getWinPhrase(owner, scope) {
+  if (state.mode === "bots" && owner === "player") {
+    return `You win the ${scope}.`;
+  }
+
+  return `${getOwnerLabel(owner)} wins the ${scope}.`;
+}
+
+function applyPreGradeSinGluttony(playedEntries, startingScores, startingStreaks, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "sin_gluttony")
+    .forEach((entry) => {
+      const streak = startingStreaks[entry.owner] || 0;
+      const amount = Math.floor((startingScores[entry.owner] || 0) * 0.025 * streak);
+      deltas[entry.owner] += amount;
+      setOwnerStreak(entry.owner, 0, { force: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} ate ${streak} streak before grading for ${amount.toLocaleString()} points.`));
+    });
+}
+
+function applyMagic8Entries(playedEntries, startingScores, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "magic_8")
+    .forEach((entry) => {
+      if (String(startingScores[entry.owner]).includes("8")) {
+        deltas[entry.owner] += 888;
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} found an 8 and paid 888 points.`));
+      }
+    });
+}
+
+function armTimeBombEntries(playedEntries, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "time_bomb")
+    .forEach((entry) => {
+      state.timeBombs.push({ owner: entry.owner, round: state.round + 3 });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will make players ahead lose 10% after 3 rounds.`));
+    });
+}
+
+function logDeadWeightEntries(playedEntries, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "dead_weight")
+    .forEach((entry) => {
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} was dumped immediately.`));
+    });
+}
+
+function applySinEnvyEntries(playedEntries, startingScores, deltas, owners, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "sin_envy")
+    .forEach((entry) => {
+      const ownerTotal = Math.max(0, startingScores[entry.owner] + (deltas[entry.owner] || 0));
+      const amount = Math.floor(ownerTotal * 0.2);
+      deltas[entry.owner] -= amount;
+      owners
+        .filter((participant) => participant !== entry.owner)
+        .forEach((participant) => {
+          deltas[participant] -= amount;
+        });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} cost ${getOwnerLabel(entry.owner)} ${amount.toLocaleString()} points, then made everyone else lose that amount.`));
+    });
+}
+
+function applyBlessingEntries(playedEntries, startingScores, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "blessing")
+    .forEach((entry) => {
+      const amount = 500 + Math.floor(startingScores[entry.owner] * 0.1);
+      deltas[entry.owner] += amount;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} added ${amount.toLocaleString()} points.`));
+    });
+}
+
+function applyVultureEntries(playedEntries, winnerSet, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "vulture")
+    .forEach((entry) => {
+      const losses = state.matchHistory.filter((round) => !(round.winners || [round.winner]).includes(getOwnerLabel(entry.owner))).length + (winnerSet.has(entry.owner) ? 0 : 1);
+      const amount = losses * 350;
+      deltas[entry.owner] += amount;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} paid ${amount.toLocaleString()} points for ${losses} losses.`));
+    });
+}
+
+function armInsuranceFraudEntries(playedEntries, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "insurance_fraud")
+    .forEach((entry) => {
+      state.insuranceFrauds[entry.owner] = { startsRound: state.round, remaining: 3, losses: 0 };
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} quietly filed paperwork.`));
+    });
+}
+
+function armBottomFeederEntries(playedEntries, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "bottom_feeder")
+    .forEach((entry) => {
+      state.bottomFeederRounds[entry.owner] = (state.bottomFeederRounds[entry.owner] || 0) + 1;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${state.bottomFeederRounds[entry.owner]} will pay after losses for the rest of the game.`));
+    });
+}
+
+function applyBottomFeederPayouts(deltas, owners, winnerSet, events) {
+  owners.forEach((participant) => {
+    const stacks = Math.max(0, state.bottomFeederRounds[participant] || 0);
+    if (stacks === 0 || winnerSet.has(participant)) {
+      return;
+    }
+    const amount = stacks * 100;
+    deltas[participant] += amount;
+    events.push(`${getOwnerLabel(participant)} gained ${amount.toLocaleString()} points from ${stacks} Bottom Feeder stack${stacks === 1 ? "" : "s"}.`);
+  });
+}
+
+function applyRedHerringEntries(playedEntries, startingScores, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "red_herring")
+    .forEach((entry) => {
+      const amount = Math.floor(Math.max(0, startingScores[entry.owner] || 0) * 0.1);
+      deltas[entry.owner] += amount;
+      activateRedHerring(entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} quietly banked ${amount.toLocaleString()} hidden Red Herring points and masked their score.`));
+    });
+}
+
+function resolveHotPotatoEntries(playedEntries, deltas, events) {
+  const hotPotatoesThisRound = playedEntries.filter((entry) => entry.power.type === "hot_potato");
+  if (state.round >= state.maxRounds) {
+    const potatoOwners = [
+      ...(state.hotPotatoOwners || []),
+      ...hotPotatoesThisRound.map((entry) => entry.owner)
+    ];
+    const potatoHits = Math.max(state.hotPotatoCount + hotPotatoesThisRound.length, potatoOwners.length);
+    for (let index = 0; index < potatoHits; index += 1) {
+      const target = getRandomActiveOwner();
+      applyHotPotatoHit(target, deltas, events, potatoOwners[index] || "");
+    }
+    state.hotPotatoCount = 0;
+    state.hotPotatoOwners = [];
+  } else if (hotPotatoesThisRound.length) {
+    state.hotPotatoCount += hotPotatoesThisRound.length;
+    state.hotPotatoOwners = [...(state.hotPotatoOwners || []), ...hotPotatoesThisRound.map((entry) => entry.owner)];
+    hotPotatoesThisRound.forEach((entry) => {
+      events.push(createPowerEvent(entry.owner, entry.power, "Hot Potato is armed for the final round."));
+    });
+  }
+}
+
+function applyMonopolyEntries(playedEntries, deltas, owners, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "monopoly")
+    .forEach((entry) => {
+      owners
+        .filter((participant) => participant !== entry.owner && hasPlayedPowerThisRound(participant))
+        .forEach((participant) => {
+          deltas[participant] -= 200;
+          deltas[entry.owner] += 200;
+        });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} taxed every other power user for 200 points.`));
+    });
+}
+
+function applyPendingPowerBonuses(deltas, owners, pendingBonuses, events) {
+  owners.forEach((participant) => {
+    const pending = pendingBonuses[participant] || 0;
+    if (!pending) {
+      return;
+    }
+    deltas[participant] += pending;
+    events.push(`${getOwnerLabel(participant)} received ${pending.toLocaleString()} pending bonus points.`);
+    state.pendingPowerBonuses[participant] = 0;
+  });
+}
+
+function progressInsuranceFrauds(deltas, winnerSet, events) {
+  Object.entries({ ...state.insuranceFrauds }).forEach(([participant, fraud]) => {
+    if (state.round < fraud.startsRound) {
+      return;
+    }
+    if (winnerSet.has(participant)) {
+      delete state.insuranceFrauds[participant];
+      events.push(`${getOwnerLabel(participant)} broke their Insurance Fraud loss streak.`);
+      return;
+    }
+    fraud.losses += 1;
+    fraud.remaining -= 1;
+    if (fraud.losses >= 3) {
+      deltas[participant] += 4500;
+      setOwnerStreak(participant, getOwnerStreak(participant) + 3);
+      const buff = applyCocktailMix(participant, { buffsOnly: true });
+      markAchievementInsuranceTrigger(participant, "fraud");
+      delete state.insuranceFrauds[participant];
+      events.push(`${getOwnerLabel(participant)} cashed out 4,500 secret Insurance Fraud points, 3 streak, and ${buff}.`);
+    } else if (fraud.remaining <= 0) {
+      delete state.insuranceFrauds[participant];
+    } else {
+      state.insuranceFrauds[participant] = fraud;
+    }
+  });
+}
+
+function applyCommunismEntries(playedEntries, deltas, owners, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "communism")
+    .forEach((entry) => {
+      const positivePool = owners.reduce((sum, participant) => sum + Math.max(0, deltas[participant]), 0);
+      const share = Math.floor(positivePool / owners.length);
+      owners.forEach((participant) => {
+        deltas[participant] -= Math.max(0, deltas[participant]);
+        deltas[participant] += share;
+      });
+      deltas[entry.owner] += 500;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} split ${positivePool.toLocaleString()} gained points and gave ${getOwnerLabel(entry.owner)} 500 extra.`));
+    });
+}
+
+function applyLastChanceEntries(playedEntries, deltas, events) {
+  playedEntries
+    .filter((entry) => entry.power.type === "last_chance")
+    .forEach((entry) => {
+      const gained = Math.max(0, deltas[entry.owner]);
+      if (gained > 0) {
+        deltas[entry.owner] += gained;
+        if (deltas[entry.owner] > 10000) {
+          const stat = getAchievementStat(entry.owner);
+          if (stat) {
+            stat.lastLaughOver10000 = true;
+          }
+        }
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} doubled ${getOwnerLabel(entry.owner)}'s ${gained.toLocaleString()} gained points.`));
+      }
+    });
+}
+
+function createNoCorrectAward() {
+  const owners = getActiveOwners();
+  const pointLossSoundToken = state.pointLossSoundToken;
+  const startingScores = Object.fromEntries(owners.map((participant) => [participant, getScore(participant)]));
+  const startingStreaks = Object.fromEntries(owners.map((participant) => [participant, getOwnerStreak(participant)]));
+  const freezeSnapshot = { ...state.freezeProtection };
+  const permafrostSnapshot = { ...state.permafrostProtection };
+  const pendingBonuses = Object.fromEntries(owners.map((participant) => [participant, state.pendingPowerBonuses[participant] || 0]));
+  let playedEntries = getPlayedPowerEntries(owners);
+  const events = [];
+  const deltas = Object.fromEntries(owners.map((participant) => [participant, 0]));
+
+  playedEntries.forEach((entry) => events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} used ${entry.power.name}.`)));
+
+  ({ playedEntries } = applyPlayedPowerDisables(playedEntries, events));
+
+  if (playedEntries.some((entry) => entry.power.type === "no_one_wins")) {
+    const tableFlip = playedEntries.find((entry) => entry.power.type === "no_one_wins");
+    rememberLastPlayedPowers(owners);
+    clearProlongedPowerEffects();
+    const refillEvent = refillPowerHandToLimit(tableFlip.owner, "from Table Flip");
+    events.push(createPowerEvent(tableFlip.owner, tableFlip.power, "Table Flip cancelled every score change this round, wiped prolonged power-up effects, and refilled its user's hand."));
+    if (refillEvent) {
+      events.push(refillEvent);
+    }
+    renderScore();
+    return {
+      bonus: 0,
+      tagBonus: 0,
+      difficultyBonus: 0,
+      underdogBonus: 0,
+      powerBonus: 0,
+      sabotagePenalty: 0,
+      doublePenalty: 0,
+      powerLabel: "",
+      total: 0,
+      baseWinPoints: 0,
+      chaosPlayed: false,
+      winningOwners: [],
+      payoutDetails: {},
+      payoutOwner: null,
+      reversePlayed: false,
+      reverseTotal: 0,
+      amplifiedMultiplier: 1,
+      deltas,
+      events,
+      noPoints: true,
+      noCorrect: true,
+      tag: "Incorrect"
+    };
+  }
+
+  playedEntries
+    .filter((entry) => entry.power.type === "eternal_flame")
+    .forEach((entry) => {
+      state.eternalFlameProtection[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} protected their streak for the rest of the game.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "streak_bonus")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      const stolen = getEntryMeta(entry).stolenStreak || 0;
+      if (target && stolen > 0) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stole ${stolen} streak from ${getOwnerLabel(target)} instantly.`));
+      } else {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} found no streak to steal.`));
+      }
+    });
+
+  rememberLastPlayedPowers(owners);
+
+  applyNewPersistentPowerEntries(playedEntries, events);
+  applyPreGradeSinGluttony(playedEntries, startingScores, startingStreaks, deltas, events);
+
+  const insuranceTriggeredOwners = resolveInsurancePolicies(owners, deltas, startingScores, events);
+  owners.forEach((participant) => {
+    if (!insuranceTriggeredOwners.has(participant) && !shouldKeepStreakAfterRoundLoss(participant)) {
+      setOwnerStreak(participant, 0);
+    }
+  });
+  owners
+    .filter((participant) => startingStreaks[participant] > 0 && (insuranceTriggeredOwners.has(participant) || shouldKeepStreakAfterRoundLoss(participant)))
+    .forEach((participant) => {
+      const source = insuranceTriggeredOwners.has(participant)
+        ? " with Insurance"
+        : isMatchModifierEnabled("wildFire") && !state.eternalFlameProtection[participant]
+          ? " in Wild Fire"
+          : " with Eternal Flame";
+      events.push(`${getOwnerLabel(participant)} kept their streak through the loss${source}.`);
+    });
+
+  if (isMatchModifierEnabled("harsh")) {
+    owners.forEach((participant) => {
+      deltas[participant] -= 500;
+    });
+    events.push("Brutal mode made every wrong answer lose 500 points.");
+  }
+
+  playedEntries
+    .filter((entry) => entry.power.type === "double_jeopardy")
+    .forEach((entry) => {
+      const amount = Math.floor(startingScores[entry.owner] * 0.1);
+      deltas[entry.owner] -= amount;
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} lost ${amount.toLocaleString()} points from ${entry.power.name}.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "sin_wrath")
+    .forEach((entry) => {
+      const target = getRandomOtherOwner(entry.owner);
+      const amount = 350 * (startingStreaks[entry.owner] || 0);
+      if (target) {
+        deltas[target] -= amount;
+      }
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} punished ${target ? getOwnerLabel(target) : "nobody"} for ${amount.toLocaleString()} points.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "heaven_hell")
+    .forEach((entry) => {
+      state.heavenHellCurses[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} cursed ${getOwnerLabel(entry.owner)} for the rest of the game.`));
+    });
+
+  owners
+    .filter((participant) => state.heavenHellCurses[participant])
+    .forEach((participant) => {
+      deltas[participant] -= 250;
+      events.push(`${getOwnerLabel(participant)} lost 250 points from the Heaven or Hell curse.`);
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "loser_tax")
+    .forEach((entry) => {
+      owners.forEach((participant) => {
+        deltas[participant] -= 250;
+      });
+      events.push(createPowerEvent(entry.owner, entry.power, "Every wrong answer lost 250 points."));
+    });
+
+  const penaltyClouds = playedEntries.filter((entry) => entry.power.type === "penalty_cloud");
+  if (penaltyClouds.length) {
+    state.loserPenaltyRounds = Math.max(state.loserPenaltyRounds, 3);
+    penaltyClouds.forEach((entry) => {
+      events.push(createPowerEvent(entry.owner, entry.power, "Penalty Cloud will punish wrong answers for 3 rounds."));
+    });
+  }
+  if (state.loserPenaltyRounds > 0) {
+    owners.forEach((participant) => {
+      const amount = Math.floor(Math.max(0, startingScores[participant] + (deltas[participant] || 0)) * 0.05);
+      deltas[participant] -= amount;
+    });
+    events.push("Penalty Cloud made every wrong answer lose 5% of their current total.");
+    state.loserPenaltyRounds -= 1;
+  }
+
+  playedEntries
+    .filter((entry) => entry.power.type === "lightning_strike" || entry.power.type === "zap_strike")
+    .filter((entry) => !getEntryMeta(entry).immediateResolved)
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        return;
+      }
+      const targetStreak = startingStreaks[target] || 0;
+      if (targetStreak <= 0) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} targeted ${getOwnerLabel(target)}, but they had no streak to zap.`));
+        return;
+      }
+      const amount = (entry.power.type === "lightning_strike" ? 500 : 250) * (targetStreak + 1);
+      deltas[target] -= amount;
+      queueStatFlash("lightning", entry.power.name, formatSignedStat(-amount, "Point"), getTargetedFlashOptions(entry.owner, target));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} zapped ${getOwnerLabel(target)} for ${amount.toLocaleString()} points.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "loose_cannon")
+    .forEach((entry) => {
+      const target = getRandomActiveOwner();
+      const amount = Math.floor((startingScores[target] || 0) * 0.1);
+      deltas[target] -= amount;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} hit ${getOwnerLabel(target)} for 10% of their total (${amount.toLocaleString()} points).`));
+    });
+
+  applyMagic8Entries(playedEntries, startingScores, deltas, events);
+  armTimeBombEntries(playedEntries, events);
+  logDeadWeightEntries(playedEntries, events);
+  applySinEnvyEntries(playedEntries, startingScores, deltas, owners, events);
+  applyBlessingEntries(playedEntries, startingScores, deltas, events);
+  applyVultureEntries(playedEntries, new Set(), deltas, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "haha_you_lose")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+        return;
+      }
+      deltas[target] -= 500;
+      deltas[entry.owner] += 500;
+      markAchievementPointSteal(entry.owner, 500);
+      setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 1);
+      queueStatFlash("negative", entry.power.name, formatSignedStat(-500, "Point"), getTargetedFlashOptions(entry.owner, target));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} took 500 points from ${getOwnerLabel(target)} and gained 1 streak.`));
+    });
+
+  armInsuranceFraudEntries(playedEntries, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "participation")
+    .forEach((entry) => {
+      deltas[entry.owner] += 100;
+      setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 1);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} turned the loss into 100 points and 1 streak.`));
+    });
+
+  armBottomFeederEntries(playedEntries, events);
+  applyBottomFeederPayouts(deltas, owners, new Set(), events);
+  progressInsuranceFrauds(deltas, new Set(), events);
+  applyRedHerringEntries(playedEntries, startingScores, deltas, events);
+  resolveHotPotatoEntries(playedEntries, deltas, events);
+  applyMonopolyEntries(playedEntries, deltas, owners, events);
+  applyPendingPowerBonuses(deltas, owners, pendingBonuses, events);
+  applyCommunismEntries(playedEntries, deltas, owners, events);
+  applyLastChanceEntries(playedEntries, deltas, events);
+
+  applyNewPointPowerEntries(playedEntries, deltas, owners, events, new Set());
+  applyPersistentRoundDeltas(deltas, owners, events);
+  applyReignChaosEndRound(playedEntries, deltas, owners, events);
+  applyLawsuitEntries(playedEntries, deltas, owners, events);
+  applyNailInCoffin(playedEntries, deltas, events);
+  applyTableEventLoserDeltas(deltas, owners, new Set(), startingScores, events);
+  applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
+  applyThornsDeltas(deltas, owners, events);
+  applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
+  const reverseTotal = applyReverseVerdicts(playedEntries, deltas, owners, events);
+
+  owners.forEach((participant) => {
+    if (freezeSnapshot[participant] > 0) {
+      state.freezeProtection[participant] = Math.max(0, freezeSnapshot[participant] - 1);
+    }
+  });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "deep_freeze")
+    .forEach((entry) => {
+      state.freezeProtection[entry.owner] = Math.max(state.freezeProtection[entry.owner] || 0, 2);
+      queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} blocked this round and will block deductions for the next 2 rounds.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "permafrost")
+    .forEach((entry) => {
+      state.permafrostProtection[entry.owner] = true;
+      queueStatFlash("shield", entry.power.name, "Permanent Shield Armed", { owners: [entry.owner], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will block deductions for the rest of the match.`));
+    });
+
+  let amplifiedMultiplier = 1;
+  if (isMatchModifierEnabled("amplified")) {
+    amplifiedMultiplier = applyRoundAmplifiedMultiplier(deltas, owners, events);
+  }
+
+  applyVoidBombCaps(playedEntries, deltas, events);
+  applyFinalTableEventGainMultipliers(deltas, owners, events);
+  applyOverachieverRewards(playedEntries, deltas, events);
+  const hasPointChanges = Object.values(deltas).some((amount) => amount !== 0);
+  playUnassignedPointLossSound(deltas, pointLossSoundToken);
+  owners.forEach((participant) => addScore(participant, deltas[participant]));
+  decrementRoundEffectCounters(owners);
+  events.push(...replenishPowerSlotsForOwners(owners, "after getting the answer wrong"));
+  renderScore();
+
+  return {
+    bonus: 0,
+    tagBonus: 0,
+    difficultyBonus: 0,
+    underdogBonus: 0,
+    powerBonus: 0,
+    sabotagePenalty: 0,
+    doublePenalty: 0,
+    powerLabel: "",
+    total: 0,
+    baseWinPoints: 0,
+    chaosPlayed: playedEntries.some((entry) => entry.power.type === "reign_chaos"),
+    winningOwners: [],
+    payoutDetails: {},
+    payoutOwner: null,
+    reversePlayed: reverseTotal > 0 || playedEntries.some((entry) => entry.power.type === "reverse"),
+    reverseTotal,
+    amplifiedMultiplier,
+    deltas,
+    events,
+    noPoints: !hasPointChanges,
+    noCorrect: true,
+    tag: "Incorrect"
+  };
+}
+
+function hasDeductionProtection(owner, playedEntries, freezeSnapshot, permafrostSnapshot) {
+  return playedEntries.some((entry) => entry.owner === owner && (entry.power.type === "participation" || entry.power.type === "deep_freeze" || entry.power.type === "permafrost" || entry.power.type === "hoarder"))
+    || Boolean(state.playedPowerMeta[owner]?.hoarderShield)
+    || (state.pocketShieldCharges[owner] || 0) > 0
+    || freezeSnapshot[owner] > 0
+    || permafrostSnapshot[owner];
+}
+
+function applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events) {
+  getActiveOwners().forEach((owner) => {
+    if (deltas[owner] < 0 && hasDeductionProtection(owner, playedEntries, freezeSnapshot, permafrostSnapshot)) {
+      const blocked = Math.abs(deltas[owner]);
+      deltas[owner] = 0;
+      if ((state.pocketShieldCharges[owner] || 0) > 0) {
+        state.pocketShieldCharges[owner] = Math.max(0, (state.pocketShieldCharges[owner] || 0) - 1);
+      }
+      markAchievementShieldSave(owner);
+      queueStatFlash("shield", "Shield", `Blocked ${blocked.toLocaleString()} Points`, { owners: [owner], complex: true });
+      events.push(`${getOwnerLabel(owner)} blocked ${blocked.toLocaleString()} points of deductions.`);
+    }
+  });
+}
+
+function applyReverseVerdicts(playedEntries, deltas, owners, events) {
+  let redirectedTotal = 0;
+  playedEntries
+    .filter((entry) => entry.power.type === "reverse")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+        return;
+      }
+
+      const amount = Math.max(0, deltas[target] || 0);
+      if (!amount) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} targeted ${getOwnerLabel(target)}, but they obtained no points to transfer.`));
+        return;
+      }
+
+      deltas[target] -= amount;
+      deltas[entry.owner] += amount;
+      redirectedTotal += amount;
+      queueStatFlash("negative", entry.power.name, `${amount.toLocaleString()} Points Transferred`, getTargetedFlashOptions(entry.owner, target, { complex: true }));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} transferred ${getOwnerLabel(target)}'s ${amount.toLocaleString()} obtained points to ${getOwnerLabel(entry.owner)}. ${getOwnerLabel(target)} got nothing from those gains.`));
+    });
+  return redirectedTotal;
+}
+
+function clearProlongedPowerEffects() {
+  state.pendingPowerBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.freezeProtection = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pocketShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.permafrostProtection = { player: false, opponent: false, bot1: false, bot2: false };
+  state.eternalFlameProtection = { player: false, opponent: false, bot1: false, bot2: false };
+  state.streakAnchorCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pendingStreakBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.heavenHellCurses = { player: false, opponent: false, bot1: false, bot2: false };
+  state.secretPointBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.fakePointDebts = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.redHerringMasks = {};
+  state.bottomFeederRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.streakFreezeRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.streakLossProtectionRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.cocktailPenaltyRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.debuffShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.failedInvestmentDebuffs = { player: false, opponent: false, bot1: false, bot2: false };
+  state.timeDilationRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pendingCocktailBuffs = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.insuranceFrauds = {};
+  state.insurancePolicies = {};
+  state.virusFactories = {};
+  state.luckRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.typhoonOwners = {};
+  state.thornOwners = {};
+  state.timeBombs = [];
+  state.debuffTimeBombs = [];
+  state.error404Owners = {};
+  state.error404Schedule = [];
+  state.pendingDeadWeights = [];
+  state.allOutRounds = {};
+  state.extraPowerUses = {};
+  state.nextPreferredTheme = "";
+  state.soulLinks = [];
+  state.arsonists = {};
+  state.bartenders = {};
+  state.hotInHereOwners = {};
+  state.worldBurnOwners = {};
+  state.lawnMowerOwners = {};
+  state.loserPenaltyRounds = 0;
+  state.hotPotatoCount = 0;
+  state.hotPotatoOwners = [];
+}
+
+function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwners = [owner], ratingsByOwner = {}) {
+  const owners = getActiveOwners();
+  const pointLossSoundToken = state.pointLossSoundToken;
+  const winnerSet = new Set(winningOwners.filter((participant) => owners.includes(participant)));
+  if (!winnerSet.size && owners.includes(owner)) {
+    winnerSet.add(owner);
+  }
+  const winners = [...winnerSet];
+  const startingScores = Object.fromEntries(owners.map((participant) => [participant, getScore(participant)]));
+  const startingStreaks = Object.fromEntries(owners.map((participant) => [participant, getOwnerStreak(participant)]));
+  const pendingBonuses = Object.fromEntries(owners.map((participant) => [participant, state.pendingPowerBonuses[participant] || 0]));
+  const freezeSnapshot = { ...state.freezeProtection };
+  const permafrostSnapshot = { ...state.permafrostProtection };
+  const winnerScore = startingScores[owner];
+  const highScore = Math.max(...owners.map((participant) => startingScores[participant]));
+  const underdogBonus = highScore - winnerScore >= UNDERDOG_BONUS_THRESHOLD ? UNDERDOG_BONUS_POINTS : 0;
+  const winnerPower = getPlayedPowerEntries([owner]).find((entry) => !isSecretPower(entry.power))?.power || getPowerById(state.playedPowerUps[owner]);
+  let playedEntries = getPlayedPowerEntries(owners);
+  const events = [];
+  const refillEvents = replenishLosingPowerSlots(winners);
+  const deltas = Object.fromEntries(owners.map((participant) => [participant, 0]));
+
+  playedEntries.forEach((entry) => events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} used ${entry.power.name}.`)));
+
+  ({ playedEntries } = applyPlayedPowerDisables(playedEntries, events));
+
+  if (playedEntries.some((entry) => entry.power.type === "no_one_wins")) {
+    const tableFlip = playedEntries.find((entry) => entry.power.type === "no_one_wins");
+    clearProlongedPowerEffects();
+    const refillEvent = refillPowerHandToLimit(tableFlip.owner, "from Table Flip");
+    events.push(createPowerEvent(tableFlip.owner, tableFlip.power, "Table Flip cancelled every score change this round, wiped prolonged power-up effects, and refilled its user's hand."));
+    if (refillEvent) {
+      events.push(refillEvent);
+    }
+    return {
+      bonus: 0,
+      tagBonus: 0,
+      underdogBonus: 0,
+      powerBonus: 0,
+      powerLabel: "",
+      total: 0,
+      baseWinPoints: 0,
+      chaosPlayed: false,
+      winningOwners: winners,
+      payoutDetails: {},
+      deltas: Object.fromEntries(owners.map((participant) => [participant, 0])),
+      events,
+      noPoints: true,
+      tag: rating.label
+    };
+  }
+
+  playedEntries
+    .filter((entry) => entry.power.type === "eternal_flame")
+    .forEach((entry) => {
+      state.eternalFlameProtection[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} protected their streak for the rest of the game.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "hard_reset")
+    .forEach((entry) => {
+      owners.forEach((participant) => {
+        if (!state.eternalFlameProtection[participant]) {
+          setOwnerStreak(participant, 0);
+        }
+      });
+      events.push(createPowerEvent(entry.owner, entry.power, "Hard Reset wiped every unprotected win streak."));
+    });
+
+  applyNewPersistentPowerEntries(playedEntries, events);
+  applyPreGradeSinGluttony(playedEntries, startingScores, startingStreaks, deltas, events);
+
+  const losingOwners = owners.filter((participant) => !winnerSet.has(participant));
+  const insuranceTriggeredOwners = resolveInsurancePolicies(losingOwners, deltas, startingScores, events);
+  const retainedOwners = owners.filter((participant) => (
+    !winnerSet.has(participant)
+    && (insuranceTriggeredOwners.has(participant) || shouldKeepStreakAfterRoundLoss(participant))
+    && getOwnerStreak(participant) > 0
+  ));
+
+  owners.forEach((participant) => {
+    if (!winnerSet.has(participant) && !retainedOwners.includes(participant)) {
+      setOwnerStreak(participant, 0);
+    }
+  });
+
+  retainedOwners.forEach((retainedOwner) => {
+    const source = insuranceTriggeredOwners.has(retainedOwner)
+      ? " with Insurance"
+      : isMatchModifierEnabled("wildFire") && !state.eternalFlameProtection[retainedOwner]
+        ? " in Wild Fire"
+        : " with Eternal Flame";
+    events.push(`${getOwnerLabel(retainedOwner)} kept their streak alive${source}.`);
+  });
+
+  winners.forEach((winner) => {
+    setOwnerStreak(winner, getOwnerStreak(winner) + 1);
+  });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "sabotage" && entry.power.blockStreak)
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (target && winnerSet.has(target)) {
+        setOwnerStreak(target, Math.max(0, getOwnerStreak(target) - 1), { force: true });
+        queueStatFlash("negative", entry.power.name, "Streak Gain Blocked", getTargetedFlashOptions(entry.owner, target, { complex: true }));
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} blocked ${getOwnerLabel(target)}'s streak gain for that win.`));
+      }
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "streak_bonus")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      const stolen = getEntryMeta(entry).stolenStreak || 0;
+      if (target && stolen > 0) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stole ${stolen} streak from ${getOwnerLabel(target)} instantly.`));
+      } else {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} found no streak to steal.`));
+      }
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "rocket")
+    .forEach((entry) => {
+      state.pendingStreakBonuses[entry.owner] = (state.pendingStreakBonuses[entry.owner] || 0) + 3;
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} will gain 3 streak next round.`));
+    });
+
+  playedEntries
+    .filter((entry) => winnerSet.has(entry.owner) && entry.power.type === "heaven_hell")
+    .forEach((entry) => {
+      setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 3);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} added 3 streak before scoring.`));
+    });
+
+  playedEntries
+    .filter((entry) => winnerSet.has(entry.owner) && entry.power.type === "sin_wrath")
+    .forEach((entry) => {
+      setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 1);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} added an extra win streak.`));
+    });
+
+  const streakRewardRefillEvents = replenishPowerSlotsForOwners(
+    winners.filter((winner) => getOwnerStreak(winner) >= 3),
+    "for winning with a 3x streak"
+  );
+
+  const payoutDetails = {};
+  let sabotagePenalty = 0;
+  let doublePenaltyTotal = 0;
+  const executionBlockedOwners = new Map();
+  const chaosPlayed = playedEntries.some((entry) => entry.power.type === "reign_chaos");
+  winners.forEach((winner) => {
+    const ownerRating = ratingsByOwner[winner] || (winner === owner ? rating : { label: "Correct", bonus: 50 });
+    const ownerPowerEntries = playedEntries.filter((entry) => entry.owner === winner && !isSecretPower(entry.power));
+    const ownerPower = ownerPowerEntries.find((entry) => entry.power.type !== "all_out")?.power || ownerPowerEntries[0]?.power || getPowerById(state.playedPowerUps[winner]);
+    const ownerTimingMeta = ownerPowerEntries.find((entry) => getEntryMeta(entry).remainingTime !== undefined)?.meta || state.playedPowerMeta[winner] || {};
+    const scoringStreak = getOwnerStreak(winner);
+    const ownerBonus = scoringStreak > 1 ? (scoringStreak - 1) * STREAK_BONUS_POINTS : 0;
+    const ownerTagBonus = ownerRating.bonus || 0;
+    const ownerDifficultyBonus = getDifficultyBonus();
+    const ownerUnderdogBonus = highScore - startingScores[winner] >= UNDERDOG_BONUS_THRESHOLD ? UNDERDOG_BONUS_POINTS : 0;
+    const timeMoneyBase = isMatchModifierEnabled("timeMoney")
+      ? Math.max(0, (state.answerRemainingTimes[winner] ?? ownerTimingMeta.remainingTime ?? 0) * 20)
+      : null;
+    const baseWinPoints = timeMoneyBase ?? BASE_WIN_POINTS;
+    let directPowerBonus = 0;
+    let ownerSabotagePenalty = 0;
+    let ownerTotal = baseWinPoints + ownerBonus + ownerTagBonus + ownerDifficultyBonus + ownerUnderdogBonus;
+
+    if (timeMoneyBase !== null) {
+      events.push(`Time Is Money set ${getOwnerLabel(winner)}'s base win to ${baseWinPoints.toLocaleString()} points.`);
+    }
+
+    ownerPowerEntries
+      .filter((entry) => entry.power.type === "bounty")
+      .forEach((entry) => {
+        const amount = Math.floor(startingScores[winner] * (entry.power.percent || 0));
+        directPowerBonus += amount;
+        events.push(createPowerEvent(winner, entry.power, `${entry.power.name} added ${amount.toLocaleString()} points.`));
+      });
+
+    ownerPowerEntries
+      .filter((entry) => entry.power.type === "speed_answer")
+      .forEach((entry) => {
+      const speedBonus = Math.max(0, (getEntryMeta(entry).remainingTime || 0) * 20);
+      directPowerBonus += speedBonus;
+      events.push(createPowerEvent(winner, entry.power, `${entry.power.name} added ${speedBonus.toLocaleString()} points.`));
+      });
+
+    if (ownerPowerEntries.some((entry) => entry.power.type === "heaven_hell")) {
+      directPowerBonus += 750;
+      events.push(createPowerEvent(winner, getPowerById("heaven_hell"), `Heaven or Hell added 750 win points.`));
+    }
+
+    ownerTotal += directPowerBonus;
+    playedEntries
+      .filter((entry) => entry.owner !== winner && entry.power.type === "sabotage" && getEntryTarget(entry) === winner)
+      .forEach((entry) => {
+        ownerSabotagePenalty += entry.power.amount;
+        queueStatFlash("negative", entry.power.name, formatSignedStat(-entry.power.amount, "Point"), getTargetedFlashOptions(entry.owner, winner));
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} cut ${entry.power.amount.toLocaleString()} points from ${getOwnerLabel(winner)}'s win.`));
+      });
+
+    if (ownerSabotagePenalty) {
+      ownerTotal = Math.max(0, ownerTotal - ownerSabotagePenalty);
+    }
+
+    if (ownerPowerEntries.some((entry) => entry.power.type === "double_jeopardy")) {
+      ownerTotal *= 2;
+      events.push(createPowerEvent(winner, getPowerById("double_jeopardy"), `Double Jeopardy doubled the winning payout.`));
+    }
+
+    payoutDetails[winner] = {
+      bonus: ownerBonus,
+      tagBonus: ownerTagBonus,
+      difficultyBonus: ownerDifficultyBonus,
+      underdogBonus: ownerUnderdogBonus,
+      powerBonus: directPowerBonus,
+      sabotagePenalty: ownerSabotagePenalty,
+      baseWinPoints,
+      tag: ownerRating.label,
+      total: ownerTotal,
+      powerLabel: ownerPower ? ownerPower.name : ""
+    };
+    sabotagePenalty += ownerSabotagePenalty;
+  });
+
+  const primaryPayout = payoutDetails[owner] || {
+    bonus: 0,
+    tagBonus: rating.bonus || 0,
+    difficultyBonus: getDifficultyBonus(),
+    underdogBonus,
+    powerBonus: 0,
+    sabotagePenalty: 0,
+    baseWinPoints: BASE_WIN_POINTS,
+    tag: rating.label,
+    total: 0,
+    powerLabel: winnerPower ? winnerPower.name : ""
+  };
+  let total = primaryPayout.total;
+  const bonus = primaryPayout.bonus;
+  const tagBonus = primaryPayout.tagBonus;
+  const difficultyBonus = primaryPayout.difficultyBonus || 0;
+  const directPowerBonus = primaryPayout.powerBonus;
+  const baseWinPoints = primaryPayout.baseWinPoints;
+
+  if (isMatchModifierEnabled("harsh")) {
+    owners
+      .filter((participant) => !winnerSet.has(participant))
+      .forEach((participant) => {
+        deltas[participant] -= 500;
+      });
+    events.push("Brutal mode made every non-winner lose 500 points.");
+  }
+
+  playedEntries
+    .filter((entry) => entry.power.type === "loose_cannon")
+    .forEach((entry) => {
+      const target = getRandomActiveOwner();
+      const amount = Math.floor((startingScores[target] || 0) * 0.1);
+      deltas[target] -= amount;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} hit ${getOwnerLabel(target)} for 10% of their total (${amount.toLocaleString()} points).`));
+    });
+
+  applyMagic8Entries(playedEntries, startingScores, deltas, events);
+  armTimeBombEntries(playedEntries, events);
+  logDeadWeightEntries(playedEntries, events);
+  applySinEnvyEntries(playedEntries, startingScores, deltas, owners, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "hitman")
+    .forEach((entry) => {
+      const leader = owners
+        .filter((participant) => participant !== entry.owner)
+        .sort((a, b) => startingScores[b] - startingScores[a])[0];
+      if (!leader) {
+        return;
+      }
+
+      const stolenStreak = getOwnerStreak(leader);
+      const amount = 1000 + (500 * stolenStreak);
+      deltas[leader] -= amount;
+      markAchievementPointSteal(entry.owner, amount);
+      if (!state.eternalFlameProtection[leader]) {
+        setOwnerStreak(leader, 0);
+      }
+      if (stolenStreak > 0) {
+        setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + stolenStreak);
+      }
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} hit ${getOwnerLabel(leader)} for ${amount.toLocaleString()} points and stole ${stolenStreak} streak.`));
+    });
+
+  applyBlessingEntries(playedEntries, startingScores, deltas, events);
+  applyVultureEntries(playedEntries, winnerSet, deltas, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "haha_you_lose")
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+      } else if (!winnerSet.has(target)) {
+        deltas[target] -= 500;
+        deltas[entry.owner] += 500;
+        markAchievementPointSteal(entry.owner, 500);
+        setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 1);
+        queueStatFlash("negative", entry.power.name, formatSignedStat(-500, "Point"), getTargetedFlashOptions(entry.owner, target));
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} took 500 points from ${getOwnerLabel(target)} and gained 1 streak.`));
+      } else {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} marked ${getOwnerLabel(target)}, but they answered correctly.`));
+      }
+    });
+
+  armInsuranceFraudEntries(playedEntries, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "participation")
+    .forEach((entry) => {
+      if (!winnerSet.has(entry.owner)) {
+        deltas[entry.owner] += 100;
+        setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 1);
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} turned the loss into 100 points and 1 streak.`));
+      } else {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} protected ${getOwnerLabel(entry.owner)} from point loss this round.`));
+      }
+    });
+
+  armBottomFeederEntries(playedEntries, events);
+  applyBottomFeederPayouts(deltas, owners, winnerSet, events);
+
+  playedEntries
+    .filter((entry) => !winnerSet.has(entry.owner) && entry.power.type === "heaven_hell")
+    .forEach((entry) => {
+      state.heavenHellCurses[entry.owner] = true;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} cursed ${getOwnerLabel(entry.owner)} for the rest of the game.`));
+    });
+
+  playedEntries
+    .filter((entry) => !winnerSet.has(entry.owner) && entry.power.type === "sin_wrath")
+    .forEach((entry) => {
+      const target = getRandomOtherOwner(entry.owner);
+      const amount = 350 * (startingStreaks[entry.owner] || 0);
+      if (target) {
+        deltas[target] -= amount;
+      }
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} punished ${target ? getOwnerLabel(target) : "nobody"} for ${amount.toLocaleString()} points.`));
+    });
+
+  owners
+    .filter((participant) => state.heavenHellCurses[participant])
+    .forEach((participant) => {
+      deltas[participant] -= 250;
+      events.push(`${getOwnerLabel(participant)} lost 250 points from the Heaven or Hell curse.`);
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "loser_tax")
+    .forEach((entry) => {
+      owners
+        .filter((participant) => !winnerSet.has(participant))
+        .forEach((participant) => {
+          deltas[participant] -= 250;
+        });
+      events.push(createPowerEvent(entry.owner, entry.power, "Every loser lost 250 points."));
+    });
+
+  const penaltyClouds = playedEntries.filter((entry) => entry.power.type === "penalty_cloud");
+  if (penaltyClouds.length) {
+    state.loserPenaltyRounds = Math.max(state.loserPenaltyRounds, 3);
+    penaltyClouds.forEach((entry) => {
+      events.push(createPowerEvent(entry.owner, entry.power, "Penalty Cloud will punish losers for 3 rounds."));
+    });
+  }
+  if (state.loserPenaltyRounds > 0) {
+    owners
+      .filter((participant) => !winnerSet.has(participant))
+      .forEach((participant) => {
+        const amount = Math.floor(Math.max(0, startingScores[participant] + (deltas[participant] || 0)) * 0.05);
+        deltas[participant] -= amount;
+      });
+    events.push("Penalty Cloud made every loser lose 5% of their current total.");
+    state.loserPenaltyRounds -= 1;
+  }
+
+  applyRedHerringEntries(playedEntries, startingScores, deltas, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "lightning_strike")
+    .filter((entry) => !getEntryMeta(entry).immediateResolved)
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        return;
+      }
+      const targetStreak = startingStreaks[target] || 0;
+      if (targetStreak <= 0) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} targeted ${getOwnerLabel(target)}, but they had no streak to zap.`));
+        return;
+      }
+      const amount = 500 * (targetStreak + 1);
+      deltas[target] -= amount;
+      queueStatFlash("lightning", entry.power.name, formatSignedStat(-amount, "Point"), getTargetedFlashOptions(entry.owner, target));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} zapped ${getOwnerLabel(target)} for ${amount.toLocaleString()} points.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "zap_strike")
+    .filter((entry) => !getEntryMeta(entry).immediateResolved)
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        return;
+      }
+      const targetStreak = startingStreaks[target] || 0;
+      if (targetStreak <= 0) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} targeted ${getOwnerLabel(target)}, but they had no streak to zap.`));
+        return;
+      }
+      const amount = 250 * (targetStreak + 1);
+      deltas[target] -= amount;
+      queueStatFlash("lightning", entry.power.name, formatSignedStat(-amount, "Point"), getTargetedFlashOptions(entry.owner, target));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} clipped ${getOwnerLabel(target)} for ${amount.toLocaleString()} points.`));
+    });
+
+  resolveHotPotatoEntries(playedEntries, deltas, events);
+
+  playedEntries
+    .filter((entry) => !winnerSet.has(entry.owner) && entry.power.type === "double_jeopardy")
+    .forEach((entry) => {
+      const amount = Math.floor(startingScores[entry.owner] * 0.1);
+      doublePenaltyTotal += amount;
+      deltas[entry.owner] -= amount;
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} lost ${amount.toLocaleString()} points from ${entry.power.name}.`));
+    });
+
+  let payoutOwner = owner;
+  const largestWinnerPayout = Math.max(0, ...Object.values(payoutDetails).map((detail) => detail.total || 0));
+  winners.forEach((winner) => {
+    deltas[winner] += payoutDetails[winner]?.total || 0;
+  });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "bribe")
+    .forEach((entry) => {
+      const amount = Math.floor(largestWinnerPayout * 0.33);
+      deltas[entry.owner] += amount;
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} skimmed ${amount.toLocaleString()} points from the biggest winner payout with ${entry.power.name}.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "robin_hood")
+    .forEach((entry) => {
+      const leader = owners
+        .filter((participant) => participant !== entry.owner)
+        .sort((a, b) => startingScores[b] - startingScores[a])[0];
+      if (!leader) {
+        return;
+      }
+      const otherCount = Math.max(1, owners.length - 1);
+      const stealTotal = Math.floor((startingScores[leader] || 0) * 0.025 * otherCount);
+      const share = Math.floor(stealTotal / otherCount);
+      deltas[leader] -= stealTotal;
+      owners.filter((participant) => participant !== leader).forEach((participant) => {
+        deltas[participant] += share;
+      });
+      markAchievementPointSteal(entry.owner, stealTotal);
+      markAchievementPointGift(entry.owner, share * owners.filter((participant) => participant !== leader && participant !== entry.owner).length);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stole ${stealTotal.toLocaleString()} points from ${getOwnerLabel(leader)} (${(2.5 * otherCount).toLocaleString()}%) and shared it around.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "tax_collector")
+    .forEach((entry) => {
+      const leader = owners
+        .filter((participant) => participant !== entry.owner)
+        .sort((a, b) => startingScores[b] - startingScores[a])[0];
+      if (!leader) {
+        return;
+      }
+      const amount = Math.floor(startingScores[leader] * 0.15);
+      deltas[leader] -= amount;
+      deltas[entry.owner] += amount;
+      markAchievementPointSteal(entry.owner, amount);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} collected ${amount.toLocaleString()} points from ${getOwnerLabel(leader)}.`));
+    });
+
+  applyPendingPowerBonuses(deltas, owners, pendingBonuses, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "execution" && winnerSet.has(entry.owner))
+    .forEach((entry) => {
+      const target = getEntryTarget(entry);
+      if (!target || !owners.includes(target)) {
+        return;
+      }
+      const amount = Math.floor(startingScores[target] * 0.2);
+      deltas[target] -= amount;
+      incrementAchievementProgress(entry.owner, "executionTriggers");
+      state.powerHands[target] = [];
+      executionBlockedOwners.set(target, entry);
+      queueStatFlash("bomb", entry.power.name, [formatSignedStat(-amount, "Point"), "Power-ups Removed"], getTargetedFlashOptions(entry.owner, target, { complex: true }));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stripped ${getOwnerLabel(target)} of ${amount.toLocaleString()} points and all power-ups.`));
+    });
+
+  applyMonopolyEntries(playedEntries, deltas, owners, events);
+
+  progressInsuranceFrauds(deltas, winnerSet, events);
+  applyCommunismEntries(playedEntries, deltas, owners, events);
+  applyLastChanceEntries(playedEntries, deltas, events);
+
+  executionBlockedOwners.forEach((entry, target) => {
+    if ((deltas[target] || 0) > 0) {
+      const blocked = deltas[target];
+      deltas[target] = 0;
+      queueStatFlash("negative", entry.power.name, `${blocked.toLocaleString()} Points Blocked`, getTargetedFlashOptions(entry.owner, target, { complex: true }));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} prevented ${getOwnerLabel(target)} from gaining ${blocked.toLocaleString()} points this round.`));
+    }
+  });
+
+  applyNewPointPowerEntries(playedEntries, deltas, owners, events, winnerSet);
+  applyPersistentRoundDeltas(deltas, owners, events);
+  applyReignChaosEndRound(playedEntries, deltas, owners, events);
+  applyLawsuitEntries(playedEntries, deltas, owners, events);
+  applyNailInCoffin(playedEntries, deltas, events);
+  applyTableEventWinnerDeltas(deltas, owners, winnerSet, startingScores, events);
+  applyTableEventLoserDeltas(deltas, owners, winnerSet, startingScores, events);
+  applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
+  applyThornsDeltas(deltas, owners, events);
+  applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
+
+  playedEntries
+    .filter((entry) => entry.power.type === "bribe_judge")
+    .forEach((entry) => {
+      deltas[entry.owner] -= 1000;
+      events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} paid 1,000 points to force the verdict.`));
+    });
+
+  owners.forEach((participant) => {
+    if (freezeSnapshot[participant] > 0) {
+      state.freezeProtection[participant] = Math.max(0, freezeSnapshot[participant] - 1);
+    }
+  });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "deep_freeze")
+    .forEach((entry) => {
+      state.freezeProtection[entry.owner] = Math.max(state.freezeProtection[entry.owner] || 0, 2);
+      queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} blocked this round and will block deductions for the next 2 rounds.`));
+    });
+
+  playedEntries
+    .filter((entry) => entry.power.type === "permafrost")
+    .forEach((entry) => {
+      state.permafrostProtection[entry.owner] = true;
+      queueStatFlash("shield", entry.power.name, "Permanent Shield Armed", { owners: [entry.owner], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will block deductions for the rest of the match.`));
+    });
+
+  const reverseTotal = applyReverseVerdicts(playedEntries, deltas, owners, events);
+
+  rememberLastPlayedPowers(owners);
+
+  let amplifiedMultiplier = 1;
+  if (isMatchModifierEnabled("amplified")) {
+    amplifiedMultiplier = applyRoundAmplifiedMultiplier(deltas, owners, events);
+    total = Math.max(0, deltas[payoutOwner] || 0);
+  }
+
+  executionBlockedOwners.forEach((entry, target) => {
+    if ((deltas[target] || 0) > 0) {
+      const blocked = deltas[target];
+      deltas[target] = 0;
+      queueStatFlash("negative", entry.power.name, `${blocked.toLocaleString()} Points Blocked`, getTargetedFlashOptions(entry.owner, target, { complex: true }));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} prevented ${getOwnerLabel(target)} from gaining ${blocked.toLocaleString()} late-round points.`));
+    }
+  });
+
+  applyFailedInvestmentDebuffs(deltas, winnerSet, events);
+  applyVoidBombCaps(playedEntries, deltas, events);
+  applyFinalTableEventGainMultipliers(deltas, owners, events);
+  applyOverachieverRewards(playedEntries, deltas, events);
+  total = Math.max(0, deltas[payoutOwner] || 0);
+  playUnassignedPointLossSound(deltas, pointLossSoundToken);
+  owners.forEach((participant) => addScore(participant, deltas[participant]));
+  decrementRoundEffectCounters(owners);
+  events.push(...refillEvents);
+  events.push(...streakRewardRefillEvents);
+
+  return {
+    bonus,
+    tagBonus,
+    difficultyBonus,
+    underdogBonus,
+    powerBonus: directPowerBonus,
+    sabotagePenalty,
+    doublePenalty: doublePenaltyTotal,
+    powerLabel: winnerPower ? winnerPower.name : "",
+    baseWinPoints,
+    chaosPlayed,
+    winningOwners: winners,
+    payoutDetails,
+    payoutOwner,
+    reversePlayed: reverseTotal > 0 || playedEntries.some((entry) => entry.power.type === "reverse"),
+    reverseTotal,
+    amplifiedMultiplier,
+    deltas,
+    events,
+    tag: rating.label,
+    total
+  };
+}
+
+function recordRoundResult(owner, awarded, winningCard, winningOwners = [owner]) {
+  state.biggestStreak = Math.max(state.biggestStreak, ...getActiveOwners().map((participant) => getOwnerStreak(participant)));
+  if (!awarded.noCorrect && awarded.total >= state.bestWinningScore) {
+    state.bestWinningScore = awarded.total;
+    state.bestWinningCard = winningCard;
+  }
+  const winnerLabels = winningOwners.map(getOwnerLabel);
+  state.matchHistory.push({
+    round: state.round,
+    winner: awarded.noCorrect ? "No correct answers" : getOwnerLabel(owner),
+    winners: winnerLabels,
+    points: awarded.total,
+    tag: awarded.tag,
+    tagBonus: awarded.tagBonus,
+    difficulty: state.questionDifficulty,
+    difficultyBonus: awarded.difficultyBonus,
+    power: awarded.powerLabel,
+    powerBonus: awarded.powerBonus,
+    underdogBonus: awarded.underdogBonus,
+    coinsEarned: awarded.coinsEarned || 0,
+    powerEvents: awarded.events,
+    card: winningCard
+  });
+  const correctOwnerSet = new Set((winningOwners || []).filter((participant) => getActiveOwners().includes(participant)));
+  const roundDeltas = awarded.deltas || {};
+  const highestRoundGain = Math.max(0, ...getActiveOwners().map((participant) => roundDeltas[participant] || 0));
+  getActiveOwners().forEach((participant) => {
+    const stat = getAchievementStat(participant);
+    if (!stat) {
+      return;
+    }
+    updateAchievementActiveEffectPeak(participant);
+    const participantGain = Math.max(0, roundDeltas[participant] || 0);
+    stat.maxSingleRoundGain = Math.max(stat.maxSingleRoundGain || 0, participantGain);
+    if (highestRoundGain > 0 && participantGain === highestRoundGain) {
+      stat.mostPointRounds += 1;
+    }
+    stat.roundsAnswered += 1;
+    if (correctOwnerSet.has(participant)) {
+      stat.correctAnswers += 1;
+      incrementAchievementProgress(participant, "correctAnswers");
+      const ownerTag = awarded.payoutDetails?.[participant]?.tag || (participant === owner ? awarded.tag : "");
+      if (ownerTag === "Exact Answer") {
+        stat.exactAnswers += 1;
+      }
+      if (stat.usedCopyAnswerRounds?.[state.round]) {
+        stat.usedCopyAnswerCorrect = true;
+        incrementAchievementProgress(participant, "cheatSheetCorrect");
+      }
+    }
+  });
+  recordAchievementRankSnapshot();
+}
+
+function animateScorePop(owner, awarded) {
+  const deltas = awarded.deltas || { [awarded.payoutOwner || owner]: awarded.total || 0 };
+  const entries = Object.entries(deltas).filter(([, amount]) => amount !== 0);
+  if (!entries.length) {
+    return;
+  }
+
+  queueDeltaStatFlash("Score Change", Object.fromEntries(entries));
+
+  entries.forEach(([targetOwner, amount]) => {
+    const target = elements.leaderboard.querySelector(`[data-owner="${targetOwner}"]`);
+    if (!target) {
+      return;
+    }
+
+    const pop = document.createElement("span");
+    pop.className = `score-pop ${amount < 0 ? "negative" : ""}`;
+    pop.textContent = `${amount > 0 ? "+" : ""}${amount.toLocaleString()}`;
+    target.appendChild(pop);
+    pop.addEventListener("animationend", () => pop.remove(), { once: true });
+  });
+}
+
+function triggerStreakFire() {
+  const streakingChips = elements.leaderboard.querySelectorAll(".leaderboard-player.streaking");
+  if (!streakingChips.length) {
+    return;
+  }
+
+  if ([...streakingChips].some((chip) => getOwnerStreak(chip.dataset.owner) > 1)) {
+    playSound("streak");
+  }
+}
+
+function renderMatchStats(wasExited = false) {
+  const progressTotal = Math.max(state.maxRounds || 0, state.roundProgress.length || 0, 1);
+  const playerScore = (state.roundProgress || []).filter((status) => status === "correct").length;
+  const stats = [
+    ["Rounds played", `${state.matchHistory.length}/${state.maxRounds}${wasExited ? " (ended early)" : ""}`],
+    ["Your score", `${playerScore}/${progressTotal}`],
+    ["Coins earned", formatCoins(state.matchCoinsEarned)],
+    state.finalEffectSummary ? ["Final effects", state.finalEffectSummary] : null
+  ].filter(Boolean);
+
+  elements.matchStats.replaceChildren(
+    ...stats.flatMap(([label, value]) => {
+      const term = document.createElement("dt");
+      term.textContent = label;
+      const detail = document.createElement("dd");
+      detail.textContent = value;
+      return [term, detail];
+    })
+  );
+}
+
+function getTimelineEventText(event) {
+  if (typeof event === "string") {
+    return event;
+  }
+  if (!event || event.secret) {
+    return "";
+  }
+  return event.text || "";
+}
+
+function renderMatchTimeline() {
+  if (!elements.matchTimeline) {
+    return;
+  }
+  elements.matchTimeline.replaceChildren();
+  if (!state.matchHistory.length) {
+    const empty = document.createElement("p");
+    empty.className = "match-timeline-empty";
+    empty.textContent = "No completed rounds to show yet.";
+    elements.matchTimeline.appendChild(empty);
+    return;
+  }
+  state.matchHistory.forEach((round) => {
+    const item = document.createElement("article");
+    item.className = "match-timeline-item";
+    const heading = document.createElement("div");
+    heading.className = "match-timeline-heading";
+    const title = document.createElement("strong");
+    title.textContent = `Round ${round.round}`;
+    const points = document.createElement("span");
+    points.textContent = `${Math.max(0, Number(round.points) || 0).toLocaleString()} pts`;
+    heading.append(title, points);
+
+    const summary = document.createElement("p");
+    const winners = (round.winners || [round.winner]).filter(Boolean).join(", ");
+    summary.textContent = `${winners || "No winner"} · ${round.difficulty || "medium"} · ${round.tag || "Result"}`;
+
+    const question = document.createElement("small");
+    question.textContent = round.card ? `Winning answer: ${round.card}` : "No winning answer.";
+
+    const events = (round.powerEvents || []).map(getTimelineEventText).filter(Boolean);
+    item.append(heading, summary, question);
+    if (events.length) {
+      const eventList = document.createElement("div");
+      eventList.className = "match-timeline-events";
+      events.slice(0, 10).forEach((text) => {
+        const chip = document.createElement("span");
+        chip.textContent = text;
+        eventList.appendChild(chip);
+      });
+      if (events.length > 10) {
+        const more = document.createElement("em");
+        more.textContent = `+${events.length - 10} more`;
+        eventList.appendChild(more);
+      }
+      item.appendChild(eventList);
+    }
+    elements.matchTimeline.appendChild(item);
+  });
+}
+
+function toggleMatchTimeline() {
+  const isHidden = elements.matchTimeline.classList.contains("hidden");
+  setHidden(elements.matchTimeline, !isHidden);
+  elements.matchTimelineButton.textContent = isHidden ? "Hide Timeline" : "View Timeline";
+  elements.matchTimelineButton.setAttribute("aria-expanded", String(isHidden));
+  if (isHidden) {
+    renderMatchTimeline();
+  }
+  playSound("click");
+}
+
+function renderFinalLeaderboard() {
+  const rows = getActiveOwners()
+    .map((owner) => ({
+      owner,
+      label: getOwnerLabel(owner),
+      score: getScore(owner),
+      streak: getOwnerStreak(owner)
+    }))
+    .sort((a, b) => b.score - a.score || getActiveOwners().indexOf(a.owner) - getActiveOwners().indexOf(b.owner));
+
+  elements.finalLeaderboard.replaceChildren();
+  rows.forEach((row, index) => {
+    const item = document.createElement("div");
+    item.className = "final-leaderboard-row";
+    item.classList.toggle("winner", index === 0);
+    applyOwnerCustomizationSurface(item, row.owner);
+    const rank = document.createElement("span");
+    rank.textContent = `#${index + 1}`;
+    const avatar = document.createElement("span");
+    avatar.className = "final-leaderboard-avatar";
+    renderAvatar(avatar, getPlayer(row.owner) || { label: row.label });
+    const identity = document.createElement("div");
+    identity.className = "final-player-identity";
+    const name = document.createElement("strong");
+    renderPlayerNameWithTitle(name, row.owner, row.label);
+    const titles = state.finalTitlesByOwner?.[row.owner] || [];
+    const titleRow = document.createElement("div");
+    titleRow.className = "player-title-row";
+    titles.forEach((title) => {
+      const badge = document.createElement("span");
+      badge.className = "player-title-badge";
+      badge.dataset.rarity = title.rarity;
+      badge.dataset.description = title.description;
+      badge.tabIndex = 0;
+      badge.textContent = title.name;
+      attachFloatingDescriptionTooltip(badge);
+      titleRow.appendChild(badge);
+    });
+    identity.append(name);
+    if (titles.length) {
+      identity.appendChild(titleRow);
+    }
+    const score = document.createElement("em");
+    score.textContent = `${row.score.toLocaleString()} points`;
+    const streak = document.createElement("small");
+    streak.textContent = `${row.streak}x streak`;
+    item.append(rank, avatar, identity, score, streak);
+    elements.finalLeaderboard.appendChild(item);
+  });
+}
+
+function applyFinalMatchEffects() {
+  const owners = getActiveOwners();
+  if (!owners.length) {
+    return null;
+  }
+
+  const pointLossSoundToken = state.pointLossSoundToken;
+  const deltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  const events = [];
+  if (state.hotPotatoCount > 0) {
+    const potatoOwners = state.hotPotatoOwners || [];
+    for (let index = 0; index < state.hotPotatoCount; index += 1) {
+      const target = getRandomActiveOwner();
+      applyHotPotatoHit(target, deltas, events, potatoOwners[index] || "");
+    }
+    state.hotPotatoCount = 0;
+    state.hotPotatoOwners = [];
+  }
+
+  owners.forEach((owner) => {
+    if (state.redHerringMasks[owner] !== undefined) {
+      delete state.redHerringMasks[owner];
+    }
+  });
+
+  protectNegativeDeltasNow(deltas, owners, "Final Effects", events);
+  const changed = Object.values(deltas).some((amount) => amount !== 0);
+  if (!changed) {
+    return null;
+  }
+
+  playUnassignedPointLossSound(deltas, pointLossSoundToken);
+  owners.forEach((owner) => addScore(owner, deltas[owner]));
+  state.finalEffectSummary = events.join(" ");
+  return { deltas, events };
+}
+
+function endMatch(wasExited = false) {
+  state.matchEnded = true;
+  stopNextRoundCountdown();
+  resetTimerDisplay();
+  stopLoadingMessages();
+  stashUnusedQuestionSetups();
+  state.nextSetup = null;
+  state.nextSetupPromise = null;
+  state.nextSetupStatus = "idle";
+  state.setupStack = [];
+  const redHerringOwnersAtEnd = new Set(Object.keys(state.redHerringMasks || {}));
+  const finalEffects = applyFinalMatchEffects();
+  const titlesByOwner = wasExited ? {} : evaluateMatchTitles(redHerringOwnersAtEnd);
+  if (wasExited) {
+    state.finalTitlesByOwner = {};
+  }
+  finalizeLongTermAchievements(wasExited, titlesByOwner);
+  const owners = getActiveOwners();
+  const highScore = Math.max(...owners.map((owner) => getScore(owner)));
+  const winners = owners.filter((owner) => getScore(owner) === highScore);
+  const winner = winners.length === 1 ? winners[0] : "tie";
+
+  elements.matchWinnerText.textContent = wasExited
+    ? "Game ended early."
+    : winner === "tie"
+      ? "The match ends in a tie."
+      : getWinPhrase(winner, "match");
+  renderFinalLeaderboard();
+  renderMatchStats(wasExited);
+  renderMatchTimeline();
+  elements.matchTimelineButton.textContent = "View Timeline";
+  elements.matchTimelineButton.setAttribute("aria-expanded", "false");
+  setHidden(elements.matchTimeline, true);
+  setHidden(elements.continueAsPlayerButton, !isRoomMode());
+  setHidden(elements.spectateAgainButton, !isRoomMode());
+  elements.changeModeButton.textContent = isRoomMode() ? "Back to Room" : "Change Mode";
+  if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
+    upsertHostedRoom("complete");
+  }
+  if (finalEffects) {
+    renderPowerLog({ events: finalEffects.events });
+  }
+  setHidden(elements.inputPanel, true);
+  setHidden(elements.answerProgressPanel, true);
+  setHidden(elements.powerPanel, true);
+  setHidden(elements.cardsArea, true);
+  setHidden(elements.verdictPanel, true);
+  setHidden(elements.powerLog, true);
+  setHidden(elements.loadingPanel, true);
+  setHidden(elements.errorPanel, true);
+  setHidden(elements.endPanel, false);
+  ensureQuestionReserve({ enabledThemes: getEnabledTriviaThemes() });
+  playSound("matchEnd");
+}
+
+elements.answerForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const rawInput = cleanInput(elements.answerInput.value);
+  if (!rawInput) {
+    elements.answerInput.focus();
+    return;
+  }
+
+  if (isRoomMode()) {
+    submitRoomAnswer(rawInput);
+    return;
+  }
+
+  if (isDuelMode() && state.localEntryStep === 1) {
+    commitActivePowerUp("player");
+    state.answerRemainingTimes.player = state.timerRemaining;
+    if (isRoomMode()) {
+      setRoomSubmission("player", true);
+    }
+    state.localAnswers.playerOne = lockRoundAnswer("player", rawInput);
+    state.localEntryStep = 2;
+    elements.answerInput.value = "";
+    updateModeUi();
+    startTimer();
+    elements.answerInput.focus();
+    playSound("lock");
+    return;
+  }
+
+  if (isDuelMode()) {
+    commitActivePowerUp("opponent");
+    state.answerRemainingTimes.opponent = state.timerRemaining;
+    if (isRoomMode()) {
+      setRoomSubmission("opponent", true);
+    }
+    state.localAnswers.playerTwo = lockRoundAnswer("opponent", rawInput);
+    playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne));
+    return;
+  }
+
+  commitActivePowerUp("player");
+  state.answerRemainingTimes.player = state.timerRemaining;
+  playRound(lockRoundAnswer("player", rawInput));
+});
+
+elements.nextRoundButton.addEventListener("click", () => {
+  advanceAfterVerdict();
+});
+elements.matchTimelineButton?.addEventListener("click", toggleMatchTimeline);
+
+elements.retryButton.addEventListener("click", () => {
+  setHidden(elements.errorPanel, true);
+  if (!state.judge) {
+    newRound();
+    return;
+  }
+
+  setHidden(elements.inputPanel, false);
+  setHidden(elements.answerProgressPanel, false);
+  setHidden(elements.powerPanel, false);
+  elements.answerInput.focus();
+});
+
+elements.startBotsButton.addEventListener("click", startBotsGame);
+elements.startLocalButton.addEventListener("click", () => startGame("local"));
+elements.createRoomButton.addEventListener("click", openRoomScreen);
+elements.joinRoomButton.addEventListener("click", openJoinScreen);
+buildDevToolScreen();
+elements.menuDevToolButton?.addEventListener("click", () => openDevToolScreen("questions"));
+elements.profileCustomizeButton?.addEventListener("click", openProfileCustomization);
+elements.profileShopButton?.addEventListener("click", openProfileShop);
+elements.profileNameInput?.addEventListener("input", (event) => updateProfileName(event.target.value));
+elements.profileNameInput?.addEventListener("change", (event) => updateProfileName(event.target.value));
+elements.profileNameInput?.addEventListener("blur", (event) => updateProfileName(event.target.value));
+elements.profileAvatarInput.addEventListener("change", (event) => updateProfileAvatar(event.target.files?.[0]));
+elements.backToMenuButton.addEventListener("click", closeRoomScreen);
+elements.backFromJoinButton.addEventListener("click", closeJoinScreen);
+elements.startRoomButton.addEventListener("click", startRoomGame);
+elements.beginRoomButton.addEventListener("click", beginRoomMatch);
+elements.lobbyAddBotButton.addEventListener("click", addBotToRoom);
+elements.lobbySettingsButton.addEventListener("click", openLobbySettings);
+elements.leaveLobbyButton.addEventListener("click", openLeaveConfirm);
+elements.roomRoundsSlider.addEventListener("input", (event) => updateRoomRounds(event.target.value));
+elements.roomTimerSlider.addEventListener("input", (event) => updateRoomTimer(event.target.value));
+elements.roomPlayerLimitSlider.addEventListener("input", (event) => updateRoomPlayerLimit(event.target.value));
+elements.selectThemesButton.addEventListener("click", openThemeSelector);
+elements.themeList.addEventListener("change", updateEnabledThemesFromPicker);
+elements.enableAllThemesButton.addEventListener("click", enableAllThemes);
+elements.harshModeToggle.addEventListener("change", updateRoomVariants);
+elements.chaosModeToggle.addEventListener("change", updateRoomVariants);
+elements.timeMoneyModeToggle.addEventListener("change", updateRoomVariants);
+elements.amplifiedModeToggle.addEventListener("change", updateRoomVariants);
+elements.wildFireModeToggle.addEventListener("change", updateRoomVariants);
+elements.partyMayhemModeToggle.addEventListener("change", updateRoomVariants);
+elements.classicModeToggle.addEventListener("change", handleClassicModeToggle);
+elements.privateRoomToggle.addEventListener("change", updateRoomVariants);
+elements.roomPasswordInput.addEventListener("input", updateRoomVariants);
+function handleModerationClick(event) {
+  const button = event.target.closest("[data-action][data-owner]");
+  if (!button) {
+    return false;
+  }
+  handleRoomPlayerAction(button.dataset.action, button.dataset.owner);
+  return true;
+}
+
+function handleRoomPlayerListClick(event) {
+  if (handleModerationClick(event)) {
+    return;
+  }
+  handleKickableBotClick(event);
+}
+
+function handleChatProfileClick(event) {
+  if (handleModerationClick(event)) {
+    return;
+  }
+
+  const message = event.target.closest(".chat-message[data-chat-owner]");
+  if (!message || event.target.closest("button")) {
+    return;
+  }
+
+  toggleChatOptions(message, message.dataset.chatOwner);
+}
+
+elements.roomPlayerList.addEventListener("click", handleRoomPlayerListClick);
+elements.roomLobbyPlayerList.addEventListener("click", handleRoomPlayerListClick);
+elements.leaderboard.addEventListener("click", handleKickableBotClick);
+elements.roundRecap.addEventListener("click", handleKickableBotClick);
+elements.joinRoomList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-join-room]");
+  if (!button) {
+    return;
+  }
+  joinHostedRoom(button.dataset.joinRoom, { spectate: button.dataset.roomAction === "spectate" });
+});
+elements.joinCodeForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  joinHostedRoom(elements.joinRoomCodeInput.value);
+});
+elements.createFromJoinButton.addEventListener("click", openRoomScreen);
+elements.rematchButton.addEventListener("click", () => {
+  if (isRoomMode()) {
+    state.roomChat.push({ sender: "System", text: "Rematch started in the same room." });
+  }
+  startGame(state.mode);
+});
+elements.continueAsPlayerButton.addEventListener("click", () => {
+  state.isSpectator = false;
+  state.currentOwner = state.joiningRoom ? "opponent" : "player";
+  addSystemChat(`${state.profile.name || "Guest"} will play next match.`);
+  startGame("room");
+});
+elements.spectateAgainButton.addEventListener("click", () => {
+  state.isSpectator = true;
+  state.currentOwner = "spectator";
+  addSystemChat(`${state.profile.name || "Guest"} stayed as a spectator.`);
+  startGame("room");
+});
+function returnToRoomLobbyAfterMatch() {
+  playSound("click");
+  clearRoomAutoResolve();
+  stopNextRoundCountdown();
+  resetTimerDisplay();
+  stopLoadingMessages();
+  state.matchEnded = true;
+  state.currentRoomStatus = "lobby";
+  state.roomParticipants = getRoomParticipantsFromPlayers("lobby");
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomChat, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.modeScreen, true);
+  elements.gameStage.classList.remove("room-active");
+  upsertHostedRoom("lobby");
+  renderRoomLobby();
+  startRoomDirectoryPolling();
+  setHidden(elements.roomLobbyScreen, false);
+}
+
+elements.changeModeButton.addEventListener("click", () => {
+  if (isRoomMode() && !elements.endPanel.classList.contains("hidden")) {
+    returnToRoomLobbyAfterMatch();
+    return;
+  }
+  playSound("click");
+  clearRoomAutoResolve();
+  stopNextRoundCountdown();
+  resetTimerDisplay();
+  stopLoadingMessages();
+  state.matchEnded = true;
+  stashUnusedQuestionSetups();
+  state.nextSetup = null;
+  state.nextSetupPromise = null;
+  state.nextSetupStatus = "idle";
+  state.setupStack = [];
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomChat, true);
+  elements.gameStage.classList.remove("room-active");
+  setHidden(elements.modeScreen, false);
+  ensureQuestionReserve({ enabledThemes: state.enabledThemes });
+});
+elements.menuSoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
+elements.roomSoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
+elements.joinSoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
+elements.lobbySoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
+elements.soundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
+elements.leaveGameButton.addEventListener("click", openLeaveConfirm);
+elements.exitGameButton.addEventListener("click", openEndConfirm);
+elements.cancelEndButton.addEventListener("click", () => {
+  if (state.pendingConfirmResolver && state.pendingConfirmAction === "saveQuestionChoice") {
+    closeEndConfirm("saveAsNew");
+    return;
+  }
+  closeEndConfirm(false);
+});
+elements.confirmEndButton.addEventListener("click", () => {
+  if (state.pendingConfirmResolver) {
+    closeEndConfirm(state.pendingConfirmAction === "saveQuestionChoice" ? "overwrite" : true);
+    return;
+  }
+  closeEndConfirm(true);
+  if (state.pendingConfirmAction === "leave") {
+    leaveCurrentRoom();
+    return;
+  }
+  endMatch(true);
+});
+elements.answerInput.addEventListener("input", () => playSound("type"));
+elements.menuSettingsButton.addEventListener("click", openSettings);
+elements.menuAbilitiesButton.addEventListener("click", openAbilities);
+elements.menuAchievementsButton.addEventListener("click", openAchievements);
+elements.gameSettingsButton.addEventListener("click", openSettings);
+function openRoundHelp() {
+  setHidden(elements.roundHelpModal, false);
+  playSound("click");
+}
+
+elements.menuHelpButton?.addEventListener("click", openRoundHelp);
+elements.roundHelpButton?.addEventListener("click", openRoundHelp);
+elements.closeSettingsButton.addEventListener("click", closeSettings);
+elements.verdictAbilitiesButton.addEventListener("click", openAbilities);
+elements.powerLogToggle.addEventListener("click", () => {
+  const isHidden = elements.powerLog.classList.contains("hidden");
+  setHidden(elements.powerLog, !isHidden);
+  elements.powerLogToggle.setAttribute("aria-expanded", String(isHidden));
+  playSound("click");
+});
+elements.closeAbilitiesButton.addEventListener("click", closeAbilities);
+elements.closeAchievementsButton.addEventListener("click", closeAchievements);
+elements.closeRoundHelpButton?.addEventListener("click", () => hideModalWithMotion(elements.roundHelpModal));
+elements.closeThemeButton.addEventListener("click", closeThemeSelector);
+elements.settingsModal.addEventListener("click", (event) => {
+  if (event.target === elements.settingsModal) {
+    closeSettings();
+  }
+});
+elements.abilitiesModal.addEventListener("click", (event) => {
+  if (event.target === elements.abilitiesModal) {
+    closeAbilities();
+  }
+});
+elements.achievementsModal.addEventListener("click", (event) => {
+  if (event.target === elements.achievementsModal) {
+    closeAchievements();
+  }
+});
+elements.roundHelpModal?.addEventListener("click", (event) => {
+  if (event.target === elements.roundHelpModal) {
+    hideModalWithMotion(elements.roundHelpModal);
+  }
+});
+elements.profileCustomModal.addEventListener("click", (event) => {
+  if (event.target === elements.profileCustomModal) {
+    closeProfileCustomization();
+  }
+});
+elements.profileShopModal?.addEventListener("click", (event) => {
+  if (event.target === elements.profileShopModal) {
+    closeProfileShop();
+    return;
+  }
+  const item = event.target.closest("[data-profile-shop-type][data-profile-shop-id]");
+  if (item) {
+    buyProfileShopItem(item.dataset.profileShopType, item.dataset.profileShopId);
+  }
+});
+elements.closeProfileCustomButton?.addEventListener("click", () => closeProfileCustomization());
+elements.closeProfileShopButton?.addEventListener("click", closeProfileShop);
+elements.profileCardStyleGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileEffectGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profilePatternGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileFontGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileGradientTopGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileGradientBottomGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileTitleGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileTitleColourGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileTitleRgbToggle?.addEventListener("change", (event) => {
+  commitProfileCustomizationDraft((draft) => {
+    draft.titleRgb = Boolean(event.target.checked);
+  });
+  playSound("click");
+});
+elements.profileTitlePastelToggle?.addEventListener("change", (event) => {
+  commitProfileCustomizationDraft((draft) => {
+    draft.titlePastel = Boolean(event.target.checked);
+  });
+  playSound("click");
+});
+elements.profileCustomUndoButton?.addEventListener("click", () => stepProfileCustomizationHistory(-1));
+elements.profileCustomRedoButton?.addEventListener("click", () => stepProfileCustomizationHistory(1));
+elements.profileCustomResetButton?.addEventListener("click", () => {
+  commitProfileCustomizationDraft((draft) => {
+    Object.assign(draft, {
+      ...defaultProfileCustomization,
+      effectIds: [...defaultProfileCustomization.effectIds],
+      equippedTitleId: ""
+    });
+  });
+  playSound("click");
+});
+elements.profileCustomSaveButton?.addEventListener("click", saveProfileCustomizationDraft);
+elements.themeModal.addEventListener("click", (event) => {
+  if (event.target === elements.themeModal) {
+    closeThemeSelector();
+  }
+});
+elements.confirmEndModal.addEventListener("click", (event) => {
+  if (event.target === elements.confirmEndModal) {
+    closeEndConfirm();
+  }
+});
+elements.targetModal.addEventListener("click", (event) => {
+  if (event.target === elements.targetModal) {
+    closeTargetSelector();
+    return;
+  }
+
+  const themeOption = event.target.closest("[data-target-theme]");
+  if (themeOption) {
+    completeThemeSelection(themeOption.dataset.targetTheme);
+    return;
+  }
+
+  const rarityOption = event.target.closest("[data-target-rarity]");
+  if (rarityOption) {
+    if (elements.targetModal.dataset.mode === "black-market") {
+      completeBlackMarketSelection(rarityOption.dataset.targetRarity);
+    } else {
+      completeMerchantSelection(rarityOption.dataset.targetRarity);
+    }
+    return;
+  }
+
+  const answerOption = event.target.closest("[data-answer-choice]");
+  if (answerOption) {
+    completeAnswerChoice(answerOption.dataset.answerChoice);
+    return;
+  }
+
+  const option = event.target.closest("[data-target-owner]");
+  if (option) {
+    completeTargetSelection(option.dataset.targetOwner);
+  }
+});
+elements.cancelTargetButton.addEventListener("click", closeTargetSelector);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && closeTopModal()) {
+    event.preventDefault();
+  }
+});
+elements.sfxVolumeSlider.addEventListener("input", (event) => updateSfxVolume(event.target.value));
+elements.musicVolumeSlider.addEventListener("input", (event) => updateMusicSetting(event.target.value));
+elements.timerSecondsSlider.addEventListener("input", (event) => updateTimerSetting(event.target.value));
+elements.roundsSlider.addEventListener("input", (event) => updateRoundsSetting(event.target.value));
+elements.powerPanel.addEventListener("click", (event) => {
+  const button = event.target.closest(".power-card");
+  if (!button) {
+    return;
+  }
+
+  selectPowerUp(button.dataset.power);
+});
+elements.answerStackButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  restartAnimation(elements.answerStackButton, "pulled");
+  cycleAnswerStack();
+});
+elements.cardsArea.addEventListener("click", (event) => {
+  if (event.target.closest("#answerStackButton")) {
+    cycleAnswerStack();
+  }
+});
+elements.chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendChatMessage(elements.chatInput.value, elements.chatInput);
+});
+elements.lobbyChatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendChatMessage(elements.lobbyChatInput.value, elements.lobbyChatInput);
+});
+elements.chatLog.addEventListener("click", handleChatProfileClick);
+elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
+document.addEventListener("click", playFallbackClickIfSilent);
+
+updateSoundButton();
+syncSettingsControls();
+syncRoomControls();
+renderProfile();
+updateAchievementNotificationDot();
+state.timerRemaining = state.timerSeconds;
+renderTimer();
+startMusic();
+armMusicUnlockListeners();
+loadRandomUsernames();
+ensureQuestionReserve({ enabledThemes: state.enabledThemes });

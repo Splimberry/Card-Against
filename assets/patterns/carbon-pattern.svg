@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="none"/>
+  <g fill="#fff">
+    <path opacity=".42" d="M-16 0h32l16 16v16H0L-16 16Z"/>
+    <path opacity=".72" d="M16 0h32l16 16v16H32L16 16Z"/>
+    <path opacity=".42" d="M48 0h32l16 16v16H64L48 16Z"/>
+    <path opacity=".72" d="M-16 32h32l16 16v16H0L-16 48Z"/>
+    <path opacity=".42" d="M16 32h32l16 16v16H32L16 48Z"/>
+    <path opacity=".72" d="M48 32h32l16 16v16H64L48 48Z"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="1.35" stroke-linecap="square" opacity=".22">
+    <path d="M-16 16h96"/>
+    <path d="M-16 48h96"/>
+    <path d="M-32 0 32 64"/>
+    <path d="M0 0 64 64"/>
+    <path d="M32 0 96 64"/>
+  </g>
+</svg>

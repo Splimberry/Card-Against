@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cards Against AI</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="mode-screen" id="modeScreen" aria-labelledby="modeTitle">
+        <button type="button" class="round-help-button menu-help-button" id="menuHelpButton" aria-label="Game help">?</button>
+        <div class="mode-header">
+          <div class="mode-title-stack">
+            <p class="eyebrow">Choose mode</p>
+            <h1 id="modeTitle"><span>CARD</span><span>AGAINST AI</span></h1>
+          </div>
+          <section class="profile-card" aria-labelledby="profileTitle">
+            <div class="profile-avatar" id="profileAvatarPreview">Y</div>
+            <div class="profile-fields">
+              <span id="profileTitle">Player profile</span>
+              <div class="profile-name-display" id="profileNameDisplay">You</div>
+              <div class="profile-actions">
+                <div class="profile-currency" aria-label="Currency balance">
+                  <span class="coin-icon" aria-hidden="true"></span>
+                  <strong id="profileCurrencyValue">0</strong>
+                  <small>Coins</small>
+                </div>
+                <button type="button" class="secondary-button profile-customize-button" id="profileCustomizeButton">Customize Card</button>
+                <button type="button" class="secondary-button profile-shop-button" id="profileShopButton">Shop</button>
+              </div>
+            </div>
+          </section>
+          <div class="menu-actions">
+            <button type="button" class="icon-button menu-settings-button" id="menuSettingsButton">Settings</button>
+            <button type="button" class="icon-button" id="menuSoundToggleButton" aria-pressed="false">Sound On</button>
+            <button type="button" class="icon-button" id="menuAbilitiesButton">View Abilities & Events</button>
+            <button type="button" class="icon-button notification-button" id="menuAchievementsButton">Achievements</button>
+            <button type="button" class="icon-button" id="menuDevToolButton">Dev Tool</button>
+          </div>
+        </div>
+        <div class="mode-grid">
+          <button type="button" class="mode-card" id="startBotsButton">
+            <span>Solo vs Bots</span>
+            <strong>1 player</strong>
+            <small>You vs two AI-generated disasters.</small>
+          </button>
+          <button type="button" class="mode-card" id="startLocalButton">
+            <span>Local 1v1</span>
+            <strong>2 players</strong>
+            <small>Share the keyboard. Let the score swing ruin a friendship.</small>
+          </button>
+          <button type="button" class="mode-card" id="createRoomButton">
+            <span>Online Room</span>
+            <strong>Create</strong>
+            <small>Configure a multiplayer room and open the lobby chat.</small>
+          </button>
+          <button type="button" class="mode-card" id="joinRoomButton">
+            <span>Join Game</span>
+            <strong>Rooms</strong>
+            <small>Browse hosted public and private rooms.</small>
+          </button>
+        </div>
+      </section>
+
+      <section class="room-screen hidden" id="roomScreen" aria-labelledby="roomTitle">
+        <div class="room-header">
+          <div>
+            <p class="eyebrow">Multiplayer setup</p>
+            <h1 id="roomTitle">CREATE ROOM</h1>
+          </div>
+          <div class="lobby-actions">
+            <button type="button" class="icon-button" id="roomSoundToggleButton" aria-pressed="false">Sound On</button>
+            <button type="button" class="icon-button" id="backToMenuButton">Back</button>
+          </div>
+        </div>
+
+        <div class="room-setup-grid">
+          <section class="room-settings-panel">
+            <label class="slider-row" for="roomRoundsSlider">
+              <span>Rounds</span>
+              <input id="roomRoundsSlider" type="range" min="1" max="10" step="1" value="5">
+              <strong id="roomRoundsValue">5</strong>
+            </label>
+
+            <label class="slider-row" for="roomTimerSlider">
+              <span>Timer</span>
+              <input id="roomTimerSlider" type="range" min="10" max="60" step="5" value="30">
+              <strong id="roomTimerValue">30s</strong>
+            </label>
+
+            <label class="slider-row" for="roomPlayerLimitSlider">
+              <span>Players</span>
+              <input id="roomPlayerLimitSlider" type="range" min="2" max="10" step="1" value="6">
+              <strong id="roomPlayerLimitValue">6</strong>
+            </label>
+
+            <button type="button" class="secondary-button full-width-button" id="selectThemesButton">Select Themes</button>
+            <p class="theme-summary" id="themeSummary">All trivia themes enabled.</p>
+
+            <div class="room-privacy-options" aria-label="Room privacy">
+              <label class="mode-toggle">
+                <input id="privateRoomToggle" type="checkbox">
+                <span>
+                  <strong>Private Room</strong>
+                  <small>Require a password before joining.</small>
+                </span>
+              </label>
+              <label class="slider-row room-password-row collapsed" for="roomPasswordInput" id="roomPasswordRow">
+                <span>Password</span>
+                <input id="roomPasswordInput" type="text" maxlength="32" autocomplete="off" placeholder="Room password">
+                <strong>Key</strong>
+              </label>
+            </div>
+
+            <div class="room-mode-options" aria-label="Game mode variants">
+              <label class="mode-toggle">
+                <input id="amplifiedModeToggle" type="checkbox">
+                <span>
+                  <strong>Amplified</strong>
+                  <small>Each round starts with one shared random 1x to 2x score multiplier.</small>
+                </span>
+              </label>
+              <label class="mode-toggle">
+                <input id="harshModeToggle" type="checkbox">
+                <span>
+                  <strong>Brutal</strong>
+                  <small>Every non-winner loses 500 points.</small>
+                </span>
+              </label>
+              <label class="mode-toggle">
+                <input id="chaosModeToggle" type="checkbox">
+                <span>
+                  <strong>Chaos</strong>
+                  <small>Power-ups refill and reroll every round.</small>
+                </span>
+              </label>
+              <label class="mode-toggle">
+                <input id="timeMoneyModeToggle" type="checkbox">
+                <span>
+                  <strong>Time Is Money</strong>
+                  <small>Base win points become remaining time x 20.</small>
+                </span>
+              </label>
+              <label class="mode-toggle">
+                <input id="wildFireModeToggle" type="checkbox">
+                <span>
+                  <strong>Wild Fire</strong>
+                  <small>Everyone carries the permanent It's Getting Hot effect.</small>
+                </span>
+              </label>
+              <label class="mode-toggle">
+                <input id="partyMayhemModeToggle" type="checkbox">
+                <span>
+                  <strong>Party Mayhem</strong>
+                  <small>Table events jump from 15% to 80% each round.</small>
+                </span>
+              </label>
+              <label class="mode-toggle">
+                <input id="classicModeToggle" type="checkbox">
+                <span>
+                  <strong>Classic</strong>
+                  <small>Multiplayer only. Disables modifiers, table events, and power-ups.</small>
+                </span>
+              </label>
+            </div>
+
+            <button type="button" id="startRoomButton">Create Room</button>
+          </section>
+
+          <section class="room-preview">
+            <p class="eyebrow">Room code</p>
+            <h2 id="roomCodePreview">CAI-0000</h2>
+            <div class="room-host-profile" id="roomHostProfile" aria-label="Room host profile">
+              <div class="profile-avatar" id="roomProfileAvatarPreview">Y</div>
+              <div>
+                <p class="eyebrow">Creating as</p>
+                <strong id="roomProfileNamePreview">You</strong>
+              </div>
+            </div>
+            <div class="room-player-list" id="roomPlayerList" aria-label="Room players"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="join-screen hidden" id="joinScreen" aria-labelledby="joinTitle">
+        <div class="room-header">
+          <div>
+            <p class="eyebrow">Hosted rooms</p>
+            <h1 id="joinTitle">JOIN GAME</h1>
+          </div>
+          <div class="lobby-actions">
+            <button type="button" class="icon-button" id="joinSoundToggleButton" aria-pressed="false">Sound On</button>
+            <button type="button" class="icon-button" id="createFromJoinButton">Create Room</button>
+            <button type="button" class="icon-button" id="backFromJoinButton">Back</button>
+          </div>
+        </div>
+        <form class="join-code-form" id="joinCodeForm">
+          <label class="sr-only" for="joinRoomCodeInput">Room code</label>
+          <input id="joinRoomCodeInput" maxlength="8" autocomplete="off" placeholder="Room code">
+          <label class="sr-only" for="joinRoomPasswordInput">Room password</label>
+          <input id="joinRoomPasswordInput" maxlength="32" autocomplete="off" placeholder="Password if private">
+          <button type="submit">Join Code</button>
+        </form>
+        <div class="join-room-list" id="joinRoomList" aria-label="Hosted game rooms"></div>
+      </section>
+
+      <section class="room-lobby-screen hidden" id="roomLobbyScreen" aria-labelledby="roomLobbyTitle">
+        <div class="room-header">
+          <div>
+            <p class="eyebrow">Waiting room</p>
+            <h1 id="roomLobbyTitle">ROOM LOBBY</h1>
+          </div>
+          <div class="lobby-actions">
+            <button type="button" class="icon-button" id="lobbySettingsButton">Settings</button>
+            <button type="button" class="icon-button" id="lobbySoundToggleButton" aria-pressed="false">Sound On</button>
+            <button type="button" class="icon-button danger-button" id="leaveLobbyButton">Leave</button>
+          </div>
+        </div>
+
+        <div class="room-setup-grid">
+          <section class="room-preview lobby-panel">
+            <p class="eyebrow">Room code</p>
+            <h2 id="lobbyRoomCode">CAI-0000</h2>
+            <p id="lobbyRoomSummary">Classic Match room. Waiting for players.</p>
+            <div class="room-host-profile" id="lobbyHostProfile" aria-label="Lobby host profile">
+              <div class="profile-avatar" id="lobbyHostAvatarPreview">Y</div>
+              <div>
+                <p class="eyebrow">Host</p>
+                <strong id="lobbyHostNamePreview">Host</strong>
+              </div>
+            </div>
+            <div class="room-player-list" id="roomLobbyPlayerList" aria-label="Lobby players"></div>
+            <div class="lobby-room-actions">
+              <button type="button" class="secondary-button" id="lobbyAddBotButton">Add Bot</button>
+              <button type="button" id="beginRoomButton">Begin Match</button>
+            </div>
+          </section>
+
+          <aside class="room-chat lobby-chat" id="lobbyRoomChat" aria-label="Lobby chat">
+            <div class="room-chat-header">
+              <div>
+                <p class="eyebrow">Room chat</p>
+                <strong id="lobbyRoomCodeLabel">CAI-0000</strong>
+              </div>
+              <span id="lobbyRoomVariantLabel">Classic Match</span>
+            </div>
+            <div class="chat-log" id="lobbyChatLog" aria-live="polite"></div>
+            <form class="chat-form" id="lobbyChatForm">
+              <label class="sr-only" for="lobbyChatInput">Chat message</label>
+              <input id="lobbyChatInput" maxlength="160" autocomplete="off" placeholder="Lobby chat">
+              <button type="submit">Send</button>
+            </form>
+          </aside>
+        </div>
+      </section>
+
+      <section class="game-stage hidden" id="gameStage" aria-label="Cards Against AI game table">
+        <div class="wild-fire-glow" aria-hidden="true">
+          <span class="wild-fire-glow-layer layer-a"></span>
+          <span class="wild-fire-glow-layer layer-b"></span>
+          <span class="wild-fire-glow-layer layer-c"></span>
+          <span class="wild-fire-glow-layer layer-d"></span>
+        </div>
+        <header class="top-bar">
+          <div>
+            <p class="eyebrow" id="modeLabel">Five-round match</p>
+            <h1>CARD AGAINST AI</h1>
+            <div class="top-actions">
+              <button type="button" class="icon-button" id="soundToggleButton" aria-pressed="false">Sound On</button>
+              <button type="button" class="icon-button" id="gameSettingsButton">Settings</button>
+              <button type="button" class="icon-button danger-button" id="leaveGameButton">Leave Game</button>
+              <button type="button" class="icon-button danger-button" id="exitGameButton">End Game</button>
+            </div>
+          </div>
+          <div class="scoreboard" aria-label="Scoreboard">
+            <div class="leaderboard" id="leaderboard" aria-label="Player leaderboard"></div>
+            <div class="match-metrics" aria-label="Match status">
+              <div class="score-metric">
+                <span>Round</span>
+                <strong id="roundCount">1</strong>
+              </div>
+              <div class="score-metric" id="timerScoreBox">
+                <span>Timer</span>
+                <strong id="timerCount">30</strong>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="table-surface">
+          <button type="button" class="round-help-button" id="roundHelpButton" aria-label="Round help">?</button>
+          <section class="judge-panel hidden" aria-labelledby="judgeName">
+            <div class="judge-avatar" id="judgeAvatar" aria-hidden="true">&#x1F4BC;</div>
+            <div>
+              <p class="eyebrow">Trivia grader</p>
+              <h2 id="judgeName">Chadwick</h2>
+              <p id="judgeBio"></p>
+              <div class="judge-tags" id="judgeTags" aria-label="Grading focus"></div>
+            </div>
+          </section>
+
+          <section class="black-card" aria-labelledby="blackCardLabel">
+            <div class="question-meta">
+              <p id="blackCardLabel">Trivia Question</p>
+              <div class="question-badges">
+                <span id="questionThemeBadge">Mixed Trivia</span>
+                <span class="difficulty-badge difficulty-medium" id="questionDifficultyBadge">Medium +500</span>
+              </div>
+            </div>
+            <figure class="question-image hidden" id="questionImageWrap">
+              <img id="questionImage" alt="">
+              <div class="question-image-placeholder hidden" id="questionImagePlaceholder">Waiting for image...</div>
+              <figcaption id="questionImageCredit"></figcaption>
+            </figure>
+            <h2 id="blackCardText"></h2>
+          </section>
+
+          <section class="power-panel" id="powerPanel" aria-label="Power ups"></section>
+          <section class="effect-panel hidden" id="effectPanel" aria-label="Active effects"></section>
+
+          <section class="input-panel" id="inputPanel" aria-labelledby="inputTitle">
+            <div>
+              <p class="eyebrow">Your answer</p>
+              <h2 id="inputTitle">Answer the trivia question.</h2>
+            </div>
+            <div class="table-event-actions hidden" id="tableEventActionPanel"></div>
+            <form id="answerForm">
+              <div class="input-fields">
+                <label class="sr-only" for="answerInput">Player 1 phrase</label>
+                <input
+                  id="answerInput"
+                  name="answer"
+                  type="text"
+                  maxlength="80"
+                  autocomplete="off"
+                  placeholder="Player 1 answer"
+                  required
+                >
+                <label class="sr-only" for="playerTwoInput">Player 2 phrase</label>
+                <input
+                  class="hidden"
+                  id="playerTwoInput"
+                  name="playerTwoAnswer"
+                  type="text"
+                  maxlength="80"
+                  autocomplete="off"
+                  placeholder="Player 2 answer"
+                >
+              </div>
+              <button type="submit" id="submitButton">Submit</button>
+            </form>
+            <div class="room-submit-status hidden" id="roomSubmitStatus" aria-live="polite"></div>
+          </section>
+
+          <section class="answer-progress" id="answerProgressPanel" aria-label="Question progress">
+            <div class="answer-progress-header">
+              <span>Question Progress</span>
+              <strong id="answerProgressSummary">0/10 answered</strong>
+            </div>
+            <div class="answer-progress-grid" id="answerProgressGrid"></div>
+          </section>
+
+          <section class="cards-area hidden" id="cardsArea" aria-label="Submitted trivia answers">
+            <article class="white-card" data-owner="player">
+              <div class="answer-owner">
+                <span class="answer-avatar" id="playerCardAvatar" aria-hidden="true">Y</span>
+                <span id="playerCardLabel">You</span>
+              </div>
+              <strong class="rating-badge hidden" id="playerCardBadge"></strong>
+              <p id="playerCardText"></p>
+            </article>
+            <article class="white-card" data-owner="bot">
+              <div class="answer-owner">
+                <span class="answer-avatar" id="botOneCardAvatar" aria-hidden="true">B1</span>
+                <span id="botOneLabel">Bot 1</span>
+              </div>
+              <strong class="rating-badge hidden" id="botOneBadge"></strong>
+              <p id="botOneText"></p>
+            </article>
+            <article class="white-card" data-owner="bot" id="botTwoCard">
+              <div class="answer-owner">
+                <span class="answer-avatar" id="botTwoCardAvatar" aria-hidden="true">B2</span>
+                <span id="botTwoLabel">Bot 2</span>
+              </div>
+              <strong class="rating-badge hidden" id="botTwoBadge"></strong>
+              <p id="botTwoText"></p>
+            </article>
+            <button type="button" class="answer-stack hidden" id="answerStackButton" aria-label="Cycle unseen answers">
+              <span>More answers</span>
+              <strong id="answerStackCount">+0</strong>
+            </button>
+          </section>
+
+          <section class="verdict-panel hidden" id="verdictPanel" aria-live="polite">
+            <p class="eyebrow">Answer review</p>
+            <h2 id="winnerText"></h2>
+            <button type="button" class="secondary-button effects-toggle hidden" id="powerLogToggle">Power Effects</button>
+            <div class="power-log hidden" id="powerLog" aria-label="Power up results"></div>
+            <div class="round-recap hidden" id="roundRecap" aria-label="Round point recap"></div>
+            <div class="verdict-actions">
+              <button type="button" class="secondary-button" id="verdictAbilitiesButton">View Abilities & Events</button>
+              <button type="button" id="nextRoundButton">Next Round</button>
+            </div>
+          </section>
+
+          <section class="error-panel hidden" id="errorPanel" aria-live="assertive">
+            <p class="eyebrow">AI generation failed</p>
+            <h2>Could not generate this round.</h2>
+            <p id="errorText"></p>
+            <button type="button" id="retryButton">Try Again</button>
+          </section>
+
+          <section class="loading-panel hidden" id="loadingPanel" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p id="loadingText">Checking the answers...</p>
+          </section>
+
+          <section class="end-panel hidden" id="endPanel" aria-live="polite">
+            <p class="eyebrow">Match complete</p>
+            <h2 id="matchWinnerText"></h2>
+            <div class="final-leaderboard" id="finalLeaderboard" aria-label="Final leaderboard"></div>
+            <dl class="match-stats" id="matchStats"></dl>
+            <div class="end-actions">
+              <button type="button" class="secondary-button" id="matchTimelineButton">View Timeline</button>
+              <button type="button" id="rematchButton">Rematch</button>
+              <button type="button" class="secondary-button hidden" id="continueAsPlayerButton">Continue Playing</button>
+              <button type="button" class="secondary-button hidden" id="spectateAgainButton">Spectate</button>
+              <button type="button" class="secondary-button" id="changeModeButton">Change Mode</button>
+            </div>
+            <section class="match-timeline hidden" id="matchTimeline" aria-label="Match timeline"></section>
+          </section>
+        </div>
+
+        <aside class="room-chat hidden" id="roomChat" aria-label="Room chat">
+          <div class="room-chat-header">
+            <div>
+              <p class="eyebrow">Room chat</p>
+              <strong id="roomCodeLabel">CAI-0000</strong>
+            </div>
+            <span id="roomVariantLabel">Classic Match</span>
+          </div>
+          <div class="chat-log" id="chatLog" aria-live="polite"></div>
+          <form class="chat-form" id="chatForm">
+            <label class="sr-only" for="chatInput">Chat message</label>
+            <input id="chatInput" maxlength="160" autocomplete="off" placeholder="Talk trash responsibly">
+            <button type="submit">Send</button>
+          </form>
+        </aside>
+      </section>
+
+      <section class="settings-modal hidden" id="settingsModal" aria-labelledby="settingsTitle" aria-modal="true" role="dialog">
+        <div class="settings-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Settings</p>
+              <h2 id="settingsTitle">Audio & Match</h2>
+            </div>
+            <button type="button" class="icon-button" id="closeSettingsButton">Close</button>
+          </div>
+
+          <label class="slider-row" for="sfxVolumeSlider">
+            <span>SFX Volume</span>
+            <input id="sfxVolumeSlider" type="range" min="0" max="100" step="1">
+            <strong id="sfxVolumeValue">70</strong>
+          </label>
+
+          <label class="slider-row" for="musicVolumeSlider">
+            <span>Music Volume</span>
+            <input id="musicVolumeSlider" type="range" min="0" max="100" step="1">
+            <strong id="musicVolumeValue">18</strong>
+          </label>
+
+          <label class="slider-row" for="timerSecondsSlider">
+            <span>Answer Timer</span>
+            <input id="timerSecondsSlider" type="range" min="10" max="60" step="5">
+            <strong id="timerSecondsValue">30s</strong>
+          </label>
+
+          <label class="slider-row" for="roundsSlider">
+            <span>Rounds</span>
+            <input id="roundsSlider" type="range" min="1" max="10" step="1">
+            <strong id="roundsValue">5</strong>
+          </label>
+        </div>
+      </section>
+
+      <section class="abilities-modal hidden" id="abilitiesModal" aria-labelledby="abilitiesTitle" aria-modal="true" role="dialog">
+        <div class="abilities-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Power-ups and table events</p>
+              <h2 id="abilitiesTitle">Abilities & Events</h2>
+            </div>
+            <button type="button" class="icon-button" id="closeAbilitiesButton">Close</button>
+          </div>
+          <div class="ability-library" id="abilityLibrary"></div>
+        </div>
+      </section>
+
+      <section class="achievements-modal hidden" id="achievementsModal" aria-labelledby="achievementsTitle" aria-modal="true" role="dialog">
+        <div class="achievements-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Account record</p>
+              <h2 id="achievementsTitle">Achievements</h2>
+            </div>
+            <button type="button" class="icon-button" id="closeAchievementsButton">Close</button>
+          </div>
+          <div class="achievement-library" id="achievementLibrary"></div>
+        </div>
+      </section>
+
+      <section class="round-help-modal hidden" id="roundHelpModal" aria-labelledby="roundHelpTitle" aria-modal="true" role="dialog">
+        <div class="round-help-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Quick guide</p>
+              <h2 id="roundHelpTitle">Game Basics</h2>
+            </div>
+            <button type="button" class="icon-button" id="closeRoundHelpButton">Close</button>
+          </div>
+          <div class="round-help-grid">
+            <article><strong>Round flow</strong><span>A question appears, everyone answers before the timer ends, then answers are graded and points resolve.</span></article>
+            <article><strong>Answer rules</strong><span>Aliases and minor typos can count if the intended answer is clear.</span></article>
+            <article><strong>Power-ups</strong><span>You can use them during answering phase, they will refill 1 slot when you have 3x or more streaks or when you lose.</span></article>
+            <article><strong>Scoring</strong><span>You will gain a small bonus for getting as accurate as possible. Difficulty, streaks, and active modifiers can boost your point earned.</span></article>
+            <article><strong>Table events</strong><span>Some rounds add global rules adding a fun twist to the round.</span></article>
+            <article><strong>Achievements</strong><span>Achievement can only be earned/progressed in public 10-round matches, bot rounds and local 1v1 will not contribute to unlocking achievements.</span></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-custom-modal hidden" id="profileCustomModal" aria-labelledby="profileCustomTitle" aria-modal="true" role="dialog">
+        <div class="profile-custom-panel">
+          <div class="modal-heading">
+            <div>
+              <p class="eyebrow">Card cosmetic</p>
+              <h2 id="profileCustomTitle">Customize Card</h2>
+            </div>
+          </div>
+          <div class="profile-custom-layout">
+            <section class="profile-custom-controls">
+              <div>
+                <p class="eyebrow">Theme</p>
+                <div class="card-style-grid" id="profileCardStyleGrid"></div>
+              </div>
+              <div class="gradient-picker" id="profileGradientPicker">
+                <div class="gradient-picker-inner">
+                  <div class="dev-panel-heading">
+                    <div>
+                      <p class="eyebrow">Gradient colours</p>
+                      <h3>Top colour</h3>
+                    </div>
+                  </div>
+                  <div class="colour-swatch-grid" id="profileGradientTopGrid"></div>
+                  <h3>Bottom colour</h3>
+                  <div class="colour-swatch-grid" id="profileGradientBottomGrid"></div>
+                </div>
+              </div>
+              <div>
+                <p class="eyebrow">Styles · Effects</p>
+                <div class="card-style-grid profile-effect-grid" id="profileEffectGrid"></div>
+              </div>
+              <div>
+                <p class="eyebrow">Styles · Pattern</p>
+                <div class="card-style-grid profile-pattern-grid" id="profilePatternGrid"></div>
+              </div>
+              <div>
+                <p class="eyebrow">Font</p>
+                <div class="card-style-grid profile-font-grid" id="profileFontGrid"></div>
+              </div>
+              <div class="profile-prefix-panel">
+                <p class="eyebrow">Title prefix</p>
+                <div class="profile-title-grid" id="profileTitleGrid"></div>
+                <div class="profile-prefix-colour-panel">
+                  <p class="eyebrow">Prefix colour</p>
+                  <div class="profile-title-colour-row">
+                    <div class="colour-swatch-grid profile-title-colour-grid" id="profileTitleColourGrid"></div>
+                    <label class="profile-title-pastel-toggle profile-title-rgb-toggle">
+                      <input type="checkbox" id="profileTitleRgbToggle">
+                      <span>RGB</span>
+                    </label>
+                    <label class="profile-title-pastel-toggle">
+                      <input type="checkbox" id="profileTitlePastelToggle">
+                      <span>Pastel</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <aside class="profile-custom-preview">
+              <p class="eyebrow">Preview</p>
+              <article class="white-card profile-preview-card" id="profilePreviewCard">
+                <div class="answer-owner">
+                  <span class="answer-avatar" id="profilePreviewAvatar" aria-hidden="true">Y</span>
+                  <span id="profilePreviewName">You</span>
+                </div>
+                <strong class="rating-badge">Exact Answer +250</strong>
+                <p>Look at my pretty card :3</p>
+              </article>
+              <label class="profile-name-editor" for="profileNameInput">
+                <span>Username</span>
+                <input id="profileNameInput" maxlength="16" autocomplete="nickname" placeholder="Your username">
+              </label>
+              <label class="profile-upload profile-custom-upload" for="profileAvatarInput">Upload profile picture</label>
+              <input class="sr-only" id="profileAvatarInput" type="file" accept="image/*">
+              <div class="profile-custom-status" id="profileCustomStatus">Choose a card look, then save.</div>
+              <div class="profile-custom-actions">
+                <button type="button" class="secondary-button" id="profileCustomUndoButton">Undo</button>
+                <button type="button" class="secondary-button" id="profileCustomRedoButton">Redo</button>
+                <button type="button" class="secondary-button" id="profileCustomResetButton">Reset</button>
+                <button type="button" class="secondary-button" id="closeProfileCustomButton">Exit</button>
+                <button type="button" class="icon-button" id="profileCustomSaveButton">Save</button>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-shop-modal hidden" id="profileShopModal" aria-labelledby="profileShopTitle" aria-modal="true" role="dialog">
+        <div class="profile-shop-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Profile cosmetics</p>
+              <h2 id="profileShopTitle">Shop</h2>
+            </div>
+            <button type="button" class="icon-button" id="closeProfileShopButton">Close</button>
+          </div>
+          <div class="profile-shop-balance">
+            <span class="coin-icon" aria-hidden="true"></span>
+            <strong id="profileShopBalance">0</strong>
+            <small>Coins available</small>
+          </div>
+          <div class="profile-shop-library" id="profileShopLibrary"></div>
+          <p class="profile-shop-status" id="profileShopStatus">Buy cosmetics here, then equip them in Customize Card.</p>
+        </div>
+      </section>
+
+      <section class="theme-modal hidden" id="themeModal" aria-labelledby="themeTitle" aria-modal="true" role="dialog">
+        <div class="theme-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Trivia pool</p>
+              <h2 id="themeTitle">Select Themes</h2>
+            </div>
+            <button type="button" class="icon-button" id="closeThemeButton">Close</button>
+          </div>
+          <div class="theme-list" id="themeList"></div>
+          <div class="theme-actions">
+            <button type="button" class="secondary-button" id="enableAllThemesButton">Enable All</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="confirm-modal hidden" id="confirmEndModal" aria-labelledby="confirmEndTitle" aria-modal="true" role="dialog">
+        <div class="confirm-panel">
+          <p class="eyebrow" id="confirmEndEyebrow">End game</p>
+          <h2 id="confirmEndTitle">Leave this match?</h2>
+          <p id="confirmEndCopy">Your current match will end immediately and show the results screen.</p>
+          <div class="confirm-actions">
+            <button type="button" class="secondary-button" id="cancelEndButton">Cancel</button>
+            <button type="button" class="danger-button" id="confirmEndButton">End Game</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="target-modal hidden" id="targetModal" aria-labelledby="targetTitle" aria-modal="true" role="dialog">
+        <div class="target-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Choose target</p>
+              <h2 id="targetTitle">Pick a player</h2>
+            </div>
+            <button type="button" class="icon-button" id="cancelTargetButton">Cancel</button>
+          </div>
+          <div class="target-list" id="targetList"></div>
+        </div>
+      </section>
+    </main>
+
+    <div class="danger-flash hidden" id="dangerFlash" aria-hidden="true"></div>
+    <div class="stat-flash hidden" id="statFlash" aria-live="polite" aria-atomic="true">
+      <div class="stat-flash-panel">
+        <strong class="stat-flash-title"></strong>
+        <span class="stat-flash-detail"></span>
+      </div>
+    </div>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
