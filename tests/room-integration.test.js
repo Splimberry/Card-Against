@@ -238,7 +238,7 @@ async function testBrowserExitDeletesRoomWhenNoRealPlayersRemain() {
   assert.equal(directRoom.response.status, 404);
 }
 
-async function testRoomListPrunesRoomsWithoutRealPlayers() {
+async function testRoomListHidesRoomsWithoutRealPlayers() {
   const code = makeCode(8107);
   await upsertRoom(makeRoom(code, {
     participants: [
@@ -267,8 +267,9 @@ async function testRoomListPrunesRoomsWithoutRealPlayers() {
 
   const rooms = await listRooms();
   assert.equal(rooms.some((room) => room.code === code), false);
-  const directRoom = await getRoom(code);
-  assert.equal(directRoom.response.status, 404);
+  const { response, payload } = await getRoom(code);
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.room.code, code);
 }
 
 async function testBackgroundTabDoesNotDeleteRoom() {
@@ -363,7 +364,7 @@ async function main() {
   await testHostLeaveDeletesRoom();
   await testBrowserExitRemovesJoinedPlayer();
   await testBrowserExitDeletesRoomWhenNoRealPlayersRemain();
-  await testRoomListPrunesRoomsWithoutRealPlayers();
+  await testRoomListHidesRoomsWithoutRealPlayers();
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();

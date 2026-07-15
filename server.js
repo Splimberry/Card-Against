@@ -277,6 +277,7 @@ function loadEnv() {
 async function handleListRooms(res) {
   const rooms = (await listRoomsForDirectory())
     .filter((room) => room.status !== "complete")
+    .filter(hasActiveRealPlayers)
     .sort((a, b) => b.updatedAt - a.updatedAt);
   sendJson(res, 200, { rooms });
 }
@@ -880,18 +881,7 @@ function hasActiveRealPlayers(room) {
 }
 
 async function listRoomsForDirectory() {
-  const rooms = await backendStore.listRooms();
-  const visibleRooms = [];
-
-  for (const room of rooms) {
-    if (room.status !== "complete" && !hasActiveRealPlayers(room)) {
-      await backendStore.deleteRoom(room.code);
-      continue;
-    }
-    visibleRooms.push(room);
-  }
-
-  return visibleRooms;
+  return backendStore.listRooms();
 }
 
 async function handleRoomPresence(req, res, code) {

@@ -14228,7 +14228,7 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
       return;
     }
     if (directRoom.status === "missing") {
-      handleCurrentRoomClosed("The room was closed by the host or an admin.");
+      state.roomMissingSince = 0;
     }
   }
 }
