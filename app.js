@@ -981,6 +981,14 @@ const state = {
   supabaseEnabled: false,
   supabaseSession: null,
   supabaseUser: null,
+  realtimeLobbyChannel: null,
+  realtimeRoomChannel: null,
+  realtimeRoomCode: "",
+  realtimeLobbyReady: false,
+  realtimeRoomReady: false,
+  realtimeJoinRefreshTimerId: null,
+  realtimeRoomRefreshTimerId: null,
+  realtimeSourceId: `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   adminAuthenticated: false,
   adminUser: null
 };
@@ -5141,6 +5149,7 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
     if (data.room) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
+      broadcastRealtimeRoomChange("chat-message", data.room);
     }
     return data.room || null;
   }).catch(() => {
@@ -5684,6 +5693,7 @@ async function initSupabaseAuth() {
 
     state.supabaseEnabled = true;
     state.supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+    startSupabaseRealtime();
     const { data } = await state.supabaseClient.auth.getSession();
     applySupabaseSession(data?.session || null);
     state.supabaseClient.auth.onAuthStateChange((_event, session) => {
@@ -5692,7 +5702,166 @@ async function initSupabaseAuth() {
   } catch (error) {
     console.warn("Supabase auth init failed:", error.message || error);
     state.supabaseEnabled = false;
+    stopSupabaseRealtime();
     renderSupabaseAuthControls();
+  }
+}
+
+function startSupabaseRealtime() {
+  if (!state.supabaseClient || state.realtimeLobbyChannel) {
+    return;
+  }
+  const channel = state.supabaseClient.channel("trivia-against-ai:rooms", {
+    config: { broadcast: { self: false } }
+  });
+  channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
+    handleRealtimeRoomChange(payload || {});
+  });
+  channel.subscribe((status) => {
+    state.realtimeLobbyReady = status === "SUBSCRIBED";
+  });
+  state.realtimeLobbyChannel = channel;
+}
+
+function stopSupabaseRealtime() {
+  stopRoomRealtime();
+  if (state.realtimeJoinRefreshTimerId) {
+    window.clearTimeout(state.realtimeJoinRefreshTimerId);
+    state.realtimeJoinRefreshTimerId = null;
+  }
+  if (state.realtimeLobbyChannel && state.supabaseClient) {
+    state.supabaseClient.removeChannel(state.realtimeLobbyChannel);
+  }
+  state.realtimeLobbyChannel = null;
+  state.realtimeLobbyReady = false;
+}
+
+function startRoomRealtime(code = state.roomSettings.code) {
+  const roomCode = String(code || "").trim().toUpperCase();
+  if (!state.supabaseClient || !roomCode || roomCode === "CAI-0000") {
+    return;
+  }
+  if (state.realtimeRoomChannel && state.realtimeRoomCode === roomCode) {
+    return;
+  }
+  stopRoomRealtime();
+  const channel = state.supabaseClient.channel(`trivia-against-ai:room:${roomCode}`, {
+    config: { broadcast: { self: false } }
+  });
+  channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
+    handleRealtimeRoomChange(payload || {});
+  });
+  channel.subscribe((status) => {
+    state.realtimeRoomReady = status === "SUBSCRIBED";
+  });
+  state.realtimeRoomChannel = channel;
+  state.realtimeRoomCode = roomCode;
+}
+
+function stopRoomRealtime() {
+  if (state.realtimeRoomRefreshTimerId) {
+    window.clearTimeout(state.realtimeRoomRefreshTimerId);
+    state.realtimeRoomRefreshTimerId = null;
+  }
+  if (state.realtimeRoomChannel && state.supabaseClient) {
+    state.supabaseClient.removeChannel(state.realtimeRoomChannel);
+  }
+  state.realtimeRoomChannel = null;
+  state.realtimeRoomCode = "";
+  state.realtimeRoomReady = false;
+}
+
+function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.code, details = {}) {
+  if (!state.supabaseClient || !state.realtimeLobbyChannel) {
+    return;
+  }
+  const room = roomOrCode && typeof roomOrCode === "object" ? roomOrCode : null;
+  const code = String(room?.code || roomOrCode || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code === "CAI-0000") {
+    return;
+  }
+  const payload = {
+    eventType: String(eventType || "room-updated"),
+    code,
+    status: room?.status || details.status || "",
+    revision: Number(room?.revision || details.revision || 0),
+    updatedAt: Number(room?.updatedAt || details.updatedAt || Date.now()),
+    sourceId: state.realtimeSourceId,
+    ...details
+  };
+  state.realtimeLobbyChannel.send({
+    type: "broadcast",
+    event: "room-change",
+    payload
+  }).catch(() => {});
+  if (state.realtimeRoomChannel && state.realtimeRoomCode === code) {
+    state.realtimeRoomChannel.send({
+      type: "broadcast",
+      event: "room-change",
+      payload
+    }).catch(() => {});
+  }
+}
+
+function handleRealtimeRoomChange(payload = {}) {
+  if (!payload || payload.sourceId === state.realtimeSourceId) {
+    return;
+  }
+  const code = String(payload.code || "").trim().toUpperCase();
+  if (!code) {
+    return;
+  }
+  if (!elements.joinScreen.classList.contains("hidden")) {
+    scheduleRealtimeJoinRefresh();
+  }
+  if (code === state.roomSettings.code && hasActiveRoomContext()) {
+    scheduleRealtimeRoomRefresh(payload);
+  }
+}
+
+function scheduleRealtimeJoinRefresh() {
+  if (state.realtimeJoinRefreshTimerId) {
+    window.clearTimeout(state.realtimeJoinRefreshTimerId);
+  }
+  state.realtimeJoinRefreshTimerId = window.setTimeout(async () => {
+    state.realtimeJoinRefreshTimerId = null;
+    await refreshHostedRooms();
+    if (!elements.joinScreen.classList.contains("hidden")) {
+      renderHostedRooms();
+    }
+  }, 90);
+}
+
+function scheduleRealtimeRoomRefresh(payload = {}) {
+  if (state.realtimeRoomRefreshTimerId) {
+    window.clearTimeout(state.realtimeRoomRefreshTimerId);
+  }
+  const expectedSessionId = state.roomSessionId;
+  state.realtimeRoomRefreshTimerId = window.setTimeout(async () => {
+    state.realtimeRoomRefreshTimerId = null;
+    await refreshCurrentRoomFromRealtime(payload, expectedSessionId);
+  }, 80);
+}
+
+async function refreshCurrentRoomFromRealtime(payload = {}, expectedSessionId = state.roomSessionId) {
+  if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
+    return;
+  }
+  if (["room-closed", "room-deleted"].includes(payload.eventType)) {
+    handleCurrentRoomClosed("The room was closed by the host or an admin.");
+    return;
+  }
+  const lookup = await fetchRoomByCode(state.roomSettings.code);
+  if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
+    return;
+  }
+  if (lookup.status === "found" && lookup.room) {
+    mergeHostedRoom(lookup.room);
+    syncActiveRoomFromDirectory(lookup.room);
+    return;
+  }
+  if (lookup.status === "closed") {
+    handleCurrentRoomClosed("The room was closed by the host or an admin.");
   }
 }
 
@@ -12115,6 +12284,9 @@ async function handleDevRoomClick(event) {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `${action} failed with status ${response.status}.`);
     elements.devRoomStatus.textContent = action === "delete" ? `Deleted ${code}.` : `Closed ${code}.`;
+    broadcastRealtimeRoomChange(action === "delete" ? "room-deleted" : "room-closed", result.room || code, {
+      reason: action === "delete" ? "admin-delete" : "admin"
+    });
     await loadDevRooms();
     playSound("reveal");
   } catch (error) {
@@ -13698,6 +13870,7 @@ async function startGame(mode) {
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, false);
   if (mode === "room") {
+    startRoomRealtime(state.roomSettings.code);
     startRoomDirectoryPolling();
   }
   resetRoundUiForLoading();
@@ -13794,6 +13967,7 @@ function openRoomScreen() {
   state.roomSettings = getDefaultRoomSettings(generateRoomCode());
   state.publishedDraftRoomCode = state.roomSettings.code;
   state.roomChat = [];
+  startRoomRealtime(state.roomSettings.code);
   syncRoomControls();
   publishDraftRoom();
   startRoomDirectoryPolling();
@@ -13848,6 +14022,7 @@ function leavePublishedRoom(options = {}) {
   });
   const url = `/api/rooms/${encodeURIComponent(code)}/leave`;
   if (options.keepalive && navigator.sendBeacon) {
+    broadcastRealtimeRoomChange("room-left", code, { reason: options.reason || "manual" });
     navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
     return Promise.resolve(null);
   }
@@ -13856,6 +14031,14 @@ function leavePublishedRoom(options = {}) {
     headers: { "Content-Type": "application/json" },
     body: payload,
     keepalive: Boolean(options.keepalive)
+  }).then(async (response) => {
+    const result = await response.json().catch(() => ({}));
+    if (result?.closed) {
+      broadcastRealtimeRoomChange("room-closed", code, { reason: result.reason || options.reason || "manual" });
+    } else if (result?.room) {
+      broadcastRealtimeRoomChange("participant-left", result.room);
+    }
+    return result;
   }).catch(() => null);
 }
 
@@ -13871,6 +14054,7 @@ function clearLocalRoomState(options = {}) {
   state.roomMissingSince = 0;
   state.roomExitLeaveSent = false;
   state.publishedDraftRoomCode = "";
+  stopRoomRealtime();
   if (options.resetCode !== false) {
     state.roomSettings.code = "CAI-0000";
   }
@@ -13944,6 +14128,7 @@ function closeJoinScreen() {
 
 function startJoinDirectoryPolling() {
   stopJoinDirectoryPolling();
+  const intervalMs = state.supabaseEnabled ? 6000 : 1800;
   state.joinDirectoryPollId = window.setInterval(async () => {
     if (elements.joinScreen.classList.contains("hidden")) {
       stopJoinDirectoryPolling();
@@ -13951,7 +14136,7 @@ function startJoinDirectoryPolling() {
     }
     await refreshHostedRooms();
     renderHostedRooms();
-  }, 1800);
+  }, intervalMs);
 }
 
 function stopJoinDirectoryPolling() {
@@ -14107,6 +14292,9 @@ async function publishRoomDirectory(room) {
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
+    if (data.room) {
+      broadcastRealtimeRoomChange("room-updated", data.room);
+    }
     return data.room || room;
   } catch {
     state.roomDirectoryOnline = false;
@@ -14220,6 +14408,7 @@ async function updateRoomPresence(room, options = {}) {
     if (data.room) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
+      broadcastRealtimeRoomChange("participant-updated", data.room);
     }
     return data.room || room;
   } catch {
@@ -14311,6 +14500,7 @@ function publishRoomRoundSetup(setup) {
     if (data.room) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
+      broadcastRealtimeRoomChange("round-started", data.room);
     }
   }).catch(() => {
     state.roomDirectoryOnline = false;
@@ -14466,7 +14656,8 @@ function handleRoomVisibilityChange() {
 function startRoomDirectoryPolling() {
   stopRoomDirectoryPolling();
   const sessionId = state.roomSessionId;
-  state.roomDirectoryPollId = window.setInterval(() => refreshCurrentRoomDirectory(sessionId), 1400);
+  const intervalMs = state.supabaseEnabled ? 5000 : 1400;
+  state.roomDirectoryPollId = window.setInterval(() => refreshCurrentRoomDirectory(sessionId), intervalMs);
 }
 
 function stopRoomDirectoryPolling() {
@@ -14701,6 +14892,7 @@ async function joinHostedRoom(code, options = {}) {
   }
 
   state.roomSettings = { ...room.settings };
+  startRoomRealtime(state.roomSettings.code);
   state.joiningRoom = room;
   state.isSpectator = options.spectate || room.status !== "lobby";
   state.roomSessionId += 1;
