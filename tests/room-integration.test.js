@@ -2,7 +2,6 @@ const assert = require("node:assert/strict");
 const { Readable } = require("node:stream");
 
 process.env.BACKEND_STORE = "memory";
-process.env.HOST_EXIT_GRACE_SECONDS = "30";
 
 const handleRequest = require("../server");
 
@@ -146,11 +145,11 @@ async function testBackgroundTabDoesNotDeleteRoom() {
   });
   assert.equal(response.status, 200, payload.error);
   assert.equal(payload.closed, false);
-  assert.equal(payload.reason, "host-exit-pending");
+  assert.equal(payload.reason, "page-exit-ignored");
   const rooms = await listRooms();
   const room = rooms.find((entry) => entry.code === code);
   assert.ok(room);
-  assert.ok(room.hostExitPendingAt > 0);
+  assert.equal(room.hostExitPendingAt, 0);
 }
 
 async function testAnswerSurvivesHeartbeat() {

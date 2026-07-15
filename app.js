@@ -14600,19 +14600,6 @@ async function leaveCurrentRoom() {
   playSound("click");
 }
 
-function handleRoomPageExit(event) {
-  if (event?.type === "pagehide" && event.persisted) {
-    return;
-  }
-  if (state.roomExitLeaveSent) {
-    return;
-  }
-  if ((isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft") && state.roomSettings.code !== "CAI-0000") {
-    state.roomExitLeaveSent = true;
-    leavePublishedRoom({ keepalive: true, reason: "page-exit" });
-  }
-}
-
 function animateRoomPlayerListChange(target, renderList) {
   if (!target || typeof renderList !== "function") {
     return;
@@ -17548,7 +17535,6 @@ elements.lobbyChatForm.addEventListener("submit", (event) => {
 elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
-window.addEventListener("pagehide", handleRoomPageExit);
 
 updateSoundButton();
 syncSettingsControls();

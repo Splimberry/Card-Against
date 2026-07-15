@@ -12,7 +12,6 @@ const host = process.env.HOST || "127.0.0.1";
 const backendStore = createBackendStore({
   roomTtlSeconds: process.env.ROOM_TTL_SECONDS || 60 * 60 * 6
 });
-const hostExitGraceMs = Number(process.env.HOST_EXIT_GRACE_SECONDS || 30) * 1000;
 const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
 const adminCookieName = "cai_admin_session";
@@ -270,7 +269,7 @@ function loadEnv() {
 }
 
 async function handleListRooms(res) {
-  const rooms = (await listRoomsWithHostExitPrune())
+  const rooms = (await listRoomsForDirectory())
     .filter((room) => room.status !== "complete")
     .sort((a, b) => b.updatedAt - a.updatedAt);
   sendJson(res, 200, { rooms });
@@ -281,7 +280,7 @@ async function handleAdminStatus(req, res) {
     return;
   }
 
-  const rooms = await listRoomsWithHostExitPrune();
+  const rooms = await listRoomsForDirectory();
   const runtimeQuestionBank = await getRuntimeQuestionBank();
   sendJson(res, 200, {
     ok: true,
@@ -306,7 +305,7 @@ async function handleAdminRooms(req, res) {
     return;
   }
 
-  const rooms = (await listRoomsWithHostExitPrune())
+  const rooms = (await listRoomsForDirectory())
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .map((room) => ({
       code: room.code,
@@ -859,21 +858,8 @@ function stampRoomEvent(room, type, payload = {}) {
   return room;
 }
 
-async function listRoomsWithHostExitPrune() {
-  const rooms = await backendStore.listRooms();
-  const now = Date.now();
-  const visibleRooms = [];
-
-  for (const room of rooms) {
-    const hostExitPendingAt = Number(room.hostExitPendingAt || 0);
-    if (hostExitPendingAt && now - hostExitPendingAt >= hostExitGraceMs) {
-      await backendStore.deleteRoom(room.code);
-      continue;
-    }
-    visibleRooms.push(room);
-  }
-
-  return visibleRooms;
+async function listRoomsForDirectory() {
+  return backendStore.listRooms();
 }
 
 async function handleRoomPresence(req, res, code) {
@@ -937,18 +923,13 @@ async function handleRoomHeartbeat(req, res, code) {
       return;
     }
 
-    const hadPendingExit = Boolean(room.hostExitPendingAt);
     room.hostExitPendingAt = 0;
     if (participant) {
       participant.active = true;
       participant.status = String(body.status || participant.status || "host").slice(0, 32);
     }
     finalizeRoom(room);
-    if (hadPendingExit) {
-      stampRoomEvent(room, "host_resumed", { participantId });
-    } else {
-      room.updatedAt = Date.now();
-    }
+    room.updatedAt = Date.now();
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, { room: storedRoom });
   } catch (error) {
@@ -1069,7 +1050,7 @@ function normalizeRoom(room) {
     banned: Array.isArray(room.banned) ? room.banned.map((entry) => String(entry).slice(0, 80)) : [],
     game: normalizeRoomGame(room.game),
     chat: normalizeRoomChat(room.chat),
-    hostExitPendingAt: clampServerNumber(room.hostExitPendingAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    hostExitPendingAt: 0,
     revision: clampServerNumber(room.revision, 0, Number.MAX_SAFE_INTEGER, 0),
     events: normalizeRoomEvents(room.events),
     updatedAt: Date.now()
@@ -1118,11 +1099,11 @@ async function handleRoomLeave(req, res, code) {
       || room.participants.some((participant) => participant.id === participantId && participant.host);
     if (isHostLeaving) {
       if (reason === "page-exit") {
-        room.hostExitPendingAt = Date.now();
+        room.hostExitPendingAt = 0;
         finalizeRoom(room);
-        stampRoomEvent(room, "host_exit_pending", { participantId });
+        room.updatedAt = Date.now();
         const storedRoom = await backendStore.upsertRoom(room);
-        sendJson(res, 200, { room: storedRoom, closed: false, reason: "host-exit-pending" });
+        sendJson(res, 200, { room: storedRoom, closed: false, reason: "page-exit-ignored" });
         return;
       }
       await backendStore.deleteRoom(normalizedCode);
