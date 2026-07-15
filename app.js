@@ -31,6 +31,9 @@ const profileShopPurchasesStorageKey = "cardsAgainstAiProfileShopPurchases";
 const questionUsageStorageKey = "cardsAgainstAiQuestionUsageStats";
 const currencyStorageKey = "cardsAgainstAiCurrency";
 const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
+const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
+const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
+const userQuestionSubmissionCost = 250;
 const achievementTitles = [
   { id: "accurate-sniper", name: "Answer Sniper", rarity: "purple", description: "Get the Exact Answer tag on at least 75% of your answers in a match." },
   { id: "all-planned", name: "All planned", rarity: "purple", description: "Win 1st place by using Last Laugh and getting over 10,000 points in that round." },
@@ -934,6 +937,9 @@ const state = {
   questionDebugToolMode: "duplicates",
   questionEditOriginalId: "",
   questionEditReturnId: "",
+  userQuestionSubmissions: [],
+  userQuestionSubmissionPollId: null,
+  devQuestionSubmissions: [],
   adminAuthenticated: false,
   adminUser: null
 };
@@ -965,6 +971,35 @@ const elements = {
   startLocalButton: document.querySelector("#startLocalButton"),
   createRoomButton: document.querySelector("#createRoomButton"),
   joinRoomButton: document.querySelector("#joinRoomButton"),
+  menuCreateQuestionsButton: document.querySelector("#menuCreateQuestionsButton"),
+  userQuestionScreen: null,
+  userQuestionForm: null,
+  userQuestionBackButton: null,
+  userQuestionTheme: null,
+  userQuestionDifficulty: null,
+  userQuestionType: null,
+  userQuestionId: null,
+  userQuestionText: null,
+  userQuestionCanonical: null,
+  userQuestionAccepted: null,
+  userQuestionBots: null,
+  userQuestionRejected: null,
+  userQuestionImageFields: null,
+  userQuestionImageUrl: null,
+  userQuestionImageAlt: null,
+  userQuestionImageCredit: null,
+  userQuestionSubmitButton: null,
+  userQuestionClearButton: null,
+  userQuestionStatus: null,
+  userQuestionSubmissionList: null,
+  userQuestionPreview: null,
+  userQuestionPreviewMeta: null,
+  userQuestionPreviewImage: null,
+  userQuestionPreviewPlaceholder: null,
+  userQuestionPreviewCredit: null,
+  userQuestionPreviewText: null,
+  devSubmissionStatus: null,
+  devSubmissionList: null,
   backToMenuButton: document.querySelector("#backToMenuButton"),
   backFromJoinButton: document.querySelector("#backFromJoinButton"),
   roomSoundToggleButton: document.querySelector("#roomSoundToggleButton"),
@@ -1042,6 +1077,7 @@ const elements = {
   devQuestionCheckImagesButton: null,
   devQuestionLeastSeenButton: null,
   devQuestionMostRepeatedButton: null,
+  devSubmissionRefreshButton: null,
   devOverlayGrid: null,
   devOverlayStatus: null,
   devOverlayClearButton: null,
@@ -10631,6 +10667,7 @@ function buildDevToolScreen() {
     </div>
     <div class="dev-tool-tabs" id="devToolTabs" role="tablist" aria-label="Dev tool sections">
       <button type="button" class="selected" data-dev-tab="questions">Question Debug</button>
+      <button type="button" data-dev-tab="submissions">Review Cards</button>
       <button type="button" data-dev-tab="create">Question Creation</button>
       <button type="button" data-dev-tab="achievements">Achievement Debug</button>
       <button type="button" data-dev-tab="profile">Profile Debug</button>
@@ -10696,6 +10733,17 @@ function buildDevToolScreen() {
           <div class="debug-status" id="devQuestionStatus">Loading question bank...</div>
         </aside>
       </div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="submissions">
+      <div class="dev-panel-heading">
+        <div>
+          <p class="eyebrow">Player submissions</p>
+          <h2>Review Cards</h2>
+        </div>
+        <button type="button" class="icon-button" id="devSubmissionRefreshButton">Refresh</button>
+      </div>
+      <div class="debug-status" id="devSubmissionStatus">Load pending player-created cards for review.</div>
+      <div class="dev-submission-list" id="devSubmissionList"></div>
     </section>
     <section class="dev-tool-panel hidden" data-dev-panel="overlays">
       <div class="overlay-debug-layout">
@@ -10791,7 +10839,7 @@ function buildDevToolScreen() {
           </div>
           <label class="dev-create-question-field"><span>Question</span><textarea id="devCreateQuestion" required rows="5" placeholder="Question text"></textarea></label>
           <div class="dev-create-answer-grid">
-            <label class="dev-create-canonical"><span>Answer</span><input id="devCreateCanonical" required placeholder="Main answer"></label>
+            <label class="dev-create-canonical"><span>Answer</span><textarea id="devCreateCanonical" required rows="3" placeholder="Main answer"></textarea></label>
             <label><span>Accepted answers</span><textarea id="devCreateAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
           </div>
           <div class="dev-create-answer-grid">
@@ -10863,6 +10911,9 @@ function buildDevToolScreen() {
   elements.devQuestionCheckImagesButton = screen.querySelector("#devQuestionCheckImagesButton");
   elements.devQuestionLeastSeenButton = screen.querySelector("#devQuestionLeastSeenButton");
   elements.devQuestionMostRepeatedButton = screen.querySelector("#devQuestionMostRepeatedButton");
+  elements.devSubmissionStatus = screen.querySelector("#devSubmissionStatus");
+  elements.devSubmissionList = screen.querySelector("#devSubmissionList");
+  elements.devSubmissionRefreshButton = screen.querySelector("#devSubmissionRefreshButton");
   elements.devOverlayGrid = screen.querySelector("#devOverlayGrid");
   elements.devOverlayStatus = screen.querySelector("#devOverlayStatus");
   elements.devOverlayClearButton = screen.querySelector("#devOverlayClearButton");
@@ -10945,6 +10996,8 @@ function bindDevToolEvents() {
       focusQuestionDebugById(button.dataset.questionToolFocus);
     }
   });
+  elements.devSubmissionRefreshButton.addEventListener("click", loadDevQuestionSubmissions);
+  elements.devSubmissionList.addEventListener("click", handleDevSubmissionClick);
   elements.devOverlayGrid.addEventListener("click", (event) => {
     const button = event.target.closest("[data-overlay-debug]");
     if (button) {
@@ -10981,6 +11034,581 @@ function bindDevToolEvents() {
   elements.devQuestionCreateForm.addEventListener("submit", submitDevQuestionCreateForm);
 }
 
+function buildUserQuestionScreen() {
+  if (elements.userQuestionScreen) {
+    return;
+  }
+
+  const screen = document.createElement("section");
+  screen.className = "user-question-screen hidden";
+  screen.id = "userQuestionScreen";
+  screen.setAttribute("aria-labelledby", "userQuestionTitle");
+  screen.innerHTML = `
+    <div class="room-header">
+      <div>
+        <p class="eyebrow">Community cards</p>
+        <h1 id="userQuestionTitle">CREATE QUESTIONS</h1>
+      </div>
+      <div class="lobby-actions">
+        <button type="button" class="icon-button" id="userQuestionBackButton">Back</button>
+      </div>
+    </div>
+    <div class="dev-create-layout user-question-layout">
+      <form class="dev-create-form" id="userQuestionForm">
+        <div class="dev-create-grid">
+          <label><span>Theme</span><select id="userQuestionTheme"></select></label>
+          <label><span>Difficulty</span><select id="userQuestionDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+          <label><span>Question type</span><select id="userQuestionType"><option value="text">Text</option><option value="image">Image</option></select></label>
+          <label><span>ID</span><input id="userQuestionId" required placeholder="theme-short-unique-id"></label>
+        </div>
+        <label class="dev-create-question-field"><span>Question</span><textarea id="userQuestionText" required rows="5" placeholder="Question text"></textarea></label>
+        <div class="dev-create-answer-grid">
+          <label class="dev-create-canonical"><span>Main answer</span><textarea id="userQuestionCanonical" required rows="3" placeholder="Main answer"></textarea></label>
+          <label><span>Accepted answers</span><textarea id="userQuestionAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
+        </div>
+        <div class="dev-create-answer-grid">
+          <label><span>Wrong bot answers</span><textarea id="userQuestionBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
+          <label><span>Rejected answers</span><textarea id="userQuestionRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
+        </div>
+        <fieldset class="dev-create-image-fields hidden" id="userQuestionImageFields">
+          <legend>Image</legend>
+          <label><span>Image URL</span><input id="userQuestionImageUrl" placeholder="https://..."></label>
+          <div class="dev-create-grid">
+            <label><span>Alt text</span><input id="userQuestionImageAlt" placeholder="Short image description"></label>
+            <label><span>Credit</span><input id="userQuestionImageCredit" placeholder="Wikimedia Commons"></label>
+          </div>
+        </fieldset>
+        <div class="dev-create-actions">
+          <button type="submit" class="primary-button" id="userQuestionSubmitButton">Submit for 250 Coins</button>
+          <button type="button" class="icon-button danger-button" id="userQuestionClearButton">Clear</button>
+          <div class="debug-status" id="userQuestionStatus">Submissions are reviewed by an admin before they enter the question bank.</div>
+        </div>
+      </form>
+      <aside class="dev-create-preview-shell">
+        <p class="eyebrow">Live preview</p>
+        <section class="black-card dev-create-preview-card text-only" id="userQuestionPreview" aria-labelledby="userQuestionPreviewText">
+          <div class="question-meta">
+            <p>Draft card</p>
+            <div class="question-badges" id="userQuestionPreviewMeta"></div>
+          </div>
+          <figure class="question-image">
+            <img id="userQuestionPreviewImage" alt="">
+            <div class="question-image-placeholder" id="userQuestionPreviewPlaceholder">Image preview</div>
+            <figcaption id="userQuestionPreviewCredit"></figcaption>
+          </figure>
+          <h2 id="userQuestionPreviewText">Question preview</h2>
+        </section>
+        <section class="user-question-submissions">
+          <div class="dev-panel-heading">
+            <div>
+              <p class="eyebrow">Your cards</p>
+              <h2>Review Status</h2>
+            </div>
+          </div>
+          <div id="userQuestionSubmissionList" class="user-question-submission-list"></div>
+        </section>
+      </aside>
+    </div>
+  `;
+  elements.modeScreen.insertAdjacentElement("afterend", screen);
+  elements.userQuestionScreen = screen;
+  elements.userQuestionForm = screen.querySelector("#userQuestionForm");
+  elements.userQuestionBackButton = screen.querySelector("#userQuestionBackButton");
+  elements.userQuestionTheme = screen.querySelector("#userQuestionTheme");
+  elements.userQuestionDifficulty = screen.querySelector("#userQuestionDifficulty");
+  elements.userQuestionType = screen.querySelector("#userQuestionType");
+  elements.userQuestionId = screen.querySelector("#userQuestionId");
+  elements.userQuestionText = screen.querySelector("#userQuestionText");
+  elements.userQuestionCanonical = screen.querySelector("#userQuestionCanonical");
+  elements.userQuestionAccepted = screen.querySelector("#userQuestionAccepted");
+  elements.userQuestionBots = screen.querySelector("#userQuestionBots");
+  elements.userQuestionRejected = screen.querySelector("#userQuestionRejected");
+  elements.userQuestionImageFields = screen.querySelector("#userQuestionImageFields");
+  elements.userQuestionImageUrl = screen.querySelector("#userQuestionImageUrl");
+  elements.userQuestionImageAlt = screen.querySelector("#userQuestionImageAlt");
+  elements.userQuestionImageCredit = screen.querySelector("#userQuestionImageCredit");
+  elements.userQuestionSubmitButton = screen.querySelector("#userQuestionSubmitButton");
+  elements.userQuestionClearButton = screen.querySelector("#userQuestionClearButton");
+  elements.userQuestionStatus = screen.querySelector("#userQuestionStatus");
+  elements.userQuestionSubmissionList = screen.querySelector("#userQuestionSubmissionList");
+  elements.userQuestionPreview = screen.querySelector("#userQuestionPreview");
+  elements.userQuestionPreviewMeta = screen.querySelector("#userQuestionPreviewMeta");
+  elements.userQuestionPreviewImage = screen.querySelector("#userQuestionPreviewImage");
+  elements.userQuestionPreviewPlaceholder = screen.querySelector("#userQuestionPreviewPlaceholder");
+  elements.userQuestionPreviewCredit = screen.querySelector("#userQuestionPreviewCredit");
+  elements.userQuestionPreviewText = screen.querySelector("#userQuestionPreviewText");
+  elements.userQuestionTheme.innerHTML = triviaThemes.map((theme) => `<option value="${theme}">${theme}</option>`).join("");
+  elements.userQuestionTheme.addEventListener("change", () => {
+    syncUserQuestionIdPrefix();
+    updateUserQuestionPreview();
+  });
+  elements.userQuestionType.addEventListener("change", updateUserQuestionImageFields);
+  elements.userQuestionId.addEventListener("input", normalizeUserQuestionIdInput);
+  elements.userQuestionForm.addEventListener("input", updateUserQuestionPreview);
+  elements.userQuestionForm.addEventListener("change", updateUserQuestionPreview);
+  elements.userQuestionForm.addEventListener("submit", submitUserQuestion);
+  elements.userQuestionBackButton.addEventListener("click", closeUserQuestionScreen);
+  elements.userQuestionClearButton.addEventListener("click", clearUserQuestionForm);
+  updateUserQuestionImageFields();
+  syncUserQuestionIdPrefix();
+  updateUserQuestionPreview();
+}
+
+function normalizeUserQuestionIdInput() {
+  const input = elements.userQuestionId;
+  input.value = formatDevQuestionId(input.value, { keepTrailingDash: true });
+}
+
+function syncUserQuestionIdPrefix() {
+  const prefix = getThemeIdPrefix(elements.userQuestionTheme.value);
+  const current = formatDevQuestionId(elements.userQuestionId.value);
+  if (!current || getKnownThemeIdPrefixes().has(current.split("-")[0])) {
+    elements.userQuestionId.value = `${prefix}-`;
+  }
+}
+
+function updateUserQuestionImageFields() {
+  const isImage = elements.userQuestionType.value === "image";
+  setHidden(elements.userQuestionImageFields, !isImage);
+  elements.userQuestionImageUrl.required = isImage;
+  updateUserQuestionPreview();
+}
+
+function updateUserQuestionPreview() {
+  if (!elements.userQuestionPreview) return;
+  const type = elements.userQuestionType.value === "image" ? "image" : "text";
+  const theme = elements.userQuestionTheme.value || "Theme";
+  const difficulty = normalizeDifficulty(elements.userQuestionDifficulty.value);
+  const question = elements.userQuestionText.value.trim() || "Question preview";
+  const imageUrl = elements.userQuestionImageUrl.value.trim();
+  const imageAlt = elements.userQuestionImageAlt.value.trim() || "Question image preview";
+  const imageCredit = elements.userQuestionImageCredit.value.trim();
+  elements.userQuestionPreview.classList.toggle("text-only", type !== "image");
+  elements.userQuestionPreviewMeta.replaceChildren();
+  [theme, type === "image" ? "Image" : "Text", difficulty].forEach((text) => {
+    const badge = document.createElement("span");
+    badge.textContent = text;
+    elements.userQuestionPreviewMeta.appendChild(badge);
+  });
+  elements.userQuestionPreviewText.textContent = question;
+  elements.userQuestionPreviewCredit.textContent = imageCredit;
+  setHidden(elements.userQuestionPreviewCredit, !imageCredit);
+  elements.userQuestionPreviewImage.onload = () => {
+    setHidden(elements.userQuestionPreviewImage, false);
+    setHidden(elements.userQuestionPreviewPlaceholder, true);
+  };
+  elements.userQuestionPreviewImage.onerror = () => {
+    elements.userQuestionPreviewPlaceholder.textContent = "Image failed to load.";
+    setHidden(elements.userQuestionPreviewImage, true);
+    setHidden(elements.userQuestionPreviewPlaceholder, false);
+  };
+  if (type === "image" && imageUrl) {
+    elements.userQuestionPreviewImage.alt = imageAlt;
+    if (elements.userQuestionPreviewImage.dataset.previewUrl !== imageUrl) {
+      elements.userQuestionPreviewImage.dataset.previewUrl = imageUrl;
+      elements.userQuestionPreviewImage.removeAttribute("src");
+      elements.userQuestionPreviewPlaceholder.textContent = "Loading image...";
+      setHidden(elements.userQuestionPreviewImage, true);
+      setHidden(elements.userQuestionPreviewPlaceholder, false);
+      elements.userQuestionPreviewImage.src = imageUrl;
+    }
+  } else {
+    elements.userQuestionPreviewImage.removeAttribute("src");
+    delete elements.userQuestionPreviewImage.dataset.previewUrl;
+    elements.userQuestionPreviewImage.alt = "";
+    elements.userQuestionPreviewPlaceholder.textContent = type === "image" ? "Image URL preview" : "Text-only question";
+    setHidden(elements.userQuestionPreviewImage, true);
+    setHidden(elements.userQuestionPreviewPlaceholder, type === "image");
+  }
+}
+
+function getUserQuestionPayload() {
+  const payload = {
+    id: formatDevQuestionId(elements.userQuestionId.value),
+    type: elements.userQuestionType.value,
+    theme: elements.userQuestionTheme.value,
+    difficulty: elements.userQuestionDifficulty.value,
+    question: elements.userQuestionText.value.trim(),
+    canonicalAnswer: elements.userQuestionCanonical.value.trim(),
+    acceptedAnswers: parseCommaSeparatedAnswers(elements.userQuestionAccepted.value),
+    botCards: parseCommaSeparatedAnswers(elements.userQuestionBots.value),
+    rejectedAnswers: parseCommaSeparatedAnswers(elements.userQuestionRejected.value)
+  };
+  if (payload.type === "image") {
+    payload.image = {
+      url: elements.userQuestionImageUrl.value.trim(),
+      alt: elements.userQuestionImageAlt.value.trim(),
+      credit: elements.userQuestionImageCredit.value.trim()
+    };
+  }
+  return payload;
+}
+
+function clearUserQuestionForm() {
+  elements.userQuestionForm.reset();
+  updateUserQuestionImageFields();
+  syncUserQuestionIdPrefix();
+  elements.userQuestionStatus.textContent = "Question form cleared.";
+  updateUserQuestionPreview();
+  playSound("click");
+}
+
+async function submitUserQuestion(event) {
+  event.preventDefault();
+  if (!elements.userQuestionForm.reportValidity()) return;
+  if (loadCurrencyBalance() < userQuestionSubmissionCost) {
+    elements.userQuestionStatus.textContent = `You need ${formatCoins(userQuestionSubmissionCost)} to submit a question.`;
+    playSound("error");
+    return;
+  }
+  const payload = getUserQuestionPayload();
+  saveCurrencyBalance(loadCurrencyBalance() - userQuestionSubmissionCost);
+  renderProfile();
+  elements.userQuestionSubmitButton.disabled = true;
+  elements.userQuestionStatus.textContent = "Submitting for admin review...";
+  try {
+    const response = await fetch("/api/question-submissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question: payload,
+        creator: { id: state.clientId, name: state.profile.name || "Player" }
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || `Submission failed with status ${response.status}.`);
+    }
+    elements.userQuestionStatus.textContent = "Submitted for review. An admin will approve or deny it.";
+    elements.userQuestionForm.reset();
+    updateUserQuestionImageFields();
+    syncUserQuestionIdPrefix();
+    updateUserQuestionPreview();
+    await loadUserQuestionSubmissions();
+    playSound("reveal");
+  } catch (error) {
+    addCurrency(userQuestionSubmissionCost);
+    renderProfile();
+    elements.userQuestionStatus.textContent = `${error.message || "Submission failed."} Your ${formatCoins(userQuestionSubmissionCost)} were refunded.`;
+    playSound("error");
+  } finally {
+    elements.userQuestionSubmitButton.disabled = false;
+  }
+}
+
+function loadSubmissionSeenIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(questionSubmissionSeenStorageKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSubmissionSeenIds(ids) {
+  localStorage.setItem(questionSubmissionSeenStorageKey, JSON.stringify([...new Set(ids.filter(Boolean))]));
+}
+
+function loadRefundedSubmissionIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(questionSubmissionRefundedStorageKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRefundedSubmissionIds(ids) {
+  localStorage.setItem(questionSubmissionRefundedStorageKey, JSON.stringify([...new Set(ids.filter(Boolean))]));
+}
+
+async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
+  try {
+    const response = await fetch(`/api/question-submissions?creatorId=${encodeURIComponent(state.clientId)}`, { cache: "no-store" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Could not load your submissions.");
+    state.userQuestionSubmissions = Array.isArray(result.submissions) ? result.submissions : [];
+    processQuestionSubmissionRefunds();
+    if (markSeen) {
+      saveSubmissionSeenIds([...loadSubmissionSeenIds(), ...getResolvedUserSubmissionIds()]);
+    }
+    renderUserQuestionSubmissions();
+    updateQuestionSubmissionNotificationDot();
+  } catch (error) {
+    if (elements.userQuestionStatus) {
+      elements.userQuestionStatus.textContent = error.message || "Could not load your submissions.";
+    }
+  }
+}
+
+function getResolvedUserSubmissionIds() {
+  return state.userQuestionSubmissions
+    .filter((submission) => submission.status === "approved" || submission.status === "denied")
+    .map((submission) => submission.id);
+}
+
+function processQuestionSubmissionRefunds() {
+  const refunded = loadRefundedSubmissionIds();
+  let changed = false;
+  state.userQuestionSubmissions.forEach((submission) => {
+    if (submission.status === "denied" && !refunded.includes(submission.id)) {
+      addCurrency(submission.cost || userQuestionSubmissionCost);
+      refunded.push(submission.id);
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveRefundedSubmissionIds(refunded);
+    renderProfile();
+  }
+}
+
+function updateQuestionSubmissionNotificationDot() {
+  if (!elements.menuCreateQuestionsButton) return;
+  const seen = loadSubmissionSeenIds();
+  const unseenCount = state.userQuestionSubmissions
+    .filter((submission) => (submission.status === "approved" || submission.status === "denied") && !seen.includes(submission.id))
+    .length;
+  elements.menuCreateQuestionsButton.classList.toggle("has-notification", unseenCount > 0);
+  elements.menuCreateQuestionsButton.dataset.notificationCount = unseenCount ? String(unseenCount) : "";
+}
+
+function renderUserQuestionSubmissions() {
+  if (!elements.userQuestionSubmissionList) return;
+  elements.userQuestionSubmissionList.replaceChildren();
+  if (!state.userQuestionSubmissions.length) {
+    const empty = document.createElement("p");
+    empty.className = "debug-status";
+    empty.textContent = "No submitted questions yet.";
+    elements.userQuestionSubmissionList.appendChild(empty);
+    return;
+  }
+  state.userQuestionSubmissions.slice(0, 12).forEach((submission) => {
+    const card = document.createElement("article");
+    card.className = "user-question-submission-card";
+    card.dataset.status = submission.status;
+    const title = document.createElement("strong");
+    title.textContent = submission.question?.canonicalAnswer || submission.question?.id || "Submitted question";
+    const status = document.createElement("span");
+    status.textContent = submission.status;
+    const detail = document.createElement("p");
+    detail.textContent = submission.status === "denied"
+      ? `Denied: ${submission.review?.reason || "No reason provided."} ${formatCoins(submission.cost || userQuestionSubmissionCost)} refunded.`
+      : submission.status === "approved"
+        ? "Approved and added to the question bank."
+        : "Pending admin review.";
+    card.append(title, status, detail);
+    elements.userQuestionSubmissionList.appendChild(card);
+  });
+}
+
+async function openUserQuestionScreen() {
+  buildUserQuestionScreen();
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.userQuestionScreen, false);
+  await loadUserQuestionSubmissions({ markSeen: true });
+  playSound("click");
+}
+
+function closeUserQuestionScreen() {
+  setHidden(elements.userQuestionScreen, true);
+  setHidden(elements.modeScreen, false);
+  saveSubmissionSeenIds([...loadSubmissionSeenIds(), ...getResolvedUserSubmissionIds()]);
+  updateQuestionSubmissionNotificationDot();
+  playSound("click");
+}
+
+async function loadDevQuestionSubmissions() {
+  if (!elements.devSubmissionStatus) return;
+  try {
+    elements.devSubmissionStatus.textContent = "Loading player submissions...";
+    const response = await fetch("/api/admin/question-submissions", { credentials: "same-origin", cache: "no-store" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `Review queue failed with status ${response.status}.`);
+    state.devQuestionSubmissions = Array.isArray(result.submissions) ? result.submissions : [];
+    renderDevQuestionSubmissions();
+  } catch (error) {
+    elements.devSubmissionStatus.textContent = error.message || "Could not load player submissions.";
+    playSound("error");
+  }
+}
+
+function renderDevQuestionSubmissions() {
+  elements.devSubmissionList.replaceChildren();
+  const pending = state.devQuestionSubmissions.filter((submission) => submission.status === "pending");
+  if (!pending.length) {
+    const empty = document.createElement("p");
+    empty.className = "debug-status";
+    empty.textContent = "No pending player-created cards.";
+    elements.devSubmissionList.appendChild(empty);
+    elements.devSubmissionStatus.textContent = `${state.devQuestionSubmissions.length} total submission${state.devQuestionSubmissions.length === 1 ? "" : "s"}, 0 pending.`;
+    return;
+  }
+  pending.forEach((submission) => elements.devSubmissionList.appendChild(createDevSubmissionCard(submission)));
+  elements.devSubmissionStatus.textContent = `${pending.length} pending player-created card${pending.length === 1 ? "" : "s"} need review.`;
+}
+
+function createDevSubmissionCard(submission) {
+  const question = submission.question || {};
+  const card = document.createElement("article");
+  card.className = "dev-submission-card";
+  card.dataset.submissionId = submission.id;
+  const header = document.createElement("div");
+  header.className = "dev-panel-heading";
+  const title = document.createElement("div");
+  const eyebrow = document.createElement("p");
+  eyebrow.className = "eyebrow";
+  eyebrow.textContent = `${submission.creator?.name || "Player"} · ${new Date(submission.createdAt || Date.now()).toLocaleString()}`;
+  const h3 = document.createElement("h3");
+  h3.textContent = question.canonicalAnswer || question.id || "Submitted card";
+  title.append(eyebrow, h3);
+  header.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "dev-submission-edit-grid";
+  grid.append(
+    createReviewSelect("theme", "Theme", triviaThemes, question.theme || triviaThemes[0]),
+    createReviewSelect("difficulty", "Difficulty", ["easy", "medium", "hard"], normalizeDifficulty(question.difficulty)),
+    createReviewSelect("type", "Type", ["text", "image"], question.type === "image" ? "image" : "text"),
+    createReviewField("id", "ID", question.id || "", "input")
+  );
+  const body = document.createElement("div");
+  body.className = "dev-submission-body";
+  body.append(
+    createReviewField("question", "Question", question.question || "", "textarea"),
+    createReviewField("canonicalAnswer", "Main answer", question.canonicalAnswer || "", "textarea"),
+    createReviewField("acceptedAnswers", "Accepted answers", (question.acceptedAnswers || []).join(", "), "textarea"),
+    createReviewField("botCards", "Wrong bot answers", (question.botCards || []).join(", "), "textarea"),
+    createReviewField("rejectedAnswers", "Rejected answers", (question.rejectedAnswers || []).join(", "), "textarea"),
+    createReviewField("imageUrl", "Image URL", question.image?.url || "", "input"),
+    createReviewField("imageAlt", "Image alt", question.image?.alt || "", "input"),
+    createReviewField("imageCredit", "Image credit", question.image?.credit || "", "input")
+  );
+  const denyReason = createReviewField("denyReason", "Deny reason", "", "textarea");
+  denyReason.classList.add("dev-submission-deny-reason");
+  denyReason.querySelector("[data-review-field]")?.setAttribute("placeholder", "Example: similar question already exists, content not permitted, answer is unclear");
+  const actions = document.createElement("div");
+  actions.className = "dev-create-actions";
+  const approve = document.createElement("button");
+  approve.type = "button";
+  approve.className = "primary-button";
+  approve.dataset.submissionAction = "approve";
+  approve.textContent = "Approve";
+  const deny = document.createElement("button");
+  deny.type = "button";
+  deny.className = "icon-button danger-button";
+  deny.dataset.submissionAction = "deny";
+  deny.textContent = "Deny";
+  actions.append(approve, deny);
+  card.append(header, grid, body, denyReason, actions);
+  return card;
+}
+
+function createReviewField(name, labelText, value, type) {
+  const label = document.createElement("label");
+  label.dataset.reviewFieldWrap = name;
+  const span = document.createElement("span");
+  span.textContent = labelText;
+  const input = type === "textarea" ? document.createElement("textarea") : document.createElement("input");
+  input.dataset.reviewField = name;
+  input.value = value;
+  if (type === "textarea") {
+    input.rows = 3;
+  }
+  label.append(span, input);
+  return label;
+}
+
+function createReviewSelect(name, labelText, options, value) {
+  const label = document.createElement("label");
+  const span = document.createElement("span");
+  span.textContent = labelText;
+  const select = document.createElement("select");
+  select.dataset.reviewField = name;
+  options.forEach((option) => {
+    const item = document.createElement("option");
+    item.value = option;
+    item.textContent = option;
+    item.selected = option === value;
+    select.appendChild(item);
+  });
+  label.append(span, select);
+  return label;
+}
+
+function getReviewCardPayload(card) {
+  const field = (name) => card.querySelector(`[data-review-field="${name}"]`)?.value || "";
+  const payload = {
+    id: formatDevQuestionId(field("id")),
+    type: field("type") === "image" ? "image" : "text",
+    theme: field("theme"),
+    difficulty: normalizeDifficulty(field("difficulty")),
+    question: field("question").trim(),
+    canonicalAnswer: field("canonicalAnswer").trim(),
+    acceptedAnswers: parseCommaSeparatedAnswers(field("acceptedAnswers")),
+    botCards: parseCommaSeparatedAnswers(field("botCards")),
+    rejectedAnswers: parseCommaSeparatedAnswers(field("rejectedAnswers"))
+  };
+  if (payload.type === "image") {
+    payload.image = {
+      url: field("imageUrl").trim(),
+      alt: field("imageAlt").trim(),
+      credit: field("imageCredit").trim()
+    };
+  }
+  return payload;
+}
+
+async function handleDevSubmissionClick(event) {
+  const button = event.target.closest("[data-submission-action]");
+  if (!button) return;
+  const card = button.closest("[data-submission-id]");
+  const id = card?.dataset.submissionId;
+  if (!id) return;
+  const action = button.dataset.submissionAction;
+  button.disabled = true;
+  try {
+    const body = action === "approve"
+      ? { question: getReviewCardPayload(card) }
+      : { reason: getRequiredDenyReason(card) };
+    if (action === "deny" && !body.reason) {
+      button.disabled = false;
+      return;
+    }
+    elements.devSubmissionStatus.textContent = `${action === "approve" ? "Approving" : "Denying"} submission...`;
+    const response = await fetch(`/api/admin/question-submissions/${encodeURIComponent(id)}/${action}`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `${action} failed with status ${response.status}.`);
+    elements.devSubmissionStatus.textContent = action === "approve"
+      ? `Approved ${result.submission?.question?.id || id}.`
+      : `Denied ${result.submission?.question?.id || id}.`;
+    await loadDevQuestionSubmissions();
+    state.questionDebugBank = [];
+    playSound("reveal");
+  } catch (error) {
+    elements.devSubmissionStatus.textContent = error.message || "Review action failed.";
+    playSound("error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function getRequiredDenyReason(card) {
+  const input = card?.querySelector('[data-review-field="denyReason"]');
+  const reason = String(input?.value || "").trim();
+  if (!reason && input) {
+    input.setCustomValidity("A denial reason is required.");
+    input.reportValidity();
+    input.setCustomValidity("");
+  }
+  return reason;
+}
+
 function getCurrentDevToolTab() {
   const selected = elements.devToolTabs?.querySelector("[data-dev-tab].selected");
   return selected?.dataset.devTab || "questions";
@@ -11001,7 +11629,7 @@ async function requestDevToolTab(tab) {
 }
 
 function setDevToolTab(tab) {
-  const selectedTab = ["questions", "create", "achievements", "profile", "overlays"].includes(tab) ? tab : "questions";
+  const selectedTab = ["questions", "submissions", "create", "achievements", "profile", "overlays"].includes(tab) ? tab : "questions";
   elements.devToolTabs.querySelectorAll("[data-dev-tab]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.devTab === selectedTab);
   });
@@ -11010,6 +11638,9 @@ function setDevToolTab(tab) {
   });
   if (selectedTab === "questions") {
     loadQuestionDebugBank();
+  }
+  if (selectedTab === "submissions") {
+    loadDevQuestionSubmissions();
   }
   if (selectedTab === "achievements") {
     renderAchievementDebug();
@@ -16139,6 +16770,7 @@ elements.answerInput.addEventListener("input", () => playSound("type"));
 elements.menuSettingsButton.addEventListener("click", openSettings);
 elements.menuAbilitiesButton.addEventListener("click", openAbilities);
 elements.menuAchievementsButton.addEventListener("click", openAchievements);
+elements.menuCreateQuestionsButton?.addEventListener("click", openUserQuestionScreen);
 elements.gameSettingsButton.addEventListener("click", openSettings);
 function openRoundHelp() {
   setHidden(elements.roundHelpModal, false);
@@ -16317,6 +16949,10 @@ syncSettingsControls();
 syncRoomControls();
 renderProfile();
 updateAchievementNotificationDot();
+loadUserQuestionSubmissions();
+if (elements.menuCreateQuestionsButton) {
+  state.userQuestionSubmissionPollId = window.setInterval(() => loadUserQuestionSubmissions(), 60000);
+}
 state.timerRemaining = state.timerSeconds;
 renderTimer();
 startMusic();

@@ -196,6 +196,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .room-screen,
 .join-screen,
 .dev-tool-screen,
+.user-question-screen,
 .room-lobby-screen,
 .game-stage {
   position: relative;
@@ -209,6 +210,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .room-screen:not(.hidden),
 .join-screen:not(.hidden),
 .dev-tool-screen:not(.hidden),
+.user-question-screen:not(.hidden),
 .room-lobby-screen:not(.hidden),
 .game-stage:not(.hidden) {
   animation: screenPanelIn 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -240,6 +242,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .room-screen,
 .join-screen,
 .dev-tool-screen,
+.user-question-screen,
 .room-lobby-screen {
   width: min(1380px, 100%);
   margin: 0 auto;
@@ -1931,7 +1934,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   gap: 0.45rem;
 }
 
-.dev-tool-screen {
+.dev-tool-screen,
+.user-question-screen {
   justify-content: flex-start;
   padding-block: 0.5rem 1.25rem;
 }
@@ -2007,7 +2011,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .dev-tool-screen input,
 .dev-tool-screen select,
-.dev-tool-screen textarea {
+.dev-tool-screen textarea,
+.user-question-screen input,
+.user-question-screen select,
+.user-question-screen textarea {
   width: 100%;
   min-height: 2.8rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -2020,7 +2027,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   resize: vertical;
 }
 
-.dev-tool-screen select {
+.dev-tool-screen select,
+.user-question-screen select {
   appearance: none;
   background:
     linear-gradient(45deg, transparent 50%, var(--muted) 50%) calc(100% - 1.05rem) 1.12rem / 0.42rem 0.42rem no-repeat,
@@ -2031,7 +2039,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .dev-tool-screen input:focus,
 .dev-tool-screen select:focus,
-.dev-tool-screen textarea:focus {
+.dev-tool-screen textarea:focus,
+.user-question-screen input:focus,
+.user-question-screen select:focus,
+.user-question-screen textarea:focus {
   border-color: rgba(34, 211, 238, 0.64);
   box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
 }
@@ -2232,6 +2243,118 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   grid-template-columns: max-content max-content max-content minmax(0, 1fr);
   gap: 0.75rem;
   align-items: center;
+}
+
+.user-question-layout {
+  grid-template-columns: minmax(28rem, 1fr) minmax(22rem, 0.48fr);
+}
+
+.user-question-submissions {
+  display: grid;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.user-question-submission-list {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.user-question-submission-card,
+.dev-submission-card {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(15, 13, 24, 0.88);
+}
+
+.user-question-submission-card {
+  padding: 0.75rem;
+}
+
+.user-question-submission-card strong,
+.user-question-submission-card span,
+.user-question-submission-card p {
+  margin: 0;
+}
+
+.user-question-submission-card strong {
+  color: var(--ink);
+}
+
+.user-question-submission-card span {
+  width: max-content;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--accent-2);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.user-question-submission-card[data-status="approved"] span {
+  background: rgba(64, 222, 164, 0.13);
+  color: #40dea4;
+}
+
+.user-question-submission-card[data-status="denied"] span {
+  background: rgba(255, 77, 125, 0.13);
+  color: #ff6f95;
+}
+
+.user-question-submission-card p {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.dev-submission-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.dev-submission-card {
+  padding: 0.9rem;
+}
+
+.dev-submission-edit-grid,
+.dev-submission-body {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dev-submission-edit-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dev-submission-body {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dev-submission-card label {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.dev-submission-card label span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.dev-submission-card textarea {
+  min-height: 5.7rem;
+  line-height: 1.35;
+}
+
+.dev-submission-deny-reason {
+  grid-column: 1 / -1;
 }
 
 .achievement-debug-layout {
@@ -9102,13 +9225,17 @@ input:focus {
   .dev-question-debug-layout,
   .dev-create-layout,
   .dev-create-grid,
+  .dev-submission-edit-grid,
+  .dev-submission-body,
   .overlay-debug-layout,
   .room-lobby-screen .room-setup-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dev-tool-controls,
-  .dev-create-answer-grid {
+  .dev-create-answer-grid,
+  .dev-submission-edit-grid,
+  .dev-submission-body {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -9248,6 +9375,8 @@ input:focus {
   .dev-create-grid,
   .dev-create-answer-grid,
   .dev-create-actions,
+  .dev-submission-edit-grid,
+  .dev-submission-body,
   .profile-custom-layout,
   .room-lobby-screen .room-setup-grid,
   .join-code-form,

@@ -82,11 +82,21 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/question-submissions") {
+      await handleListOwnQuestionSubmissions(url, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/question-submissions") {
+      await handleCreateQuestionSubmission(req, res);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/debug/questions") {
       if (!requireAdmin(req, res)) {
         return;
       }
-      handleDebugQuestions(res);
+      await handleDebugQuestions(res);
       return;
     }
 
@@ -138,6 +148,17 @@ async function handleRequest(req, res) {
 
     if (url.pathname === "/api/admin/rooms" && req.method === "GET") {
       await handleAdminRooms(req, res);
+      return;
+    }
+
+    if (url.pathname === "/api/admin/question-submissions" && req.method === "GET") {
+      await handleAdminQuestionSubmissions(req, res);
+      return;
+    }
+
+    const adminSubmissionActionMatch = url.pathname.match(/^\/api\/admin\/question-submissions\/([^/]+)\/(approve|deny)$/);
+    if (adminSubmissionActionMatch && req.method === "POST") {
+      await handleAdminReviewQuestionSubmission(req, res, adminSubmissionActionMatch[1], adminSubmissionActionMatch[2]);
       return;
     }
 
@@ -229,6 +250,7 @@ async function handleAdminStatus(req, res) {
   }
 
   const rooms = await backendStore.listRooms();
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
   sendJson(res, 200, {
     ok: true,
     storage: {
@@ -241,7 +263,7 @@ async function handleAdminStatus(req, res) {
       complete: rooms.filter((room) => room.status === "complete").length
     },
     questions: {
-      total: questionBank.length,
+      total: runtimeQuestionBank.length,
       themes: triviaThemes
     }
   });
@@ -338,6 +360,151 @@ async function handleImageProxy(url, res) {
   }
 }
 
+async function handleListOwnQuestionSubmissions(url, res) {
+  const creatorId = String(url.searchParams.get("creatorId") || "").trim().slice(0, 120);
+  if (!creatorId) {
+    sendJson(res, 400, { error: "Missing creatorId." });
+    return;
+  }
+
+  const submissions = (await backendStore.listQuestionSubmissions())
+    .filter((submission) => submission.creator?.id === creatorId)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map(sanitizeQuestionSubmissionForCreator);
+  sendJson(res, 200, { submissions });
+}
+
+async function handleCreateQuestionSubmission(req, res) {
+  try {
+    const body = await readRequestJson(req);
+    const question = normalizeCreatedQuestion(body.question || body);
+    const creator = body.creator && typeof body.creator === "object" ? body.creator : {};
+    const creatorId = String(creator.id || "").trim().slice(0, 120);
+    if (!creatorId) {
+      throw new Error("Missing creator id.");
+    }
+
+    const now = Date.now();
+    const submission = {
+      id: `sub-${now}-${Math.random().toString(36).slice(2, 10)}`,
+      status: "pending",
+      question,
+      creator: {
+        id: creatorId,
+        name: String(creator.name || "Player").trim().slice(0, 32)
+      },
+      cost: 250,
+      createdAt: now,
+      updatedAt: now,
+      review: null
+    };
+    const storedSubmission = await backendStore.upsertQuestionSubmission(submission);
+    sendJson(res, 201, { submission: sanitizeQuestionSubmissionForCreator(storedSubmission) });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Question submission failed." });
+  }
+}
+
+async function handleAdminQuestionSubmissions(req, res) {
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+
+  const submissions = (await backendStore.listQuestionSubmissions())
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+  sendJson(res, 200, { submissions });
+}
+
+async function handleAdminReviewQuestionSubmission(req, res, id, action) {
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+
+  try {
+    const submission = await backendStore.getQuestionSubmission(id);
+    if (!submission) {
+      sendJson(res, 404, { error: "Submission not found." });
+      return;
+    }
+    if (submission.status !== "pending") {
+      sendJson(res, 409, { error: `Submission is already ${submission.status}.` });
+      return;
+    }
+
+    const body = await readRequestJson(req);
+    const now = Date.now();
+    if (action === "deny") {
+      const reason = String(body.reason || "").trim().replace(/\s+/g, " ").slice(0, 280);
+      if (!reason) {
+        sendJson(res, 400, { error: "A denial reason is required." });
+        return;
+      }
+      submission.status = "denied";
+      submission.updatedAt = now;
+      submission.review = { reason, reviewedAt: now };
+      const storedSubmission = await backendStore.upsertQuestionSubmission(submission);
+      sendJson(res, 200, { submission: storedSubmission });
+      return;
+    }
+
+    const question = normalizeCreatedQuestion(body.question || submission.question);
+    const saved = await saveApprovedQuestion(question);
+    submission.status = "approved";
+    submission.question = question;
+    submission.updatedAt = now;
+    submission.review = { approvedAt: now, savedId: saved.question.id, fileSaved: saved.fileSaved };
+    const storedSubmission = await backendStore.upsertQuestionSubmission(submission);
+    sendJson(res, 200, { submission: storedSubmission, total: saved.total });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Submission review failed." });
+  }
+}
+
+async function saveApprovedQuestion(question) {
+  const normalizedId = normalizeQuestionText(question.id);
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
+  if (runtimeQuestionBank.some((entry) => normalizeQuestionText(entry.id) === normalizedId)) {
+    throw new Error(`Question id already exists: ${question.id}`);
+  }
+
+  const filePath = join(root, "data", "questions.json");
+  let total = runtimeQuestionBank.length + 1;
+  let fileSaved = false;
+  try {
+    const current = JSON.parse(readFileSync(filePath, "utf8"));
+    if (!Array.isArray(current)) {
+      throw new Error("Question bank is not an array.");
+    }
+    current.push(question);
+    await writeFile(filePath, `${JSON.stringify(current, null, 2)}\n`);
+    total = current.length;
+    fileSaved = true;
+  } catch (error) {
+    if (!["EROFS", "EACCES", "EPERM"].includes(error.code)) {
+      throw error;
+    }
+    console.warn("Could not write approved question to data/questions.json; keeping it in persistent review storage.", error.message || error);
+  }
+
+  const normalized = normalizeSeedQuestion(question);
+  if (normalized && !questionBank.some((entry) => normalizeQuestionText(entry.id) === normalizedId)) {
+    questionBank.push(normalized);
+  }
+  return { question, total, fileSaved };
+}
+
+function sanitizeQuestionSubmissionForCreator(submission) {
+  return {
+    id: submission.id,
+    status: submission.status,
+    question: submission.question,
+    cost: submission.cost || 250,
+    createdAt: submission.createdAt || 0,
+    updatedAt: submission.updatedAt || 0,
+    review: submission.review || null
+  };
+}
+
 function handleAuthSession(req, res) {
   const session = getAdminSession(req);
   sendJson(res, 200, {
@@ -397,7 +564,8 @@ function handleLogout(res) {
   res.end(JSON.stringify({ authenticated: false }));
 }
 
-function handleDebugQuestions(res) {
+async function handleDebugQuestions(res) {
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
   const counts = Object.fromEntries(triviaThemes.map((theme) => [theme, {
     total: 0,
     image: 0,
@@ -407,7 +575,7 @@ function handleDebugQuestions(res) {
     hard: 0
   }]));
 
-  questionBank.forEach((question) => {
+  runtimeQuestionBank.forEach((question) => {
     const bucket = counts[question.theme] || (counts[question.theme] = {
       total: 0,
       image: 0,
@@ -422,10 +590,10 @@ function handleDebugQuestions(res) {
   });
 
   sendJson(res, 200, {
-    total: questionBank.length,
+    total: runtimeQuestionBank.length,
     themes: triviaThemes,
     counts,
-    questions: questionBank.map((question, index) => ({
+    questions: runtimeQuestionBank.map((question, index) => ({
       index,
       id: question.id,
       type: question.type,
@@ -903,6 +1071,29 @@ function loadQuestionBank() {
   }
 }
 
+async function getRuntimeQuestionBank() {
+  const merged = new Map();
+  questionBank.forEach((question) => {
+    merged.set(normalizeQuestionText(question.id), question);
+  });
+
+  try {
+    const submissions = await backendStore.listQuestionSubmissions();
+    submissions
+      .filter((submission) => submission.status === "approved")
+      .forEach((submission) => {
+        const normalized = normalizeSeedQuestion(submission.question);
+        if (normalized) {
+          merged.set(normalizeQuestionText(normalized.id), { ...normalized, source: "player" });
+        }
+      });
+  } catch (error) {
+    console.warn("Could not load approved player questions:", error.message || error);
+  }
+
+  return [...merged.values()];
+}
+
 function normalizeSeedQuestion(question) {
   const source = question && typeof question === "object" ? question : {};
   const type = source.type === "image" ? "image" : "text";
@@ -1033,11 +1224,12 @@ async function getSeedQuestionSetup(options = {}) {
   const preferredTheme = normalizePreferredTheme(options.preferredTheme, enabledThemes);
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : [];
   const seed = String(options.setupSeed || `${Date.now()}-${Math.random()}`);
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
   const preferredPool = preferredTheme
-    ? questionBank.filter((question) => question.theme === preferredTheme && !isRepeatedQuestion(question.blackCard, recentBlackCards))
+    ? runtimeQuestionBank.filter((question) => question.theme === preferredTheme && !isRepeatedQuestion(question.blackCard, recentBlackCards))
     : [];
-  const broadPool = questionBank.filter((question) => enabledThemes.includes(question.theme) && !isRepeatedQuestion(question.blackCard, recentBlackCards));
-  const fallbackPool = questionBank.filter((question) => enabledThemes.includes(question.theme));
+  const broadPool = runtimeQuestionBank.filter((question) => enabledThemes.includes(question.theme) && !isRepeatedQuestion(question.blackCard, recentBlackCards));
+  const fallbackPool = runtimeQuestionBank.filter((question) => enabledThemes.includes(question.theme));
   const pool = preferredPool.length ? preferredPool : broadPool.length ? broadPool : fallbackPool;
   if (!pool.length) {
     return null;
