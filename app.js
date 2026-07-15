@@ -14758,7 +14758,7 @@ function handleKickableBotClick(event) {
 
 function renderHostedRooms() {
   elements.joinRoomList.replaceChildren();
-  const visibleRooms = state.hostedRooms.filter((room) => room.status !== "complete" && getHostedRoomActivePlayerCount(room) > 0);
+  const visibleRooms = state.hostedRooms.filter((room) => room.status !== "complete");
   if (!visibleRooms.length) {
     const empty = document.createElement("section");
     empty.className = "join-room-card";
