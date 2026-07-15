@@ -469,6 +469,11 @@ const fallbackBotUsernames = [
   "spark_quest",
   "moon283"
 ];
+
+function getUserProfileStorageKey(user, field) {
+  const userId = String(user?.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
+  return userId ? `cardsAgainstAiProfile:${userId}:${field}` : `cardsAgainstAiProfile:${field}`;
+}
 const audioAssets = {
   music: "assets/bg-music.mp3",
   warning: "assets/warning.mp3",
@@ -5707,27 +5712,44 @@ function applyGuestProfile() {
   state.profile.avatar = "";
   localStorage.setItem("cardsAgainstAiProfileName", savedGuestName);
   localStorage.removeItem("cardsAgainstAiProfileAvatar");
-  if (getPlayer("player")) {
-    getPlayer("player").label = state.profile.name;
-    getPlayer("player").avatar = state.profile.avatar;
-  }
+  syncProfileToPlayer();
   renderProfile();
   renderRoomPlayers();
   renderRoomChat();
 }
 
+function syncProfileToPlayer() {
+  const player = getPlayer("player");
+  if (!player) {
+    return;
+  }
+  player.label = state.profile.name;
+  player.avatar = state.profile.avatar;
+  player.equippedTitleId = state.profile.equippedTitleId;
+  player.cardCustomization = state.profile.cardCustomization;
+}
+
 function applySupabaseProfile(user) {
   const metadata = user.user_metadata || {};
-  const name = String(metadata.full_name || metadata.name || user.email?.split("@")[0] || "").trim();
-  const avatar = String(metadata.avatar_url || metadata.picture || "").trim();
+  const nameKey = getUserProfileStorageKey(user, "name");
+  const avatarKey = getUserProfileStorageKey(user, "avatar");
+  const googleName = String(metadata.full_name || metadata.name || user.email?.split("@")[0] || "").trim();
+  const googleAvatar = String(metadata.avatar_url || metadata.picture || "").trim();
+  const savedName = String(localStorage.getItem(nameKey) || "").replace(/[\r\n\t]/g, " ").slice(0, 16).trim();
+  const savedAvatar = String(localStorage.getItem(avatarKey) || "").trim();
+  const name = savedName || googleName;
+  const avatar = savedAvatar || googleAvatar;
   if (name) {
     state.profile.name = name.replace(/[\r\n\t]/g, " ").slice(0, 16) || state.profile.name;
-    localStorage.setItem("cardsAgainstAiProfileName", state.profile.name);
+    localStorage.setItem(nameKey, state.profile.name);
   }
   if (avatar) {
     state.profile.avatar = avatar;
-    localStorage.setItem("cardsAgainstAiProfileAvatar", avatar);
+    localStorage.setItem(avatarKey, avatar);
+  } else {
+    state.profile.avatar = "";
   }
+  syncProfileToPlayer();
   renderProfile();
   renderRoomPlayers();
   renderRoomChat();
@@ -5778,12 +5800,8 @@ function updateProfileName(value) {
     return;
   }
   state.profile.name = String(value ?? "").replace(/[\r\n\t]/g, " ").slice(0, 16) || "You";
-  localStorage.setItem("cardsAgainstAiProfileName", state.profile.name);
-  if (getPlayer("player")) {
-    getPlayer("player").label = state.profile.name;
-    getPlayer("player").equippedTitleId = state.profile.equippedTitleId;
-    getPlayer("player").cardCustomization = state.profile.cardCustomization;
-  }
+  localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "name"), state.profile.name);
+  syncProfileToPlayer();
   renderProfile();
   renderLeaderboard();
   renderRoomPlayers();
@@ -5810,10 +5828,8 @@ function updateProfileAvatar(file) {
   const reader = new FileReader();
   reader.addEventListener("load", () => {
     state.profile.avatar = String(reader.result || "");
-    localStorage.setItem("cardsAgainstAiProfileAvatar", state.profile.avatar);
-    if (getPlayer("player")) {
-      getPlayer("player").avatar = state.profile.avatar;
-    }
+    localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "avatar"), state.profile.avatar);
+    syncProfileToPlayer();
     renderProfile();
     renderRoomPlayers();
     renderRoomChat();
