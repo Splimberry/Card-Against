@@ -325,6 +325,39 @@ async function testRoomListUsesParticipantsWhenActiveCountIsMissing() {
   assert.equal(listedRoom.participants.some((participant) => participant.id === "host-client" && participant.active), true);
 }
 
+async function testRoomDirectoryAcceptsProfileImagePayload() {
+  const code = makeCode(8110);
+  const avatar = `data:image/png;base64,${"a".repeat(32_000)}`;
+  const room = makeRoom(code, {
+    host: {
+      id: "host-client",
+      name: "Host",
+      avatar,
+      equippedTitleId: "",
+      cardCustomization: null
+    },
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        avatar,
+        equippedTitleId: "",
+        cardCustomization: null,
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      }
+    ]
+  });
+  const stored = await upsertRoom(room);
+  assert.equal(stored.host.avatar, avatar);
+  const rooms = await listRooms();
+  assert.equal(rooms.some((entry) => entry.code === code), true);
+}
+
 async function testBackgroundTabDoesNotDeleteRoom() {
   const code = makeCode(8102);
   await upsertRoom(makeRoom(code));
@@ -470,6 +503,7 @@ async function main() {
   await testBrowserExitDeletesRoomWhenNoRealPlayersRemain();
   await testRoomListShowsStoredRoomsWithoutActivePlayers();
   await testRoomListUsesParticipantsWhenActiveCountIsMissing();
+  await testRoomDirectoryAcceptsProfileImagePayload();
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();

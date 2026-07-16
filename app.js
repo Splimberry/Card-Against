@@ -5032,7 +5032,7 @@ function getActiveRoomPlayerCount(players = state.players) {
 function getRoomSyncAvatar(avatar = "") {
   const value = String(avatar || "");
   if (value.startsWith("data:")) {
-    return "";
+    return value.length <= 250000 ? value : "";
   }
   return value.slice(0, 800);
 }

@@ -17,6 +17,7 @@ const imageCacheTtlMs = 15 * 60 * 1000;
 const adminCookieName = "cai_admin_session";
 const adminSessionTtlSeconds = 60 * 60 * 12;
 const maxRoomEvents = 100;
+const roomRequestMaxBytes = 750_000;
 const triviaThemes = [
   "Pop Culture",
   "Gaming and Geek Culture",
@@ -977,7 +978,7 @@ function normalizeAnswerList(value, limit) {
 
 async function handleUpsertRoom(req, res) {
   try {
-    const body = await readRequestJson(req);
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const existingRoom = await backendStore.getRoom((body.room || body).code);
     const room = normalizeRoom(body.room || body);
     room.events = normalizeRoomEvents(existingRoom?.events);
@@ -1063,7 +1064,7 @@ async function handleRoomPresence(req, res, code) {
       return;
     }
 
-    const body = await readRequestJson(req);
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const rawParticipant = body.participant || {};
     const participant = normalizeParticipant(rawParticipant);
     const existingIndex = room.participants.findIndex((entry) => entry.id === participant.id);
@@ -1138,7 +1139,7 @@ async function handleRoomChat(req, res, code) {
       return;
     }
 
-    const body = await readRequestJson(req);
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const [message] = normalizeRoomChat([body.message || body]);
     if (!message) {
       sendJson(res, 400, { error: "Chat message is empty." });
@@ -1167,7 +1168,7 @@ async function handleRoomGame(req, res, code) {
       return;
     }
 
-    const body = await readRequestJson(req);
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const game = normalizeRoomGame(body.game || body);
     if (!game?.setup) {
       sendJson(res, 400, { error: "Room game update needs a setup payload." });
@@ -1788,12 +1789,13 @@ async function handleRound(req, res) {
   }
 }
 
-function readRequestJson(req) {
+function readRequestJson(req, options = {}) {
+  const maxBytes = Number(options.maxBytes || 20_000);
   return new Promise((resolve, reject) => {
     let raw = "";
     req.on("data", (chunk) => {
       raw += chunk;
-      if (raw.length > 20_000) {
+      if (raw.length > maxBytes) {
         req.destroy();
         reject(new Error("Request too large."));
       }
