@@ -4391,9 +4391,9 @@ input:focus {
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-effects~="text-glow"]
   .special-player-badge {
   filter:
-    drop-shadow(0 0 0.34rem rgba(255, 255, 255, 0.32))
-    drop-shadow(0 0 0.82rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42))
-    drop-shadow(0 0 1.18rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.22));
+    drop-shadow(0 0 0.4rem rgba(255, 255, 255, 0.42))
+    drop-shadow(0 0 0.98rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.56))
+    drop-shadow(0 0 1.38rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.3));
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
@@ -4423,9 +4423,9 @@ input:focus {
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
   .special-player-badge {
   filter:
-    drop-shadow(0 0 0.36rem rgba(255, 255, 255, 0.32))
-    drop-shadow(0 0 0.9rem rgb(var(--rgb-r, var(--custom-card-rgb-base-r, 34)) var(--rgb-g, var(--custom-card-rgb-base-g, 211)) var(--rgb-b, var(--custom-card-rgb-base-b, 238)) / 0.44))
-    drop-shadow(0 0 1.28rem rgb(var(--rgb2-r, var(--custom-card-rgb2-base-r, 255)) var(--rgb2-g, var(--custom-card-rgb2-base-g, 77)) var(--rgb2-b, var(--custom-card-rgb2-base-b, 125)) / 0.24));
+    drop-shadow(0 0 0.42rem rgba(255, 255, 255, 0.42))
+    drop-shadow(0 0 1.04rem rgb(var(--rgb-r, var(--custom-card-rgb-base-r, 34)) var(--rgb-g, var(--custom-card-rgb-base-g, 211)) var(--rgb-b, var(--custom-card-rgb-base-b, 238)) / 0.58))
+    drop-shadow(0 0 1.48rem rgb(var(--rgb2-r, var(--custom-card-rgb2-base-r, 255)) var(--rgb2-g, var(--custom-card-rgb2-base-g, 77)) var(--rgb2-b, var(--custom-card-rgb2-base-b, 125)) / 0.32));
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
