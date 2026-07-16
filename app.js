@@ -5032,9 +5032,16 @@ function getActiveRoomPlayerCount(players = state.players) {
 function getRoomSyncAvatar(avatar = "") {
   const value = String(avatar || "");
   if (value.startsWith("data:")) {
-    return value.slice(0, 20000);
+    return "";
   }
   return value.slice(0, 800);
+}
+
+function getRoomSyncChatMessage(message = {}) {
+  return {
+    ...message,
+    avatar: getRoomSyncAvatar(message.avatar)
+  };
 }
 
 function getRoomSyncCardCustomization(customization) {
@@ -5134,7 +5141,7 @@ function pushRoomChatMessage(message) {
   const source = message && typeof message === "object" ? message : {};
   const cleanMessage = {
     sender: String(source.sender || "System").slice(0, 32),
-    avatar: source.avatar || "",
+    avatar: getRoomSyncAvatar(source.avatar),
     equippedTitleId: source.equippedTitleId || "",
     text: cleanChatInput(source.text || "").slice(0, 220),
     owner: source.owner || "",
@@ -5165,7 +5172,7 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
   return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message })
+    body: JSON.stringify({ message: getRoomSyncChatMessage(message) })
   }).then(async (response) => {
     if (!response.ok) {
       state.roomDirectoryOnline = false;
@@ -14300,7 +14307,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
     spectators: participants.filter((participant) => participant.active && participant.spectator).length,
     banned: [...getRoomBanList()],
     game: status === "in-progress" ? (state.roomGame || existing?.game || null) : null,
-    chat: state.roomChat.slice(-roomChatHistoryLimit)
+    chat: state.roomChat.slice(-roomChatHistoryLimit).map(getRoomSyncChatMessage)
   };
 }
 
@@ -15510,7 +15517,7 @@ function sendChatMessage(text, input = elements.chatInput) {
 
   const message = pushRoomChatMessage({
     sender: state.profile.name || "Host",
-    avatar: state.profile.avatar,
+    avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
     text: cleaned,
     owner: state.currentOwner,
