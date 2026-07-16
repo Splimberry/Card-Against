@@ -1308,17 +1308,25 @@ async function handleRoomGame(req, res, code) {
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const game = normalizeRoomGame(body.game || body);
-    if (!game?.setup) {
+    if (!game || (!game.setup && game.status !== "ended")) {
       sendJson(res, 400, { error: "Room game update needs a setup payload." });
       return;
     }
-    room.status = "in-progress";
+    room.status = game.status === "ended" ? "complete" : "in-progress";
     room.game = game;
-    stampRoomEvent(room, "round_started", {
-      round: game.round,
-      matchId: game.matchId,
-      game
-    });
+    if (game.status === "ended") {
+      stampRoomEvent(room, "game_ended", {
+        round: game.round,
+        matchId: game.matchId,
+        game
+      });
+    } else {
+      stampRoomEvent(room, "round_started", {
+        round: game.round,
+        matchId: game.matchId,
+        game
+      });
+    }
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, { room: storedRoom });

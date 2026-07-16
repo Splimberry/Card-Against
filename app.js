@@ -2977,7 +2977,9 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   const text = document.createElement("p");
   card.append(answerOwner, badge, text);
   if (shouldUseAnswerCardCustomization(owner)) {
-    applyCardCustomizationToElement(card, getProfileCardCustomizationForOwner(owner));
+    applyProfileCustomizationSurface(card, getProfileCardCustomizationForOwner(owner) || defaultProfileCustomization, {
+      forceCustom: isRoomMode()
+    });
   }
   return card;
 }
@@ -6638,7 +6640,7 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
   const activePatternId = isSpecialStyle ? "none" : normalized.patternId;
   card.dataset.cardStyle = style.id;
   const hasStyleLayers = activeEffectIds.length > 0 || activePatternId !== "none";
-  card.dataset.cardCustom = style.id === "default" && !options.preview && !hasStyleLayers ? "false" : "true";
+  card.dataset.cardCustom = style.id === "default" && !options.preview && !options.forceCustom && !hasStyleLayers ? "false" : "true";
   card.dataset.cardSpecial = String(isSpecialStyle);
   card.dataset.cardEffects = activeEffectIds.length ? activeEffectIds.join(" ") : "none";
   card.dataset.cardPattern = activePatternId;
@@ -7161,6 +7163,11 @@ function applyRoomServerEvent(event = {}) {
     });
   } else if (type === "settings_updated") {
     applied = applyRealtimeRoomSettings(eventPayload);
+  } else if (type === "game_ended" && payload.game) {
+    applied = applyRealtimeRoomGameEnded({
+      ...eventPayload,
+      game: payload.game
+    });
   } else if (type === "round_started" && payload.game) {
     state.roomGame = payload.game;
     applyRoomGamePowerState(state.roomGame);
@@ -7571,10 +7578,13 @@ function handleRealtimeRoomChange(payload = {}) {
     if (payload.eventType === "room-settings") {
       appliedDelta = applyRealtimeRoomSettings(payload);
     }
+    if (payload.eventType === "game-ended") {
+      appliedDelta = applyRealtimeRoomGameEnded(payload);
+    }
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-started", "participant-left", "participant-moderated", "room-settings"].includes(payload.eventType)) {
+    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-started", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
     scheduleRealtimeRoomRefresh(payload);
@@ -7592,6 +7602,7 @@ function shouldRealtimeRefreshJoinDirectory(eventType = "") {
     "participant-updated",
     "participant-moderated",
     "room-settings",
+    "game-ended",
     "round-started"
   ].includes(String(eventType || ""));
 }
@@ -16933,6 +16944,57 @@ function publishRoomRoundSetup(setup) {
   });
 }
 
+function publishRoomGameEnded() {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return Promise.resolve(null);
+  }
+  const game = {
+    ...(state.roomGame || {}),
+    matchId: state.roomGame?.matchId || `${state.roomSettings.code}-${Date.now()}`,
+    status: "ended",
+    round: state.round,
+    setup: state.roomGame?.setup || null,
+    powerState: getRoomPowerStatePayload(),
+    updatedAt: Date.now()
+  };
+  state.roomGame = game;
+  return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/game`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ game })
+  }).then(async (response) => {
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      broadcastRealtimeRoomChange("game-ended", state.roomSettings.code, {
+        status: "complete",
+        game,
+        updatedAt: game.updatedAt
+      });
+      return null;
+    }
+    const data = await response.json();
+    state.roomDirectoryOnline = true;
+    if (data.room) {
+      mergeHostedRoom(data.room);
+      broadcastRealtimeRoomChange("game-ended", data.room.code || state.roomSettings.code, {
+        status: "complete",
+        revision: data.room.revision || 0,
+        updatedAt: data.room.updatedAt || game.updatedAt,
+        game: data.room.game || game
+      });
+    }
+    return data.room || null;
+  }).catch(() => {
+    state.roomDirectoryOnline = false;
+    broadcastRealtimeRoomChange("game-ended", state.roomSettings.code, {
+      status: "complete",
+      game,
+      updatedAt: game.updatedAt
+    });
+    return null;
+  });
+}
+
 function publishRoomHeartbeat(status = "host") {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
@@ -17008,6 +17070,44 @@ function startJoinedRoomMatchFromDirectory(room) {
   startGame("room");
 }
 
+function applyRealtimeRoomGameEnded(payload = {}) {
+  const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext()) {
+    return false;
+  }
+  state.roomGame = payload.game && typeof payload.game === "object"
+    ? payload.game
+    : {
+      ...(state.roomGame || {}),
+      status: "ended",
+      round: state.round,
+      updatedAt: Number(payload.updatedAt) || Date.now()
+    };
+  state.currentRoomStatus = "complete";
+  if (state.joiningRoom) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      status: "complete",
+      game: state.roomGame,
+      revision: Number(payload.revision) || state.joiningRoom.revision || 0,
+      updatedAt: Number(payload.updatedAt) || Date.now()
+    };
+  }
+  const hostedRoom = state.hostedRooms.find((entry) => entry.code === code);
+  if (hostedRoom) {
+    hostedRoom.status = "complete";
+    hostedRoom.game = state.roomGame;
+    hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
+    hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
+  }
+  updateRoomEventRevision(payload.revision);
+  if (!state.matchEnded) {
+    addSystemChat("The host ended the game.", { private: true, sync: false });
+    endMatch(true, { syncRoom: false });
+  }
+  return true;
+}
+
 function hasActiveRoomContext() {
   return state.roomSettings.code !== "CAI-0000"
     && (isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft");
@@ -17020,6 +17120,15 @@ function isRoomTabBackgrounded() {
 function syncActiveRoomFromDirectory(room, options = {}) {
   state.roomMissingSince = 0;
   applyRoomDirectoryRoom(room);
+  if (room?.status === "complete" && !state.matchEnded) {
+    applyRealtimeRoomGameEnded({
+      code: room.code,
+      revision: room.revision || 0,
+      updatedAt: room.updatedAt || Date.now(),
+      game: room.game || null
+    });
+    return true;
+  }
   if (shouldStartJoinedRoomMatch(room)) {
     startJoinedRoomMatchFromDirectory(room);
     return true;
@@ -20197,7 +20306,7 @@ function applyFinalMatchEffects() {
   return { deltas, events };
 }
 
-function endMatch(wasExited = false) {
+function endMatch(wasExited = false, options = {}) {
   state.matchEnded = true;
   stopNextRoundCountdown();
   resetTimerDisplay();
@@ -20235,6 +20344,9 @@ function endMatch(wasExited = false) {
   elements.changeModeButton.textContent = isRoomMode() ? "Back to Room" : "Change Mode";
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
     upsertHostedRoom("complete");
+    if (options.syncRoom !== false) {
+      publishRoomGameEnded();
+    }
   }
   if (finalEffects) {
     renderPowerLog({ events: finalEffects.events });
