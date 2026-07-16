@@ -42,6 +42,9 @@ const userStorageWriteDelayMs = 450;
 const setupCacheLimit = 30;
 const setupCacheMaxAgeMs = 24 * 60 * 60 * 1000;
 const publicCatalogVersion = "2026-07-16-1";
+const chatCooldownWindowMs = 2000;
+const chatCooldownMaxMessages = 3;
+const chatCooldownDurationMs = 10000;
 const userQuestionSubmissionCost = 250;
 const roomChatHistoryLimit = 50;
 const roomMissingGraceMs = 10000;
@@ -527,7 +530,15 @@ function getPublicCatalogCachePayload() {
     updatedAt: Date.now(),
     catalog: {
       achievements: achievementCatalog.map((achievement) => achievement.id),
-      cosmetics: profileShopItems.map((item) => getProfileShopKey(item.type, item.id)),
+      cosmetics: profileShopItems.map((item) => ({
+        key: getProfileShopKey(item.type, item.id),
+        type: item.type,
+        id: item.id,
+        name: item.name,
+        cost: item.cost,
+        unlockType: item.unlockType || "",
+        rarity: item.rarity || ""
+      })),
       powerUps: powerDeck.map((power) => power.id),
       themes: [...triviaThemes]
     }
@@ -767,6 +778,9 @@ const state = {
     code: "CAI-0000"
   },
   roomChat: [],
+  chatMessageTimestamps: [],
+  chatCooldownUntil: 0,
+  chatCooldownTimerId: null,
   hostedRooms: [],
   devRooms: [],
   roomParticipants: [],
@@ -5453,8 +5467,21 @@ function pushRoomChatMessage(message) {
     return cleanMessage;
   }
   state.roomChat.push(cleanMessage);
-  state.roomChat = state.roomChat.slice(-roomChatHistoryLimit);
+  pruneRoomChatHistory();
   return cleanMessage;
+}
+
+function pruneRoomChatHistory() {
+  state.roomChat = state.roomChat
+    .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0))
+    .slice(-roomChatHistoryLimit);
+}
+
+function getSyncedRoomChatHistory() {
+  return state.roomChat
+    .filter((message) => !message.private)
+    .slice(-roomChatHistoryLimit)
+    .map(getRoomSyncChatMessage);
 }
 
 function getRoomChatMessageKey(message = {}) {
@@ -5501,6 +5528,59 @@ function mergeRoomChatMessages(remoteMessages = []) {
     .slice(-roomChatHistoryLimit);
 }
 
+function resetChatCooldown() {
+  state.chatMessageTimestamps = [];
+  state.chatCooldownUntil = 0;
+  if (state.chatCooldownTimerId) {
+    window.clearTimeout(state.chatCooldownTimerId);
+    state.chatCooldownTimerId = null;
+  }
+}
+
+function getChatCooldownRemainingMs(now = Date.now()) {
+  return Math.max(0, (Number(state.chatCooldownUntil) || 0) - now);
+}
+
+function startChatCooldown(now = Date.now()) {
+  state.chatCooldownUntil = now + chatCooldownDurationMs;
+  state.chatMessageTimestamps = [];
+  if (state.chatCooldownTimerId) {
+    window.clearTimeout(state.chatCooldownTimerId);
+  }
+  state.chatCooldownTimerId = window.setTimeout(() => {
+    state.chatCooldownTimerId = null;
+    state.chatCooldownUntil = 0;
+  }, chatCooldownDurationMs);
+}
+
+function canSendClientChatMessage(now = Date.now()) {
+  if (getChatCooldownRemainingMs(now) > 0) {
+    return false;
+  }
+  state.chatMessageTimestamps = (state.chatMessageTimestamps || [])
+    .filter((timestamp) => now - timestamp < chatCooldownWindowMs);
+  if (state.chatMessageTimestamps.length >= chatCooldownMaxMessages) {
+    startChatCooldown(now);
+    return false;
+  }
+  state.chatMessageTimestamps.push(now);
+  return true;
+}
+
+function showLocalChatCooldownNotice(input = elements.chatInput) {
+  const remainingSeconds = Math.max(1, Math.ceil(getChatCooldownRemainingMs() / 1000));
+  addSystemChat(`Slow down. Chat cooldown: ${remainingSeconds}s.`, { private: true, sync: false });
+  if (input) {
+    input.value = "";
+    input.placeholder = `Chat cooldown: ${remainingSeconds}s`;
+    window.setTimeout(() => {
+      if (getChatCooldownRemainingMs() <= 0 && input.placeholder.startsWith("Chat cooldown:")) {
+        input.placeholder = "Send a message";
+      }
+    }, Math.min(chatCooldownDurationMs, remainingSeconds * 1000));
+  }
+}
+
 function applyRealtimeRoomChatMessage(message = {}) {
   const beforeCount = state.roomChat.length;
   const normalized = normalizeRoomChatMessage(message);
@@ -5529,7 +5609,7 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
   return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: getRoomSyncChatMessage(message) })
+    body: JSON.stringify({ message: getRoomSyncChatMessage(message), compact: true })
   }).then(async (response) => {
     if (!response.ok) {
       state.roomDirectoryOnline = false;
@@ -5537,7 +5617,9 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
-    if (data.room) {
+    if (data.message) {
+      applyRealtimeRoomChatMessage(data.message);
+    } else if (data.room) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
     }
@@ -6499,7 +6581,10 @@ function handleRealtimeRoomChange(payload = {}) {
     if (payload.eventType === "power-state") {
       appliedDelta = applyRoomPowerState(payload);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "power-state"].includes(payload.eventType)) {
+    if (payload.eventType === "participant-updated" && payload.participant) {
+      appliedDelta = applyRoomParticipantDelta(payload.participant, payload);
+    }
+    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated"].includes(payload.eventType)) {
       return;
     }
     scheduleRealtimeRoomRefresh(payload);
@@ -8312,15 +8397,15 @@ function incrementAchievementProgress(owner, key, amount = 1, options = {}) {
   if (!key || !isAccountAchievementOwner(owner)) {
     return;
   }
-  if (!options.persistNow) {
-    if (!hasActiveAchievementProgressContext(owner)) {
-      return;
-    }
+  if (hasActiveAchievementProgressContext(owner)) {
     if (options.max) {
       setPendingProgressValue(key, Math.max(getPendingProgressValue(key), Math.floor(amount || 0)));
     } else {
       setPendingProgressValue(key, getPendingProgressValue(key) + Math.max(0, Math.floor(amount || 0)));
     }
+    return;
+  }
+  if (!options.persistNow) {
     return;
   }
   const progress = loadAchievementProgress();
@@ -14721,6 +14806,7 @@ function openRoomScreen() {
   state.roomSettings = getDefaultRoomSettings(generateRoomCode());
   state.publishedDraftRoomCode = state.roomSettings.code;
   state.roomChat = [];
+  resetChatCooldown();
   startRoomRealtime(state.roomSettings.code);
   syncRoomControls();
   publishDraftRoom();
@@ -14809,6 +14895,7 @@ function clearLocalRoomState(options = {}) {
   state.roomMissingSince = 0;
   state.roomExitLeaveSent = false;
   state.publishedDraftRoomCode = "";
+  resetChatCooldown();
   stopRoomRealtime();
   if (options.resetCode !== false) {
     state.roomSettings.code = "CAI-0000";
@@ -15038,7 +15125,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
     spectators: participants.filter((participant) => participant.active && participant.spectator).length,
     banned: [...getRoomBanList()],
     game: status === "in-progress" ? (state.roomGame || existing?.game || null) : null,
-    chat: state.roomChat.slice(-roomChatHistoryLimit).map(getRoomSyncChatMessage)
+    chat: getSyncedRoomChatHistory()
   };
 }
 
@@ -15167,23 +15254,123 @@ async function updateRoomPresence(room, options = {}) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ participant })
+      body: JSON.stringify({
+        participant,
+        compact: options.compactResponse !== false
+      })
     });
     if (!response.ok) {
       return room;
     }
     const data = await response.json();
-    if (data.room) {
+    if (data.participant) {
+      applyRoomParticipantDelta(data.participant, data);
+      if (!options.skipRealtimeBroadcast) {
+        broadcastRealtimeRoomChange("participant-updated", state.roomSettings.code, {
+          status: data.status || "",
+          revision: data.revision || 0,
+          updatedAt: data.updatedAt || Date.now(),
+          participant: data.participant
+        });
+      }
+    } else if (data.room) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
       if (!options.skipRealtimeBroadcast) {
         broadcastRealtimeRoomChange("participant-updated", data.room);
       }
     }
-    return data.room || room;
+    return data.room || { ...room, participants: state.roomParticipants };
   } catch {
     return room;
   }
+}
+
+function normalizeRoomParticipantDelta(participant = {}) {
+  const source = participant && typeof participant === "object" ? participant : {};
+  const id = String(source.id || "").slice(0, 80);
+  if (!id) {
+    return null;
+  }
+  return {
+    id,
+    name: String(source.name || "Guest").slice(0, 32),
+    avatar: getRoomSyncAvatar(source.avatar),
+    equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
+    cardCustomization: getRoomSyncCardCustomization(source.cardCustomization),
+    host: Boolean(source.host),
+    spectator: Boolean(source.spectator),
+    bot: Boolean(source.bot),
+    active: source.active !== false,
+    muted: Boolean(source.muted),
+    status: String(source.status || (source.host ? "host" : source.spectator ? "spectating" : "joined")).slice(0, 32),
+    answer: cleanInput(source.answer || ""),
+    submittedRound: Number(source.submittedRound) || 0,
+    remainingTime: Math.max(0, Number(source.remainingTime) || 0)
+  };
+}
+
+function applyRoomParticipantDelta(participant, payload = {}) {
+  const normalized = normalizeRoomParticipantDelta(participant);
+  if (!normalized) {
+    return false;
+  }
+  const code = String(payload.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (code && code !== state.roomSettings.code) {
+    return false;
+  }
+  const existingIndex = state.roomParticipants.findIndex((entry) => entry.id === normalized.id);
+  if (existingIndex >= 0) {
+    state.roomParticipants[existingIndex] = {
+      ...state.roomParticipants[existingIndex],
+      ...normalized
+    };
+  } else {
+    state.roomParticipants.push(normalized);
+  }
+  state.roomParticipants = state.roomParticipants.slice(-getRoomMaxPlayers() - 10);
+  if (state.joiningRoom) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      participants: [...state.roomParticipants],
+      updatedAt: Number(payload.updatedAt) || Date.now(),
+      revision: Number(payload.revision) || state.joiningRoom.revision || 0
+    };
+  }
+  const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
+  if (hostedRoom) {
+    hostedRoom.participants = [...state.roomParticipants];
+    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length || hostedRoom.activePlayers;
+    hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
+    hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
+    hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
+  }
+  if (state.currentRoomStatus === "lobby" || !isRoomMode()) {
+    setPlayersForMode("room");
+  } else {
+    const participantIndex = state.roomParticipants.findIndex((entry) => entry.id === normalized.id);
+    const owner = getRoomOwnerForParticipant(normalized, participantIndex);
+    const player = state.players.find((entry) => entry.participantId === normalized.id)
+      || state.players.find((entry) => entry.owner === owner);
+    if (player) {
+      player.label = normalized.name;
+      player.avatar = normalized.avatar;
+      player.equippedTitleId = normalized.equippedTitleId;
+      player.cardCustomization = normalized.cardCustomization;
+      player.connectionStatus = normalized.status;
+      player.muted = normalized.muted;
+      player.active = normalized.active;
+      player.spectator = normalized.spectator;
+    }
+  }
+  syncRoomSubmissionsFromParticipants();
+  renderRoomPlayers();
+  renderRoomChat();
+  renderSubmissionStatus();
+  if (!elements.roomLobbyScreen.classList.contains("hidden")) {
+    renderRoomLobby();
+  }
+  return true;
 }
 
 function applyRoomDirectoryRoom(room) {
@@ -15672,9 +15859,11 @@ async function joinHostedRoom(code, options = {}) {
   state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
   await updateRoomPresence(room, {
     spectator: state.isSpectator,
-    status: state.isSpectator ? "spectating" : "joined"
+    status: state.isSpectator ? "spectating" : "joined",
+    compactResponse: false
   });
   state.roomChat = [];
+  resetChatCooldown();
   if (Array.isArray(room.chat)) {
     mergeRoomChatMessages(room.chat);
   }
@@ -16150,6 +16339,7 @@ function startRoomGame() {
   }
   setPlayersForMode("room");
   state.roomChat = [];
+  resetChatCooldown();
   addSystemChat(`Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`);
   upsertHostedRoom("lobby");
   openRoomLobby();
@@ -16248,6 +16438,11 @@ function sendChatMessage(text, input = elements.chatInput) {
   if (sender?.muted) {
     addSystemChat("You are muted and cannot send chat messages.", { private: true });
     input.value = "";
+    return;
+  }
+  if (!canSendClientChatMessage()) {
+    showLocalChatCooldownNotice(input);
+    playSound("error");
     return;
   }
 

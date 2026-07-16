@@ -1096,6 +1096,17 @@ async function handleRoomPresence(req, res, code) {
       status: participant.status
     });
     const storedRoom = await backendStore.upsertRoom(room);
+    if (body.compact) {
+      const storedParticipant = storedRoom.participants.find((entry) => entry.id === participant.id) || participant;
+      sendJson(res, 200, {
+        code: storedRoom.code,
+        status: storedRoom.status,
+        revision: getRoomRevision(storedRoom),
+        updatedAt: storedRoom.updatedAt,
+        participant: storedParticipant
+      });
+      return;
+    }
     sendJson(res, 200, { room: storedRoom });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room presence update failed." });
@@ -1157,6 +1168,16 @@ async function handleRoomChat(req, res, code) {
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
+    if (body.compact) {
+      sendJson(res, 200, {
+        code: storedRoom.code,
+        status: storedRoom.status,
+        revision: getRoomRevision(storedRoom),
+        updatedAt: storedRoom.updatedAt,
+        message
+      });
+      return;
+    }
     sendJson(res, 200, { room: storedRoom, message });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room chat update failed." });

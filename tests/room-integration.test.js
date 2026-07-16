@@ -476,6 +476,40 @@ async function testRoomChatPreservesMessageIds() {
   assert.equal(payload.room.chat.at(-1).id, "chat-test-message-1");
 }
 
+async function testCompactRoomDeltasAvoidFullRoomPayloads() {
+  const code = makeCode(8110);
+  await upsertRoom(makeRoom(code));
+
+  const chat = await request("POST", `/api/rooms/${code}/chat`, {
+    compact: true,
+    message: {
+      id: "chat-compact-message-1",
+      sender: "Host",
+      owner: "player",
+      text: "Compact hello",
+      createdAt: Date.now()
+    }
+  });
+  assert.equal(chat.response.status, 200, chat.payload.error);
+  assert.equal(chat.payload.message.id, "chat-compact-message-1");
+  assert.equal(chat.payload.room, undefined);
+  assert.ok(chat.payload.revision >= 2);
+
+  const presence = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    participant: {
+      id: "compact-joiner",
+      name: "Compact",
+      active: true,
+      status: "joined"
+    }
+  });
+  assert.equal(presence.response.status, 200, presence.payload.error);
+  assert.equal(presence.payload.participant.id, "compact-joiner");
+  assert.equal(presence.payload.room, undefined);
+  assert.ok(presence.payload.revision >= 3);
+}
+
 async function testDebugQuestionCreateUsesBackendStorage() {
   const question = makeQuestion("science-backend-create-test");
   const { response, payload } = await request("POST", "/api/debug/questions", question, adminHeaders());
@@ -539,6 +573,7 @@ async function main() {
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
   await testRoomChatPreservesMessageIds();
+  await testCompactRoomDeltasAvoidFullRoomPayloads();
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();
