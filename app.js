@@ -648,6 +648,8 @@ const state = {
   joinDirectoryPollId: null,
   roomDirectoryOnline: true,
   roomGame: null,
+  roomPowerStateUpdatedAt: 0,
+  achievementMilestoneScrollLeft: 0,
   joiningRoom: null,
   roomSessionId: 0,
   roomExitLeaveSent: false,
@@ -661,6 +663,8 @@ const state = {
   currentOwner: "player",
   roomSubmissions: {},
   roomAutoResolveId: null,
+  roomSubmissionResolveId: null,
+  roomRoundResolving: false,
   pendingConfirmAction: "end",
   pendingConfirmResolver: null,
   roomModeration: {
@@ -1012,6 +1016,7 @@ const elements = {
   profileNameInput: document.querySelector("#profileNameInput"),
   profileAvatarInput: document.querySelector("#profileAvatarInput"),
   profileCurrencyValue: document.querySelector("#profileCurrencyValue"),
+  profileCustomizeControl: document.querySelector("#profileCustomizeControl"),
   profileCustomizeButton: document.querySelector("#profileCustomizeButton"),
   profileShopButton: document.querySelector("#profileShopButton"),
   profileAuthButton: document.querySelector("#profileAuthButton"),
@@ -1196,9 +1201,11 @@ const elements = {
   profileTitleColourGrid: document.querySelector("#profileTitleColourGrid"),
   profileTitleRgbToggle: document.querySelector("#profileTitleRgbToggle"),
   profileTitlePastelToggle: document.querySelector("#profileTitlePastelToggle"),
+  profileFontLivePreview: document.querySelector("#profileFontLivePreview"),
   profilePreviewCard: document.querySelector("#profilePreviewCard"),
   profilePreviewAvatar: document.querySelector("#profilePreviewAvatar"),
   profilePreviewName: document.querySelector("#profilePreviewName"),
+  profileLoginNote: document.querySelector("#profileLoginNote"),
   profileCustomStatus: document.querySelector("#profileCustomStatus"),
   profileCustomUndoButton: document.querySelector("#profileCustomUndoButton"),
   profileCustomRedoButton: document.querySelector("#profileCustomRedoButton"),
@@ -4112,10 +4119,25 @@ function getAchievementScrollContainer() {
 function renderAchievementLibraryPreservingScroll() {
   const scroller = getAchievementScrollContainer();
   const scrollTop = scroller?.scrollTop || 0;
+  const milestoneScroller = elements.achievementLibrary?.querySelector(".achievement-milestone-scroller");
+  const milestoneScrollLeft = milestoneScroller?.scrollLeft || state.achievementMilestoneScrollLeft || 0;
+  state.achievementMilestoneScrollLeft = milestoneScrollLeft;
   renderAchievementLibrary();
   if (scroller) {
-    window.requestAnimationFrame(() => {
+    const restoreScroll = () => {
       scroller.scrollTop = Math.min(scrollTop, Math.max(0, scroller.scrollHeight - scroller.clientHeight));
+      const nextMilestoneScroller = elements.achievementLibrary?.querySelector(".achievement-milestone-scroller");
+      if (nextMilestoneScroller) {
+        nextMilestoneScroller.scrollLeft = Math.min(
+          state.achievementMilestoneScrollLeft || milestoneScrollLeft,
+          Math.max(0, nextMilestoneScroller.scrollWidth - nextMilestoneScroller.clientWidth)
+        );
+      }
+    };
+    window.requestAnimationFrame(() => {
+      restoreScroll();
+      window.requestAnimationFrame(restoreScroll);
+      window.setTimeout(restoreScroll, 80);
     });
   }
 }
@@ -4144,6 +4166,9 @@ function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
 
   const scroller = document.createElement("div");
   scroller.className = "achievement-milestone-scroller";
+  scroller.addEventListener("scroll", () => {
+    state.achievementMilestoneScrollLeft = scroller.scrollLeft;
+  }, { passive: true });
   const track = document.createElement("div");
   track.className = "achievement-milestone-track";
   const fill = document.createElement("span");
@@ -4181,9 +4206,18 @@ function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
 
   scroller.appendChild(track);
   road.append(heading, scroller);
+  window.requestAnimationFrame(() => {
+    if (state.achievementMilestoneScrollLeft) {
+      scroller.scrollLeft = Math.min(
+        state.achievementMilestoneScrollLeft,
+        Math.max(0, scroller.scrollWidth - scroller.clientWidth)
+      );
+    }
+  });
   road.addEventListener("click", (event) => {
     const button = event.target.closest("[data-milestone-claim]");
     if (button) {
+      state.achievementMilestoneScrollLeft = scroller.scrollLeft;
       claimAchievementMilestone(button.dataset.milestoneClaim);
     }
   });
@@ -5094,6 +5128,7 @@ async function compressProfileImage(file, options = {}) {
 function getRoomSyncChatMessage(message = {}) {
   return {
     ...message,
+    id: String(message.id || "").slice(0, 120),
     avatar: getRoomSyncAvatar(message.avatar)
   };
 }
@@ -5193,7 +5228,9 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
 
 function pushRoomChatMessage(message) {
   const source = message && typeof message === "object" ? message : {};
+  const createdAt = Number(source.createdAt) || Date.now();
   const cleanMessage = {
+    id: String(source.id || `chat-${state.clientId}-${createdAt}-${Math.random().toString(36).slice(2, 8)}`).slice(0, 120),
     sender: String(source.sender || "System").slice(0, 32),
     avatar: getRoomSyncAvatar(source.avatar),
     equippedTitleId: source.equippedTitleId || "",
@@ -5203,14 +5240,73 @@ function pushRoomChatMessage(message) {
     host: Boolean(source.host),
     private: Boolean(source.private),
     audience: source.audience || "",
-    createdAt: Number(source.createdAt) || Date.now()
+    createdAt
   };
   if (!cleanMessage.text) {
     return null;
   }
+  if (state.roomChat.some((entry) => getRoomChatMessageKey(entry) === getRoomChatMessageKey(cleanMessage))) {
+    return cleanMessage;
+  }
   state.roomChat.push(cleanMessage);
   state.roomChat = state.roomChat.slice(-roomChatHistoryLimit);
   return cleanMessage;
+}
+
+function getRoomChatMessageKey(message = {}) {
+  return message.id || [
+    message.createdAt || "",
+    message.owner || "",
+    message.sender || "",
+    message.text || ""
+  ].join("|");
+}
+
+function normalizeRoomChatMessage(message = {}) {
+  const normalized = pushRoomChatMessage({ ...message, own: Boolean(message.owner && message.owner === state.currentOwner) });
+  if (normalized) {
+    normalized.own = Boolean(normalized.owner && normalized.owner === state.currentOwner);
+  }
+  return normalized;
+}
+
+function mergeRoomChatMessages(remoteMessages = []) {
+  const existing = [...state.roomChat];
+  const byKey = new Map(existing.map((message) => [getRoomChatMessageKey(message), message]));
+  remoteMessages.forEach((message) => {
+    const source = message && typeof message === "object" ? message : {};
+    const normalized = {
+      id: String(source.id || "").slice(0, 120),
+      sender: String(source.sender || "System").slice(0, 32),
+      avatar: getRoomSyncAvatar(source.avatar),
+      equippedTitleId: source.equippedTitleId || "",
+      text: cleanChatInput(source.text || "").slice(0, 220),
+      owner: source.owner || "",
+      own: Boolean(source.owner && source.owner === state.currentOwner),
+      host: Boolean(source.host),
+      private: Boolean(source.private),
+      audience: source.audience || "",
+      createdAt: Number(source.createdAt) || Date.now()
+    };
+    if (normalized.text) {
+      byKey.set(getRoomChatMessageKey(normalized), normalized);
+    }
+  });
+  state.roomChat = [...byKey.values()]
+    .sort((a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0))
+    .slice(-roomChatHistoryLimit);
+}
+
+function applyRealtimeRoomChatMessage(message = {}) {
+  const beforeCount = state.roomChat.length;
+  const normalized = normalizeRoomChatMessage(message);
+  if (!normalized) {
+    return false;
+  }
+  if (state.roomChat.length !== beforeCount || state.roomChat.at(-1)?.id === normalized.id) {
+    renderRoomChat();
+  }
+  return true;
 }
 
 function publishRoomChat(message = state.roomChat.at(-1)) {
@@ -5223,6 +5319,9 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
   if (!message) {
     return Promise.resolve(null);
   }
+  broadcastRealtimeRoomChange("chat-message", state.roomSettings.code, {
+    message: getRoomSyncChatMessage(message)
+  });
   return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -5278,6 +5377,10 @@ function clearRoomAutoResolve() {
     clearTimeout(state.roomAutoResolveId);
     state.roomAutoResolveId = null;
   }
+  if (state.roomSubmissionResolveId) {
+    clearTimeout(state.roomSubmissionResolveId);
+    state.roomSubmissionResolveId = null;
+  }
 }
 
 function getRoomBanList() {
@@ -5303,6 +5406,7 @@ function setRoomSubmission(owner, submitted) {
 
 function resetRoomSubmissions() {
   state.roomSubmissions = Object.fromEntries(getActiveOwners().map((owner) => [owner, false]));
+  state.roomRoundResolving = false;
   state.players.forEach((player) => {
     if (player.active && !player.muted) {
       player.connectionStatus = player.owner === "player" ? "host" : "waiting";
@@ -5326,15 +5430,276 @@ function publishCurrentRoomSubmission(answer) {
   });
 }
 
+function broadcastRoomAnswerSubmission(answer) {
+  if (!isRoomMode() || state.isSpectator) {
+    return;
+  }
+  broadcastRealtimeRoomChange("answer-submitted", state.roomSettings.code, {
+    participantId: state.clientId,
+    owner: state.currentOwner,
+    round: state.round,
+    answer: cleanInput(answer || ""),
+    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0
+  });
+}
+
+function getRoomOwnerForParticipantId(participantId) {
+  const id = String(participantId || "");
+  if (!id) {
+    return "";
+  }
+  const player = state.players.find((entry) => entry.participantId === id);
+  if (player) {
+    return player.owner;
+  }
+  const participantIndex = state.roomParticipants.findIndex((participant) => participant.id === id);
+  if (participantIndex >= 0) {
+    return getRoomOwnerForParticipant(state.roomParticipants[participantIndex], participantIndex);
+  }
+  return "";
+}
+
+function getRoomParticipantIdForOwner(owner) {
+  if (!owner) {
+    return "";
+  }
+  const player = getPlayer(owner);
+  if (player?.participantId) {
+    return player.participantId;
+  }
+  if (owner === state.currentOwner) {
+    return state.clientId;
+  }
+  const participant = state.roomParticipants.find((entry, index) => getRoomOwnerForParticipant(entry, index) === owner);
+  return participant?.id || "";
+}
+
+function updateRoomParticipantSubmission(participantId, answer, round, remainingTime) {
+  const id = String(participantId || "");
+  if (!id) {
+    return;
+  }
+  const participant = state.roomParticipants.find((entry) => entry.id === id);
+  if (!participant) {
+    return;
+  }
+  participant.status = "submitted";
+  participant.answer = cleanInput(answer || "");
+  participant.submittedRound = Number(round) || state.round;
+  participant.remainingTime = Math.max(0, Number(remainingTime) || 0);
+}
+
+function applyRoomAnswerSubmission(payload = {}) {
+  if (!isRoomMode() || !hasActiveRoomContext()) {
+    return false;
+  }
+  const code = String(payload.code || "").trim().toUpperCase();
+  if (code !== state.roomSettings.code) {
+    return false;
+  }
+  const round = Number(payload.round) || 0;
+  if (!round || round !== Number(state.round)) {
+    return false;
+  }
+  const participantId = String(payload.participantId || "");
+  const owner = getRoomOwnerForParticipantId(participantId);
+  if (!owner || owner === state.currentOwner || !getActiveOwners().includes(owner)) {
+    return false;
+  }
+  const answer = cleanInput(payload.answer || "");
+  const remainingTime = Math.max(0, Number(payload.remainingTime) || 0);
+  updateRoomParticipantSubmission(participantId, answer, round, remainingTime);
+  if (answer) {
+    lockRoundAnswer(owner, answer);
+    if (owner === "player") {
+      state.localAnswers.playerOne = answer;
+    }
+    if (owner === "opponent") {
+      state.localAnswers.playerTwo = answer;
+    }
+  }
+  state.answerRemainingTimes[owner] = remainingTime;
+  setRoomSubmission(owner, true);
+  maybeResolveRoomSubmissions();
+  return true;
+}
+
+function getRoomPowerHandSyncEntry(owner) {
+  const participantId = getRoomParticipantIdForOwner(owner);
+  if (!participantId) {
+    return null;
+  }
+  return {
+    participantId,
+    owner,
+    hand: [...(state.powerHands[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => powerMap[powerId]).slice(0, 10),
+    fresh: [...(state.freshPowerUps[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => powerMap[powerId]).slice(0, 10)
+  };
+}
+
+function getRoomPowerStatePayload(owners = getActiveOwners()) {
+  return {
+    updatedAt: Date.now(),
+    hands: [...new Set(owners)].map(getRoomPowerHandSyncEntry).filter(Boolean)
+  };
+}
+
+function getImmediatePowerAffectedOwners(owner, power, meta = {}) {
+  const owners = new Set([owner]);
+  if (meta.targetOwner) {
+    owners.add(meta.targetOwner);
+  }
+  if (power?.type === "sin_sloth" || power?.type === "gamblers_dream" || power?.type === "hard_reset" || power?.type === "time_bender") {
+    getActiveOwners().forEach((activeOwner) => owners.add(activeOwner));
+  }
+  return [...owners].filter((entry) => getPlayer(entry));
+}
+
+function broadcastRoomPowerState(owner, power, meta = {}) {
+  if (!isRoomMode() || state.isSpectator || !power) {
+    return;
+  }
+  const updatedAt = Date.now();
+  if (state.roomGame) {
+    state.roomGame.powerState = {
+      ...getRoomPowerStatePayload(),
+      updatedAt
+    };
+  }
+  state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt);
+  const affectedOwners = getImmediatePowerAffectedOwners(owner, power, meta);
+  const hands = affectedOwners.map(getRoomPowerHandSyncEntry).filter(Boolean);
+  if (!hands.length) {
+    return;
+  }
+  broadcastRealtimeRoomChange("power-state", state.roomSettings.code, {
+    round: state.round,
+    updatedAt,
+    powerId: power.id,
+    actorParticipantId: getRoomParticipantIdForOwner(owner),
+    targetParticipantId: meta.targetOwner ? getRoomParticipantIdForOwner(meta.targetOwner) : "",
+    deletedPowerId: meta.deletedPowerId || state.playedPowerMeta[owner]?.deletedPowerId || "",
+    stolenPowerId: meta.stolenPowerId || state.playedPowerMeta[owner]?.stolenPowerId || "",
+    hands
+  });
+}
+
+function applyRoomPowerState(payload = {}) {
+  if (!isRoomMode() || !hasActiveRoomContext()) {
+    return false;
+  }
+  const code = String(payload.code || "").trim().toUpperCase();
+  if (code !== state.roomSettings.code) {
+    return false;
+  }
+  const round = Number(payload.round) || 0;
+  if (round && round !== Number(state.round)) {
+    return false;
+  }
+  const updatedAt = Number(payload.updatedAt) || 0;
+  if (updatedAt && updatedAt < (state.roomPowerStateUpdatedAt || 0)) {
+    return false;
+  }
+  const hands = Array.isArray(payload.hands) ? payload.hands : [];
+  let changed = false;
+  hands.forEach((entry) => {
+    const owner = getRoomOwnerForParticipantId(entry?.participantId);
+    if (!owner || !getPlayer(owner)) {
+      return;
+    }
+    const nextHand = Array.isArray(entry.hand)
+      ? entry.hand.map((powerId) => String(powerId || "")).filter((powerId) => powerMap[powerId]).slice(0, 10)
+      : [];
+    state.powerHands[owner] = nextHand;
+    state.freshPowerUps[owner] = Array.isArray(entry.fresh)
+      ? entry.fresh.map((powerId) => String(powerId || "")).filter((powerId) => powerMap[powerId]).slice(0, 10)
+      : [];
+    setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((powerId) => nextHand.includes(powerId)));
+    changed = true;
+  });
+  if (!changed) {
+    return false;
+  }
+  state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt || Date.now());
+  if (state.roomGame) {
+    const syncedParticipantIds = new Set(hands.map((entry) => String(entry?.participantId || "")).filter(Boolean));
+    const existingHands = Array.isArray(state.roomGame.powerState?.hands) ? state.roomGame.powerState.hands : [];
+    state.roomGame.powerState = {
+      updatedAt: state.roomPowerStateUpdatedAt,
+      hands: [
+        ...existingHands.filter((entry) => !syncedParticipantIds.has(String(entry?.participantId || ""))),
+        ...hands
+      ].slice(-10)
+    };
+  }
+  const power = getPowerById(payload.powerId);
+  const actorOwner = getRoomOwnerForParticipantId(payload.actorParticipantId);
+  const targetOwner = getRoomOwnerForParticipantId(payload.targetParticipantId);
+  if (power?.type === "software_downgrade" && targetOwner) {
+    const deletedPower = getPowerById(payload.deletedPowerId);
+    queueStatFlash(
+      deletedPower ? "negative" : "mixed",
+      power.name,
+      deletedPower ? `${deletedPower.name} Deleted` : "No power-up deleted",
+      getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
+    );
+  }
+  if (power?.type === "power_heist" && targetOwner) {
+    const stolenPower = getPowerById(payload.stolenPowerId);
+    queueStatFlash(
+      "negative",
+      power.name,
+      `${stolenPower?.name || "Power-up"} Stolen`,
+      getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
+    );
+  }
+  renderPowerUps();
+  renderRoomPlayers();
+  return true;
+}
+
+function applyRoomGamePowerState(game = state.roomGame) {
+  if (!game?.powerState?.hands?.length) {
+    return false;
+  }
+  return applyRoomPowerState({
+    code: state.roomSettings.code,
+    round: game.round,
+    updatedAt: game.powerState.updatedAt,
+    hands: game.powerState.hands
+  });
+}
+
+function maybeResolveRoomSubmissions() {
+  if (!isRoomMode() || state.isSpectator || !state.roomSubmissions[state.currentOwner]) {
+    return;
+  }
+  if (getPendingSubmitters().length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
+    return;
+  }
+  state.roomRoundResolving = true;
+  state.roomSubmissionResolveId = window.setTimeout(() => {
+    state.roomSubmissionResolveId = null;
+    if (!isRoomMode() || state.matchEnded || getPendingSubmitters().length > 0) {
+      state.roomRoundResolving = false;
+      return;
+    }
+    playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+  }, 40);
+}
+
 async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   const timeoutMs = Math.max(3200, (state.timerRemaining + 1) * 1000);
   const startedAt = Date.now();
   while (!state.matchEnded && Date.now() - startedAt < timeoutMs) {
+    if (getPendingSubmitters().length === 0) {
+      break;
+    }
     await refreshCurrentRoomDirectory();
     if (getPendingSubmitters().length === 0) {
       break;
     }
-    await sleep(550);
+    await sleep(260);
   }
 
   getRemoteActiveOwners().forEach((remoteOwner) => {
@@ -5355,6 +5720,11 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   });
 
   state.roomAutoResolveId = null;
+  state.roomSubmissionResolveId = null;
+  if (state.roomRoundResolving) {
+    return;
+  }
+  state.roomRoundResolving = true;
   playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback));
 }
 
@@ -5731,9 +6101,21 @@ function isPlayerSignedIn() {
 
 function syncProfileEditControls() {
   const signedIn = isPlayerSignedIn();
+  const signInMessage = "Sign in with Google to customize your card.";
+  if (elements.profileCustomizeControl) {
+    elements.profileCustomizeControl.dataset.disabled = String(!signedIn);
+    if (signedIn) {
+      delete elements.profileCustomizeControl.dataset.tooltip;
+      elements.profileCustomizeControl.removeAttribute("tabindex");
+    } else {
+      elements.profileCustomizeControl.dataset.tooltip = signInMessage;
+      elements.profileCustomizeControl.tabIndex = 0;
+    }
+  }
   if (elements.profileCustomizeButton) {
     elements.profileCustomizeButton.disabled = !signedIn;
-    elements.profileCustomizeButton.title = signedIn ? "" : "Sign in with Google to customize your card.";
+    elements.profileCustomizeButton.title = signedIn ? "" : signInMessage;
+    elements.profileCustomizeButton.setAttribute("aria-disabled", String(!signedIn));
   }
   if (elements.profileNameInput) {
     elements.profileNameInput.disabled = !signedIn;
@@ -5741,6 +6123,9 @@ function syncProfileEditControls() {
   }
   if (elements.profileAvatarInput) {
     elements.profileAvatarInput.disabled = !signedIn;
+  }
+  if (elements.profileLoginNote) {
+    elements.profileLoginNote.hidden = signedIn;
   }
   const uploadLabel = document.querySelector(".profile-custom-upload");
   if (uploadLabel) {
@@ -5757,10 +6142,10 @@ function renderSupabaseAuthControls() {
   setHidden(elements.profileAuthButton, signedIn || !configured);
   setHidden(elements.profileSignOutButton, !signedIn);
   elements.profileAuthButton.disabled = !configured;
-  setHidden(elements.profileAuthStatus, !signedIn);
+  setHidden(elements.profileAuthStatus, !configured);
   elements.profileAuthStatus.textContent = signedIn
     ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
-    : "";
+    : "Sign in to customize your card, username, and profile picture.";
   syncProfileEditControls();
 }
 
@@ -5903,6 +6288,15 @@ function handleRealtimeRoomChange(payload = {}) {
     scheduleRealtimeJoinRefresh();
   }
   if (code === state.roomSettings.code && hasActiveRoomContext()) {
+    if (payload.eventType === "chat-message" && payload.message) {
+      applyRealtimeRoomChatMessage(payload.message);
+    }
+    if (payload.eventType === "answer-submitted") {
+      applyRoomAnswerSubmission(payload);
+    }
+    if (payload.eventType === "power-state") {
+      applyRoomPowerState(payload);
+    }
     scheduleRealtimeRoomRefresh(payload);
   }
 }
@@ -6068,6 +6462,10 @@ function updateProfileName(value) {
     elements.profileFontGrid?.querySelectorAll(".profile-font-preview").forEach((preview) => {
       preview.textContent = state.profile.name;
     });
+    if (elements.profileFontLivePreview) {
+      elements.profileFontLivePreview.textContent = state.profile.name;
+      applyProfileFontToElement(elements.profileFontLivePreview, getProfileFont(getProfileCustomizationDraft().fontId));
+    }
   }
 }
 
@@ -6082,14 +6480,24 @@ async function updateProfileAvatar(file) {
     return;
   }
 
+  let previewUrl = "";
   try {
     if (elements.profileCustomStatus) {
       elements.profileCustomStatus.textContent = "Compressing profile picture...";
+    }
+    if (isModalOpen(elements.profileCustomModal) && elements.profilePreviewAvatar) {
+      previewUrl = URL.createObjectURL(file);
+      renderAvatar(elements.profilePreviewAvatar, { ...state.profile, avatar: previewUrl });
+      renderAvatar(elements.profileAvatarPreview, { ...state.profile, avatar: previewUrl });
+      renderAvatar(elements.roomProfileAvatarPreview, { ...state.profile, avatar: previewUrl });
     }
     state.profile.avatar = await compressProfileImage(file);
     localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "avatar"), state.profile.avatar);
     syncProfileToPlayer();
     renderProfile();
+    if (isModalOpen(elements.profileCustomModal)) {
+      renderProfileCustomizationPreview();
+    }
     renderRoomPlayers();
     renderRoomChat();
     if (hasActiveRoomContext()) {
@@ -6104,6 +6512,9 @@ async function updateProfileAvatar(file) {
       elements.profileCustomStatus.textContent = "Could not save that profile picture.";
     }
   } finally {
+    if (previewUrl) {
+      window.setTimeout(() => URL.revokeObjectURL(previewUrl), 15000);
+    }
     if (elements.profileAvatarInput) {
       elements.profileAvatarInput.value = "";
     }
@@ -8027,6 +8438,10 @@ function renderProfileCustomizationPreview() {
   const draft = getProfileCustomizationDraft();
   applyCardCustomizationToElement(elements.profilePreviewCard, draft, { preview: true });
   renderAvatar(elements.profilePreviewAvatar, state.profile);
+  if (elements.profileFontLivePreview) {
+    elements.profileFontLivePreview.textContent = state.profile.name || "You";
+    applyProfileFontToElement(elements.profileFontLivePreview, getProfileFont(draft.fontId));
+  }
   renderPlayerNameWithTitle(elements.profilePreviewName, {
     owner: "preview",
     label: state.profile.name || "You",
@@ -8147,7 +8562,7 @@ function createProfileFontButton(font, records, progress) {
   button.style.setProperty("--style-swatch", getProfileCardColour("pink").value);
   button.style.setProperty("--style-swatch-rgb", hexToRgbParts(getProfileCardColour("pink").value));
   button.style.setProperty("--style-swatch-secondary-rgb", hexToRgbParts(getProfileCardColour("blue").value));
-  button.innerHTML = `<span>${font.name}</span><strong class="profile-font-preview">${state.profile.name || "You"}</strong><small>${getProfileOptionSummary(font, status)}</small>${getProfileOptionLockMarkup(status)}${getProfileOptionProgressMarkup(font, status)}`;
+  button.innerHTML = `<span>${font.name}</span><em class="profile-font-sample-label">Name preview</em><strong class="profile-font-preview">${state.profile.name || "You"}</strong><small>${getProfileOptionSummary(font, status)}</small>${getProfileOptionLockMarkup(status)}${getProfileOptionProgressMarkup(font, status)}`;
   const preview = button.querySelector(".profile-font-preview");
   applyProfileFontToElement(preview, font);
   attachFloatingDescriptionTooltip(button);
@@ -10199,6 +10614,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     }
   }
 
+  broadcastRoomPowerState(owner, power, meta);
   renderPowerUps();
   if (!meta.suppressSound) {
     playSound(power.type === "shuffle" || power.type === "premium_shuffle" || power.type === "mirror" || power.type === "hoarder" || power.type === "recycle_bin" ? "reveal" : "click");
@@ -13762,6 +14178,7 @@ async function newRound() {
       const setup = await waitForSyncedRoomSetupForRound(state.round);
       if (!state.matchEnded) {
         applyRoundSetup(setup);
+        applyRoomGamePowerState();
       }
     } catch (error) {
       console.warn(error);
@@ -13846,6 +14263,7 @@ function resetMatch(mode) {
   clearStatFlashes();
   clearBackgroundSetupPrefetch();
   state.mode = mode;
+  state.roomPowerStateUpdatedAt = 0;
   state.matchModifiers = rollMatchModifiers(mode);
   setPlayersForMode(mode);
   resetAchievementStats();
@@ -13995,6 +14413,9 @@ async function startGame(mode) {
       clearWarmSetup();
     }
     applyRoundSetup(firstSetup);
+    if (mode === "room" && !isCurrentHost()) {
+      applyRoomGamePowerState();
+    }
   } catch (error) {
     console.warn(error);
     stopLoadingMessages();
@@ -14065,6 +14486,7 @@ function openRoomScreen() {
   state.roomMissingSince = 0;
   state.roomClosedNotice = "";
   state.roomGame = null;
+  state.roomPowerStateUpdatedAt = 0;
   state.currentOwner = "player";
   state.currentRoomStatus = "draft";
   state.roomParticipants = [];
@@ -14153,6 +14575,7 @@ function clearLocalRoomState(options = {}) {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomGame = null;
+  state.roomPowerStateUpdatedAt = 0;
   state.roomParticipants = [];
   state.roomSubmissions = {};
   state.roomMissingSince = 0;
@@ -14530,12 +14953,10 @@ function applyRoomDirectoryRoom(room) {
   state.roomSettings = { ...state.roomSettings, ...room.settings, code: room.code };
   state.roomParticipants = Array.isArray(room.participants) ? room.participants : [];
   if (Array.isArray(room.chat)) {
-    state.roomChat = room.chat.slice(-roomChatHistoryLimit).map((message) => ({
-      ...message,
-      own: Boolean(message.owner && message.owner === state.currentOwner)
-    }));
+    mergeRoomChatMessages(room.chat);
   }
   state.roomGame = room.game && typeof room.game === "object" ? room.game : null;
+  applyRoomGamePowerState(state.roomGame);
   state.joiningRoom = state.joiningRoom ? room : state.joiningRoom;
   syncRoomSubmissionsFromParticipants();
 }
@@ -14591,6 +15012,7 @@ function publishRoomRoundSetup(setup) {
     status: "playing",
     round: state.round,
     setup,
+    powerState: getRoomPowerStatePayload(),
     updatedAt: Date.now()
   };
   fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/game`, {
@@ -15012,7 +15434,10 @@ async function joinHostedRoom(code, options = {}) {
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined"
   });
-  state.roomChat = Array.isArray(room.chat) ? room.chat.slice(-roomChatHistoryLimit) : [];
+  state.roomChat = [];
+  if (Array.isArray(room.chat)) {
+    mergeRoomChatMessages(room.chat);
+  }
   addSystemChat(`${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
   if (room.status === "lobby") {
     state.mode = "room";
@@ -15157,6 +15582,7 @@ async function beginRoomMatch() {
   }
   state.currentRoomStatus = "in-progress";
   state.roomGame = null;
+  state.roomPowerStateUpdatedAt = 0;
   addSystemChat("The host started the match.");
   startGame("room");
 }
@@ -15473,6 +15899,7 @@ function startRoomGame() {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomGame = null;
+  state.roomPowerStateUpdatedAt = 0;
   state.roomSessionId += 1;
   state.roomMissingSince = 0;
   state.roomClosedNotice = "";
@@ -15937,6 +16364,7 @@ function submitRoomAnswer(rawInput, options = {}) {
   }
 
   setRoomSubmission(owner, true);
+  broadcastRoomAnswerSubmission(lockedInput);
   void publishCurrentRoomSubmission(lockedInput);
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;

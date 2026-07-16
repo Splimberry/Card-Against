@@ -23,7 +23,9 @@
               <div class="profile-actions">
                 <button type="button" class="secondary-button profile-auth-button" id="profileAuthButton">Sign in with Google</button>
                 <button type="button" class="secondary-button profile-auth-button hidden" id="profileSignOutButton">Sign out</button>
-                <button type="button" class="secondary-button profile-customize-button" id="profileCustomizeButton">Customize Card</button>
+                <span class="profile-customize-control" id="profileCustomizeControl">
+                  <button type="button" class="secondary-button profile-customize-button" id="profileCustomizeButton">Customize Card</button>
+                </span>
                 <div class="profile-currency" aria-label="Currency balance">
                   <span class="coin-icon" aria-hidden="true"></span>
                   <strong id="profileCurrencyValue">0</strong>
@@ -573,6 +575,7 @@
               </div>
               <div>
                 <p class="eyebrow">Font</p>
+                <div class="profile-font-live-preview" id="profileFontLivePreview">You</div>
                 <div class="card-style-grid profile-font-grid" id="profileFontGrid"></div>
               </div>
               <div class="profile-prefix-panel">
@@ -610,6 +613,7 @@
               </label>
               <label class="profile-upload profile-custom-upload" for="profileAvatarInput">Upload profile picture</label>
               <input class="sr-only" id="profileAvatarInput" type="file" accept="image/*">
+              <p class="profile-login-note" id="profileLoginNote">Sign in with Google to edit your username, upload a profile picture, and save card customizations.</p>
               <div class="profile-custom-status" id="profileCustomStatus">Choose a card look, then save.</div>
               <div class="profile-custom-actions">
                 <button type="button" class="secondary-button" id="profileCustomUndoButton">Undo</button>

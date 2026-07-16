@@ -424,6 +424,17 @@ async function testLateJoinerReceivesRoundState() {
     status: "playing",
     round: 1,
     setup: makeSetup(1),
+    powerState: {
+      updatedAt: Date.now(),
+      hands: [
+        {
+          participantId: "host-client",
+          owner: "player",
+          hand: ["software_downgrade", "xray_hacks"],
+          fresh: ["software_downgrade"]
+        }
+      ]
+    },
     updatedAt: Date.now()
   };
   const gameUpdate = await request("PUT", `/api/rooms/${code}/game`, { game });
@@ -441,8 +452,28 @@ async function testLateJoinerReceivesRoundState() {
   assert.equal(presence.payload.room.status, "in-progress");
   assert.equal(presence.payload.room.game.round, 1);
   assert.equal(presence.payload.room.game.setup.blackCard, "Round 1 question?");
+  assert.equal(presence.payload.room.game.powerState.hands[0].participantId, "host-client");
+  assert.deepEqual(presence.payload.room.game.powerState.hands[0].hand, ["software_downgrade", "xray_hacks"]);
   assert.ok(presence.payload.room.revision >= 3);
   assert.ok(presence.payload.room.events.some((event) => event.type === "round_started"));
+}
+
+async function testRoomChatPreservesMessageIds() {
+  const code = makeCode(8109);
+  await upsertRoom(makeRoom(code));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/chat`, {
+    message: {
+      id: "chat-test-message-1",
+      sender: "Host",
+      owner: "player",
+      text: "Hello room",
+      createdAt: Date.now()
+    }
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.message.id, "chat-test-message-1");
+  assert.equal(payload.room.chat.at(-1).id, "chat-test-message-1");
 }
 
 async function testDebugQuestionCreateUsesBackendStorage() {
@@ -507,6 +538,7 @@ async function main() {
   await testBackgroundTabDoesNotDeleteRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
+  await testRoomChatPreservesMessageIds();
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();

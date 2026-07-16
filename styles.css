@@ -374,6 +374,19 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   text-transform: uppercase;
 }
 
+.profile-customize-control {
+  display: block;
+  width: 100%;
+}
+
+.profile-customize-control[data-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.profile-customize-control[data-disabled="true"] .profile-customize-button {
+  cursor: not-allowed;
+}
+
 .profile-auth-status {
   color: var(--muted);
   font-size: 0.72rem;
@@ -442,6 +455,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .profile-custom-upload {
   width: min(100%, 15rem);
   justify-self: center;
+}
+
+.profile-login-note {
+  margin: -0.15rem 0 0;
+  color: rgba(245, 247, 251, 0.68);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .profile-currency small {
@@ -7141,19 +7163,60 @@ input:focus {
 }
 
 .profile-font-option {
-  min-height: 6.15rem;
+  grid-template-rows: auto auto minmax(2.6rem, 1fr) auto;
+  min-height: 8.4rem;
+}
+
+.profile-font-live-preview {
+  display: grid;
+  place-items: center;
+  min-height: 3.4rem;
+  margin-bottom: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 77, 125, 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(34, 211, 238, 0.11), rgba(255, 255, 255, 0.045)),
+    rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font-size: 1.18rem;
+  font-weight: 950;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-font-preview {
+  display: flex;
+  align-items: center;
   min-width: 0;
+  min-height: 2.7rem;
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.16);
   overflow: hidden;
   color: var(--ink);
-  font-size: 1.1rem;
-  font-weight: 900;
+  font-size: 1.22rem;
+  font-weight: 950;
   line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-transform: none;
+}
+
+.profile-font-sample-label {
+  position: relative;
+  z-index: 2;
+  color: rgba(245, 247, 251, 0.58);
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .profile-style-option[data-profile-style-kind="hexagon"] {

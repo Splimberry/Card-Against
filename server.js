@@ -1326,6 +1326,7 @@ function normalizeRoomChat(chat) {
     .map((message) => {
       const source = message && typeof message === "object" ? message : {};
       return {
+        id: String(source.id || "").slice(0, 120),
         sender: String(source.sender || "System").slice(0, 32),
         avatar: String(source.avatar || "").slice(0, 250000),
         equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
@@ -1378,7 +1379,34 @@ function normalizeRoomGame(game) {
     status: String(game.status || "playing").slice(0, 32),
     round: clampServerNumber(game.round, 1, 100, 1),
     setup,
+    powerState: normalizeRoomPowerState(game.powerState),
     updatedAt: clampServerNumber(game.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+  };
+}
+
+function normalizeRoomPowerState(powerState) {
+  if (!powerState || typeof powerState !== "object") {
+    return null;
+  }
+  const hands = Array.isArray(powerState.hands) ? powerState.hands : [];
+  return {
+    updatedAt: clampServerNumber(powerState.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()),
+    hands: hands
+      .map((entry) => {
+        const source = entry && typeof entry === "object" ? entry : {};
+        return {
+          participantId: String(source.participantId || "").slice(0, 120),
+          owner: String(source.owner || "").slice(0, 80),
+          hand: Array.isArray(source.hand)
+            ? source.hand.map((powerId) => String(powerId || "").slice(0, 80)).filter(Boolean).slice(0, 10)
+            : [],
+          fresh: Array.isArray(source.fresh)
+            ? source.fresh.map((powerId) => String(powerId || "").slice(0, 80)).filter(Boolean).slice(0, 10)
+            : []
+        };
+      })
+      .filter((entry) => entry.participantId)
+      .slice(0, 10)
   };
 }
 
