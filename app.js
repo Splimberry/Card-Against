@@ -1170,6 +1170,9 @@ const state = {
   hostedRoomsRefreshPromise: null,
   locallyClosedRooms: {},
   roomEventRevision: 0,
+  roomSettingsRevisionByCode: {},
+  roomSettingsUpdatedAtByCode: {},
+  roomSettingsLocalUpdatedAtByCode: {},
   roomJoinInProgress: false,
   roomHeartbeatTimerId: null,
   roomEventPollId: null,
@@ -7050,6 +7053,82 @@ function getRoomPayloadRevision(payload = {}) {
   return Number(payload.revision || payload.room?.revision || 0) || 0;
 }
 
+function getRoomPayloadUpdatedAt(payload = {}) {
+  return Number(payload.updatedAt || payload.room?.updatedAt || 0) || 0;
+}
+
+function markRoomSettingsLocallyChanged(code = state.roomSettings.code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode || normalizedCode === "CAI-0000") {
+    return;
+  }
+  state.roomSettingsLocalUpdatedAtByCode[normalizedCode] = Date.now();
+}
+
+function getRoomSettingsMeta(payload = {}) {
+  const room = payload.room && typeof payload.room === "object" ? payload.room : {};
+  const code = String(payload.code || room.code || payload.settings?.code || "").trim().toUpperCase();
+  return {
+    code,
+    revision: getRoomPayloadRevision(payload),
+    updatedAt: getRoomPayloadUpdatedAt(payload)
+  };
+}
+
+function isStaleRoomSettingsPayload(payload = {}) {
+  const meta = getRoomSettingsMeta(payload);
+  if (!meta.code) {
+    return false;
+  }
+  const knownRevision = Number(state.roomSettingsRevisionByCode[meta.code]) || 0;
+  const knownUpdatedAt = Number(state.roomSettingsUpdatedAtByCode[meta.code]) || 0;
+  if (meta.revision && knownRevision && meta.revision < knownRevision) {
+    return true;
+  }
+  if (meta.revision && knownRevision && meta.revision === knownRevision && meta.updatedAt && knownUpdatedAt && meta.updatedAt < knownUpdatedAt) {
+    return true;
+  }
+  const localUpdatedAt = Number(state.roomSettingsLocalUpdatedAtByCode[meta.code]) || 0;
+  if (localUpdatedAt && Date.now() - localUpdatedAt < 3500) {
+    if (meta.updatedAt && meta.updatedAt < localUpdatedAt && (!meta.revision || meta.revision <= knownRevision)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function rememberRoomSettingsPayload(payload = {}) {
+  const meta = getRoomSettingsMeta(payload);
+  if (!meta.code) {
+    return;
+  }
+  if (meta.revision) {
+    state.roomSettingsRevisionByCode[meta.code] = Math.max(Number(state.roomSettingsRevisionByCode[meta.code]) || 0, meta.revision);
+  }
+  if (meta.updatedAt) {
+    state.roomSettingsUpdatedAtByCode[meta.code] = Math.max(Number(state.roomSettingsUpdatedAtByCode[meta.code]) || 0, meta.updatedAt);
+  }
+}
+
+function mergeRoomSettingsFresh(currentSettings = {}, incomingSettings = {}, payload = {}) {
+  if (!incomingSettings || typeof incomingSettings !== "object") {
+    return currentSettings;
+  }
+  const meta = getRoomSettingsMeta({
+    ...payload,
+    code: payload.code || incomingSettings.code || currentSettings.code
+  });
+  if (isStaleRoomSettingsPayload({ ...payload, code: meta.code, settings: incomingSettings })) {
+    return currentSettings;
+  }
+  rememberRoomSettingsPayload({ ...payload, code: meta.code, settings: incomingSettings });
+  return {
+    ...(currentSettings || {}),
+    ...incomingSettings,
+    code: meta.code || incomingSettings.code || currentSettings.code || ""
+  };
+}
+
 function applyRoomServerEvent(event = {}) {
   const type = String(event.type || "");
   const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
@@ -7140,11 +7219,12 @@ function mergeRealtimeRoomPayload(room = {}) {
     return null;
   }
   const existing = state.hostedRooms.find((entry) => entry.code === code) || {};
+  const settings = mergeRoomSettingsFresh(existing.settings || {}, room.settings || {}, room);
   return {
     ...existing,
     ...room,
     code,
-    settings: { ...(existing.settings || {}), ...(room.settings || {}), code },
+    settings,
     host: { ...(existing.host || {}), ...(room.host || {}) },
     participants: Array.isArray(room.participants) ? room.participants : (existing.participants || []),
     chat: Array.isArray(room.chat) ? room.chat : (existing.chat || []),
@@ -7191,9 +7271,10 @@ function applyRealtimeRoomSettings(payload = {}) {
   const settings = payload.settings && typeof payload.settings === "object" ? payload.settings : null;
   const host = payload.host && typeof payload.host === "object" ? payload.host : null;
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === code);
+  const settingsAreFresh = !settings || !isStaleRoomSettingsPayload({ ...payload, code, settings });
   if (hostedRoom) {
-    if (settings) {
-      hostedRoom.settings = { ...(hostedRoom.settings || {}), ...settings, code };
+    if (settings && settingsAreFresh) {
+      hostedRoom.settings = mergeRoomSettingsFresh(hostedRoom.settings || {}, settings, { ...payload, code });
     }
     if (host) {
       hostedRoom.host = { ...(hostedRoom.host || {}), ...host };
@@ -7205,14 +7286,16 @@ function applyRealtimeRoomSettings(payload = {}) {
     hostedRoom.updatedAt = Number(payload.updatedAt) || Date.now();
   }
   if (code === state.roomSettings.code && hasActiveRoomContext()) {
-    if (settings) {
-      state.roomSettings = { ...state.roomSettings, ...settings, code };
+    if (settings && settingsAreFresh) {
+      state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, settings, { ...payload, code });
       syncRoomControls();
     }
     if (state.joiningRoom) {
       state.joiningRoom = {
         ...state.joiningRoom,
-        settings: { ...(state.joiningRoom.settings || {}), ...(settings || {}), code },
+        settings: settings && settingsAreFresh
+          ? mergeRoomSettingsFresh(state.joiningRoom.settings || {}, settings, { ...payload, code })
+          : state.joiningRoom.settings,
         host: host ? { ...(state.joiningRoom.host || {}), ...host } : state.joiningRoom.host,
         status: payload.status || state.joiningRoom.status,
         revision: Number(payload.revision) || state.joiningRoom.revision || 0,
@@ -16262,6 +16345,22 @@ function scheduleRoomSettingsPublish(kind = state.currentRoomStatus, delay = 300
 }
 
 function publishCurrentRoomSettingsSoon() {
+  markRoomSettingsLocallyChanged();
+  const code = state.roomSettings.code;
+  const updatedAt = state.roomSettingsLocalUpdatedAtByCode[code] || Date.now();
+  const serverStatus = state.currentRoomStatus === "draft" ? "lobby" : state.currentRoomStatus;
+  const hostedRoom = state.hostedRooms.find((room) => room.code === code);
+  if (hostedRoom) {
+    hostedRoom.settings = { ...(hostedRoom.settings || {}), ...state.roomSettings, code };
+    hostedRoom.status = serverStatus || hostedRoom.status;
+    hostedRoom.updatedAt = updatedAt;
+  }
+  broadcastRealtimeRoomChange("room-settings", code, {
+    status: serverStatus,
+    revision: Number(state.roomSettingsRevisionByCode[code]) || state.roomEventRevision || 0,
+    updatedAt,
+    settings: { ...state.roomSettings, code }
+  });
   if (state.currentRoomStatus === "lobby") {
     scheduleRoomSettingsPublish("lobby");
     renderRoomLobby();
@@ -16491,9 +16590,11 @@ function mergeHostedRoom(room) {
   }
   const existing = state.hostedRooms.find((entry) => entry.code === room.code);
   if (existing) {
-    Object.assign(existing, room);
+    const settings = mergeRoomSettingsFresh(existing.settings || {}, room.settings || {}, room);
+    Object.assign(existing, room, { settings });
   } else {
-    state.hostedRooms.unshift(room);
+    const settings = mergeRoomSettingsFresh({}, room.settings || {}, room);
+    state.hostedRooms.unshift({ ...room, settings });
   }
 }
 
@@ -16526,7 +16627,14 @@ async function refreshHostedRooms(options = {}) {
       const data = await response.json();
       state.roomDirectoryOnline = true;
       state.hostedRooms = (Array.isArray(data.rooms) ? data.rooms : [])
-        .filter((room) => !isRoomLocallyClosed(room?.code));
+        .filter((room) => !isRoomLocallyClosed(room?.code))
+        .map((room) => {
+          const existing = state.hostedRooms.find((entry) => entry.code === room.code) || {};
+          return {
+            ...room,
+            settings: mergeRoomSettingsFresh(existing.settings || {}, room.settings || {}, room)
+          };
+        });
       return true;
     } catch {
       state.roomDirectoryOnline = false;
@@ -16739,7 +16847,7 @@ function applyRoomDirectoryRoom(room) {
     return;
   }
   updateRoomEventRevision(room.revision);
-  state.roomSettings = { ...state.roomSettings, ...room.settings, code: room.code };
+  state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
   state.roomParticipants = Array.isArray(room.participants) ? room.participants : [];
   if (Array.isArray(room.chat)) {
     mergeRoomChatMessages(room.chat);
