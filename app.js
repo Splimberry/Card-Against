@@ -49,6 +49,10 @@ const chatCooldownDurationMs = 10000;
 const userQuestionSubmissionCost = 250;
 const roomChatHistoryLimit = 50;
 const roomMissingGraceMs = 10000;
+const roomDirectoryFetchTimeoutMs = 4500;
+const roomLookupFetchTimeoutMs = 4500;
+const roomPresenceFetchTimeoutMs = 5000;
+const roomLeaveFetchTimeoutMs = 2500;
 const specialPlayerBadgeOrder = ["admin", "verified", "creator"];
 const specialPlayerBadges = [
   {
@@ -1161,6 +1165,8 @@ const state = {
   realtimeJoinRefreshTimerId: null,
   realtimeRoomRefreshTimerId: null,
   realtimeSourceId: `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  hostedRoomsRefreshPromise: null,
+  roomJoinInProgress: false,
   roomHeartbeatTimerId: null,
   userStorageWriteTimerId: null,
   roomSettingsPublishTimerId: null,
@@ -7142,10 +7148,7 @@ function scheduleRealtimeJoinRefresh() {
   }
   state.realtimeJoinRefreshTimerId = window.setTimeout(async () => {
     state.realtimeJoinRefreshTimerId = null;
-    await refreshHostedRooms();
-    if (!elements.joinScreen.classList.contains("hidden")) {
-      renderHostedRooms();
-    }
+    await refreshHostedRoomsAndRender();
   }, 90);
 }
 
@@ -15680,12 +15683,12 @@ function leavePublishedRoom(options = {}) {
     navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
     return Promise.resolve(null);
   }
-  return fetch(url, {
+  return fetchWithTimeout(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: payload,
     keepalive: Boolean(options.keepalive)
-  }).then(async (response) => {
+  }, roomLeaveFetchTimeoutMs).then(async (response) => {
     const result = await response.json().catch(() => ({}));
     if (result?.closed && !isHostLeaving) {
       broadcastRealtimeRoomChange("room-closed", code, { reason: result.reason || reason });
@@ -15766,8 +15769,7 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   });
 }
 
-async function openJoinScreen() {
-  await refreshHostedRooms();
+function openJoinScreen() {
   renderHostedRooms();
   startJoinDirectoryPolling();
   setHidden(elements.modeScreen, true);
@@ -15775,6 +15777,7 @@ async function openJoinScreen() {
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, true);
   setHidden(elements.joinScreen, false);
+  refreshHostedRoomsAndRender({ force: true });
   playSound("click");
 }
 
@@ -15785,10 +15788,12 @@ async function refreshJoinRooms() {
   const previousLabel = elements.refreshJoinRoomsButton.textContent;
   elements.refreshJoinRoomsButton.disabled = true;
   elements.refreshJoinRoomsButton.textContent = "Refreshing...";
-  await refreshHostedRooms();
-  renderHostedRooms();
-  elements.refreshJoinRoomsButton.textContent = previousLabel || "Refresh";
-  elements.refreshJoinRoomsButton.disabled = false;
+  try {
+    await refreshHostedRoomsAndRender({ force: true });
+  } finally {
+    elements.refreshJoinRoomsButton.textContent = previousLabel || "Refresh";
+    elements.refreshJoinRoomsButton.disabled = false;
+  }
   playSound("click");
 }
 
@@ -15810,8 +15815,7 @@ function startJoinDirectoryPolling() {
       stopJoinDirectoryPolling();
       return;
     }
-    await refreshHostedRooms();
-    renderHostedRooms();
+    await refreshHostedRoomsAndRender();
   }, intervalMs);
 }
 
@@ -16021,20 +16025,52 @@ function mergeHostedRoom(room) {
   }
 }
 
-async function refreshHostedRooms() {
-  try {
-    const response = await fetch("/api/rooms", { cache: "no-store" });
-    if (!response.ok) {
-      state.roomDirectoryOnline = false;
-      return;
-    }
-    const data = await response.json();
-    state.roomDirectoryOnline = true;
-    state.hostedRooms = Array.isArray(data.rooms) ? data.rooms : [];
-  } catch {
-    state.roomDirectoryOnline = false;
-    // Keep the local fallback list when the server is unavailable.
+function fetchWithTimeout(url, options = {}, timeoutMs = roomDirectoryFetchTimeoutMs) {
+  if (!window.AbortController || options.keepalive) {
+    return fetch(url, options);
   }
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, {
+    ...options,
+    signal: controller.signal
+  }).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
+}
+
+async function refreshHostedRooms(options = {}) {
+  if (state.hostedRoomsRefreshPromise && !options.force) {
+    return state.hostedRoomsRefreshPromise;
+  }
+  state.hostedRoomsRefreshPromise = (async () => {
+    try {
+      const response = await fetchWithTimeout("/api/rooms", { cache: "no-store" }, roomDirectoryFetchTimeoutMs);
+      if (!response.ok) {
+        state.roomDirectoryOnline = false;
+        return false;
+      }
+      const data = await response.json();
+      state.roomDirectoryOnline = true;
+      state.hostedRooms = Array.isArray(data.rooms) ? data.rooms : [];
+      return true;
+    } catch {
+      state.roomDirectoryOnline = false;
+      // Keep the local fallback list when the server is unavailable.
+      return false;
+    } finally {
+      state.hostedRoomsRefreshPromise = null;
+    }
+  })();
+  return state.hostedRoomsRefreshPromise;
+}
+
+async function refreshHostedRoomsAndRender(options = {}) {
+  const ok = await refreshHostedRooms(options);
+  if (!elements.joinScreen.classList.contains("hidden")) {
+    renderHostedRooms();
+  }
+  return ok;
 }
 
 async function fetchRoomByCode(code = state.roomSettings.code) {
@@ -16042,7 +16078,7 @@ async function fetchRoomByCode(code = state.roomSettings.code) {
     return { status: "missing", room: null };
   }
   try {
-    const response = await fetch(`/api/rooms/${encodeURIComponent(code)}`, { cache: "no-store" });
+    const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}`, { cache: "no-store" }, roomLookupFetchTimeoutMs);
     if (response.status === 410) {
       const data = await response.json().catch(() => ({}));
       state.roomDirectoryOnline = true;
@@ -16085,7 +16121,7 @@ async function updateRoomPresence(room, options = {}) {
     if (!Object.hasOwn(options, "remainingTime")) {
       delete participant.remainingTime;
     }
-    const response = await fetch(`/api/rooms/${encodeURIComponent(room.code)}/presence`, {
+    const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(room.code)}/presence`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -16094,9 +16130,9 @@ async function updateRoomPresence(room, options = {}) {
         participant,
         compact: options.compactResponse !== false
       })
-    });
+    }, roomPresenceFetchTimeoutMs);
     if (!response.ok) {
-      return room;
+      return null;
     }
     const data = await response.json();
     if (data.participant) {
@@ -16118,7 +16154,7 @@ async function updateRoomPresence(room, options = {}) {
     }
     return data.room || { ...room, participants: state.roomParticipants };
   } catch {
-    return room;
+    return null;
   }
 }
 
@@ -16676,85 +16712,154 @@ function getRoomModeLabel(settings = state.roomSettings) {
   return modes.length ? modes.join(" + ") : "No Modifiers";
 }
 
-async function joinHostedRoom(code, options = {}) {
-  const normalizedCode = String(code || "").trim().toUpperCase();
-  let room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
-  const lookup = await fetchRoomByCode(normalizedCode);
-  if (lookup.status === "closed") {
-    addSystemChat(`Room ${normalizedCode || "code"} was closed.`, { private: true });
-    return;
-  }
-  if (lookup.status === "found" && lookup.room) {
-    room = lookup.room;
-    mergeHostedRoom(room);
-  }
-  if (!room) {
-    addSystemChat(`Room ${normalizedCode || "code"} was not found.`, { private: true });
-    return;
-  }
-  const banList = state.roomModeration.bannedByRoom[normalizedCode] || [];
-  if (banList.includes("opponent") || banList.includes(state.profile.name)) {
-    addSystemChat(`You cannot rejoin ${normalizedCode}.`, { private: true });
-    return;
-  }
-  if (room.status !== "lobby" && !options.spectate) {
-    addSystemChat("That match already started. Join as a spectator instead.", { private: true });
-    return;
-  }
-  if (!options.spectate && getHostedRoomActivePlayerCount(room) >= getRoomMaxPlayers(room.settings)) {
-    addSystemChat(`${normalizedCode} is full. Join as a spectator instead.`, { private: true });
-    return;
-  }
-  if (room.settings.private) {
-    let typedPassword = cleanChatInput(options.password || elements.joinRoomPasswordInput.value);
-    if (!typedPassword) {
-      typedPassword = cleanChatInput(window.prompt(`Password for ${normalizedCode}`) || "");
+function setJoinRoomBusy(isBusy, code = "") {
+  state.roomJoinInProgress = Boolean(isBusy);
+  elements.joinCodeForm.querySelectorAll("input, button").forEach((control) => {
+    control.disabled = Boolean(isBusy);
+  });
+  if (!isBusy) {
+    if (!elements.joinScreen.classList.contains("hidden")) {
+      renderHostedRooms();
     }
-    if (typedPassword !== room.settings.password) {
-      elements.joinRoomPasswordInput.focus();
-      return;
-    }
+    return;
   }
+  elements.joinRoomList.querySelectorAll("[data-join-room]").forEach((button) => {
+    button.disabled = true;
+    if (code && button.dataset.joinRoom === code) {
+      button.dataset.previousText = button.textContent;
+      button.textContent = "Joining...";
+    }
+  });
+}
 
-  state.roomSettings = { ...room.settings };
-  startRoomRealtime(state.roomSettings.code);
-  state.joiningRoom = room;
-  state.isSpectator = options.spectate || room.status !== "lobby";
-  state.roomSessionId += 1;
-  state.roomExitLeaveSent = false;
-  state.roomMissingSince = 0;
-  state.roomClosedNotice = "";
-  state.currentOwner = state.isSpectator ? "spectator" : "opponent";
-  state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
-  await updateRoomPresence(room, {
+function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessionId) {
+  updateRoomPresence(room, {
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined",
     compactResponse: false
+  }).then(async (serverRoom) => {
+    if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
+      return;
+    }
+    if (!serverRoom) {
+      const lookup = await fetchRoomByCode(room.code);
+      if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
+        return;
+      }
+      if (lookup.status === "closed") {
+        handleCurrentRoomClosed("The room was closed by the host or an admin.");
+      } else if (lookup.status === "found" && lookup.room) {
+        serverRoom = lookup.room;
+      } else {
+        addSystemChat("Room server is slow. You can keep playing while it reconnects.", { private: true, sync: false });
+        return;
+      }
+    }
+    mergeHostedRoom(serverRoom);
+    applyRoomDirectoryRoom(serverRoom);
+    if (state.currentRoomStatus === "lobby" && !elements.roomLobbyScreen.classList.contains("hidden")) {
+      renderRoomLobby();
+    }
   });
-  state.roomChat = [];
-  resetChatCooldown();
-  if (Array.isArray(room.chat)) {
-    mergeRoomChatMessages(room.chat);
+}
+
+async function joinHostedRoom(code, options = {}) {
+  if (state.roomJoinInProgress) {
+    return;
   }
-  addSystemChat(`${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
-  if (room.status === "lobby") {
-    state.mode = "room";
-    setPlayersForMode("room");
-    applyRoomDirectoryRoom(state.hostedRooms.find((entry) => entry.code === normalizedCode) || room);
-    renderRoomLobby();
-    startRoomDirectoryPolling();
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode) {
+    elements.joinRoomCodeInput.focus();
+    return;
+  }
+  setJoinRoomBusy(true, normalizedCode);
+  let room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
+  try {
+    if (!room) {
+      const lookup = await fetchRoomByCode(normalizedCode);
+      if (lookup.status === "closed") {
+        addSystemChat(`Room ${normalizedCode || "code"} was closed.`, { private: true });
+        return;
+      }
+      if (lookup.status === "found" && lookup.room) {
+        room = lookup.room;
+        mergeHostedRoom(room);
+      }
+    }
+    if (!room) {
+      addSystemChat(`Room ${normalizedCode || "code"} was not found.`, { private: true });
+      return;
+    }
+    const banList = state.roomModeration.bannedByRoom[normalizedCode] || [];
+    if (banList.includes("opponent") || banList.includes(state.profile.name)) {
+      addSystemChat(`You cannot rejoin ${normalizedCode}.`, { private: true });
+      return;
+    }
+    if (room.status !== "lobby" && !options.spectate) {
+      addSystemChat("That match already started. Join as a spectator instead.", { private: true });
+      return;
+    }
+    if (!options.spectate && getHostedRoomActivePlayerCount(room) >= getRoomMaxPlayers(room.settings)) {
+      addSystemChat(`${normalizedCode} is full. Join as a spectator instead.`, { private: true });
+      return;
+    }
+    if (room.settings.private) {
+      let typedPassword = cleanChatInput(options.password || elements.joinRoomPasswordInput.value);
+      if (!typedPassword) {
+        typedPassword = cleanChatInput(window.prompt(`Password for ${normalizedCode}`) || "");
+      }
+      if (typedPassword !== room.settings.password) {
+        elements.joinRoomPasswordInput.focus();
+        return;
+      }
+    }
+
+    state.roomSettings = { ...room.settings };
+    startRoomRealtime(state.roomSettings.code);
+    state.joiningRoom = room;
+    state.isSpectator = options.spectate || room.status !== "lobby";
+    state.roomSessionId += 1;
+    state.roomExitLeaveSent = false;
+    state.roomMissingSince = 0;
+    state.roomClosedNotice = "";
+    state.currentOwner = state.isSpectator ? "spectator" : "opponent";
+    state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
+    state.roomParticipants = Array.isArray(room.participants) ? [...room.participants] : [];
+    applyRoomParticipantDelta(getCurrentParticipant({
+      spectator: state.isSpectator,
+      status: state.isSpectator ? "spectating" : "joined"
+    }), {
+      code: normalizedCode,
+      updatedAt: Date.now()
+    });
+    syncJoinedRoomPresence(room, state.roomSessionId);
+    state.roomChat = [];
+    resetChatCooldown();
+    if (Array.isArray(room.chat)) {
+      mergeRoomChatMessages(room.chat);
+    }
+    addSystemChat(`${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
     stopJoinDirectoryPolling();
     setHidden(elements.modeScreen, true);
     setHidden(elements.roomScreen, true);
     setHidden(elements.joinScreen, true);
     setHidden(elements.gameStage, true);
-    setHidden(elements.roomLobbyScreen, false);
-    playSound("click");
-    return;
-  }
+    if (room.status === "lobby") {
+      state.mode = "room";
+      setPlayersForMode("room");
+      applyRoomDirectoryRoom(state.hostedRooms.find((entry) => entry.code === normalizedCode) || room);
+      renderRoomLobby();
+      startRoomDirectoryPolling();
+      setHidden(elements.roomLobbyScreen, false);
+      playSound("click");
+      return;
+    }
 
-  stopJoinDirectoryPolling();
-  startGame("room");
+    setHidden(elements.roomLobbyScreen, true);
+    startGame("room");
+  } finally {
+    setJoinRoomBusy(false);
+  }
 }
 
 function getRoomOpenSlotCount() {
@@ -16906,8 +17011,11 @@ async function leaveCurrentRoom() {
   state.matchEnded = true;
   state.roomSessionId += 1;
   state.roomExitLeaveSent = true;
+  const leavePromise = isLeavingRoom
+    ? leavePublishedRoom({ reason: "manual" })
+    : Promise.resolve(null);
   if (isLeavingRoom) {
-    await leavePublishedRoom({ reason: "manual" });
+    leavePromise.catch(() => null);
   }
   clearLocalRoomState();
 
