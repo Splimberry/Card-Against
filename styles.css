@@ -1470,14 +1470,20 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   z-index: 10;
   display: inline-block;
   flex: 0 0 auto;
-  width: 1em;
-  height: 1em;
+  width: 1.18em;
+  height: 1.18em;
   color: inherit;
-  background: currentColor;
+  background-color: currentColor;
   cursor: help;
   transform: translateY(0.08em);
-  -webkit-mask: center / contain no-repeat;
-  mask: center / contain no-repeat;
+  overflow: visible;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 82% 82%;
+  mask-size: 82% 82%;
+  filter: drop-shadow(0 0 0 transparent);
 }
 
 .special-player-badge[data-icon="wrench"] {
@@ -4255,6 +4261,13 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
+  .special-player-badge {
+  filter:
+    drop-shadow(0 0.36rem 0.24rem rgba(0, 0, 0, 0.48))
+    drop-shadow(0 0 0.62rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.26));
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
   :is(.answer-avatar, .profile-avatar, .room-player-avatar) {
   box-shadow:
     0 0.48rem 0.55rem rgba(0, 0, 0, 0.42),
@@ -4277,12 +4290,27 @@ input:focus {
     0 0 0.78rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.18);
 }
 
+:is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
+  .special-player-badge {
+  filter:
+    drop-shadow(0 0.28rem 0.2rem rgba(0, 0, 0, 0.44))
+    drop-shadow(0 0 0.54rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.24));
+}
+
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
   :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .equipped-title-pill, .special-player-badge, .rating-badge, h2, p, strong, label, input, small, button) {
   text-shadow:
     0 0 0.4rem rgba(255, 255, 255, 0.34),
     0 0 0.95rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42),
     0 0 1.6rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.22);
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
+  .special-player-badge {
+  filter:
+    drop-shadow(0 0 0.34rem rgba(255, 255, 255, 0.32))
+    drop-shadow(0 0 0.82rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42))
+    drop-shadow(0 0 1.18rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.22));
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
@@ -4299,6 +4327,14 @@ input:focus {
     0 0 0.4rem rgba(255, 255, 255, 0.34),
     0 0 1rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44),
     0 0 1.7rem rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.24);
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
+  .special-player-badge {
+  filter:
+    drop-shadow(0 0 0.36rem rgba(255, 255, 255, 0.32))
+    drop-shadow(0 0 0.9rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44))
+    drop-shadow(0 0 1.28rem rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.24));
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
