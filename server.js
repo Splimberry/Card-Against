@@ -1262,6 +1262,7 @@ function normalizeRoom(room) {
       name: String(host.name || "Host").slice(0, 24),
       avatar: String(host.avatar || "").slice(0, 250000),
       equippedTitleId: String(host.equippedTitleId || "").slice(0, 80),
+      specialBadges: normalizeSpecialBadges(host.specialBadges),
       cardCustomization: normalizeCardCustomization(host.cardCustomization)
     },
     participants,
@@ -1288,6 +1289,7 @@ function normalizeParticipant(participant) {
     name: String(participant.name || "Guest").slice(0, 24),
     avatar: String(participant.avatar || "").slice(0, 250000),
     equippedTitleId: String(participant.equippedTitleId || "").slice(0, 80),
+    specialBadges: normalizeSpecialBadges(participant.specialBadges),
     cardCustomization: normalizeCardCustomization(participant.cardCustomization),
     host: Boolean(participant.host),
     spectator: Boolean(participant.spectator),
@@ -1355,6 +1357,8 @@ function normalizeRoomChat(chat) {
         sender: String(source.sender || "System").slice(0, 32),
         avatar: String(source.avatar || "").slice(0, 250000),
         equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
+        specialBadges: normalizeSpecialBadges(source.specialBadges),
+        cardCustomization: normalizeCardCustomization(source.cardCustomization),
         text: String(source.text || "").trim().slice(0, 220),
         owner: String(source.owner || "").slice(0, 80),
         host: Boolean(source.host),
@@ -1365,6 +1369,24 @@ function normalizeRoomChat(chat) {
     })
     .filter((message) => message.text)
     .slice(-50);
+}
+
+function normalizeSpecialBadges(value) {
+  const allowed = new Set(["admin", "verified", "creator"]);
+  const seen = new Set();
+  return (Array.isArray(value) ? value : [])
+    .map((badge) => ({
+      id: typeof badge === "string" ? badge : String(badge?.id || ""),
+      count: clampServerNumber(typeof badge === "string" ? 0 : badge?.count, 0, 100000, 0)
+    }))
+    .filter((badge) => {
+      if (!allowed.has(badge.id) || seen.has(badge.id)) {
+        return false;
+      }
+      seen.add(badge.id);
+      return true;
+    })
+    .sort((a, b) => ["admin", "verified", "creator"].indexOf(a.id) - ["admin", "verified", "creator"].indexOf(b.id));
 }
 
 function normalizeCardCustomization(customization) {

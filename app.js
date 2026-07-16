@@ -27,6 +27,7 @@ const disabledAchievementStorageKey = "cardsAgainstAiDebugDisabledAchievements";
 const equippedAchievementStorageKey = "cardsAgainstAiEquippedAchievement";
 const profileCustomizationStorageKey = "cardsAgainstAiProfileCustomization";
 const profileCustomizationDebugStorageKey = "cardsAgainstAiDebugProfileCustomizations";
+const profileSpecialBadgeDebugStorageKey = "cardsAgainstAiDebugSpecialBadges";
 const profileShopPurchasesStorageKey = "cardsAgainstAiProfileShopPurchases";
 const questionUsageStorageKey = "cardsAgainstAiQuestionUsageStats";
 const currencyStorageKey = "cardsAgainstAiCurrency";
@@ -48,6 +49,31 @@ const chatCooldownDurationMs = 10000;
 const userQuestionSubmissionCost = 250;
 const roomChatHistoryLimit = 50;
 const roomMissingGraceMs = 10000;
+const specialPlayerBadgeOrder = ["admin", "verified", "creator"];
+const specialPlayerBadges = [
+  {
+    id: "admin",
+    name: "Admin",
+    icon: "wrench",
+    description: "This player is a verified admin.",
+    condition: "Exclusive to admins after signing in to Dev Tool."
+  },
+  {
+    id: "verified",
+    name: "Verified",
+    icon: "check",
+    description: "This player is verified.",
+    condition: "Special condition. Enable manually in Dev Tool when granted."
+  },
+  {
+    id: "creator",
+    name: "Creator",
+    icon: "hammer",
+    description: "Approved question creator.",
+    condition: "Create at least 5 question cards and have them approved."
+  }
+];
+const specialPlayerBadgeMap = Object.fromEntries(specialPlayerBadges.map((badge) => [badge.id, badge]));
 const achievementTitles = [
   { id: "accurate-sniper", name: "Answer Sniper", rarity: "purple", description: "Get the Exact Answer tag on at least 75% of your answers in a match." },
   { id: "all-planned", name: "All planned", rarity: "purple", description: "Win 1st place by using Last Laugh and getting over 10,000 points in that round." },
@@ -565,7 +591,8 @@ function getUserStorageSnapshot() {
       avatarPreview: avatar,
       compressedAvatar: avatar,
       cardCustomization: normalizeProfileCustomization(state.profile?.cardCustomization || loadProfileCustomization()),
-      equippedAchievementId: state.profile?.equippedTitleId || ""
+      equippedAchievementId: state.profile?.equippedTitleId || "",
+      specialBadges: getRoomSyncSpecialBadges(state.profile?.specialBadges || [])
     },
     settings: {
       sfx: Math.round((soundState.sfxVolume || 0) * 100),
@@ -815,7 +842,8 @@ const state = {
     name: savedProfileName,
     avatar: savedProfileAvatar,
     equippedTitleId: savedEquippedAchievementId,
-    cardCustomization: savedProfileCustomization
+    cardCustomization: savedProfileCustomization,
+    specialBadges: []
   },
   profileCustomizationDraft: null,
   clientId: savedClientId,
@@ -4710,6 +4738,7 @@ function createPlayer(owner, label, options = {}) {
     bot: Boolean(options.bot || options.type === "bot"),
     muted: Boolean(options.muted),
     equippedTitleId: options.equippedTitleId || "",
+    specialBadges: normalizeSpecialBadges(options.specialBadges || []),
     cardCustomization: options.cardCustomization ? normalizeProfileCustomization(options.cardCustomization) : null,
     connectionStatus: options.connectionStatus || "local"
   };
@@ -4785,7 +4814,7 @@ function getPlayersForMode(mode) {
   if (mode === "bots") {
     const [botOneName, botTwoName] = getRandomBotUsernames(2);
     return [
-      createPlayer("player", state.profile.name || "You", { type: "human", handLimit: 3, avatar: state.profile.avatar, equippedTitleId: state.profile.equippedTitleId, cardCustomization: state.profile.cardCustomization }),
+      createPlayer("player", state.profile.name || "You", { type: "human", handLimit: 3, avatar: state.profile.avatar, equippedTitleId: state.profile.equippedTitleId, specialBadges: state.profile.specialBadges, cardCustomization: state.profile.cardCustomization }),
       createPlayer("bot1", botOneName, { type: "bot", handLimit: 3, avatar: "" }),
       createPlayer("bot2", botTwoName, { type: "bot", handLimit: 3, avatar: "" })
     ];
@@ -4835,6 +4864,7 @@ function getRoomPlayersForMode() {
       spectator: Boolean(participant.spectator),
       bot: Boolean(participant.bot),
       equippedTitleId: participant.equippedTitleId || "",
+      specialBadges: participant.specialBadges || [],
       cardCustomization: participant.cardCustomization || null,
       muted: Boolean(participant.muted),
       active: participant.active !== false,
@@ -4851,6 +4881,7 @@ function getRoomPlayersForMode() {
       name: host.name || state.profile.name || "Host",
       avatar: host.avatar || state.profile.avatar,
       equippedTitleId: host.equippedTitleId || state.profile.equippedTitleId,
+      specialBadges: host.specialBadges || state.profile.specialBadges,
       cardCustomization: host.cardCustomization || state.profile.cardCustomization,
       host: true,
       active: true,
@@ -4866,6 +4897,7 @@ function getRoomPlayersForMode() {
       participantId: state.clientId,
       spectator: true,
       equippedTitleId: state.profile.equippedTitleId,
+      specialBadges: state.profile.specialBadges,
       cardCustomization: state.profile.cardCustomization,
       connectionStatus: "spectating"
     }));
@@ -5347,7 +5379,9 @@ function getRoomSyncChatMessage(message = {}) {
   return {
     ...message,
     id: String(message.id || "").slice(0, 120),
-    avatar: getRoomSyncAvatar(message.avatar)
+    avatar: getRoomSyncAvatar(message.avatar),
+    specialBadges: getRoomSyncSpecialBadges(message.specialBadges || []),
+    cardCustomization: getRoomSyncCardCustomization(message.cardCustomization)
   };
 }
 
@@ -5376,6 +5410,7 @@ function getCurrentParticipant(options = {}) {
     name: state.profile.name || "Guest",
     avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
+    specialBadges: getRoomSyncSpecialBadges(),
     cardCustomization: getRoomSyncCardCustomization(state.profile.cardCustomization),
     host: Boolean(options.host),
     spectator: Boolean(options.spectator),
@@ -5400,6 +5435,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
         name: player.label,
         avatar: getRoomSyncAvatar(player.avatar),
         equippedTitleId: player.equippedTitleId || "",
+        specialBadges: getRoomSyncSpecialBadges(player.specialBadges || []),
         cardCustomization: getRoomSyncCardCustomization(player.cardCustomization),
         host: Boolean(player.host),
         spectator: Boolean(player.spectator),
@@ -5423,6 +5459,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
       name: participant.name,
       avatar: getRoomSyncAvatar(participant.avatar),
       equippedTitleId: participant.equippedTitleId || "",
+      specialBadges: getRoomSyncSpecialBadges(participant.specialBadges || []),
       cardCustomization: getRoomSyncCardCustomization(participant.cardCustomization),
       host: Boolean(participant.host),
       spectator: Boolean(participant.spectator),
@@ -5452,6 +5489,8 @@ function pushRoomChatMessage(message) {
     sender: String(source.sender || "System").slice(0, 32),
     avatar: getRoomSyncAvatar(source.avatar),
     equippedTitleId: source.equippedTitleId || "",
+    specialBadges: normalizeSpecialBadges(source.specialBadges || []),
+    cardCustomization: getRoomSyncCardCustomization(source.cardCustomization),
     text: cleanChatInput(source.text || "").slice(0, 220),
     owner: source.owner || "",
     own: Boolean(source.own),
@@ -5511,6 +5550,8 @@ function mergeRoomChatMessages(remoteMessages = []) {
       sender: String(source.sender || "System").slice(0, 32),
       avatar: getRoomSyncAvatar(source.avatar),
       equippedTitleId: source.equippedTitleId || "",
+      specialBadges: normalizeSpecialBadges(source.specialBadges || []),
+      cardCustomization: getRoomSyncCardCustomization(source.cardCustomization),
       text: cleanChatInput(source.text || "").slice(0, 220),
       owner: source.owner || "",
       own: Boolean(source.owner && source.owner === state.currentOwner),
@@ -6366,12 +6407,15 @@ function renderProfile() {
     owner: state.currentOwner || "player",
     label: state.profile.name || "You",
     equippedTitleId: state.profile.equippedTitleId,
+    specialBadges: state.profile.specialBadges,
     cardCustomization: state.profile.cardCustomization
   }, state.profile.name || "You");
   renderPlayerNameWithTitle(elements.roomProfileNamePreview, {
     owner: state.currentOwner || "player",
     label: state.profile.name || "You",
-    equippedTitleId: state.profile.equippedTitleId
+    equippedTitleId: state.profile.equippedTitleId,
+    specialBadges: state.profile.specialBadges,
+    cardCustomization: state.profile.cardCustomization
   }, state.profile.name || "You");
   renderAvatar(elements.roomProfileAvatarPreview, state.profile);
   applyProfileCustomizationSurface(elements.roomHostProfile, state.profile.cardCustomization);
@@ -6680,7 +6724,23 @@ function syncProfileToPlayer() {
   player.label = state.profile.name;
   player.avatar = state.profile.avatar;
   player.equippedTitleId = state.profile.equippedTitleId;
+  player.specialBadges = normalizeSpecialBadges(state.profile.specialBadges || []);
   player.cardCustomization = state.profile.cardCustomization;
+}
+
+function publishProfileIdentityUpdate() {
+  if (state.roomSettings.code === "CAI-0000" || !(state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress")) {
+    return;
+  }
+  if (state.joiningRoom) {
+    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
+    updateRoomPresence(room, {
+      spectator: state.isSpectator,
+      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined"
+    });
+    return;
+  }
+  upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
 }
 
 function applySupabaseProfile(user) {
@@ -7118,14 +7178,18 @@ function compareScoreRowsForLeaderboard(a, b) {
 
 function renderLeaderboard() {
   const leaders = getActiveOwners()
-    .map((owner) => ({
-      owner,
-      label: getOwnerLabel(owner),
-      score: getScore(owner),
-      displayScore: getDisplayScoreText(owner),
-      hiddenScore: isScoreHidden(owner),
-      streak: getOwnerStreak(owner)
-    }))
+    .map((owner) => {
+      const player = getPlayer(owner);
+      return {
+        owner,
+        player,
+        label: player?.label || getOwnerLabel(owner),
+        score: getScore(owner),
+        displayScore: getDisplayScoreText(owner),
+        hiddenScore: isScoreHidden(owner),
+        streak: getOwnerStreak(owner)
+      };
+    })
     .sort(compareScoreRowsForLeaderboard);
 
   elements.leaderboard.replaceChildren();
@@ -7133,7 +7197,7 @@ function renderLeaderboard() {
     const chip = document.createElement("div");
     chip.className = "leaderboard-player";
     chip.dataset.owner = entry.owner;
-    chip.dataset.participantId = getPlayer(entry.owner)?.participantId || "";
+    chip.dataset.participantId = entry.player?.participantId || "";
     const isKickableBot = canKickRoomBot(entry.owner, chip.dataset.participantId);
     chip.classList.toggle("leader", index === 0);
     chip.classList.toggle("streaking", entry.streak > 0);
@@ -7148,10 +7212,10 @@ function renderLeaderboard() {
     rank.textContent = `#${index + 1}`;
     const avatar = document.createElement("span");
     avatar.className = "leaderboard-avatar";
-    renderAvatar(avatar, getPlayer(entry.owner) || { label: entry.label });
+    renderAvatar(avatar, entry.player || { label: entry.label });
     const name = document.createElement("span");
     name.className = "leaderboard-name";
-    renderPlayerNameWithTitle(name, entry.owner, entry.label);
+    renderPlayerNameWithTitle(name, entry.player || entry.owner, entry.label);
     const powers = document.createElement("div");
     powers.className = "leaderboard-power-list";
     const visiblePowers = getPlayedPowerEntries([entry.owner])
@@ -8124,6 +8188,129 @@ function saveDebugProfileCustomizations(value) {
   }
 }
 
+function loadDebugSpecialBadges() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(profileSpecialBadgeDebugStorageKey) || "{}");
+    return {
+      enabled: Array.isArray(parsed?.enabled) ? parsed.enabled.filter((id) => specialPlayerBadgeMap[id]) : [],
+      disabled: Array.isArray(parsed?.disabled) ? parsed.disabled.filter((id) => specialPlayerBadgeMap[id]) : []
+    };
+  } catch {
+    return { enabled: [], disabled: [] };
+  }
+}
+
+function saveDebugSpecialBadges(value) {
+  const normalized = {
+    enabled: [...new Set((value?.enabled || []).filter((id) => specialPlayerBadgeMap[id]))],
+    disabled: [...new Set((value?.disabled || []).filter((id) => specialPlayerBadgeMap[id]))]
+  };
+  if (normalized.enabled.length || normalized.disabled.length) {
+    localStorage.setItem(profileSpecialBadgeDebugStorageKey, JSON.stringify(normalized));
+  } else {
+    localStorage.removeItem(profileSpecialBadgeDebugStorageKey);
+  }
+  scheduleUserStorageSnapshot();
+}
+
+function setSpecialBadgeDebugState(id, mode) {
+  if (!specialPlayerBadgeMap[id]) {
+    return;
+  }
+  const debug = loadDebugSpecialBadges();
+  debug.enabled = debug.enabled.filter((entry) => entry !== id);
+  debug.disabled = debug.disabled.filter((entry) => entry !== id);
+  if (mode === "enabled") {
+    debug.enabled.push(id);
+  }
+  if (mode === "disabled") {
+    debug.disabled.push(id);
+  }
+  saveDebugSpecialBadges(debug);
+  syncSpecialBadgesToProfile();
+}
+
+function getApprovedCreatorQuestionCount() {
+  return state.userQuestionSubmissions.filter((submission) => submission.status === "approved").length;
+}
+
+function getNaturalSpecialBadgeIds() {
+  const ids = [];
+  if (state.adminAuthenticated) {
+    ids.push("admin");
+  }
+  if (getApprovedCreatorQuestionCount() >= 5) {
+    ids.push("creator");
+  }
+  return ids;
+}
+
+function getLocalSpecialBadges() {
+  const debug = loadDebugSpecialBadges();
+  const ids = new Set([...getNaturalSpecialBadgeIds(), ...debug.enabled]);
+  debug.disabled.forEach((id) => ids.delete(id));
+  return specialPlayerBadgeOrder
+    .filter((id) => ids.has(id) && specialPlayerBadgeMap[id])
+    .map((id) => ({
+      id,
+      count: id === "creator" ? getApprovedCreatorQuestionCount() : 0
+    }));
+}
+
+function normalizeSpecialBadges(value) {
+  const badges = Array.isArray(value) ? value : [];
+  const byId = new Map();
+  badges.forEach((badge) => {
+    const id = typeof badge === "string" ? badge : String(badge?.id || "");
+    if (!specialPlayerBadgeMap[id] || byId.has(id)) {
+      return;
+    }
+    byId.set(id, {
+      id,
+      count: Math.max(0, Math.floor(Number(badge?.count) || 0))
+    });
+  });
+  return specialPlayerBadgeOrder.filter((id) => byId.has(id)).map((id) => byId.get(id));
+}
+
+function getSpecialBadgeDescription(badge = {}) {
+  const meta = specialPlayerBadgeMap[badge.id];
+  if (!meta) {
+    return "";
+  }
+  if (badge.id === "creator") {
+    const count = Math.max(0, Math.floor(Number(badge.count) || 0));
+    return `${count.toLocaleString()} approved question card${count === 1 ? "" : "s"} created.`;
+  }
+  return meta.description;
+}
+
+function getSpecialBadgesForPlayer(player) {
+  if (!player) {
+    return [];
+  }
+  if (player.owner === state.currentOwner || (player.owner === "player" && !isRoomMode())) {
+    return getLocalSpecialBadges();
+  }
+  return normalizeSpecialBadges(player.specialBadges || []);
+}
+
+function getRoomSyncSpecialBadges(badges = getLocalSpecialBadges()) {
+  return normalizeSpecialBadges(badges).map((badge) => ({
+    id: badge.id,
+    count: Math.max(0, Math.floor(Number(badge.count) || 0))
+  }));
+}
+
+function syncSpecialBadgesToProfile() {
+  state.profile.specialBadges = getLocalSpecialBadges();
+  syncProfileToPlayer();
+  renderProfile();
+  renderRoomPlayers();
+  renderRoomChat();
+  publishProfileIdentityUpdate();
+}
+
 function getProfileShopKey(type, id) {
   return `${type}:${id}`;
 }
@@ -8482,7 +8669,7 @@ function applyProfileFontToElement(element, font) {
 }
 
 function getTitleColourRgbParts(customization, fallbackRarity = "grey") {
-  if (!customization || customization.titleColourId === "rarity" || !isTitleColourCustomizationUnlocked()) {
+  if (!customization || customization.titleColourId === "rarity") {
     return "";
   }
   const colour = getProfileCardColour(customization.titleColourId);
@@ -8530,6 +8717,23 @@ function createEquippedTitlePill(title, customization = null) {
   return pill;
 }
 
+function createSpecialPlayerBadge(badge) {
+  const meta = specialPlayerBadgeMap[badge.id];
+  if (!meta) {
+    return null;
+  }
+  const icon = document.createElement("span");
+  icon.className = "special-player-badge";
+  icon.dataset.badge = meta.id;
+  icon.dataset.icon = meta.icon;
+  icon.dataset.description = getSpecialBadgeDescription(badge);
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", meta.name);
+  icon.tabIndex = 0;
+  attachFloatingDescriptionTooltip(icon);
+  return icon;
+}
+
 function getDisplayTitleIdForPlayer(player) {
   if (!player) {
     return "";
@@ -8558,6 +8762,12 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
   name.textContent = `${hostPrefix}${label}`;
   applyProfileFontToElement(name, getProfileFontForPlayer(player));
   element.appendChild(name);
+  getSpecialBadgesForPlayer(player).forEach((badge) => {
+    const badgeIcon = createSpecialPlayerBadge(badge);
+    if (badgeIcon) {
+      element.appendChild(badgeIcon);
+    }
+  });
 }
 
 function setEquippedAchievement(id) {
@@ -8757,7 +8967,9 @@ function renderProfileCustomizationPreview() {
   renderPlayerNameWithTitle(elements.profilePreviewName, {
     owner: "preview",
     label: state.profile.name || "You",
-    equippedTitleId: draft.equippedTitleId
+    equippedTitleId: draft.equippedTitleId,
+    specialBadges: state.profile.specialBadges,
+    cardCustomization: draft
   }, state.profile.name || "You");
 }
 
@@ -12645,6 +12857,7 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
     if (markSeen) {
       saveSubmissionSeenIds([...loadSubmissionSeenIds(), ...getResolvedUserSubmissionIds()]);
     }
+    syncSpecialBadgesToProfile();
     renderUserQuestionSubmissions();
     updateQuestionSubmissionNotificationDot();
   } catch (error) {
@@ -13362,7 +13575,45 @@ function renderProfileDebug() {
   const records = loadUnlockedAchievements();
   const progress = loadAchievementProgress();
   const debug = loadDebugProfileCustomizations();
+  const badgeDebug = loadDebugSpecialBadges();
   elements.devProfileGrid.replaceChildren();
+  specialPlayerBadges.forEach((badge) => {
+    const natural = getNaturalSpecialBadgeIds().includes(badge.id);
+    const stateLabel = badgeDebug.enabled.includes(badge.id)
+      ? "enabled"
+      : badgeDebug.disabled.includes(badge.id)
+        ? "disabled"
+        : natural ? "natural" : "locked";
+    const card = document.createElement("article");
+    card.className = "profile-debug-card";
+    card.dataset.specialBadgeId = badge.id;
+    card.dataset.state = stateLabel;
+    const title = document.createElement("div");
+    title.innerHTML = `<strong>${badge.name} Badge</strong><span>Special player badge</span>`;
+    const condition = document.createElement("p");
+    condition.textContent = badge.id === "creator"
+      ? `${badge.condition} Current approved cards: ${getApprovedCreatorQuestionCount().toLocaleString()}.`
+      : badge.condition;
+    const progressText = document.createElement("small");
+    progressText.textContent = stateLabel === "natural"
+      ? "Unlocked naturally"
+      : stateLabel === "enabled"
+        ? "Forced enabled"
+        : stateLabel === "disabled"
+          ? "Disabled by dev tool"
+          : "Not unlocked";
+    const actions = document.createElement("div");
+    actions.className = "profile-debug-card-actions";
+    ["enabled", "disabled", "reset"].forEach((action) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.specialBadgeAction = action;
+      button.textContent = action === "enabled" ? "Enable" : action === "disabled" ? "Disable" : "Reset";
+      actions.appendChild(button);
+    });
+    card.append(title, condition, progressText, actions);
+    elements.devProfileGrid.appendChild(card);
+  });
   getProfileDebugItems().forEach((item) => {
     const status = getProfileUnlockStatus(item, item.type, records, progress);
     const card = document.createElement("article");
@@ -13396,10 +13647,22 @@ function renderProfileDebug() {
     card.append(title, condition, progressText, actions);
     elements.devProfileGrid.appendChild(card);
   });
-  elements.devProfileStatus.textContent = `${getProfileDebugItems().length} profile customization items shown.`;
+  elements.devProfileStatus.textContent = `${specialPlayerBadges.length} badge controls and ${getProfileDebugItems().length} profile customization items shown.`;
 }
 
 function handleProfileDebugClick(event) {
+  const badgeButton = event.target.closest("[data-special-badge-action]");
+  if (badgeButton) {
+    const id = badgeButton.closest("[data-special-badge-id]")?.dataset.specialBadgeId;
+    if (!id) {
+      return;
+    }
+    setSpecialBadgeDebugState(id, badgeButton.dataset.specialBadgeAction);
+    renderProfileDebug();
+    elements.devProfileStatus.textContent = `${specialPlayerBadgeMap[id]?.name || id} badge ${badgeButton.dataset.specialBadgeAction}.`;
+    playSound("click");
+    return;
+  }
   const button = event.target.closest("[data-profile-debug-action]");
   if (!button) {
     return;
@@ -13514,6 +13777,7 @@ async function refreshAdminSession() {
     state.adminAuthenticated = false;
     state.adminUser = null;
   }
+  syncSpecialBadgesToProfile();
   updateAdminControls();
 }
 
@@ -13555,6 +13819,7 @@ async function submitAdminLogin(event) {
     }
     state.adminAuthenticated = true;
     state.adminUser = payload.user || { role: "admin", name: "Admin" };
+    syncSpecialBadgesToProfile();
     updateAdminControls();
     closeAdminAuthModal();
     openDevToolScreen("questions");
@@ -13579,6 +13844,7 @@ async function logoutAdmin() {
   }
   state.adminAuthenticated = false;
   state.adminUser = null;
+  syncSpecialBadgesToProfile();
   updateAdminControls();
   if (elements.devToolScreen) {
     setHidden(elements.devToolScreen, true);
@@ -15106,6 +15372,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
       name: state.profile.name || "Host",
       avatar: getRoomSyncAvatar(state.profile.avatar),
       equippedTitleId: state.profile.equippedTitleId || "",
+      specialBadges: getRoomSyncSpecialBadges(),
       cardCustomization: getRoomSyncCardCustomization(state.profile.cardCustomization)
     }
     : (existing?.host || state.joiningRoom?.host || participants.find((participant) => participant.host) || {});
@@ -15118,6 +15385,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
       name: hostSource.name || "Host",
       avatar: getRoomSyncAvatar(hostSource.avatar),
       equippedTitleId: hostSource.equippedTitleId || "",
+      specialBadges: getRoomSyncSpecialBadges(hostSource.specialBadges || []),
       cardCustomization: getRoomSyncCardCustomization(hostSource.cardCustomization)
     },
     participants,
@@ -15297,6 +15565,7 @@ function normalizeRoomParticipantDelta(participant = {}) {
     name: String(source.name || "Guest").slice(0, 32),
     avatar: getRoomSyncAvatar(source.avatar),
     equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
+    specialBadges: getRoomSyncSpecialBadges(source.specialBadges || []),
     cardCustomization: getRoomSyncCardCustomization(source.cardCustomization),
     host: Boolean(source.host),
     spectator: Boolean(source.spectator),
@@ -15356,6 +15625,7 @@ function applyRoomParticipantDelta(participant, payload = {}) {
       player.label = normalized.name;
       player.avatar = normalized.avatar;
       player.equippedTitleId = normalized.equippedTitleId;
+      player.specialBadges = normalizeSpecialBadges(normalized.specialBadges);
       player.cardCustomization = normalized.cardCustomization;
       player.connectionStatus = normalized.status;
       player.muted = normalized.muted;
@@ -15746,7 +16016,9 @@ function renderHostedRooms() {
       owner: room.host.id === state.clientId ? state.currentOwner : "room-host",
       label: room.host.name,
       host: true,
-      equippedTitleId: room.host.equippedTitleId || ""
+      equippedTitleId: room.host.equippedTitleId || "",
+      specialBadges: room.host.specialBadges || [],
+      cardCustomization: room.host.cardCustomization || null
     }, room.host.name);
     host.append(avatar, hostName);
     const meta = document.createElement("div");
@@ -15952,7 +16224,9 @@ function renderRoomLobby() {
     owner: hostParticipant.id === state.clientId ? state.currentOwner : "room-host",
     label: hostParticipant.name || "Host",
     host: Boolean(hostParticipant.host),
-    equippedTitleId: hostParticipant.equippedTitleId || ""
+    equippedTitleId: hostParticipant.equippedTitleId || "",
+    specialBadges: hostParticipant.specialBadges || [],
+    cardCustomization: hostParticipant.cardCustomization || null
   }, hostParticipant.name || "Host");
   renderAvatar(elements.lobbyHostAvatarPreview, { label: hostParticipant.name || "Host", avatar: hostParticipant.avatar || "" });
   applyProfileCustomizationSurface(elements.lobbyHostProfile, hostParticipant.cardCustomization || defaultProfileCustomization);
@@ -16155,6 +16429,7 @@ function renderRoomPlayerList(target) {
       {
         avatar: participant.avatar,
         equippedTitleId: participant.equippedTitleId || "",
+        specialBadges: normalizeSpecialBadges(participant.specialBadges || []),
         cardCustomization: participant.cardCustomization || null,
       participantId: participant.id,
       host: participant.host,
@@ -16171,7 +16446,7 @@ function renderRoomPlayerList(target) {
     : state.mode === "room" && state.players.length
     ? state.players
     : [
-      createPlayer("player", state.profile.name || "You", { avatar: state.profile.avatar, host: true, equippedTitleId: state.profile.equippedTitleId, cardCustomization: state.profile.cardCustomization, connectionStatus: "host" })
+      createPlayer("player", state.profile.name || "You", { avatar: state.profile.avatar, host: true, equippedTitleId: state.profile.equippedTitleId, specialBadges: state.profile.specialBadges, cardCustomization: state.profile.cardCustomization, connectionStatus: "host" })
     ];
   const activePlayers = basePlayers.filter((player) => player.active && !player.spectator);
   const visiblePlayers = activePlayers.filter((player) => {
@@ -16395,7 +16670,9 @@ function renderChatLog(target) {
         owner: message.owner || "",
         label: message.sender,
         host: Boolean(message.host),
-        equippedTitleId: message.equippedTitleId || ""
+        equippedTitleId: message.equippedTitleId || "",
+        specialBadges: message.specialBadges || [],
+        cardCustomization: message.cardCustomization || null
       }, message.sender);
     }
     const text = document.createElement("span");
@@ -16450,6 +16727,8 @@ function sendChatMessage(text, input = elements.chatInput) {
     sender: state.profile.name || "Host",
     avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
+    specialBadges: getRoomSyncSpecialBadges(),
+    cardCustomization: getRoomSyncCardCustomization(state.profile.cardCustomization),
     text: cleaned,
     owner: state.currentOwner,
     own: true,
@@ -19006,6 +19285,7 @@ updateSoundButton();
 syncSettingsControls();
 syncRoomControls();
 renderProfile();
+syncSpecialBadgesToProfile();
 initSupabaseAuth();
 updateAchievementNotificationDot();
 loadUserQuestionSubmissions();

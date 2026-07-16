@@ -802,11 +802,12 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .room-host-profile strong {
-  display: block;
-  overflow: hidden;
+  display: inline-flex;
+  width: max-content;
+  max-width: none;
+  overflow: visible;
   color: var(--ink);
   font-size: 1.05rem;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -923,9 +924,11 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .room-player-card strong {
   grid-column: 2;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  white-space: normal;
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 .room-player-card small {
@@ -1329,7 +1332,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   align-items: center;
   gap: 0.32rem;
   min-width: 0;
-  max-width: 100%;
+  max-width: none;
   overflow: visible;
 }
 
@@ -1348,6 +1351,24 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .room-player-card .equipped-title-pill + .name-with-title-text,
 .join-room-host .equipped-title-pill + .name-with-title-text {
   margin-left: 0.24rem;
+}
+
+.room-host-profile .name-with-title,
+.room-player-card .name-with-title,
+.join-room-host .name-with-title,
+.leaderboard-name .name-with-title {
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.room-host-profile .equipped-title-pill,
+.room-player-card .equipped-title-pill,
+.join-room-host .equipped-title-pill {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .scoreboard .name-with-title-text,
@@ -1444,6 +1465,36 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   color: color-mix(in srgb, var(--title-pill-colour) 42%, white);
 }
 
+.special-player-badge {
+  position: relative;
+  z-index: 10;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  color: inherit;
+  background: currentColor;
+  cursor: help;
+  transform: translateY(0.08em);
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+
+.special-player-badge[data-icon="wrench"] {
+  -webkit-mask-image: url("assets/badge-wrench.svg");
+  mask-image: url("assets/badge-wrench.svg");
+}
+
+.special-player-badge[data-icon="check"] {
+  -webkit-mask-image: url("assets/badge-check.svg");
+  mask-image: url("assets/badge-check.svg");
+}
+
+.special-player-badge[data-icon="hammer"] {
+  -webkit-mask-image: url("assets/badge-hammer.svg");
+  mask-image: url("assets/badge-hammer.svg");
+}
+
 .scoreboard .leaderboard-player strong {
   color: var(--ink);
   font-size: clamp(0.78rem, 1vw, 0.92rem);
@@ -1466,10 +1517,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .leaderboard-player[data-card-custom="true"] .leaderboard-rank {
   color: rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)));
-}
-
-.leaderboard-player[data-card-custom="true"] :is(.leaderboard-name, .leaderboard-name .name-with-title-text) {
-  color: var(--ink);
 }
 
 .match-metrics {
@@ -2717,6 +2764,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .profile-debug-card[data-state="disabled"] {
   border-color: rgba(255, 77, 125, 0.5);
   background: rgba(255, 77, 125, 0.08);
+}
+
+.profile-debug-card[data-state="locked"] {
+  opacity: 0.74;
 }
 
 .profile-debug-card strong {
@@ -4171,7 +4222,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
-  :is(.answer-avatar, .profile-avatar, .room-player-avatar, .equipped-title-pill, .rating-badge, .name-with-title-text, .profile-name-display, h2, p, strong) {
+  :is(.answer-avatar, .profile-avatar, .room-player-avatar, .equipped-title-pill, .special-player-badge, .rating-badge, .name-with-title-text, .profile-name-display, h2, p, strong) {
   text-shadow:
     0 0.36rem 0.34rem rgba(0, 0, 0, 0.56),
     0 0 0.78rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.2);
@@ -4211,7 +4262,7 @@ input:focus {
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
-  :is(.leaderboard-avatar, .result-player-avatar, .final-leaderboard-avatar, .equipped-title-pill, .name-with-title-text, .leaderboard-name, strong, em, small) {
+  :is(.leaderboard-avatar, .result-player-avatar, .final-leaderboard-avatar, .equipped-title-pill, .special-player-badge, .name-with-title-text, .leaderboard-name, strong, em, small) {
   text-shadow:
     0 0.26rem 0.26rem rgba(0, 0, 0, 0.5),
     0 0 0.7rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.2);
@@ -4227,7 +4278,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
-  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .equipped-title-pill, .rating-badge, h2, p, strong, label, input, small, button) {
+  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .equipped-title-pill, .special-player-badge, .rating-badge, h2, p, strong, label, input, small, button) {
   text-shadow:
     0 0 0.4rem rgba(255, 255, 255, 0.34),
     0 0 0.95rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42),
@@ -4235,7 +4286,7 @@ input:focus {
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
-  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .name-with-title-text, strong, em, small) {
+  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .special-player-badge, .name-with-title-text, strong, em, small) {
   text-shadow:
     0 0 0.34rem rgba(255, 255, 255, 0.32),
     0 0 0.82rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42),
@@ -4243,7 +4294,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
-  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .equipped-title-pill, .rating-badge, h2, p, strong, label, input, small, button) {
+  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .equipped-title-pill, .special-player-badge, .rating-badge, h2, p, strong, label, input, small, button) {
   text-shadow:
     0 0 0.4rem rgba(255, 255, 255, 0.34),
     0 0 1rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44),
@@ -4251,7 +4302,7 @@ input:focus {
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
-  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .name-with-title-text, strong, em, small) {
+  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .special-player-badge, .name-with-title-text, strong, em, small) {
   text-shadow:
     0 0 0.34rem rgba(255, 255, 255, 0.32),
     0 0 0.9rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44),
