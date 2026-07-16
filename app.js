@@ -7171,9 +7171,10 @@ function applyRoomServerEvent(event = {}) {
       game: payload.game
     });
   } else if (type === "round_started" && payload.game) {
-    state.roomGame = payload.game;
-    applyRoomGamePowerState(state.roomGame);
-    applied = true;
+    applied = applyRealtimeRoundStarted({
+      ...eventPayload,
+      game: payload.game
+    });
   } else if (type === "participant_moderated") {
     applied = applyRoomModerationDelta(eventPayload);
   } else if (type === "room_updated" || type === "room_created") {
@@ -7582,6 +7583,9 @@ function handleRealtimeRoomChange(payload = {}) {
     }
     if (payload.eventType === "game-ended") {
       appliedDelta = applyRealtimeRoomGameEnded(payload);
+    }
+    if (payload.eventType === "round-started") {
+      appliedDelta = applyRealtimeRoundStarted(payload);
     }
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
@@ -16928,6 +16932,12 @@ function publishRoomRoundSetup(setup) {
     powerState: getRoomPowerStatePayload(),
     updatedAt: Date.now()
   };
+  broadcastRealtimeRoomChange("round-started", state.roomSettings.code, {
+    status: "in-progress",
+    revision: state.roomEventRevision || 0,
+    updatedAt: state.roomGame.updatedAt,
+    game: state.roomGame
+  });
   fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/game`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -17073,6 +17083,64 @@ function startJoinedRoomMatchFromDirectory(room) {
   state.mode = "room";
   setPlayersForMode("room");
   startGame("room");
+}
+
+function applyRealtimeRoundStarted(payload = {}) {
+  const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || state.matchEnded) {
+    return false;
+  }
+  if (isCurrentHost() && !state.joiningRoom) {
+    return false;
+  }
+  const game = payload.game && typeof payload.game === "object"
+    ? payload.game
+    : payload.room?.game && typeof payload.room.game === "object"
+      ? payload.room.game
+      : null;
+  if (!game?.setup) {
+    return false;
+  }
+  const nextRound = Number(game.round) || 0;
+  if (!nextRound || nextRound < Number(state.round)) {
+    return false;
+  }
+  let setup;
+  try {
+    setup = normalizeSetupPayload(game.setup);
+  } catch {
+    return false;
+  }
+  const sameRound = nextRound === Number(state.round);
+  const alreadyShowingSetup = sameRound
+    && state.questionId
+    && setup.id
+    && state.questionId === setup.id
+    && elements.verdictPanel.classList.contains("hidden");
+  if (alreadyShowingSetup) {
+    state.roomGame = game;
+    applyRoomGamePowerState(state.roomGame);
+    updateRoomEventRevision(payload.revision);
+    return true;
+  }
+  stopNextRoundCountdown();
+  state.currentRoomStatus = "in-progress";
+  state.round = nextRound;
+  state.roomGame = game;
+  if (state.joiningRoom) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      status: "in-progress",
+      game,
+      revision: Number(payload.revision) || state.joiningRoom.revision || 0,
+      updatedAt: Number(payload.updatedAt) || Date.now()
+    };
+  }
+  resetRoundUiForLoading({ resetBlackCardTheme: true });
+  applyRoundSetup(setup);
+  applyRoomGamePowerState(game);
+  updateRoomEventRevision(payload.revision);
+  return true;
 }
 
 function applyRealtimeRoomGameEnded(payload = {}) {
