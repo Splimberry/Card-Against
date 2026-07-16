@@ -5030,7 +5030,30 @@ function getActiveRoomPlayerCount(players = state.players) {
 }
 
 function getRoomSyncAvatar(avatar = "") {
-  return String(avatar || "").slice(0, 240000);
+  const value = String(avatar || "");
+  if (value.startsWith("data:")) {
+    return value.slice(0, 20000);
+  }
+  return value.slice(0, 800);
+}
+
+function getRoomSyncCardCustomization(customization) {
+  if (!customization || typeof customization !== "object") {
+    return null;
+  }
+  return {
+    styleId: String(customization.styleId || "default").slice(0, 48),
+    gradientTop: String(customization.gradientTop || "blue").slice(0, 48),
+    gradientBottom: String(customization.gradientBottom || "pink").slice(0, 48),
+    effectIds: Array.isArray(customization.effectIds)
+      ? customization.effectIds.map((id) => String(id).slice(0, 48)).filter(Boolean).slice(0, 8)
+      : [],
+    patternId: String(customization.patternId || "none").slice(0, 48),
+    fontId: String(customization.fontId || "default").slice(0, 48),
+    titleColourId: String(customization.titleColourId || "rarity").slice(0, 48),
+    titleRgb: Boolean(customization.titleRgb),
+    titlePastel: Boolean(customization.titlePastel)
+  };
 }
 
 function getCurrentParticipant(options = {}) {
@@ -5039,7 +5062,7 @@ function getCurrentParticipant(options = {}) {
     name: state.profile.name || "Guest",
     avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
-    cardCustomization: state.profile.cardCustomization,
+    cardCustomization: getRoomSyncCardCustomization(state.profile.cardCustomization),
     host: Boolean(options.host),
     spectator: Boolean(options.spectator),
     bot: false,
@@ -5063,7 +5086,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
         name: player.label,
         avatar: getRoomSyncAvatar(player.avatar),
         equippedTitleId: player.equippedTitleId || "",
-        cardCustomization: player.cardCustomization || null,
+        cardCustomization: getRoomSyncCardCustomization(player.cardCustomization),
         host: Boolean(player.host),
         spectator: Boolean(player.spectator),
         bot: Boolean(player.bot || player.type === "bot"),
@@ -5086,7 +5109,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
       name: participant.name,
       avatar: getRoomSyncAvatar(participant.avatar),
       equippedTitleId: participant.equippedTitleId || "",
-      cardCustomization: participant.cardCustomization || null,
+      cardCustomization: getRoomSyncCardCustomization(participant.cardCustomization),
       host: Boolean(participant.host),
       spectator: Boolean(participant.spectator),
       bot: Boolean(participant.bot),
@@ -14258,7 +14281,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
       name: state.profile.name || "Host",
       avatar: getRoomSyncAvatar(state.profile.avatar),
       equippedTitleId: state.profile.equippedTitleId || "",
-      cardCustomization: state.profile.cardCustomization
+      cardCustomization: getRoomSyncCardCustomization(state.profile.cardCustomization)
     }
     : (existing?.host || state.joiningRoom?.host || participants.find((participant) => participant.host) || {});
   return {
@@ -14270,7 +14293,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
       name: hostSource.name || "Host",
       avatar: getRoomSyncAvatar(hostSource.avatar),
       equippedTitleId: hostSource.equippedTitleId || "",
-      cardCustomization: hostSource.cardCustomization || null
+      cardCustomization: getRoomSyncCardCustomization(hostSource.cardCustomization)
     },
     participants,
     activePlayers: participants.filter((participant) => participant.active && !participant.spectator).length || 1,
@@ -14292,7 +14315,8 @@ async function publishRoomDirectory(room) {
     });
     if (!response.ok) {
       state.roomDirectoryOnline = false;
-      console.warn("Room directory update failed:", response.status);
+      const errorPayload = await response.json().catch(() => ({}));
+      console.warn("Room directory update failed:", response.status, errorPayload.error || errorPayload);
       return null;
     }
     const data = await response.json();
