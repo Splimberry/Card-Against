@@ -5862,10 +5862,150 @@ function getRoomPowerHandSyncEntry(owner) {
   };
 }
 
+function getRoomPlayedPowerSyncEntry(owner) {
+  const participantId = getRoomParticipantIdForOwner(owner);
+  if (!participantId) {
+    return null;
+  }
+  const stacks = (state.playedPowerStacks[owner] || [])
+    .map((entry) => ({
+      powerId: String(entry?.powerId || ""),
+      revealId: String(entry?.revealId || ""),
+      meta: entry?.meta && typeof entry.meta === "object" ? { ...entry.meta } : {}
+    }))
+    .filter((entry) => powerMap[entry.powerId])
+    .slice(0, 10);
+  return {
+    participantId,
+    owner,
+    stacks,
+    primaryPowerId: String(state.playedPowerUps[owner] || ""),
+    meta: state.playedPowerMeta[owner] && typeof state.playedPowerMeta[owner] === "object"
+      ? { ...state.playedPowerMeta[owner] }
+      : null
+  };
+}
+
+function getRoomAbilityPlayerSyncEntry(owner) {
+  const participantId = getRoomParticipantIdForOwner(owner);
+  const player = getPlayer(owner);
+  if (!participantId || !player) {
+    return null;
+  }
+  return {
+    participantId,
+    owner,
+    score: getScore(owner),
+    streak: getOwnerStreak(owner)
+  };
+}
+
+const roomAbilityEffectMapKeys = [
+  "pendingPowerBonuses",
+  "freezeProtection",
+  "pocketShieldCharges",
+  "permafrostProtection",
+  "eternalFlameProtection",
+  "streakAnchorCharges",
+  "pendingStreakBonuses",
+  "heavenHellCurses",
+  "secretPointBonuses",
+  "fakePointDebts",
+  "redHerringMasks",
+  "bottomFeederRounds",
+  "streakFreezeRounds",
+  "streakLossProtectionRounds",
+  "cocktailPenaltyRounds",
+  "debuffShieldCharges",
+  "failedInvestmentDebuffs",
+  "timeDilationRounds",
+  "pendingCocktailBuffs",
+  "insuranceFrauds",
+  "insurancePolicies",
+  "virusFactories",
+  "luckRounds",
+  "typhoonOwners",
+  "thornOwners",
+  "allOutRounds",
+  "arsonists",
+  "bartenders",
+  "hotInHereOwners",
+  "worldBurnOwners",
+  "lawnMowerOwners"
+];
+
+const roomAbilityEffectArrayKeys = [
+  "timeBombs",
+  "debuffTimeBombs",
+  "pendingDeadWeights",
+  "soulLinks",
+  "hotPotatoOwners"
+];
+
+function cloneRoomAbilitySyncValue(value, fallback) {
+  try {
+    return JSON.parse(JSON.stringify(value ?? fallback));
+  } catch {
+    return fallback;
+  }
+}
+
+function getRoomAbilityEffectStatePayload() {
+  return {
+    maps: Object.fromEntries(roomAbilityEffectMapKeys.map((key) => [
+      key,
+      cloneRoomAbilitySyncValue(state[key], {})
+    ])),
+    arrays: Object.fromEntries(roomAbilityEffectArrayKeys.map((key) => [
+      key,
+      cloneRoomAbilitySyncValue(state[key], [])
+    ])),
+    values: {
+      loserPenaltyRounds: Math.max(0, Number(state.loserPenaltyRounds) || 0),
+      hotPotatoCount: Math.max(0, Number(state.hotPotatoCount) || 0),
+      nextPreferredTheme: String(state.nextPreferredTheme || "")
+    }
+  };
+}
+
+function applyRoomAbilityEffectStatePayload(effects) {
+  if (!effects || typeof effects !== "object") {
+    return false;
+  }
+  const maps = effects.maps && typeof effects.maps === "object" ? effects.maps : {};
+  const arrays = effects.arrays && typeof effects.arrays === "object" ? effects.arrays : {};
+  roomAbilityEffectMapKeys.forEach((key) => {
+    if (Object.hasOwn(maps, key)) {
+      state[key] = cloneRoomAbilitySyncValue(maps[key], {});
+    }
+  });
+  roomAbilityEffectArrayKeys.forEach((key) => {
+    if (Object.hasOwn(arrays, key)) {
+      const nextValue = cloneRoomAbilitySyncValue(arrays[key], []);
+      state[key] = Array.isArray(nextValue) ? nextValue : [];
+    }
+  });
+  const values = effects.values && typeof effects.values === "object" ? effects.values : {};
+  if (Object.hasOwn(values, "loserPenaltyRounds")) {
+    state.loserPenaltyRounds = Math.max(0, Number(values.loserPenaltyRounds) || 0);
+  }
+  if (Object.hasOwn(values, "hotPotatoCount")) {
+    state.hotPotatoCount = Math.max(0, Number(values.hotPotatoCount) || 0);
+  }
+  if (Object.hasOwn(values, "nextPreferredTheme")) {
+    state.nextPreferredTheme = String(values.nextPreferredTheme || "");
+  }
+  return true;
+}
+
 function getRoomPowerStatePayload(owners = getActiveOwners()) {
+  const uniqueOwners = [...new Set(owners)].filter((owner) => getPlayer(owner));
   return {
     updatedAt: Date.now(),
-    hands: [...new Set(owners)].map(getRoomPowerHandSyncEntry).filter(Boolean)
+    hands: uniqueOwners.map(getRoomPowerHandSyncEntry).filter(Boolean),
+    played: uniqueOwners.map(getRoomPlayedPowerSyncEntry).filter(Boolean),
+    players: uniqueOwners.map(getRoomAbilityPlayerSyncEntry).filter(Boolean),
+    effects: getRoomAbilityEffectStatePayload()
   };
 }
 
@@ -5894,7 +6034,12 @@ function broadcastRoomPowerState(owner, power, meta = {}) {
   state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt);
   const affectedOwners = getImmediatePowerAffectedOwners(owner, power, meta);
   const hands = affectedOwners.map(getRoomPowerHandSyncEntry).filter(Boolean);
-  if (!hands.length) {
+  const played = [owner].map(getRoomPlayedPowerSyncEntry).filter(Boolean);
+  const players = [...new Set([...affectedOwners, ...getActiveOwners()])]
+    .map(getRoomAbilityPlayerSyncEntry)
+    .filter(Boolean);
+  const effects = getRoomAbilityEffectStatePayload();
+  if (!hands.length && !played.length && !players.length && !effects) {
     return;
   }
   broadcastRealtimeRoomChange("power-state", state.roomSettings.code, {
@@ -5905,7 +6050,10 @@ function broadcastRoomPowerState(owner, power, meta = {}) {
     targetParticipantId: meta.targetOwner ? getRoomParticipantIdForOwner(meta.targetOwner) : "",
     deletedPowerId: meta.deletedPowerId || state.playedPowerMeta[owner]?.deletedPowerId || "",
     stolenPowerId: meta.stolenPowerId || state.playedPowerMeta[owner]?.stolenPowerId || "",
-    hands
+    hands,
+    played,
+    players,
+    effects
   });
 }
 
@@ -5926,6 +6074,9 @@ function applyRoomPowerState(payload = {}) {
     return false;
   }
   const hands = Array.isArray(payload.hands) ? payload.hands : [];
+  const played = Array.isArray(payload.played) ? payload.played : [];
+  const players = Array.isArray(payload.players) ? payload.players : [];
+  const effects = payload.effects && typeof payload.effects === "object" ? payload.effects : null;
   let changed = false;
   hands.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId);
@@ -5942,6 +6093,48 @@ function applyRoomPowerState(payload = {}) {
     setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((powerId) => nextHand.includes(powerId)));
     changed = true;
   });
+  played.forEach((entry) => {
+    const owner = getRoomOwnerForParticipantId(entry?.participantId);
+    if (!owner || !getPlayer(owner)) {
+      return;
+    }
+    const nextStacks = (Array.isArray(entry.stacks) ? entry.stacks : [])
+      .map((stack) => ({
+        powerId: String(stack?.powerId || ""),
+        revealId: String(stack?.revealId || ""),
+        meta: stack?.meta && typeof stack.meta === "object" ? { ...stack.meta } : {}
+      }))
+      .filter((stack) => powerMap[stack.powerId])
+      .slice(0, 10);
+    const previousRevealIds = new Set((state.playedPowerStacks[owner] || []).map((stack) => stack.revealId).filter(Boolean));
+    nextStacks.forEach((stack) => {
+      const power = getPowerById(stack.powerId);
+      if (stack.revealId && power && !isSecretPower(power) && !previousRevealIds.has(stack.revealId)) {
+        if (!(state.pendingPowerPillAnimations instanceof Set)) {
+          state.pendingPowerPillAnimations = new Set();
+        }
+        state.pendingPowerPillAnimations.add(stack.revealId);
+      }
+    });
+    state.playedPowerStacks[owner] = nextStacks;
+    state.playedPowerUps[owner] = String(entry.primaryPowerId || nextStacks[0]?.powerId || "") || null;
+    state.playedPowerMeta[owner] = entry.meta && typeof entry.meta === "object"
+      ? { ...entry.meta }
+      : nextStacks.at(-1)?.meta || null;
+    changed = true;
+  });
+  players.forEach((entry) => {
+    const owner = getRoomOwnerForParticipantId(entry?.participantId);
+    if (!owner || !getPlayer(owner)) {
+      return;
+    }
+    setScore(owner, Number(entry.score) || 0);
+    setOwnerStreak(owner, Number(entry.streak) || 0, { force: true });
+    changed = true;
+  });
+  if (applyRoomAbilityEffectStatePayload(effects)) {
+    changed = true;
+  }
   if (!changed) {
     return false;
   }
@@ -5954,7 +6147,10 @@ function applyRoomPowerState(payload = {}) {
       hands: [
         ...existingHands.filter((entry) => !syncedParticipantIds.has(String(entry?.participantId || ""))),
         ...hands
-      ].slice(-10)
+      ].slice(-10),
+      played,
+      players,
+      effects
     };
   }
   const power = getPowerById(payload.powerId);
@@ -5978,6 +6174,10 @@ function applyRoomPowerState(payload = {}) {
       getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
     );
   }
+  renderScore();
+  renderLeaderboard();
+  renderEffectPanel();
+  renderTableEventControls();
   renderPowerUps();
   renderRoomPlayers();
   return true;
@@ -5991,7 +6191,10 @@ function applyRoomGamePowerState(game = state.roomGame) {
     code: state.roomSettings.code,
     round: game.round,
     updatedAt: game.powerState.updatedAt,
-    hands: game.powerState.hands
+    hands: game.powerState.hands,
+    played: game.powerState.played,
+    players: game.powerState.players,
+    effects: game.powerState.effects
   });
 }
 
@@ -6607,7 +6810,9 @@ function getRealtimeRoomPayload(room = {}, options = {}) {
       cardCustomization: getRoomSyncCardCustomization(host.cardCustomization)
     },
     participants,
-    activePlayers: Number(source.activePlayers) || participants.filter((participant) => participant.active && !participant.spectator).length || 0,
+    activePlayers: Number.isFinite(Number(source.activePlayers))
+      ? Math.max(0, Number(source.activePlayers))
+      : participants.filter((participant) => participant.active && !participant.spectator).length,
     spectators: Number(source.spectators) || participants.filter((participant) => participant.active && participant.spectator).length || 0,
     banned: Array.isArray(source.banned) ? source.banned.map((entry) => String(entry).slice(0, 80)) : [],
     game: options.includeGame ? (source.game || null) : null,
@@ -6729,6 +6934,69 @@ function applyRealtimeRoomClosed(payload = {}) {
   return true;
 }
 
+function applyHostedRoomParticipantDelta(payload = {}) {
+  const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
+  const room = state.hostedRooms.find((entry) => entry.code === code);
+  if (!room || !payload.participant) {
+    return false;
+  }
+  const participant = normalizeRoomParticipantDelta(payload.participant);
+  if (!participant) {
+    return false;
+  }
+  const participants = Array.isArray(room.participants) ? [...room.participants] : [];
+  const existingIndex = participants.findIndex((entry) => entry.id === participant.id);
+  if (existingIndex >= 0) {
+    participants[existingIndex] = { ...participants[existingIndex], ...participant };
+  } else {
+    participants.push(participant);
+  }
+  room.participants = participants;
+  room.activePlayers = participants.filter((entry) => entry.active !== false && !entry.spectator).length;
+  room.spectators = participants.filter((entry) => entry.active !== false && entry.spectator).length;
+  room.revision = Number(payload.revision) || Number(room.revision) || 0;
+  room.updatedAt = Number(payload.updatedAt) || Date.now();
+  if (participant.host || participant.id === room.host?.id) {
+    room.host = {
+      ...(room.host || {}),
+      id: participant.id,
+      name: participant.name,
+      avatar: participant.avatar,
+      equippedTitleId: participant.equippedTitleId || "",
+      specialBadges: participant.specialBadges || [],
+      cardCustomization: participant.cardCustomization || null
+    };
+  }
+  if (!elements.joinScreen.classList.contains("hidden")) {
+    renderHostedRooms();
+  }
+  return true;
+}
+
+function applyHostedRoomParticipantLeft(payload = {}) {
+  const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
+  const participantId = String(payload.participantId || "").slice(0, 80);
+  const room = state.hostedRooms.find((entry) => entry.code === code);
+  if (!room || !participantId) {
+    return false;
+  }
+  const leavingParticipant = (room.participants || []).find((entry) => entry.id === participantId);
+  if (leavingParticipant?.host || participantId === room.host?.id) {
+    removeHostedRoom(code);
+    return true;
+  }
+  room.participants = (Array.isArray(room.participants) ? room.participants : [])
+    .filter((entry) => entry.id !== participantId);
+  room.activePlayers = room.participants.filter((entry) => entry.active !== false && !entry.spectator).length;
+  room.spectators = room.participants.filter((entry) => entry.active !== false && entry.spectator).length;
+  room.revision = Number(payload.revision) || Number(room.revision) || 0;
+  room.updatedAt = Number(payload.updatedAt) || Date.now();
+  if (!elements.joinScreen.classList.contains("hidden")) {
+    renderHostedRooms();
+  }
+  return true;
+}
+
 function applyRealtimeParticipantLeft(payload = {}) {
   const code = String(payload.code || "").trim().toUpperCase();
   if (code && code !== state.roomSettings.code) {
@@ -6759,7 +7027,7 @@ function applyRealtimeParticipantLeft(payload = {}) {
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (hostedRoom) {
     hostedRoom.participants = [...state.roomParticipants];
-    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length || hostedRoom.activePlayers;
+    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length;
     hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
     hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
     hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
@@ -6819,7 +7087,12 @@ function handleRealtimeRoomChange(payload = {}) {
     return;
   }
   if (!elements.joinScreen.classList.contains("hidden") && shouldRealtimeRefreshJoinDirectory(payload.eventType)) {
-    if (!payload.room || !applyRealtimeRoomPayload(payload.room)) {
+    const appliedJoinDelta = payload.eventType === "participant-updated" && payload.participant
+      ? applyHostedRoomParticipantDelta(payload)
+      : payload.eventType === "participant-left" && payload.participantId
+        ? applyHostedRoomParticipantLeft(payload)
+        : false;
+    if (!appliedJoinDelta && (!payload.room || !applyRealtimeRoomPayload(payload.room))) {
       scheduleRealtimeJoinRefresh();
     }
   }
@@ -10380,6 +10653,7 @@ function activateStreakInjector(owner, power, powerId, targetOwner) {
   clearSelectedPowerUps(owner);
   renderScore();
   renderPowerUps();
+  broadcastRoomPowerState(owner, power, meta);
   playSound("targetSelect");
   return true;
 }
@@ -11676,6 +11950,7 @@ function commitActivePowerUp(owner = getCurrentPowerOwner()) {
   }
 
   const selectedPowerIds = getSelectedPowerIds(owner);
+  const committedPowers = [];
   selectedPowerIds.forEach((powerId) => {
     if (!canPlayPower(owner)) {
       return;
@@ -11692,8 +11967,10 @@ function commitActivePowerUp(owner = getCurrentPowerOwner()) {
       originalPowerId: powerId
     });
     state.powerHands[owner] = state.powerHands[owner].filter((handPowerId) => handPowerId !== powerId);
+    committedPowers.push({ power, meta: state.playedPowerMeta[owner] || {} });
   });
   clearSelectedPowerUps(owner);
+  committedPowers.forEach((entry) => broadcastRoomPowerState(owner, entry.power, entry.meta));
   renderPowerUps();
 }
 
@@ -11858,6 +12135,7 @@ function commitSingleBotPowerUp(owner) {
     remainingTime: state.timerRemaining
   });
   state.powerHands[owner] = state.powerHands[owner].filter((id) => id !== powerId);
+  broadcastRoomPowerState(owner, power, state.playedPowerMeta[owner] || {});
   renderPowerUps();
   return true;
 }
@@ -15679,7 +15957,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
       cardCustomization: getRoomSyncCardCustomization(hostSource.cardCustomization)
     },
     participants,
-    activePlayers: participants.filter((participant) => participant.active && !participant.spectator).length || 1,
+    activePlayers: participants.filter((participant) => participant.active && !participant.spectator).length,
     spectators: participants.filter((participant) => participant.active && participant.spectator).length,
     banned: [...getRoomBanList()],
     game: status === "in-progress" ? (state.roomGame || existing?.game || null) : null,
@@ -15899,7 +16177,7 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (hostedRoom) {
     hostedRoom.participants = [...state.roomParticipants];
-    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length || hostedRoom.activePlayers;
+    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length;
     hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
     hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
     hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
@@ -16323,6 +16601,7 @@ function renderHostedRooms() {
   visibleRooms.forEach((room) => {
     const card = document.createElement("section");
     card.className = "join-room-card";
+    applyProfileCustomizationSurface(card, room.host?.cardCustomization || defaultProfileCustomization);
     const details = document.createElement("div");
     const host = document.createElement("div");
     host.className = "join-room-host";

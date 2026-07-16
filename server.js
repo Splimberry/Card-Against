@@ -1392,7 +1392,11 @@ function normalizeCardCustomization(customization) {
     effectIds: Array.isArray(customization.effectIds)
       ? customization.effectIds.map((id) => String(id).slice(0, 48)).filter(Boolean).slice(0, 8)
       : [],
-    patternId: String(customization.patternId || "none").slice(0, 48)
+    patternId: String(customization.patternId || "none").slice(0, 48),
+    fontId: String(customization.fontId || "default").slice(0, 48),
+    titleColourId: String(customization.titleColourId || "rarity").slice(0, 48),
+    titleRgb: Boolean(customization.titleRgb),
+    titlePastel: Boolean(customization.titlePastel)
   };
 }
 
@@ -1445,8 +1449,59 @@ function normalizeRoomPowerState(powerState) {
         };
       })
       .filter((entry) => entry.participantId)
-      .slice(0, 10)
+      .slice(0, 10),
+    played: (Array.isArray(powerState.played) ? powerState.played : [])
+      .map((entry) => {
+        const source = entry && typeof entry === "object" ? entry : {};
+        return {
+          participantId: String(source.participantId || "").slice(0, 120),
+          owner: String(source.owner || "").slice(0, 80),
+          stacks: (Array.isArray(source.stacks) ? source.stacks : [])
+            .map((stack) => {
+              const stackSource = stack && typeof stack === "object" ? stack : {};
+              return {
+                powerId: String(stackSource.powerId || "").slice(0, 80),
+                revealId: String(stackSource.revealId || "").slice(0, 120),
+                meta: stackSource.meta && typeof stackSource.meta === "object" ? stackSource.meta : {}
+              };
+            })
+            .filter((stack) => stack.powerId)
+            .slice(0, 10),
+          primaryPowerId: String(source.primaryPowerId || "").slice(0, 80),
+          meta: source.meta && typeof source.meta === "object" ? source.meta : null
+        };
+      })
+      .filter((entry) => entry.participantId)
+      .slice(0, 10),
+    players: (Array.isArray(powerState.players) ? powerState.players : [])
+      .map((entry) => {
+        const source = entry && typeof entry === "object" ? entry : {};
+        return {
+          participantId: String(source.participantId || "").slice(0, 120),
+          owner: String(source.owner || "").slice(0, 80),
+          score: clampServerNumber(source.score, 0, Number.MAX_SAFE_INTEGER, 0),
+          streak: clampServerNumber(source.streak, 0, Number.MAX_SAFE_INTEGER, 0)
+        };
+      })
+      .filter((entry) => entry.participantId)
+      .slice(0, 10),
+    effects: normalizeRoomAbilityEffects(powerState.effects)
   };
+}
+
+function normalizeRoomAbilityEffects(effects) {
+  if (!effects || typeof effects !== "object") {
+    return null;
+  }
+  try {
+    const serialized = JSON.stringify(effects);
+    if (serialized.length > 120000) {
+      return null;
+    }
+    return JSON.parse(serialized);
+  } catch {
+    return null;
+  }
 }
 
 function finalizeRoom(room) {
@@ -1463,6 +1518,7 @@ function finalizeRoom(room) {
       name: room.host.name,
       avatar: room.host.avatar,
       equippedTitleId: room.host.equippedTitleId || "",
+      specialBadges: normalizeSpecialBadges(room.host.specialBadges),
       cardCustomization: room.host.cardCustomization || null,
       host: true,
       spectator: false,

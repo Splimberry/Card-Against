@@ -703,6 +703,67 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   background: rgba(15, 13, 24, 0.86);
 }
 
+.join-room-card[data-card-custom="true"] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: var(--custom-card-rim, var(--accent-2));
+  background: var(--custom-card-active-bg, var(--custom-card-bg, rgba(15, 13, 24, 0.86)));
+  color: var(--ink);
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.28),
+    0 0 1.25rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.18);
+}
+
+.join-room-card[data-card-custom="true"] > * {
+  position: relative;
+  z-index: 2;
+}
+
+.join-room-card[data-card-style="gradient"][data-card-custom="true"] {
+  border-color: transparent;
+  background-color: #08090d;
+  background-image:
+    var(--custom-card-active-bg, var(--custom-card-bg, #08090d)),
+    var(--custom-card-active-rim-gradient, var(--custom-card-rim-gradient, linear-gradient(180deg, var(--accent-2), var(--accent))));
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+}
+
+.join-room-card[data-card-custom="true"][data-card-special="false"][data-card-effects~="neon"] {
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.3),
+    0 0 1.45rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42),
+    0 0 2.4rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.16);
+}
+
+.join-room-card[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"] {
+  --rgb-r: var(--custom-card-rgb-base-r, 34);
+  --rgb-g: var(--custom-card-rgb-base-g, 211);
+  --rgb-b: var(--custom-card-rgb-base-b, 238);
+  --rgb2-r: var(--custom-card-rgb2-base-r, 255);
+  --rgb2-g: var(--custom-card-rgb2-base-g, 77);
+  --rgb2-b: var(--custom-card-rgb2-base-b, 125);
+  --custom-card-active-bg: var(--custom-card-rgb-bg);
+  --custom-card-active-rim-rgb: var(--rgb-r) var(--rgb-g) var(--rgb-b);
+  --custom-card-active-secondary-rgb: var(--rgb2-r) var(--rgb2-g) var(--rgb2-b);
+  --custom-card-active-rim-gradient: var(--custom-card-rgb-rim-gradient);
+  animation: cardRgbShift var(--card-rgb-duration, 8600ms) ease-in-out infinite;
+  animation-delay: var(--card-rgb-delay, 0ms);
+}
+
+.join-room-card[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
+  :is(.join-room-host, .join-room-meta, .name-with-title-text, .equipped-title-pill, .special-player-badge, strong, span, button) {
+  text-shadow:
+    0 0 0.34rem rgba(255, 255, 255, 0.28),
+    0 0 0.78rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.38),
+    0 0 1.25rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.18);
+}
+
+.join-room-card[data-card-custom="true"] .join-room-meta span {
+  color: color-mix(in srgb, var(--ink) 74%, var(--muted));
+}
+
 .join-room-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1481,8 +1542,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   mask-position: center;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  -webkit-mask-size: 82% 82%;
-  mask-size: 82% 82%;
+  -webkit-mask-size: contain;
+  mask-size: contain;
   filter: drop-shadow(0 0 0 transparent);
 }
 

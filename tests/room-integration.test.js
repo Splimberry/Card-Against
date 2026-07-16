@@ -358,6 +358,43 @@ async function testRoomDirectoryAcceptsProfileImagePayload() {
   assert.equal(rooms.some((entry) => entry.code === code), true);
 }
 
+async function testRoomDirectoryPreservesProfileStyleFields() {
+  const code = makeCode(8111);
+  const cardCustomization = {
+    styleId: "gradient",
+    gradientTop: "green",
+    gradientBottom: "gold",
+    effectIds: ["rgb", "text-glow"],
+    patternId: "circuit",
+    fontId: "mono",
+    titleColourId: "pink",
+    titleRgb: true,
+    titlePastel: true
+  };
+  const specialBadges = [{ id: "admin", count: 0 }, { id: "creator", count: 8 }];
+  const stored = await upsertRoom(makeRoom(code, {
+    host: {
+      id: "host-client",
+      name: "Host",
+      avatar: "",
+      equippedTitleId: "test-title",
+      specialBadges,
+      cardCustomization
+    },
+    participants: []
+  }));
+
+  assert.equal(stored.host.cardCustomization.fontId, "mono");
+  assert.equal(stored.host.cardCustomization.titleColourId, "pink");
+  assert.equal(stored.host.cardCustomization.titleRgb, true);
+  assert.equal(stored.host.cardCustomization.titlePastel, true);
+  assert.deepEqual(stored.host.specialBadges, specialBadges);
+  const hostParticipant = stored.participants.find((participant) => participant.host);
+  assert.ok(hostParticipant);
+  assert.deepEqual(hostParticipant.specialBadges, specialBadges);
+  assert.equal(hostParticipant.cardCustomization.fontId, "mono");
+}
+
 async function testHostPageExitDeletesRoom() {
   const code = makeCode(8102);
   await upsertRoom(makeRoom(code));
@@ -567,6 +604,7 @@ async function main() {
   await testRoomListShowsStoredRoomsWithoutActivePlayers();
   await testRoomListUsesParticipantsWhenActiveCountIsMissing();
   await testRoomDirectoryAcceptsProfileImagePayload();
+  await testRoomDirectoryPreservesProfileStyleFields();
   await testHostPageExitDeletesRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
