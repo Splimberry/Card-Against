@@ -374,7 +374,8 @@ async function handleAdminRooms(req, res) {
         timerSeconds: room.settings?.timerSeconds,
         maxPlayers: room.settings?.maxPlayers,
         private: Boolean(room.settings?.private),
-        classicMode: Boolean(room.settings?.classicMode)
+        classicMode: Boolean(room.settings?.classicMode),
+        autoAdvance: room.settings?.autoAdvance !== false
       },
       participants: Array.isArray(room.participants)
         ? room.participants.map((participant) => ({
@@ -1571,6 +1572,7 @@ function normalizeRoomSettings(settings = {}, code = "") {
     wildFire: classicMode ? false : Boolean(source.wildFire),
     partyMayhem: classicMode ? false : Boolean(source.partyMayhem),
     classicMode,
+    autoAdvance: source.autoAdvance !== false,
     private: Boolean(source.private),
     password: String(source.password || "").slice(0, 32),
     enabledThemes: normalizeEnabledThemes(source.enabledThemes),

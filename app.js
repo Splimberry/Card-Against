@@ -798,13 +798,14 @@ const state = {
     timerSeconds: 30,
     maxPlayers: 5,
     harsh: false,
-	    chaos: false,
-	    timeMoney: false,
-	    amplified: false,
-	    wildFire: false,
-	    partyMayhem: false,
-	    classicMode: false,
-	    enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
+    chaos: false,
+    timeMoney: false,
+    amplified: false,
+    wildFire: false,
+    partyMayhem: false,
+    classicMode: false,
+    autoAdvance: true,
+    enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
     private: false,
     password: "",
     code: "CAI-0000"
@@ -1269,6 +1270,7 @@ const elements = {
   wildFireModeToggle: document.querySelector("#wildFireModeToggle"),
   partyMayhemModeToggle: document.querySelector("#partyMayhemModeToggle"),
   classicModeToggle: document.querySelector("#classicModeToggle"),
+  autoAdvanceToggle: document.querySelector("#autoAdvanceToggle"),
   privateRoomToggle: document.querySelector("#privateRoomToggle"),
   roomPasswordRow: document.querySelector("#roomPasswordRow"),
   roomPasswordInput: document.querySelector("#roomPasswordInput"),
@@ -16058,6 +16060,7 @@ function getDefaultRoomSettings(code = "CAI-0000") {
     wildFire: false,
     partyMayhem: false,
     classicMode: false,
+    autoAdvance: true,
     enabledThemes: cachedThemes.length ? cachedThemes : [...triviaThemes],
     private: false,
     password: "",
@@ -16081,6 +16084,7 @@ function syncRoomControls() {
   elements.wildFireModeToggle.checked = state.roomSettings.wildFire;
   elements.partyMayhemModeToggle.checked = state.roomSettings.partyMayhem;
   elements.classicModeToggle.checked = state.roomSettings.classicMode;
+  elements.autoAdvanceToggle.checked = state.roomSettings.autoAdvance !== false;
   elements.privateRoomToggle.checked = state.roomSettings.private;
   syncClassicRoomToggleState();
   elements.roomPasswordInput.value = state.roomSettings.password;
@@ -16433,6 +16437,7 @@ function updateRoomVariants() {
   state.roomSettings.wildFire = elements.wildFireModeToggle.checked;
   state.roomSettings.partyMayhem = elements.partyMayhemModeToggle.checked;
   state.roomSettings.classicMode = elements.classicModeToggle.checked;
+  state.roomSettings.autoAdvance = elements.autoAdvanceToggle.checked;
   state.roomSettings.private = elements.privateRoomToggle.checked;
   state.roomSettings.password = cleanChatInput(elements.roomPasswordInput.value);
   setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
@@ -18389,7 +18394,12 @@ function updateNextRoundButtonLabel() {
 
 function startNextRoundCountdown() {
   stopNextRoundCountdown();
-  state.nextRoundCountdown = 15;
+  if (isRoomMode() && state.roomSettings.autoAdvance === false) {
+    state.nextRoundCountdown = 0;
+    updateNextRoundButtonLabel();
+    return;
+  }
+  state.nextRoundCountdown = 30;
   updateNextRoundButtonLabel();
   state.nextRoundAutoTimerId = setInterval(() => {
     state.nextRoundCountdown -= 1;
@@ -20463,6 +20473,7 @@ elements.amplifiedModeToggle.addEventListener("change", updateRoomVariants);
 elements.wildFireModeToggle.addEventListener("change", updateRoomVariants);
 elements.partyMayhemModeToggle.addEventListener("change", updateRoomVariants);
 elements.classicModeToggle.addEventListener("change", handleClassicModeToggle);
+elements.autoAdvanceToggle.addEventListener("change", updateRoomVariants);
 elements.privateRoomToggle.addEventListener("change", updateRoomVariants);
 elements.roomPasswordInput.addEventListener("input", updateRoomVariants);
 function handleModerationClick(event) {

@@ -582,16 +582,19 @@ async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
       rounds: 7,
       timerSeconds: 45,
       maxPlayers: 6,
+      autoAdvance: false,
       enabledThemes: ["Science"]
     }
   });
   assert.equal(response.status, 200, payload.error);
   assert.equal(payload.settings.rounds, 7);
+  assert.equal(payload.settings.autoAdvance, false);
   assert.ok(payload.revision >= 5);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
   assert.equal(stored.payload.room.settings.timerSeconds, 45);
+  assert.equal(stored.payload.room.settings.autoAdvance, false);
   assert.equal(stored.payload.room.chat.some((message) => message.id === "settings-preserve-chat"), true);
   assert.equal(stored.payload.room.participants.some((participant) => participant.id === "settings-joiner"), true);
   assert.equal(stored.payload.room.game.setup.blackCard, "Round 1 question?");
