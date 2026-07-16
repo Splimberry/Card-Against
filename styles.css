@@ -1537,6 +1537,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   background-color: currentColor;
   cursor: help;
   transform: translateY(0.08em);
+  padding: 0.05em;
+  box-sizing: content-box;
   overflow: visible;
   -webkit-mask-position: center;
   mask-position: center;
@@ -1545,6 +1547,11 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   -webkit-mask-size: contain;
   mask-size: contain;
   filter: drop-shadow(0 0 0 transparent);
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]
+  .special-player-badge {
+  color: var(--custom-card-active-text, var(--custom-card-text, currentColor));
 }
 
 .special-player-badge[data-icon="wrench"] {
@@ -4771,21 +4778,27 @@ input:focus {
 }
 
 .white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="gradient"][data-card-custom="true"] p,
 .white-card[data-card-special="false"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-special="false"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-special="false"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-special="false"][data-card-custom="true"] p,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="chaos"][data-card-custom="true"] p,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="black-market"][data-card-custom="true"] p,
 .white-card[data-card-style="black"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="black"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="black"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="black"][data-card-custom="true"] p,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="burning"][data-card-custom="true"] p {
   color: rgba(246, 242, 238, 0.94);
@@ -4793,6 +4806,7 @@ input:focus {
 }
 
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner > span:last-child {
   text-shadow:
     0 0 0.75rem rgba(255, 121, 38, 0.44),
@@ -4800,6 +4814,7 @@ input:focus {
 }
 
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner > span:last-child {
   text-shadow:
     -0.05rem 0 rgba(255, 77, 125, 0.7),
@@ -4807,6 +4822,7 @@ input:focus {
 }
 
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .name-with-title-text,
+.white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner > span:last-child {
   color: #e6fff7;
   text-shadow: 0 0 0.75rem rgba(64, 222, 164, 0.34);

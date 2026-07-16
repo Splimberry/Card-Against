@@ -977,6 +977,7 @@ const state = {
   timeBombs: [],
   debuffTimeBombs: [],
   pendingDeadWeights: [],
+  deadWeightLockedRounds: {},
   chaosInputLockId: "",
   allOutRounds: {},
   extraPowerUses: {},
@@ -5996,6 +5997,7 @@ const roomAbilityEffectMapKeys = [
   "insurancePolicies",
   "virusFactories",
   "luckRounds",
+  "deadWeightLockedRounds",
   "typhoonOwners",
   "thornOwners",
   "allOutRounds",
@@ -6280,6 +6282,14 @@ function applyRoomPowerState(payload = {}) {
       "negative",
       power.name,
       `${stolenPower?.name || "Power-up"} Stolen`,
+      getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
+    );
+  }
+  if (power?.type === "dead_weight" && targetOwner) {
+    queueStatFlash(
+      "negative",
+      power.name,
+      "Dead Weight Received",
       getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
     );
   }
@@ -8431,18 +8441,20 @@ function passDeadWeight(owner) {
     return null;
   }
 
-  const limit = getPowerHandLimit(target);
-  const hand = state.powerHands[target] || [];
-  if (hand.length < limit) {
-    state.powerHands[target] = [...hand, "dead_weight"];
-  } else if (hand.length) {
-    const replaceAt = Math.floor(Math.random() * hand.length);
-    state.powerHands[target] = hand.map((powerId, index) => index === replaceAt ? "dead_weight" : powerId);
-  } else {
-    return null;
+  const added = giveDeadWeightToOwner(target);
+  return added ? target : null;
+}
+
+function lockDeadWeightForCurrentRound(owner) {
+  if (!owner) {
+    return;
   }
-  markFreshPowerUps(target, ["dead_weight"]);
-  return target;
+  state.deadWeightLockedRounds[owner] = state.round;
+  setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((powerId) => powerId !== "dead_weight"));
+}
+
+function isDeadWeightLockedThisRound(owner) {
+  return Number(state.deadWeightLockedRounds?.[owner]) === Number(state.round);
 }
 
 function giveDeadWeightToOwner(owner) {
@@ -8461,6 +8473,7 @@ function giveDeadWeightToOwner(owner) {
     return false;
   }
   markFreshPowerUps(owner, ["dead_weight"]);
+  lockDeadWeightForCurrentRound(owner);
   if (owner === getCurrentPowerOwner()) {
     renderPowerUps();
   }
@@ -11976,6 +11989,19 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "dead_weight") {
     const target = passDeadWeight(owner);
+    if (target) {
+      meta.targetOwner = target;
+      state.playedPowerMeta[owner] = {
+        ...(state.playedPowerMeta[owner] || {}),
+        targetOwner: target
+      };
+      queueStatFlash(
+        "negative",
+        power.name,
+        "Dead Weight Received",
+        getTargetedFlashOptions(owner, target, { complex: true })
+      );
+    }
     if (target === getCurrentPowerOwner()) {
       renderPowerUps();
     }
@@ -12275,6 +12301,10 @@ function isPowerUsable(power, owner) {
   if (power.type === "recycle_bin") {
     const copied = getPowerById(state.lastPlayedPowerUps[owner]);
     return Boolean(copied && copied.type !== "recycle_bin");
+  }
+
+  if (power.type === "dead_weight" && isDeadWeightLockedThisRound(owner)) {
+    return false;
   }
 
   if (power.type === "vending_machine") {
@@ -15788,6 +15818,7 @@ function resetMatch(mode) {
   state.error404Owners = {};
   state.error404Schedule = [];
   state.pendingDeadWeights = [];
+  state.deadWeightLockedRounds = {};
   state.chaosInputLockId = "";
   state.allOutRounds = {};
   state.extraPowerUses = {};
@@ -19158,6 +19189,7 @@ function clearProlongedPowerEffects() {
   state.error404Owners = {};
   state.error404Schedule = [];
   state.pendingDeadWeights = [];
+  state.deadWeightLockedRounds = {};
   state.allOutRounds = {};
   state.extraPowerUses = {};
   state.nextPreferredTheme = "";
