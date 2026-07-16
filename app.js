@@ -5037,6 +5037,60 @@ function getRoomSyncAvatar(avatar = "") {
   return value.slice(0, 800);
 }
 
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve) => {
+    canvas.toBlob(resolve, type, quality);
+  });
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => reject(reader.error || new Error("Could not read image.")));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressProfileImage(file, options = {}) {
+  const maxSize = Number(options.maxSize || 192);
+  const maxBytes = Number(options.maxBytes || 120000);
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("Could not load image."));
+    });
+    image.src = sourceUrl;
+    await loaded;
+
+    const side = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
+    const size = Math.min(maxSize, side || maxSize);
+    const sourceX = Math.max(0, ((image.naturalWidth || image.width) - side) / 2);
+    const sourceY = Math.max(0, ((image.naturalHeight || image.height) - side) / 2);
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#111827";
+    context.fillRect(0, 0, size, size);
+    context.drawImage(image, sourceX, sourceY, side, side, 0, 0, size, size);
+
+    for (const quality of [0.82, 0.72, 0.62]) {
+      const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+      if (blob && blob.size <= maxBytes) {
+        return readFileAsDataUrl(blob);
+      }
+    }
+    const fallbackBlob = await canvasToBlob(canvas, "image/jpeg", 0.52);
+    return fallbackBlob ? readFileAsDataUrl(fallbackBlob) : readFileAsDataUrl(file);
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
 function getRoomSyncChatMessage(message = {}) {
   return {
     ...message,
@@ -6017,7 +6071,7 @@ function updateProfileName(value) {
   }
 }
 
-function updateProfileAvatar(file) {
+async function updateProfileAvatar(file) {
   if (!isPlayerSignedIn()) {
     if (elements.profileAvatarInput) {
       elements.profileAvatarInput.value = "";
@@ -6028,16 +6082,32 @@ function updateProfileAvatar(file) {
     return;
   }
 
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    state.profile.avatar = String(reader.result || "");
+  try {
+    if (elements.profileCustomStatus) {
+      elements.profileCustomStatus.textContent = "Compressing profile picture...";
+    }
+    state.profile.avatar = await compressProfileImage(file);
     localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "avatar"), state.profile.avatar);
     syncProfileToPlayer();
     renderProfile();
     renderRoomPlayers();
     renderRoomChat();
-  });
-  reader.readAsDataURL(file);
+    if (hasActiveRoomContext()) {
+      upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+    }
+    if (elements.profileCustomStatus) {
+      elements.profileCustomStatus.textContent = "Profile picture compressed and saved.";
+    }
+  } catch (error) {
+    console.warn("Profile image compression failed:", error.message || error);
+    if (elements.profileCustomStatus) {
+      elements.profileCustomStatus.textContent = "Could not save that profile picture.";
+    }
+  } finally {
+    if (elements.profileAvatarInput) {
+      elements.profileAvatarInput.value = "";
+    }
+  }
 }
 
 function renderQuestionProgress() {
@@ -15412,9 +15482,8 @@ function startRoomGame() {
     state.roomModeration.bannedByRoom[state.roomSettings.code] = [];
   }
   setPlayersForMode("room");
-  if (!state.roomChat.length) {
-    addSystemChat(`Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`);
-  }
+  state.roomChat = [];
+  addSystemChat(`Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`);
   upsertHostedRoom("lobby");
   openRoomLobby();
 }
