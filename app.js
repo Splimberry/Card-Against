@@ -53,6 +53,7 @@ const roomDirectoryFetchTimeoutMs = 4500;
 const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
+const supabaseAvatarBucket = "profile-avatars";
 const specialPlayerBadgeOrder = ["admin", "verified", "creator"];
 const specialPlayerBadges = [
   {
@@ -5383,6 +5384,67 @@ async function compressProfileImage(file, options = {}) {
   }
 }
 
+async function compressProfileImageBlob(file, options = {}) {
+  const maxSize = Number(options.maxSize || 160);
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("Could not load image."));
+    });
+    image.src = sourceUrl;
+    await loaded;
+
+    const side = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
+    const size = Math.min(maxSize, side || maxSize);
+    const sourceX = Math.max(0, ((image.naturalWidth || image.width) - side) / 2);
+    const sourceY = Math.max(0, ((image.naturalHeight || image.height) - side) / 2);
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#111827";
+    context.fillRect(0, 0, size, size);
+    context.drawImage(image, sourceX, sourceY, side, side, 0, 0, size, size);
+
+    const webpBlob = await canvasToBlob(canvas, "image/webp", Number(options.quality || 0.72));
+    if (webpBlob?.size) {
+      return { blob: webpBlob, extension: "webp", contentType: "image/webp" };
+    }
+    const jpegBlob = await canvasToBlob(canvas, "image/jpeg", Number(options.quality || 0.72));
+    if (jpegBlob?.size) {
+      return { blob: jpegBlob, extension: "jpg", contentType: "image/jpeg" };
+    }
+    throw new Error("Could not compress image.");
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+async function uploadProfileAvatarToSupabase(file) {
+  if (!state.supabaseClient || !state.supabaseUser?.id) {
+    return "";
+  }
+  const compressed = await compressProfileImageBlob(file);
+  const path = `${state.supabaseUser.id}/avatar.${compressed.extension}`;
+  const { error } = await state.supabaseClient.storage
+    .from(supabaseAvatarBucket)
+    .upload(path, compressed.blob, {
+      cacheControl: "31536000",
+      contentType: compressed.contentType,
+      upsert: true
+    });
+  if (error) {
+    throw error;
+  }
+  const { data } = state.supabaseClient.storage
+    .from(supabaseAvatarBucket)
+    .getPublicUrl(path);
+  return data?.publicUrl ? `${data.publicUrl}?v=${Date.now()}` : "";
+}
+
 function getRoomSyncChatMessage(message = {}) {
   return {
     ...message,
@@ -7376,7 +7438,7 @@ async function updateProfileAvatar(file) {
   let previewUrl = "";
   try {
     if (elements.profileCustomStatus) {
-      elements.profileCustomStatus.textContent = "Compressing profile picture...";
+      elements.profileCustomStatus.textContent = "Saving profile picture...";
     }
     if (isModalOpen(elements.profileCustomModal) && elements.profilePreviewAvatar) {
       previewUrl = URL.createObjectURL(file);
@@ -7384,7 +7446,16 @@ async function updateProfileAvatar(file) {
       renderAvatar(elements.profileAvatarPreview, { ...state.profile, avatar: previewUrl });
       renderAvatar(elements.roomProfileAvatarPreview, { ...state.profile, avatar: previewUrl });
     }
-    state.profile.avatar = await compressProfileImage(file);
+    let savedAvatar = "";
+    try {
+      savedAvatar = await uploadProfileAvatarToSupabase(file);
+    } catch (uploadError) {
+      console.warn("Supabase avatar upload failed; using compressed local avatar:", uploadError.message || uploadError);
+    }
+    if (!savedAvatar) {
+      savedAvatar = await compressProfileImage(file, { maxSize: 128, maxBytes: 60000 });
+    }
+    state.profile.avatar = savedAvatar;
     localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "avatar"), state.profile.avatar);
     scheduleUserStorageSnapshot();
     syncProfileToPlayer();
@@ -7398,7 +7469,9 @@ async function updateProfileAvatar(file) {
       upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
     }
     if (elements.profileCustomStatus) {
-      elements.profileCustomStatus.textContent = "Profile picture compressed and saved.";
+      elements.profileCustomStatus.textContent = state.profile.avatar.startsWith("data:")
+        ? "Profile picture compressed and saved locally."
+        : "Profile picture uploaded and saved.";
     }
   } catch (error) {
     console.warn("Profile image compression failed:", error.message || error);

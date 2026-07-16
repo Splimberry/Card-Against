@@ -103,6 +103,9 @@ Supabase Auth is optional but supported for public player login:
 
 When configured, the profile card shows Google sign-in and sign-out controls. When not configured, the app keeps using the local profile.
 
+For shorter synced profile pictures, create a public Supabase Storage bucket named `profile-avatars`.
+Add Storage policies that let authenticated users upload/update/read objects in that bucket. The app uploads each user's avatar to `profile-avatars/<user-id>/avatar.webp` and stores the public URL instead of sending a large base64 image through room sync. If Storage is not configured yet, avatar uploads fall back to a smaller compressed local image.
+
 Notes for public hosting:
 
 - Hosted room directory state is persistent only when Redis REST environment variables are configured.
