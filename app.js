@@ -838,6 +838,9 @@ const state = {
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
   roomRoundResolving: false,
+  matchWorkToken: 0,
+  roundRequestAbortController: null,
+  setupRequestAbortControllers: new Set(),
   pendingConfirmAction: "end",
   pendingConfirmResolver: null,
   roomModeration: {
@@ -2147,6 +2150,9 @@ function startWarmSetupPreload(options = {}) {
       return setup;
     })
     .catch((error) => {
+      if (isAbortError(error)) {
+        return null;
+      }
       if (state.warmSetupVersion === warmVersion) {
         console.warn("Warm question preload failed:", error);
       }
@@ -2203,6 +2209,49 @@ function waitForGradingPriority() {
   return new Promise((resolve) => {
     state.gradingWaiters.push(resolve);
   });
+}
+
+function isAbortError(error) {
+  return error?.name === "AbortError";
+}
+
+function createAbortError(message = "The active match work was cancelled.") {
+  if (typeof DOMException === "function") {
+    return new DOMException(message, "AbortError");
+  }
+  const error = new Error(message);
+  error.name = "AbortError";
+  return error;
+}
+
+function isCurrentMatchWork(token) {
+  return token === state.matchWorkToken && !state.matchEnded;
+}
+
+function cancelActiveMatchWork(options = {}) {
+  state.matchWorkToken += 1;
+  if (state.roundRequestAbortController) {
+    state.roundRequestAbortController.abort();
+    state.roundRequestAbortController = null;
+  }
+  state.setupRequestAbortControllers.forEach((controller) => controller.abort());
+  state.setupRequestAbortControllers.clear();
+  clearRoomAutoResolve();
+  stopNextRoundCountdown();
+  resetTimerDisplay();
+  stopLoadingMessages();
+  clearBackgroundSetupPrefetch();
+  clearWarmSetup();
+  setGradingActive(false);
+  state.roomRoundResolving = false;
+  state.nextSetup = null;
+  state.nextSetupPromise = null;
+  state.nextSetupStatus = "idle";
+  state.setupStack = [];
+  state.setupVersion += 1;
+  if (options.stopRoomSync) {
+    stopRoomDirectoryPolling();
+  }
 }
 
 function ensureServerMode() {
@@ -2264,6 +2313,9 @@ function normalizeSetupPayload(setup) {
 async function requestRoundSetup(options = {}) {
   ensureServerMode();
   await waitForGradingPriority();
+  if (options.signal?.aborted) {
+    throw createAbortError();
+  }
   const setupSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards;
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
@@ -2272,29 +2324,41 @@ async function requestRoundSetup(options = {}) {
   if (cachedSetup) {
     return cachedSetup;
   }
-  const response = await fetch("/api/setup", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      recentBlackCards,
-      enabledThemes,
-      preferredTheme,
-      backgroundMode: Boolean(options.backgroundMode),
-      setupSeed,
-      round: state.round
-    })
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || `AI setup request failed with status ${response.status}.`);
+  const controller = options.signal ? null : new AbortController();
+  const signal = options.signal || controller.signal;
+  if (controller) {
+    state.setupRequestAbortControllers.add(controller);
   }
+  try {
+    const response = await fetch("/api/setup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      signal,
+      body: JSON.stringify({
+        recentBlackCards,
+        enabledThemes,
+        preferredTheme,
+        backgroundMode: Boolean(options.backgroundMode),
+        setupSeed,
+        round: state.round
+      })
+    });
 
-  const setup = normalizeSetupPayload(await response.json());
-  cacheRoundSetup(setup, enabledThemes);
-  return setup;
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `AI setup request failed with status ${response.status}.`);
+    }
+
+    const setup = normalizeSetupPayload(await response.json());
+    cacheRoundSetup(setup, enabledThemes);
+    return setup;
+  } finally {
+    if (controller) {
+      state.setupRequestAbortControllers.delete(controller);
+    }
+  }
 }
 
 function normalizePromptText(text) {
@@ -2420,8 +2484,11 @@ function isRepeatedBlackCard(setup, previousBlackCard = state.blackCard) {
   return recentPrompts.includes(nextPrompt);
 }
 
-async function requestAiRound(rawInput) {
+async function requestAiRound(rawInput, options = {}) {
   ensureServerMode();
+  if (options.signal?.aborted) {
+    throw createAbortError();
+  }
   const roundSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const cardOwners = prepareRoundCardOwners(rawInput);
   const roomMode = isRoomMode();
@@ -2439,6 +2506,7 @@ async function requestAiRound(rawInput) {
     headers: {
       "Content-Type": "application/json"
     },
+    signal: options.signal,
     body: JSON.stringify({
       answer: playerAnswer,
       opponentAnswer,
@@ -6331,10 +6399,11 @@ function maybeResolveRoomSubmissions() {
   if (getPendingSubmitters().length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
     return;
   }
+  const matchToken = state.matchWorkToken;
   state.roomRoundResolving = true;
   state.roomSubmissionResolveId = window.setTimeout(() => {
     state.roomSubmissionResolveId = null;
-    if (!isRoomMode() || state.matchEnded || getPendingSubmitters().length > 0) {
+    if (!isRoomMode() || !isCurrentMatchWork(matchToken) || getPendingSubmitters().length > 0) {
       state.roomRoundResolving = false;
       return;
     }
@@ -6343,27 +6412,40 @@ function maybeResolveRoomSubmissions() {
 }
 
 async function waitForRoomSubmissionsThenPlay(localFallback = "") {
+  const matchToken = state.matchWorkToken;
   const timeoutMs = Math.max(3200, (state.timerRemaining + 1) * 1000);
   const startedAt = Date.now();
   let lastEventRefreshAt = 0;
-  while (!state.matchEnded && Date.now() - startedAt < timeoutMs) {
+  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeoutMs) {
     if (getPendingSubmitters().length === 0) {
       break;
     }
     if (Date.now() - lastEventRefreshAt > 800) {
       lastEventRefreshAt = Date.now();
       await refreshRoomEventsSinceLastRevision({ refreshRoom: false });
+      if (!isCurrentMatchWork(matchToken)) {
+        state.roomRoundResolving = false;
+        return;
+      }
       if (getPendingSubmitters().length === 0) {
         break;
       }
     }
     if (!(state.supabaseEnabled && state.realtimeRoomChannel)) {
       await refreshCurrentRoomDirectory();
+      if (!isCurrentMatchWork(matchToken)) {
+        state.roomRoundResolving = false;
+        return;
+      }
       if (getPendingSubmitters().length === 0) {
         break;
       }
     }
     await sleep(260);
+  }
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return;
   }
 
   getRemoteActiveOwners().forEach((remoteOwner) => {
@@ -6389,7 +6471,9 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
     return;
   }
   state.roomRoundResolving = true;
-  playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback));
+  if (isCurrentMatchWork(matchToken)) {
+    playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback));
+  }
 }
 
 function getPendingSubmitters() {
@@ -15737,13 +15821,14 @@ function prefetchNextSetup() {
   }
 
   const setupVersion = state.setupVersion;
+  const matchToken = state.matchWorkToken;
   const promise = requestRoundSetup();
   state.nextSetupPromise = promise;
   state.nextSetupStatus = "loading";
   console.info(`Prefetching setup for round ${state.round + 1}...`);
   promise
     .then((setup) => {
-      if (state.setupVersion === setupVersion && !state.matchEnded && !isRepeatedBlackCard(setup)) {
+      if (state.setupVersion === setupVersion && isCurrentMatchWork(matchToken) && !isRepeatedBlackCard(setup)) {
         state.nextSetup = setup;
         state.nextSetupStatus = "ready";
         preloadQuestionImageInBackground(setup);
@@ -15751,6 +15836,9 @@ function prefetchNextSetup() {
       }
     })
     .catch((error) => {
+      if (isAbortError(error)) {
+        return;
+      }
       if (state.setupVersion === setupVersion) {
         state.nextSetupStatus = "failed";
         console.warn("Next round prefetch failed:", error);
@@ -15774,13 +15862,14 @@ function scheduleNextSetupPrefetch() {
     return;
   }
   scheduleWhenIdle(() => {
-    if (!state.gradingActive) {
+    if (!state.gradingActive && !state.matchEnded) {
       prefetchNextSetup();
     }
   });
 }
 
 async function newRound() {
+  const matchToken = state.matchWorkToken;
   const previousBlackCard = state.blackCard;
   state.questionId = "";
   state.blackCard = "";
@@ -15796,11 +15885,14 @@ async function newRound() {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
     try {
       const setup = await waitForSyncedRoomSetupForRound(state.round);
-      if (!state.matchEnded) {
+      if (isCurrentMatchWork(matchToken)) {
         applyRoundSetup(setup);
         applyRoomGamePowerState();
       }
     } catch (error) {
+      if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+        return;
+      }
       console.warn(error);
       stopLoadingMessages();
       playSound("error");
@@ -15821,10 +15913,13 @@ async function newRound() {
     resetRoundUiForLoading();
     try {
       const setup = await requestRoundSetup(getThemeSetupOptions(preferredTheme));
-      if (!state.matchEnded) {
+      if (isCurrentMatchWork(matchToken)) {
         applyRoundSetup(setup);
       }
     } catch (error) {
+      if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+        return;
+      }
       console.warn(error);
       stopLoadingMessages();
       playSound("error");
@@ -15861,7 +15956,7 @@ async function newRound() {
     if (isRepeatedBlackCard(setup, previousBlackCard)) {
       setup = state.setupStack.length ? state.setupStack.shift() : await requestRoundSetup();
     }
-    if (state.matchEnded) {
+    if (!isCurrentMatchWork(matchToken)) {
       return;
     }
     if (state.nextSetup === setup) {
@@ -15869,6 +15964,9 @@ async function newRound() {
     }
     applyRoundSetup(setup);
   } catch (error) {
+    if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+      return;
+    }
     console.warn(error);
     stopLoadingMessages();
     playSound("error");
@@ -15879,6 +15977,7 @@ async function newRound() {
 }
 
 function resetMatch(mode) {
+  cancelActiveMatchWork();
   stopTimer();
   clearStatFlashes();
   clearBackgroundSetupPrefetch();
@@ -16007,6 +16106,7 @@ async function startGame(mode) {
   clearRoomAutoResolve();
   stopRoomDirectoryPolling();
   resetMatch(mode);
+  const matchToken = state.matchWorkToken;
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
   setHidden(elements.joinScreen, true);
@@ -16027,7 +16127,7 @@ async function startGame(mode) {
       || takeWarmSetup(enabledThemes)
       || await getWarmSetupPromise(enabledThemes)
       || await requestRoundSetup();
-    if (state.matchEnded) {
+    if (!isCurrentMatchWork(matchToken)) {
       return;
     }
     if (state.warmSetup === firstSetup) {
@@ -16038,6 +16138,9 @@ async function startGame(mode) {
       applyRoomGamePowerState();
     }
   } catch (error) {
+    if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+      return;
+    }
     console.warn(error);
     stopLoadingMessages();
     playSound("error");
@@ -16260,12 +16363,8 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   const closedCode = state.roomSettings.code;
   markRoomLocallyClosed(closedCode);
   removeHostedRoom(closedCode);
-  clearRoomAutoResolve();
-  stopRoomDirectoryPolling();
-  stopNextRoundCountdown();
-  resetTimerDisplay();
-  stopLoadingMessages();
   state.matchEnded = true;
+  cancelActiveMatchWork({ stopRoomSync: true });
   state.roomClosedNotice = reason;
   clearLocalRoomState();
   addSystemChat(reason, { private: true, sync: false });
@@ -17035,9 +17134,10 @@ function publishRoomHeartbeat(status = "host") {
 }
 
 async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 12000) {
+  const matchToken = state.matchWorkToken;
   const startedAt = Date.now();
   let lastEventRefreshAt = 0;
-  while (Date.now() - startedAt < timeoutMs) {
+  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeoutMs) {
     const setup = getSyncedRoomSetupForRound(round);
     if (setup) {
       return setup;
@@ -17045,6 +17145,9 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
     if (Date.now() - lastEventRefreshAt > 800) {
       lastEventRefreshAt = Date.now();
       await refreshRoomEventsSinceLastRevision();
+      if (!isCurrentMatchWork(matchToken)) {
+        throw createAbortError();
+      }
       const eventSetup = getSyncedRoomSetupForRound(round);
       if (eventSetup) {
         return eventSetup;
@@ -17052,6 +17155,9 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
     }
     if (!(state.supabaseEnabled && state.realtimeRoomChannel)) {
       const lookup = await fetchRoomByCode(state.roomSettings.code);
+      if (!isCurrentMatchWork(matchToken)) {
+        throw createAbortError();
+      }
       if (lookup.status === "found" && lookup.room) {
         mergeHostedRoom(lookup.room);
         applyRoomDirectoryRoom(lookup.room);
@@ -17061,6 +17167,9 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
       }
     }
     await sleep(650);
+  }
+  if (!isCurrentMatchWork(matchToken)) {
+    throw createAbortError();
   }
   throw new Error("Timed out waiting for the host to sync this round.");
 }
@@ -18706,6 +18815,11 @@ function applyCheatSheetPowers() {
 }
 
 async function playRound(rawInput) {
+  const matchToken = state.matchWorkToken;
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return;
+  }
   clearRoomAutoResolve();
   applyCheatSheetPowers();
   resetTimerDisplay();
@@ -18724,17 +18838,30 @@ async function playRound(rawInput) {
   playSound("submit");
 
   let roundResult;
+  if (state.roundRequestAbortController) {
+    state.roundRequestAbortController.abort();
+  }
+  const roundAbortController = new AbortController();
+  state.roundRequestAbortController = roundAbortController;
   try {
     setGradingActive(true);
     try {
-      roundResult = await requestAiRound(rawInput);
+      roundResult = await requestAiRound(rawInput, { signal: roundAbortController.signal });
     } finally {
       setGradingActive(false);
+      if (state.roundRequestAbortController === roundAbortController) {
+        state.roundRequestAbortController = null;
+      }
     }
-    if (state.matchEnded) {
+    if (!isCurrentMatchWork(matchToken)) {
+      state.roomRoundResolving = false;
       return;
     }
   } catch (error) {
+    if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+      state.roomRoundResolving = false;
+      return;
+    }
     console.warn(error);
     playSound("error");
     stopLoadingMessages();
@@ -18743,9 +18870,14 @@ async function playRound(rawInput) {
     elements.submitButton.disabled = false;
     setHidden(elements.loadingPanel, true);
     setHidden(elements.errorPanel, false);
+    state.roomRoundResolving = false;
     return;
   }
 
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return;
+  }
   const cardRatings = getCardRatings(roundResult.cards, roundResult.winner.index, roundResult.correctIndexes);
   state.currentRoundCards = roundResult.cards;
   state.currentRoundCardRatings = cardRatings;
@@ -18763,12 +18895,20 @@ async function playRound(rawInput) {
   playSound("reveal");
 
   await sleep(450);
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return;
+  }
   animateTableLayoutChange(() => {
     setHidden(elements.loadingPanel, false);
   });
   startLoadingMessages("judge", "Preparing the answer review...");
   playSound("judge");
   await sleep(850);
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return;
+  }
 
   const forcedWinnerOwner = getForcedWinnerOwner();
   const winner = forcedWinnerOwner
@@ -18830,12 +18970,17 @@ async function playRound(rawInput) {
   } else {
     await revealBlackCardAnswer(buildBlackCardAnswerReveal("", { showBestAnswer: false }));
   }
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return;
+  }
   animateTableLayoutChange(() => {
     setHidden(elements.verdictPanel, false);
   });
   restartAnimation(elements.verdictPanel, "revealed");
   elements.nextRoundButton.disabled = false;
   startNextRoundCountdown();
+  state.roomRoundResolving = false;
 }
 
 function getOwnerLabel(owner) {
@@ -20386,9 +20531,7 @@ function applyFinalMatchEffects() {
 
 function endMatch(wasExited = false, options = {}) {
   state.matchEnded = true;
-  stopNextRoundCountdown();
-  resetTimerDisplay();
-  stopLoadingMessages();
+  cancelActiveMatchWork({ stopRoomSync: isRoomMode() });
   stashUnusedQuestionSetups();
   state.nextSetup = null;
   state.nextSetupPromise = null;
@@ -20420,10 +20563,12 @@ function endMatch(wasExited = false, options = {}) {
   setHidden(elements.continueAsPlayerButton, !isRoomMode());
   setHidden(elements.spectateAgainButton, !isRoomMode());
   elements.changeModeButton.textContent = isRoomMode() ? "Back to Room" : "Change Mode";
+  let roomEndPublish = null;
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
+    state.currentRoomStatus = "complete";
     upsertHostedRoom("complete");
     if (options.syncRoom !== false) {
-      publishRoomGameEnded();
+      roomEndPublish = publishRoomGameEnded();
     }
   }
   if (finalEffects) {
@@ -20438,7 +20583,21 @@ function endMatch(wasExited = false, options = {}) {
   setHidden(elements.loadingPanel, true);
   setHidden(elements.errorPanel, true);
   setHidden(elements.endPanel, false);
-  ensureQuestionReserve({ enabledThemes: getEnabledTriviaThemes() });
+  if (!isRoomMode()) {
+    ensureQuestionReserve({ enabledThemes: getEnabledTriviaThemes() });
+  }
+  if (isRoomMode()) {
+    const stopRoomAfterEndPublish = () => {
+      if (state.matchEnded && state.currentRoomStatus === "complete") {
+        stopRoomRealtime();
+      }
+    };
+    if (roomEndPublish && typeof roomEndPublish.finally === "function") {
+      roomEndPublish.finally(stopRoomAfterEndPublish);
+    } else {
+      stopRoomAfterEndPublish();
+    }
+  }
   playSound("matchEnd");
 }
 
@@ -20624,6 +20783,7 @@ function returnToRoomLobbyAfterMatch() {
   elements.gameStage.classList.remove("room-active");
   upsertHostedRoom("lobby");
   renderRoomLobby();
+  startRoomRealtime(state.roomSettings.code);
   startRoomDirectoryPolling();
   setHidden(elements.roomLobbyScreen, false);
 }
