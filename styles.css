@@ -1171,6 +1171,12 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   text-align: left;
 }
 
+.leaderboard-player > :is(.leaderboard-rank, .leaderboard-avatar, .leaderboard-name, .leaderboard-power-list, strong, .leaderboard-streak) {
+  position: relative;
+  z-index: 8;
+  align-self: center;
+}
+
 .leaderboard-player.leader {
   border-color: rgba(64, 222, 164, 0.46);
   background:
@@ -1247,6 +1253,18 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   overflow: visible;
   text-overflow: clip;
   white-space: nowrap;
+  line-height: 1;
+}
+
+.leaderboard-name .name-with-title {
+  align-items: center;
+}
+
+.leaderboard-name .name-with-title-text,
+.leaderboard-name .special-player-badge,
+.leaderboard-name .equipped-title-pill {
+  position: relative;
+  z-index: 10;
 }
 
 .leaderboard-player.kickable-bot {
@@ -1580,6 +1598,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   color: var(--ink);
   font-size: clamp(0.78rem, 1vw, 0.92rem);
   line-height: 1;
+  align-self: center;
   white-space: nowrap;
 }
 
@@ -1592,7 +1611,9 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .leaderboard-streak {
   color: #ffb84d;
+  align-self: center;
   text-align: right;
+  line-height: 1;
   white-space: nowrap;
 }
 
