@@ -1534,19 +1534,26 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   width: 1.18em;
   height: 1.18em;
   color: inherit;
-  background-color: currentColor;
+  background-color: transparent;
   cursor: help;
   transform: translateY(0.08em);
   padding: 0.05em;
   box-sizing: content-box;
   overflow: visible;
+  filter: drop-shadow(0 0 0 transparent);
+}
+
+.special-player-badge::before {
+  content: "";
+  position: absolute;
+  inset: 0.05em;
+  background-color: currentColor;
   -webkit-mask-position: center;
   mask-position: center;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-size: contain;
   mask-size: contain;
-  filter: drop-shadow(0 0 0 transparent);
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]
@@ -1554,17 +1561,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   color: var(--custom-card-active-text, var(--custom-card-text, currentColor));
 }
 
-.special-player-badge[data-icon="wrench"] {
+.special-player-badge[data-icon="wrench"]::before {
   -webkit-mask-image: url("assets/badge-wrench.svg");
   mask-image: url("assets/badge-wrench.svg");
 }
 
-.special-player-badge[data-icon="check"] {
+.special-player-badge[data-icon="check"]::before {
   -webkit-mask-image: url("assets/badge-check.svg");
   mask-image: url("assets/badge-check.svg");
 }
 
-.special-player-badge[data-icon="hammer"] {
+.special-player-badge[data-icon="hammer"]::before {
   -webkit-mask-image: url("assets/badge-hammer.svg");
   mask-image: url("assets/badge-hammer.svg");
 }
@@ -4381,6 +4388,14 @@ input:focus {
     drop-shadow(0 0 1.18rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.22));
 }
 
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-effects~="text-glow"]
+  .special-player-badge {
+  filter:
+    drop-shadow(0 0 0.34rem rgba(255, 255, 255, 0.32))
+    drop-shadow(0 0 0.82rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42))
+    drop-shadow(0 0 1.18rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.22));
+}
+
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
   :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .special-player-badge, .name-with-title-text, strong, em, small) {
   text-shadow:
@@ -4403,6 +4418,14 @@ input:focus {
     drop-shadow(0 0 0.36rem rgba(255, 255, 255, 0.32))
     drop-shadow(0 0 0.9rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44))
     drop-shadow(0 0 1.28rem rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.24));
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
+  .special-player-badge {
+  filter:
+    drop-shadow(0 0 0.36rem rgba(255, 255, 255, 0.32))
+    drop-shadow(0 0 0.9rem rgb(var(--rgb-r, var(--custom-card-rgb-base-r, 34)) var(--rgb-g, var(--custom-card-rgb-base-g, 211)) var(--rgb-b, var(--custom-card-rgb-base-b, 238)) / 0.44))
+    drop-shadow(0 0 1.28rem rgb(var(--rgb2-r, var(--custom-card-rgb2-base-r, 255)) var(--rgb2-g, var(--custom-card-rgb2-base-g, 77)) var(--rgb2-b, var(--custom-card-rgb2-base-b, 125)) / 0.24));
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
