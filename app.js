@@ -1166,6 +1166,7 @@ const state = {
   realtimeRoomRefreshTimerId: null,
   realtimeSourceId: `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   hostedRoomsRefreshPromise: null,
+  locallyClosedRooms: {},
   roomJoinInProgress: false,
   roomHeartbeatTimerId: null,
   userStorageWriteTimerId: null,
@@ -6880,9 +6881,42 @@ function broadcastRealtimeAppEvent(eventType, details = {}) {
   }).catch(() => {});
 }
 
+function markRoomLocallyClosed(code = "", ttlMs = 90000) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode) {
+    return;
+  }
+  state.locallyClosedRooms[normalizedCode] = Date.now() + ttlMs;
+}
+
+function isRoomLocallyClosed(code = "") {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode) {
+    return false;
+  }
+  const expiresAt = Number(state.locallyClosedRooms[normalizedCode]) || 0;
+  if (!expiresAt) {
+    return false;
+  }
+  if (expiresAt <= Date.now()) {
+    delete state.locallyClosedRooms[normalizedCode];
+    return false;
+  }
+  return true;
+}
+
+function pruneLocallyClosedRooms() {
+  const now = Date.now();
+  Object.entries(state.locallyClosedRooms).forEach(([code, expiresAt]) => {
+    if (Number(expiresAt) <= now) {
+      delete state.locallyClosedRooms[code];
+    }
+  });
+}
+
 function mergeRealtimeRoomPayload(room = {}) {
   const code = String(room.code || "").trim().toUpperCase();
-  if (!code) {
+  if (!code || isRoomLocallyClosed(code)) {
     return null;
   }
   const existing = state.hostedRooms.find((entry) => entry.code === code) || {};
@@ -6933,6 +6967,7 @@ function applyRealtimeRoomClosed(payload = {}) {
   if (!code) {
     return false;
   }
+  markRoomLocallyClosed(code);
   removeHostedRoom(code);
   if (code === state.roomSettings.code && hasActiveRoomContext()) {
     handleCurrentRoomClosed("The room was closed by the host or an admin.");
@@ -15665,6 +15700,8 @@ function leavePublishedRoom(options = {}) {
   const reason = options.reason || "manual";
   const isHostLeaving = isCurrentHost() && !state.joiningRoom;
   if (isHostLeaving) {
+    markRoomLocallyClosed(code);
+    removeHostedRoom(code);
     broadcastRealtimeRoomChange("room-closed", code, {
       reason: reason === "page-exit" ? "host-left" : reason
     });
@@ -15743,6 +15780,9 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   if (state.roomClosedNotice) {
     return;
   }
+  const closedCode = state.roomSettings.code;
+  markRoomLocallyClosed(closedCode);
+  removeHostedRoom(closedCode);
   clearRoomAutoResolve();
   stopRoomDirectoryPolling();
   stopNextRoundCountdown();
@@ -16017,6 +16057,9 @@ function upsertHostedRoom(status = "lobby") {
 }
 
 function mergeHostedRoom(room) {
+  if (isRoomLocallyClosed(room?.code)) {
+    return;
+  }
   const existing = state.hostedRooms.find((entry) => entry.code === room.code);
   if (existing) {
     Object.assign(existing, room);
@@ -16045,6 +16088,7 @@ async function refreshHostedRooms(options = {}) {
   }
   state.hostedRoomsRefreshPromise = (async () => {
     try {
+      pruneLocallyClosedRooms();
       const response = await fetchWithTimeout("/api/rooms", { cache: "no-store" }, roomDirectoryFetchTimeoutMs);
       if (!response.ok) {
         state.roomDirectoryOnline = false;
@@ -16052,7 +16096,8 @@ async function refreshHostedRooms(options = {}) {
       }
       const data = await response.json();
       state.roomDirectoryOnline = true;
-      state.hostedRooms = Array.isArray(data.rooms) ? data.rooms : [];
+      state.hostedRooms = (Array.isArray(data.rooms) ? data.rooms : [])
+        .filter((room) => !isRoomLocallyClosed(room?.code));
       return true;
     } catch {
       state.roomDirectoryOnline = false;
@@ -16076,6 +16121,9 @@ async function refreshHostedRoomsAndRender(options = {}) {
 async function fetchRoomByCode(code = state.roomSettings.code) {
   if (!code || code === "CAI-0000") {
     return { status: "missing", room: null };
+  }
+  if (isRoomLocallyClosed(code)) {
+    return { status: "closed", room: null };
   }
   try {
     const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}`, { cache: "no-store" }, roomLookupFetchTimeoutMs);
@@ -16243,6 +16291,9 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   renderSubmissionStatus();
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
+  }
+  if (state.currentRoomStatus === "draft" && !state.joiningRoom && isCurrentHost()) {
+    scheduleRoomSettingsPublish("draft", 120);
   }
   return true;
 }

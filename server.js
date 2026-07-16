@@ -983,8 +983,17 @@ function normalizeAnswerList(value, limit) {
 async function handleUpsertRoom(req, res) {
   try {
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
-    const existingRoom = await backendStore.getRoom((body.room || body).code);
     const room = normalizeRoom(body.room || body);
+    const existingRoom = await backendStore.getRoom(room.code);
+    const recentClose = existingRoom ? null : await backendStore.getRoomClose(room.code);
+    if (recentClose) {
+      sendJson(res, 409, {
+        error: "Room was recently closed.",
+        closed: true,
+        close: recentClose
+      });
+      return;
+    }
     room.events = normalizeRoomEvents(existingRoom?.events);
     room.revision = clampServerNumber(existingRoom?.revision, 0, Number.MAX_SAFE_INTEGER, 0);
     stampRoomEvent(room, existingRoom ? "room_updated" : "room_created", { status: room.status });

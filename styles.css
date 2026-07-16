@@ -4406,7 +4406,7 @@ input:focus {
     0 0 1.45rem rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.22);
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-pattern]:not([data-card-pattern="none"])::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-pattern]:not([data-card-pattern="none"])::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -4416,7 +4416,7 @@ input:focus {
   mix-blend-mode: screen;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="hexagon"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="hexagon"]::before {
   background: var(--custom-card-pattern-bg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.42));
   -webkit-mask-image: url("assets/patterns/hexagon-pattern.svg");
   mask-image: url("assets/patterns/hexagon-pattern.svg");
@@ -4427,7 +4427,7 @@ input:focus {
   animation: cardPatternDriftHex 12000ms linear infinite;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="slants"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="slants"]::before {
   background: var(--custom-card-pattern-bg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.46));
   -webkit-mask-image: url("assets/patterns/slants-pattern.svg");
   mask-image: url("assets/patterns/slants-pattern.svg");
@@ -4438,18 +4438,18 @@ input:focus {
   animation: cardPatternDriftSlants 9600ms linear infinite;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="slants"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="slants"]::before {
   background: linear-gradient(180deg, rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.5), rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.24));
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="digital"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="digital"]::before {
   background:
     repeating-linear-gradient(0deg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.58) 0 1px, transparent 1px 0.55rem);
   background-size: 100% 2.2rem;
   animation: cardPatternDriftDigital 4600ms linear infinite;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="waves"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="waves"]::before {
   background: var(--custom-card-pattern-bg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.5));
   -webkit-mask-image: url("assets/patterns/wave-pattern.svg");
   mask-image: url("assets/patterns/wave-pattern.svg");
@@ -4462,11 +4462,11 @@ input:focus {
   animation: cardPatternDriftWaves 18000ms linear infinite;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="waves"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="waves"]::before {
   background: linear-gradient(180deg, rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.52), rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.3));
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="geometric"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="geometric"]::before {
   background: var(--custom-card-pattern-bg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.5));
   -webkit-mask-image: url("assets/patterns/geometric-pattern.svg");
   mask-image: url("assets/patterns/geometric-pattern.svg");
@@ -4479,11 +4479,11 @@ input:focus {
   animation: cardPatternDriftGeometric 15000ms linear infinite;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="geometric"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="geometric"]::before {
   background: linear-gradient(180deg, rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.52), rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.3));
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="scales"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="scales"]::before {
   background: var(--custom-card-pattern-bg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.5));
   -webkit-mask-image: url("assets/patterns/scales-pattern.svg");
   mask-image: url("assets/patterns/scales-pattern.svg");
@@ -4496,11 +4496,11 @@ input:focus {
   animation: cardPatternDriftScales 16000ms linear infinite;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="scales"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="scales"]::before {
   background: linear-gradient(180deg, rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.52), rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.3));
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="carbon"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="carbon"]::before {
   background: var(--custom-card-pattern-bg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.5));
   -webkit-mask-image: url("assets/patterns/carbon-pattern.svg");
   mask-image: url("assets/patterns/carbon-pattern.svg");
@@ -4512,11 +4512,11 @@ input:focus {
   opacity: 0.44;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="carbon"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="carbon"]::before {
   background: linear-gradient(180deg, rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.52), rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.3));
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="circuit"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="circuit"]::before {
   background-image: url("assets/patterns/circuit-pattern.svg");
   background-repeat: repeat;
   background-size: 36rem 23.2rem;
@@ -4525,12 +4525,12 @@ input:focus {
   opacity: 0.26;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="circuit"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="circuit"]::before {
   opacity: 0.32;
   filter: invert(1) brightness(1.5) contrast(1.25);
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="hearts"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-pattern="hearts"]::before {
   background: var(--custom-card-pattern-bg, rgb(var(--custom-card-pattern-rgb, 34 211 238) / 0.52));
   -webkit-mask-image: url("assets/patterns/hearts-pattern.svg");
   mask-image: url("assets/patterns/hearts-pattern.svg");
@@ -4543,7 +4543,7 @@ input:focus {
   animation: cardPatternDriftHearts 15000ms linear infinite;
 }
 
-:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="hearts"]::before {
+:is(.profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-pattern="hearts"]::before {
   background: linear-gradient(180deg, rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.52), rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.3));
 }
 
