@@ -157,6 +157,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomSettingsMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/settings$/);
+    if (roomSettingsMatch && req.method === "PATCH") {
+      await handleRoomSettings(req, res, roomSettingsMatch[1]);
+      return;
+    }
+
     const roomHeartbeatMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/heartbeat$/);
     if (roomHeartbeatMatch && req.method === "POST") {
       await handleRoomHeartbeat(req, res, roomHeartbeatMatch[1]);
@@ -175,9 +181,27 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomPowerStateMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/power-state$/);
+    if (roomPowerStateMatch && req.method === "POST") {
+      await handleRoomPowerState(req, res, roomPowerStateMatch[1]);
+      return;
+    }
+
     const roomEventsMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/events$/);
     if (roomEventsMatch && req.method === "GET") {
       await handleRoomEvents(url, res, roomEventsMatch[1]);
+      return;
+    }
+
+    const roomModerationMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/moderation$/);
+    if (roomModerationMatch && req.method === "POST") {
+      await handleRoomModeration(req, res, roomModerationMatch[1]);
+      return;
+    }
+
+    const roomCloseMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/close$/);
+    if (roomCloseMatch && req.method === "POST") {
+      await handleRoomClose(req, res, roomCloseMatch[1]);
       return;
     }
 
@@ -983,8 +1007,23 @@ function normalizeAnswerList(value, limit) {
 async function handleUpsertRoom(req, res) {
   try {
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
-    const room = normalizeRoom(body.room || body);
-    const existingRoom = await backendStore.getRoom(room.code);
+    const rawRoom = body.room || body;
+    const existingRoom = await backendStore.getRoom(rawRoom.code);
+    if (existingRoom) {
+      if (!Array.isArray(rawRoom.chat)) {
+        rawRoom.chat = existingRoom.chat || [];
+      }
+      if (!Object.hasOwn(rawRoom, "game")) {
+        rawRoom.game = existingRoom.game || null;
+      }
+      if (!Array.isArray(rawRoom.participants)) {
+        rawRoom.participants = existingRoom.participants || [];
+      }
+      if (!Array.isArray(rawRoom.banned)) {
+        rawRoom.banned = existingRoom.banned || [];
+      }
+    }
+    const room = normalizeRoom(rawRoom);
     const recentClose = existingRoom ? null : await backendStore.getRoomClose(room.code);
     if (recentClose) {
       sendJson(res, 409, {
@@ -1102,7 +1141,8 @@ async function handleRoomPresence(req, res, code) {
       participantId: participant.id,
       host: Boolean(participant.host),
       spectator: Boolean(participant.spectator),
-      status: participant.status
+      status: participant.status,
+      participant: room.participants.find((entry) => entry.id === participant.id) || participant
     });
     const storedRoom = await backendStore.upsertRoom(room);
     if (body.compact) {
@@ -1119,6 +1159,69 @@ async function handleRoomPresence(req, res, code) {
     sendJson(res, 200, { room: storedRoom });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room presence update failed." });
+  }
+}
+
+async function handleRoomSettings(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    if (!isHostParticipant(room, body.hostParticipantId)) {
+      sendJson(res, 403, { error: "Only the host can update room settings." });
+      return;
+    }
+    const nextSettings = normalizeRoomSettings({
+      ...(room.settings || {}),
+      ...(body.settings && typeof body.settings === "object" ? body.settings : body)
+    }, normalizedCode);
+    const nextStatus = ["draft", "lobby", "in-progress", "complete"].includes(body.status)
+      ? body.status
+      : room.status;
+    room.settings = nextSettings;
+    room.status = nextStatus;
+    if (body.host && typeof body.host === "object") {
+      room.host = {
+        ...(room.host || {}),
+        id: String(body.host.id || room.host?.id || "host").slice(0, 80),
+        name: String(body.host.name || room.host?.name || "Host").slice(0, 24),
+        avatar: String(body.host.avatar || room.host?.avatar || "").slice(0, 250000),
+        equippedTitleId: String(body.host.equippedTitleId || room.host?.equippedTitleId || "").slice(0, 80),
+        specialBadges: normalizeSpecialBadges(body.host.specialBadges || room.host?.specialBadges),
+        cardCustomization: normalizeCardCustomization(body.host.cardCustomization || room.host?.cardCustomization)
+      };
+      const hostParticipant = room.participants.find((participant) => participant.id === room.host.id || participant.host);
+      if (hostParticipant) {
+        hostParticipant.name = room.host.name;
+        hostParticipant.avatar = room.host.avatar;
+        hostParticipant.equippedTitleId = room.host.equippedTitleId || "";
+        hostParticipant.specialBadges = normalizeSpecialBadges(room.host.specialBadges);
+        hostParticipant.cardCustomization = room.host.cardCustomization || null;
+        hostParticipant.host = true;
+      }
+    }
+    finalizeRoom(room);
+    stampRoomEvent(room, "settings_updated", {
+      status: room.status,
+      settings: room.settings,
+      host: room.host
+    });
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, {
+      code: storedRoom.code,
+      status: storedRoom.status,
+      revision: getRoomRevision(storedRoom),
+      updatedAt: storedRoom.updatedAt,
+      settings: storedRoom.settings,
+      host: storedRoom.host
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room settings update failed." });
   }
 }
 
@@ -1173,7 +1276,8 @@ async function handleRoomChat(req, res, code) {
     stampRoomEvent(room, "chat_message", {
       owner: message.owner,
       sender: message.sender,
-      private: Boolean(message.private)
+      private: Boolean(message.private),
+      message
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
@@ -1212,7 +1316,8 @@ async function handleRoomGame(req, res, code) {
     room.game = game;
     stampRoomEvent(room, "round_started", {
       round: game.round,
-      matchId: game.matchId
+      matchId: game.matchId,
+      game
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
@@ -1222,9 +1327,80 @@ async function handleRoomGame(req, res, code) {
   }
 }
 
+async function handleRoomPowerState(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const powerState = normalizeRoomPowerState({
+      updatedAt: Date.now(),
+      hands: body.hands,
+      played: body.played,
+      players: body.players,
+      effects: body.effects
+    });
+    if (!powerState) {
+      sendJson(res, 400, { error: "Room power update needs a power state payload." });
+      return;
+    }
+    if (!room.game || typeof room.game !== "object") {
+      room.game = {
+        matchId: `${normalizedCode}-${Date.now()}`,
+        status: "playing",
+        round: clampServerNumber(body.round, 1, 100, 1),
+        setup: null,
+        powerState,
+        updatedAt: Date.now()
+      };
+    } else {
+      room.game.powerState = powerState;
+      room.game.updatedAt = Date.now();
+    }
+    stampRoomEvent(room, "power_state", {
+      round: clampServerNumber(body.round, 0, 100, room.game.round || 0),
+      powerId: String(body.powerId || "").slice(0, 80),
+      actorParticipantId: String(body.actorParticipantId || "").slice(0, 120),
+      targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
+      deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
+      stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
+      powerState
+    });
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, {
+      code: storedRoom.code,
+      status: storedRoom.status,
+      revision: getRoomRevision(storedRoom),
+      updatedAt: storedRoom.updatedAt,
+      round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
+      powerId: String(body.powerId || "").slice(0, 80),
+      actorParticipantId: String(body.actorParticipantId || "").slice(0, 120),
+      targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
+      deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
+      stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
+      hands: powerState.hands,
+      played: powerState.played,
+      players: powerState.players,
+      effects: powerState.effects
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room power update failed." });
+  }
+}
+
 async function handleRoomEvents(url, res, code) {
   const room = await backendStore.getRoom(String(code || "").trim().toUpperCase());
   if (!room) {
+    const close = await backendStore.getRoomClose(String(code || "").trim().toUpperCase());
+    if (close) {
+      sendJson(res, 410, { closed: true, close, events: [] });
+      return;
+    }
     sendJson(res, 404, { error: "Room not found." });
     return;
   }
@@ -1237,6 +1413,108 @@ async function handleRoomEvents(url, res, code) {
   });
 }
 
+function isHostParticipant(room, participantId) {
+  const id = String(participantId || "").slice(0, 80);
+  return Boolean(id && (id === room.host?.id || room.participants.some((participant) => participant.id === id && participant.host)));
+}
+
+async function handleRoomModeration(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
+    if (!isHostParticipant(room, hostParticipantId)) {
+      sendJson(res, 403, { error: "Only the host can moderate this room." });
+      return;
+    }
+
+    const action = String(body.action || "").slice(0, 32);
+    const participantId = String(body.participantId || "").slice(0, 80);
+    const participant = room.participants.find((entry) => entry.id === participantId);
+    if (!participant || participant.host || participant.id === room.host?.id) {
+      sendJson(res, 404, { error: "Participant not found." });
+      return;
+    }
+
+    if (action === "mute" || action === "unmute" || action === "set-muted") {
+      const muted = action === "mute" ? true : action === "unmute" ? false : Boolean(body.muted);
+      participant.muted = muted;
+      participant.status = muted ? "muted" : String(participant.status || "joined").slice(0, 32);
+    } else if (action === "kick" || action === "ban") {
+      participant.active = false;
+      participant.status = action === "ban" ? "banned" : "kicked";
+      if (action === "ban") {
+        room.banned = [...new Set([...(Array.isArray(room.banned) ? room.banned : []), participant.id, participant.name].filter(Boolean))];
+      }
+    } else {
+      sendJson(res, 400, { error: "Unknown moderation action." });
+      return;
+    }
+
+    finalizeRoom(room);
+    stampRoomEvent(room, "participant_moderated", {
+      action,
+      participantId,
+      muted: Boolean(participant.muted),
+      banned: room.banned || [],
+      participant
+    });
+    if (!hasActiveRealPlayers(room)) {
+      await closeStoredRoom(normalizedCode, "empty-room");
+      sendJson(res, 200, { closed: true, code: normalizedCode, reason: "empty-room" });
+      return;
+    }
+    const storedRoom = await backendStore.upsertRoom(room);
+    const storedParticipant = storedRoom.participants.find((entry) => entry.id === participantId) || participant;
+    sendJson(res, 200, {
+      code: storedRoom.code,
+      status: storedRoom.status,
+      revision: getRoomRevision(storedRoom),
+      updatedAt: storedRoom.updatedAt,
+      action,
+      participantId,
+      participant: storedParticipant,
+      banned: storedRoom.banned || []
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room moderation failed." });
+  }
+}
+
+async function handleRoomClose(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      const close = await backendStore.getRoomClose(normalizedCode);
+      sendJson(res, close ? 200 : 404, close ? { closed: true, code: normalizedCode, close } : { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req);
+    const participantId = String(body.participantId || "").slice(0, 80);
+    if (!isHostParticipant(room, participantId)) {
+      sendJson(res, 403, { error: "Only the host can close this room." });
+      return;
+    }
+    const reason = String(body.reason || "host-left").slice(0, 60);
+    await closeStoredRoom(normalizedCode, reason);
+    sendJson(res, 200, {
+      closed: true,
+      code: normalizedCode,
+      reason
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room close failed." });
+  }
+}
+
 function normalizeRoom(room) {
   const code = String(room.code || "").trim().toUpperCase();
   if (!/^CAI-\d{4}$/.test(code)) {
@@ -1246,26 +1524,10 @@ function normalizeRoom(room) {
   const settings = room.settings && typeof room.settings === "object" ? room.settings : {};
   const host = room.host && typeof room.host === "object" ? room.host : {};
   const participants = Array.isArray(room.participants) ? room.participants.map(normalizeParticipant) : [];
-  const classicMode = Boolean(settings.classicMode);
   const normalizedRoom = {
     code,
     status: ["draft", "lobby", "in-progress", "complete"].includes(room.status) ? room.status : "lobby",
-    settings: {
-      rounds: clampServerNumber(settings.rounds, 1, 10, 10),
-      timerSeconds: clampServerNumber(settings.timerSeconds, 10, 60, 30),
-      maxPlayers: clampServerNumber(settings.maxPlayers, 2, 10, 5),
-      harsh: classicMode ? false : Boolean(settings.harsh),
-      chaos: classicMode ? false : Boolean(settings.chaos),
-      timeMoney: classicMode ? false : Boolean(settings.timeMoney),
-      amplified: classicMode ? false : Boolean(settings.amplified),
-      wildFire: classicMode ? false : Boolean(settings.wildFire),
-      partyMayhem: classicMode ? false : Boolean(settings.partyMayhem),
-      classicMode,
-      private: Boolean(settings.private),
-      password: String(settings.password || "").slice(0, 32),
-      enabledThemes: normalizeEnabledThemes(settings.enabledThemes),
-      code
-    },
+    settings: normalizeRoomSettings(settings, code),
     host: {
       id: String(host.id || participants.find((entry) => entry.host)?.id || "host").slice(0, 80),
       name: String(host.name || "Host").slice(0, 24),
@@ -1285,6 +1547,27 @@ function normalizeRoom(room) {
   };
   finalizeRoom(normalizedRoom);
   return normalizedRoom;
+}
+
+function normalizeRoomSettings(settings = {}, code = "") {
+  const source = settings && typeof settings === "object" ? settings : {};
+  const classicMode = Boolean(source.classicMode);
+  return {
+    rounds: clampServerNumber(source.rounds, 1, 10, 10),
+    timerSeconds: clampServerNumber(source.timerSeconds, 10, 60, 30),
+    maxPlayers: clampServerNumber(source.maxPlayers, 2, 10, 5),
+    harsh: classicMode ? false : Boolean(source.harsh),
+    chaos: classicMode ? false : Boolean(source.chaos),
+    timeMoney: classicMode ? false : Boolean(source.timeMoney),
+    amplified: classicMode ? false : Boolean(source.amplified),
+    wildFire: classicMode ? false : Boolean(source.wildFire),
+    partyMayhem: classicMode ? false : Boolean(source.partyMayhem),
+    classicMode,
+    private: Boolean(source.private),
+    password: String(source.password || "").slice(0, 32),
+    enabledThemes: normalizeEnabledThemes(source.enabledThemes),
+    code: String(code || source.code || "").trim().toUpperCase()
+  };
 }
 
 function normalizeParticipant(participant) {
@@ -1324,8 +1607,7 @@ async function handleRoomLeave(req, res, code) {
     const body = await readRequestJson(req);
     const participantId = String(body.participantId || "").slice(0, 80);
     const reason = String(body.reason || "manual").slice(0, 40);
-    const isHostLeaving = participantId && participantId === room.host?.id
-      || room.participants.some((participant) => participant.id === participantId && participant.host);
+    const isHostLeaving = isHostParticipant(room, participantId);
     if (isHostLeaving) {
       await closeStoredRoom(normalizedCode, "host-left");
       sendJson(res, 200, { closed: true, code: normalizedCode, reason: "host-left" });

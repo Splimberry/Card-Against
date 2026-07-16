@@ -545,6 +545,158 @@ async function testCompactRoomDeltasAvoidFullRoomPayloads() {
   assert.ok(presence.payload.revision >= 3);
 }
 
+async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
+  const code = makeCode(8112);
+  await upsertRoom(makeRoom(code));
+  await request("POST", `/api/rooms/${code}/chat`, {
+    message: {
+      id: "settings-preserve-chat",
+      sender: "Host",
+      owner: "player",
+      text: "Preserve me",
+      createdAt: Date.now()
+    }
+  });
+  await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "settings-joiner",
+      name: "Joiner",
+      active: true,
+      status: "joined"
+    }
+  });
+  await request("PUT", `/api/rooms/${code}/game`, {
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  });
+
+  const { response, payload } = await request("PATCH", `/api/rooms/${code}/settings`, {
+    hostParticipantId: "host-client",
+    status: "lobby",
+    settings: {
+      rounds: 7,
+      timerSeconds: 45,
+      maxPlayers: 6,
+      enabledThemes: ["Science"]
+    }
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.settings.rounds, 7);
+  assert.ok(payload.revision >= 5);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.settings.timerSeconds, 45);
+  assert.equal(stored.payload.room.chat.some((message) => message.id === "settings-preserve-chat"), true);
+  assert.equal(stored.payload.room.participants.some((participant) => participant.id === "settings-joiner"), true);
+  assert.equal(stored.payload.room.game.setup.blackCard, "Round 1 question?");
+  assert.equal(stored.payload.room.events.some((event) => event.type === "settings_updated"), true);
+}
+
+async function testRoomPowerStateEndpointStampsEvents() {
+  const code = makeCode(8113);
+  await upsertRoom(makeRoom(code, { status: "in-progress", game: { matchId: `${code}-match`, status: "playing", round: 1, setup: makeSetup(1), updatedAt: Date.now() } }));
+  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+    round: 1,
+    powerId: "software_downgrade",
+    actorParticipantId: "host-client",
+    hands: [
+      {
+        participantId: "host-client",
+        owner: "player",
+        hand: ["xray_hacks"],
+        fresh: []
+      }
+    ],
+    played: [
+      {
+        participantId: "host-client",
+        owner: "player",
+        stacks: [{ powerId: "software_downgrade", revealId: "test-reveal", meta: {} }],
+        primaryPowerId: "software_downgrade"
+      }
+    ],
+    players: [{ participantId: "host-client", owner: "player", score: 100, streak: 2 }],
+    effects: { maps: {}, arrays: {}, values: {} }
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.hands[0].hand[0], "xray_hacks");
+  assert.ok(payload.revision >= 2);
+
+  const events = await request("GET", `/api/rooms/${code}/events?since=0`);
+  assert.equal(events.response.status, 200, events.payload.error);
+  assert.equal(events.payload.events.some((event) => event.type === "power_state"), true);
+}
+
+async function testRoomModerationEndpointMutesAndBans() {
+  const code = makeCode(8114);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  }));
+
+  const mute = await request("POST", `/api/rooms/${code}/moderation`, {
+    hostParticipantId: "host-client",
+    participantId: "guest-client",
+    action: "mute"
+  });
+  assert.equal(mute.response.status, 200, mute.payload.error);
+  assert.equal(mute.payload.participant.muted, true);
+
+  const ban = await request("POST", `/api/rooms/${code}/moderation`, {
+    hostParticipantId: "host-client",
+    participantId: "guest-client",
+    action: "ban"
+  });
+  assert.equal(ban.response.status, 200, ban.payload.error);
+  assert.equal(ban.payload.banned.includes("guest-client"), true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.participants.some((participant) => participant.id === "guest-client"), false);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated"), true);
+}
+
+async function testHostCloseEndpointDeletesRoom() {
+  const code = makeCode(8115);
+  await upsertRoom(makeRoom(code));
+  const { response, payload } = await request("POST", `/api/rooms/${code}/close`, {
+    participantId: "host-client",
+    reason: "manual"
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.closed, true);
+  assert.equal(payload.reason, "manual");
+  const directRoom = await getRoom(code);
+  assert.equal(directRoom.response.status, 410);
+  assert.equal(directRoom.payload.close.reason, "manual");
+}
+
 async function testDebugQuestionCreateUsesBackendStorage() {
   const question = makeQuestion("science-backend-create-test");
   const { response, payload } = await request("POST", "/api/debug/questions", question, adminHeaders());
@@ -610,6 +762,10 @@ async function main() {
   await testLateJoinerReceivesRoundState();
   await testRoomChatPreservesMessageIds();
   await testCompactRoomDeltasAvoidFullRoomPayloads();
+  await testRoomSettingsPatchPreservesParticipantsChatAndGame();
+  await testRoomPowerStateEndpointStampsEvents();
+  await testRoomModerationEndpointMutesAndBans();
+  await testHostCloseEndpointDeletesRoom();
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();
