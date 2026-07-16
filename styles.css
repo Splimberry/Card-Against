@@ -4288,7 +4288,7 @@ input:focus {
   animation: cardMetallicShine 5200ms ease-in-out infinite;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
   :is(.answer-avatar, .profile-avatar, .room-player-avatar, .equipped-title-pill, .special-player-badge, .rating-badge, .name-with-title-text, .profile-name-display, h2, p, strong) {
   text-shadow:
     0 0.36rem 0.34rem rgba(0, 0, 0, 0.56),
@@ -4321,7 +4321,7 @@ input:focus {
   overflow: visible;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
   .special-player-badge {
   filter:
     drop-shadow(0 0.36rem 0.24rem rgba(0, 0, 0, 0.48))
@@ -4358,15 +4358,15 @@ input:focus {
     drop-shadow(0 0 0.54rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.24));
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
-  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .equipped-title-pill, .special-player-badge, .rating-badge, h2, p, strong, label, input, small, button) {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
+  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .name-with-title-text, .equipped-title-pill, .rating-badge, h2, p, strong, label, input, small, button) {
   text-shadow:
     0 0 0.4rem rgba(255, 255, 255, 0.34),
     0 0 0.95rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42),
     0 0 1.6rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.22);
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
   .special-player-badge {
   filter:
     drop-shadow(0 0 0.34rem rgba(255, 255, 255, 0.32))
@@ -4382,15 +4382,15 @@ input:focus {
     0 0 1.35rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.2);
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
-  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .equipped-title-pill, .special-player-badge, .rating-badge, h2, p, strong, label, input, small, button) {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
+  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .name-with-title-text, .equipped-title-pill, .rating-badge, h2, p, strong, label, input, small, button) {
   text-shadow:
     0 0 0.4rem rgba(255, 255, 255, 0.34),
     0 0 1rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44),
     0 0 1.7rem rgb(var(--rgb2-r) var(--rgb2-g) var(--rgb2-b) / 0.24);
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
   .special-player-badge {
   filter:
     drop-shadow(0 0 0.36rem rgba(255, 255, 255, 0.32))
@@ -7181,6 +7181,7 @@ input:focus {
   display: grid;
   gap: 0.25rem;
   align-content: start;
+  min-width: 0;
   min-height: 5.2rem;
   padding: 0.65rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -7331,12 +7332,14 @@ input:focus {
     linear-gradient(135deg, rgba(34, 211, 238, 0.11), rgba(255, 255, 255, 0.045)),
     rgba(255, 255, 255, 0.04);
   color: var(--ink);
-  font-size: 1.18rem;
+  font-size: 1.02rem;
   font-weight: 950;
+  line-height: 1.1;
   overflow: hidden;
   text-align: center;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .profile-font-preview {
@@ -7352,12 +7355,13 @@ input:focus {
   background: rgba(0, 0, 0, 0.16);
   overflow: hidden;
   color: var(--ink);
-  font-size: 1.22rem;
+  font-size: 0.96rem;
   font-weight: 950;
   line-height: 1.1;
   text-align: center;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
   text-transform: none;
 }
 
@@ -7603,15 +7607,17 @@ input:focus {
   padding-left: 1.7rem;
   padding-top: 0.2rem;
   color: var(--ink);
-  font-size: 0.82rem;
-  line-height: 1.08;
+  font-size: 0.72rem;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
 }
 
 .profile-style-option small {
   color: rgba(245, 247, 251, 0.68);
-  font-size: 0.66rem;
+  font-size: 0.58rem;
   line-height: 1.18;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
 }
 
