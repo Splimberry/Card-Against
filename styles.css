@@ -5075,11 +5075,12 @@ input:focus {
   position: relative;
   z-index: 4;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-flow: row wrap;
+  align-items: center;
   justify-content: center;
   align-self: center;
-  gap: 0.34rem;
+  column-gap: 0.34rem;
+  row-gap: 0.34rem;
   width: max-content;
   max-width: none;
   min-height: 3rem;
@@ -5109,6 +5110,7 @@ input:focus {
   position: relative;
   z-index: 2;
   display: inline-flex;
+  flex-basis: 100%;
   align-items: center;
   justify-content: center;
   width: max-content;
