@@ -358,7 +358,7 @@ async function testRoomDirectoryAcceptsProfileImagePayload() {
   assert.equal(rooms.some((entry) => entry.code === code), true);
 }
 
-async function testBackgroundTabDoesNotDeleteRoom() {
+async function testHostPageExitDeletesRoom() {
   const code = makeCode(8102);
   await upsertRoom(makeRoom(code));
   const { response, payload } = await request("POST", `/api/rooms/${code}/leave`, {
@@ -366,12 +366,10 @@ async function testBackgroundTabDoesNotDeleteRoom() {
     reason: "page-exit"
   });
   assert.equal(response.status, 200, payload.error);
-  assert.equal(payload.closed, false);
-  assert.equal(payload.reason, "page-exit-ignored");
+  assert.equal(payload.closed, true);
+  assert.equal(payload.reason, "host-left");
   const rooms = await listRooms();
-  const room = rooms.find((entry) => entry.code === code);
-  assert.ok(room);
-  assert.equal(room.hostExitPendingAt, 0);
+  assert.equal(rooms.some((entry) => entry.code === code), false);
 }
 
 async function testAnswerSurvivesHeartbeat() {
@@ -569,7 +567,7 @@ async function main() {
   await testRoomListShowsStoredRoomsWithoutActivePlayers();
   await testRoomListUsesParticipantsWhenActiveCountIsMissing();
   await testRoomDirectoryAcceptsProfileImagePayload();
-  await testBackgroundTabDoesNotDeleteRoom();
+  await testHostPageExitDeletesRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
   await testRoomChatPreservesMessageIds();

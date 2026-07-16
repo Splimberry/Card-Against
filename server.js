@@ -1318,14 +1318,6 @@ async function handleRoomLeave(req, res, code) {
     const isHostLeaving = participantId && participantId === room.host?.id
       || room.participants.some((participant) => participant.id === participantId && participant.host);
     if (isHostLeaving) {
-      if (reason === "page-exit") {
-        room.hostExitPendingAt = 0;
-        finalizeRoom(room);
-        room.updatedAt = Date.now();
-        const storedRoom = await backendStore.upsertRoom(room);
-        sendJson(res, 200, { room: storedRoom, closed: false, reason: "page-exit-ignored" });
-        return;
-      }
       await closeStoredRoom(normalizedCode, "host-left");
       sendJson(res, 200, { closed: true, code: normalizedCode, reason: "host-left" });
       return;
