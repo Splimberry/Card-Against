@@ -10,7 +10,10 @@ loadEnv();
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
 const backendStore = createBackendStore({
-  roomTtlSeconds: process.env.ROOM_TTL_SECONDS || 60 * 60 * 6
+  roomTtlSeconds: process.env.ROOM_TTL_SECONDS || 60 * 60 * 6,
+  lobbyRoomTtlSeconds: process.env.ROOM_LOBBY_TTL_SECONDS || 5 * 60,
+  activeRoomTtlSeconds: process.env.ROOM_ACTIVE_TTL_SECONDS || 2 * 60 * 60,
+  closedRoomTtlSeconds: process.env.ROOM_CLOSED_TTL_SECONDS || 60
 });
 const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
@@ -313,7 +316,8 @@ async function handleAdminStatus(req, res) {
     ok: true,
     storage: {
       mode: backendStore.mode,
-      persistent: backendStore.persistent
+      persistent: backendStore.persistent,
+      roomTtlSeconds: backendStore.roomTtlSeconds
     },
     rooms: {
       total: rooms.length,
@@ -1476,7 +1480,7 @@ async function serveStatic(pathname, res, isHead, req) {
           "Content-Length": chunk.length,
           "Content-Range": `bytes ${start}-${end}/${data.length}`,
           "Accept-Ranges": "bytes",
-          "Cache-Control": "no-store"
+          "Cache-Control": getStaticCacheControl(filePath, contentType)
         });
         if (!isHead) {
           res.end(chunk);
@@ -1491,7 +1495,7 @@ async function serveStatic(pathname, res, isHead, req) {
       "Content-Type": contentType,
       "Content-Length": data.length,
       ...(isMedia ? { "Accept-Ranges": "bytes" } : {}),
-      "Cache-Control": "no-store"
+      "Cache-Control": getStaticCacheControl(filePath, contentType)
     });
     if (!isHead) {
       res.end(data);
@@ -1501,6 +1505,28 @@ async function serveStatic(pathname, res, isHead, req) {
   } catch {
     sendText(res, 404, "Not found");
   }
+}
+
+function getStaticCacheControl(filePath, contentType = "") {
+  const extension = extname(filePath).toLowerCase();
+  if (extension === ".html") {
+    return "no-store";
+  }
+  if (extension === ".js" || extension === ".css") {
+    return "public, max-age=60, must-revalidate";
+  }
+  if (
+    contentType.startsWith("audio/")
+    || contentType.startsWith("image/")
+    || extension === ".woff"
+    || extension === ".woff2"
+  ) {
+    return "public, max-age=604800, immutable";
+  }
+  if (extension === ".json") {
+    return "public, max-age=300, must-revalidate";
+  }
+  return "public, max-age=300, must-revalidate";
 }
 
 async function handleSetup(req, res) {

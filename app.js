@@ -33,6 +33,15 @@ const currencyStorageKey = "cardsAgainstAiCurrency";
 const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
 const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
 const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
+const userStorageVersion = 1;
+const userCacheStorageKey = "cardsAgainstAiUserCache:v1";
+const setupCacheStorageKey = "cardsAgainstAiRecentQuestionCache:v1";
+const publicCatalogCacheStorageKey = "cardsAgainstAiPublicCatalog:v1";
+const helpSeenFlagsStorageKey = "cardsAgainstAiHelpSeenFlags:v1";
+const userStorageWriteDelayMs = 450;
+const setupCacheLimit = 30;
+const setupCacheMaxAgeMs = 24 * 60 * 60 * 1000;
+const publicCatalogVersion = "2026-07-16-1";
 const userQuestionSubmissionCost = 250;
 const roomChatHistoryLimit = 50;
 const roomMissingGraceMs = 10000;
@@ -428,8 +437,10 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, number));
 }
 
-const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, 5);
-const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds"), 10, 60, 30);
+const savedUserCache = loadUserStorageCache();
+const savedEnabledThemes = normalizeCachedThemes(savedUserCache?.settings?.lastSelectedThemes);
+const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds") || savedUserCache?.settings?.maxRounds, 1, 10, 5);
+const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds") || savedUserCache?.settings?.timerSeconds, 10, 60, 30);
 const DEFAULT_OWNER_IDS = ["player", "opponent", "bot1", "bot2"];
 
 function createGuestName() {
@@ -473,6 +484,121 @@ const fallbackBotUsernames = [
 function getUserProfileStorageKey(user, field) {
   const userId = String(user?.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
   return userId ? `cardsAgainstAiProfile:${userId}:${field}` : `cardsAgainstAiProfile:${field}`;
+}
+
+function readJsonStorage(key, fallback) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || "null");
+    return parsed === null || typeof parsed === "undefined" ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function loadUserStorageCache() {
+  const cache = readJsonStorage(userCacheStorageKey, {});
+  return cache?.version === userStorageVersion && typeof cache === "object" ? cache : {};
+}
+
+function normalizeCachedThemes(themes) {
+  const uniqueThemes = [...new Set((Array.isArray(themes) ? themes : [])
+    .map((theme) => String(theme || "").trim())
+    .filter((theme) => triviaThemes.includes(theme)))];
+  return uniqueThemes.length ? uniqueThemes : [];
+}
+
+function getCacheableAvatar(avatar) {
+  const value = String(avatar || "");
+  return value.length <= 180000 ? value : "";
+}
+
+function getPublicCatalogCachePayload() {
+  return {
+    version: publicCatalogVersion,
+    updatedAt: Date.now(),
+    catalog: {
+      achievements: achievementCatalog.map((achievement) => achievement.id),
+      cosmetics: profileShopItems.map((item) => getProfileShopKey(item.type, item.id)),
+      powerUps: powerDeck.map((power) => power.id),
+      themes: [...triviaThemes]
+    }
+  };
+}
+
+function writePublicCatalogCache() {
+  const current = readJsonStorage(publicCatalogCacheStorageKey, {});
+  if (current?.version === publicCatalogVersion) {
+    return;
+  }
+  writeJsonStorage(publicCatalogCacheStorageKey, getPublicCatalogCachePayload());
+}
+
+function getUserStorageSnapshot() {
+  const avatar = getCacheableAvatar(state.profile?.avatar);
+  const purchases = loadProfileShopPurchases();
+  return {
+    version: userStorageVersion,
+    updatedAt: Date.now(),
+    userId: state.supabaseUser?.id || "guest",
+    profile: {
+      username: state.profile?.name || savedGuestName,
+      avatarPreview: avatar,
+      compressedAvatar: avatar,
+      cardCustomization: normalizeProfileCustomization(state.profile?.cardCustomization || loadProfileCustomization()),
+      equippedAchievementId: state.profile?.equippedTitleId || ""
+    },
+    settings: {
+      sfx: Math.round((soundState.sfxVolume || 0) * 100),
+      music: Math.round((soundState.musicVolume || 0) * 100),
+      timerSeconds: state.timerSeconds,
+      maxRounds: state.maxRounds,
+      lastSelectedThemes: getEnabledTriviaThemes()
+    },
+    currencyDisplayCache: {
+      coins: getCurrencyBalance()
+    },
+    unlockedCosmeticsCache: {
+      purchases,
+      equipped: normalizeProfileCustomization(state.profile?.cardCustomization || loadProfileCustomization())
+    },
+    recentQuestionCache: {
+      total: loadRecentSetupCache().length
+    },
+    tutorialHelpSeenFlags: readJsonStorage(helpSeenFlagsStorageKey, {}),
+    shopDisplayCache: {
+      purchases,
+      catalogVersion: publicCatalogVersion
+    },
+    achievementProgressCache: {
+      unlocked: loadUnlockedAchievements(),
+      progress: loadAchievementProgress(),
+      claimedMilestones: loadClaimedAchievementMilestones()
+    }
+  };
+}
+
+function flushUserStorageSnapshot() {
+  if (state.userStorageWriteTimerId) {
+    window.clearTimeout(state.userStorageWriteTimerId);
+    state.userStorageWriteTimerId = null;
+  }
+  writeJsonStorage(userCacheStorageKey, getUserStorageSnapshot());
+}
+
+function scheduleUserStorageSnapshot() {
+  if (state.userStorageWriteTimerId) {
+    window.clearTimeout(state.userStorageWriteTimerId);
+  }
+  state.userStorageWriteTimerId = window.setTimeout(flushUserStorageSnapshot, userStorageWriteDelayMs);
 }
 const audioAssets = {
   music: "assets/bg-music.mp3",
@@ -612,8 +738,8 @@ const soundState = {
   muted: false,
   lastSfxAt: 0,
   activeAudioNodes: new Set(),
-  sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume"), 0, 100, 50) / 100,
-  musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume"), 0, 100, 50) / 100
+  sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume") || savedUserCache?.settings?.sfx, 0, 100, 50) / 100,
+  musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume") || savedUserCache?.settings?.music, 0, 100, 50) / 100
 };
 
 const state = {
@@ -635,7 +761,7 @@ const state = {
 	    wildFire: false,
 	    partyMayhem: false,
 	    classicMode: false,
-	    enabledThemes: [...triviaThemes],
+	    enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
     private: false,
     password: "",
     code: "CAI-0000"
@@ -962,7 +1088,7 @@ const state = {
   questionImageLoadId: 0,
   canonicalAnswer: "",
   acceptedAnswers: [],
-  enabledThemes: [...triviaThemes],
+  enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
   judge: null,
   statFlashQueue: [],
   statFlashActive: false,
@@ -993,6 +1119,9 @@ const state = {
   realtimeJoinRefreshTimerId: null,
   realtimeRoomRefreshTimerId: null,
   realtimeSourceId: `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  userStorageWriteTimerId: null,
+  roomSettingsPublishTimerId: null,
+  roomSettingsPublishKind: "",
   adminAuthenticated: false,
   adminUser: null
 };
@@ -2080,6 +2209,10 @@ async function requestRoundSetup(options = {}) {
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards;
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = options.preferredTheme || "";
+  const cachedSetup = takeCachedRoundSetup({ recentBlackCards, enabledThemes, preferredTheme });
+  if (cachedSetup) {
+    return cachedSetup;
+  }
   const response = await fetch("/api/setup", {
     method: "POST",
     headers: {
@@ -2100,7 +2233,9 @@ async function requestRoundSetup(options = {}) {
     throw new Error(error.error || `AI setup request failed with status ${response.status}.`);
   }
 
-  return normalizeSetupPayload(await response.json());
+  const setup = normalizeSetupPayload(await response.json());
+  cacheRoundSetup(setup, enabledThemes);
+  return setup;
 }
 
 function normalizePromptText(text) {
@@ -2108,6 +2243,71 @@ function normalizePromptText(text) {
     .toLowerCase()
     .replace(/[_\W]+/g, " ")
     .trim();
+}
+
+function loadRecentSetupCache() {
+  const now = Date.now();
+  const parsed = readJsonStorage(setupCacheStorageKey, []);
+  return (Array.isArray(parsed) ? parsed : [])
+    .map((entry) => ({
+      signature: String(entry?.signature || ""),
+      cachedAt: Number(entry?.cachedAt) || 0,
+      setup: entry?.setup && typeof entry.setup === "object" ? entry.setup : null
+    }))
+    .filter((entry) => entry.setup && now - entry.cachedAt <= setupCacheMaxAgeMs)
+    .slice(-setupCacheLimit);
+}
+
+function saveRecentSetupCache(entries) {
+  writeJsonStorage(setupCacheStorageKey, (Array.isArray(entries) ? entries : []).slice(-setupCacheLimit));
+  scheduleUserStorageSnapshot();
+}
+
+function getRecentPromptSet(recentBlackCards = state.recentBlackCards, previousBlackCard = state.blackCard) {
+  return new Set([previousBlackCard, ...(Array.isArray(recentBlackCards) ? recentBlackCards : [])]
+    .map(normalizePromptText)
+    .filter(Boolean));
+}
+
+function isSetupUsableFromCache(setup, options = {}) {
+  const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
+  const preferredTheme = String(options.preferredTheme || "").trim();
+  const prompt = normalizePromptText(setup?.blackCard);
+  if (!prompt || getRecentPromptSet(options.recentBlackCards).has(prompt) || !setupMatchesThemes(setup, enabledThemes)) {
+    return false;
+  }
+  return !preferredTheme || setup.triviaTheme === preferredTheme || setup.theme === preferredTheme;
+}
+
+function takeCachedRoundSetup(options = {}) {
+  const cache = loadRecentSetupCache();
+  const index = cache.findIndex((entry) => isSetupUsableFromCache(entry.setup, options));
+  if (index < 0) {
+    return null;
+  }
+  const [entry] = cache.splice(index, 1);
+  saveRecentSetupCache(cache);
+  try {
+    return normalizeSetupPayload(entry.setup);
+  } catch {
+    return null;
+  }
+}
+
+function cacheRoundSetup(setup, enabledThemes = getEnabledTriviaThemes()) {
+  if (!setup?.blackCard) {
+    return;
+  }
+  const normalized = normalizeSetupPayload(setup);
+  const prompt = normalizePromptText(normalized.blackCard);
+  const cache = loadRecentSetupCache()
+    .filter((entry) => normalizePromptText(entry.setup?.blackCard) !== prompt);
+  cache.push({
+    signature: getThemeSignature(enabledThemes),
+    cachedAt: Date.now(),
+    setup: normalized
+  });
+  saveRecentSetupCache(cache);
 }
 
 function getQuestionUsageKey(question) {
@@ -2126,6 +2326,7 @@ function loadQuestionUsageStats() {
 function saveQuestionUsageStats(stats) {
   try {
     localStorage.setItem(questionUsageStorageKey, JSON.stringify(stats || {}));
+    scheduleUserStorageSnapshot();
   } catch {
     // Local stats are nice-to-have; gameplay should keep moving if storage is full.
   }
@@ -4318,6 +4519,7 @@ function updateEnabledThemesFromPicker() {
   }
   updateRoomVariants();
   clearWarmSetup();
+  scheduleUserStorageSnapshot();
   ensureQuestionReserve({ enabledThemes: state.roomSettings.enabledThemes });
 }
 
@@ -4326,6 +4528,7 @@ function enableAllThemes() {
   renderThemePicker();
   updateRoomVariants();
   clearWarmSetup();
+  scheduleUserStorageSnapshot();
   ensureQuestionReserve({ enabledThemes: state.roomSettings.enabledThemes });
   playSound("click");
 }
@@ -4769,6 +4972,7 @@ function loadCurrencyBalance() {
 function saveCurrencyBalance(value) {
   const cleanValue = Math.max(0, Math.floor(Number(value) || 0));
   localStorage.setItem(currencyStorageKey, String(cleanValue));
+  scheduleUserStorageSnapshot();
   return cleanValue;
 }
 
@@ -5336,7 +5540,6 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
     if (data.room) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
-      broadcastRealtimeRoomChange("chat-message", data.room);
     }
     return data.room || null;
   }).catch(() => {
@@ -5393,9 +5596,6 @@ function getRoomBanList() {
 
 function setRoomSubmission(owner, submitted) {
   state.roomSubmissions[owner] = Boolean(submitted);
-  if (submitted && isRoomMode() && isCurrentHost() && !state.joiningRoom) {
-    upsertHostedRoom("in-progress");
-  }
   const player = getPlayer(owner);
   if (player && player.active && !player.muted) {
     player.connectionStatus = submitted ? "submitted" : player.owner === "player" ? "host" : "waiting";
@@ -5426,7 +5626,8 @@ function publishCurrentRoomSubmission(answer) {
     status: "submitted",
     answer,
     submittedRound: state.round,
-    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0
+    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0,
+    skipRealtimeBroadcast: true
   });
 }
 
@@ -6284,21 +6485,37 @@ function handleRealtimeRoomChange(payload = {}) {
   if (!code) {
     return;
   }
-  if (!elements.joinScreen.classList.contains("hidden")) {
+  if (!elements.joinScreen.classList.contains("hidden") && shouldRealtimeRefreshJoinDirectory(payload.eventType)) {
     scheduleRealtimeJoinRefresh();
   }
   if (code === state.roomSettings.code && hasActiveRoomContext()) {
+    let appliedDelta = false;
     if (payload.eventType === "chat-message" && payload.message) {
-      applyRealtimeRoomChatMessage(payload.message);
+      appliedDelta = applyRealtimeRoomChatMessage(payload.message);
     }
     if (payload.eventType === "answer-submitted") {
-      applyRoomAnswerSubmission(payload);
+      appliedDelta = applyRoomAnswerSubmission(payload);
     }
     if (payload.eventType === "power-state") {
-      applyRoomPowerState(payload);
+      appliedDelta = applyRoomPowerState(payload);
+    }
+    if (appliedDelta && ["chat-message", "answer-submitted", "power-state"].includes(payload.eventType)) {
+      return;
     }
     scheduleRealtimeRoomRefresh(payload);
   }
+}
+
+function shouldRealtimeRefreshJoinDirectory(eventType = "") {
+  return [
+    "room-updated",
+    "room-created",
+    "room-deleted",
+    "room-closed",
+    "room-left",
+    "participant-updated",
+    "round-started"
+  ].includes(String(eventType || ""));
 }
 
 function scheduleRealtimeJoinRefresh() {
@@ -6363,6 +6580,7 @@ function applyGuestProfile() {
   state.profile.avatar = "";
   localStorage.setItem("cardsAgainstAiProfileName", savedGuestName);
   localStorage.removeItem("cardsAgainstAiProfileAvatar");
+  scheduleUserStorageSnapshot();
   syncProfileToPlayer();
   renderProfile();
   renderRoomPlayers();
@@ -6400,6 +6618,7 @@ function applySupabaseProfile(user) {
   } else {
     state.profile.avatar = "";
   }
+  scheduleUserStorageSnapshot();
   syncProfileToPlayer();
   renderProfile();
   renderRoomPlayers();
@@ -6452,6 +6671,7 @@ function updateProfileName(value) {
   }
   state.profile.name = String(value ?? "").replace(/[\r\n\t]/g, " ").slice(0, 16) || "You";
   localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "name"), state.profile.name);
+  scheduleUserStorageSnapshot();
   syncProfileToPlayer();
   renderProfile();
   renderLeaderboard();
@@ -6493,6 +6713,7 @@ async function updateProfileAvatar(file) {
     }
     state.profile.avatar = await compressProfileImage(file);
     localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "avatar"), state.profile.avatar);
+    scheduleUserStorageSnapshot();
     syncProfileToPlayer();
     renderProfile();
     if (isModalOpen(elements.profileCustomModal)) {
@@ -7632,6 +7853,7 @@ function loadUnlockedAchievements() {
 
 function saveUnlockedAchievements(records) {
   localStorage.setItem(achievementStorageKey, JSON.stringify(records || {}));
+  scheduleUserStorageSnapshot();
 }
 
 function loadAchievementProgress() {
@@ -7645,6 +7867,7 @@ function loadAchievementProgress() {
 
 function saveAchievementProgress(progress) {
   localStorage.setItem(achievementProgressStorageKey, JSON.stringify(progress || {}));
+  scheduleUserStorageSnapshot();
 }
 
 function loadClaimedAchievementMilestones() {
@@ -7663,6 +7886,7 @@ function saveClaimedAchievementMilestones(ids) {
   } else {
     localStorage.removeItem(achievementMilestonesStorageKey);
   }
+  scheduleUserStorageSnapshot();
   updateAchievementNotificationDot();
 }
 
@@ -7787,6 +8011,7 @@ function loadProfileCustomization() {
 function saveProfileCustomization(customization) {
   const normalized = normalizeProfileCustomization(customization);
   localStorage.setItem(profileCustomizationStorageKey, JSON.stringify(normalized));
+  scheduleUserStorageSnapshot();
   return normalized;
 }
 
@@ -7834,6 +8059,7 @@ function saveProfileShopPurchases(keys) {
   } else {
     localStorage.removeItem(profileShopPurchasesStorageKey);
   }
+  scheduleUserStorageSnapshot();
 }
 
 function isProfileShopItemPurchased(type, id, purchases = loadProfileShopPurchases()) {
@@ -8258,6 +8484,7 @@ function setEquippedAchievement(id) {
   } else {
     localStorage.removeItem(equippedAchievementStorageKey);
   }
+  scheduleUserStorageSnapshot();
   state.players.forEach((player) => {
     if (player.owner === state.currentOwner || (player.owner === "player" && !isRoomMode())) {
       player.equippedTitleId = nextId;
@@ -14431,6 +14658,7 @@ function generateRoomCode() {
 }
 
 function getDefaultRoomSettings(code = "CAI-0000") {
+  const cachedThemes = normalizeCachedThemes(state.enabledThemes);
   return {
     rounds: 10,
     timerSeconds: 30,
@@ -14442,7 +14670,7 @@ function getDefaultRoomSettings(code = "CAI-0000") {
     wildFire: false,
     partyMayhem: false,
     classicMode: false,
-    enabledThemes: [...triviaThemes],
+    enabledThemes: cachedThemes.length ? cachedThemes : [...triviaThemes],
     private: false,
     password: "",
     code
@@ -14673,26 +14901,46 @@ function stopJoinDirectoryPolling() {
   }
 }
 
+function scheduleRoomSettingsPublish(kind = state.currentRoomStatus, delay = 300) {
+  if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return;
+  }
+  state.roomSettingsPublishKind = kind;
+  if (state.roomSettingsPublishTimerId) {
+    window.clearTimeout(state.roomSettingsPublishTimerId);
+  }
+  state.roomSettingsPublishTimerId = window.setTimeout(() => {
+    const publishKind = state.roomSettingsPublishKind;
+    state.roomSettingsPublishTimerId = null;
+    state.roomSettingsPublishKind = "";
+    if (publishKind === "lobby" && state.currentRoomStatus === "lobby") {
+      upsertHostedRoom("lobby");
+    } else if (publishKind === "draft" && state.currentRoomStatus === "draft") {
+      publishDraftRoom();
+    }
+  }, delay);
+}
+
+function publishCurrentRoomSettingsSoon() {
+  if (state.currentRoomStatus === "lobby") {
+    scheduleRoomSettingsPublish("lobby");
+    renderRoomLobby();
+  } else if (state.currentRoomStatus === "draft") {
+    scheduleRoomSettingsPublish("draft");
+  }
+  scheduleUserStorageSnapshot();
+}
+
 function updateRoomRounds(value) {
   state.roomSettings.rounds = clampNumber(value, 1, 10, 10);
   elements.roomRoundsValue.textContent = `${state.roomSettings.rounds}`;
-  if (state.currentRoomStatus === "lobby") {
-    upsertHostedRoom("lobby");
-    renderRoomLobby();
-  } else if (state.currentRoomStatus === "draft") {
-    publishDraftRoom();
-  }
+  publishCurrentRoomSettingsSoon();
 }
 
 function updateRoomTimer(value) {
   state.roomSettings.timerSeconds = clampNumber(value, 10, 60, 30);
   elements.roomTimerValue.textContent = `${state.roomSettings.timerSeconds}s`;
-  if (state.currentRoomStatus === "lobby") {
-    upsertHostedRoom("lobby");
-    renderRoomLobby();
-  } else if (state.currentRoomStatus === "draft") {
-    publishDraftRoom();
-  }
+  publishCurrentRoomSettingsSoon();
 }
 
 function updateRoomPlayerLimit(value) {
@@ -14700,12 +14948,7 @@ function updateRoomPlayerLimit(value) {
   elements.roomPlayerLimitSlider.value = state.roomSettings.maxPlayers;
   elements.roomPlayerLimitValue.textContent = `${state.roomSettings.maxPlayers}`;
   renderRoomPlayers();
-  if (state.currentRoomStatus === "lobby") {
-    upsertHostedRoom("lobby");
-    renderRoomLobby();
-  } else if (state.currentRoomStatus === "draft") {
-    publishDraftRoom();
-  }
+  publishCurrentRoomSettingsSoon();
 }
 
 function syncClassicRoomToggleState() {
@@ -14745,12 +14988,7 @@ function updateRoomVariants() {
   setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
   syncClassicRoomToggleState();
   elements.roomVariantLabel.textContent = getRoomVariantNames().join(" + ");
-  if (state.currentRoomStatus === "lobby") {
-    upsertHostedRoom("lobby");
-    renderRoomLobby();
-  } else if (state.currentRoomStatus === "draft") {
-    publishDraftRoom();
-  }
+  publishCurrentRoomSettingsSoon();
 }
 
 async function handleClassicModeToggle() {
@@ -14938,7 +15176,9 @@ async function updateRoomPresence(room, options = {}) {
     if (data.room) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
-      broadcastRealtimeRoomChange("participant-updated", data.room);
+      if (!options.skipRealtimeBroadcast) {
+        broadcastRealtimeRoomChange("participant-updated", data.room);
+      }
     }
     return data.room || room;
   } catch {
@@ -16123,6 +16363,7 @@ function syncSettingsControls() {
 function updateSfxVolume(value) {
   soundState.sfxVolume = Number(value) / 100;
   localStorage.setItem("cardsAgainstAiSfxVolume", String(value));
+  scheduleUserStorageSnapshot();
   elements.sfxVolumeValue.textContent = `${value}`;
   playSound("click");
 }
@@ -16130,6 +16371,7 @@ function updateSfxVolume(value) {
 function updateMusicSetting(value) {
   soundState.musicVolume = Number(value) / 100;
   localStorage.setItem("cardsAgainstAiMusicVolume", String(value));
+  scheduleUserStorageSnapshot();
   elements.musicVolumeValue.textContent = `${value}`;
   updateMusicVolume();
 }
@@ -16137,6 +16379,7 @@ function updateMusicSetting(value) {
 function updateTimerSetting(value) {
   state.timerSeconds = Number(value);
   localStorage.setItem("cardsAgainstAiTimerSeconds", String(state.timerSeconds));
+  scheduleUserStorageSnapshot();
   elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
   if (!elements.inputPanel.classList.contains("hidden")) {
     startTimer();
@@ -16151,6 +16394,7 @@ function updateRoundsSetting(value) {
   const activeGame = !elements.gameStage.classList.contains("hidden") && !state.matchEnded;
   state.maxRounds = activeGame ? Math.max(requestedRounds, state.round) : requestedRounds;
   localStorage.setItem("cardsAgainstAiMaxRounds", String(requestedRounds));
+  scheduleUserStorageSnapshot();
   elements.roundsSlider.value = state.maxRounds;
   elements.roundsValue.textContent = `${state.maxRounds}`;
   updateModeUi();
@@ -18560,7 +18804,9 @@ elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
 document.addEventListener("visibilitychange", handleRoomVisibilityChange);
+window.addEventListener("beforeunload", flushUserStorageSnapshot);
 
+writePublicCatalogCache();
 updateSoundButton();
 syncSettingsControls();
 syncRoomControls();
@@ -18577,3 +18823,4 @@ startMusic();
 armMusicUnlockListeners();
 loadRandomUsernames();
 ensureQuestionReserve({ enabledThemes: state.enabledThemes });
+scheduleUserStorageSnapshot();
