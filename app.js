@@ -7039,12 +7039,13 @@ function updateProfileName(value) {
   renderRoomPlayers();
   renderRoomChat();
   if (isModalOpen(elements.profileCustomModal)) {
+    const displayName = getProfileDisplayName();
     renderProfileCustomizationPreview();
     elements.profileFontGrid?.querySelectorAll(".profile-font-preview").forEach((preview) => {
-      preview.textContent = state.profile.name;
+      preview.textContent = displayName;
     });
     if (elements.profileFontLivePreview) {
-      elements.profileFontLivePreview.textContent = state.profile.name;
+      elements.profileFontLivePreview.textContent = displayName;
       applyProfileFontToElement(elements.profileFontLivePreview, getProfileFont(getProfileCustomizationDraft().fontId));
     }
   }
@@ -9088,6 +9089,11 @@ function getProfileCustomizationStatusText(item, type, records = loadUnlockedAch
   return `${item.condition || "Always unlocked."} ${status.text ? `Progress: ${status.text}.` : ""}`;
 }
 
+function getProfileDisplayName() {
+  const inputName = elements.profileNameInput?.value?.trim();
+  return inputName || state.profile.name || savedGuestName || "You";
+}
+
 function getProfileUnlockPercent(status) {
   return `${Math.max(0, Math.min(100, ((status.value || 0) / Math.max(1, status.target || 1)) * 100))}%`;
 }
@@ -9174,19 +9180,20 @@ function getProfileStyleSwatch(style, draft = getProfileCustomizationDraft()) {
 
 function renderProfileCustomizationPreview() {
   const draft = getProfileCustomizationDraft();
+  const displayName = getProfileDisplayName();
   applyCardCustomizationToElement(elements.profilePreviewCard, draft, { preview: true });
   renderAvatar(elements.profilePreviewAvatar, state.profile);
   if (elements.profileFontLivePreview) {
-    elements.profileFontLivePreview.textContent = state.profile.name || "You";
+    elements.profileFontLivePreview.textContent = displayName;
     applyProfileFontToElement(elements.profileFontLivePreview, getProfileFont(draft.fontId));
   }
   renderPlayerNameWithTitle(elements.profilePreviewName, {
     owner: "preview",
-    label: state.profile.name || "You",
+    label: displayName,
     equippedTitleId: draft.equippedTitleId,
     specialBadges: state.profile.specialBadges,
     cardCustomization: draft
-  }, state.profile.name || "You");
+  }, displayName);
 }
 
 function createProfileStyleButton(style, records, progress) {
@@ -9291,6 +9298,7 @@ function createProfilePatternButton(pattern, records, progress) {
 function createProfileFontButton(font, records, progress) {
   const draft = getProfileCustomizationDraft();
   const status = getProfileUnlockStatus(font, "font", records, progress);
+  const displayName = getProfileDisplayName();
   const button = document.createElement("button");
   button.type = "button";
   button.className = "profile-style-option profile-layer-option profile-font-option";
@@ -9302,7 +9310,7 @@ function createProfileFontButton(font, records, progress) {
   button.style.setProperty("--style-swatch", getProfileCardColour("pink").value);
   button.style.setProperty("--style-swatch-rgb", hexToRgbParts(getProfileCardColour("pink").value));
   button.style.setProperty("--style-swatch-secondary-rgb", hexToRgbParts(getProfileCardColour("blue").value));
-  button.innerHTML = `<span>${font.name}</span><em class="profile-font-sample-label">Name preview</em><strong class="profile-font-preview">${state.profile.name || "You"}</strong><small>${getProfileOptionSummary(font, status)}</small>${getProfileOptionLockMarkup(status)}${getProfileOptionProgressMarkup(font, status)}`;
+  button.innerHTML = `<span>${font.name}</span><em class="profile-font-sample-label">Name preview</em><strong class="profile-font-preview">${displayName}</strong><small>${getProfileOptionSummary(font, status)}</small>${getProfileOptionLockMarkup(status)}${getProfileOptionProgressMarkup(font, status)}`;
   const preview = button.querySelector(".profile-font-preview");
   applyProfileFontToElement(preview, font);
   attachFloatingDescriptionTooltip(button);
@@ -9338,7 +9346,7 @@ function createProfileShopItem(item, purchases = loadProfileShopPurchases()) {
     : `${item.description || "Profile cosmetic."} Current balance: ${formatCoins(balance)}.`;
   if (item.type === "font") {
     const preview = button.querySelector(".profile-shop-preview");
-    preview.textContent = state.profile.name || "You";
+    preview.textContent = getProfileDisplayName();
     preview.dataset.profileShopFont = item.id;
     applyProfileFontToElement(preview, getProfileFont(item.id));
   }
