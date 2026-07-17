@@ -9258,6 +9258,10 @@ function getEntryMeta(entry) {
   };
 }
 
+function isEntryImmediateResolved(entry) {
+  return Boolean(entry?.meta?.immediateResolved);
+}
+
 function getEntryTarget(entry) {
   return getEntryMeta(entry).targetOwner;
 }
@@ -12016,7 +12020,8 @@ function activateStreakInjector(owner, power, powerId, targetOwner) {
     targetOwner,
     stolenStreak,
     remainingTime: state.timerRemaining,
-    originalPowerId: powerId
+    originalPowerId: powerId,
+    immediateResolved: true
   };
   recordPlayedPower(owner, power.id, meta);
   state.powerHands[owner] = state.powerHands[owner].filter((id) => id !== powerId);
@@ -12628,8 +12633,8 @@ function consumeImmediatePower(owner, power, meta = {}) {
   const strikeResolvedImmediately = power.type === "lightning_strike" || power.type === "zap_strike";
   const allowsFollowUp = power.type === "premium_shuffle" || power.type === "hoarder" || power.type === "all_out" || chaosFollowUp;
   const recordMeta = {
-    immediateResolved: strikeResolvedImmediately,
-    ...meta
+    ...meta,
+    immediateResolved: true
   };
   if (!allowsFollowUp) {
     recordPlayedPower(owner, power.id, {
@@ -13027,7 +13032,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     }
   }
 
-  broadcastRoomPowerState(owner, power, meta);
+  broadcastRoomPowerState(owner, power, state.playedPowerMeta[owner] || recordMeta);
   renderPowerUps();
   if (!meta.suppressSound) {
     playSound(power.type === "shuffle" || power.type === "premium_shuffle" || power.type === "mirror" || power.type === "hoarder" || power.type === "recycle_bin" ? "reveal" : "click");
@@ -20510,7 +20515,7 @@ function createNoCorrectAward() {
 
   playedEntries
     .filter((entry) => entry.power.type === "lightning_strike" || entry.power.type === "zap_strike")
-    .filter((entry) => !getEntryMeta(entry).immediateResolved)
+    .filter((entry) => !isEntryImmediateResolved(entry))
     .forEach((entry) => {
       const target = getEntryTarget(entry);
       if (!target || !owners.includes(target)) {
@@ -20809,6 +20814,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   playedEntries
     .filter((entry) => entry.power.type === "hard_reset")
+    .filter((entry) => !isEntryImmediateResolved(entry))
     .forEach((entry) => {
       owners.forEach((participant) => {
         if (!state.eternalFlameProtection[participant]) {
@@ -21139,7 +21145,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   playedEntries
     .filter((entry) => entry.power.type === "lightning_strike")
-    .filter((entry) => !getEntryMeta(entry).immediateResolved)
+    .filter((entry) => !isEntryImmediateResolved(entry))
     .forEach((entry) => {
       const target = getEntryTarget(entry);
       if (!target || !owners.includes(target)) {
@@ -21158,7 +21164,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   playedEntries
     .filter((entry) => entry.power.type === "zap_strike")
-    .filter((entry) => !getEntryMeta(entry).immediateResolved)
+    .filter((entry) => !isEntryImmediateResolved(entry))
     .forEach((entry) => {
       const target = getEntryTarget(entry);
       if (!target || !owners.includes(target)) {
