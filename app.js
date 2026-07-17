@@ -13310,10 +13310,12 @@ function renderRound() {
   rollRoundAmplifiedMultiplier();
   state.timerPenalties = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
   state.forcedWinnerOwner = null;
-  elements.answerInput.disabled = false;
+  elements.answerInput.disabled = state.isSpectator;
   elements.playerTwoInput.disabled = false;
-  elements.submitButton.disabled = false;
-  elements.answerInput.focus();
+  elements.submitButton.disabled = state.isSpectator;
+  if (!state.isSpectator) {
+    elements.answerInput.focus();
+  }
   applyRoundStartEffects();
   applyRoundStartTableEventEffects();
   applyRoomRoundStartModifiers();
@@ -20881,7 +20883,7 @@ function endMatch(wasExited = false, options = {}) {
   elements.matchTimelineButton.setAttribute("aria-expanded", "false");
   setHidden(elements.matchTimeline, true);
   setHidden(elements.continueAsPlayerButton, !isRoomMode());
-  setHidden(elements.spectateAgainButton, !isRoomMode());
+  setHidden(elements.spectateAgainButton, !isRoomMode() || (isCurrentHost() && !state.joiningRoom));
   elements.changeModeButton.textContent = isRoomMode() ? "Back to Room" : "Change Mode";
   let roomEndPublish = null;
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
@@ -21079,17 +21081,45 @@ elements.rematchButton.addEventListener("click", () => {
   }
   startGame(state.mode);
 });
-elements.continueAsPlayerButton.addEventListener("click", () => {
-  state.isSpectator = false;
-  state.currentOwner = state.joiningRoom ? "opponent" : "player";
-  addSystemChat(`${state.profile.name || "Guest"} will play next match.`);
+async function startNextRoomMatchWithSpectatorMode(spectating) {
+  if (!isRoomMode()) {
+    return;
+  }
+  const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
+  if (!spectating && room) {
+    const currentParticipant = (state.roomParticipants.length ? state.roomParticipants : room.participants || [])
+      .find((participant) => participant.id === state.clientId);
+    const needsPlayerSlot = !currentParticipant || currentParticipant.spectator;
+    if (needsPlayerSlot && getHostedRoomActivePlayerCount(room) >= getRoomMaxPlayers(room.settings || state.roomSettings)) {
+      addSystemChat("This room is full, so you can only spectate right now.", { private: true, sync: false });
+      return;
+    }
+  }
+  state.isSpectator = Boolean(spectating);
+  state.currentOwner = state.isSpectator ? "spectator" : state.joiningRoom ? "opponent" : "player";
+  if (room && state.joiningRoom) {
+    const updatedRoom = await updateRoomPresence(room, {
+      spectator: state.isSpectator,
+      status: state.isSpectator ? "spectating" : "joined"
+    });
+    if (updatedRoom) {
+      state.joiningRoom = updatedRoom;
+      applyRoomDirectoryRoom(updatedRoom);
+    }
+  }
+  setPlayersForMode("room");
+  addSystemChat(
+    state.isSpectator
+      ? `${state.profile.name || "Guest"} stayed as a spectator.`
+      : `${state.profile.name || "Guest"} will play next match.`
+  );
   startGame("room");
+}
+elements.continueAsPlayerButton.addEventListener("click", () => {
+  startNextRoomMatchWithSpectatorMode(false);
 });
 elements.spectateAgainButton.addEventListener("click", () => {
-  state.isSpectator = true;
-  state.currentOwner = "spectator";
-  addSystemChat(`${state.profile.name || "Guest"} stayed as a spectator.`);
-  startGame("room");
+  startNextRoomMatchWithSpectatorMode(true);
 });
 function returnToRoomLobbyAfterMatch() {
   playSound("click");

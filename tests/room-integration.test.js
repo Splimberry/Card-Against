@@ -545,6 +545,25 @@ async function testCompactRoomDeltasAvoidFullRoomPayloads() {
   assert.ok(presence.payload.revision >= 3);
 }
 
+async function testSpectatorPresenceDoesNotConsumePlayerSlot() {
+  const code = makeCode(8111);
+  await upsertRoom(makeRoom(code));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "spectator-client",
+      name: "Spectator",
+      active: true,
+      spectator: true,
+      status: "spectating"
+    }
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.room.activePlayers, 1);
+  assert.equal(payload.room.spectators, 1);
+  assert.equal(payload.room.participants.some((participant) => participant.id === "spectator-client" && participant.spectator), true);
+}
+
 async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
   const code = makeCode(8112);
   await upsertRoom(makeRoom(code));
@@ -842,6 +861,7 @@ async function main() {
   await testLateJoinerReceivesRoundState();
   await testRoomChatPreservesMessageIds();
   await testCompactRoomDeltasAvoidFullRoomPayloads();
+  await testSpectatorPresenceDoesNotConsumePlayerSlot();
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
   await testRoomPowerStateDeltaPreservesStoredFullState();
