@@ -239,7 +239,12 @@ const profileFonts = [
   { id: "comic", name: "Comic", kind: "comic", family: "\"ProfileFontComic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
   { id: "cursive", name: "Cursive", kind: "cursive", family: "\"ProfileFontCursive\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
   { id: "minimalistic", name: "Minimalistic", kind: "minimalistic", family: "\"ProfileFontMinimalistic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
-  { id: "neon", name: "Neon", kind: "neon", family: "\"ProfileFontNeon\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 }
+  { id: "neon", name: "Neon", kind: "neon", family: "\"ProfileFontNeon\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "chunky", name: "Chunky", kind: "chunky", family: "\"ProfileFontChunky\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "poofy", name: "Poofy", kind: "poofy", family: "\"ProfileFontPoofy\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "cutesy", name: "cutesy", kind: "cutesy", family: "\"ProfileFontCutesy\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "bubble", name: "bubble", kind: "bubble", family: "\"ProfileFontBubble\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "gothic", name: "gothic", kind: "gothic", family: "\"ProfileFontGothic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 }
 ];
 const profileFontMap = Object.fromEntries(profileFonts.map((font) => [font.id, font]));
 const profileShopItems = [

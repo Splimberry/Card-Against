@@ -44,13 +44,43 @@
 
 @font-face {
   font-family: "ProfileFontMinimalistic";
-  src: url("assets/fonts/minimalistic.woff2") format("woff2");
+  src: url("assets/fonts/minimalistic-dont-panic.ttf") format("truetype");
   font-display: swap;
 }
 
 @font-face {
   font-family: "ProfileFontNeon";
   src: url("assets/fonts/neon.otf") format("opentype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ProfileFontChunky";
+  src: url("assets/fonts/chunky.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ProfileFontPoofy";
+  src: url("assets/fonts/poofy.otf") format("opentype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ProfileFontCutesy";
+  src: url("assets/fonts/cutesy.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ProfileFontBubble";
+  src: url("assets/fonts/bubble.otf") format("opentype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ProfileFontGothic";
+  src: url("assets/fonts/gothic.ttf") format("truetype");
   font-display: swap;
 }
 
