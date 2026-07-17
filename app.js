@@ -1376,6 +1376,7 @@ const state = {
   triviaTheme: "",
   questionImage: null,
   questionImageLoadId: 0,
+  blackCardAnimationToken: 0,
   canonicalAnswer: "",
   acceptedAnswers: [],
   enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
@@ -13970,6 +13971,7 @@ function handleTimerExpired() {
 }
 
 function resetBlackCardSizing() {
+  state.blackCardAnimationToken += 1;
   const blackCard = elements.blackCardText.closest(".black-card");
   if (!blackCard) {
     return;
@@ -14052,6 +14054,19 @@ function animateBlackCardToNaturalHeight(blackCard, beforeHeight, options = {}) 
     () => resetBlackCardSizing()
   );
   return animation;
+}
+
+function animateBlackCardToNaturalHeightAfterLayout(blackCard, beforeHeight, options = {}) {
+  const token = state.blackCardAnimationToken + 1;
+  state.blackCardAnimationToken = token;
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      if (state.blackCardAnimationToken !== token || !blackCard?.isConnected) {
+        return;
+      }
+      animateBlackCardToNaturalHeight(blackCard, beforeHeight, options);
+    });
+  });
 }
 
 function resetRoundUiForLoading(options = {}) {
@@ -14147,7 +14162,7 @@ function renderRound() {
   elements.questionDifficultyBadge.textContent = getDifficultyLabel(difficulty);
   elements.questionDifficultyBadge.className = `difficulty-badge difficulty-${difficulty}`;
   renderQuestionImage(state.questionImage, { skipFit: true });
-  animateBlackCardToNaturalHeight(blackCard, beforeBlackCardHeight, { allowShrink: true, durationMs: 620 });
+  animateBlackCardToNaturalHeightAfterLayout(blackCard, beforeBlackCardHeight, { allowShrink: true, durationMs: 620 });
   elements.answerInput.value = "";
   elements.playerTwoInput.value = "";
   state.localEntryStep = 1;
@@ -19135,6 +19150,10 @@ async function leaveCurrentRoom() {
 
 function animateRoomPlayerListChange(target, renderList) {
   if (!target || typeof renderList !== "function") {
+    return;
+  }
+  if (target === elements.roomPlayerList || target === elements.roomLobbyPlayerList) {
+    renderList();
     return;
   }
   const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;

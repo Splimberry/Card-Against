@@ -634,6 +634,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.75fr);
   gap: 1rem;
+  align-items: stretch;
 }
 
 .room-settings-panel,
@@ -647,12 +648,20 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .room-settings-panel,
 .room-preview {
   padding: 1rem;
+  min-height: 0;
 }
 
 .room-settings-panel {
   display: grid;
   align-content: start;
   gap: 0.72rem;
+}
+
+#roomScreen .room-preview {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: stretch;
+  min-height: min(72vh, 54rem);
 }
 
 .room-lobby-screen .room-setup-grid {
@@ -943,12 +952,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   display: grid;
   overflow-x: hidden;
   overflow-y: auto;
+  min-height: 0;
   padding-right: 0.25rem;
   scroll-snap-type: none;
 }
 
 #roomPlayerList {
-  max-height: min(54rem, calc(100vh - 18rem));
+  align-self: stretch;
+  height: 100%;
+  max-height: none;
 }
 
 #roomLobbyPlayerList {
@@ -3426,6 +3438,9 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .question-image {
+  display: grid;
+  align-items: center;
+  min-height: clamp(7rem, 20vh, 11rem);
   margin: 0 0 1rem;
 }
 
