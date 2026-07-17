@@ -659,7 +659,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 #roomScreen .room-preview {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   align-content: stretch;
   min-height: min(72vh, 54rem);
 }
@@ -959,7 +959,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 #roomPlayerList {
   align-self: stretch;
-  height: 100%;
+  height: auto;
   max-height: none;
 }
 

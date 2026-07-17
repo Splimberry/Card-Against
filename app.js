@@ -1072,6 +1072,7 @@ const state = {
   isSpectator: false,
   currentOwner: "player",
   roomSubmissions: {},
+  roomBotSequence: 0,
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
   roomRoundResolving: false,
@@ -19003,11 +19004,14 @@ async function addBotToRoom() {
   if (!state.randomUsernames.length) {
     await loadRandomUsernames();
   }
-  const participants = getRoomParticipantsFromPlayers("lobby");
+  const participants = state.roomParticipants.length
+    ? state.roomParticipants.filter((participant) => participant.active !== false || participant.spectator)
+    : getRoomParticipantsFromPlayers("lobby");
   const botCount = participants.filter((participant) => participant.bot).length + 1;
   const botName = getRandomRoomBotName();
+  state.roomBotSequence += 1;
   const bot = {
-    id: `${state.clientId}-room-bot-${Date.now()}-${botCount}`,
+    id: `room-bot-${Date.now()}-${state.roomBotSequence}-${String(state.clientId).slice(-10)}`,
     name: botName,
     avatar: "",
     equippedTitleId: "",
@@ -19152,7 +19156,7 @@ function animateRoomPlayerListChange(target, renderList) {
   if (!target || typeof renderList !== "function") {
     return;
   }
-  if (target === elements.roomPlayerList || target === elements.roomLobbyPlayerList) {
+  if (target === elements.roomPlayerList) {
     renderList();
     return;
   }
