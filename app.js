@@ -95,8 +95,10 @@ const achievementTitles = [
   { id: "dealer", name: "Dealer", rarity: "grey", description: "Buy from Ability Merchant, Black Market, or Vending Machine at least 3 times in one match." },
   { id: "dummie", name: "Dummie", rarity: "grey", description: "Get every question wrong in a match." },
   { id: "fake-genius", name: "Fake Genius", rarity: "blue", description: "Use Auto-Pilot Answer and win 1st place." },
+  { id: "first-blood", name: "First Blood", rarity: "grey", description: "Use a targeted power-up on another player in the first round." },
   { id: "final-boss", name: "Final boss", rarity: "gold", description: "Be in 1st place every round since round two, then win 1st place." },
   { id: "flawless", name: "Flawless", rarity: "gold", description: "Never lose points this game while having a shield save you from point loss at least once." },
+  { id: "get-flexed-on", name: "Get flexed on", rarity: "blue", description: "Win a public non-selfhosted multiplayer round by being the only correct answer in a room with at least 5 players." },
   { id: "how", name: "How?", rarity: "purple", description: "Win 1st place in a power-up enabled match without using any power-ups." },
   { id: "invincible", name: "Invincible", rarity: "gold", description: "Lose an average of at least 3,000 points per round and still win 1st place." },
   { id: "monopoly", name: "Monopoly", rarity: "gold", description: "Win with a score at least 20% higher than 2nd place." },
@@ -108,6 +110,7 @@ const achievementTitles = [
   { id: "sharing-is-caring", name: "sharing is caring", rarity: "blue", description: "Use point sharing skills at least 3 times in one match: Communism, Soul Link, Bartender, Airdrop, or Score Heist." },
   { id: "straight-a-student", name: "Straight A student?", rarity: "blue", description: "Use the Copy Answer power-up and get that question correct." },
   { id: "the-actual-nerd", name: "The Actual Nerd", rarity: "gold", description: "Get every answer exactly correct in a match with 10 or more rounds." },
+  { id: "the-bully", name: "The bully", rarity: "blue", description: "Target the same player 3 times in one multiplayer match." },
   { id: "the-chosen-one", name: "The chosen one", rarity: "purple", description: "Use at least 3 Legendary power-ups in one match." },
   { id: "the-clown", name: "The clown", rarity: "grey", description: "Be in 1st place in the second-to-last round, then fail to win the match." },
   { id: "the-fraud", name: "The Fraud", rarity: "purple", description: "Win 1st place after triggering Insurance Fraud." },
@@ -121,6 +124,8 @@ const achievementTitles = [
   { id: "underdog", name: "Underdog", rarity: "gold", description: "Answer less than 50% of questions correctly and still win 1st place." },
   { id: "one-hit-wonder", name: "One hit wonder", rarity: "purple", description: "Obtain more than 30,000 points in a single round." },
   { id: "overachiever-title", name: "Overachiever", rarity: "gold", description: "Obtain the most points in every round of a 10-round public non-selfhosted match." },
+  { id: "three-sec-is-good-enough", name: "3 sec is good enough", rarity: "purple", description: "Win a public non-selfhosted multiplayer match after submitting at least 3 answers with less than 3 seconds left." },
+  { id: "carried", name: "Carried", rarity: "gold", description: "Win a public non-selfhosted multiplayer match with 0 correct answers and at least 5,000 points." },
   { id: "big-load", name: "Big Load", rarity: "purple", target: 10000, progressKey: "bestMerchantBlackMarketSpend", description: "Spend over 10,000 points buying power-ups from Ability Merchant or Black Market in one match.", hidden: true },
   { id: "yo-what", name: "Yo what?", rarity: "blue", description: "Trigger 3 power-ups in one non-Black Market round." },
   { id: "you-hacking", name: "You hacking?", rarity: "gold", description: "Trigger at least 6 power-ups in one non-Black Market round." },
@@ -134,12 +139,14 @@ const longTermAchievements = [
   { id: "fourth-place", name: "4th place", rarity: "grey", target: 1, completionRarity: "grey", description: "Obtain every Common achievement." },
   { id: "tis-but-a-scratch", name: "Tis but a scratch", rarity: "grey", target: 100, progressKey: "debuffsReceived", description: "Have debuffs trigger on you 100 times." },
   { id: "femboy", name: "Femboy", rarity: "grey", target: 1, progressKey: "femboyAnswer", description: "Type \"I am a cute femboy\" in the answer box in a non-selfhosted public match." },
+  { id: "speed-bump", name: "Speed Bump", rarity: "grey", target: 50, progressKey: "lateSubmissions", description: "Submit with less than 3 seconds left 50 times." },
   { id: "click-me", name: "Click me", rarity: "grey", target: 1, progressKey: "clickMe", description: "Click this achievement in the achievement menu.", hidden: true },
   { id: "in-pain", name: "In pain", rarity: "grey", target: 100000, progressKey: "pointsLostTotal", description: "Lose over 100,000 points in total.", hidden: true },
 
   { id: "spender", name: "Spender", rarity: "blue", target: 50, progressKey: "powerPurchases", description: "Buy power-ups 50 times." },
   { id: "air-strike", name: "Air Strike", rarity: "blue", target: 100, progressKey: "targetsPicked", description: "Target players 100 times." },
   { id: "winner", name: "winner", rarity: "blue", target: 50, progressKey: "publicWinsFivePlus", description: "Win 50 non-selfhosted online games with at least 5 people." },
+  { id: "room-regular", name: "Room Regular", rarity: "blue", target: 10, progressKey: "publicMatchesFinished", description: "Finish 10 public non-selfhosted multiplayer matches." },
   { id: "built-different", name: "Built different", rarity: "blue", target: 100, progressKey: "epicBadgesTriggered", description: "Trigger Epic rarity badges 100 times." },
   { id: "menace", name: "Menace", rarity: "blue", target: 100000, progressKey: "pointsStolenTotal", description: "Steal 100,000 points in total." },
   { id: "third-place", name: "3rd place", rarity: "blue", target: 1, completionRarity: "blue", description: "Obtain every Rare achievement." },
@@ -155,6 +162,7 @@ const longTermAchievements = [
   { id: "realestate", name: "Realestate", rarity: "gold", target: 500, progressKey: "hostFinishedRounds", description: "Host and fully finish 500 rounds." },
   { id: "luxerious", name: "Luxerious", rarity: "gold", target: 250, progressKey: "goldPowerUses", description: "Play 250 Legendary power-ups." },
   { id: "the-pro", name: "The pro", rarity: "gold", target: 10, progressKey: "publicWinStreak", description: "Win non-selfhosted public games 10 times in a row. Progress resets after losing a public game." },
+  { id: "yo-look-at-my-win-streak", name: "Yo look at my win Streak", rarity: "gold", target: 5, progressKey: "bestPublicFirstPlaceWinStreak", description: "Win at least 5 public non-selfhosted multiplayer matches in a row in 1st place. Progress shows your best streak." },
   { id: "the-millionair", name: "The Millionair", rarity: "gold", target: 1000000, progressKey: "pointsGainedTotal", description: "Obtain a total of 1,000,000 points." },
   { id: "first-place", name: "1st place", rarity: "gold", target: 1, completionAll: true, description: "Obtain every achievement." }
 ];
@@ -310,7 +318,7 @@ const zeusPowerTypes = new Set(["zap_strike", "lightning_strike", "typhoon_seaso
 const pointStealPowerTypes = new Set(["shameless", "robin_hood", "tax_collector", "hitman", "haha_you_lose"]);
 const bombPowerTypes = new Set(["time_bomb", "hot_potato", "void_bomb", "shock_bomb"]);
 const publicActiveEffectPowerTypes = new Set(["world_burn", "soul_link", "arsonist", "bartender", "virus_factory", "typhoon_season", "thorns", "hot_in_here", "law_mower", "crawler_virus"]);
-const maxAchievementProgressKeys = new Set(["bestBuffStreak", "bestMerchantBlackMarketSpend"]);
+const maxAchievementProgressKeys = new Set(["bestBuffStreak", "bestMerchantBlackMarketSpend", "bestPublicFirstPlaceWinStreak"]);
 const powerDeck = [
   { id: "small_bounty", name: "Pocket Bounty", rarity: "grey", short: "+5%", description: "If you win this round, gain 5% of your current total score.", type: "bounty", percent: 0.05 },
   { id: "basic_bounty", name: "Clean Bounty", rarity: "blue", short: "+10%", description: "If you win this round, gain 10% of your current total score.", type: "bounty", percent: 0.1 },
@@ -5036,7 +5044,8 @@ function isRoomMode() {
 }
 
 function isPublicNonSelfHostedRoom() {
-  return isRoomMode() && Boolean(state.joiningRoom) && !state.roomSettings.private;
+  const hasPublishedRoom = state.roomSettings.code && state.roomSettings.code !== "CAI-0000";
+  return isRoomMode() && hasPublishedRoom && !state.roomSettings.private;
 }
 
 function isPublicAchievementMatch() {
@@ -8865,6 +8874,10 @@ function getRarityRank(rarity) {
 function createAchievementStat() {
   return {
     targetedCount: 0,
+    targetCountsByOwner: {},
+    firstRoundTargetedPower: false,
+    onlyCorrectRoundWin: false,
+    lateSubmissionsThisMatch: 0,
     powerRounds: {},
     totalPowerUses: 0,
     legendaryPowerUses: 0,
@@ -8924,6 +8937,36 @@ function getAchievementStat(owner) {
   return state.achievementStats[owner];
 }
 
+function recordAchievementTargetEvent(owner, targetOwner, options = {}) {
+  if (!owner || !targetOwner || owner === targetOwner) {
+    return;
+  }
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.targetedCount += 1;
+    stat.targetCountsByOwner = stat.targetCountsByOwner || {};
+    stat.targetCountsByOwner[targetOwner] = (stat.targetCountsByOwner[targetOwner] || 0) + 1;
+    if (options.powerUse && Number(state.round) === 1) {
+      stat.firstRoundTargetedPower = true;
+    }
+  }
+  if (options.progress !== false) {
+    incrementAchievementProgress(owner, "targetsPicked");
+  }
+}
+
+function markAchievementLateSubmission(owner, remainingTime = state.timerRemaining) {
+  const secondsLeft = Number(remainingTime);
+  if (!owner || !Number.isFinite(secondsLeft) || secondsLeft >= 3) {
+    return;
+  }
+  const stat = getAchievementStat(owner);
+  if (stat) {
+    stat.lateSubmissionsThisMatch += 1;
+  }
+  incrementAchievementProgress(owner, "lateSubmissions");
+}
+
 function markAchievementPowerUse(owner, power, meta = {}) {
   const stat = getAchievementStat(owner);
   if (!stat || !power) {
@@ -8968,20 +9011,12 @@ function markAchievementPowerUse(owner, power, meta = {}) {
     stat.usedCopyAnswerRounds[state.round] = true;
   }
   if (meta.targetOwner && meta.targetOwner !== owner) {
-    stat.targetedCount += 1;
-    incrementAchievementProgress(owner, "targetsPicked");
+    recordAchievementTargetEvent(owner, meta.targetOwner, { powerUse: true });
   }
 }
 
 function markAchievementTarget(owner, targetOwner) {
-  if (!owner || !targetOwner || owner === targetOwner) {
-    return;
-  }
-  const stat = getAchievementStat(owner);
-  if (stat) {
-    stat.targetedCount += 1;
-  }
-  incrementAchievementProgress(owner, "targetsPicked");
+  recordAchievementTargetEvent(owner, targetOwner);
 }
 
 function markAchievementBuffDebuff(owner, kind = "mixed") {
@@ -10725,6 +10760,7 @@ function evaluateMatchTitles(redHerringOwnersAtEnd = new Set()) {
   const winnerSet = new Set(winnerOwners);
   const secondScore = finalRows[1]?.score ?? 0;
   const middleOwner = finalRows[Math.floor((finalRows.length - 1) / 2)]?.owner;
+  const publicNonSelfHosted = isPublicNonSelfHostedRoom();
   const titlesByOwner = {};
 
   owners.forEach((owner) => {
@@ -10744,6 +10780,8 @@ function evaluateMatchTitles(redHerringOwnersAtEnd = new Set()) {
     if (stat.shopPurchases >= 3) primaryTitleIds.push("dealer");
     if (stat.roundsAnswered >= roundsPlayed && stat.correctAnswers === 0) primaryTitleIds.push("dummie");
     if (stat.targetedCount >= 3) primaryTitleIds.push("psychopath");
+    if (stat.firstRoundTargetedPower) primaryTitleIds.push("first-blood");
+    if (Object.values(stat.targetCountsByOwner || {}).some((count) => count >= 3) && isRoomMode()) primaryTitleIds.push("the-bully");
     if (roundsPlayed > 0 && Object.keys(stat.powerRounds).length >= roundsPlayed) primaryTitleIds.push("chaos-enjoyer");
     if (getOwnerStreak(owner) > roundsPlayed) primaryTitleIds.push("arsonist");
     if (stat.roundsAnswered >= roundsPlayed && stat.correctAnswers >= roundsPlayed) primaryTitleIds.push("trivia-king");
@@ -10767,7 +10805,8 @@ function evaluateMatchTitles(redHerringOwnersAtEnd = new Set()) {
     if (isWinner && stat.lastLaughOver10000) primaryTitleIds.push("all-planned");
     if (roundsPlayed >= 10 && getOwnerStreak(owner) >= 20) primaryTitleIds.push("the-cook");
     if ((stat.maxSingleRoundGain || 0) > 30000) primaryTitleIds.push("one-hit-wonder");
-    if (roundsPlayed >= 10 && isPublicNonSelfHostedRoom() && stat.mostPointRounds >= roundsPlayed) primaryTitleIds.push("overachiever-title");
+    if (roundsPlayed >= 10 && publicNonSelfHosted && stat.mostPointRounds >= roundsPlayed) primaryTitleIds.push("overachiever-title");
+    if (stat.onlyCorrectRoundWin) primaryTitleIds.push("get-flexed-on");
     if ((stat.merchantBlackMarketSpend || 0) > 10000) primaryTitleIds.push("big-load");
     if (isWinner && finalRows.length > 1 && finalScore >= secondScore * 1.2) primaryTitleIds.push("monopoly");
     if (finalScore > 10000 * roundsPlayed) primaryTitleIds.push("too-wealthy");
@@ -10778,6 +10817,8 @@ function evaluateMatchTitles(redHerringOwnersAtEnd = new Set()) {
     if ((stat.maxPowersNonBlackMarketRound || 0) >= 6) primaryTitleIds.push("you-hacking");
     if (isWinner && isPowerUpAchievementEnabled() && stat.totalPowerUses === 0) primaryTitleIds.push("how");
     if (isWinner && stat.redHerringActiveAtEnd) primaryTitleIds.push("undercover");
+    if (isWinner && publicNonSelfHosted && (stat.lateSubmissionsThisMatch || 0) >= 3) primaryTitleIds.push("three-sec-is-good-enough");
+    if (isWinner && publicNonSelfHosted && stat.correctAnswers === 0 && finalScore >= 5000) primaryTitleIds.push("carried");
 
     const fallbackTitleIds = [];
     if (!primaryTitleIds.length) {
@@ -10812,6 +10853,7 @@ function finalizeLongTermAchievements(wasExited = false, titlesByOwner = state.f
   getAccountAchievementOwners().forEach((owner) => {
     const stat = getAchievementStat(owner) || createAchievementStat();
     const isWinner = finalRows.some((row) => row.owner === owner && row.score === topScore);
+    const isSoleFirstPlace = finalRows.length > 0 && finalRows[0].owner === owner && finalRows.filter((row) => row.score === topScore).length === 1;
     const activePlayerCount = owners.length;
 
     if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
@@ -10826,7 +10868,14 @@ function finalizeLongTermAchievements(wasExited = false, titlesByOwner = state.f
     }
 
     if (publicNonSelfHosted) {
+      setProgressValue(progress, "publicMatchesFinished", getProgressValue(progress, "publicMatchesFinished") + 1);
       setProgressValue(progress, "publicWinStreak", isWinner ? getProgressValue(progress, "publicWinStreak") + 1 : 0);
+      const currentFirstPlaceStreak = isSoleFirstPlace ? getProgressValue(progress, "currentPublicFirstPlaceWinStreak") + 1 : 0;
+      setProgressValue(progress, "currentPublicFirstPlaceWinStreak", currentFirstPlaceStreak);
+      setProgressValue(progress, "bestPublicFirstPlaceWinStreak", Math.max(
+        getProgressValue(progress, "bestPublicFirstPlaceWinStreak"),
+        currentFirstPlaceStreak
+      ));
     }
 
     if ((stat.merchantBlackMarketSpend || 0) > 0) {
@@ -12270,6 +12319,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const target = passDeadWeight(owner);
     if (target) {
       meta.targetOwner = target;
+      recordAchievementTargetEvent(owner, target, { powerUse: true });
       state.playedPowerMeta[owner] = {
         ...(state.playedPowerMeta[owner] || {}),
         targetOwner: target
@@ -13012,7 +13062,7 @@ function handleTimerExpired() {
   const fallback = "";
   if (isRoomMode()) {
     markAchievementTimeout(state.currentOwner);
-    submitRoomAnswer(lockRoundAnswer(state.currentOwner, elements.answerInput.value, fallback), { allowBlank: true });
+    submitRoomAnswer(lockRoundAnswer(state.currentOwner, elements.answerInput.value, fallback), { allowBlank: true, timedOut: true });
     return;
   }
 
@@ -18982,6 +19032,9 @@ function submitRoomAnswer(rawInput, options = {}) {
   }
   commitActivePowerUp(owner);
   state.answerRemainingTimes[owner] = state.timerRemaining;
+  if (!options.timedOut) {
+    markAchievementLateSubmission(owner, state.timerRemaining);
+  }
   if (owner === "opponent") {
     state.localAnswers.playerTwo = lockedInput;
     state.localAnswers.playerOne = shouldAutoGenerateRoomAnswer("player")
@@ -20516,6 +20569,13 @@ function recordRoundResult(owner, awarded, winningCard, winningOwners = [owner])
     card: winningCard
   });
   const correctOwnerSet = new Set((winningOwners || []).filter((participant) => getActiveOwners().includes(participant)));
+  if (!awarded.noCorrect && correctOwnerSet.size === 1 && isPublicNonSelfHostedRoom() && getActiveRoomPlayerCount() >= 5) {
+    const [onlyCorrectOwner] = correctOwnerSet;
+    const stat = getAchievementStat(onlyCorrectOwner);
+    if (stat) {
+      stat.onlyCorrectRoundWin = true;
+    }
+  }
   const roundDeltas = awarded.deltas || {};
   const highestRoundGain = Math.max(0, ...getActiveOwners().map((participant) => roundDeltas[participant] || 0));
   getActiveOwners().forEach((participant) => {
