@@ -548,8 +548,29 @@ function writeJsonStorage(key, value) {
 }
 
 function loadUserStorageCache() {
-  const cache = readJsonStorage(userCacheStorageKey, {});
-  return cache?.version === userStorageVersion && typeof cache === "object" ? cache : {};
+  return loadUserStorageCacheForUser("guest");
+}
+
+function getUserStorageCacheKey(userId = "guest") {
+  const safeUserId = String(userId || "guest").replace(/[^a-zA-Z0-9_-]/g, "") || "guest";
+  return `${userCacheStorageKey}:${safeUserId}`;
+}
+
+function loadUserStorageCacheForUser(userId = "guest") {
+  const scoped = readJsonStorage(getUserStorageCacheKey(userId), {});
+  if (scoped?.version === userStorageVersion && typeof scoped === "object") {
+    return scoped;
+  }
+  const legacy = readJsonStorage(userCacheStorageKey, {});
+  return legacy?.version === userStorageVersion && typeof legacy === "object" && (legacy.userId || "guest") === userId
+    ? legacy
+    : {};
+}
+
+function writeUserStorageCache(snapshot = getUserStorageSnapshot()) {
+  const userId = snapshot?.userId || state.supabaseUser?.id || "guest";
+  writeJsonStorage(getUserStorageCacheKey(userId), snapshot);
+  writeJsonStorage(userCacheStorageKey, snapshot);
 }
 
 function normalizeCachedThemes(themes) {
@@ -643,14 +664,215 @@ function flushUserStorageSnapshot() {
     window.clearTimeout(state.userStorageWriteTimerId);
     state.userStorageWriteTimerId = null;
   }
-  writeJsonStorage(userCacheStorageKey, getUserStorageSnapshot());
+  if (state.userStorageHydrating || state.userStorageApplying) {
+    return;
+  }
+  const snapshot = getUserStorageSnapshot();
+  writeUserStorageCache(snapshot);
+  if (state.supabaseUser) {
+    void saveRemoteUserStorageSnapshot(snapshot);
+  }
 }
 
 function scheduleUserStorageSnapshot() {
+  if (state.userStorageHydrating || state.userStorageApplying) {
+    return;
+  }
   if (state.userStorageWriteTimerId) {
     window.clearTimeout(state.userStorageWriteTimerId);
   }
   state.userStorageWriteTimerId = window.setTimeout(flushUserStorageSnapshot, userStorageWriteDelayMs);
+}
+
+function setJsonLocalStorage(key, value) {
+  if (Array.isArray(value) ? value.length : value && Object.keys(value).length) {
+    localStorage.setItem(key, JSON.stringify(value));
+  } else {
+    localStorage.removeItem(key);
+  }
+}
+
+function applyUserStorageSnapshot(snapshot = {}, options = {}) {
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  state.userStorageApplying = true;
+  try {
+    const profile = source.profile && typeof source.profile === "object" ? source.profile : {};
+    const settings = source.settings && typeof source.settings === "object" ? source.settings : {};
+    const achievements = source.achievementProgressCache && typeof source.achievementProgressCache === "object"
+      ? source.achievementProgressCache
+      : {};
+    const purchases = Array.isArray(source.unlockedCosmeticsCache?.purchases)
+      ? source.unlockedCosmeticsCache.purchases
+      : Array.isArray(source.shopDisplayCache?.purchases)
+        ? source.shopDisplayCache.purchases
+        : [];
+    const customization = normalizeProfileCustomization(profile.cardCustomization || source.unlockedCosmeticsCache?.equipped || defaultProfileCustomization);
+    const themes = normalizeCachedThemes(settings.lastSelectedThemes);
+    const username = String(profile.username || options.fallbackName || savedGuestName).replace(/[\r\n\t]/g, " ").slice(0, 16).trim() || savedGuestName;
+    const avatar = getCacheableAvatar(profile.compressedAvatar || profile.avatarPreview || "");
+    const equippedAchievementId = achievementTitleMap[profile.equippedAchievementId] ? profile.equippedAchievementId : "";
+    const sfx = clampNumber(settings.sfx, 0, 100, 50);
+    const music = clampNumber(settings.music, 0, 100, 50);
+    const maxRounds = clampNumber(settings.maxRounds, 1, 10, 5);
+    const timerSeconds = clampNumber(settings.timerSeconds, 10, 60, 30);
+
+    localStorage.setItem("cardsAgainstAiProfileName", username);
+    if (avatar) {
+      localStorage.setItem("cardsAgainstAiProfileAvatar", avatar);
+    } else {
+      localStorage.removeItem("cardsAgainstAiProfileAvatar");
+    }
+    if (state.supabaseUser) {
+      localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "name"), username);
+      if (avatar) {
+        localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "avatar"), avatar);
+      } else {
+        localStorage.removeItem(getUserProfileStorageKey(state.supabaseUser, "avatar"));
+      }
+    }
+    localStorage.setItem(profileCustomizationStorageKey, JSON.stringify(customization));
+    if (equippedAchievementId) {
+      localStorage.setItem(equippedAchievementStorageKey, equippedAchievementId);
+    } else {
+      localStorage.removeItem(equippedAchievementStorageKey);
+    }
+    setJsonLocalStorage(profileShopPurchasesStorageKey, purchases);
+    setJsonLocalStorage(achievementStorageKey, achievements.unlocked || {});
+    setJsonLocalStorage(achievementProgressStorageKey, achievements.progress || {});
+    setJsonLocalStorage(achievementMilestonesStorageKey, achievements.claimedMilestones || []);
+    localStorage.removeItem(unseenAchievementStorageKey);
+    localStorage.setItem(currencyStorageKey, String(Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0))));
+    localStorage.setItem("cardsAgainstAiSfxVolume", String(sfx));
+    localStorage.setItem("cardsAgainstAiMusicVolume", String(music));
+    localStorage.setItem("cardsAgainstAiMaxRounds", String(maxRounds));
+    localStorage.setItem("cardsAgainstAiTimerSeconds", String(timerSeconds));
+    writeJsonStorage(helpSeenFlagsStorageKey, source.tutorialHelpSeenFlags || {});
+
+    state.profile.name = username;
+    state.profile.avatar = avatar;
+    state.profile.equippedTitleId = equippedAchievementId;
+    state.profile.cardCustomization = customization;
+    state.profile.specialBadges = normalizeSpecialBadges(profile.specialBadges || []).filter((badge) => badge.id !== "admin");
+    state.enabledThemes = themes.length ? themes : [...triviaThemes];
+    state.roomSettings.enabledThemes = [...state.enabledThemes];
+    state.maxRounds = maxRounds;
+    state.timerSeconds = timerSeconds;
+    if (!state.timerId) {
+      state.timerRemaining = timerSeconds;
+    }
+    soundState.sfxVolume = sfx / 100;
+    soundState.musicVolume = music / 100;
+    updateMusicVolume();
+    syncProfileToPlayer();
+    renderProfile();
+    renderRoomPlayers();
+    renderRoomChat();
+    renderLeaderboard();
+    renderThemeSummary();
+    syncSettingsControls();
+    updateAchievementNotificationDot();
+    updateQuestionSubmissionNotificationDot();
+  } finally {
+    state.userStorageApplying = false;
+  }
+}
+
+function resetSignedOutAccountState() {
+  const guestName = createGuestName();
+  localStorage.setItem("cardsAgainstAiGuestName", guestName);
+  [
+    profileCustomizationDebugStorageKey,
+    profileSpecialBadgeDebugStorageKey,
+    disabledAchievementStorageKey,
+    questionSubmissionSeenStorageKey,
+    questionSubmissionRefundedStorageKey
+  ].forEach((key) => localStorage.removeItem(key));
+  state.userQuestionSubmissions = [];
+  updateQuestionSubmissionNotificationDot();
+  const guestSnapshot = {
+    version: userStorageVersion,
+    updatedAt: Date.now(),
+    userId: "guest",
+    profile: {
+      username: guestName,
+      avatarPreview: "",
+      compressedAvatar: "",
+      cardCustomization: defaultProfileCustomization,
+      equippedAchievementId: "",
+      specialBadges: []
+    },
+    settings: {
+      sfx: 50,
+      music: 50,
+      timerSeconds: 30,
+      maxRounds: 5,
+      lastSelectedThemes: [...triviaThemes]
+    },
+    currencyDisplayCache: { coins: 0 },
+    unlockedCosmeticsCache: { purchases: [], equipped: defaultProfileCustomization },
+    shopDisplayCache: { purchases: [], catalogVersion: publicCatalogVersion },
+    achievementProgressCache: { unlocked: {}, progress: {}, claimedMilestones: [] },
+    tutorialHelpSeenFlags: {}
+  };
+  applyUserStorageSnapshot(guestSnapshot, { fallbackName: guestName });
+  writeUserStorageCache(guestSnapshot);
+}
+
+async function loadRemoteUserStorageSnapshot(user) {
+  if (!state.supabaseClient || !user?.id) {
+    return null;
+  }
+  const { data, error } = await state.supabaseClient
+    .from("user_storage")
+    .select("data, updated_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error) {
+    console.warn("Supabase user storage load failed:", error.message || error);
+    return null;
+  }
+  return data?.data && typeof data.data === "object" ? data.data : null;
+}
+
+async function saveRemoteUserStorageSnapshot(snapshot = getUserStorageSnapshot()) {
+  if (!state.supabaseClient || !state.supabaseUser?.id) {
+    return null;
+  }
+  const payload = {
+    user_id: state.supabaseUser.id,
+    data: snapshot,
+    updated_at: new Date(snapshot.updatedAt || Date.now()).toISOString()
+  };
+  const { error } = await state.supabaseClient
+    .from("user_storage")
+    .upsert(payload, { onConflict: "user_id" });
+  if (error) {
+    console.warn("Supabase user storage save failed:", error.message || error);
+    return null;
+  }
+  return payload;
+}
+
+async function hydrateSignedInUserStorage(user) {
+  if (!user?.id) {
+    return;
+  }
+  state.userStorageHydrating = true;
+  try {
+    const localSnapshot = loadUserStorageCacheForUser(user.id);
+    const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
+    const chosenSnapshot = remoteSnapshot && (!localSnapshot.updatedAt || Number(remoteSnapshot.updatedAt || 0) >= Number(localSnapshot.updatedAt || 0))
+      ? remoteSnapshot
+      : localSnapshot;
+    if (chosenSnapshot?.version === userStorageVersion) {
+      applyUserStorageSnapshot(chosenSnapshot, { fallbackName: state.profile.name });
+    } else {
+      writeUserStorageCache(getUserStorageSnapshot());
+    }
+  } finally {
+    state.userStorageHydrating = false;
+  }
+  flushUserStorageSnapshot();
 }
 const audioAssets = {
   music: "assets/bg-music.mp3",
@@ -1190,6 +1412,8 @@ const state = {
   roomHeartbeatTimerId: null,
   roomEventPollId: null,
   userStorageWriteTimerId: null,
+  userStorageHydrating: false,
+  userStorageApplying: false,
   roomSettingsPublishTimerId: null,
   roomSettingsPublishKind: "",
   adminAuthenticated: false,
@@ -8117,10 +8341,14 @@ async function refreshCurrentRoomFromRealtime(payload = {}, expectedSessionId = 
 }
 
 function applySupabaseSession(session) {
+  const previousUserId = state.supabaseUser?.id || "";
   state.supabaseSession = session;
   state.supabaseUser = session?.user || null;
   if (state.supabaseUser) {
     applySupabaseProfile(state.supabaseUser);
+    if (state.supabaseUser.id !== previousUserId) {
+      void hydrateSignedInUserStorage(state.supabaseUser);
+    }
   } else {
     applyGuestProfile();
   }
@@ -8128,11 +8356,7 @@ function applySupabaseSession(session) {
 }
 
 function applyGuestProfile() {
-  state.profile.name = savedGuestName;
-  state.profile.avatar = "";
-  localStorage.setItem("cardsAgainstAiProfileName", savedGuestName);
-  localStorage.removeItem("cardsAgainstAiProfileAvatar");
-  scheduleUserStorageSnapshot();
+  resetSignedOutAccountState();
   syncProfileToPlayer();
   renderProfile();
   renderRoomPlayers();
@@ -8216,6 +8440,8 @@ async function signOutSupabase() {
   if (!state.supabaseClient) {
     return;
   }
+  flushUserStorageSnapshot();
+  await logoutAdmin({ silent: true });
   const { error } = await state.supabaseClient.auth.signOut();
   if (error) {
     console.warn("Supabase sign-out failed:", error.message || error);
@@ -8225,9 +8451,13 @@ async function signOutSupabase() {
     }
     return;
   }
-  state.supabaseSession = null;
-  state.supabaseUser = null;
-  applyGuestProfile();
+  if (state.supabaseUser) {
+    state.supabaseSession = null;
+    state.supabaseUser = null;
+    applyGuestProfile();
+  } else {
+    renderSupabaseAuthControls();
+  }
 }
 
 function updateProfileName(value) {
@@ -14386,6 +14616,13 @@ function saveRefundedSubmissionIds(ids) {
 }
 
 async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
+  if (!isPlayerSignedIn()) {
+    state.userQuestionSubmissions = [];
+    renderUserQuestionSubmissions();
+    updateQuestionSubmissionNotificationDot();
+    syncUserQuestionSubmissionPolling();
+    return;
+  }
   try {
     const response = await fetch(`/api/question-submissions?creatorId=${encodeURIComponent(state.clientId)}`, { cache: "no-store" });
     const result = await response.json().catch(() => ({}));
@@ -15401,7 +15638,7 @@ async function submitAdminLogin(event) {
   }
 }
 
-async function logoutAdmin() {
+async function logoutAdmin(options = {}) {
   try {
     await fetch("/api/auth/logout", {
       method: "POST",
@@ -15414,11 +15651,13 @@ async function logoutAdmin() {
   state.adminUser = null;
   syncSpecialBadgesToProfile();
   updateAdminControls();
-  if (elements.devToolScreen) {
-    setHidden(elements.devToolScreen, true);
+  if (!options.silent) {
+    if (elements.devToolScreen) {
+      setHidden(elements.devToolScreen, true);
+    }
+    setHidden(elements.modeScreen, false);
+    playSound("click");
   }
-  setHidden(elements.modeScreen, false);
-  playSound("click");
 }
 
 async function handleDevToolButtonClick() {
