@@ -1624,6 +1624,7 @@ async function handleRoomLeave(req, res, code) {
       return;
     }
 
+    const leavingParticipant = room.participants.find((participant) => participant.id === participantId) || null;
     room.participants = room.participants.filter((participant) => participant.id !== participantId);
     finalizeRoom(room);
     if (!hasActiveRealPlayers(room)) {
@@ -1632,9 +1633,13 @@ async function handleRoomLeave(req, res, code) {
       return;
     }
 
-    stampRoomEvent(room, "participant_left", { participantId });
+    stampRoomEvent(room, "participant_left", {
+      participantId,
+      participantName: leavingParticipant?.name || "A player",
+      participant: leavingParticipant
+    });
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, { room: storedRoom, closed: false });
+    sendJson(res, 200, { room: storedRoom, participant: leavingParticipant, closed: false });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room leave failed." });
   }

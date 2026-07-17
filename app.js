@@ -7592,14 +7592,25 @@ function applyRealtimeParticipantLeft(payload = {}) {
   if (!participantId) {
     return false;
   }
-  const participant = state.roomParticipants.find((entry) => entry.id === participantId);
+  const participant = state.roomParticipants.find((entry) => entry.id === participantId)
+    || payload.participant
+    || payload.room?.participants?.find?.((entry) => entry.id === participantId)
+    || null;
   if (participant?.host || participantId === state.joiningRoom?.host?.id) {
     handleCurrentRoomClosed("The room was closed by the host or an admin.");
     return true;
   }
   const beforeLength = state.roomParticipants.length;
-  state.roomParticipants = state.roomParticipants.filter((entry) => entry.id !== participantId);
-  if (beforeLength === state.roomParticipants.length) {
+  state.roomParticipants = Array.isArray(payload.room?.participants)
+    ? payload.room.participants.filter((entry) => entry.id !== participantId)
+    : state.roomParticipants.filter((entry) => entry.id !== participantId);
+  const player = state.players.find((entry) => entry.participantId === participantId);
+  if (player) {
+    player.active = false;
+    player.connectionStatus = "left";
+  }
+  state.players = state.players.filter((entry) => entry.participantId !== participantId);
+  if (beforeLength === state.roomParticipants.length && !player) {
     return false;
   }
   if (state.joiningRoom) {
@@ -7618,14 +7629,18 @@ function applyRealtimeParticipantLeft(payload = {}) {
     hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
     hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
   }
-  const player = state.players.find((entry) => entry.participantId === participantId);
-  if (player) {
-    player.active = false;
-    player.connectionStatus = "left";
+  if (player?.owner) {
     delete state.roomSubmissions[player.owner];
+    delete state.roundAnswers[player.owner];
+    delete state.answerRemainingTimes[player.owner];
+  }
+  const participantName = String(payload.participantName || participant?.name || player?.label || "A player").trim();
+  if (participantId !== state.clientId && participantName) {
+    addSystemChat(`${participantName} left and was removed from the room.`, { sync: false });
   }
   renderRoomPlayers();
   renderRoomChat();
+  renderScore();
   renderSubmissionStatus();
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
@@ -16419,6 +16434,14 @@ function leavePublishedRoom(options = {}) {
   }
   const reason = options.reason || "manual";
   const isHostLeaving = isCurrentHost() && !state.joiningRoom;
+  const leavingParticipant = state.roomParticipants.find((entry) => entry.id === state.clientId)
+    || getCurrentParticipant({ host: isCurrentHost(), spectator: state.isSpectator });
+  const leaveDetails = {
+    participantId: state.clientId,
+    participantName: leavingParticipant?.name || state.profile.name || "A player",
+    participant: leavingParticipant || null,
+    reason
+  };
   if (isHostLeaving) {
     markRoomLocallyClosed(code);
     removeHostedRoom(code);
@@ -16439,10 +16462,7 @@ function leavePublishedRoom(options = {}) {
       return result?.closed ? result : { closed: true, code, reason };
     });
   } else if (options.keepalive) {
-    broadcastRealtimeRoomChange("participant-left", code, {
-      participantId: state.clientId,
-      reason
-    });
+    broadcastRealtimeRoomChange("participant-left", code, leaveDetails);
   }
   const payload = JSON.stringify({
     participantId: state.clientId,
@@ -16463,7 +16483,11 @@ function leavePublishedRoom(options = {}) {
     if (result?.closed) {
       broadcastRealtimeRoomChange("room-closed", code, { reason: result.reason || reason });
     } else if (result?.room) {
-      broadcastRealtimeRoomChange("participant-left", result.room);
+      broadcastRealtimeRoomChange("participant-left", result.room, {
+        ...leaveDetails,
+        participantName: result.participant?.name || leaveDetails.participantName,
+        participant: result.participant || leaveDetails.participant
+      });
     }
     return result;
   }).catch(() => null);
@@ -18193,7 +18217,7 @@ async function leaveCurrentRoom() {
 
   if (isLeavingRoom) {
     const leavingLabel = getOwnerLabel(state.currentOwner) || state.profile.name || "A player";
-    addSystemChat(`${leavingLabel} left the room.`);
+    addSystemChat(`${leavingLabel} left and was removed from the room.`, { sync: false });
   }
   clearRoomAutoResolve();
   stopRoomDirectoryPolling();
