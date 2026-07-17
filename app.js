@@ -55,6 +55,7 @@ const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
 const supabaseAvatarBucket = "profile-avatars";
+const supabaseSdkUrl = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const specialPlayerBadgeOrder = ["admin", "verified", "creator"];
 const specialPlayerBadges = [
   {
@@ -1400,6 +1401,11 @@ const state = {
   devQuestionSubmissions: [],
   devSelectedSubmissionId: "",
   supabaseClient: null,
+  supabaseConfig: null,
+  supabaseConfigLoaded: false,
+  supabaseSdkPromise: null,
+  supabaseAuthPromise: null,
+  supabaseAuthListenerAttached: false,
   supabaseEnabled: false,
   supabaseSession: null,
   supabaseUser: null,
@@ -1863,7 +1869,7 @@ function playAudioFile(src, volume = 1, options = {}) {
   }
 
   const audio = new Audio(src);
-  audio.preload = "auto";
+  audio.preload = "none";
   audio.loop = Boolean(options.loop);
   const effectiveVolume = options.ignoreSettings ? volume : volume * getScaledSfxVolume();
   if (!options.ignoreSettings && effectiveVolume > 1) {
@@ -2089,13 +2095,12 @@ function startMusic() {
   if (!soundState.musicAudio) {
     soundState.musicAudio = new Audio(audioAssets.music);
     soundState.musicAudio.loop = true;
-    soundState.musicAudio.preload = "auto";
+    soundState.musicAudio.preload = "none";
     soundState.musicAudio.addEventListener("error", () => {
       soundState.musicUnlocked = false;
       soundState.musicAudio = null;
       armMusicUnlockListeners();
     });
-    soundState.musicAudio.load();
   }
 
   setMusicElementVolume(soundState.musicVolume);
@@ -5720,9 +5725,9 @@ function getActiveRoomPlayerCount(players = state.players) {
 function getRoomSyncAvatar(avatar = "") {
   const value = String(avatar || "");
   if (value.startsWith("data:")) {
-    return value.length <= 250000 ? value : "";
+    return value.length <= 60000 ? value : "";
   }
-  return value.slice(0, 800);
+  return value.slice(0, 1200);
 }
 
 function canvasToBlob(canvas, type, quality) {
@@ -7494,38 +7499,144 @@ function renderSupabaseAuthControls() {
   syncProfileEditControls();
 }
 
-async function initSupabaseAuth() {
-  if (!elements.profileAuthButton || !window.supabase?.createClient) {
-    renderSupabaseAuthControls();
-    return;
+function loadScriptOnce(src, stateKey) {
+  if (window.supabase?.createClient) {
+    return Promise.resolve(window.supabase);
   }
-
-  try {
-    const response = await fetch("/api/auth/supabase-config", { cache: "no-store" });
-    const config = await response.json();
-    if (!response.ok || !config.enabled || !config.url || !config.anonKey) {
-      state.supabaseEnabled = false;
-      renderSupabaseAuthControls();
+  if (state[stateKey]) {
+    return state[stateKey];
+  }
+  state[stateKey] = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.supabase), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`Could not load ${src}`)), { once: true });
       return;
     }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve(window.supabase);
+    script.onerror = () => reject(new Error(`Could not load ${src}`));
+    document.head.appendChild(script);
+  });
+  return state[stateKey];
+}
 
-    state.supabaseEnabled = true;
+function getSupabaseProjectRef(url = state.supabaseConfig?.url || "") {
+  try {
+    return new URL(url).hostname.split(".")[0] || "";
+  } catch {
+    return "";
+  }
+}
+
+function hasSupabaseAuthCallback() {
+  const hash = String(window.location.hash || "");
+  const search = String(window.location.search || "");
+  return /(?:access_token|refresh_token|code)=/.test(hash) || /(?:access_token|refresh_token|code)=/.test(search);
+}
+
+function hasStoredSupabaseSession(config = state.supabaseConfig) {
+  const projectRef = getSupabaseProjectRef(config?.url || "");
+  if (!projectRef) {
+    return false;
+  }
+  try {
+    return Boolean(localStorage.getItem(`sb-${projectRef}-auth-token`));
+  } catch {
+    return false;
+  }
+}
+
+async function loadSupabaseConfig() {
+  if (state.supabaseConfigLoaded) {
+    return state.supabaseConfig;
+  }
+  const response = await fetch("/api/auth/supabase-config", { cache: "no-store" });
+  const config = await response.json().catch(() => ({}));
+  state.supabaseConfigLoaded = true;
+  if (!response.ok || !config.enabled || !config.url || !config.anonKey) {
+    state.supabaseEnabled = false;
+    state.supabaseConfig = null;
+    return null;
+  }
+  state.supabaseEnabled = true;
+  state.supabaseConfig = config;
+  return config;
+}
+
+async function ensureSupabaseClient() {
+  const config = await loadSupabaseConfig();
+  if (!config) {
+    renderSupabaseAuthControls();
+    return null;
+  }
+  if (!state.supabaseClient) {
+    await loadScriptOnce(supabaseSdkUrl, "supabaseSdkPromise");
+    if (!window.supabase?.createClient) {
+      throw new Error("Supabase SDK is unavailable.");
+    }
     state.supabaseClient = window.supabase.createClient(config.url, config.anonKey);
-    startSupabaseRealtime();
-    if (hasActiveRoomContext()) {
-      startRoomRealtime(state.roomSettings.code);
+  }
+  return state.supabaseClient;
+}
+
+async function ensureSupabaseAuthReady(options = {}) {
+  if (state.supabaseAuthPromise && !options.force) {
+    return state.supabaseAuthPromise;
+  }
+  state.supabaseAuthPromise = (async () => {
+    const client = await ensureSupabaseClient();
+    if (!client) {
+      syncUserQuestionSubmissionPolling();
+      return null;
+    }
+    if (options.realtime) {
+      startSupabaseRealtime();
+      if (hasActiveRoomContext()) {
+        startRoomRealtime(state.roomSettings.code);
+      }
+    }
+    const { data } = await client.auth.getSession();
+    applySupabaseSession(data?.session || null);
+    if (!state.supabaseAuthListenerAttached) {
+      state.supabaseAuthListenerAttached = true;
+      client.auth.onAuthStateChange((_event, session) => {
+        applySupabaseSession(session || null);
+      });
     }
     syncUserQuestionSubmissionPolling();
-    const { data } = await state.supabaseClient.auth.getSession();
-    applySupabaseSession(data?.session || null);
-    state.supabaseClient.auth.onAuthStateChange((_event, session) => {
-      applySupabaseSession(session || null);
-    });
-  } catch (error) {
+    return client;
+  })().catch((error) => {
     console.warn("Supabase auth init failed:", error.message || error);
     state.supabaseEnabled = false;
     stopSupabaseRealtime();
     syncUserQuestionSubmissionPolling();
+    renderSupabaseAuthControls();
+    return null;
+  }).finally(() => {
+    state.supabaseAuthPromise = null;
+  });
+  return state.supabaseAuthPromise;
+}
+
+async function initSupabaseAuth() {
+  try {
+    const config = await loadSupabaseConfig();
+    renderSupabaseAuthControls();
+    if (!config) {
+      syncUserQuestionSubmissionPolling();
+      return;
+    }
+    if (hasSupabaseAuthCallback() || hasStoredSupabaseSession(config)) {
+      await ensureSupabaseAuthReady({ realtime: true });
+    } else {
+      syncUserQuestionSubmissionPolling();
+    }
+  } catch (error) {
+    console.warn("Supabase config init failed:", error.message || error);
+    state.supabaseEnabled = false;
     renderSupabaseAuthControls();
   }
 }
@@ -8366,7 +8477,10 @@ function handleRealtimeRoomChange(payload = {}) {
   if (!payload || payload.sourceId === state.realtimeSourceId) {
     return;
   }
-  updateRoomEventRevision(getRoomPayloadRevision(payload));
+  const payloadRevision = getRoomPayloadRevision(payload);
+  const previousRevision = Number(state.roomEventRevision) || 0;
+  payload.revisionGap = Boolean(payloadRevision && previousRevision && payloadRevision > previousRevision + 1);
+  updateRoomEventRevision(payloadRevision);
   if (payload.eventType === "question-submission-updated") {
     applyRealtimeQuestionSubmissionUpdate(payload);
     return;
@@ -8432,8 +8546,39 @@ function handleRealtimeRoomChange(payload = {}) {
     if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-advancing", "round-started", "round-skipped", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
-    scheduleRealtimeRoomRefresh(payload);
+    if (shouldRefreshRoomAfterRealtimeMiss(payload)) {
+      scheduleRealtimeRoomRefresh(payload);
+    }
   }
+}
+
+function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
+  const eventType = String(payload.eventType || "");
+  if (payload.revisionGap) {
+    return true;
+  }
+  if (eventType === "room-updated" || eventType === "room-created") {
+    return !payload.room;
+  }
+  if (eventType === "round-started") {
+    return !(payload.game || payload.room?.game);
+  }
+  if (eventType === "room-settings") {
+    return !(payload.settings || payload.room?.settings);
+  }
+  if (eventType === "game-ended") {
+    return !(payload.game || payload.room?.game);
+  }
+  return ![
+    "chat-message",
+    "answer-submitted",
+    "power-state",
+    "participant-updated",
+    "participant-left",
+    "participant-moderated",
+    "round-advancing",
+    "round-skipped"
+  ].includes(eventType);
 }
 
 function shouldRealtimeRefreshJoinDirectory(eventType = "") {
@@ -8575,12 +8720,13 @@ function applySupabaseProfile(user) {
 }
 
 async function signInWithSupabaseGoogle() {
-  if (!state.supabaseClient) {
+  const client = await ensureSupabaseAuthReady({ realtime: true, force: true });
+  if (!client) {
     renderSupabaseAuthControls();
     return;
   }
   const redirectTo = `${window.location.origin}${window.location.pathname}`;
-  const { error } = await state.supabaseClient.auth.signInWithOAuth({
+  const { error } = await client.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo }
   });
@@ -15021,7 +15167,7 @@ function syncUserQuestionSubmissionPolling() {
     window.clearInterval(state.userQuestionSubmissionPollId);
     state.userQuestionSubmissionPollId = null;
   }
-  if (elements.menuCreateQuestionsButton && !state.supabaseEnabled && hasPendingUserQuestionSubmissions()) {
+  if (elements.menuCreateQuestionsButton && !state.realtimeLobbyReady && hasPendingUserQuestionSubmissions()) {
     state.userQuestionSubmissionPollId = window.setInterval(() => loadUserQuestionSubmissions(), 60000);
   }
 }
@@ -17166,6 +17312,7 @@ async function startGame(mode) {
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, false);
   if (mode === "room") {
+    await ensureSupabaseAuthReady({ realtime: true });
     startRoomRealtime(state.roomSettings.code);
     startRoomDirectoryPolling();
   }
@@ -17258,6 +17405,7 @@ function syncRoomControls() {
 
 function openRoomScreen() {
   stopJoinDirectoryPolling();
+  void ensureSupabaseAuthReady({ realtime: true });
   state.roomSessionId += 1;
   state.mode = null;
   state.players = [];
@@ -17466,6 +17614,7 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
 }
 
 function openJoinScreen() {
+  void ensureSupabaseAuthReady({ realtime: true });
   renderHostedRooms();
   startJoinDirectoryPolling();
   setHidden(elements.modeScreen, true);
@@ -22315,8 +22464,4 @@ loadUserQuestionSubmissions();
 syncUserQuestionSubmissionPolling();
 state.timerRemaining = state.timerSeconds;
 renderTimer();
-startMusic();
-armMusicUnlockListeners();
-loadRandomUsernames();
-ensureQuestionReserve({ enabledThemes: state.enabledThemes });
 scheduleUserStorageSnapshot();

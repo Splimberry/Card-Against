@@ -1,6 +1,6 @@
 const { createServer } = require("node:http");
-const { readFile, writeFile } = require("node:fs/promises");
-const { existsSync, readFileSync } = require("node:fs");
+const { readFile, stat, writeFile } = require("node:fs/promises");
+const { createReadStream, existsSync, readFileSync } = require("node:fs");
 const { extname, join, normalize } = require("node:path");
 const { createHmac, timingSafeEqual } = require("node:crypto");
 const { createBackendStore } = require("./lib/backend-store");
@@ -1198,7 +1198,7 @@ async function handleRoomSettings(req, res, code) {
         ...(room.host || {}),
         id: String(body.host.id || room.host?.id || "host").slice(0, 80),
         name: String(body.host.name || room.host?.name || "Host").slice(0, 24),
-        avatar: String(body.host.avatar || room.host?.avatar || "").slice(0, 250000),
+        avatar: String(body.host.avatar || room.host?.avatar || "").slice(0, 60000),
         equippedTitleId: String(body.host.equippedTitleId || room.host?.equippedTitleId || "").slice(0, 80),
         specialBadges: normalizeSpecialBadges(body.host.specialBadges || room.host?.specialBadges),
         cardCustomization: normalizeCardCustomization(body.host.cardCustomization || room.host?.cardCustomization)
@@ -1615,7 +1615,7 @@ function normalizeRoom(room) {
     host: {
       id: String(host.id || participants.find((entry) => entry.host)?.id || "host").slice(0, 80),
       name: String(host.name || "Host").slice(0, 24),
-      avatar: String(host.avatar || "").slice(0, 250000),
+      avatar: String(host.avatar || "").slice(0, 60000),
       equippedTitleId: String(host.equippedTitleId || "").slice(0, 80),
       specialBadges: normalizeSpecialBadges(host.specialBadges),
       cardCustomization: normalizeCardCustomization(host.cardCustomization)
@@ -1664,7 +1664,7 @@ function normalizeParticipant(participant) {
   return {
     id,
     name: String(participant.name || "Guest").slice(0, 24),
-    avatar: String(participant.avatar || "").slice(0, 250000),
+    avatar: String(participant.avatar || "").slice(0, 60000),
     equippedTitleId: String(participant.equippedTitleId || "").slice(0, 80),
     specialBadges: normalizeSpecialBadges(participant.specialBadges),
     cardCustomization: normalizeCardCustomization(participant.cardCustomization),
@@ -1728,7 +1728,7 @@ function normalizeRoomChat(chat) {
       return {
         id: String(source.id || "").slice(0, 120),
         sender: String(source.sender || "System").slice(0, 32),
-        avatar: String(source.avatar || "").slice(0, 250000),
+        avatar: String(source.avatar || "").slice(0, 60000),
         equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
         specialBadges: normalizeSpecialBadges(source.specialBadges),
         cardCustomization: normalizeCardCustomization(source.cardCustomization),
@@ -1970,28 +1970,49 @@ async function serveStatic(pathname, res, isHead, req) {
   }
 
   try {
-    const data = await readFile(filePath);
+    const fileStats = await stat(filePath);
+    if (!fileStats.isFile()) {
+      sendText(res, 404, "Not found");
+      return;
+    }
     const contentType = mimeTypes[extname(filePath).toLowerCase()] || "application/octet-stream";
     const isMedia = contentType.startsWith("audio/");
     const range = isMedia ? req?.headers?.range : "";
+    const cacheControl = getStaticCacheControl(filePath, contentType);
+    const etag = `W/"${fileStats.size}-${Math.floor(fileStats.mtimeMs)}"`;
+    const lastModified = fileStats.mtime.toUTCString();
+    const commonHeaders = {
+      "Content-Type": contentType,
+      "Cache-Control": cacheControl,
+      "ETag": etag,
+      "Last-Modified": lastModified,
+      ...(isMedia ? { "Accept-Ranges": "bytes" } : {})
+    };
+
+    const ifNoneMatch = String(req?.headers?.["if-none-match"] || "");
+    const ifModifiedSince = Date.parse(String(req?.headers?.["if-modified-since"] || ""));
+    const mtimeSecond = Math.floor(fileStats.mtimeMs / 1000) * 1000;
+    if (!range && (ifNoneMatch === etag || (Number.isFinite(ifModifiedSince) && ifModifiedSince >= mtimeSecond))) {
+      res.writeHead(304, commonHeaders);
+      res.end();
+      return;
+    }
 
     if (range) {
       const match = /^bytes=(\d*)-(\d*)$/.exec(range);
       if (match) {
         const requestedStart = match[1] ? Number(match[1]) : 0;
-        const requestedEnd = match[2] ? Number(match[2]) : data.length - 1;
-        const start = Math.max(0, Math.min(data.length - 1, requestedStart));
-        const end = Math.max(start, Math.min(data.length - 1, requestedEnd));
-        const chunk = data.subarray(start, end + 1);
+        const requestedEnd = match[2] ? Number(match[2]) : fileStats.size - 1;
+        const start = Math.max(0, Math.min(fileStats.size - 1, requestedStart));
+        const end = Math.max(start, Math.min(fileStats.size - 1, requestedEnd));
+        const chunkLength = end - start + 1;
         res.writeHead(206, {
-          "Content-Type": contentType,
-          "Content-Length": chunk.length,
-          "Content-Range": `bytes ${start}-${end}/${data.length}`,
-          "Accept-Ranges": "bytes",
-          "Cache-Control": getStaticCacheControl(filePath, contentType)
+          ...commonHeaders,
+          "Content-Length": chunkLength,
+          "Content-Range": `bytes ${start}-${end}/${fileStats.size}`
         });
         if (!isHead) {
-          res.end(chunk);
+          createReadStream(filePath, { start, end }).pipe(res);
         } else {
           res.end();
         }
@@ -2000,13 +2021,11 @@ async function serveStatic(pathname, res, isHead, req) {
     }
 
     res.writeHead(200, {
-      "Content-Type": contentType,
-      "Content-Length": data.length,
-      ...(isMedia ? { "Accept-Ranges": "bytes" } : {}),
-      "Cache-Control": getStaticCacheControl(filePath, contentType)
+      ...commonHeaders,
+      "Content-Length": fileStats.size
     });
     if (!isHead) {
-      res.end(data);
+      createReadStream(filePath).pipe(res);
     } else {
       res.end();
     }
@@ -2021,18 +2040,20 @@ function getStaticCacheControl(filePath, contentType = "") {
     return "no-store";
   }
   if (extension === ".js" || extension === ".css") {
-    return "public, max-age=60, must-revalidate";
+    return "public, max-age=3600, stale-while-revalidate=86400";
   }
   if (
     contentType.startsWith("audio/")
     || contentType.startsWith("image/")
+    || extension === ".otf"
+    || extension === ".ttf"
     || extension === ".woff"
     || extension === ".woff2"
   ) {
-    return "public, max-age=604800, immutable";
+    return "public, max-age=2592000, immutable";
   }
   if (extension === ".json") {
-    return "public, max-age=300, must-revalidate";
+    return "public, max-age=600, must-revalidate";
   }
   return "public, max-age=300, must-revalidate";
 }

@@ -1,4 +1,4 @@
-# Cards Against AI
+# Trivia Against AI
 
 An AI-powered party game prototype with Solo vs Bots, Local 1v1, and a multiplayer room prototype. The app calls a model-backed Node API for black cards, bot opponents, and judge verdicts.
 
