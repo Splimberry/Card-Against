@@ -997,12 +997,18 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     rgba(255, 255, 255, 0.06);
 }
 
-.room-player-card.kickable-bot[data-tooltip]::after,
-.leaderboard-player.kickable-bot[data-tooltip]::after {
+.room-player-card.kickable-bot[data-tooltip]::after {
   top: calc(100% + 0.45rem);
   bottom: auto;
-  z-index: 180;
+  z-index: 420;
   transform: translate(-50%, -0.2rem);
+}
+
+.leaderboard-player.kickable-bot[data-tooltip]::after {
+  top: auto;
+  bottom: calc(100% + 0.45rem);
+  z-index: 520;
+  transform: translate(-50%, 0.2rem);
 }
 
 .room-player-card.kickable-bot[data-tooltip]:hover::after,
@@ -1328,55 +1334,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .leaderboard-player.kickable-bot {
-  grid-template-rows: auto auto;
-  min-height: 3.25rem;
+  overflow: visible;
+  z-index: 20;
 }
 
-.leaderboard-player.kickable-bot .leaderboard-rank,
-.leaderboard-player.kickable-bot .leaderboard-avatar,
-.leaderboard-player.kickable-bot .leaderboard-power-list,
-.leaderboard-player.kickable-bot > strong,
-.leaderboard-player.kickable-bot .leaderboard-streak {
-  grid-row: 1 / span 2;
+.leaderboard-player.kickable-bot:hover,
+.leaderboard-player.kickable-bot:focus-visible {
+  z-index: 520;
 }
 
 .leaderboard-player.kickable-bot .leaderboard-name {
-  grid-column: 3;
-  grid-row: 1;
-  align-self: end;
-}
-
-.leaderboard-kick-hint {
-  grid-column: 3;
-  grid-row: 2;
-  align-self: start;
-  justify-self: start;
-  max-width: min(12rem, calc(100% - 5.4rem));
-  padding: 0.12rem 0.42rem;
-  border: 1px solid rgba(255, 77, 125, 0.3);
-  border-radius: 999px;
-  background: rgba(19, 22, 35, 0.92);
-  color: #ffd1dc;
-  font-size: 0.53rem;
-  font-weight: 950;
-  line-height: 1;
-  opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  transform: translateY(-0.12rem);
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease;
-  white-space: nowrap;
-  z-index: 2;
-}
-
-.leaderboard-player.kickable-bot:hover .leaderboard-kick-hint,
-.leaderboard-player.kickable-bot:focus-visible .leaderboard-kick-hint {
-  opacity: 1;
-  transform: translateY(0);
+  align-self: center;
 }
 
 .leaderboard-power-list {
@@ -1620,6 +1588,14 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-sizing: content-box;
   overflow: visible;
   filter: drop-shadow(0 0 0 transparent);
+}
+
+.bot-player-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(0);
+  vertical-align: middle;
 }
 
 .special-player-badge::before,
@@ -9814,14 +9790,6 @@ input:focus {
   .leaderboard-power-list {
     grid-column: 3 / -1;
     grid-row: 2;
-  }
-
-  .leaderboard-kick-hint {
-    max-width: 100%;
-  }
-
-  .leaderboard-player.kickable-bot .leaderboard-power-list {
-    grid-row: 3;
   }
 
   .match-metrics {

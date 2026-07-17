@@ -8906,6 +8906,7 @@ function renderLeaderboard() {
     applyOwnerCustomizationSurface(chip, entry.owner);
     if (isKickableBot) {
       chip.setAttribute("aria-label", "Click to kick this bot from the room.");
+      chip.dataset.tooltip = "Click to kick this bot from the room.";
     }
     const rank = document.createElement("span");
     rank.className = "leaderboard-rank";
@@ -8940,12 +8941,6 @@ function renderLeaderboard() {
     streak.className = "leaderboard-streak";
     streak.textContent = entry.streak > 0 ? `${entry.streak}x streak` : "0x streak";
     chip.append(rank, avatar, name, powers, score, streak);
-    if (isKickableBot) {
-      const kickHint = document.createElement("span");
-      kickHint.className = "leaderboard-kick-hint";
-      kickHint.textContent = "Click to kick bot";
-      chip.appendChild(kickHint);
-    }
     elements.leaderboard.appendChild(chip);
   });
 }
@@ -17078,6 +17073,7 @@ function openRoomScreen() {
   stopJoinDirectoryPolling();
   state.roomSessionId += 1;
   state.mode = null;
+  state.players = [];
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomExitLeaveSent = false;
@@ -17086,6 +17082,7 @@ function openRoomScreen() {
   state.roomGame = null;
   state.roomPowerStateUpdatedAt = 0;
   state.roomEventRevision = 0;
+  state.roomSubmissions = {};
   state.currentOwner = "player";
   state.currentRoomStatus = "draft";
   state.roomParticipants = [];
@@ -17215,6 +17212,7 @@ function clearLocalRoomState(options = {}) {
   state.isSpectator = false;
   state.roomGame = null;
   state.roomPowerStateUpdatedAt = 0;
+  state.players = [];
   state.roomParticipants = [];
   state.roomSubmissions = {};
   state.roomMissingSince = 0;
@@ -19015,7 +19013,7 @@ function createRoomModerationControls(owner, context = "list") {
   const player = getPlayer(owner);
   const controls = document.createElement("div");
   controls.className = context === "chat" ? "chat-options" : "room-player-controls";
-  if (!player || !player.active || player.owner === state.currentOwner) {
+  if (!player || !player.active || player.owner === state.currentOwner || player.bot || player.type === "bot") {
     return controls;
   }
 
@@ -19117,7 +19115,9 @@ function renderRoomPlayerList(target) {
     const name = document.createElement("strong");
     renderPlayerNameWithTitle(name, player, player.label);
     const status = document.createElement("small");
-    status.textContent = player.muted ? "muted" : player.connectionStatus || "ready";
+    status.textContent = player.bot || player.type === "bot"
+      ? "BOT"
+      : player.muted ? "muted" : player.connectionStatus || "ready";
     card.dataset.owner = player.owner;
     card.dataset.participantId = player.participantId || "";
     card.dataset.bot = String(Boolean(player.bot));
@@ -19128,7 +19128,7 @@ function renderRoomPlayerList(target) {
     }
     card.append(avatar, name, status);
 
-    if (state.mode === "room" && player.owner !== state.currentOwner && player.active) {
+    if (state.mode === "room" && player.owner !== state.currentOwner && player.active && !player.bot && player.type !== "bot") {
       const controls = createRoomModerationControls(player.owner);
       card.appendChild(controls);
     }
