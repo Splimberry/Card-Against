@@ -19318,7 +19318,13 @@ function animateRoomPlayerListChange(target, renderList) {
   target.classList.add("room-player-list-resizing");
   target.style.height = `${previousHeight}px`;
   renderList();
-  const nextHeight = target.scrollHeight;
+  const previousInlineTransition = target.style.transition;
+  target.style.transition = "none";
+  target.style.height = "auto";
+  const nextHeight = target.getBoundingClientRect().height;
+  target.style.height = `${previousHeight}px`;
+  target.offsetHeight;
+  target.style.transition = previousInlineTransition;
   if (Math.abs(nextHeight - previousHeight) < 2) {
     target.classList.remove("room-player-list-resizing");
     target.style.height = "";
