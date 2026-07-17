@@ -5335,12 +5335,12 @@ input:focus {
   position: relative;
   z-index: 4;
   display: grid;
-  grid-template-columns: repeat(4, max-content);
+  grid-template-columns: repeat(6, max-content);
   align-items: center;
   justify-content: start;
   align-self: center;
   column-gap: 0.34rem;
-  row-gap: 0.34rem;
+  row-gap: 0.22rem;
   width: max-content;
   max-width: none;
   min-height: 3rem;
@@ -5371,6 +5371,7 @@ input:focus {
   z-index: 2;
   display: inline-flex;
   grid-column: 1 / -1;
+  grid-row: 1;
   justify-self: start;
   align-items: center;
   justify-content: center;
@@ -5472,7 +5473,23 @@ input:focus {
 }
 
 .answer-owner .name-with-title-text {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
   text-transform: none;
+}
+
+.answer-owner :is(.host-player-badge, .bot-player-badge, .special-player-badge) {
+  grid-row: 2;
+  justify-self: start;
+}
+
+.answer-owner .name-with-title:has(.equipped-title-pill) .name-with-title-text {
+  grid-row: 2;
+}
+
+.answer-owner .name-with-title:has(.equipped-title-pill) :is(.host-player-badge, .bot-player-badge, .special-player-badge) {
+  grid-row: 3;
 }
 
 .answer-owner > span:last-child {
