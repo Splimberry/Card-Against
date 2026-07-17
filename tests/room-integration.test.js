@@ -732,6 +732,64 @@ async function testRoomPowerStateDeltaPreservesStoredFullState() {
   assert.equal(powerState.players.find((entry) => entry.participantId === "host-client").score, 100);
 }
 
+async function testRoomRoundSkipEndpointStampsEvent() {
+  const code = makeCode(8117);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ],
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/round-skip`, {
+    hostParticipantId: "host-client",
+    round: 2,
+    submissions: [
+      { participantId: "host-client", owner: "player", answer: "Host answer", remainingTime: 14 },
+      { participantId: "guest-client", owner: "opponent", answer: "", remainingTime: 0 }
+    ]
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.submissions.length, 2);
+  assert.ok(payload.revision >= 2);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const host = stored.payload.room.participants.find((participant) => participant.id === "host-client");
+  const guest = stored.payload.room.participants.find((participant) => participant.id === "guest-client");
+  assert.equal(host.answer, "Host answer");
+  assert.equal(host.submittedRound, 2);
+  assert.equal(guest.answer, "");
+  assert.equal(guest.submittedRound, 2);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_skipped"), true);
+}
+
 async function testRoomModerationEndpointMutesAndBans() {
   const code = makeCode(8114);
   await upsertRoom(makeRoom(code, {
@@ -919,6 +977,7 @@ async function main() {
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
   await testRoomPowerStateDeltaPreservesStoredFullState();
+  await testRoomRoundSkipEndpointStampsEvent();
   await testRoomModerationEndpointMutesAndBans();
   await testRoomModerationEndpointKicksBot();
   await testHostCloseEndpointDeletesRoom();

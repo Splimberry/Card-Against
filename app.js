@@ -6561,12 +6561,144 @@ function getPendingSubmitters() {
   return getActiveOwners().filter((owner) => !state.roomSubmissions[owner]);
 }
 
+function hasPendingTimeBenderSubmitter(pendingOwners = getPendingSubmitters()) {
+  return getPlayedPowerEntries(pendingOwners).some((entry) => entry.power?.type === "time_bender");
+}
+
 function getRemoteActiveOwners() {
   if (!isRoomMode()) {
     return [];
   }
 
   return getActiveOwners().filter((owner) => owner !== state.currentOwner);
+}
+
+function buildRoundSkipSubmissions() {
+  return getActiveOwners()
+    .map((owner) => {
+      const participantId = getRoomParticipantIdForOwner(owner);
+      if (!participantId) {
+        return null;
+      }
+      const currentInput = owner === state.currentOwner && !state.roomSubmissions[owner]
+        ? cleanInput(elements.answerInput.value || "")
+        : "";
+      const answer = state.roomSubmissions[owner]
+        ? getLockedRoundAnswer(owner)
+        : currentInput;
+      return {
+        participantId,
+        owner,
+        answer: cleanInput(answer || ""),
+        remainingTime: Math.max(0, Number(state.answerRemainingTimes[owner] ?? state.timerRemaining) || 0)
+      };
+    })
+    .filter(Boolean);
+}
+
+function forceRoomRoundToGrading(payload = {}) {
+  if (!isRoomMode() || state.isSpectator || state.roomRoundResolving || state.matchEnded) {
+    return false;
+  }
+  const code = String(payload.code || "").trim().toUpperCase();
+  if (code && code !== state.roomSettings.code) {
+    return false;
+  }
+  const round = Number(payload.round) || state.round;
+  if (round !== Number(state.round) || elements.inputPanel.classList.contains("hidden")) {
+    return false;
+  }
+
+  const submissions = Array.isArray(payload.submissions) ? payload.submissions : [];
+  submissions.forEach((entry) => {
+    const owner = getRoomOwnerForParticipantId(entry?.participantId) || String(entry?.owner || "");
+    if (!owner || !getActiveOwners().includes(owner)) {
+      return;
+    }
+    const answer = lockRoundAnswer(owner, cleanInput(entry.answer || ""));
+    if (owner === "player") {
+      state.localAnswers.playerOne = answer;
+    }
+    if (owner === "opponent") {
+      state.localAnswers.playerTwo = answer;
+    }
+    state.answerRemainingTimes[owner] = Math.max(0, Number(entry.remainingTime) || 0);
+    setRoomSubmission(owner, true);
+  });
+
+  getPendingSubmitters().forEach((owner) => {
+    const answer = lockRoundAnswer(owner, "");
+    if (owner === "player") {
+      state.localAnswers.playerOne = answer;
+    }
+    if (owner === "opponent") {
+      state.localAnswers.playerTwo = answer;
+    }
+    state.answerRemainingTimes[owner] = 0;
+    setRoomSubmission(owner, true);
+  });
+
+  stopTimer();
+  elements.answerInput.disabled = true;
+  elements.submitButton.disabled = true;
+  document.querySelector("#inputTitle").textContent = "Host skipped to grading.";
+  addSystemChat("The host skipped to grading. Unsubmitted answers were left blank.", { private: true, sync: false });
+  renderSubmissionStatus();
+  state.roomRoundResolving = true;
+  playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+  updateRoomEventRevision(payload.revision);
+  return true;
+}
+
+function publishRoomRoundSkip(payload = {}) {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return Promise.resolve(null);
+  }
+  const body = {
+    round: state.round,
+    hostParticipantId: state.clientId,
+    reason: "host-skip",
+    submissions: buildRoundSkipSubmissions(),
+    ...payload
+  };
+  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/round-skip`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }, roomPresenceFetchTimeoutMs).then(async (response) => {
+    if (!response.ok) {
+      broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, {
+        ...body,
+        updatedAt: Date.now()
+      });
+      return null;
+    }
+    const data = await response.json();
+    updateRoomEventRevision(data.revision);
+    broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, data);
+    return data;
+  }).catch(() => {
+    broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, {
+      ...body,
+      updatedAt: Date.now()
+    });
+    return null;
+  });
+}
+
+function skipRoomRoundToGrading() {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.roomRoundResolving || state.matchEnded) {
+    return;
+  }
+  const payload = {
+    code: state.roomSettings.code,
+    round: state.round,
+    hostParticipantId: state.clientId,
+    submissions: buildRoundSkipSubmissions(),
+    updatedAt: Date.now()
+  };
+  forceRoomRoundToGrading(payload);
+  void publishRoomRoundSkip(payload);
 }
 
 function getRoomVariantNames() {
@@ -7422,6 +7554,13 @@ function applyRoomServerEvent(event = {}) {
       ...eventPayload,
       game: payload.game
     });
+  } else if (type === "round_skipped") {
+    applied = forceRoomRoundToGrading({
+      ...eventPayload,
+      round: payload.round,
+      hostParticipantId: payload.hostParticipantId,
+      submissions: payload.submissions || []
+    });
   } else if (type === "participant_moderated") {
     applied = applyRoomModerationDelta(eventPayload);
   } else if (type === "room_updated" || type === "room_created") {
@@ -7903,10 +8042,13 @@ function handleRealtimeRoomChange(payload = {}) {
     if (payload.eventType === "round-started") {
       appliedDelta = applyRealtimeRoundStarted(payload);
     }
+    if (payload.eventType === "round-skipped") {
+      appliedDelta = forceRoomRoundToGrading(payload);
+    }
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-advancing", "round-started", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
+    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-advancing", "round-started", "round-skipped", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
     scheduleRealtimeRoomRefresh(payload);
@@ -7926,7 +8068,8 @@ function shouldRealtimeRefreshJoinDirectory(eventType = "") {
     "room-settings",
     "game-ended",
     "round-advancing",
-    "round-started"
+    "round-started",
+    "round-skipped"
   ].includes(String(eventType || ""));
 }
 
@@ -8240,7 +8383,12 @@ function renderSubmissionStatus() {
   const submitted = owners.filter((owner) => state.roomSubmissions[owner]);
   elements.roomSubmitStatus.replaceChildren();
   const title = document.createElement("strong");
-  title.textContent = pending.length ? `Waiting for ${pending.map(getOwnerLabel).join(", ")}` : "All answers submitted";
+  const waitingForTimeBender = pending.length > 0 && hasPendingTimeBenderSubmitter(pending);
+  title.textContent = pending.length
+    ? waitingForTimeBender
+      ? `Waiting for Time Bender: ${pending.map(getOwnerLabel).join(", ")}`
+      : `Waiting for ${pending.map(getOwnerLabel).join(", ")}`
+    : "All answers submitted";
   const chipRow = document.createElement("div");
   submitted.forEach((owner) => {
     const chip = document.createElement("span");
@@ -8254,6 +8402,18 @@ function renderSubmissionStatus() {
     chipRow.appendChild(chip);
   });
   elements.roomSubmitStatus.append(title, chipRow);
+  if (pending.length > 0 && isCurrentHost() && !state.joiningRoom && !state.roomRoundResolving) {
+    const actions = document.createElement("div");
+    actions.className = "room-submit-actions";
+    const skipButton = document.createElement("button");
+    skipButton.type = "button";
+    skipButton.className = "mini-button danger-button";
+    skipButton.dataset.action = "skip-room-round";
+    skipButton.textContent = "Skip to Grading";
+    skipButton.dataset.tooltip = "Host only: instantly grade now. Unsubmitted answers are left blank.";
+    actions.appendChild(skipButton);
+    elements.roomSubmitStatus.appendChild(actions);
+  }
   setHidden(elements.roomSubmitStatus, false);
 }
 
@@ -19201,7 +19361,9 @@ function submitRoomAnswer(rawInput, options = {}) {
   void publishCurrentRoomSubmission(lockedInput);
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
-  document.querySelector("#inputTitle").textContent = "Waiting for the other player...";
+  document.querySelector("#inputTitle").textContent = hasPendingTimeBenderSubmitter()
+    ? "Waiting for Time Bender bonus time..."
+    : "Waiting for the other player...";
   playSound("lock");
   clearRoomAutoResolve();
   void waitForRoomSubmissionsThenPlay(lockedInput);
@@ -21095,6 +21257,14 @@ elements.nextRoundButton.addEventListener("click", (event) => {
     return;
   }
   advanceAfterVerdict();
+});
+elements.roomSubmitStatus?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-action='skip-room-round']");
+  if (!button) {
+    return;
+  }
+  event.preventDefault();
+  skipRoomRoundToGrading();
 });
 elements.matchTimelineButton?.addEventListener("click", toggleMatchTimeline);
 

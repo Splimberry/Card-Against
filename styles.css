@@ -3640,6 +3640,14 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   gap: 0.4rem;
 }
 
+.room-submit-actions {
+  justify-content: flex-start;
+}
+
+.room-submit-actions button {
+  width: max-content;
+}
+
 .room-submit-status span {
   padding: 0.3rem 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.14);

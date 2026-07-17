@@ -188,6 +188,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomRoundSkipMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/round-skip$/);
+    if (roomRoundSkipMatch && req.method === "POST") {
+      await handleRoomRoundSkip(req, res, roomRoundSkipMatch[1]);
+      return;
+    }
+
     const roomEventsMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/events$/);
     if (roomEventsMatch && req.method === "GET") {
       await handleRoomEvents(url, res, roomEventsMatch[1]);
@@ -1401,6 +1407,73 @@ async function handleRoomPowerState(req, res, code) {
     });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room power update failed." });
+  }
+}
+
+function normalizeRoundSkipSubmissions(submissions) {
+  return (Array.isArray(submissions) ? submissions : [])
+    .map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      return {
+        participantId: String(source.participantId || "").slice(0, 120),
+        owner: String(source.owner || "").slice(0, 80),
+        answer: String(source.answer || "").slice(0, 500),
+        remainingTime: clampServerNumber(source.remainingTime, 0, 600, 0)
+      };
+    })
+    .filter((entry) => entry.participantId)
+    .slice(0, 10);
+}
+
+async function handleRoomRoundSkip(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
+    if (!isHostParticipant(room, hostParticipantId)) {
+      sendJson(res, 403, { error: "Only the host can skip to grading." });
+      return;
+    }
+
+    const round = clampServerNumber(body.round, 1, 100, room.game?.round || 1);
+    const submissions = normalizeRoundSkipSubmissions(body.submissions);
+    submissions.forEach((submission) => {
+      const participant = room.participants.find((entry) => entry.id === submission.participantId);
+      if (!participant || participant.active === false || participant.spectator) {
+        return;
+      }
+      participant.answer = submission.answer;
+      participant.submittedRound = round;
+      participant.remainingTime = submission.remainingTime;
+      participant.status = "submitted";
+    });
+
+    stampRoomEvent(room, "round_skipped", {
+      round,
+      hostParticipantId,
+      submissions,
+      reason: String(body.reason || "host-skip").slice(0, 60)
+    });
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, {
+      code: storedRoom.code,
+      status: storedRoom.status,
+      revision: getRoomRevision(storedRoom),
+      updatedAt: storedRoom.updatedAt,
+      round,
+      hostParticipantId,
+      submissions,
+      reason: String(body.reason || "host-skip").slice(0, 60)
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Round skip failed." });
   }
 }
 
