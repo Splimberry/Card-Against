@@ -7554,6 +7554,21 @@ function hasStoredSupabaseSession(config = state.supabaseConfig) {
   }
 }
 
+function clearStoredSupabaseSession(config = state.supabaseConfig) {
+  const projectRef = getSupabaseProjectRef(config?.url || "");
+  if (!projectRef) {
+    return;
+  }
+  const prefixes = [`sb-${projectRef}-`];
+  [localStorage, sessionStorage].forEach((storage) => {
+    try {
+      Object.keys(storage)
+        .filter((key) => prefixes.some((prefix) => key.startsWith(prefix)))
+        .forEach((key) => storage.removeItem(key));
+    } catch {}
+  });
+}
+
 async function loadSupabaseConfig() {
   if (state.supabaseConfigLoaded) {
     return state.supabaseConfig;
@@ -8745,26 +8760,56 @@ async function signInWithSupabaseGoogle() {
 }
 
 async function signOutSupabase() {
-  if (!state.supabaseClient) {
-    return;
+  const signingOutUser = state.supabaseUser;
+  if (elements.profileSignOutButton) {
+    elements.profileSignOutButton.disabled = true;
   }
-  flushUserStorageSnapshot();
-  await logoutAdmin({ silent: true });
-  const { error } = await state.supabaseClient.auth.signOut();
-  if (error) {
+  if (elements.profileAuthStatus) {
+    setHidden(elements.profileAuthStatus, false);
+    elements.profileAuthStatus.textContent = "Signing out...";
+  }
+
+  try {
+    if (signingOutUser) {
+      const snapshot = getUserStorageSnapshot();
+      writeUserStorageCache(snapshot);
+      await saveRemoteUserStorageSnapshot(snapshot);
+    }
+    await logoutAdmin({ silent: true });
+
+    let client = state.supabaseClient;
+    if (!client) {
+      try {
+        client = await ensureSupabaseClient();
+      } catch (error) {
+        console.warn("Supabase client unavailable during sign-out; clearing local session anyway:", error.message || error);
+      }
+    }
+    if (client) {
+      const { error } = await client.auth.signOut();
+      if (error) {
+        console.warn("Supabase sign-out returned an error; clearing local session anyway:", error.message || error);
+      }
+    }
+
+    clearStoredSupabaseSession();
+    state.supabaseSession = null;
+    state.supabaseUser = null;
+    state.adminAuthenticated = false;
+    state.adminUser = null;
+    applyGuestProfile();
+    updateAdminControls();
+  } catch (error) {
     console.warn("Supabase sign-out failed:", error.message || error);
     if (elements.profileAuthStatus) {
       setHidden(elements.profileAuthStatus, false);
       elements.profileAuthStatus.textContent = error.message || "Sign out failed.";
     }
-    return;
-  }
-  if (state.supabaseUser) {
-    state.supabaseSession = null;
-    state.supabaseUser = null;
-    applyGuestProfile();
-  } else {
     renderSupabaseAuthControls();
+  } finally {
+    if (elements.profileSignOutButton) {
+      elements.profileSignOutButton.disabled = false;
+    }
   }
 }
 
