@@ -6714,22 +6714,48 @@ function applyRoomGamePowerState(game = state.roomGame) {
   });
 }
 
+function isRoomSubmissionResolveStale() {
+  return Boolean(
+    state.roomRoundResolving
+    && !state.roomSubmissionResolveId
+    && isRoomMode()
+    && getPendingSubmitters().length === 0
+    && !elements.inputPanel.classList.contains("hidden")
+    && elements.loadingPanel.classList.contains("hidden")
+  );
+}
+
+function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchWorkToken) {
+  if (!isRoomMode() || state.isSpectator || !isCurrentMatchWork(matchToken) || getPendingSubmitters().length > 0) {
+    return false;
+  }
+  if (isRoomSubmissionResolveStale()) {
+    state.roomRoundResolving = false;
+  }
+  if (state.roomRoundResolving) {
+    return false;
+  }
+  state.roomRoundResolving = true;
+  playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback));
+  return true;
+}
+
 function maybeResolveRoomSubmissions() {
   if (!isRoomMode() || state.isSpectator || !state.roomSubmissions[state.currentOwner]) {
     return;
+  }
+  if (isRoomSubmissionResolveStale()) {
+    state.roomRoundResolving = false;
   }
   if (getPendingSubmitters().length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
     return;
   }
   const matchToken = state.matchWorkToken;
-  state.roomRoundResolving = true;
   state.roomSubmissionResolveId = window.setTimeout(() => {
     state.roomSubmissionResolveId = null;
-    if (!isRoomMode() || !isCurrentMatchWork(matchToken) || getPendingSubmitters().length > 0) {
+    if (!resolveRoomSubmissionsNow("", matchToken) && getPendingSubmitters().length > 0) {
       state.roomRoundResolving = false;
-      return;
     }
-    playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
   }, 40);
 }
 
@@ -6789,14 +6815,11 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   });
 
   state.roomAutoResolveId = null;
-  state.roomSubmissionResolveId = null;
-  if (state.roomRoundResolving) {
-    return;
+  if (state.roomSubmissionResolveId) {
+    window.clearTimeout(state.roomSubmissionResolveId);
+    state.roomSubmissionResolveId = null;
   }
-  state.roomRoundResolving = true;
-  if (isCurrentMatchWork(matchToken)) {
-    playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback));
-  }
+  resolveRoomSubmissionsNow(localFallback, matchToken);
 }
 
 function getPendingSubmitters() {
@@ -8662,6 +8685,9 @@ function renderSubmissionStatus() {
     actions.appendChild(skipButton);
     elements.roomSubmitStatus.appendChild(actions);
   }
+  if (pending.length === 0 && state.roomSubmissions[state.currentOwner] && !state.roomRoundResolving) {
+    window.setTimeout(() => maybeResolveRoomSubmissions(), 0);
+  }
   setHidden(elements.roomSubmitStatus, false);
 }
 
@@ -10473,6 +10499,20 @@ function createBotPlayerBadge(player) {
   return icon;
 }
 
+function createHostPlayerBadge(player) {
+  if (!player?.host) {
+    return null;
+  }
+  const icon = document.createElement("span");
+  icon.className = "host-player-badge";
+  icon.dataset.description = "This player is a host.";
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", "Room host");
+  icon.tabIndex = 0;
+  attachFloatingDescriptionTooltip(icon);
+  return icon;
+}
+
 function getDisplayTitleIdForPlayer(player) {
   if (!player) {
     return "";
@@ -10489,7 +10529,6 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
   }
   const player = typeof playerOrOwner === "string" ? getPlayer(playerOrOwner) : playerOrOwner;
   const label = player?.label || fallbackLabel || (typeof playerOrOwner === "string" ? getOwnerLabel(playerOrOwner) : "Player");
-  const hostPrefix = player?.host ? "♕ " : "";
   const title = getEquippedAchievementTitle(getDisplayTitleIdForPlayer(player));
   element.replaceChildren();
   element.classList.add("name-with-title");
@@ -10498,9 +10537,13 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
   }
   const name = document.createElement("span");
   name.className = "name-with-title-text";
-  name.textContent = `${hostPrefix}${label}`;
+  name.textContent = label;
   applyProfileFontToElement(name, getProfileFontForPlayer(player));
   element.appendChild(name);
+  const hostBadge = createHostPlayerBadge(player);
+  if (hostBadge) {
+    element.appendChild(hostBadge);
+  }
   const botBadge = createBotPlayerBadge(player);
   if (botBadge) {
     element.appendChild(botBadge);
@@ -20015,7 +20058,7 @@ function getOwnerLabel(owner) {
   if (!player) {
     return owner;
   }
-  return player.host ? `♕ ${player.label}` : player.label;
+  return player.label;
 }
 
 function getOwnerFromCardIndex(index) {

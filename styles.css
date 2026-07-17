@@ -797,7 +797,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .join-room-card[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
-  :is(.join-room-host, .join-room-meta, .name-with-title-text, .equipped-title-pill, .special-player-badge, .bot-player-badge, strong, span, button) {
+  :is(.join-room-host, .join-room-meta, .name-with-title-text, .equipped-title-pill, .special-player-badge, .bot-player-badge, .host-player-badge, strong, span, button) {
   text-shadow:
     0 0 0.34rem rgba(255, 255, 255, 0.28),
     0 0 0.78rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.38),
@@ -1313,6 +1313,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .leaderboard-name .name-with-title-text,
 .leaderboard-name .special-player-badge,
 .leaderboard-name .bot-player-badge,
+.leaderboard-name .host-player-badge,
 .leaderboard-name .equipped-title-pill {
   position: relative;
   z-index: 10;
@@ -1322,14 +1323,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .leaderboard-player[data-card-custom="true"] .leaderboard-name .name-with-title,
 .leaderboard-player[data-card-custom="true"] .leaderboard-name .name-with-title-text,
 .leaderboard-player[data-card-custom="true"] .leaderboard-name .special-player-badge,
-.leaderboard-player[data-card-custom="true"] .leaderboard-name .bot-player-badge {
+.leaderboard-player[data-card-custom="true"] .leaderboard-name .bot-player-badge,
+.leaderboard-player[data-card-custom="true"] .leaderboard-name .host-player-badge {
   position: relative;
   z-index: 14;
   color: var(--ink);
   opacity: 1;
 }
 
-.leaderboard-player[data-card-custom="true"] .leaderboard-name :is(.special-player-badge, .bot-player-badge)::before {
+.leaderboard-player[data-card-custom="true"] .leaderboard-name :is(.special-player-badge, .bot-player-badge, .host-player-badge)::before {
   background-color: currentColor;
 }
 
@@ -1573,7 +1575,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .special-player-badge,
-.bot-player-badge {
+.bot-player-badge,
+.host-player-badge {
   position: relative;
   z-index: 10;
   display: inline-block;
@@ -1590,7 +1593,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   filter: drop-shadow(0 0 0 transparent);
 }
 
-.bot-player-badge {
+.bot-player-badge,
+.host-player-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1599,7 +1603,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .special-player-badge::before,
-.bot-player-badge::before {
+.bot-player-badge::before,
+.host-player-badge::before {
   content: "";
   position: absolute;
   inset: 0.05em;
@@ -1613,13 +1618,18 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]
-  :is(.special-player-badge, .bot-player-badge) {
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
   color: var(--custom-card-active-text, var(--custom-card-text, currentColor));
 }
 
 .bot-player-badge::before {
   -webkit-mask-image: url("assets/bot-robot.svg");
   mask-image: url("assets/bot-robot.svg");
+}
+
+.host-player-badge::before {
+  -webkit-mask-image: url("assets/badge-crown.svg");
+  mask-image: url("assets/badge-crown.svg");
 }
 
 .special-player-badge[data-icon="wrench"]::before {
@@ -4379,7 +4389,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
-  :is(.answer-avatar, .profile-avatar, .room-player-avatar, .equipped-title-pill, .special-player-badge, .bot-player-badge, .rating-badge, .name-with-title-text, .profile-name-display, h2, p, strong) {
+  :is(.answer-avatar, .profile-avatar, .room-player-avatar, .equipped-title-pill, .special-player-badge, .bot-player-badge, .host-player-badge, .rating-badge, .name-with-title-text, .profile-name-display, h2, p, strong) {
   text-shadow:
     0 0.36rem 0.34rem rgba(0, 0, 0, 0.56),
     0 0 0.78rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.2);
@@ -4412,7 +4422,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
-  :is(.special-player-badge, .bot-player-badge) {
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
   filter:
     drop-shadow(0 0.36rem 0.24rem rgba(0, 0, 0, 0.48))
     drop-shadow(0 0 0.62rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.26));
@@ -4426,7 +4436,7 @@ input:focus {
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
-  :is(.leaderboard-avatar, .result-player-avatar, .final-leaderboard-avatar, .equipped-title-pill, .special-player-badge, .bot-player-badge, .name-with-title-text, .leaderboard-name, strong, em, small) {
+  :is(.leaderboard-avatar, .result-player-avatar, .final-leaderboard-avatar, .equipped-title-pill, .special-player-badge, .bot-player-badge, .host-player-badge, .name-with-title-text, .leaderboard-name, strong, em, small) {
   text-shadow:
     0 0.26rem 0.26rem rgba(0, 0, 0, 0.5),
     0 0 0.7rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.2);
@@ -4442,7 +4452,7 @@ input:focus {
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
-  :is(.special-player-badge, .bot-player-badge) {
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
   filter:
     drop-shadow(0 0.28rem 0.2rem rgba(0, 0, 0, 0.44))
     drop-shadow(0 0 0.54rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.24));
@@ -4457,7 +4467,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
-  :is(.special-player-badge, .bot-player-badge) {
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
   filter:
     drop-shadow(0 0 0.34rem rgba(255, 255, 255, 0.32))
     drop-shadow(0 0 0.82rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42))
@@ -4465,7 +4475,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-effects~="text-glow"]
-  :is(.special-player-badge, .bot-player-badge) {
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
   filter:
     drop-shadow(0 0 0.4rem rgba(255, 255, 255, 0.42))
     drop-shadow(0 0 0.98rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.56))
@@ -4473,7 +4483,7 @@ input:focus {
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="text-glow"]
-  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .special-player-badge, .bot-player-badge, .name-with-title-text, strong, em, small) {
+  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .special-player-badge, .bot-player-badge, .host-player-badge, .name-with-title-text, strong, em, small) {
   text-shadow:
     0 0 0.34rem rgba(255, 255, 255, 0.32),
     0 0 0.82rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42),
@@ -4489,7 +4499,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
-  :is(.special-player-badge, .bot-player-badge) {
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
   filter:
     drop-shadow(0 0 0.36rem rgba(255, 255, 255, 0.32))
     drop-shadow(0 0 0.9rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44))
@@ -4497,7 +4507,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row, .join-room-card)[data-card-custom="true"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
-  :is(.special-player-badge, .bot-player-badge) {
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
   filter:
     drop-shadow(0 0 0.42rem rgba(255, 255, 255, 0.42))
     drop-shadow(0 0 1.04rem rgb(var(--rgb-r, var(--custom-card-rgb-base-r, 34)) var(--rgb-g, var(--custom-card-rgb-base-g, 211)) var(--rgb-b, var(--custom-card-rgb-base-b, 238)) / 0.58))
@@ -4505,7 +4515,7 @@ input:focus {
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="rgb"][data-card-effects~="text-glow"]
-  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .special-player-badge, .bot-player-badge, .name-with-title-text, strong, em, small) {
+  :is(.leaderboard-rank, .leaderboard-name, .leaderboard-streak, .equipped-title-pill, .special-player-badge, .bot-player-badge, .host-player-badge, .name-with-title-text, strong, em, small) {
   text-shadow:
     0 0 0.34rem rgba(255, 255, 255, 0.32),
     0 0 0.9rem rgb(var(--rgb-r) var(--rgb-g) var(--rgb-b) / 0.44),
@@ -4879,31 +4889,37 @@ input:focus {
 .white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="gradient"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="gradient"][data-card-custom="true"] p,
 .white-card[data-card-special="false"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-special="false"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-special="false"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-special="false"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-special="false"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-special="false"][data-card-custom="true"] p,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="chaos"][data-card-custom="true"] p,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="black-market"][data-card-custom="true"] p,
 .white-card[data-card-style="black"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="black"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="black"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="black"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="black"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="black"][data-card-custom="true"] p,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner > span:last-child,
 .white-card[data-card-style="burning"][data-card-custom="true"] p {
   color: rgba(246, 242, 238, 0.94);
@@ -4913,6 +4929,7 @@ input:focus {
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="burning"][data-card-custom="true"] .answer-owner > span:last-child {
   text-shadow:
     0 0 0.75rem rgba(255, 121, 38, 0.44),
@@ -4922,6 +4939,7 @@ input:focus {
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="chaos"][data-card-custom="true"] .answer-owner > span:last-child {
   text-shadow:
     -0.05rem 0 rgba(255, 77, 125, 0.7),
@@ -4931,6 +4949,7 @@ input:focus {
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .name-with-title-text,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .special-player-badge,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .bot-player-badge,
+.white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner .host-player-badge,
 .white-card[data-card-style="black-market"][data-card-custom="true"] .answer-owner > span:last-child {
   color: #e6fff7;
   text-shadow: 0 0 0.75rem rgba(64, 222, 164, 0.34);
