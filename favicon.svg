@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Trivia Against AI">
+  <rect width="64" height="64" rx="16" fill="#111827"/>
+  <circle cx="32" cy="32" r="23" fill="#f8fafc"/>
+  <path d="M23 21h18a8 8 0 0 1 0 16h-3v6h-8v-6h-7V21zm8 7v3h9a1.5 1.5 0 0 0 0-3h-9z" fill="#111827"/>
+  <path d="M39 42l5 9h-10l5-9z" fill="#ef4444"/>
+</svg>
