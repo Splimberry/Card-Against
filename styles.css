@@ -3404,6 +3404,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   letter-spacing: 0.02em;
 }
 
+.question-image.image-loaded .question-image-placeholder {
+  display: none;
+}
+
 .question-image figcaption {
   margin-top: 0.35rem;
   color: rgba(255, 255, 255, 0.54);

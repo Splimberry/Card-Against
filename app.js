@@ -3240,6 +3240,7 @@ function clearCardBadges() {
 function renderQuestionImagePlaceholder(message = "Waiting for image...", options = {}) {
   state.questionImageLoadId += 1;
   setHidden(elements.questionImageWrap, false);
+  elements.questionImageWrap.classList.remove("image-loaded");
   elements.questionImage.onload = null;
   elements.questionImage.onerror = null;
   elements.questionImage.removeAttribute("src");
@@ -3257,6 +3258,7 @@ function renderQuestionImagePlaceholder(message = "Waiting for image...", option
 function renderQuestionImage(image = state.questionImage, options = {}) {
   if (!image?.url && state.questionType === "text") {
     state.questionImageLoadId += 1;
+    elements.questionImageWrap.classList.remove("image-loaded");
     elements.questionImage.onload = null;
     elements.questionImage.onerror = null;
     elements.questionImage.removeAttribute("src");
@@ -3277,6 +3279,7 @@ function renderQuestionImage(image = state.questionImage, options = {}) {
   if (!hasImage) {
     state.questionImageLoadId += 1;
     setHidden(elements.questionImageWrap, false);
+    elements.questionImageWrap.classList.remove("image-loaded");
     elements.questionImage.onload = null;
     elements.questionImage.onerror = null;
     elements.questionImage.removeAttribute("src");
@@ -3295,26 +3298,35 @@ function renderQuestionImage(image = state.questionImage, options = {}) {
   const loadId = state.questionImageLoadId + 1;
   state.questionImageLoadId = loadId;
   setHidden(elements.questionImageWrap, false);
-  elements.questionImage.onload = () => {
+  elements.questionImageWrap.classList.remove("image-loaded");
+  const showLoadedImage = () => {
     if (state.questionImageLoadId !== loadId) return;
+    elements.questionImageWrap.classList.add("image-loaded");
     setHidden(elements.questionImage, false);
     setHidden(elements.questionImagePlaceholder, true);
     if (!options.skipFit) {
       scheduleBlackCardFit();
     }
   };
+  elements.questionImage.onload = () => {
+    showLoadedImage();
+  };
   elements.questionImage.onerror = () => {
     if (state.questionImageLoadId !== loadId) return;
+    elements.questionImageWrap.classList.remove("image-loaded");
     renderQuestionImagePlaceholder("Image not retrieved", options);
   };
   elements.questionImage.alt = safeImage.alt || "Trivia question reference image";
   elements.questionImageCredit.textContent = safeImage.credit || "";
   setHidden(elements.questionImageCredit, !safeImage.credit);
   elements.questionImage.removeAttribute("src");
-  setHidden(elements.questionImage, true);
+  setHidden(elements.questionImage, false);
   elements.questionImagePlaceholder.textContent = "Waiting for image...";
-  setHidden(elements.questionImagePlaceholder, false);
+  setHidden(elements.questionImagePlaceholder, true);
   elements.questionImage.src = safeImage.url;
+  if (elements.questionImage.complete && elements.questionImage.naturalWidth > 0) {
+    showLoadedImage();
+  }
   if (!options.skipFit) {
     scheduleBlackCardFit();
   }
