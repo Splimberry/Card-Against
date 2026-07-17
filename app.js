@@ -6500,7 +6500,8 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
     if (getPendingSubmitters().length === 0) {
       break;
     }
-    if (Date.now() - lastEventRefreshAt > 800) {
+    const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
+    if (Date.now() - lastEventRefreshAt > eventRefreshIntervalMs) {
       lastEventRefreshAt = Date.now();
       await refreshRoomEventsSinceLastRevision({ refreshRoom: false });
       if (!isCurrentMatchWork(matchToken)) {
@@ -7072,6 +7073,7 @@ function startRoomRealtime(code = state.roomSettings.code) {
   channel.subscribe((status) => {
     state.realtimeRoomReady = status === "SUBSCRIBED";
     if (state.realtimeRoomReady) {
+      stopRoomEventPolling();
       startRoomEventPolling();
     }
   });
@@ -14236,6 +14238,7 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
     syncSpecialBadgesToProfile();
     renderUserQuestionSubmissions();
     updateQuestionSubmissionNotificationDot();
+    syncUserQuestionSubmissionPolling();
   } catch (error) {
     if (elements.userQuestionStatus) {
       elements.userQuestionStatus.textContent = error.message || "Could not load your submissions.";
@@ -14243,12 +14246,16 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
   }
 }
 
+function hasPendingUserQuestionSubmissions() {
+  return state.userQuestionSubmissions.some((submission) => submission.status === "pending" || submission.status === "review");
+}
+
 function syncUserQuestionSubmissionPolling() {
   if (state.userQuestionSubmissionPollId) {
     window.clearInterval(state.userQuestionSubmissionPollId);
     state.userQuestionSubmissionPollId = null;
   }
-  if (elements.menuCreateQuestionsButton && !state.supabaseEnabled) {
+  if (elements.menuCreateQuestionsButton && !state.supabaseEnabled && hasPendingUserQuestionSubmissions()) {
     state.userQuestionSubmissionPollId = window.setInterval(() => loadUserQuestionSubmissions(), 60000);
   }
 }
@@ -16719,7 +16726,7 @@ function closeJoinScreen() {
 
 function startJoinDirectoryPolling() {
   stopJoinDirectoryPolling();
-  if (state.supabaseEnabled && state.realtimeLobbyChannel) {
+  if (state.supabaseEnabled && state.realtimeLobbyReady) {
     return;
   }
   const intervalMs = state.supabaseEnabled ? 6000 : 1800;
@@ -17453,7 +17460,8 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
     if (setup) {
       return setup;
     }
-    if (Date.now() - lastEventRefreshAt > 800) {
+    const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
+    if (Date.now() - lastEventRefreshAt > eventRefreshIntervalMs) {
       lastEventRefreshAt = Date.now();
       await refreshRoomEventsSinceLastRevision();
       if (!isCurrentMatchWork(matchToken)) {
@@ -17792,17 +17800,17 @@ function startRoomHeartbeat() {
 
 function startRoomEventPolling() {
   stopRoomEventPolling();
-  if (!state.supabaseEnabled || !state.realtimeRoomChannel || !hasActiveRoomContext()) {
+  if (!state.supabaseEnabled || !state.realtimeRoomChannel || state.realtimeRoomReady || !hasActiveRoomContext()) {
     return;
   }
   const sessionId = state.roomSessionId;
   state.roomEventPollId = window.setInterval(() => {
-    if (sessionId !== state.roomSessionId || !hasActiveRoomContext()) {
+    if (sessionId !== state.roomSessionId || !hasActiveRoomContext() || state.realtimeRoomReady) {
       stopRoomEventPolling();
       return;
     }
     refreshRoomEventsSinceLastRevision({ refreshRoom: false });
-  }, 4000);
+  }, 6000);
 }
 
 function stopRoomEventPolling() {
@@ -17821,7 +17829,7 @@ function stopRoomHeartbeat() {
 
 function startRoomDirectoryPolling() {
   stopRoomDirectoryPolling();
-  if (state.supabaseEnabled && state.realtimeLobbyChannel) {
+  if (state.supabaseEnabled && state.realtimeLobbyReady) {
     startRoomHeartbeat();
     startRoomEventPolling();
     return;
