@@ -1281,6 +1281,20 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   z-index: 10;
 }
 
+.leaderboard-player[data-card-custom="true"] .leaderboard-name,
+.leaderboard-player[data-card-custom="true"] .leaderboard-name .name-with-title,
+.leaderboard-player[data-card-custom="true"] .leaderboard-name .name-with-title-text,
+.leaderboard-player[data-card-custom="true"] .leaderboard-name .special-player-badge {
+  position: relative;
+  z-index: 14;
+  color: var(--ink);
+  opacity: 1;
+}
+
+.leaderboard-player[data-card-custom="true"] .leaderboard-name .special-player-badge::before {
+  background-color: currentColor;
+}
+
 .leaderboard-player.kickable-bot {
   grid-template-rows: auto auto;
   min-height: 3.25rem;
