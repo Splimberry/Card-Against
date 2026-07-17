@@ -6090,11 +6090,14 @@ const roomAbilityEffectMapKeys = [
   "insuranceFrauds",
   "insurancePolicies",
   "virusFactories",
+  "error404Owners",
   "luckRounds",
+  "timerPenalties",
   "deadWeightLockedRounds",
   "typhoonOwners",
   "thornOwners",
   "allOutRounds",
+  "extraPowerUses",
   "arsonists",
   "bartenders",
   "hotInHereOwners",
@@ -6105,6 +6108,7 @@ const roomAbilityEffectMapKeys = [
 const roomAbilityEffectArrayKeys = [
   "timeBombs",
   "debuffTimeBombs",
+  "error404Schedule",
   "pendingDeadWeights",
   "soulLinks",
   "hotPotatoOwners"

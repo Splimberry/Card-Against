@@ -636,6 +636,83 @@ async function testRoomPowerStateEndpointStampsEvents() {
   assert.equal(events.payload.events.some((event) => event.type === "power_state"), true);
 }
 
+async function testRoomPowerStateDeltaPreservesStoredFullState() {
+  const code = makeCode(8115);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ],
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        updatedAt: Date.now(),
+        hands: [
+          { participantId: "host-client", owner: "player", hand: ["software_downgrade"], fresh: [] },
+          { participantId: "guest-client", owner: "opponent", hand: ["xray_hacks"], fresh: [] }
+        ],
+        played: [],
+        players: [
+          { participantId: "host-client", owner: "player", score: 0, streak: 0 },
+          { participantId: "guest-client", owner: "opponent", score: 0, streak: 0 }
+        ],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+    round: 1,
+    powerId: "shuffle",
+    actorParticipantId: "host-client",
+    hands: [
+      { participantId: "host-client", owner: "player", hand: ["shuffle"], fresh: ["shuffle"] }
+    ],
+    played: [
+      {
+        participantId: "host-client",
+        owner: "player",
+        stacks: [{ powerId: "shuffle", revealId: "test-reveal-delta", meta: {} }],
+        primaryPowerId: "shuffle"
+      }
+    ],
+    players: [{ participantId: "host-client", owner: "player", score: 100, streak: 1 }],
+    effects: { maps: {}, arrays: {}, values: {} }
+  });
+  assert.equal(response.status, 200, payload.error);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const powerState = stored.payload.room.game.powerState;
+  assert.deepEqual(powerState.hands.find((entry) => entry.participantId === "host-client").hand, ["shuffle"]);
+  assert.deepEqual(powerState.hands.find((entry) => entry.participantId === "guest-client").hand, ["xray_hacks"]);
+  assert.equal(powerState.players.find((entry) => entry.participantId === "guest-client").score, 0);
+  assert.equal(powerState.players.find((entry) => entry.participantId === "host-client").score, 100);
+}
+
 async function testRoomModerationEndpointMutesAndBans() {
   const code = makeCode(8114);
   await upsertRoom(makeRoom(code, {
@@ -767,6 +844,7 @@ async function main() {
   await testCompactRoomDeltasAvoidFullRoomPayloads();
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
+  await testRoomPowerStateDeltaPreservesStoredFullState();
   await testRoomModerationEndpointMutesAndBans();
   await testHostCloseEndpointDeletesRoom();
   await testDebugQuestionCreateUsesBackendStorage();

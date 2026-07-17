@@ -1358,17 +1358,18 @@ async function handleRoomPowerState(req, res, code) {
       sendJson(res, 400, { error: "Room power update needs a power state payload." });
       return;
     }
+    const mergedPowerState = mergeRoomPowerState(room.game?.powerState, powerState);
     if (!room.game || typeof room.game !== "object") {
       room.game = {
         matchId: `${normalizedCode}-${Date.now()}`,
         status: "playing",
         round: clampServerNumber(body.round, 1, 100, 1),
         setup: null,
-        powerState,
+        powerState: mergedPowerState,
         updatedAt: Date.now()
       };
     } else {
-      room.game.powerState = powerState;
+      room.game.powerState = mergedPowerState;
       room.game.updatedAt = Date.now();
     }
     stampRoomEvent(room, "power_state", {
@@ -1793,6 +1794,42 @@ function normalizeRoomPowerState(powerState) {
       .filter((entry) => entry.participantId)
       .slice(0, 10),
     effects: normalizeRoomAbilityEffects(powerState.effects)
+  };
+}
+
+function mergePowerStateEntries(previousEntries = [], nextEntries = []) {
+  const byParticipantId = new Map();
+  previousEntries.forEach((entry) => {
+    if (entry?.participantId) {
+      byParticipantId.set(entry.participantId, entry);
+    }
+  });
+  nextEntries.forEach((entry) => {
+    if (entry?.participantId) {
+      byParticipantId.set(entry.participantId, entry);
+    }
+  });
+  return [...byParticipantId.values()].slice(0, 10);
+}
+
+function mergeRoomPowerState(previousPowerState, nextPowerState) {
+  const previous = normalizeRoomPowerState(previousPowerState) || {
+    updatedAt: 0,
+    hands: [],
+    played: [],
+    players: [],
+    effects: null
+  };
+  const next = normalizeRoomPowerState(nextPowerState);
+  if (!next) {
+    return previous;
+  }
+  return {
+    updatedAt: Math.max(previous.updatedAt || 0, next.updatedAt || Date.now()),
+    hands: mergePowerStateEntries(previous.hands, next.hands),
+    played: mergePowerStateEntries(previous.played, next.played),
+    players: mergePowerStateEntries(previous.players, next.players),
+    effects: next.effects || previous.effects || null
   };
 }
 
