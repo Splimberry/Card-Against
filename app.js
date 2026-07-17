@@ -39,6 +39,7 @@ const userCacheStorageKey = "cardsAgainstAiUserCache:v1";
 const setupCacheStorageKey = "cardsAgainstAiRecentQuestionCache:v1";
 const publicCatalogCacheStorageKey = "cardsAgainstAiPublicCatalog:v1";
 const helpSeenFlagsStorageKey = "cardsAgainstAiHelpSeenFlags:v1";
+const hostedRoomSessionStorageKey = "cardsAgainstAiHostedRoomSession:v1";
 const userStorageWriteDelayMs = 450;
 const setupCacheLimit = 30;
 const setupCacheMaxAgeMs = 24 * 60 * 60 * 1000;
@@ -7121,6 +7122,87 @@ function isRoomLocallyClosed(code = "") {
   return true;
 }
 
+function readHostedRoomSessionMarker() {
+  try {
+    const marker = JSON.parse(sessionStorage.getItem(hostedRoomSessionStorageKey) || "null");
+    const code = String(marker?.code || "").trim().toUpperCase();
+    const participantId = String(marker?.participantId || "").slice(0, 80);
+    if (!/^CAI-\d{4}$/.test(code) || participantId !== state.clientId) {
+      return null;
+    }
+    return {
+      code,
+      participantId,
+      updatedAt: Number(marker.updatedAt) || 0
+    };
+  } catch {
+    return null;
+  }
+}
+
+function rememberHostedRoomSession(code = state.roomSettings.code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!/^CAI-\d{4}$/.test(normalizedCode)) {
+    return;
+  }
+  try {
+    sessionStorage.setItem(hostedRoomSessionStorageKey, JSON.stringify({
+      code: normalizedCode,
+      participantId: state.clientId,
+      updatedAt: Date.now()
+    }));
+  } catch {}
+}
+
+function clearHostedRoomSession(code = state.roomSettings.code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const marker = readHostedRoomSessionMarker();
+  if (!marker || (normalizedCode && marker.code !== normalizedCode)) {
+    return;
+  }
+  try {
+    sessionStorage.removeItem(hostedRoomSessionStorageKey);
+  } catch {}
+}
+
+function closeHostedRoomByCode(code, options = {}) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!/^CAI-\d{4}$/.test(normalizedCode)) {
+    return Promise.resolve(null);
+  }
+  markRoomLocallyClosed(normalizedCode);
+  removeHostedRoom(normalizedCode);
+  const payload = JSON.stringify({
+    participantId: options.participantId || state.clientId,
+    reason: options.reason || "host-left"
+  });
+  const url = `/api/rooms/${encodeURIComponent(normalizedCode)}/close`;
+  if (options.keepalive && navigator.sendBeacon) {
+    navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
+    return Promise.resolve(null);
+  }
+  return fetchWithTimeout(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: Boolean(options.keepalive)
+  }, roomLeaveFetchTimeoutMs).catch(() => null);
+}
+
+function cleanupReloadedHostedRoomSession() {
+  const marker = readHostedRoomSessionMarker();
+  if (!marker) {
+    return;
+  }
+  markRoomLocallyClosed(marker.code);
+  removeHostedRoom(marker.code);
+  clearHostedRoomSession(marker.code);
+  closeHostedRoomByCode(marker.code, {
+    participantId: marker.participantId,
+    reason: "page-refresh-cleanup"
+  });
+}
+
 function pruneLocallyClosedRooms() {
   const now = Date.now();
   Object.entries(state.locallyClosedRooms).forEach(([code, expiresAt]) => {
@@ -7668,13 +7750,16 @@ function handleRealtimeRoomChange(payload = {}) {
     if (payload.eventType === "game-ended") {
       appliedDelta = applyRealtimeRoomGameEnded(payload);
     }
+    if (payload.eventType === "round-advancing") {
+      appliedDelta = applyRealtimeRoundAdvancing(payload);
+    }
     if (payload.eventType === "round-started") {
       appliedDelta = applyRealtimeRoundStarted(payload);
     }
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-started", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
+    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-advancing", "round-started", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
     scheduleRealtimeRoomRefresh(payload);
@@ -7693,6 +7778,7 @@ function shouldRealtimeRefreshJoinDirectory(eventType = "") {
     "participant-moderated",
     "room-settings",
     "game-ended",
+    "round-advancing",
     "round-started"
   ].includes(String(eventType || ""));
 }
@@ -16222,6 +16308,7 @@ function openRoomScreen() {
   state.publishedDraftRoomCode = state.roomSettings.code;
   state.roomChat = [];
   resetChatCooldown();
+  rememberHostedRoomSession(state.roomSettings.code);
   startRoomRealtime(state.roomSettings.code);
   syncRoomControls();
   publishDraftRoom();
@@ -16276,6 +16363,22 @@ function leavePublishedRoom(options = {}) {
   if (isHostLeaving) {
     markRoomLocallyClosed(code);
     removeHostedRoom(code);
+    broadcastRealtimeRoomChange("room-closed", code, {
+      reason: reason === "page-exit" ? "host-left" : reason
+    });
+    if (!options.keepalive || reason !== "page-exit") {
+      clearHostedRoomSession(code);
+    }
+    return closeHostedRoomByCode(code, {
+      keepalive: Boolean(options.keepalive),
+      reason: reason === "page-exit" ? "host-left" : reason
+    }).then(async (response) => {
+      if (!response || typeof response.json !== "function") {
+        return { closed: true, code, reason };
+      }
+      const result = await response.json().catch(() => ({}));
+      return result?.closed ? result : { closed: true, code, reason };
+    });
   } else if (options.keepalive) {
     broadcastRealtimeRoomChange("participant-left", code, {
       participantId: state.clientId,
@@ -16286,16 +16389,9 @@ function leavePublishedRoom(options = {}) {
     participantId: state.clientId,
     reason
   });
-  const url = isHostLeaving
-    ? `/api/rooms/${encodeURIComponent(code)}/close`
-    : `/api/rooms/${encodeURIComponent(code)}/leave`;
+  const url = `/api/rooms/${encodeURIComponent(code)}/leave`;
   if (options.keepalive && navigator.sendBeacon) {
     navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
-    if (isHostLeaving) {
-      broadcastRealtimeRoomChange("room-closed", code, {
-        reason: reason === "page-exit" ? "host-left" : reason
-      });
-    }
     return Promise.resolve(null);
   }
   return fetchWithTimeout(url, {
@@ -16315,6 +16411,9 @@ function leavePublishedRoom(options = {}) {
 }
 
 function clearLocalRoomState(options = {}) {
+  if (options.clearHostedSession) {
+    clearHostedRoomSession(state.roomSettings.code);
+  }
   state.roomSessionId += 1;
   state.mode = null;
   state.currentRoomStatus = "draft";
@@ -16366,7 +16465,7 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   state.matchEnded = true;
   cancelActiveMatchWork({ stopRoomSync: true });
   state.roomClosedNotice = reason;
-  clearLocalRoomState();
+  clearLocalRoomState({ clearHostedSession: true });
   addSystemChat(reason, { private: true, sync: false });
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -16687,6 +16786,9 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
 function upsertHostedRoom(status = "lobby") {
   const existing = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
   const room = buildRoomDirectoryPayload(status);
+  if (!state.joiningRoom && isCurrentHost() && status !== "complete") {
+    rememberHostedRoomSession(room.code);
+  }
   if (existing) {
     Object.assign(existing, room);
   } else {
@@ -17058,6 +17160,17 @@ function publishRoomRoundSetup(setup) {
   });
 }
 
+function publishRoomRoundAdvancing(round = state.round) {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return;
+  }
+  broadcastRealtimeRoomChange("round-advancing", state.roomSettings.code, {
+    status: "in-progress",
+    round: Number(round) || state.round,
+    updatedAt: Date.now()
+  });
+}
+
 function publishRoomGameEnded() {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
@@ -17194,6 +17307,39 @@ function startJoinedRoomMatchFromDirectory(room) {
   startGame("room");
 }
 
+function applyRealtimeRoundAdvancing(payload = {}) {
+  const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || state.matchEnded) {
+    return false;
+  }
+  if (isCurrentHost() && !state.joiningRoom) {
+    return false;
+  }
+  const nextRound = Number(payload.round || payload.nextRound) || 0;
+  if (!nextRound || nextRound < Number(state.round)) {
+    return false;
+  }
+  if (nextRound === Number(state.round) && elements.verdictPanel.classList.contains("hidden")) {
+    updateRoomEventRevision(payload.revision);
+    return true;
+  }
+  cancelActiveMatchWork();
+  state.currentRoomStatus = "in-progress";
+  state.round = nextRound;
+  state.questionId = "";
+  state.blackCard = "";
+  state.questionType = "image";
+  state.questionDifficulty = "medium";
+  state.triviaTheme = "";
+  state.questionImage = null;
+  state.canonicalAnswer = "";
+  state.acceptedAnswers = [];
+  state.judge = null;
+  resetRoundUiForLoading({ resetBlackCardTheme: true });
+  updateRoomEventRevision(payload.revision);
+  return true;
+}
+
 function applyRealtimeRoundStarted(payload = {}) {
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || state.matchEnded) {
@@ -17232,7 +17378,7 @@ function applyRealtimeRoundStarted(payload = {}) {
     updateRoomEventRevision(payload.revision);
     return true;
   }
-  stopNextRoundCountdown();
+  cancelActiveMatchWork();
   state.currentRoomStatus = "in-progress";
   state.round = nextRound;
   state.roomGame = game;
@@ -17951,7 +18097,7 @@ async function leaveCurrentRoom() {
   if (isLeavingRoom) {
     leavePromise.catch(() => null);
   }
-  clearLocalRoomState();
+  clearLocalRoomState({ clearHostedSession: true });
 
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -18597,6 +18743,7 @@ function advanceAfterVerdict() {
   }
 
   state.round += 1;
+  publishRoomRoundAdvancing(state.round);
   newRound();
 }
 
@@ -21017,6 +21164,7 @@ document.addEventListener("click", playFallbackClickIfSilent);
 document.addEventListener("visibilitychange", handleRoomVisibilityChange);
 window.addEventListener("beforeunload", handleWindowBeforeUnload);
 
+cleanupReloadedHostedRoomSession();
 writePublicCatalogCache();
 updateSoundButton();
 syncSettingsControls();
