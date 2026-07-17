@@ -1058,6 +1058,7 @@ const state = {
   roomDirectoryOnline: true,
   roomGame: null,
   roomPowerStateUpdatedAt: 0,
+  roomPlayedResetSyncedRound: null,
   achievementMilestoneScrollLeft: 0,
   joiningRoom: null,
   roomSessionId: 0,
@@ -6360,6 +6361,24 @@ function getRoomPlayedPowerSyncEntry(owner) {
   };
 }
 
+function getRoomPlayedPowerResetEntries(owners = getActiveOwners()) {
+  return [...new Set(owners)]
+    .map((owner) => {
+      const participantId = getRoomParticipantIdForOwner(owner);
+      if (!participantId) {
+        return null;
+      }
+      return {
+        participantId,
+        owner,
+        stacks: [],
+        primaryPowerId: "",
+        meta: null
+      };
+    })
+    .filter(Boolean);
+}
+
 function getRoomAbilityPlayerSyncEntry(owner) {
   const participantId = getRoomParticipantIdForOwner(owner);
   const player = getPlayer(owner);
@@ -6614,6 +6633,36 @@ function publishRoomPowerState(payload = {}) {
   }).catch(() => {
     broadcastRealtimeRoomChange("power-state", state.roomSettings.code, payload);
     return null;
+  });
+}
+
+function publishRoomPowerRoundReset(round = state.round) {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator) {
+    return Promise.resolve(null);
+  }
+  const roundNumber = Number(round) || Number(state.round) || 0;
+  if (state.roomPlayedResetSyncedRound === roundNumber) {
+    return Promise.resolve(null);
+  }
+  const played = getRoomPlayedPowerResetEntries();
+  if (!played.length) {
+    return Promise.resolve(null);
+  }
+  state.roomPlayedResetSyncedRound = roundNumber;
+  const updatedAt = Date.now();
+  if (state.roomGame) {
+    state.roomGame.powerState = {
+      ...(state.roomGame.powerState || {}),
+      updatedAt,
+      played
+    };
+  }
+  state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt);
+  return publishRoomPowerState({
+    round: roundNumber,
+    updatedAt,
+    powerId: "round-reset",
+    played
   });
 }
 
@@ -9251,6 +9300,7 @@ function resetPlayedPowersForRound() {
   state.extraPowerUses = {};
   state.botPowerSchedule = {};
   state.roomBotAnswerSchedule = {};
+  publishRoomPowerRoundReset(state.round);
 }
 
 function recordPlayedPower(owner, powerId, meta = {}) {
@@ -16865,6 +16915,7 @@ async function newRound() {
   state.acceptedAnswers = [];
   state.judge = null;
   state.botCards = [];
+  resetPlayedPowersForRound();
   if (isRoomMode() && !isCurrentHost()) {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
     try {
@@ -16967,6 +17018,7 @@ function resetMatch(mode) {
   clearBackgroundSetupPrefetch();
   state.mode = mode;
   state.roomPowerStateUpdatedAt = 0;
+  state.roomPlayedResetSyncedRound = null;
   state.matchModifiers = rollMatchModifiers(mode);
   setPlayersForMode(mode);
   resetAchievementStats();
@@ -17200,6 +17252,7 @@ function openRoomScreen() {
   state.roomClosedNotice = "";
   state.roomGame = null;
   state.roomPowerStateUpdatedAt = 0;
+  state.roomPlayedResetSyncedRound = null;
   state.roomEventRevision = 0;
   state.roomSubmissions = {};
   state.currentOwner = "player";
@@ -17331,6 +17384,7 @@ function clearLocalRoomState(options = {}) {
   state.isSpectator = false;
   state.roomGame = null;
   state.roomPowerStateUpdatedAt = 0;
+  state.roomPlayedResetSyncedRound = null;
   state.players = [];
   state.roomParticipants = [];
   state.roomSubmissions = {};

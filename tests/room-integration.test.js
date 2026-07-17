@@ -732,6 +732,90 @@ async function testRoomPowerStateDeltaPreservesStoredFullState() {
   assert.equal(powerState.players.find((entry) => entry.participantId === "host-client").score, 100);
 }
 
+async function testRoomPowerStateCanClearPlayedHistory() {
+  const code = makeCode(8116);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ],
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        updatedAt: Date.now(),
+        hands: [
+          { participantId: "host-client", owner: "player", hand: ["shuffle"], fresh: [] },
+          { participantId: "guest-client", owner: "opponent", hand: ["xray_hacks"], fresh: [] }
+        ],
+        played: [
+          {
+            participantId: "host-client",
+            owner: "player",
+            stacks: [{ powerId: "shuffle", revealId: "old-host-power", meta: {} }],
+            primaryPowerId: "shuffle",
+            meta: {}
+          },
+          {
+            participantId: "guest-client",
+            owner: "opponent",
+            stacks: [{ powerId: "xray_hacks", revealId: "old-guest-power", meta: {} }],
+            primaryPowerId: "xray_hacks",
+            meta: {}
+          }
+        ],
+        players: [
+          { participantId: "host-client", owner: "player", score: 100, streak: 1 },
+          { participantId: "guest-client", owner: "opponent", score: 50, streak: 0 }
+        ],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+    round: 2,
+    powerId: "round-reset",
+    played: [
+      { participantId: "host-client", owner: "player", stacks: [], primaryPowerId: "", meta: null },
+      { participantId: "guest-client", owner: "opponent", stacks: [], primaryPowerId: "", meta: null }
+    ]
+  });
+  assert.equal(response.status, 200, payload.error);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const powerState = stored.payload.room.game.powerState;
+  assert.deepEqual(powerState.hands.find((entry) => entry.participantId === "host-client").hand, ["shuffle"]);
+  assert.deepEqual(powerState.hands.find((entry) => entry.participantId === "guest-client").hand, ["xray_hacks"]);
+  assert.deepEqual(powerState.played.find((entry) => entry.participantId === "host-client").stacks, []);
+  assert.deepEqual(powerState.played.find((entry) => entry.participantId === "guest-client").stacks, []);
+  assert.equal(powerState.played.find((entry) => entry.participantId === "host-client").primaryPowerId, "");
+  assert.equal(powerState.played.find((entry) => entry.participantId === "guest-client").primaryPowerId, "");
+}
+
 async function testRoomRoundSkipEndpointStampsEvent() {
   const code = makeCode(8117);
   await upsertRoom(makeRoom(code, {
@@ -977,6 +1061,7 @@ async function main() {
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
   await testRoomPowerStateDeltaPreservesStoredFullState();
+  await testRoomPowerStateCanClearPlayedHistory();
   await testRoomRoundSkipEndpointStampsEvent();
   await testRoomModerationEndpointMutesAndBans();
   await testRoomModerationEndpointKicksBot();
