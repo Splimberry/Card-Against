@@ -3,6 +3,7 @@ const { readFile, stat, writeFile } = require("node:fs/promises");
 const { createReadStream, existsSync, readFileSync } = require("node:fs");
 const { extname, join, normalize } = require("node:path");
 const { createHmac, timingSafeEqual } = require("node:crypto");
+const { createGzip } = require("node:zlib");
 const { createBackendStore } = require("./lib/backend-store");
 
 const root = __dirname;
@@ -1979,6 +1980,7 @@ async function serveStatic(pathname, res, isHead, req) {
     const isMedia = contentType.startsWith("audio/");
     const range = isMedia ? req?.headers?.range : "";
     const cacheControl = getStaticCacheControl(filePath, contentType);
+    const shouldGzip = shouldGzipStaticResponse(req, filePath, contentType, fileStats.size) && !range;
     const etag = `W/"${fileStats.size}-${Math.floor(fileStats.mtimeMs)}"`;
     const lastModified = fileStats.mtime.toUTCString();
     const commonHeaders = {
@@ -1986,6 +1988,7 @@ async function serveStatic(pathname, res, isHead, req) {
       "Cache-Control": cacheControl,
       "ETag": etag,
       "Last-Modified": lastModified,
+      ...(isGzipCandidate(filePath, contentType) ? { "Vary": "Accept-Encoding" } : {}),
       ...(isMedia ? { "Accept-Ranges": "bytes" } : {})
     };
 
@@ -2020,18 +2023,40 @@ async function serveStatic(pathname, res, isHead, req) {
       }
     }
 
-    res.writeHead(200, {
-      ...commonHeaders,
-      "Content-Length": fileStats.size
-    });
+    const responseHeaders = shouldGzip
+      ? { ...commonHeaders, "Content-Encoding": "gzip" }
+      : { ...commonHeaders, "Content-Length": fileStats.size };
+    res.writeHead(200, responseHeaders);
     if (!isHead) {
-      createReadStream(filePath).pipe(res);
+      const stream = createReadStream(filePath);
+      if (shouldGzip) {
+        stream.pipe(createGzip({ level: 6 })).pipe(res);
+      } else {
+        stream.pipe(res);
+      }
     } else {
       res.end();
     }
   } catch {
     sendText(res, 404, "Not found");
   }
+}
+
+function isGzipCandidate(filePath, contentType = "") {
+  const extension = extname(filePath).toLowerCase();
+  return contentType.startsWith("text/")
+    || extension === ".js"
+    || extension === ".json"
+    || extension === ".svg"
+    || extension === ".webmanifest"
+    || extension === ".md";
+}
+
+function shouldGzipStaticResponse(req, filePath, contentType, size) {
+  if (!isGzipCandidate(filePath, contentType) || Number(size) < 1024) {
+    return false;
+  }
+  return String(req?.headers?.["accept-encoding"] || "").includes("gzip");
 }
 
 function getStaticCacheControl(filePath, contentType = "") {

@@ -5158,7 +5158,7 @@ async function loadRandomUsernames() {
   if (!state.randomUsernamesPromise) {
     state.randomUsernamesPromise = (async () => {
       try {
-        const response = await fetch("/data/random_usernames.txt", { cache: "no-store" });
+        const response = await fetch("/data/random_usernames.txt");
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -17021,14 +17021,12 @@ function prefetchNextSetup() {
   const promise = requestRoundSetup();
   state.nextSetupPromise = promise;
   state.nextSetupStatus = "loading";
-  console.info(`Prefetching setup for round ${state.round + 1}...`);
   promise
     .then((setup) => {
       if (state.setupVersion === setupVersion && isCurrentMatchWork(matchToken) && !isRepeatedBlackCard(setup)) {
         state.nextSetup = setup;
         state.nextSetupStatus = "ready";
         preloadQuestionImageInBackground(setup);
-        console.info(`Prefetched setup for round ${state.round + 1}.`);
       }
     })
     .catch((error) => {
@@ -22464,4 +22462,3 @@ loadUserQuestionSubmissions();
 syncUserQuestionSubmissionPolling();
 state.timerRemaining = state.timerSeconds;
 renderTimer();
-scheduleUserStorageSnapshot();
