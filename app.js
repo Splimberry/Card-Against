@@ -2223,6 +2223,28 @@ function reserveQuestionSetups(setups) {
   }
 }
 
+function removeReservedQuestionSetup(setupOrPrompt) {
+  const prompt = normalizePromptText(typeof setupOrPrompt === "string" ? setupOrPrompt : setupOrPrompt?.blackCard);
+  if (!prompt) {
+    return;
+  }
+  state.questionReserve = state.questionReserve.filter((setup) => normalizePromptText(setup?.blackCard) !== prompt);
+}
+
+function discardUnusedQuestionSetups() {
+  clearBackgroundSetupPrefetch();
+  state.questionReserve = [];
+  state.setupStack = [];
+  state.nextSetup = null;
+  state.nextSetupPromise = null;
+  state.nextSetupStatus = "idle";
+  state.warmSetup = null;
+  state.warmSetupPromise = null;
+  state.warmSetupSignature = "";
+  state.setupVersion += 1;
+  state.warmSetupVersion += 1;
+}
+
 function getQuestionImageUrls(setup) {
   const image = setup?.image;
   if (!image?.url) {
@@ -2625,6 +2647,16 @@ function saveRecentSetupCache(entries) {
   scheduleUserStorageSnapshot();
 }
 
+function removeCachedRoundSetup(setupOrPrompt) {
+  const prompt = normalizePromptText(typeof setupOrPrompt === "string" ? setupOrPrompt : setupOrPrompt?.blackCard);
+  if (!prompt) {
+    return;
+  }
+  const cache = loadRecentSetupCache()
+    .filter((entry) => normalizePromptText(entry.setup?.blackCard) !== prompt);
+  saveRecentSetupCache(cache);
+}
+
 function getRecentPromptSet(recentBlackCards = state.recentBlackCards, previousBlackCard = state.blackCard) {
   return new Set([previousBlackCard, ...(Array.isArray(recentBlackCards) ? recentBlackCards : [])]
     .map(normalizePromptText)
@@ -2636,6 +2668,11 @@ function isSetupUsableFromCache(setup, options = {}) {
   const preferredTheme = String(options.preferredTheme || "").trim();
   const prompt = normalizePromptText(setup?.blackCard);
   if (!prompt || getRecentPromptSet(options.recentBlackCards).has(prompt) || !setupMatchesThemes(setup, enabledThemes)) {
+    return false;
+  }
+  const usage = loadQuestionUsageStats();
+  const usageKey = getQuestionUsageKey(setup);
+  if (usageKey && Number(usage[usageKey]?.count) > 0) {
     return false;
   }
   return !preferredTheme || setup.triviaTheme === preferredTheme || setup.theme === preferredTheme;
@@ -14157,6 +14194,8 @@ function updateModeUi() {
 function applyRoundSetup(setup) {
   state.questionId = setup.id || "";
   state.blackCard = setup.blackCard;
+  removeReservedQuestionSetup(setup);
+  removeCachedRoundSetup(setup);
   state.questionType = setup.type === "text" ? "text" : "image";
   state.questionDifficulty = normalizeDifficulty(setup.difficulty);
   state.triviaTheme = setup.triviaTheme || "Mixed Trivia";
@@ -19019,6 +19058,7 @@ async function leaveCurrentRoom() {
   resetTimerDisplay();
   stopLoadingMessages();
   state.matchEnded = true;
+  discardUnusedQuestionSetups();
   state.roomSessionId += 1;
   state.roomExitLeaveSent = true;
   const leavePromise = isLeavingRoom
@@ -21648,8 +21688,13 @@ function applyFinalMatchEffects() {
 
 function endMatch(wasExited = false, options = {}) {
   state.matchEnded = true;
+  if (wasExited) {
+    discardUnusedQuestionSetups();
+  }
   cancelActiveMatchWork({ stopRoomSync: isRoomMode() });
-  stashUnusedQuestionSetups();
+  if (!wasExited) {
+    stashUnusedQuestionSetups();
+  }
   state.nextSetup = null;
   state.nextSetupPromise = null;
   state.nextSetupStatus = "idle";
@@ -21956,8 +22001,13 @@ elements.changeModeButton.addEventListener("click", () => {
   stopNextRoundCountdown();
   resetTimerDisplay();
   stopLoadingMessages();
+  const leavingActiveMatchEarly = !state.matchEnded && elements.endPanel.classList.contains("hidden");
   state.matchEnded = true;
-  stashUnusedQuestionSetups();
+  if (leavingActiveMatchEarly) {
+    discardUnusedQuestionSetups();
+  } else {
+    stashUnusedQuestionSetups();
+  }
   state.nextSetup = null;
   state.nextSetupPromise = null;
   state.nextSetupStatus = "idle";
