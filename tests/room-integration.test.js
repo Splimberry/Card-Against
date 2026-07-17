@@ -781,6 +781,60 @@ async function testRoomModerationEndpointMutesAndBans() {
   assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated"), true);
 }
 
+async function testRoomModerationEndpointKicksBot() {
+  const code = makeCode(8116);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "bot-client",
+        name: "Trivia Bot",
+        host: false,
+        spectator: false,
+        bot: true,
+        active: true,
+        muted: false,
+        status: "bot",
+        submittedRound: 1,
+        remainingTime: 0
+      }
+    ],
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/moderation`, {
+    hostParticipantId: "host-client",
+    participantId: "bot-client",
+    action: "kick"
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.participant.active, false);
+  assert.equal(payload.participant.bot, true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const storedBot = stored.payload.room.participants.find((participant) => participant.id === "bot-client");
+  assert.equal(storedBot.active, false);
+  assert.equal(stored.payload.room.activePlayers, 1);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated" && event.payload.participantId === "bot-client"), true);
+}
+
 async function testHostCloseEndpointDeletesRoom() {
   const code = makeCode(8115);
   await upsertRoom(makeRoom(code));
@@ -866,6 +920,7 @@ async function main() {
   await testRoomPowerStateEndpointStampsEvents();
   await testRoomPowerStateDeltaPreservesStoredFullState();
   await testRoomModerationEndpointMutesAndBans();
+  await testRoomModerationEndpointKicksBot();
   await testHostCloseEndpointDeletesRoom();
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();

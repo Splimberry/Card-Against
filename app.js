@@ -6181,6 +6181,26 @@ function getRoomPowerStatePayload(owners = getActiveOwners()) {
   };
 }
 
+function publishRoomScoreState(reason = "score") {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator) {
+    return Promise.resolve(null);
+  }
+  const players = getActiveOwners()
+    .map(getRoomAbilityPlayerSyncEntry)
+    .filter(Boolean);
+  if (!players.length) {
+    return Promise.resolve(null);
+  }
+  const updatedAt = Date.now();
+  return publishRoomPowerState({
+    round: state.round,
+    updatedAt,
+    powerId: reason,
+    players,
+    effects: getRoomAbilityEffectStatePayload()
+  });
+}
+
 function getImmediatePowerAffectedOwners(owner, power, meta = {}) {
   const owners = new Set([owner]);
   if (meta.targetOwner) {
@@ -6229,6 +6249,35 @@ function broadcastRoomPowerState(owner, power, meta = {}) {
   });
 }
 
+function mergeLocalRoomPowerStateEntries(previousEntries = [], nextEntries = []) {
+  const byParticipantId = new Map();
+  (Array.isArray(previousEntries) ? previousEntries : []).forEach((entry) => {
+    const participantId = String(entry?.participantId || "");
+    if (participantId) {
+      byParticipantId.set(participantId, entry);
+    }
+  });
+  (Array.isArray(nextEntries) ? nextEntries : []).forEach((entry) => {
+    const participantId = String(entry?.participantId || "");
+    if (participantId) {
+      byParticipantId.set(participantId, entry);
+    }
+  });
+  return [...byParticipantId.values()].slice(-10);
+}
+
+function mergeLocalRoomPowerState(previousPowerState = {}, nextPowerState = {}) {
+  const previous = previousPowerState && typeof previousPowerState === "object" ? previousPowerState : {};
+  const next = nextPowerState && typeof nextPowerState === "object" ? nextPowerState : {};
+  return {
+    updatedAt: Math.max(Number(previous.updatedAt) || 0, Number(next.updatedAt) || Date.now()),
+    hands: mergeLocalRoomPowerStateEntries(previous.hands, next.hands),
+    played: mergeLocalRoomPowerStateEntries(previous.played, next.played),
+    players: mergeLocalRoomPowerStateEntries(previous.players, next.players),
+    effects: next.effects || previous.effects || null
+  };
+}
+
 function publishRoomPowerState(payload = {}) {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
@@ -6245,13 +6294,13 @@ function publishRoomPowerState(payload = {}) {
     const data = await response.json();
     updateRoomEventRevision(data.revision);
     if (state.roomGame) {
-      state.roomGame.powerState = {
+      state.roomGame.powerState = mergeLocalRoomPowerState(state.roomGame.powerState, {
         updatedAt: data.updatedAt || Date.now(),
         hands: data.hands || [],
         played: data.played || [],
         players: data.players || [],
         effects: data.effects || null
-      };
+      });
     }
     broadcastRealtimeRoomChange("power-state", state.roomSettings.code, data);
     return data;
@@ -6350,15 +6399,25 @@ function applyRoomPowerState(payload = {}) {
   updateRoomEventRevision(revision);
   if (state.roomGame) {
     const syncedParticipantIds = new Set(hands.map((entry) => String(entry?.participantId || "")).filter(Boolean));
+    const syncedPlayedParticipantIds = new Set(played.map((entry) => String(entry?.participantId || "")).filter(Boolean));
+    const syncedPlayerParticipantIds = new Set(players.map((entry) => String(entry?.participantId || "")).filter(Boolean));
     const existingHands = Array.isArray(state.roomGame.powerState?.hands) ? state.roomGame.powerState.hands : [];
+    const existingPlayed = Array.isArray(state.roomGame.powerState?.played) ? state.roomGame.powerState.played : [];
+    const existingPlayers = Array.isArray(state.roomGame.powerState?.players) ? state.roomGame.powerState.players : [];
     state.roomGame.powerState = {
       updatedAt: state.roomPowerStateUpdatedAt,
       hands: [
         ...existingHands.filter((entry) => !syncedParticipantIds.has(String(entry?.participantId || ""))),
         ...hands
       ].slice(-10),
-      played,
-      players,
+      played: [
+        ...existingPlayed.filter((entry) => !syncedPlayedParticipantIds.has(String(entry?.participantId || ""))),
+        ...played
+      ].slice(-10),
+      players: [
+        ...existingPlayers.filter((entry) => !syncedPlayerParticipantIds.has(String(entry?.participantId || ""))),
+        ...players
+      ].slice(-10),
       effects
     };
   }
@@ -6392,8 +6451,6 @@ function applyRoomPowerState(payload = {}) {
     );
   }
   renderScore();
-  renderLeaderboard();
-  renderEffectPanel();
   renderTableEventControls();
   renderPowerUps();
   renderRoomPlayers();
@@ -7587,6 +7644,74 @@ function applyHostedRoomParticipantLeft(payload = {}) {
   return true;
 }
 
+function clearRoomOwnerVolatileState(owner) {
+  if (!owner) {
+    return;
+  }
+  delete state.roomSubmissions[owner];
+  delete state.roundAnswers[owner];
+  delete state.answerRemainingTimes[owner];
+  delete state.powerHands[owner];
+  delete state.freshPowerUps[owner];
+  delete state.playedPowerUps[owner];
+  delete state.playedPowerMeta[owner];
+  delete state.playedPowerStacks[owner];
+  clearSelectedPowerUps(owner);
+  removeActiveEffectsForOwner(owner);
+}
+
+function removeRoomParticipantLocally(participantId, options = {}) {
+  const id = String(participantId || "").slice(0, 80);
+  if (!id) {
+    return { removed: false, participant: null, player: null, owners: [] };
+  }
+  const participantIndex = state.roomParticipants.findIndex((entry) => entry.id === id);
+  const participant = participantIndex >= 0 ? state.roomParticipants[participantIndex] : null;
+  const matchedPlayers = state.players.filter((entry) => entry.participantId === id);
+  const owners = new Set(matchedPlayers.map((entry) => entry.owner).filter(Boolean));
+  if (participant) {
+    owners.add(getRoomOwnerForParticipant(participant, participantIndex));
+  }
+
+  const beforeParticipantCount = state.roomParticipants.length;
+  state.roomParticipants = state.roomParticipants.filter((entry) => entry.id !== id);
+  state.players.forEach((player) => {
+    if (player.participantId === id || owners.has(player.owner)) {
+      player.active = false;
+      player.connectionStatus = options.status || "left";
+    }
+  });
+  state.players = state.players.filter((player) => player.participantId !== id && !owners.has(player.owner));
+  owners.forEach(clearRoomOwnerVolatileState);
+
+  if (state.joiningRoom) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      participants: [...state.roomParticipants],
+      updatedAt: Number(options.updatedAt) || Date.now(),
+      revision: Number(options.revision) || state.joiningRoom.revision || 0
+    };
+  }
+  const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
+  if (hostedRoom) {
+    hostedRoom.participants = [...state.roomParticipants];
+    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length;
+    hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
+    hostedRoom.updatedAt = Number(options.updatedAt) || hostedRoom.updatedAt || Date.now();
+    hostedRoom.revision = Number(options.revision) || hostedRoom.revision || 0;
+    if (Array.isArray(options.banned)) {
+      hostedRoom.banned = [...options.banned];
+    }
+  }
+
+  return {
+    removed: beforeParticipantCount !== state.roomParticipants.length || matchedPlayers.length > 0,
+    participant,
+    player: matchedPlayers[0] || null,
+    owners: [...owners].filter(Boolean)
+  };
+}
+
 function applyRealtimeParticipantLeft(payload = {}) {
   const code = String(payload.code || "").trim().toUpperCase();
   if (code && code !== state.roomSettings.code) {
@@ -7604,41 +7729,18 @@ function applyRealtimeParticipantLeft(payload = {}) {
     handleCurrentRoomClosed("The room was closed by the host or an admin.");
     return true;
   }
-  const beforeLength = state.roomParticipants.length;
-  state.roomParticipants = Array.isArray(payload.room?.participants)
-    ? payload.room.participants.filter((entry) => entry.id !== participantId)
-    : state.roomParticipants.filter((entry) => entry.id !== participantId);
-  const player = state.players.find((entry) => entry.participantId === participantId);
-  if (player) {
-    player.active = false;
-    player.connectionStatus = "left";
+  if (Array.isArray(payload.room?.participants)) {
+    state.roomParticipants = payload.room.participants;
   }
-  state.players = state.players.filter((entry) => entry.participantId !== participantId);
-  if (beforeLength === state.roomParticipants.length && !player) {
+  const removal = removeRoomParticipantLocally(participantId, {
+    status: "left",
+    revision: payload.revision,
+    updatedAt: payload.updatedAt
+  });
+  if (!removal.removed) {
     return false;
   }
-  if (state.joiningRoom) {
-    state.joiningRoom = {
-      ...state.joiningRoom,
-      participants: [...state.roomParticipants],
-      updatedAt: Number(payload.updatedAt) || Date.now(),
-      revision: Number(payload.revision) || state.joiningRoom.revision || 0
-    };
-  }
-  const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
-  if (hostedRoom) {
-    hostedRoom.participants = [...state.roomParticipants];
-    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length;
-    hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
-    hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
-    hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
-  }
-  if (player?.owner) {
-    delete state.roomSubmissions[player.owner];
-    delete state.roundAnswers[player.owner];
-    delete state.answerRemainingTimes[player.owner];
-  }
-  const participantName = String(payload.participantName || participant?.name || player?.label || "A player").trim();
+  const participantName = String(payload.participantName || participant?.name || removal.player?.label || "A player").trim();
   if (participantId !== state.clientId && participantName) {
     addSystemChat(`${participantName} left and was removed from the room.`, { sync: false });
   }
@@ -7646,6 +7748,7 @@ function applyRealtimeParticipantLeft(payload = {}) {
   renderRoomChat();
   renderScore();
   renderSubmissionStatus();
+  maybeResolveRoomSubmissions();
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
   }
@@ -7669,12 +7772,15 @@ function applyRoomModerationDelta(payload = {}) {
       handleCurrentRoomClosed(action === "ban" ? "You were removed from this room by the host." : "You were kicked from this room by the host.");
       return true;
     }
-    state.roomParticipants = state.roomParticipants.filter((entry) => entry.id !== participantId);
-    const player = state.players.find((entry) => entry.participantId === participantId);
-    if (player) {
-      player.active = false;
-      player.connectionStatus = action === "ban" ? "banned" : "kicked";
-      delete state.roomSubmissions[player.owner];
+    const removal = removeRoomParticipantLocally(participantId, {
+      status: action === "ban" ? "banned" : "kicked",
+      revision: payload.revision,
+      updatedAt: payload.updatedAt,
+      banned: payload.banned
+    });
+    if (removal.removed && !payload.silent) {
+      const participantName = String(participant?.name || removal.participant?.name || removal.player?.label || "A player").trim();
+      addSystemChat(`${participantName} was ${action === "ban" ? "banned" : "kicked"} from the room.`, { sync: false });
     }
   } else if (participant) {
     applyRoomParticipantDelta(participant, payload);
@@ -7701,7 +7807,9 @@ function applyRoomModerationDelta(payload = {}) {
   }
   renderRoomPlayers();
   renderRoomChat();
+  renderScore();
   renderSubmissionStatus();
+  maybeResolveRoomSubmissions();
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
   }
@@ -13344,6 +13452,7 @@ function renderRound() {
   restartAnimation(judgePanel, "entering");
   renderPowerUps();
   renderScore();
+  publishRoomScoreState("round-start-score");
   if (state.isSpectator) {
     stopTimer();
     setHidden(elements.inputPanel, true);
@@ -17774,19 +17883,10 @@ function kickRoomBot(owner = "", participantId = "") {
     return false;
   }
 
-  state.roomParticipants = state.roomParticipants.filter((participant) => participant.id !== target.participantId);
-  state.players.forEach((player) => {
-    if (player.participantId === target.participantId || player.owner === target.owner) {
-      player.active = false;
-      player.connectionStatus = "kicked";
-    }
-  });
-
-  if (target.owner === "opponent" || getPlayer("opponent")?.participantId === target.participantId) {
+  const opponentParticipantId = getPlayer("opponent")?.participantId;
+  removeRoomParticipantLocally(target.participantId, { status: "kicked" });
+  if (target.owner === "opponent" || opponentParticipantId === target.participantId) {
     state.localAnswers.playerTwo = "";
-    delete state.roomSubmissions.opponent;
-  } else if (target.owner) {
-    delete state.roomSubmissions[target.owner];
   }
 
   addSystemChat(`${target.name} was kicked from the room.`);
@@ -17797,7 +17897,18 @@ function kickRoomBot(owner = "", participantId = "") {
   renderScore();
   renderRoomPlayers();
   renderSubmissionStatus();
-  upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  maybeResolveRoomSubmissions();
+  publishRoomModeration("kick", target.participantId, { reason: "bot-kicked" }).then((data) => {
+    if (!data) {
+      upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+      broadcastRealtimeRoomChange("participant-moderated", state.roomSettings.code, {
+        action: "kick",
+        participantId: target.participantId,
+        participantName: target.name,
+        updatedAt: Date.now()
+      });
+    }
+  });
   playSound("click");
   return true;
 }
@@ -18452,7 +18563,7 @@ function publishRoomModeration(action, participantId, options = {}) {
       return data;
     }
     updateRoomEventRevision(data.revision);
-    applyRoomModerationDelta({ ...data, code: state.roomSettings.code });
+    applyRoomModerationDelta({ ...data, code: state.roomSettings.code, silent: true });
     broadcastRealtimeRoomChange("participant-moderated", state.roomSettings.code, data);
     return data;
   }).catch(() => null);
@@ -19249,6 +19360,7 @@ async function playRound(rawInput) {
   awardRoundCoins(winningOwners, awarded);
   recordRoundResult(winnerOwner, awarded, roundResult.cards[winner.index], winningOwners);
   renderScore();
+  publishRoomScoreState("round-score");
   animateScorePop(winnerOwner, awarded);
   if (progressOwner !== "spectator") {
     playSound(focusedAnswerCorrect ? "correctAnswer" : "wrongAnswer");
