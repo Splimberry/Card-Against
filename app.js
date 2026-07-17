@@ -4386,16 +4386,13 @@ function renderAchievementLibrary() {
         ? "progress-title"
         : isTitle ? "title" : "progress";
       card.tabIndex = 0;
-      const imageSlot = document.createElement("div");
-      imageSlot.className = "achievement-image-slot";
-      imageSlot.setAttribute("aria-hidden", "true");
       const name = document.createElement("strong");
       name.textContent = achievement.name;
       const meta = document.createElement("span");
       meta.textContent = unlocked ? "Title unlocked" : (isHiddenLocked ? "Secret" : "Locked");
       const description = document.createElement("small");
       description.textContent = descriptionText;
-      card.append(imageSlot, name, meta, description);
+      card.append(name, meta, description);
       if (unseenIds.includes(achievement.id)) {
         const dot = document.createElement("i");
         dot.className = "achievement-new-dot";
