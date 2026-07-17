@@ -564,6 +564,49 @@ async function testSpectatorPresenceDoesNotConsumePlayerSlot() {
   assert.equal(payload.room.participants.some((participant) => participant.id === "spectator-client" && participant.spectator), true);
 }
 
+async function testDuplicateHostPresenceRemovesStaleHostRow() {
+  const code = makeCode(8114);
+  await upsertRoom(makeRoom(code, {
+    host: {
+      id: "old-host-client",
+      name: "Host",
+      avatar: "",
+      equippedTitleId: "",
+      cardCustomization: null
+    },
+    participants: [
+      {
+        id: "old-host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      }
+    ]
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "new-host-client",
+      name: "Host",
+      host: true,
+      spectator: false,
+      bot: false,
+      active: true,
+      muted: false,
+      status: "host"
+    }
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.room.host.id, "new-host-client");
+  assert.equal(payload.room.participants.filter((participant) => participant.host).length, 1);
+  assert.equal(payload.room.participants.some((participant) => participant.id === "old-host-client"), false);
+  assert.equal(payload.room.activePlayers, 1);
+}
+
 async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
   const code = makeCode(8112);
   await upsertRoom(makeRoom(code));
@@ -1058,6 +1101,7 @@ async function main() {
   await testRoomChatPreservesMessageIds();
   await testCompactRoomDeltasAvoidFullRoomPayloads();
   await testSpectatorPresenceDoesNotConsumePlayerSlot();
+  await testDuplicateHostPresenceRemovesStaleHostRow();
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
   await testRoomPowerStateDeltaPreservesStoredFullState();

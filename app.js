@@ -5228,13 +5228,18 @@ function getRoomPlayersForMode() {
     : state.joiningRoom?.participants?.length
       ? state.joiningRoom.participants
       : [];
-  const activeParticipants = participantSource
+  const activeParticipants = normalizeRoomParticipantsList(participantSource)
     .filter((participant) => participant.active !== false && !participant.spectator)
     .sort((a, b) => Number(!a.host) - Number(!b.host));
   const players = [];
+  const seenOwners = new Set();
 
   const addParticipantPlayer = (participant, fallback = {}, index = 0) => {
     const owner = getRoomOwnerForParticipant(participant, index);
+    if (seenOwners.has(owner)) {
+      return;
+    }
+    seenOwners.add(owner);
     players.push(createPlayer(owner, participant.name || fallback.name || "Room Player", {
       type: participant.bot ? "bot" : "human",
       handLimit: participant.spectator ? 0 : 3,
@@ -5948,7 +5953,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
     participants.push(getCurrentParticipant({ host: isCurrentHost(), spectator: state.isSpectator, status: isCurrentHost() ? "host" : "joined" }));
   }
 
-  return participants;
+  return normalizeRoomParticipantsList(participants);
 }
 
 function pushRoomChatMessage(message) {
@@ -7724,7 +7729,7 @@ function getRealtimeRoomPayload(room = {}, options = {}) {
   const settings = source.settings && typeof source.settings === "object" ? source.settings : {};
   const host = source.host && typeof source.host === "object" ? source.host : {};
   const participants = Array.isArray(source.participants)
-    ? source.participants.map(normalizeRoomParticipantDelta).filter(Boolean)
+    ? normalizeRoomParticipantsList(source.participants)
     : [];
   return {
     code: String(source.code || settings.code || "").trim().toUpperCase(),
@@ -8114,7 +8119,7 @@ function mergeRealtimeRoomPayload(room = {}) {
     code,
     settings,
     host: { ...(existing.host || {}), ...(room.host || {}) },
-    participants: Array.isArray(room.participants) ? room.participants : (existing.participants || []),
+    participants: normalizeRoomParticipantsList(Array.isArray(room.participants) ? room.participants : (existing.participants || [])),
     chat: Array.isArray(room.chat) ? room.chat : (existing.chat || []),
     game: Object.hasOwn(room, "game") ? room.game : (existing.game || null),
     revision: Number(room.revision) || Number(existing.revision) || 0,
@@ -8224,16 +8229,16 @@ function applyHostedRoomParticipantDelta(payload = {}) {
   if (!participant) {
     return false;
   }
-  const participants = Array.isArray(room.participants) ? [...room.participants] : [];
+  const participants = normalizeRoomParticipantsList(room.participants);
   const existingIndex = participants.findIndex((entry) => entry.id === participant.id);
   if (existingIndex >= 0) {
     participants[existingIndex] = { ...participants[existingIndex], ...participant };
   } else {
     participants.push(participant);
   }
-  room.participants = participants;
-  room.activePlayers = participants.filter((entry) => entry.active !== false && !entry.spectator).length;
-  room.spectators = participants.filter((entry) => entry.active !== false && entry.spectator).length;
+  room.participants = normalizeRoomParticipantsList(participants);
+  room.activePlayers = room.participants.filter((entry) => entry.active !== false && !entry.spectator).length;
+  room.spectators = room.participants.filter((entry) => entry.active !== false && entry.spectator).length;
   room.revision = Number(payload.revision) || Number(room.revision) || 0;
   room.updatedAt = Number(payload.updatedAt) || Date.now();
   if (participant.host || participant.id === room.host?.id) {
@@ -8265,7 +8270,7 @@ function applyHostedRoomParticipantLeft(payload = {}) {
     removeHostedRoom(code);
     return true;
   }
-  room.participants = (Array.isArray(room.participants) ? room.participants : [])
+  room.participants = normalizeRoomParticipantsList(Array.isArray(room.participants) ? room.participants : [])
     .filter((entry) => entry.id !== participantId);
   room.activePlayers = room.participants.filter((entry) => entry.active !== false && !entry.spectator).length;
   room.spectators = room.participants.filter((entry) => entry.active !== false && entry.spectator).length;
@@ -8363,7 +8368,7 @@ function applyRealtimeParticipantLeft(payload = {}) {
     return true;
   }
   if (Array.isArray(payload.room?.participants)) {
-    state.roomParticipants = payload.room.participants;
+    state.roomParticipants = normalizeRoomParticipantsList(payload.room.participants);
   }
   const removal = removeRoomParticipantLocally(participantId, {
     status: "left",
@@ -9123,7 +9128,14 @@ function applyRoundStartEffects() {
 }
 
 function getActiveOwners() {
-  return state.players.filter((player) => player.active && !player.spectator).map((player) => player.owner);
+  return [
+    ...new Set(
+      state.players
+        .filter((player) => player.active && !player.spectator)
+        .map((player) => player.owner)
+        .filter(Boolean)
+    )
+  ];
 }
 
 function getOwnerStreak(owner) {
@@ -9224,6 +9236,7 @@ function renderLeaderboard() {
       powers.appendChild(pill);
     });
     const score = document.createElement("strong");
+    score.className = "leaderboard-score";
     score.textContent = entry.displayScore;
     const streak = document.createElement("span");
     streak.className = "leaderboard-streak";
@@ -17462,7 +17475,7 @@ function publishDraftRoom() {
     if (serverRoom) {
       mergeHostedRoom(serverRoom);
       if (state.currentRoomStatus === "draft" && state.roomSettings.code === serverRoom.code) {
-        state.roomParticipants = Array.isArray(serverRoom.participants) ? serverRoom.participants : state.roomParticipants;
+        state.roomParticipants = normalizeRoomParticipantsList(Array.isArray(serverRoom.participants) ? serverRoom.participants : state.roomParticipants);
         renderRoomPlayers();
       }
     }
@@ -17937,13 +17950,17 @@ function mergeHostedRoom(room) {
   if (isRoomLocallyClosed(room?.code)) {
     return;
   }
-  const existing = state.hostedRooms.find((entry) => entry.code === room.code);
+  const normalizedRoom = {
+    ...room,
+    participants: normalizeRoomParticipantsList(room?.participants)
+  };
+  const existing = state.hostedRooms.find((entry) => entry.code === normalizedRoom.code);
   if (existing) {
-    const settings = mergeRoomSettingsFresh(existing.settings || {}, room.settings || {}, room);
-    Object.assign(existing, room, { settings });
+    const settings = mergeRoomSettingsFresh(existing.settings || {}, normalizedRoom.settings || {}, normalizedRoom);
+    Object.assign(existing, normalizedRoom, { settings });
   } else {
-    const settings = mergeRoomSettingsFresh({}, room.settings || {}, room);
-    state.hostedRooms.unshift({ ...room, settings });
+    const settings = mergeRoomSettingsFresh({}, normalizedRoom.settings || {}, normalizedRoom);
+    state.hostedRooms.unshift({ ...normalizedRoom, settings });
   }
 }
 
@@ -18123,6 +18140,31 @@ function normalizeRoomParticipantDelta(participant = {}) {
   };
 }
 
+function normalizeRoomParticipantsList(participants = []) {
+  const byId = new Map();
+  (Array.isArray(participants) ? participants : []).forEach((participant) => {
+    const normalized = normalizeRoomParticipantDelta(participant);
+    if (!normalized) {
+      return;
+    }
+    byId.set(normalized.id, {
+      ...(byId.get(normalized.id) || {}),
+      ...normalized
+    });
+  });
+
+  const merged = [...byId.values()];
+  const activeHosts = merged.filter((participant) => participant.active !== false && participant.host && !participant.spectator);
+  let staleHostIds = new Set();
+  if (activeHosts.length > 1) {
+    const preferredHost = activeHosts.find((participant) => participant.id === state.clientId) || activeHosts.at(-1);
+    staleHostIds = new Set(activeHosts.filter((participant) => participant.id !== preferredHost.id).map((participant) => participant.id));
+  }
+
+  const maxEntries = Math.max(getRoomMaxPlayers() + 10, 12);
+  return merged.filter((participant) => !staleHostIds.has(participant.id)).slice(-maxEntries);
+}
+
 function applyRoomParticipantDelta(participant, payload = {}) {
   const normalized = normalizeRoomParticipantDelta(participant);
   if (!normalized) {
@@ -18141,7 +18183,7 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   } else {
     state.roomParticipants.push(normalized);
   }
-  state.roomParticipants = state.roomParticipants.slice(-getRoomMaxPlayers() - 10);
+  state.roomParticipants = normalizeRoomParticipantsList(state.roomParticipants);
   if (state.joiningRoom) {
     state.joiningRoom = {
       ...state.joiningRoom,
@@ -18197,7 +18239,7 @@ function applyRoomDirectoryRoom(room) {
   }
   updateRoomEventRevision(room.revision);
   state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
-  state.roomParticipants = Array.isArray(room.participants) ? room.participants : [];
+  state.roomParticipants = normalizeRoomParticipantsList(room.participants);
   syncRoomPlayersFromParticipants({ preserveMatchStats: state.currentRoomStatus === "in-progress" });
   if (Array.isArray(room.chat)) {
     mergeRoomChatMessages(room.chat);
@@ -19075,7 +19117,7 @@ async function joinHostedRoom(code, options = {}) {
     state.roomClosedNotice = "";
     state.currentOwner = state.isSpectator ? "spectator" : "opponent";
     state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
-    state.roomParticipants = Array.isArray(room.participants) ? [...room.participants] : [];
+    state.roomParticipants = normalizeRoomParticipantsList(room.participants);
     const joinedRoom = await syncJoinedRoomPresence(room, state.roomSessionId);
     if (!joinedRoom) {
       clearLocalRoomState();
@@ -19152,7 +19194,7 @@ async function addBotToRoom() {
     await loadRandomUsernames();
   }
   const participants = state.roomParticipants.length
-    ? state.roomParticipants.filter((participant) => participant.active !== false || participant.spectator)
+    ? normalizeRoomParticipantsList(state.roomParticipants).filter((participant) => participant.active !== false || participant.spectator)
     : getRoomParticipantsFromPlayers("lobby");
   const botCount = participants.filter((participant) => participant.bot).length + 1;
   const botName = getRandomRoomBotName();
@@ -19170,7 +19212,7 @@ async function addBotToRoom() {
     muted: false,
     status: "bot"
   };
-  state.roomParticipants = [...participants, bot];
+  state.roomParticipants = normalizeRoomParticipantsList([...participants, bot]);
   syncRoomPlayersFromParticipants();
   addSystemChat(`${botName} joined as a bot.`);
   upsertHostedRoom("lobby");
@@ -19223,7 +19265,7 @@ function renderRoomLobby() {
 function openRoomLobby() {
   state.mode = "room";
   setPlayersForMode("room");
-  state.roomParticipants = getRoomParticipantsFromPlayers("lobby");
+  state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
   renderRoomLobby();
   startRoomDirectoryPolling();
   setHidden(elements.modeScreen, true);
@@ -21711,7 +21753,7 @@ function animateScorePop(owner, awarded) {
   queueDeltaStatFlash("Score Change", Object.fromEntries(entries));
 
   entries.forEach(([targetOwner, amount]) => {
-    const target = elements.leaderboard.querySelector(`[data-owner="${targetOwner}"]`);
+    const target = elements.leaderboard.querySelector(`[data-owner="${targetOwner}"] .leaderboard-score`);
     if (!target) {
       return;
     }
@@ -22207,7 +22249,7 @@ function returnToRoomLobbyAfterMatch() {
   stopLoadingMessages();
   state.matchEnded = true;
   state.currentRoomStatus = "lobby";
-  state.roomParticipants = getRoomParticipantsFromPlayers("lobby");
+  state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
   setHidden(elements.roomScreen, true);

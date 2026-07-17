@@ -1142,6 +1142,17 @@ async function handleRoomPresence(req, res, code) {
       room.participants.push(participant);
     }
 
+    if (participant.host) {
+      room.host = {
+        ...(room.host || {}),
+        id: participant.id,
+        name: participant.name,
+        avatar: participant.avatar,
+        equippedTitleId: participant.equippedTitleId || "",
+        specialBadges: normalizeSpecialBadges(participant.specialBadges),
+        cardCustomization: participant.cardCustomization || null
+      };
+    }
     if (participant.host || participant.id === room.host?.id) {
       room.hostExitPendingAt = 0;
     }
@@ -1930,6 +1941,12 @@ function finalizeRoom(room) {
     }
   });
   room.participants = [...participantById.values()];
+  const activeHosts = room.participants.filter((participant) => participant.host && participant.active !== false && !participant.spectator);
+  if (activeHosts.length > 1) {
+    const preferredHost = activeHosts.find((participant) => participant.id === room.host?.id) || activeHosts.at(-1);
+    const staleHostIds = new Set(activeHosts.filter((participant) => participant.id !== preferredHost.id).map((participant) => participant.id));
+    room.participants = room.participants.filter((participant) => !staleHostIds.has(participant.id));
+  }
   if (!room.participants.some((participant) => participant.host)) {
     room.participants.unshift({
       id: room.host.id,

@@ -1244,6 +1244,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   align-self: center;
 }
 
+.leaderboard-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: visible;
+  width: max-content;
+  justify-self: end;
+}
+
 .leaderboard-player.leader {
   border-color: rgba(64, 222, 164, 0.46);
   background:
@@ -1732,8 +1741,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .score-pop {
   position: absolute;
   left: 50%;
-  bottom: -0.2rem;
-  z-index: 4;
+  top: 50%;
+  z-index: 12;
   padding: 0.22rem 0.45rem;
   border-radius: 999px;
   background: var(--accent-2);
@@ -1741,7 +1750,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   font-size: 0.78rem;
   font-weight: 950;
   white-space: nowrap;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   animation: scorePop 1150ms ease-out forwards;
 }
 
@@ -9463,17 +9472,17 @@ input:focus {
 @keyframes scorePop {
   0% {
     opacity: 0;
-    transform: translate(-50%, 0.3rem) scale(0.86);
+    transform: translate(-50%, calc(-50% + 0.3rem)) scale(0.86);
   }
 
   16% {
     opacity: 1;
-    transform: translate(-50%, -0.4rem) scale(1.08);
+    transform: translate(-50%, calc(-50% - 0.4rem)) scale(1.08);
   }
 
   100% {
     opacity: 0;
-    transform: translate(-50%, -2.4rem) scale(1);
+    transform: translate(-50%, calc(-50% - 2.4rem)) scale(1);
   }
 }
 
