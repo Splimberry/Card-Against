@@ -6549,6 +6549,21 @@ input:focus {
   white-space: nowrap;
 }
 
+.target-modal[data-mode="xray-result"] .target-panel {
+  width: min(100%, 32rem);
+  max-height: min(82vh, 42rem);
+  overflow: auto;
+}
+
+.target-modal[data-mode="xray-result"] .settings-header {
+  margin-bottom: 0.65rem;
+}
+
+.target-modal[data-mode="xray-result"] .settings-header h2 {
+  font-size: clamp(1.05rem, 3vw, 1.45rem);
+  line-height: 1;
+}
+
 .target-list {
   display: grid;
   gap: 0.55rem;
@@ -6583,6 +6598,32 @@ input:focus {
   grid-template-columns: minmax(0, 1fr);
   min-height: 3rem;
   padding: 0.58rem 0.72rem;
+}
+
+.target-modal[data-mode="xray-result"] .target-list {
+  gap: 0.35rem;
+}
+
+.target-modal[data-mode="xray-result"] .target-option {
+  grid-template-columns: 2.35rem minmax(0, 1fr);
+  min-height: 2.85rem;
+  padding: 0.45rem 0.55rem;
+  gap: 0.55rem;
+}
+
+.target-modal[data-mode="xray-result"] .target-option.readonly {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 2.35rem;
+}
+
+.target-modal[data-mode="xray-result"] .xray-result-heading {
+  margin-top: 0.25rem;
+  border-color: rgba(34, 211, 238, 0.24);
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.target-modal[data-mode="xray-result"] .target-option .room-player-avatar {
+  width: 2.35rem;
 }
 
 .target-modal[data-mode="multiple-choice"] .target-option strong {
@@ -6622,6 +6663,26 @@ input:focus {
 .target-option span:last-child {
   display: grid;
   gap: 0.2rem;
+}
+
+.target-option .target-player-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+}
+
+.target-option .target-player-copy > .name-with-title {
+  width: max-content;
+  max-width: 100%;
+}
+
+.target-option .target-player-copy .name-with-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.target-option .target-player-copy :is(.bot-player-badge, .host-player-badge, .special-player-badge) {
+  z-index: 12;
 }
 
 .target-option small {

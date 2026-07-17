@@ -5255,6 +5255,34 @@ function setPlayersForMode(mode) {
   syncLegacyScoresFromPlayers();
 }
 
+function syncRoomPlayersFromParticipants(options = {}) {
+  if (!state.roomParticipants.length) {
+    return;
+  }
+  const previousByParticipant = new Map();
+  const previousByOwner = new Map();
+  state.players.forEach((player) => {
+    if (player.participantId) {
+      previousByParticipant.set(player.participantId, player);
+    }
+    previousByOwner.set(player.owner, player);
+  });
+  const nextPlayers = getRoomPlayersForMode();
+  if (options.preserveMatchStats) {
+    nextPlayers.forEach((player) => {
+      const previous = previousByParticipant.get(player.participantId) || previousByOwner.get(player.owner);
+      if (!previous) {
+        return;
+      }
+      player.score = previous.score || 0;
+      player.streak = previous.streak || 0;
+      player.handLimit = previous.handLimit ?? player.handLimit;
+    });
+  }
+  state.players = nextPlayers;
+  syncLegacyScoresFromPlayers();
+}
+
 function getPlayer(owner) {
   return state.players.find((player) => player.owner === owner) || null;
 }
@@ -11568,6 +11596,17 @@ function getWrongAnswerCount(owner) {
   return state.matchHistory.filter((round) => !(round.winners || [round.winner]).includes(label)).length;
 }
 
+function createTargetPlayerCopy(player, owner, metaText) {
+  const copy = document.createElement("span");
+  copy.className = "target-player-copy";
+  const name = document.createElement("strong");
+  renderPlayerNameWithTitle(name, player || owner, getOwnerLabel(owner));
+  const meta = document.createElement("small");
+  meta.textContent = metaText;
+  copy.append(name, meta);
+  return copy;
+}
+
 function openTargetSelector(owner, power, powerId) {
   const candidates = getTargetCandidates(owner, power);
   if (!candidates.length) {
@@ -11586,8 +11625,7 @@ function openTargetSelector(owner, power, powerId) {
     const avatar = document.createElement("span");
     avatar.className = "room-player-avatar";
     renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
-    const copy = document.createElement("span");
-    copy.innerHTML = `<strong>${getOwnerLabel(targetOwner)}</strong><small>${getDisplayScoreText(targetOwner)} - ${getOwnerStreak(targetOwner)}x streak</small>`;
+    const copy = createTargetPlayerCopy(player, targetOwner, `${getDisplayScoreText(targetOwner)} - ${getOwnerStreak(targetOwner)}x streak`);
     button.append(avatar, copy);
     elements.targetList.appendChild(button);
   });
@@ -11700,8 +11738,7 @@ function openTableSabotageSelector(owner) {
     const avatar = document.createElement("span");
     avatar.className = "room-player-avatar";
     renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
-    const copy = document.createElement("span");
-    copy.innerHTML = `<strong>${getOwnerLabel(targetOwner)}</strong><small>${getDisplayScoreText(targetOwner)} - random debuff</small>`;
+    const copy = createTargetPlayerCopy(player, targetOwner, `${getDisplayScoreText(targetOwner)} - random debuff`);
     button.append(avatar, copy);
     elements.targetList.appendChild(button);
   });
@@ -11814,15 +11851,14 @@ function renderXrayResult(owner, targetOwner, powerNames) {
       const avatar = document.createElement("span");
       avatar.className = "room-player-avatar";
       renderAvatar(avatar, player || { label: getOwnerLabel(participant) });
-      const copy = document.createElement("span");
-      copy.innerHTML = `<strong>${getOwnerLabel(participant)}</strong><small>${participant === targetOwner ? "Viewing now" : "Click to reveal"}</small>`;
+      const copy = createTargetPlayerCopy(player, participant, participant === targetOwner ? "Viewing now" : "Click to reveal");
       button.append(avatar, copy);
       elements.targetList.appendChild(button);
     });
   const list = powerNames.length ? powerNames : ["No power-ups"];
   const resultHeader = document.createElement("div");
   resultHeader.className = "target-option readonly xray-result-heading";
-  resultHeader.innerHTML = `<span><strong>${getOwnerLabel(targetOwner)}'s hand</strong></span>`;
+  resultHeader.appendChild(createTargetPlayerCopy(getPlayer(targetOwner), targetOwner, "revealed hand"));
   elements.targetList.appendChild(resultHeader);
   list.forEach((name) => {
     const item = document.createElement("div");
@@ -11831,7 +11867,6 @@ function renderXrayResult(owner, targetOwner, powerNames) {
     elements.targetList.appendChild(item);
   });
   setHidden(elements.targetModal, false);
-  queueStatFlash("positive", "X-Ray Hacks", list, { owners: [owner], complex: true });
 }
 
 function closeTargetSelector() {
@@ -12762,9 +12797,6 @@ function consumeImmediatePower(owner, power, meta = {}) {
       targetOwner: target,
       revealedPowers: revealed
     };
-    if (getPlayer(owner)?.type === "bot") {
-      queueStatFlash("positive", power.name, revealed.length ? revealed : "No power-ups", { owners: [owner], complex: true });
-    }
   }
 
   if (power.type === "software_downgrade") {
@@ -17905,6 +17937,7 @@ function applyRoomDirectoryRoom(room) {
   updateRoomEventRevision(room.revision);
   state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
   state.roomParticipants = Array.isArray(room.participants) ? room.participants : [];
+  syncRoomPlayersFromParticipants({ preserveMatchStats: state.currentRoomStatus === "in-progress" });
   if (Array.isArray(room.chat)) {
     mergeRoomChatMessages(room.chat);
   }
@@ -18874,6 +18907,7 @@ async function addBotToRoom() {
     status: "bot"
   };
   state.roomParticipants = [...participants, bot];
+  syncRoomPlayersFromParticipants();
   addSystemChat(`${botName} joined as a bot.`);
   upsertHostedRoom("lobby");
   renderRoomLobby();
