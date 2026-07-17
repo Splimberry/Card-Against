@@ -1217,6 +1217,7 @@ const state = {
   allOutRounds: {},
   extraPowerUses: {},
   botPowerSchedule: {},
+  roomBotAnswerSchedule: {},
   nextPreferredTheme: "",
   soulLinks: [],
   arsonists: {},
@@ -6150,12 +6151,23 @@ function broadcastRoomAnswerSubmission(answer) {
   if (!isRoomMode() || state.isSpectator) {
     return;
   }
+  broadcastRoomAnswerSubmissionForOwner(state.currentOwner, answer);
+}
+
+function broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime = state.answerRemainingTimes[owner] || 0) {
+  if (!isRoomMode() || state.isSpectator) {
+    return;
+  }
+  const participantId = getRoomParticipantIdForOwner(owner);
+  if (!participantId) {
+    return;
+  }
   broadcastRealtimeRoomChange("answer-submitted", state.roomSettings.code, {
-    participantId: state.clientId,
-    owner: state.currentOwner,
+    participantId,
+    owner,
     round: state.round,
     answer: cleanInput(answer || ""),
-    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0
+    remainingTime: Math.max(0, Number(remainingTime) || 0)
   });
 }
 
@@ -6236,6 +6248,7 @@ function applyRoomAnswerSubmission(payload = {}) {
   }
   state.answerRemainingTimes[owner] = remainingTime;
   setRoomSubmission(owner, true);
+  maybeSubmitRoomBotsAfterRealPlayers();
   maybeResolveRoomSubmissions();
   return true;
 }
@@ -9146,6 +9159,7 @@ function resetPlayedPowersForRound() {
   state.pendingPowerPillAnimations = new Set();
   state.extraPowerUses = {};
   state.botPowerSchedule = {};
+  state.roomBotAnswerSchedule = {};
 }
 
 function recordPlayedPower(owner, powerId, meta = {}) {
@@ -10445,6 +10459,20 @@ function createSpecialPlayerBadge(badge) {
   return icon;
 }
 
+function createBotPlayerBadge(player) {
+  if (!player?.bot && player?.type !== "bot") {
+    return null;
+  }
+  const icon = document.createElement("span");
+  icon.className = "bot-player-badge";
+  icon.dataset.description = "Bot player";
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", "Bot player");
+  icon.tabIndex = 0;
+  attachFloatingDescriptionTooltip(icon);
+  return icon;
+}
+
 function getDisplayTitleIdForPlayer(player) {
   if (!player) {
     return "";
@@ -10473,6 +10501,10 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
   name.textContent = `${hostPrefix}${label}`;
   applyProfileFontToElement(name, getProfileFontForPlayer(player));
   element.appendChild(name);
+  const botBadge = createBotPlayerBadge(player);
+  if (botBadge) {
+    element.appendChild(botBadge);
+  }
   getSpecialBadgesForPlayer(player).forEach((badge) => {
     const badgeIcon = createSpecialPlayerBadge(badge);
     if (badgeIcon) {
@@ -11442,9 +11474,22 @@ function getTargetCandidates(owner, power = null) {
   return candidates;
 }
 
+function getPowerHandThreatScore(owner) {
+  return (state.powerHands[owner] || [])
+    .map((powerId) => getPowerById(powerId))
+    .filter(Boolean)
+    .reduce((total, power) => total + getRarityRank(power.rarity) + (power.immediate ? 0.35 : 0), 0);
+}
+
 function chooseTargetOwner(owner, power) {
   const candidates = getTargetCandidates(owner, power);
   if (getPlayer(owner)?.type === "bot") {
+    if (!candidates.length) {
+      return null;
+    }
+    if (power.type === "airdrop") {
+      return owner;
+    }
     if (power.type === "streak_bonus") {
       return candidates.sort((a, b) => getOwnerStreak(b) - getOwnerStreak(a) || getScore(b) - getScore(a))[0];
     }
@@ -11455,6 +11500,18 @@ function chooseTargetOwner(owner, power) {
       return candidates.sort((a, b) => getScore(a) - getScore(b) || getOwnerStreak(a) - getOwnerStreak(b))[0];
     }
     if (power.type === "reverse") {
+      return candidates.sort((a, b) => getScore(b) - getScore(a) || getOwnerStreak(b) - getOwnerStreak(a))[0];
+    }
+    if (power.type === "power_heist" || power.type === "software_downgrade" || power.type === "xray_hacks") {
+      return candidates.sort((a, b) => getPowerHandThreatScore(b) - getPowerHandThreatScore(a) || getScore(b) - getScore(a))[0];
+    }
+    if (power.type === "lawsuit") {
+      return candidates.sort((a, b) => getRemovableActiveEffects(b).length - getRemovableActiveEffects(a).length || getScore(b) - getScore(a))[0];
+    }
+    if (power.type === "get_good") {
+      return candidates.sort((a, b) => getWrongAnswerCount(b) - getWrongAnswerCount(a) || getScore(b) - getScore(a))[0];
+    }
+    if (["shameless", "execution", "void_bomb", "curse", "virus_deployment", "freeze_ray", "soul_link"].includes(power.type)) {
       return candidates.sort((a, b) => getScore(b) - getScore(a) || getOwnerStreak(b) - getOwnerStreak(a))[0];
     }
     return candidates.sort((a, b) => getScore(b) - getScore(a))[0];
@@ -13243,7 +13300,12 @@ function getBotPowerChoiceScore(owner, power) {
   let value = Math.random() * 8;
 
   if (power.type === "bounty") value += 25 + ((power.percent || 0) * Math.max(500, getScore(owner)) / 80);
+  if (power.type === "ai_answer") value += getLockedRoundAnswer(owner) ? 0 : 34;
+  if (power.type === "next_question") value += state.round < state.maxRounds ? 18 : 0;
+  if (power.type === "ability_merchant") value += isBehind ? 42 : 24;
+  if (power.type === "all_out") value += (state.powerHands[owner] || []).filter((powerId) => isPowerUsable(getPowerById(powerId), owner)).length > 1 ? 55 : 8;
   if (power.type === "speed_answer") value += state.timerRemaining > 12 ? 28 : 8;
+  if (power.type === "time_bender") value += state.timerRemaining < 12 ? 62 : 24;
   if (power.type === "bribe_judge") value += isBehind || lateRound ? 88 : 18;
   if (power.type === "reverse") value += isLast || behindBy > 1500 ? 76 : 15;
   if (power.type === "hitman") value += isBehind ? 92 + Math.min(35, behindBy / 120) : 5;
@@ -13261,6 +13323,7 @@ function getBotPowerChoiceScore(owner, power) {
     value += bestTargetStreak > 0 ? 46 + (bestTargetStreak * 12) : 0;
   }
   if (power.type === "gamblers_dream") value += streak === 0 ? 42 : 18;
+  if (power.type === "sin_sloth") value += getActiveOwners().some((participant) => participant !== owner && getOwnerStreak(participant) > streak) ? 48 : 4;
   if (power.type === "rocket") value += state.round < state.maxRounds ? 46 : 0;
   if (power.type === "hard_reset") value += getActiveOwners().some((participant) => participant !== owner && getOwnerStreak(participant) > streak) ? 62 : 6;
   if (power.type === "eternal_flame") value += streak > 0 ? 78 : 35;
@@ -13271,17 +13334,22 @@ function getBotPowerChoiceScore(owner, power) {
   if (power.type === "heaven_hell") value += isBehind || streak > 0 ? 52 : 22;
   if (power.type === "red_herring") value += lateRound ? 20 : 55;
   if (power.type === "insurance_fraud") value += state.round < state.maxRounds - 2 ? 42 : 5;
-  if (power.type === "haha_you_lose" || power.type === "execution") value += isBehind ? 55 : 25;
+  if (power.type === "haha_you_lose" || power.type === "execution" || power.type === "void_bomb") value += isBehind ? 55 : 25;
   if (power.type === "vulture") value += state.matchHistory.filter((round) => round.winner !== getOwnerLabel(owner)).length * 18;
   if (power.type === "time_bomb") value += isBehind ? 45 : 18;
-  if (power.type === "communism") value += isBehind ? 65 : 18;
+  if (power.type === "communism" || power.type === "soul_link") value += isBehind ? 65 : 18;
   if (power.type === "monopoly" || power.type === "shock_bomb") value += getActiveOwners().some((participant) => participant !== owner && hasPlayedPowerThisRound(participant)) ? 68 : 22;
   if (power.type === "hoarder") value += isBehind ? 36 : 28;
   if (power.type === "mirror" || power.type === "premium_shuffle" || power.type === "vending_machine" || power.type === "recycle_bin") value += 18;
   if (power.type === "dead_weight") value += 2;
   if (power.type === "penalty_cloud" || power.type === "loser_tax") value += leaders.includes(owner) ? 44 : 30;
-  if (power.type === "antivirus") value += 28;
-  if (power.type === "virus_deployment" || power.type === "curse" || power.type === "get_good") value += isBehind ? 42 : 24;
+  if (power.type === "antivirus" || power.type === "crawler_virus" || power.type === "virus_factory") value += 28;
+  if (power.type === "virus_deployment" || power.type === "curse" || power.type === "get_good" || power.type === "lawsuit" || power.type === "software_downgrade" || power.type === "power_heist") value += isBehind ? 42 : 24;
+  if (power.type === "cheat_sheet" || power.type === "xray_hacks") value += getTargetCandidates(owner, power).length ? 26 : 0;
+  if (power.type === "airdrop") value += isBehind ? 54 : 26;
+  if (power.type === "blessing" || power.type === "blue_pill" || power.type === "cocktail_mix" || power.type === "afterparty" || power.type === "lucky_side") value += isBehind ? 44 : 24;
+  if (power.type === "nail_coffin") value += leaders.includes(owner) ? 45 : 16;
+  if (power.type === "gamblers_dice") value += 38;
   if (power.type === "reign_chaos") value += isBehind ? 86 : 14;
   if (power.type === "no_one_wins") value += isBehind && lateRound ? 72 : 10;
   if (power.type === "shuffle") value += 16;
@@ -13312,9 +13380,36 @@ function getBotPowerTriggerSecond() {
   return getRandomInt(lateRemaining, earlyRemaining);
 }
 
+function isBotOwner(owner) {
+  const player = getPlayer(owner);
+  return Boolean(player?.bot || player?.type === "bot");
+}
+
+function getActiveBotOwners() {
+  return getActiveOwners().filter((owner) => isBotOwner(owner));
+}
+
+function getPendingRealRoomSubmitters() {
+  return getActiveOwners().filter((owner) => !isBotOwner(owner) && !state.roomSubmissions[owner]);
+}
+
+function getPendingRoomBotSubmitters() {
+  return getActiveBotOwners().filter((owner) => !state.roomSubmissions[owner]);
+}
+
+function getBotAnswerTriggerSecond() {
+  const maxTimer = Math.max(5, Math.round(state.timerSeconds || 30));
+  const earlyRemaining = Math.max(1, maxTimer - 5);
+  const lateRemaining = Math.min(5, earlyRemaining);
+  return getRandomInt(lateRemaining, earlyRemaining);
+}
+
 function scheduleBotPowerUpsForRound() {
   state.botPowerSchedule = {};
   if (state.mode !== "bots" && !isRoomMode()) {
+    return;
+  }
+  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
     return;
   }
 
@@ -13333,8 +13428,25 @@ function scheduleBotPowerUpsForRound() {
   });
 }
 
+function scheduleRoomBotAnswersForRound() {
+  state.roomBotAnswerSchedule = {};
+  if (!isRoomMode() || !isCurrentHost() || state.isSpectator) {
+    return;
+  }
+
+  getPendingRoomBotSubmitters().forEach((owner) => {
+    state.roomBotAnswerSchedule[owner] = {
+      triggerAt: getBotAnswerTriggerSecond(),
+      submitted: false
+    };
+  });
+}
+
 function commitScheduledBotPowerUps() {
   if ((state.mode !== "bots" && !isRoomMode()) || !state.botPowerSchedule) {
+    return;
+  }
+  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
     return;
   }
 
@@ -13347,8 +13459,53 @@ function commitScheduledBotPowerUps() {
   });
 }
 
+function commitRoomBotAnswer(owner, options = {}) {
+  if (!isRoomMode() || !isCurrentHost() || state.isSpectator || !isBotOwner(owner) || state.roomSubmissions[owner]) {
+    return false;
+  }
+  const remainingTime = Math.max(0, Number(options.remainingTime ?? state.timerRemaining) || 0);
+  const answer = lockRoundAnswer(owner, generateAutoAnswer(owner));
+  state.answerRemainingTimes[owner] = remainingTime;
+  updateRoomParticipantSubmission(getRoomParticipantIdForOwner(owner), answer, state.round, remainingTime);
+  setRoomSubmission(owner, true);
+  broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime);
+  return true;
+}
+
+function commitScheduledRoomBotAnswers(options = {}) {
+  if (!isRoomMode() || !isCurrentHost() || state.isSpectator || !state.roomBotAnswerSchedule) {
+    return false;
+  }
+  const force = Boolean(options.force);
+  let changed = false;
+  Object.entries(state.roomBotAnswerSchedule).forEach(([owner, schedule]) => {
+    if (!schedule || schedule.submitted || state.roomSubmissions[owner] || (!force && state.timerRemaining > schedule.triggerAt)) {
+      return;
+    }
+    schedule.submitted = true;
+    changed = commitRoomBotAnswer(owner) || changed;
+  });
+  if (changed) {
+    maybeResolveRoomSubmissions();
+  }
+  return changed;
+}
+
+function maybeSubmitRoomBotsAfterRealPlayers() {
+  if (!isRoomMode() || !isCurrentHost() || state.isSpectator) {
+    return false;
+  }
+  if (getPendingRealRoomSubmitters().length > 0 || getPendingRoomBotSubmitters().length === 0) {
+    return false;
+  }
+  return commitScheduledRoomBotAnswers({ force: true });
+}
+
 function commitSingleBotPowerUp(owner) {
   if ((state.mode !== "bots" && !isRoomMode()) || !canPlayPower(owner) || !state.powerHands[owner]?.length) {
+    return false;
+  }
+  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
     return false;
   }
 
@@ -13363,6 +13520,31 @@ function commitSingleBotPowerUp(owner) {
   }
 
   const power = getPowerById(powerId);
+  if (power?.type === "ai_answer") {
+    lockRoundAnswer(owner, generateAutoAnswer(owner));
+    consumeImmediatePower(owner, power);
+    return true;
+  }
+  if (power?.type === "next_question") {
+    const themes = getEnabledTriviaThemes();
+    consumeImmediatePower(owner, power, { selectedTheme: themes[Math.floor(Math.random() * themes.length)] });
+    return true;
+  }
+  if (power?.type === "ability_merchant") {
+    const affordableRarity = getScore(owner) >= getMerchantCost(owner, "purple")
+      ? "purple"
+      : getScore(owner) >= getMerchantCost(owner, "blue")
+        ? "blue"
+        : "grey";
+    consumeImmediatePower(owner, power, { selectedRarity: affordableRarity });
+    return true;
+  }
+  if (power?.type === "multiple_choice") {
+    const choices = getMultipleChoiceAnswers();
+    const correct = getQuestionCorrectAnswerPool()[0];
+    consumeImmediatePower(owner, power, { chosenAnswer: correct || choices[0] || generateAutoAnswer(owner) });
+    return true;
+  }
   if (power?.targeted) {
     const targetOwner = chooseTargetOwner(owner, power);
     if (!targetOwner) {
@@ -13557,6 +13739,7 @@ function startTimer() {
     state.timerRemaining = Math.max(0, state.timerRemaining - 1);
     renderTimer();
     commitScheduledBotPowerUps();
+    commitScheduledRoomBotAnswers();
     commitScheduledError404Effects();
 
     const submittedCurrentPlayer = isRoomMode() && state.roomSubmissions[state.currentOwner];
@@ -13821,6 +14004,7 @@ function renderRound() {
   applyRoomRoundStartModifiers();
   updateModeUi();
   scheduleBotPowerUpsForRound();
+  scheduleRoomBotAnswersForRound();
   startTimer();
 
   getAnswerCardNodes().forEach((card) => card.classList.remove("winner", "launching"));
@@ -16703,6 +16887,7 @@ function resetMatch(mode) {
   state.allOutRounds = {};
   state.extraPowerUses = {};
   state.botPowerSchedule = {};
+  state.roomBotAnswerSchedule = {};
   state.nextPreferredTheme = "";
   state.soulLinks = [];
   state.arsonists = {};
@@ -19598,6 +19783,7 @@ function submitRoomAnswer(rawInput, options = {}) {
   setRoomSubmission(owner, true);
   broadcastRoomAnswerSubmission(lockedInput);
   void publishCurrentRoomSubmission(lockedInput);
+  maybeSubmitRoomBotsAfterRealPlayers();
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
   document.querySelector("#inputTitle").textContent = hasPendingTimeBenderSubmitter()
