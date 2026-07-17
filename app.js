@@ -17307,9 +17307,33 @@ function startJoinedRoomMatchFromDirectory(room) {
   startGame("room");
 }
 
+function startJoinedRoomMatchFromRealtime(payload = {}, game = null) {
+  const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code || isCurrentHost() || !state.joiningRoom) {
+    return false;
+  }
+  const sourceRoom = payload.room && typeof payload.room === "object" ? payload.room : state.joiningRoom;
+  state.roomGame = game || sourceRoom?.game || state.roomGame;
+  state.joiningRoom = {
+    ...(state.joiningRoom || {}),
+    ...(sourceRoom || {}),
+    code,
+    status: "in-progress",
+    game: state.roomGame,
+    revision: Number(payload.revision) || Number(sourceRoom?.revision) || state.joiningRoom?.revision || 0,
+    updatedAt: Number(payload.updatedAt) || Number(sourceRoom?.updatedAt) || Date.now()
+  };
+  state.currentRoomStatus = "in-progress";
+  state.mode = "room";
+  setPlayersForMode("room");
+  startGame("room");
+  return true;
+}
+
 function applyRealtimeRoundAdvancing(payload = {}) {
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
-  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || state.matchEnded) {
+  const canStartFromLobby = state.currentRoomStatus === "lobby" || elements.gameStage.classList.contains("hidden");
+  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || (state.matchEnded && !canStartFromLobby)) {
     return false;
   }
   if (isCurrentHost() && !state.joiningRoom) {
@@ -17322,6 +17346,18 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   if (nextRound === Number(state.round) && elements.verdictPanel.classList.contains("hidden")) {
     updateRoomEventRevision(payload.revision);
     return true;
+  }
+  if (canStartFromLobby) {
+    if (state.joiningRoom) {
+      state.joiningRoom = {
+        ...state.joiningRoom,
+        status: "in-progress",
+        revision: Number(payload.revision) || state.joiningRoom.revision || 0,
+        updatedAt: Number(payload.updatedAt) || Date.now()
+      };
+    }
+    updateRoomEventRevision(payload.revision);
+    return startJoinedRoomMatchFromRealtime(payload, state.roomGame);
   }
   cancelActiveMatchWork();
   state.currentRoomStatus = "in-progress";
@@ -17342,7 +17378,8 @@ function applyRealtimeRoundAdvancing(payload = {}) {
 
 function applyRealtimeRoundStarted(payload = {}) {
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
-  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || state.matchEnded) {
+  const canStartFromLobby = state.currentRoomStatus === "lobby" || elements.gameStage.classList.contains("hidden");
+  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || (state.matchEnded && !canStartFromLobby)) {
     return false;
   }
   if (isCurrentHost() && !state.joiningRoom) {
@@ -17365,6 +17402,20 @@ function applyRealtimeRoundStarted(payload = {}) {
     setup = normalizeSetupPayload(game.setup);
   } catch {
     return false;
+  }
+  if (state.currentRoomStatus === "lobby" || elements.gameStage.classList.contains("hidden")) {
+    state.roomGame = game;
+    if (state.joiningRoom) {
+      state.joiningRoom = {
+        ...state.joiningRoom,
+        status: "in-progress",
+        game,
+        revision: Number(payload.revision) || state.joiningRoom.revision || 0,
+        updatedAt: Number(payload.updatedAt) || Date.now()
+      };
+    }
+    updateRoomEventRevision(payload.revision);
+    return startJoinedRoomMatchFromRealtime(payload, game);
   }
   const sameRound = nextRound === Number(state.round);
   const alreadyShowingSetup = sameRound
@@ -18069,6 +18120,8 @@ async function beginRoomMatch() {
   state.roomGame = null;
   state.roomPowerStateUpdatedAt = 0;
   addSystemChat("The host started the match.");
+  upsertHostedRoom("in-progress");
+  publishRoomRoundAdvancing(1);
   startGame("room");
 }
 
