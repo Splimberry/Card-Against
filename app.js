@@ -18773,11 +18773,28 @@ function stopNextRoundCountdown() {
   }
 }
 
+function canAdvanceVerdict() {
+  return !isRoomMode() || isCurrentHost();
+}
+
 function updateNextRoundButtonLabel() {
   const base = state.round >= state.maxRounds ? "Show Results" : "Next Round";
+  const canAdvance = canAdvanceVerdict();
+  elements.nextRoundButton.classList.toggle("waiting-for-host", !canAdvance);
+  if (!canAdvance) {
+    elements.nextRoundButton.textContent = state.nextRoundCountdown > 0
+      ? `Waiting for host (${state.nextRoundCountdown}s)`
+      : "Waiting for host";
+    elements.nextRoundButton.disabled = false;
+    elements.nextRoundButton.setAttribute("aria-disabled", "true");
+    setButtonHint(elements.nextRoundButton, "Only the host can advance to the next question.");
+    return;
+  }
   elements.nextRoundButton.textContent = state.nextRoundCountdown > 0
     ? `${base} (${state.nextRoundCountdown}s)`
     : base;
+  elements.nextRoundButton.removeAttribute("aria-disabled");
+  setButtonHint(elements.nextRoundButton, "");
 }
 
 function startNextRoundCountdown() {
@@ -18794,12 +18811,18 @@ function startNextRoundCountdown() {
     updateNextRoundButtonLabel();
     if (state.nextRoundCountdown <= 0) {
       stopNextRoundCountdown();
-      advanceAfterVerdict();
+      if (canAdvanceVerdict()) {
+        advanceAfterVerdict();
+      }
     }
   }, 1000);
 }
 
 function advanceAfterVerdict() {
+  if (!canAdvanceVerdict()) {
+    updateNextRoundButtonLabel();
+    return;
+  }
   stopNextRoundCountdown();
   closeOverlayMenus();
   if (state.round >= state.maxRounds) {
@@ -20858,7 +20881,12 @@ elements.answerForm.addEventListener("submit", (event) => {
   playRound(lockRoundAnswer("player", rawInput));
 });
 
-elements.nextRoundButton.addEventListener("click", () => {
+elements.nextRoundButton.addEventListener("click", (event) => {
+  if (!canAdvanceVerdict()) {
+    event.preventDefault();
+    updateNextRoundButtonLabel();
+    return;
+  }
   advanceAfterVerdict();
 });
 elements.matchTimelineButton?.addEventListener("click", toggleMatchTimeline);

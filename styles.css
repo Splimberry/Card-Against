@@ -144,6 +144,20 @@ button:disabled {
   transform: none;
 }
 
+button.waiting-for-host,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  filter: grayscale(0.45);
+}
+
+button.waiting-for-host:hover,
+button[aria-disabled="true"]:hover {
+  box-shadow: none;
+  transform: none;
+}
+
 [data-tooltip] {
   position: relative;
 }
