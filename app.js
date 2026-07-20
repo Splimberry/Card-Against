@@ -928,14 +928,14 @@ function queueUserProfileInventorySync(reason = "profile") {
   });
 }
 
-async function fetchServerUserInventory(user = state.supabaseUser) {
+async function fetchServerUserInventory(user = state.supabaseUser, options = {}) {
   const userId = getUserInventoryStorageId(user);
   if (!userId) {
     return null;
   }
   const response = await fetch(`/api/user/inventory?userId=${encodeURIComponent(userId)}`, {
     cache: "no-store",
-    headers: await getInventoryAuthHeaders()
+    headers: await getInventoryAuthHeaders(options)
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -944,12 +944,12 @@ async function fetchServerUserInventory(user = state.supabaseUser) {
   return result.inventory || null;
 }
 
-async function postUserInventoryOps(userId, ops) {
+async function postUserInventoryOps(userId, ops, options = {}) {
   const response = await fetch("/api/user/inventory/ops", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(await getInventoryAuthHeaders())
+      ...(await getInventoryAuthHeaders(options))
     },
     body: JSON.stringify({ userId, ops })
   });
@@ -960,47 +960,71 @@ async function postUserInventoryOps(userId, ops) {
   return result;
 }
 
-async function postUserInventoryPurchase(userId, type, id, opId = "") {
-  const response = await fetch("/api/user/inventory/purchase", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await getInventoryAuthHeaders())
-    },
-    body: JSON.stringify({ userId, type, id, opId })
+function trackUserInventoryWrite(promise) {
+  const tracked = Promise.resolve(promise);
+  if (!(state.userInventoryWritePromises instanceof Set)) {
+    state.userInventoryWritePromises = new Set();
+  }
+  state.userInventoryWritePromises.add(tracked);
+  tracked.finally(() => {
+    state.userInventoryWritePromises.delete(tracked);
   });
-  const result = await response.json().catch(() => ({}));
-  if (result.inventory) {
-    applyServerUserInventory(result.inventory);
-  }
-  if (!response.ok) {
-    throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
-  }
-  return result;
+  return tracked;
 }
 
-async function postUserInventoryMilestone(userId, milestoneId, opId = "") {
-  const response = await fetch("/api/user/inventory/milestone", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(await getInventoryAuthHeaders())
-    },
-    body: JSON.stringify({ userId, milestoneId, opId })
-  });
-  const result = await response.json().catch(() => ({}));
-  if (result.inventory) {
-    applyServerUserInventory(result.inventory);
+async function waitForTrackedUserInventoryWrites() {
+  const pending = [...(state.userInventoryWritePromises instanceof Set ? state.userInventoryWritePromises : [])];
+  if (!pending.length) {
+    return;
   }
-  if (!response.ok) {
-    throw new Error(result.error || result.milestone?.reason || "Could not save milestone.");
-  }
-  return result;
+  await Promise.allSettled(pending);
 }
 
-async function getInventoryAuthHeaders() {
+async function postUserInventoryPurchase(userId, type, id, opId = "", options = {}) {
+  return trackUserInventoryWrite((async () => {
+    const response = await fetch("/api/user/inventory/purchase", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getInventoryAuthHeaders(options))
+      },
+      body: JSON.stringify({ userId, type, id, opId })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (result.inventory) {
+      applyServerUserInventory(result.inventory);
+    }
+    if (!response.ok) {
+      throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
+    }
+    return result;
+  })());
+}
+
+async function postUserInventoryMilestone(userId, milestoneId, opId = "", options = {}) {
+  return trackUserInventoryWrite((async () => {
+    const response = await fetch("/api/user/inventory/milestone", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getInventoryAuthHeaders(options))
+      },
+      body: JSON.stringify({ userId, milestoneId, opId })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (result.inventory) {
+      applyServerUserInventory(result.inventory);
+    }
+    if (!response.ok) {
+      throw new Error(result.error || result.milestone?.reason || "Could not save milestone.");
+    }
+    return result;
+  })());
+}
+
+async function getInventoryAuthHeaders(options = {}) {
   try {
-    const session = state.supabaseSession || (state.supabaseClient
+    const session = options.session || state.supabaseSession || (state.supabaseClient
       ? (await state.supabaseClient.auth.getSession())?.data?.session
       : null);
     const token = String(session?.access_token || "").trim();
@@ -1010,19 +1034,22 @@ async function getInventoryAuthHeaders() {
   }
 }
 
-async function flushUserInventoryQueue() {
-  const userId = getUserInventoryStorageId();
-  if (!userId || state.userInventoryFlushing) {
-    return;
+async function flushUserInventoryQueue(options = {}) {
+  const userId = options.userId || getUserInventoryStorageId(options.user || state.supabaseUser);
+  if (!userId) {
+    return null;
+  }
+  if (state.userInventoryFlushPromise) {
+    return state.userInventoryFlushPromise;
   }
   const queue = loadUserInventoryQueue(userId);
   if (!queue.length) {
-    return;
+    return null;
   }
   state.userInventoryFlushing = true;
-  try {
+  state.userInventoryFlushPromise = (async () => {
     const batch = queue.slice(0, 100);
-    const result = await postUserInventoryOps(userId, batch);
+    const result = await postUserInventoryOps(userId, batch, options);
     const completedIds = new Set([
       ...(Array.isArray(result.applied) ? result.applied : []),
       ...(Array.isArray(result.skipped) ? result.skipped.map((entry) => entry.id) : [])
@@ -1034,17 +1061,23 @@ async function flushUserInventoryQueue() {
       applyServerUserInventory(result.inventory);
     }
     if (loadUserInventoryQueue(userId).length) {
-      window.setTimeout(() => flushUserInventoryQueue(), 750);
+      window.setTimeout(() => flushUserInventoryQueue(options), 750);
     }
+    return result;
+  })();
+  try {
+    return await state.userInventoryFlushPromise;
   } catch (error) {
     console.warn("Inventory queue sync failed:", error.message || error);
+    return null;
   } finally {
     state.userInventoryFlushing = false;
+    state.userInventoryFlushPromise = null;
   }
 }
 
-async function flushPendingUserInventoryWrites() {
-  await flushUserInventoryQueue();
+async function flushPendingUserInventoryWrites(options = {}) {
+  await flushUserInventoryQueue(options);
 }
 
 function applyServerUserInventory(inventory = {}) {
@@ -1859,6 +1892,8 @@ const state = {
   userStorageHydrating: false,
   userStorageApplying: false,
   userInventoryFlushing: false,
+  userInventoryFlushPromise: null,
+  userInventoryWritePromises: new Set(),
   userInventoryApplying: false,
   roomSettingsPublishTimerId: null,
   roomSettingsPublishKind: "",
@@ -9262,9 +9297,13 @@ async function signOutSupabase(event) {
     writeUserStorageCache(getDisplayUserStorageSnapshot(snapshot));
   }
   if (signingOutUser) {
+    const signingOutSession = state.supabaseSession;
     await Promise.race([
-      flushPendingUserInventoryWrites(),
-      new Promise((resolve) => window.setTimeout(resolve, 1500))
+      (async () => {
+        await flushPendingUserInventoryWrites({ user: signingOutUser, session: signingOutSession });
+        await waitForTrackedUserInventoryWrites();
+      })(),
+      new Promise((resolve) => window.setTimeout(resolve, 5000))
     ]);
   }
   clearStoredSupabaseSession();
