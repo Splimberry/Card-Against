@@ -553,7 +553,8 @@ const chaosInfusedPowerOverrides = {
   shield: {
     name: "Resistant Shield",
     short: "until block",
-    description: "Prevent the next point deduction against you. Persists until it blocks."
+    description: "Prevent point deductions against you. Persists until it blocks more than 2,000 points in a single round.",
+    breakThreshold: 2000
   },
   deep_freeze: {
     name: "Uno Reverse",
@@ -795,6 +796,44 @@ const chaosInfusedPowerOverrides = {
     flatPoints: 1500,
     percent: 0.05,
     megaPill: true
+  },
+  bribe_judge: {
+    name: "I'm the Judge",
+    short: "force win/loss",
+    description: "Pay 1,000 points, force yourself to win this round, and pick a player to force into losing.",
+    targeted: true
+  },
+  reign_chaos: {
+    name: "Chaos Infusioner",
+    short: "next chaos hand",
+    description: "Your next power-up refresh turns the refreshed power-ups into chaos-infused power-ups."
+  },
+  hitman: {
+    name: "Death Note",
+    short: "sudden death",
+    description: "Only usable outside first place. Immediately hit first place for 1,000 + 500 per streak, steal their streak, trigger Sudden Death, and place a permanent death mark on them.",
+    immediate: true
+  },
+  execution: {
+    name: "Death Bomb",
+    short: "mark all",
+    description: "Immediately plant a death bomb on everyone except you for this round and the next 2 rounds. If they answer incorrectly, it explodes for 20% of their total and gives them a permanent death mark.",
+    targeted: false,
+    immediate: true,
+    duration: 3
+  },
+  law_mower: {
+    name: "Cut Down to Size",
+    short: "15% trim",
+    description: "Lasts the entire game. Every round, players ahead of you lose points equal to 15% of your current total and are trimmed to 1 power-up after Chaos refresh.",
+    lossPercent: 0.15,
+    trimAfterChaosRefresh: true
+  },
+  bartender: {
+    name: "Pharmacy",
+    short: "auto pill",
+    description: "Lasts the entire game. At the start of every round, automatically activates Blue Pill.",
+    bluePill: true
   }
 };
 const triviaThemes = [
@@ -2337,6 +2376,12 @@ const state = {
     bot1: 0,
     bot2: 0
   },
+  pocketShieldBreakThresholds: {
+    player: 0,
+    opponent: 0,
+    bot1: 0,
+    bot2: 0
+  },
   chaosInfusionBoostRounds: {
     player: 0,
     opponent: 0,
@@ -2369,8 +2414,11 @@ const state = {
   chaosBottomFeederOwners: {},
   loserTaxCollectors: {},
   eventHorizonMarks: {},
+  chaosRefreshOwners: {},
+  permanentDeathMarks: {},
   timeBombs: [],
   deathMarks: [],
+  deathBombMarks: [],
   wrathBombs: [],
   streakLinks: [],
   skillIssueMarks: [],
@@ -4880,14 +4928,15 @@ function getActiveEffectEntries() {
       )],
       [state.pendingCocktailBuffs[owner] > 0, createActiveEffect(owner, "overachiever", `Overachiever Buff x${state.pendingCocktailBuffs[owner]}`, "Adds a random Cocktail Mix buff next round.")],
       [state.pendingLegendaryPowers[owner] > 0, createActiveEffect(owner, "overachiever", `Pending Legendary x${state.pendingLegendaryPowers[owner]}`, "Adds a random Legendary power-up next round after Chaos refresh.")],
+      [(state.pocketShieldBreakThresholds[owner] || 0) > 0, createActiveEffect(owner, "shield", "Resistant Shield", "Shield only breaks after blocking more than 2,000 points in a round.")],
       [state.chaosInfusionBoostRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Four Leaf Clover x${state.chaosInfusionBoostRounds[owner]}`, "Chaos infusion chance is boosted to 25%.")],
       [state.luckRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Lucky Side x${state.luckRounds[owner]}`, "Buff/debuff rolls become buffs, and new power-ups are Rare or better.")],
       [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", "Heaven/Hell Curse", "Loses 250 points each round.")],
       [state.bottomFeederRounds[owner] > 0, createActiveEffect(owner, "bottom_feeder", `Bottom Feeder x${state.bottomFeederRounds[owner]}`, `Gains ${(state.bottomFeederRounds[owner] * 100).toLocaleString()} points after every loss for the rest of the game.`)],
       [state.worldBurnOwners[owner], createActiveEffect(owner, "world_burn", "Let the World Burn", "First place loses 5% each round.")],
-      [state.lawnMowerOwners[owner], createActiveEffect(owner, "law_mower", "Lawn Mower", "Players ahead lose 12% of this player's total each round.")],
+      [state.lawnMowerOwners[owner], createActiveEffect(owner, "law_mower", state.lawnMowerOwners[owner] === "chaos" ? "Cut Down to Size" : "Lawn Mower", state.lawnMowerOwners[owner] === "chaos" ? "Players ahead lose 15% and get trimmed after Chaos refresh." : "Players ahead lose 12% of this player's total each round.")],
       [state.arsonists[owner], createActiveEffect(owner, "arsonist", "Arsonist", "Adds streaks at round start.")],
-      [state.bartenders[owner], createActiveEffect(owner, "bartender", "Bartender", "Serves Cocktail Mix at round start.")],
+      [state.bartenders[owner], createActiveEffect(owner, "bartender", state.bartenders[owner] === "chaos" ? "Pharmacy" : "Bartender", state.bartenders[owner] === "chaos" ? "Serves Blue Pill at round start." : "Serves Cocktail Mix at round start.")],
       [state.virusFactories[owner], createActiveEffect(owner, "virus_factory", "Virus Factory", "Each player may roll a debuff at round start.")],
       [state.error404Owners[owner], createActiveEffect(owner, "crawler_virus", "Error 404", "Each player has a 33% chance each round to get scrambled at a random timer moment.")],
       [state.typhoonOwners[owner], createActiveEffect(owner, "typhoon_season", "Typhoon Season", "Each player may self-zap at round start.")],
@@ -4896,6 +4945,8 @@ function getActiveEffectEntries() {
       [state.divineBlessingOwners[owner], createActiveEffect(owner, "blessing", "Devine Blessing", "Gains 500 plus 5% score every round.")],
       [state.superFuelOwners[owner], createActiveEffect(owner, "rocket", "Super Fuel", "Future win streak gains are doubled.")],
       [state.vultureSwarmOwners[owner], createActiveEffect(owner, "vulture", "Vulture Swarm", "Pays for past losses every round.")],
+      [state.chaosRefreshOwners[owner], createActiveEffect(owner, "reign_chaos", "Chaos Infusioner", "The next power-up refresh becomes chaos-infused.")],
+      [state.permanentDeathMarks[owner], createActiveEffect(owner, "time_bomb", "Permanent Death Mark", "Point losses are doubled for the rest of the game.")],
       [state.chaosEnvyOwners[owner], createActiveEffect(owner, "sin_envy", "Virus Corruption", "Wrong-answer history drains everyone each round.")],
       [state.chaosBottomFeederOwners[owner], createActiveEffect(owner, "bottom_feeder", "Scavenger", "Adds a Bottom Feeder stack at the end of every round.")],
       [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for remaining rounds.")],
@@ -4975,6 +5026,18 @@ function getActiveEffectEntries() {
       "streak_retainer",
       `Streak Link x${link.remaining || 0}`,
       `Copies ${getOwnerLabel(link.targetOwner)}'s streak for remaining rounds.`
+    ));
+  });
+
+  (state.deathBombMarks || []).forEach((bomb) => {
+    if (!owners.includes(bomb.targetOwner)) {
+      return;
+    }
+    entries.push(createActiveEffect(
+      bomb.targetOwner,
+      "execution",
+      `Death Bomb x${bomb.remaining || 0}`,
+      "Explodes if this player answers incorrectly."
     ));
   });
 
@@ -5218,6 +5281,7 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
     .filter((entry) => entry.power.type === "shield")
     .forEach((entry) => {
       state.pocketShieldCharges[entry.owner] = Math.max(state.pocketShieldCharges[entry.owner] || 0, 1);
+      state.pocketShieldBreakThresholds[entry.owner] = Math.max(state.pocketShieldBreakThresholds[entry.owner] || 0, entry.power.breakThreshold || 0);
       queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will block the next point deduction against ${getOwnerLabel(entry.owner)}.`));
     });
@@ -5257,7 +5321,7 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
   playedEntries
     .filter((entry) => entry.power.type === "law_mower")
     .forEach((entry) => {
-      state.lawnMowerOwners[entry.owner] = true;
+      state.lawnMowerOwners[entry.owner] = isChaosInfusedPower(entry.power) ? "chaos" : true;
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will trim players ahead every round.`));
     });
 
@@ -5289,7 +5353,7 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
   playedEntries
     .filter((entry) => entry.power.type === "bartender")
     .forEach((entry) => {
-      state.bartenders[entry.owner] = true;
+      state.bartenders[entry.owner] = isChaosInfusedPower(entry.power) ? "chaos" : true;
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will serve Cocktail Mix every round.`));
     });
 
@@ -5389,7 +5453,7 @@ function applyNewPointPowerEntries(playedEntries, deltas, owners, events, winner
     });
 
   playedEntries
-    .filter((entry) => ["ability_merchant", "sin_sloth", "crawler_virus", "multiple_choice", "lucky_side", "blue_pill", "antivirus", "virus_deployment", "curse", "get_good", "lightning_strike", "zap_strike"].includes(entry.power.type))
+    .filter((entry) => ["ability_merchant", "sin_sloth", "crawler_virus", "multiple_choice", "lucky_side", "blue_pill", "antivirus", "virus_deployment", "curse", "get_good", "lightning_strike", "zap_strike", "hitman", "execution"].includes(entry.power.type))
     .forEach((entry) => {
       const target = getEntryTarget(entry);
       const meta = getEntryMeta(entry);
@@ -5399,6 +5463,14 @@ function applyNewPointPowerEntries(playedEntries, deltas, owners, events, winner
       }
       if (entry.power.type === "get_good") {
         events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} hit ${target ? getOwnerLabel(target) : "a target"} for ${Number(meta.appliedLoss || 0).toLocaleString()} points from ${Number(meta.wrongCount || 0)} wrong answer${Number(meta.wrongCount || 0) === 1 ? "" : "s"}.`));
+        return;
+      }
+      if (entry.power.type === "hitman" && isChaosInfusedPower(entry.power)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} hit ${target ? getOwnerLabel(target) : "first place"} for ${Number(meta.appliedLoss || 0).toLocaleString()} points and placed a permanent Death Mark.`));
+        return;
+      }
+      if (entry.power.type === "execution" && isChaosInfusedPower(entry.power)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} armed death bombs on ${(meta.bombTargets || []).map(getOwnerLabel).join(", ") || "everyone else"}.`));
         return;
       }
       if (target) {
@@ -5425,6 +5497,12 @@ function applyReignChaosEndRound(playedEntries, deltas, owners, events) {
   }
 
   chaosEntries.forEach((entry) => {
+    if (isChaosInfusedPower(entry.power)) {
+      state.chaosRefreshOwners[entry.owner] = true;
+      queueStatFlash("chaos", entry.power.name, "Next Refresh\nChaos Infused", { owners: [entry.owner], complex: true });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} armed ${getOwnerLabel(entry.owner)}'s next power-up refresh to become chaos-infused.`));
+      return;
+    }
     queueStatFlash("mixed", entry.power.name, "+/-15% Roll\nHand Reroll", { owners });
     owners.forEach((participant) => {
       const currentTotal = Math.max(0, getScore(participant) + (deltas[participant] || 0));
@@ -5440,6 +5518,7 @@ function applyReignChaosEndRound(playedEntries, deltas, owners, events) {
       queueStatFlash(isBuff ? "positive" : "negative", entry.power.name, cocktailResult, { owners: [participant], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} swung ${getOwnerLabel(participant)} by ${percent >= 0 ? "+" : ""}${(percent * 100).toFixed(1)}% (${amount >= 0 ? "+" : ""}${amount.toLocaleString()}), rerolled their remaining hand, and served a ${isBuff ? "buff" : "debuff"}: ${cocktailResult}.`));
     });
+    trimChaosRefreshedHandsFromLawnMower(owners, events);
   });
 }
 
@@ -5464,7 +5543,8 @@ function applyLawnMowerDeltas(deltas, owners, events) {
     .filter((owner) => owners.includes(owner))
     .forEach((owner) => {
       const ownerTotal = Math.max(0, getScore(owner) + (deltas[owner] || 0));
-      const amount = Math.floor(ownerTotal * 0.12);
+      const isChaosMower = state.lawnMowerOwners[owner] === "chaos";
+      const amount = Math.floor(ownerTotal * (isChaosMower ? 0.15 : 0.12));
       if (amount <= 0) {
         return;
       }
@@ -5472,7 +5552,23 @@ function applyLawnMowerDeltas(deltas, owners, events) {
         .filter((participant) => participant !== owner && getScore(participant) + (deltas[participant] || 0) > ownerTotal)
         .forEach((participant) => {
           deltas[participant] -= amount;
-          events.push(`Lawn Mower from ${getOwnerLabel(owner)} trimmed ${getOwnerLabel(participant)} for ${amount.toLocaleString()} points.`);
+          events.push(`${isChaosMower ? "Cut Down to Size" : "Lawn Mower"} from ${getOwnerLabel(owner)} trimmed ${getOwnerLabel(participant)} for ${amount.toLocaleString()} points.`);
+        });
+    });
+}
+
+function trimChaosRefreshedHandsFromLawnMower(owners, events) {
+  Object.keys(state.lawnMowerOwners || {})
+    .filter((owner) => owners.includes(owner) && state.lawnMowerOwners[owner] === "chaos")
+    .forEach((owner) => {
+      const ownerScore = getScore(owner);
+      owners
+        .filter((participant) => participant !== owner && getScore(participant) > ownerScore && (state.powerHands[participant] || []).length > 1)
+        .forEach((participant) => {
+          const trimmed = (state.powerHands[participant] || []).length - 1;
+          state.powerHands[participant] = (state.powerHands[participant] || []).slice(0, 1);
+          setSelectedPowerIds(participant, getSelectedPowerIds(participant).filter((powerId) => state.powerHands[participant].includes(powerId)));
+          events.push(`Cut Down to Size removed ${trimmed} refreshed power-up${trimmed === 1 ? "" : "s"} from ${getOwnerLabel(participant)}.`);
         });
     });
 }
@@ -5716,6 +5812,58 @@ function applyEventHorizonAfterRound(owners, winnerSet, events) {
     }
     triggerEventHorizonOnTarget(sourceOwner, target, events);
   });
+}
+
+function applyPermanentDeathMarkDeltas(deltas, owners, events) {
+  Object.entries(state.permanentDeathMarks || {}).forEach(([target, sourceOwner]) => {
+    if (!owners.includes(target)) {
+      delete state.permanentDeathMarks[target];
+      return;
+    }
+    const currentLoss = Math.abs(Math.min(0, deltas[target] || 0));
+    if (currentLoss <= 0) {
+      return;
+    }
+    deltas[target] -= currentLoss;
+    events.push(`Permanent Death Mark doubled ${getOwnerLabel(target)}'s point losses by ${currentLoss.toLocaleString()}${sourceOwner && owners.includes(sourceOwner) ? ` for ${getOwnerLabel(sourceOwner)}` : ""}.`);
+  });
+}
+
+function plantDeathBombs(owner, power, events = []) {
+  const targets = getActiveOwners().filter((participant) => participant !== owner);
+  state.deathBombMarks = [
+    ...(state.deathBombMarks || []).filter((bomb) => bomb.owner !== owner),
+    ...targets.map((targetOwner) => ({
+      owner,
+      targetOwner,
+      remaining: power.duration || 3
+    }))
+  ];
+  queueStatFlash("bomb", power.name, "Death Bombs Armed", { owners: targets, complex: true });
+  events.push(createPowerEvent(owner, power, `${power.name} planted death bombs on everyone else for 3 rounds.`));
+}
+
+function applyDeathBombMarks(owners, winnerSet, deltas, events) {
+  const remainingBombs = [];
+  (state.deathBombMarks || []).forEach((bomb) => {
+    if (!owners.includes(bomb.owner) || !owners.includes(bomb.targetOwner)) {
+      return;
+    }
+    if (!winnerSet.has(bomb.targetOwner)) {
+      const currentTotal = Math.max(0, getScore(bomb.targetOwner) + (deltas[bomb.targetOwner] || 0));
+      const amount = Math.floor(currentTotal * 0.2);
+      deltas[bomb.targetOwner] -= amount;
+      state.permanentDeathMarks[bomb.targetOwner] = bomb.owner;
+      queueStatFlash("bomb", "Death Bomb", [formatSignedStat(-amount, "Point"), "Death Marked"], { owners: [bomb.targetOwner], complex: true });
+      events.push(`Death Bomb exploded on ${getOwnerLabel(bomb.targetOwner)} for ${amount.toLocaleString()} points and left a permanent Death Mark.`);
+      return;
+    }
+    const remaining = Math.max(0, (bomb.remaining || 0) - 1);
+    if (remaining > 0) {
+      remainingBombs.push({ ...bomb, remaining });
+    }
+  });
+  state.deathBombMarks = remainingBombs;
 }
 
 function applySkillIssueMarks(owners, winnerSet, startingScores, deltas, events) {
@@ -8053,6 +8201,7 @@ const roomAbilityEffectMapKeys = [
   "timeDilationRounds",
   "pendingCocktailBuffs",
   "pendingLegendaryPowers",
+  "pocketShieldBreakThresholds",
   "chaosInfusionBoostRounds",
   "freezeReflectionRounds",
   "insuranceFrauds",
@@ -8073,6 +8222,8 @@ const roomAbilityEffectMapKeys = [
   "chaosBottomFeederOwners",
   "loserTaxCollectors",
   "eventHorizonMarks",
+  "chaosRefreshOwners",
+  "permanentDeathMarks",
   "allOutRounds",
   "extraPowerUses",
   "arsonists",
@@ -8085,6 +8236,7 @@ const roomAbilityEffectMapKeys = [
 const roomAbilityEffectArrayKeys = [
   "timeBombs",
   "deathMarks",
+  "deathBombMarks",
   "wrathBombs",
   "streakLinks",
   "skillIssueMarks",
@@ -10890,10 +11042,13 @@ function applyRoundStartEffects() {
     if (!owners.includes(owner)) {
       return;
     }
-    const result = applyCocktailMix(owner, { buffsOnly: false });
+    const result = state.bartenders[owner] === "chaos"
+      ? Array.from({ length: 3 }, () => applyCocktailMix(owner, { buffsOnly: true }))
+      : applyCocktailMix(owner, { buffsOnly: false });
     if (result) {
-      queueStatFlash(getCocktailFlashKind(result), "Bartender", result, { owners: [owner], complex: true });
-      events.push(`Bartender served ${getOwnerLabel(owner)}: ${result}.`);
+      const source = state.bartenders[owner] === "chaos" ? "Pharmacy" : "Bartender";
+      queueStatFlash(state.bartenders[owner] === "chaos" ? "positive" : getCocktailFlashKind(result), source, result, { owners: [owner], complex: true });
+      events.push(`${source} served ${getOwnerLabel(owner)}: ${Array.isArray(result) ? result.join(", ") : result}.`);
     }
   });
 
@@ -11322,6 +11477,9 @@ function canPowerBecomeChaosInfused(powerOrId) {
 }
 
 function maybeChaosInfusePowerId(powerId, options = {}) {
+  if (options.forceChaosInfusion && canPowerBecomeChaosInfused(powerId)) {
+    return getChaosInfusedPowerId(powerId);
+  }
   const chance = Number.isFinite(options.chaosInfusionChance)
     ? options.chaosInfusionChance
     : chaosInfusionChance;
@@ -11634,14 +11792,18 @@ function getPowerDrawOptions(owner) {
 
 function rerollPowerHand(owner, count, options = {}) {
   const hand = [];
+  const forceChaosInfusion = Boolean(state.chaosRefreshOwners?.[owner]);
   for (let index = 0; index < count; index += 1) {
-    const powerId = drawPowerCard(hand, { ...getPowerDrawOptions(owner), ...options });
+    const powerId = drawPowerCard(hand, { ...getPowerDrawOptions(owner), ...options, forceChaosInfusion });
     if (powerId) {
       hand.push(powerId);
     }
   }
   state.powerHands[owner] = hand;
   markFreshPowerUps(owner, hand);
+  if (forceChaosInfusion) {
+    delete state.chaosRefreshOwners[owner];
+  }
 }
 
 function getRandomActiveOwner() {
@@ -14565,6 +14727,7 @@ function getRemovableActiveEffects(owner) {
   add((state.pendingPowerBonuses[owner] || 0) > 0, "Pending Bonus", () => { state.pendingPowerBonuses[owner] = 0; });
   add((state.pendingCocktailBuffs[owner] || 0) > 0, "Overachiever Buff", () => { state.pendingCocktailBuffs[owner] = 0; });
   add((state.pendingLegendaryPowers[owner] || 0) > 0, "Pending Legendary", () => { state.pendingLegendaryPowers[owner] = 0; });
+  add((state.pocketShieldBreakThresholds[owner] || 0) > 0, "Resistant Shield", () => { state.pocketShieldBreakThresholds[owner] = 0; state.pocketShieldCharges[owner] = 0; });
   add((state.chaosInfusionBoostRounds[owner] || 0) > 0, "Four Leaf Clover", () => { state.chaosInfusionBoostRounds[owner] = 0; });
   add((state.freezeReflectionRounds[owner] || 0) > 0, "Uno Reverse", () => { state.freezeReflectionRounds[owner] = 0; });
   add((state.luckRounds[owner] || 0) > 0, "Lucky Side", () => { state.luckRounds[owner] = 0; });
@@ -14596,6 +14759,11 @@ function getRemovableActiveEffects(owner) {
   add((state.deathMarks || []).some((mark) => mark.targetOwner === owner), "Death Mark", () => {
     state.deathMarks = (state.deathMarks || []).filter((mark) => mark.targetOwner !== owner);
   });
+  add(state.permanentDeathMarks?.[owner], "Permanent Death Mark", () => { delete state.permanentDeathMarks[owner]; });
+  add((state.deathBombMarks || []).some((bomb) => bomb.targetOwner === owner), "Death Bomb", () => {
+    state.deathBombMarks = (state.deathBombMarks || []).filter((bomb) => bomb.targetOwner !== owner);
+  });
+  add(state.chaosRefreshOwners?.[owner], "Chaos Infusioner", () => { delete state.chaosRefreshOwners[owner]; });
   add((state.wrathBombs || []).some((bomb) => bomb.targetOwner === owner), "Wrath Bomb", () => {
     state.wrathBombs = (state.wrathBombs || []).filter((bomb) => bomb.targetOwner !== owner);
   });
@@ -14642,6 +14810,13 @@ function getForcedWinnerOwner() {
   const briber = getActiveOwners().find((owner) => getPlayedPowerEntries([owner]).some((entry) => entry.power.type === "bribe_judge"));
   state.forcedWinnerOwner = briber || null;
   return state.forcedWinnerOwner;
+}
+
+function getForcedLoserOwner() {
+  const entry = getPlayedPowerEntries(getActiveOwners())
+    .find((candidate) => candidate.power.type === "bribe_judge" && isChaosInfusedPower(candidate.power));
+  const target = entry ? getEntryTarget(entry) : null;
+  return target && getActiveOwners().includes(target) ? target : null;
 }
 
 function grantExtraPowerUseFromBuff(owner) {
@@ -14910,6 +15085,7 @@ function removeActiveEffectsForOwner(owner) {
   state.timeDilationRounds[owner] = 0;
   state.pendingCocktailBuffs[owner] = 0;
   state.pendingLegendaryPowers[owner] = 0;
+  state.pocketShieldBreakThresholds[owner] = 0;
   state.chaosInfusionBoostRounds[owner] = 0;
   state.freezeReflectionRounds[owner] = 0;
   delete state.insuranceFrauds[owner];
@@ -14926,6 +15102,8 @@ function removeActiveEffectsForOwner(owner) {
   delete state.chaosEnvyOwners[owner];
   delete state.chaosBottomFeederOwners[owner];
   delete state.loserTaxCollectors[owner];
+  delete state.chaosRefreshOwners[owner];
+  delete state.permanentDeathMarks[owner];
   delete state.thornOwners[owner];
   delete state.allOutRounds[owner];
   delete state.arsonists[owner];
@@ -14935,6 +15113,7 @@ function removeActiveEffectsForOwner(owner) {
   delete state.lawnMowerOwners[owner];
   state.timeBombs = state.timeBombs.filter((bomb) => bomb.owner !== owner);
   state.deathMarks = (state.deathMarks || []).filter((mark) => mark.owner !== owner && mark.targetOwner !== owner);
+  state.deathBombMarks = (state.deathBombMarks || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
   state.wrathBombs = (state.wrathBombs || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
   state.streakLinks = (state.streakLinks || []).filter((link) => link.owner !== owner && link.targetOwner !== owner);
   delete state.eventHorizonMarks[owner];
@@ -15225,6 +15404,43 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "all_out") {
     state.allOutRounds[owner] = state.round;
+  }
+
+  if (power.type === "hitman" && isChaosInfusedPower(power)) {
+    const target = getLeaders().filter((participant) => participant !== owner)[0]
+      || getActiveOwners().filter((participant) => participant !== owner).sort((a, b) => getScore(b) - getScore(a))[0];
+    if (target) {
+      const stolenStreak = getOwnerStreak(target);
+      const hitAmount = 1000 + (500 * stolenStreak);
+      const suddenDeathAmount = Math.floor(Math.max(0, getScore(target) - hitAmount) * 0.25);
+      const appliedHit = applyProtectedScoreLoss(target, hitAmount, power.name);
+      const appliedSuddenDeath = applyProtectedScoreLoss(target, suddenDeathAmount, power.name);
+      markAchievementPointSteal(owner, appliedHit + appliedSuddenDeath);
+      if (!state.eternalFlameProtection[target]) {
+        setOwnerStreak(target, 0, { force: true });
+      }
+      if (stolenStreak > 0) {
+        setOwnerStreak(owner, getOwnerStreak(owner) + stolenStreak, { force: true });
+      }
+      state.permanentDeathMarks[target] = owner;
+      state.playedPowerMeta[owner] = {
+        ...(state.playedPowerMeta[owner] || {}),
+        targetOwner: target,
+        appliedLoss: appliedHit + appliedSuddenDeath,
+        stolenStreak
+      };
+      queueStatFlash("bomb", power.name, [formatSignedStat(-(appliedHit + appliedSuddenDeath), "Point"), "Death Marked"], getTargetedFlashOptions(owner, target, { complex: true }));
+      renderScore();
+    }
+  }
+
+  if (power.type === "execution" && isChaosInfusedPower(power)) {
+    const events = [];
+    plantDeathBombs(owner, power, events);
+    state.playedPowerMeta[owner] = {
+      ...(state.playedPowerMeta[owner] || {}),
+      bombTargets: getActiveOwners().filter((participant) => participant !== owner)
+    };
   }
 
   if (power.type === "streak_bonus" && isChaosInfusedPower(power)) {
@@ -19655,6 +19871,7 @@ function resetMatch(mode) {
   state.timeDilationRounds = createOwnerValueMap(0);
   state.pendingCocktailBuffs = createOwnerValueMap(0);
   state.pendingLegendaryPowers = createOwnerValueMap(0);
+  state.pocketShieldBreakThresholds = createOwnerValueMap(0);
   state.chaosInfusionBoostRounds = createOwnerValueMap(0);
   state.freezeReflectionRounds = createOwnerValueMap(0);
   state.insuranceFrauds = {};
@@ -19672,8 +19889,11 @@ function resetMatch(mode) {
   state.chaosBottomFeederOwners = {};
   state.loserTaxCollectors = {};
   state.eventHorizonMarks = {};
+  state.chaosRefreshOwners = {};
+  state.permanentDeathMarks = {};
   state.timeBombs = [];
   state.deathMarks = [];
+  state.deathBombMarks = [];
   state.wrathBombs = [];
   state.streakLinks = [];
   state.skillIssueMarks = [];
@@ -22849,6 +23069,7 @@ async function playRound(rawInput) {
   }
 
   const forcedWinnerOwner = getForcedWinnerOwner();
+  const forcedLoserOwner = getForcedLoserOwner();
   const winner = forcedWinnerOwner
     ? { ...roundResult.winner, index: getCardIndexFromOwner(forcedWinnerOwner) }
     : roundResult.winner;
@@ -22859,6 +23080,9 @@ async function playRound(rawInput) {
   let winningOwners = getUniqueOwnersFromCardIndexes(correctIndexes);
   if (forcedWinnerOwner && !winningOwners.includes(forcedWinnerOwner)) {
     winningOwners = [forcedWinnerOwner, ...winningOwners];
+  }
+  if (forcedLoserOwner) {
+    winningOwners = winningOwners.filter((candidate) => candidate !== forcedLoserOwner);
   }
   const hasCorrectAnswer = winningOwners.length > 0;
   const progressOwner = isRoomMode() && state.currentOwner !== "spectator" ? state.currentOwner : "player";
@@ -23539,7 +23763,9 @@ function createNoCorrectAward() {
   applyNailInCoffin(playedEntries, deltas, events);
   applyTableEventLoserDeltas(deltas, owners, new Set(), startingScores, events);
   applyWrathLossTriggers(owners, events);
+  applyDeathBombMarks(owners, new Set(), deltas, events);
   applyDeathMarkDeltas(deltas, owners, events);
+  applyPermanentDeathMarkDeltas(deltas, owners, events);
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   applyThornsDeltas(deltas, owners, events);
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
@@ -23631,7 +23857,13 @@ function applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafr
       const blocked = Math.abs(deltas[owner]);
       deltas[owner] = hasDeductionReflection(owner, playedEntries) ? blocked : 0;
       if ((state.pocketShieldCharges[owner] || 0) > 0) {
-        state.pocketShieldCharges[owner] = Math.max(0, (state.pocketShieldCharges[owner] || 0) - 1);
+        const breakThreshold = state.pocketShieldBreakThresholds[owner] || 0;
+        if (!breakThreshold || blocked > breakThreshold) {
+          state.pocketShieldCharges[owner] = Math.max(0, (state.pocketShieldCharges[owner] || 0) - 1);
+          if ((state.pocketShieldCharges[owner] || 0) <= 0) {
+            state.pocketShieldBreakThresholds[owner] = 0;
+          }
+        }
       }
       markAchievementShieldSave(owner);
       queueStatFlash("shield", "Shield", `Blocked ${blocked.toLocaleString()} Points`, { owners: [owner], complex: true });
@@ -23690,6 +23922,7 @@ function clearProlongedPowerEffects() {
   state.timeDilationRounds = createOwnerValueMap(0);
   state.pendingCocktailBuffs = createOwnerValueMap(0);
   state.pendingLegendaryPowers = createOwnerValueMap(0);
+  state.pocketShieldBreakThresholds = createOwnerValueMap(0);
   state.insuranceFrauds = {};
   state.insurancePolicies = {};
   state.virusFactories = {};
@@ -23707,8 +23940,11 @@ function clearProlongedPowerEffects() {
   state.freezeReflectionRounds = createOwnerValueMap(0);
   state.chaosEnvyOwners = {};
   state.eventHorizonMarks = {};
+  state.chaosRefreshOwners = {};
+  state.permanentDeathMarks = {};
   state.timeBombs = [];
   state.deathMarks = [];
+  state.deathBombMarks = [];
   state.wrathBombs = [];
   state.debuffTimeBombs = [];
   state.skillIssueMarks = [];
@@ -24018,6 +24254,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   playedEntries
     .filter((entry) => entry.power.type === "hitman")
+    .filter((entry) => !isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       const leader = owners
         .filter((participant) => participant !== entry.owner)
@@ -24259,6 +24496,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   playedEntries
     .filter((entry) => entry.power.type === "execution" && winnerSet.has(entry.owner))
+    .filter((entry) => !isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       const target = getEntryTarget(entry);
       if (!target || !owners.includes(target)) {
@@ -24296,7 +24534,9 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   applyTableEventWinnerDeltas(deltas, owners, winnerSet, startingScores, events);
   applyTableEventLoserDeltas(deltas, owners, winnerSet, startingScores, events);
   applyWrathLossTriggers(owners.filter((participant) => !winnerSet.has(participant)), events);
+  applyDeathBombMarks(owners, winnerSet, deltas, events);
   applyDeathMarkDeltas(deltas, owners, events);
+  applyPermanentDeathMarkDeltas(deltas, owners, events);
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   applyThornsDeltas(deltas, owners, events);
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
