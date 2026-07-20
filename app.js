@@ -9708,6 +9708,7 @@ async function signOutSupabase(event) {
   event?.stopPropagation?.();
   const signingOutUser = state.supabaseUser;
   const signingOutClient = state.supabaseClient;
+  const signingOutSession = state.supabaseSession;
   if (elements.profileSignOutButton) {
     elements.profileSignOutButton.disabled = true;
   }
@@ -9729,22 +9730,12 @@ async function signOutSupabase(event) {
   if (snapshot) {
     writeUserStorageCache(getDisplayUserStorageSnapshot(snapshot));
   }
-  if (signingOutUser) {
-    const signingOutSession = state.supabaseSession;
-    await Promise.race([
-      (async () => {
-        await flushPendingUserInventoryWrites({ user: signingOutUser, session: signingOutSession });
-        await flushPendingUserInventoryMutations({ user: signingOutUser, session: signingOutSession });
-        await waitForTrackedUserInventoryWrites();
-      })(),
-      new Promise((resolve) => window.setTimeout(resolve, 5000))
-    ]);
-  }
   clearStoredSupabaseSession();
   state.supabaseSession = null;
   state.supabaseUser = null;
   state.adminAuthenticated = false;
   state.adminUser = null;
+  state.supabaseSignOutInProgress = false;
   try {
     applyGuestProfile();
   } catch (error) {
@@ -9756,7 +9747,7 @@ async function signOutSupabase(event) {
     elements.profileSignOutButton.disabled = false;
   }
 
-  void completeSupabaseSignOut({ client: signingOutClient, user: signingOutUser, snapshot });
+  void completeSupabaseSignOut({ client: signingOutClient, user: signingOutUser, session: signingOutSession, snapshot });
 }
 
 function handleProfileSignOutClick(event) {
@@ -9766,8 +9757,18 @@ function handleProfileSignOutClick(event) {
   signOutSupabase(event);
 }
 
-async function completeSupabaseSignOut({ client, user, snapshot } = {}) {
+async function completeSupabaseSignOut({ client, user, session, snapshot } = {}) {
   try {
+    if (user) {
+      await Promise.race([
+        (async () => {
+          await flushPendingUserInventoryWrites({ user, session });
+          await flushPendingUserInventoryMutations({ user, session });
+          await waitForTrackedUserInventoryWrites();
+        })(),
+        new Promise((resolve) => window.setTimeout(resolve, 3500))
+      ]);
+    }
     if (user && snapshot) {
       await saveRemoteUserStorageSnapshotForUser(snapshot, user, client || state.supabaseClient);
     }
