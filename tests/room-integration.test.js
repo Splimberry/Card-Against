@@ -1035,6 +1035,58 @@ async function testHostCloseEndpointDeletesRoom() {
   assert.equal(directRoom.payload.close.reason, "manual");
 }
 
+async function testUserInventoryOpsAreIdempotent() {
+  const userId = "inventory-user-idempotent";
+  const coinOps = [
+    { id: "inv-coin-start", type: "coin", delta: 500, reason: "test" }
+  ];
+  let result = await request("POST", "/api/user/inventory/ops", { userId, ops: coinOps });
+  assert.equal(result.response.status, 200, result.payload.error);
+  assert.equal(result.payload.inventory.coins, 500);
+  assert.deepEqual(result.payload.applied, ["inv-coin-start"]);
+
+  result = await request("POST", "/api/user/inventory/ops", { userId, ops: coinOps });
+  assert.equal(result.response.status, 200, result.payload.error);
+  assert.equal(result.payload.inventory.coins, 500);
+  assert.equal(result.payload.skipped[0].reason, "already-applied");
+
+  const fetched = await request("GET", `/api/user/inventory?userId=${userId}`);
+  assert.equal(fetched.response.status, 200, fetched.payload.error);
+  assert.equal(fetched.payload.inventory.coins, 500);
+  assert.equal(fetched.payload.inventory.coinTransactions.length, 1);
+}
+
+async function testUserInventoryPurchaseAndUnlockRowsPersist() {
+  const userId = "inventory-user-purchase";
+  const { response, payload } = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [
+      { id: "purchase-seed-coins", type: "coin", delta: 300, reason: "seed" },
+      { id: "purchase-techno-font", type: "purchase-cosmetic", key: "font:techno", cost: 100 },
+      { id: "unlock-first-blood", type: "achievement", achievementId: "first-blood", record: { source: "test" } },
+      { id: "progress-room-regular", type: "achievement-progress", key: "publicMatchesFinished", value: 10, mode: "set" },
+      { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 50 }
+    ]
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.inventory.coins, 250);
+  assert.deepEqual(payload.inventory.cosmetics, ["font:techno"]);
+  assert.ok(payload.inventory.achievements["first-blood"]);
+  assert.equal(payload.inventory.achievementProgress.publicMatchesFinished, 10);
+  assert.deepEqual(payload.inventory.claimedMilestones, ["achievements-5"]);
+
+  const duplicate = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [
+      { id: "purchase-techno-font", type: "purchase-cosmetic", key: "font:techno", cost: 100 },
+      { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 50 }
+    ]
+  });
+  assert.equal(duplicate.response.status, 200, duplicate.payload.error);
+  assert.equal(duplicate.payload.inventory.coins, 250);
+  assert.deepEqual(duplicate.payload.inventory.cosmetics, ["font:techno"]);
+}
+
 async function testDebugQuestionCreateUsesBackendStorage() {
   const question = makeQuestion("science-backend-create-test");
   const { response, payload } = await request("POST", "/api/debug/questions", question, adminHeaders());
@@ -1110,6 +1162,8 @@ async function main() {
   await testRoomModerationEndpointMutesAndBans();
   await testRoomModerationEndpointKicksBot();
   await testHostCloseEndpointDeletesRoom();
+  await testUserInventoryOpsAreIdempotent();
+  await testUserInventoryPurchaseAndUnlockRowsPersist();
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();

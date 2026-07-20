@@ -84,6 +84,16 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/user/inventory") {
+      await handleGetUserInventory(url, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/user/inventory/ops") {
+      await handleUserInventoryOps(req, res);
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/auth/admin/login") {
       await handleAdminLogin(req, res);
       return;
@@ -673,6 +683,266 @@ function handleLogout(req, res) {
     })
   });
   res.end(JSON.stringify({ authenticated: false }));
+}
+
+async function handleGetUserInventory(url, res) {
+  const userId = normalizeInventoryUserId(url.searchParams.get("userId"));
+  if (!userId) {
+    sendJson(res, 400, { error: "Missing userId." });
+    return;
+  }
+
+  const inventory = await getOrCreateUserInventory(userId);
+  sendJson(res, 200, { inventory: sanitizeUserInventoryForClient(inventory) });
+}
+
+async function handleUserInventoryOps(req, res) {
+  try {
+    const body = await readRequestJson(req, { maxBytes: 500_000 });
+    const userId = normalizeInventoryUserId(body.userId);
+    if (!userId) {
+      sendJson(res, 400, { error: "Missing userId." });
+      return;
+    }
+
+    const ops = Array.isArray(body.ops) ? body.ops.slice(0, 100) : [];
+    if (!ops.length) {
+      const inventory = await getOrCreateUserInventory(userId);
+      sendJson(res, 200, { inventory: sanitizeUserInventoryForClient(inventory), applied: [], skipped: [] });
+      return;
+    }
+
+    const inventory = await getOrCreateUserInventory(userId);
+    const applied = [];
+    const skipped = [];
+    ops.forEach((op) => {
+      const result = applyUserInventoryOp(inventory, op);
+      if (result.applied) {
+        applied.push(result.id);
+      } else if (result.id) {
+        skipped.push({ id: result.id, reason: result.reason || "skipped" });
+      }
+    });
+    pruneUserInventory(inventory);
+    const storedInventory = await backendStore.upsertUserInventory(inventory);
+    sendJson(res, 200, {
+      inventory: sanitizeUserInventoryForClient(storedInventory),
+      applied,
+      skipped
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Inventory update failed." });
+  }
+}
+
+async function getOrCreateUserInventory(userId) {
+  const stored = await backendStore.getUserInventory(userId);
+  return normalizeUserInventory(stored || { userId });
+}
+
+function normalizeUserInventory(source = {}) {
+  const userId = normalizeInventoryUserId(source.userId);
+  const achievements = source.achievements && typeof source.achievements === "object" ? source.achievements : {};
+  const achievementProgress = source.achievementProgress && typeof source.achievementProgress === "object" ? source.achievementProgress : {};
+  const appliedOps = source.appliedOps && typeof source.appliedOps === "object" ? source.appliedOps : {};
+  return {
+    userId,
+    coins: Math.max(0, Math.floor(Number(source.coins) || 0)),
+    coinTransactions: Array.isArray(source.coinTransactions)
+      ? source.coinTransactions.map(normalizeCoinTransaction).filter(Boolean).slice(-250)
+      : [],
+    cosmetics: [...new Set((Array.isArray(source.cosmetics) ? source.cosmetics : [])
+      .map(normalizeInventoryKey)
+      .filter(Boolean))].slice(0, 1000),
+    achievements: Object.fromEntries(Object.entries(achievements)
+      .map(([id, record]) => [normalizeInventoryKey(id), normalizeAchievementRecord(record)])
+      .filter(([id]) => id)),
+    achievementProgress: Object.fromEntries(Object.entries(achievementProgress)
+      .map(([key, value]) => [normalizeInventoryKey(key), Math.max(0, Math.floor(Number(value) || 0))])
+      .filter(([key]) => key)),
+    claimedMilestones: [...new Set((Array.isArray(source.claimedMilestones) ? source.claimedMilestones : [])
+      .map(normalizeInventoryKey)
+      .filter(Boolean))].slice(0, 500),
+    appliedOps: Object.fromEntries(Object.entries(appliedOps)
+      .map(([id, appliedAt]) => [normalizeInventoryOpId(id), clampServerNumber(appliedAt, 0, Number.MAX_SAFE_INTEGER, 0)])
+      .filter(([id, appliedAt]) => id && appliedAt > 0)
+      .slice(-1000)),
+    updatedAt: clampServerNumber(source.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+  };
+}
+
+function applyUserInventoryOp(inventory, rawOp) {
+  const op = rawOp && typeof rawOp === "object" ? rawOp : {};
+  const id = normalizeInventoryOpId(op.id);
+  if (!id) {
+    return { applied: false, id: "", reason: "missing-id" };
+  }
+  if (inventory.appliedOps[id]) {
+    return { applied: false, id, reason: "already-applied" };
+  }
+
+  const type = String(op.type || "").trim();
+  const now = Date.now();
+  let applied = false;
+  if (type === "coin") {
+    const delta = clampInventoryDelta(op.delta);
+    if (!delta) {
+      return { applied: false, id, reason: "empty-delta" };
+    }
+    if (inventory.coins + delta < 0) {
+      return { applied: false, id, reason: "insufficient-coins" };
+    }
+    applyCoinTransaction(inventory, id, delta, op.reason || "adjustment", now);
+    applied = true;
+  } else if (type === "purchase-cosmetic") {
+    const key = normalizeInventoryKey(op.key);
+    const cost = Math.max(0, Math.floor(Number(op.cost) || 0));
+    if (!key) {
+      return { applied: false, id, reason: "missing-cosmetic" };
+    }
+    if (inventory.cosmetics.includes(key)) {
+      applied = true;
+    } else {
+      if (inventory.coins < cost) {
+        return { applied: false, id, reason: "insufficient-coins" };
+      }
+      if (cost > 0) {
+        applyCoinTransaction(inventory, id, -cost, `purchase:${key}`, now);
+      }
+      inventory.cosmetics.push(key);
+      applied = true;
+    }
+  } else if (type === "cosmetic") {
+    const key = normalizeInventoryKey(op.key);
+    if (!key) {
+      return { applied: false, id, reason: "missing-cosmetic" };
+    }
+    if (!inventory.cosmetics.includes(key)) {
+      inventory.cosmetics.push(key);
+    }
+    applied = true;
+  } else if (type === "achievement") {
+    const achievementId = normalizeInventoryKey(op.achievementId || op.key);
+    if (!achievementId) {
+      return { applied: false, id, reason: "missing-achievement" };
+    }
+    inventory.achievements[achievementId] = {
+      ...normalizeAchievementRecord(op.record),
+      unlockedAt: normalizeAchievementRecord(op.record).unlockedAt || new Date(now).toISOString()
+    };
+    applied = true;
+  } else if (type === "achievement-progress") {
+    const key = normalizeInventoryKey(op.key);
+    if (!key) {
+      return { applied: false, id, reason: "missing-progress-key" };
+    }
+    const value = Math.max(0, Math.floor(Number(op.value) || 0));
+    const current = Math.max(0, Math.floor(Number(inventory.achievementProgress[key]) || 0));
+    if (op.mode === "add") {
+      inventory.achievementProgress[key] = current + value;
+    } else if (op.mode === "max") {
+      inventory.achievementProgress[key] = Math.max(current, value);
+    } else {
+      inventory.achievementProgress[key] = value;
+    }
+    applied = true;
+  } else if (type === "milestone") {
+    const milestoneId = normalizeInventoryKey(op.milestoneId || op.key);
+    if (!milestoneId) {
+      return { applied: false, id, reason: "missing-milestone" };
+    }
+    if (!inventory.claimedMilestones.includes(milestoneId)) {
+      inventory.claimedMilestones.push(milestoneId);
+      const coinDelta = clampInventoryDelta(op.coinDelta);
+      if (coinDelta) {
+        applyCoinTransaction(inventory, id, coinDelta, `milestone:${milestoneId}`, now);
+      }
+    }
+    applied = true;
+  } else {
+    return { applied: false, id, reason: "unknown-type" };
+  }
+
+  if (applied) {
+    inventory.appliedOps[id] = now;
+    inventory.updatedAt = now;
+  }
+  return { applied, id };
+}
+
+function applyCoinTransaction(inventory, id, delta, reason, now = Date.now()) {
+  const cleanDelta = clampInventoryDelta(delta);
+  inventory.coins = Math.max(0, Math.floor(Number(inventory.coins) || 0) + cleanDelta);
+  inventory.coinTransactions.push({
+    id,
+    delta: cleanDelta,
+    reason: String(reason || "adjustment").trim().replace(/\s+/g, "-").slice(0, 80),
+    createdAt: now
+  });
+}
+
+function pruneUserInventory(inventory) {
+  inventory.coinTransactions = (inventory.coinTransactions || []).slice(-250);
+  inventory.cosmetics = [...new Set((inventory.cosmetics || []).map(normalizeInventoryKey).filter(Boolean))].slice(0, 1000);
+  inventory.claimedMilestones = [...new Set((inventory.claimedMilestones || []).map(normalizeInventoryKey).filter(Boolean))].slice(0, 500);
+  const appliedEntries = Object.entries(inventory.appliedOps || {})
+    .sort((a, b) => Number(a[1]) - Number(b[1]))
+    .slice(-1000);
+  inventory.appliedOps = Object.fromEntries(appliedEntries);
+}
+
+function sanitizeUserInventoryForClient(inventory) {
+  const normalized = normalizeUserInventory(inventory);
+  return {
+    userId: normalized.userId,
+    coins: normalized.coins,
+    coinTransactions: normalized.coinTransactions,
+    cosmetics: normalized.cosmetics,
+    achievements: normalized.achievements,
+    achievementProgress: normalized.achievementProgress,
+    claimedMilestones: normalized.claimedMilestones,
+    updatedAt: normalized.updatedAt
+  };
+}
+
+function normalizeCoinTransaction(transaction) {
+  const source = transaction && typeof transaction === "object" ? transaction : {};
+  const id = normalizeInventoryOpId(source.id);
+  const delta = clampInventoryDelta(source.delta);
+  if (!id || !delta) {
+    return null;
+  }
+  return {
+    id,
+    delta,
+    reason: String(source.reason || "adjustment").trim().replace(/\s+/g, "-").slice(0, 80),
+    createdAt: clampServerNumber(source.createdAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+  };
+}
+
+function normalizeAchievementRecord(record) {
+  const source = record && typeof record === "object" ? record : {};
+  return {
+    unlockedAt: String(source.unlockedAt || "").slice(0, 40),
+    source: String(source.source || (source.debug ? "debug" : "game")).slice(0, 40),
+    debug: Boolean(source.debug)
+  };
+}
+
+function normalizeInventoryUserId(value) {
+  return String(value || "").trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 140);
+}
+
+function normalizeInventoryKey(value) {
+  return String(value || "").trim().replace(/[^a-zA-Z0-9_:.@/-]/g, "").slice(0, 180);
+}
+
+function normalizeInventoryOpId(value) {
+  return String(value || "").trim().replace(/[^a-zA-Z0-9_:.@/-]/g, "").slice(0, 220);
+}
+
+function clampInventoryDelta(value) {
+  return clampServerNumber(value, -1_000_000_000, 1_000_000_000, 0);
 }
 
 async function handleDebugQuestions(res) {

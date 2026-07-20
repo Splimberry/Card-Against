@@ -36,6 +36,8 @@ const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
 const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
 const userStorageVersion = 1;
 const userCacheStorageKey = "cardsAgainstAiUserCache:v1";
+const userInventoryQueueStorageKey = "cardsAgainstAiUserInventoryQueue:v1";
+const userInventoryCacheStorageKey = "cardsAgainstAiUserInventoryCache:v1";
 const setupCacheStorageKey = "cardsAgainstAiRecentQuestionCache:v1";
 const publicCatalogCacheStorageKey = "cardsAgainstAiPublicCatalog:v1";
 const helpSeenFlagsStorageKey = "cardsAgainstAiHelpSeenFlags:v1";
@@ -718,7 +720,7 @@ function flushUserStorageSnapshot() {
   if (state.userStorageHydrating || state.userStorageApplying) {
     return;
   }
-  const snapshot = getUserStorageSnapshot();
+  const snapshot = getDisplayUserStorageSnapshot(getUserStorageSnapshot());
   writeUserStorageCache(snapshot);
   if (state.supabaseUser) {
     void saveRemoteUserStorageSnapshot(snapshot);
@@ -745,6 +747,7 @@ function setJsonLocalStorage(key, value) {
 
 function applyUserStorageSnapshot(snapshot = {}, options = {}) {
   const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  const shouldApplyInventory = options.applyInventory === true || !state.supabaseUser;
   state.userStorageApplying = true;
   try {
     const profile = source.profile && typeof source.profile === "object" ? source.profile : {};
@@ -787,12 +790,14 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
     } else {
       localStorage.removeItem(equippedAchievementStorageKey);
     }
-    setJsonLocalStorage(profileShopPurchasesStorageKey, purchases);
-    setJsonLocalStorage(achievementStorageKey, achievements.unlocked || {});
-    setJsonLocalStorage(achievementProgressStorageKey, achievements.progress || {});
-    setJsonLocalStorage(achievementMilestonesStorageKey, achievements.claimedMilestones || []);
-    localStorage.removeItem(unseenAchievementStorageKey);
-    localStorage.setItem(currencyStorageKey, String(Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0))));
+    if (shouldApplyInventory) {
+      setJsonLocalStorage(profileShopPurchasesStorageKey, purchases);
+      setJsonLocalStorage(achievementStorageKey, achievements.unlocked || {});
+      setJsonLocalStorage(achievementProgressStorageKey, achievements.progress || {});
+      setJsonLocalStorage(achievementMilestonesStorageKey, achievements.claimedMilestones || []);
+      localStorage.removeItem(unseenAchievementStorageKey);
+      localStorage.setItem(currencyStorageKey, String(Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0))));
+    }
     localStorage.setItem("cardsAgainstAiSfxVolume", String(sfx));
     localStorage.setItem("cardsAgainstAiMusicVolume", String(music));
     localStorage.setItem("cardsAgainstAiMaxRounds", String(maxRounds));
@@ -826,6 +831,224 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
   } finally {
     state.userStorageApplying = false;
   }
+}
+
+function getUserInventoryStorageId(user = state.supabaseUser) {
+  return String(user?.id || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 140);
+}
+
+function getUserInventoryQueueKey(userId = getUserInventoryStorageId()) {
+  const safeUserId = String(userId || "guest").replace(/[^a-zA-Z0-9_-]/g, "") || "guest";
+  return `${userInventoryQueueStorageKey}:${safeUserId}`;
+}
+
+function getUserInventoryCacheKey(userId = getUserInventoryStorageId()) {
+  const safeUserId = String(userId || "guest").replace(/[^a-zA-Z0-9_-]/g, "") || "guest";
+  return `${userInventoryCacheStorageKey}:${safeUserId}`;
+}
+
+function normalizeInventoryOpId(value) {
+  return String(value || "").trim().replace(/[^a-zA-Z0-9_:.@/-]/g, "").slice(0, 220);
+}
+
+function normalizeInventoryKey(value) {
+  return String(value || "").trim().replace(/[^a-zA-Z0-9_:.@/-]/g, "").slice(0, 180);
+}
+
+function createUserInventoryOpId(type, key = "") {
+  const cleanType = normalizeInventoryKey(type || "op") || "op";
+  const cleanKey = normalizeInventoryKey(key || Math.random().toString(36).slice(2)) || "item";
+  return `${cleanType}:${cleanKey}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function loadUserInventoryQueue(userId = getUserInventoryStorageId()) {
+  const queue = readJsonStorage(getUserInventoryQueueKey(userId), []);
+  return Array.isArray(queue) ? queue.filter((op) => op && typeof op === "object" && normalizeInventoryOpId(op.id)) : [];
+}
+
+function saveUserInventoryQueue(queue, userId = getUserInventoryStorageId()) {
+  const cleanQueue = (Array.isArray(queue) ? queue : [])
+    .filter((op) => op && typeof op === "object" && normalizeInventoryOpId(op.id))
+    .slice(-250);
+  if (cleanQueue.length) {
+    writeJsonStorage(getUserInventoryQueueKey(userId), cleanQueue);
+  } else {
+    localStorage.removeItem(getUserInventoryQueueKey(userId));
+  }
+}
+
+function writeUserInventoryCache(inventory) {
+  if (!inventory?.userId) {
+    return;
+  }
+  writeJsonStorage(getUserInventoryCacheKey(inventory.userId), {
+    ...inventory,
+    cachedAt: Date.now()
+  });
+}
+
+function loadUserInventoryCache(userId = getUserInventoryStorageId()) {
+  const cache = readJsonStorage(getUserInventoryCacheKey(userId), null);
+  return cache && typeof cache === "object" ? cache : null;
+}
+
+function enqueueUserInventoryOps(ops) {
+  if (state.userInventoryApplying || !state.supabaseUser?.id) {
+    return;
+  }
+  const userId = getUserInventoryStorageId();
+  const cleanOps = (Array.isArray(ops) ? ops : [ops])
+    .filter((op) => op && typeof op === "object")
+    .map((op) => ({ ...op, id: normalizeInventoryOpId(op.id || createUserInventoryOpId(op.type, op.key || op.achievementId || op.milestoneId)) }))
+    .filter((op) => op.id && op.type);
+  if (!cleanOps.length) {
+    return;
+  }
+  saveUserInventoryQueue([...loadUserInventoryQueue(userId), ...cleanOps], userId);
+  void flushUserInventoryQueue();
+}
+
+async function fetchServerUserInventory(user = state.supabaseUser) {
+  const userId = getUserInventoryStorageId(user);
+  if (!userId) {
+    return null;
+  }
+  const response = await fetch(`/api/user/inventory?userId=${encodeURIComponent(userId)}`, { cache: "no-store" });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.error || "Could not load server inventory.");
+  }
+  return result.inventory || null;
+}
+
+async function postUserInventoryOps(userId, ops) {
+  const response = await fetch("/api/user/inventory/ops", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, ops })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.error || "Could not save inventory.");
+  }
+  return result;
+}
+
+async function flushUserInventoryQueue() {
+  const userId = getUserInventoryStorageId();
+  if (!userId || state.userInventoryFlushing) {
+    return;
+  }
+  const queue = loadUserInventoryQueue(userId);
+  if (!queue.length) {
+    return;
+  }
+  state.userInventoryFlushing = true;
+  try {
+    const batch = queue.slice(0, 100);
+    const result = await postUserInventoryOps(userId, batch);
+    const completedIds = new Set([
+      ...(Array.isArray(result.applied) ? result.applied : []),
+      ...(Array.isArray(result.skipped) ? result.skipped.map((entry) => entry.id) : [])
+    ].map(normalizeInventoryOpId).filter(Boolean));
+    if (completedIds.size) {
+      saveUserInventoryQueue(loadUserInventoryQueue(userId).filter((op) => !completedIds.has(normalizeInventoryOpId(op.id))), userId);
+    }
+    if (result.inventory) {
+      applyServerUserInventory(result.inventory);
+    }
+    if (loadUserInventoryQueue(userId).length) {
+      window.setTimeout(() => flushUserInventoryQueue(), 750);
+    }
+  } catch (error) {
+    console.warn("Inventory queue sync failed:", error.message || error);
+  } finally {
+    state.userInventoryFlushing = false;
+  }
+}
+
+async function flushPendingUserInventoryWrites() {
+  await flushUserInventoryQueue();
+}
+
+function applyServerUserInventory(inventory = {}) {
+  const userId = getUserInventoryStorageId();
+  if (!userId || inventory.userId !== userId) {
+    return;
+  }
+  state.userInventoryApplying = true;
+  try {
+    const coins = Math.max(0, Math.floor(Number(inventory.coins) || 0));
+    const cosmetics = [...new Set((Array.isArray(inventory.cosmetics) ? inventory.cosmetics : [])
+      .map(normalizeInventoryKey)
+      .filter(Boolean))];
+    const achievements = inventory.achievements && typeof inventory.achievements === "object" ? inventory.achievements : {};
+    const progress = inventory.achievementProgress && typeof inventory.achievementProgress === "object" ? inventory.achievementProgress : {};
+    const milestones = [...new Set((Array.isArray(inventory.claimedMilestones) ? inventory.claimedMilestones : [])
+      .map(normalizeInventoryKey)
+      .filter(Boolean))];
+    localStorage.setItem(currencyStorageKey, String(coins));
+    setJsonLocalStorage(profileShopPurchasesStorageKey, cosmetics);
+    setJsonLocalStorage(achievementStorageKey, achievements);
+    setJsonLocalStorage(achievementProgressStorageKey, progress);
+    setJsonLocalStorage(achievementMilestonesStorageKey, milestones);
+    writeUserInventoryCache(inventory);
+    renderProfile();
+    renderProfileShop();
+    renderAchievementLibraryPreservingScroll();
+    renderRoomPlayers();
+    renderLeaderboard();
+    updateAchievementNotificationDot();
+    if (isModalOpen(elements.profileCustomModal)) {
+      renderProfileCustomizationModal();
+    }
+  } finally {
+    state.userInventoryApplying = false;
+  }
+}
+
+function getInventoryMigrationOpsFromSnapshot(snapshot = {}, userId = getUserInventoryStorageId()) {
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  const achievements = source.achievementProgressCache && typeof source.achievementProgressCache === "object"
+    ? source.achievementProgressCache
+    : {};
+  const purchases = Array.isArray(source.unlockedCosmeticsCache?.purchases)
+    ? source.unlockedCosmeticsCache.purchases
+    : Array.isArray(source.shopDisplayCache?.purchases)
+      ? source.shopDisplayCache.purchases
+      : [];
+  const ops = [];
+  const coins = Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0));
+  if (coins > 0) {
+    ops.push({ id: `migration:${userId}:coins`, type: "coin", delta: coins, reason: "migration" });
+  }
+  [...new Set(purchases.map(normalizeInventoryKey).filter(Boolean))].forEach((key) => {
+    ops.push({ id: `migration:${userId}:cosmetic:${key}`, type: "cosmetic", key });
+  });
+  Object.entries(achievements.unlocked || {}).forEach(([achievementId, record]) => {
+    const key = normalizeInventoryKey(achievementId);
+    if (key) {
+      ops.push({ id: `migration:${userId}:achievement:${key}`, type: "achievement", achievementId: key, record });
+    }
+  });
+  Object.entries(achievements.progress || {}).forEach(([key, value]) => {
+    const cleanKey = normalizeInventoryKey(key);
+    if (cleanKey) {
+      ops.push({ id: `migration:${userId}:progress:${cleanKey}`, type: "achievement-progress", key: cleanKey, value, mode: "max" });
+    }
+  });
+  [...new Set((achievements.claimedMilestones || []).map(normalizeInventoryKey).filter(Boolean))].forEach((milestoneId) => {
+    ops.push({ id: `migration:${userId}:milestone:${milestoneId}`, type: "milestone", milestoneId });
+  });
+  return ops;
+}
+
+function isServerInventoryEmpty(inventory = {}) {
+  return !Math.max(0, Math.floor(Number(inventory.coins) || 0))
+    && !(Array.isArray(inventory.cosmetics) && inventory.cosmetics.length)
+    && !(inventory.achievements && Object.keys(inventory.achievements).length)
+    && !(inventory.achievementProgress && Object.keys(inventory.achievementProgress).length)
+    && !(Array.isArray(inventory.claimedMilestones) && inventory.claimedMilestones.length);
 }
 
 function resetSignedOutAccountState() {
@@ -889,14 +1112,32 @@ async function saveRemoteUserStorageSnapshot(snapshot = getUserStorageSnapshot()
   return saveRemoteUserStorageSnapshotForUser(snapshot, state.supabaseUser, state.supabaseClient);
 }
 
+function getDisplayUserStorageSnapshot(snapshot = getUserStorageSnapshot()) {
+  const source = snapshot && typeof snapshot === "object" ? snapshot : getUserStorageSnapshot();
+  return {
+    ...source,
+    currencyDisplayCache: {
+      coins: Math.max(0, Math.floor(Number(localStorage.getItem(currencyStorageKey)) || 0))
+    },
+    unlockedCosmeticsCache: {
+      equipped: source.unlockedCosmeticsCache?.equipped || source.profile?.cardCustomization || defaultProfileCustomization
+    },
+    shopDisplayCache: {
+      catalogVersion: publicCatalogVersion
+    },
+    achievementProgressCache: {}
+  };
+}
+
 async function saveRemoteUserStorageSnapshotForUser(snapshot = getUserStorageSnapshot(), user = state.supabaseUser, client = state.supabaseClient) {
   if (!client || !user?.id) {
     return null;
   }
+  const displaySnapshot = getDisplayUserStorageSnapshot(snapshot);
   const payload = {
     user_id: user.id,
-    data: snapshot,
-    updated_at: new Date(snapshot.updatedAt || Date.now()).toISOString()
+    data: displaySnapshot,
+    updated_at: new Date(displaySnapshot.updatedAt || Date.now()).toISOString()
   };
   const { error } = await client
     .from("user_storage")
@@ -914,19 +1155,43 @@ async function hydrateSignedInUserStorage(user) {
   }
   let restoredSnapshot = false;
   state.userStorageHydrating = true;
+  let chosenSnapshot = null;
   try {
     const localSnapshot = loadUserStorageCacheForUser(user.id);
     const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
-    const chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
+    chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
     if (chosenSnapshot) {
-      applyUserStorageSnapshot(chosenSnapshot, { fallbackName: state.profile.name });
-      writeUserStorageCache(chosenSnapshot);
+      applyUserStorageSnapshot(chosenSnapshot, { fallbackName: state.profile.name, applyInventory: false });
+      writeUserStorageCache(getDisplayUserStorageSnapshot(chosenSnapshot));
       restoredSnapshot = true;
     } else {
       console.warn("No saved user storage snapshot found; keeping current signed-in profile without overwriting user progress.");
     }
   } finally {
     state.userStorageHydrating = false;
+  }
+  try {
+    let inventory = await fetchServerUserInventory(user);
+    const migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
+    if (migrationOps.length) {
+      const migrated = await postUserInventoryOps(user.id, migrationOps);
+      inventory = migrated.inventory || inventory;
+    }
+    if (inventory) {
+      applyServerUserInventory(inventory);
+    } else {
+      const cachedInventory = loadUserInventoryCache(user.id);
+      if (cachedInventory) {
+        applyServerUserInventory(cachedInventory);
+      }
+    }
+    await flushPendingUserInventoryWrites();
+  } catch (error) {
+    console.warn("Server inventory hydration failed:", error.message || error);
+    const cachedInventory = loadUserInventoryCache(user.id);
+    if (cachedInventory) {
+      applyServerUserInventory(cachedInventory);
+    }
   }
   if (restoredSnapshot) {
     flushUserStorageSnapshot();
@@ -1481,11 +1746,20 @@ const state = {
   userStorageWriteTimerId: null,
   userStorageHydrating: false,
   userStorageApplying: false,
+  userInventoryFlushing: false,
+  userInventoryApplying: false,
   roomSettingsPublishTimerId: null,
   roomSettingsPublishKind: "",
   adminAuthenticated: false,
   adminUser: null
 };
+
+window.addEventListener("online", () => {
+  void flushUserInventoryQueue();
+});
+window.addEventListener("focus", () => {
+  void flushUserInventoryQueue();
+});
 
 const elements = {
   modeScreen: document.querySelector("#modeScreen"),
@@ -4908,10 +5182,16 @@ function claimAchievementMilestone(id) {
     playSound("error");
     return;
   }
-  saveClaimedAchievementMilestones([...claimed, id]);
+  saveClaimedAchievementMilestones([...claimed, id], { sync: false });
   if (milestone.coins) {
-    addCurrency(milestone.coins);
+    addCurrency(milestone.coins, "milestone", { sync: false });
   }
+  enqueueUserInventoryOps({
+    id: createUserInventoryOpId("milestone", id),
+    type: "milestone",
+    milestoneId: id,
+    coinDelta: milestone.coins || 0
+  });
   renderProfile();
   renderAchievementLibraryPreservingScroll();
   if (isModalOpen(elements.profileCustomModal)) {
@@ -5488,12 +5768,42 @@ function saveCurrencyBalance(value) {
   return cleanValue;
 }
 
-function addCurrency(amount) {
+function queueCoinTransaction(delta, reason = "adjustment", key = "") {
+  const cleanDelta = Math.floor(Number(delta) || 0);
+  if (!cleanDelta) {
+    return;
+  }
+  enqueueUserInventoryOps({
+    id: createUserInventoryOpId("coin", key || `${reason}:${cleanDelta}`),
+    type: "coin",
+    delta: cleanDelta,
+    reason
+  });
+}
+
+function addCurrency(amount, reason = "earn", options = {}) {
   const cleanAmount = Math.max(0, Math.floor(Number(amount) || 0));
   if (!cleanAmount) {
     return loadCurrencyBalance();
   }
-  return saveCurrencyBalance(loadCurrencyBalance() + cleanAmount);
+  const balance = saveCurrencyBalance(loadCurrencyBalance() + cleanAmount);
+  if (options.sync !== false) {
+    queueCoinTransaction(cleanAmount, reason, options.key || "");
+  }
+  return balance;
+}
+
+function spendCurrency(amount, reason = "spend", options = {}) {
+  const cleanAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  const balance = loadCurrencyBalance();
+  if (!cleanAmount || balance < cleanAmount) {
+    return false;
+  }
+  saveCurrencyBalance(balance - cleanAmount);
+  if (options.sync !== false) {
+    queueCoinTransaction(-cleanAmount, reason, options.key || "");
+  }
+  return true;
 }
 
 function formatCoins(amount) {
@@ -8835,7 +9145,13 @@ async function signOutSupabase(event) {
     }
   }
   if (snapshot) {
-    writeUserStorageCache(snapshot);
+    writeUserStorageCache(getDisplayUserStorageSnapshot(snapshot));
+  }
+  if (signingOutUser) {
+    await Promise.race([
+      flushPendingUserInventoryWrites(),
+      new Promise((resolve) => window.setTimeout(resolve, 1500))
+    ]);
   }
   clearStoredSupabaseSession();
   state.supabaseSession = null;
@@ -10149,8 +10465,21 @@ function loadUnlockedAchievements() {
   }
 }
 
-function saveUnlockedAchievements(records) {
-  localStorage.setItem(achievementStorageKey, JSON.stringify(records || {}));
+function saveUnlockedAchievements(records, options = {}) {
+  const previous = loadUnlockedAchievements();
+  const nextRecords = records || {};
+  localStorage.setItem(achievementStorageKey, JSON.stringify(nextRecords));
+  if (options.sync !== false && !state.userInventoryApplying) {
+    const ops = Object.entries(nextRecords)
+      .filter(([id]) => !previous[id])
+      .map(([achievementId, record]) => ({
+        id: createUserInventoryOpId("achievement", achievementId),
+        type: "achievement",
+        achievementId,
+        record
+      }));
+    enqueueUserInventoryOps(ops);
+  }
   scheduleUserStorageSnapshot();
 }
 
@@ -10163,8 +10492,22 @@ function loadAchievementProgress() {
   }
 }
 
-function saveAchievementProgress(progress) {
-  localStorage.setItem(achievementProgressStorageKey, JSON.stringify(progress || {}));
+function saveAchievementProgress(progress, options = {}) {
+  const previous = loadAchievementProgress();
+  const nextProgress = progress || {};
+  localStorage.setItem(achievementProgressStorageKey, JSON.stringify(nextProgress));
+  if (options.sync !== false && !state.userInventoryApplying) {
+    const ops = Object.entries(nextProgress)
+      .filter(([key, value]) => Math.max(0, Math.floor(Number(previous[key]) || 0)) !== Math.max(0, Math.floor(Number(value) || 0)))
+      .map(([key, value]) => ({
+        id: createUserInventoryOpId("achievement-progress", `${key}:${Math.max(0, Math.floor(Number(value) || 0))}`),
+        type: "achievement-progress",
+        key,
+        value,
+        mode: "set"
+      }));
+    enqueueUserInventoryOps(ops);
+  }
   scheduleUserStorageSnapshot();
 }
 
@@ -10177,12 +10520,23 @@ function loadClaimedAchievementMilestones() {
   }
 }
 
-function saveClaimedAchievementMilestones(ids) {
+function saveClaimedAchievementMilestones(ids, options = {}) {
+  const previous = loadClaimedAchievementMilestones();
   const uniqueIds = [...new Set((ids || []).filter(Boolean))];
   if (uniqueIds.length) {
     localStorage.setItem(achievementMilestonesStorageKey, JSON.stringify(uniqueIds));
   } else {
     localStorage.removeItem(achievementMilestonesStorageKey);
+  }
+  if (options.sync !== false && !state.userInventoryApplying) {
+    const ops = uniqueIds
+      .filter((id) => !previous.includes(id))
+      .map((milestoneId) => ({
+        id: createUserInventoryOpId("milestone", milestoneId),
+        type: "milestone",
+        milestoneId
+      }));
+    enqueueUserInventoryOps(ops);
   }
   scheduleUserStorageSnapshot();
   updateAchievementNotificationDot();
@@ -10473,12 +10827,23 @@ function loadProfileShopPurchases() {
   }
 }
 
-function saveProfileShopPurchases(keys) {
+function saveProfileShopPurchases(keys, options = {}) {
+  const previous = loadProfileShopPurchases();
   const uniqueKeys = [...new Set((keys || []).filter(Boolean))];
   if (uniqueKeys.length) {
     localStorage.setItem(profileShopPurchasesStorageKey, JSON.stringify(uniqueKeys));
   } else {
     localStorage.removeItem(profileShopPurchasesStorageKey);
+  }
+  if (options.sync !== false && !state.userInventoryApplying) {
+    const ops = uniqueKeys
+      .filter((key) => !previous.includes(key))
+      .map((key) => ({
+        id: createUserInventoryOpId("cosmetic", key),
+        type: "cosmetic",
+        key
+      }));
+    enqueueUserInventoryOps(ops);
   }
   scheduleUserStorageSnapshot();
 }
@@ -11394,8 +11759,15 @@ function buyProfileShopItem(type, id) {
     playSound("error");
     return;
   }
+  const purchaseKey = getProfileShopKey(type, id);
   saveCurrencyBalance(balance - item.cost);
-  saveProfileShopPurchases([...purchases, getProfileShopKey(type, id)]);
+  saveProfileShopPurchases([...purchases, purchaseKey], { sync: false });
+  enqueueUserInventoryOps({
+    id: createUserInventoryOpId("purchase-cosmetic", purchaseKey),
+    type: "purchase-cosmetic",
+    key: purchaseKey,
+    cost: item.cost
+  });
   renderProfile();
   renderProfileShop();
   if (isModalOpen(elements.profileCustomModal)) {
@@ -15201,7 +15573,7 @@ async function submitUserQuestion(event) {
     return;
   }
   const payload = getUserQuestionPayload();
-  saveCurrencyBalance(loadCurrencyBalance() - userQuestionSubmissionCost);
+  spendCurrency(userQuestionSubmissionCost, "question-submission");
   renderProfile();
   elements.userQuestionSubmitButton.disabled = true;
   elements.userQuestionStatus.textContent = "Submitting for admin review...";
