@@ -841,15 +841,19 @@ async function loadRemoteUserStorageSnapshot(user) {
 }
 
 async function saveRemoteUserStorageSnapshot(snapshot = getUserStorageSnapshot()) {
-  if (!state.supabaseClient || !state.supabaseUser?.id) {
+  return saveRemoteUserStorageSnapshotForUser(snapshot, state.supabaseUser, state.supabaseClient);
+}
+
+async function saveRemoteUserStorageSnapshotForUser(snapshot = getUserStorageSnapshot(), user = state.supabaseUser, client = state.supabaseClient) {
+  if (!client || !user?.id) {
     return null;
   }
   const payload = {
-    user_id: state.supabaseUser.id,
+    user_id: user.id,
     data: snapshot,
     updated_at: new Date(snapshot.updatedAt || Date.now()).toISOString()
   };
-  const { error } = await state.supabaseClient
+  const { error } = await client
     .from("user_storage")
     .upsert(payload, { onConflict: "user_id" });
   if (error) {
@@ -8761,6 +8765,8 @@ async function signInWithSupabaseGoogle() {
 
 async function signOutSupabase() {
   const signingOutUser = state.supabaseUser;
+  const signingOutClient = state.supabaseClient;
+  const snapshot = signingOutUser ? getUserStorageSnapshot() : null;
   if (elements.profileSignOutButton) {
     elements.profileSignOutButton.disabled = true;
   }
@@ -8769,47 +8775,43 @@ async function signOutSupabase() {
     elements.profileAuthStatus.textContent = "Signing out...";
   }
 
+  if (snapshot) {
+    writeUserStorageCache(snapshot);
+  }
+  clearStoredSupabaseSession();
+  state.supabaseSession = null;
+  state.supabaseUser = null;
+  state.adminAuthenticated = false;
+  state.adminUser = null;
+  applyGuestProfile();
+  updateAdminControls();
+  if (elements.profileSignOutButton) {
+    elements.profileSignOutButton.disabled = false;
+  }
+
+  void completeSupabaseSignOut({ client: signingOutClient, user: signingOutUser, snapshot });
+}
+
+async function completeSupabaseSignOut({ client, user, snapshot } = {}) {
   try {
-    if (signingOutUser) {
-      const snapshot = getUserStorageSnapshot();
-      writeUserStorageCache(snapshot);
-      await saveRemoteUserStorageSnapshot(snapshot);
+    if (user && snapshot) {
+      await saveRemoteUserStorageSnapshotForUser(snapshot, user, client || state.supabaseClient);
     }
     await logoutAdmin({ silent: true });
-
-    let client = state.supabaseClient;
-    if (!client) {
-      try {
-        client = await ensureSupabaseClient();
-      } catch (error) {
-        console.warn("Supabase client unavailable during sign-out; clearing local session anyway:", error.message || error);
-      }
-    }
-    if (client) {
-      const { error } = await client.auth.signOut();
+    const signOutClient = client || state.supabaseClient || await ensureSupabaseClient().catch((error) => {
+      console.warn("Supabase client unavailable during sign-out cleanup:", error.message || error);
+      return null;
+    });
+    if (signOutClient) {
+      const { error } = await signOutClient.auth.signOut();
       if (error) {
-        console.warn("Supabase sign-out returned an error; clearing local session anyway:", error.message || error);
+        console.warn("Supabase sign-out returned an error after local reset:", error.message || error);
       }
     }
-
-    clearStoredSupabaseSession();
-    state.supabaseSession = null;
-    state.supabaseUser = null;
-    state.adminAuthenticated = false;
-    state.adminUser = null;
-    applyGuestProfile();
-    updateAdminControls();
   } catch (error) {
-    console.warn("Supabase sign-out failed:", error.message || error);
-    if (elements.profileAuthStatus) {
-      setHidden(elements.profileAuthStatus, false);
-      elements.profileAuthStatus.textContent = error.message || "Sign out failed.";
-    }
-    renderSupabaseAuthControls();
+    console.warn("Supabase sign-out cleanup failed after local reset:", error.message || error);
   } finally {
-    if (elements.profileSignOutButton) {
-      elements.profileSignOutButton.disabled = false;
-    }
+    clearStoredSupabaseSession();
   }
 }
 

@@ -2556,6 +2556,7 @@ function buildRoundPrompt(payload) {
       "Grade answers against the question, canonicalAnswer, and acceptedAnswers.",
       "Blank or empty answers are always incorrect and must never appear in correctIndexes.",
       "Accept common aliases, nicknames, abbreviations, swapped word order, missing accents, and minor spelling mistakes when the intended answer is clearly correct.",
+      "For person, creator, artist, author, composer, inventor, or 'who is this by' questions, accept a distinctive first name, last name, or well-known partial name when it clearly identifies the canonical person. Example: 'Vincent', 'Gogh', or a minor typo like 'Vicent' can be correct for Vincent van Gogh; do not require the full name unless the partial name is ambiguous.",
       "Reject random objects, wrong-category guesses, or answers only vaguely related to the theme.",
       "Every cards[index] value must exactly match submittedAnswers[index].answer with no added words, flavor text, punctuation, or rewrite.",
       isRoom
@@ -2797,6 +2798,11 @@ function scoreAnswerAgainstBank(answer, acceptedAnswers) {
       continue;
     }
 
+    const partialPersonScore = scoreDistinctivePartialName(normalizedAnswer, accepted);
+    if (partialPersonScore > 0) {
+      bestScore = Math.max(bestScore, partialPersonScore);
+    }
+
     const answerWords = new Set(normalizedAnswer.split(" ").filter(Boolean));
     const acceptedWords = accepted.split(" ").filter(Boolean);
     const sharedWords = acceptedWords.filter((word) => answerWords.has(word));
@@ -2814,6 +2820,36 @@ function scoreAnswerAgainstBank(answer, acceptedAnswers) {
   }
 
   return bestScore;
+}
+
+function scoreDistinctivePartialName(normalizedAnswer, normalizedAccepted) {
+  const answerWords = normalizedAnswer.split(" ").filter(Boolean);
+  const acceptedWords = normalizedAccepted.split(" ").filter(Boolean);
+  if (answerWords.length !== 1 || acceptedWords.length < 2) {
+    return 0;
+  }
+
+  const answerWord = answerWords[0];
+  if (answerWord.length < 4) {
+    return 0;
+  }
+
+  let bestTokenScore = 0;
+  acceptedWords
+    .filter((word) => word.length >= 4)
+    .forEach((word) => {
+      if (answerWord === word) {
+        bestTokenScore = Math.max(bestTokenScore, 0.94);
+        return;
+      }
+      const distance = levenshteinDistance(answerWord, word);
+      const longest = Math.max(answerWord.length, word.length, 1);
+      const similarity = 1 - (distance / longest);
+      if (similarity >= 0.82) {
+        bestTokenScore = Math.max(bestTokenScore, Math.min(0.93, similarity));
+      }
+    });
+  return bestTokenScore;
 }
 
 function normalizeTriviaAnswer(value) {
