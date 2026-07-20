@@ -1764,6 +1764,7 @@ const state = {
   randomUsernamesPromise: null,
   botSettings: {
     botCount: 2,
+    classicMode: false,
     randomModifiers: false,
     harsh: false,
     chaos: false,
@@ -2226,6 +2227,7 @@ const elements = {
   botCountSlider: document.querySelector("#botCountSlider"),
   botCountValue: document.querySelector("#botCountValue"),
   botRandomModeToggle: document.querySelector("#botRandomModeToggle"),
+  botClassicModeToggle: document.querySelector("#botClassicModeToggle"),
   botHarshModeToggle: document.querySelector("#botHarshModeToggle"),
   botChaosModeToggle: document.querySelector("#botChaosModeToggle"),
   botTimeMoneyModeToggle: document.querySelector("#botTimeMoneyModeToggle"),
@@ -6015,6 +6017,7 @@ function syncBotAdvancedControls() {
   elements.botCountSlider.value = getBotCount();
   elements.botCountValue.textContent = String(getBotCount());
   elements.botRandomModeToggle.checked = Boolean(settings.randomModifiers);
+  elements.botClassicModeToggle.checked = Boolean(settings.classicMode);
   elements.botHarshModeToggle.checked = Boolean(settings.harsh);
   elements.botChaosModeToggle.checked = Boolean(settings.chaos);
   elements.botTimeMoneyModeToggle.checked = Boolean(settings.timeMoney);
@@ -6025,7 +6028,7 @@ function syncBotAdvancedControls() {
 }
 
 function syncBotRandomToggleState() {
-  const random = Boolean(elements.botRandomModeToggle?.checked);
+  const classic = Boolean(elements.botClassicModeToggle?.checked);
   [
     elements.botHarshModeToggle,
     elements.botChaosModeToggle,
@@ -6035,9 +6038,12 @@ function syncBotRandomToggleState() {
     elements.botPartyMayhemModeToggle
   ].forEach((toggle) => {
     if (toggle) {
-      toggle.disabled = random;
+      toggle.disabled = classic;
     }
   });
+  if (elements.botRandomModeToggle) {
+    elements.botRandomModeToggle.disabled = classic;
+  }
 }
 
 function updateBotSettingsFromControls() {
@@ -6045,8 +6051,9 @@ function updateBotSettingsFromControls() {
     return;
   }
   state.botSettings.botCount = clampNumber(elements.botCountSlider.value, 1, 9, 2);
-  state.botSettings.randomModifiers = Boolean(elements.botRandomModeToggle.checked);
-  if (state.botSettings.randomModifiers) {
+  state.botSettings.classicMode = Boolean(elements.botClassicModeToggle.checked);
+  if (state.botSettings.classicMode) {
+    elements.botRandomModeToggle.checked = false;
     elements.botHarshModeToggle.checked = false;
     elements.botChaosModeToggle.checked = false;
     elements.botTimeMoneyModeToggle.checked = false;
@@ -6054,6 +6061,7 @@ function updateBotSettingsFromControls() {
     elements.botWildFireModeToggle.checked = false;
     elements.botPartyMayhemModeToggle.checked = false;
   }
+  state.botSettings.randomModifiers = Boolean(elements.botRandomModeToggle.checked);
   state.botSettings.harsh = Boolean(elements.botHarshModeToggle.checked);
   state.botSettings.chaos = Boolean(elements.botChaosModeToggle.checked);
   state.botSettings.timeMoney = Boolean(elements.botTimeMoneyModeToggle.checked);
@@ -6261,7 +6269,8 @@ function isMatchModifierEnabled(modifier) {
 }
 
 function isClassicModeEnabled() {
-  return isRoomMode() && Boolean(state.roomSettings.classicMode);
+  return (isRoomMode() && Boolean(state.roomSettings.classicMode))
+    || (state.mode === "bots" && Boolean(state.botSettings.classicMode));
 }
 
 function rollMatchModifiers(mode) {
@@ -6269,14 +6278,18 @@ function rollMatchModifiers(mode) {
     return { harsh: false, chaos: false, amplified: false, timeMoney: false, wildFire: false, partyMayhem: false };
   }
 
-  if (mode === "bots" && !state.botSettings.randomModifiers) {
+  if (mode === "bots" && state.botSettings.classicMode) {
+    return { harsh: false, chaos: false, amplified: false, timeMoney: false, wildFire: false, partyMayhem: false };
+  }
+
+  if (mode === "bots") {
     return {
-      harsh: Boolean(state.botSettings.harsh),
-      chaos: Boolean(state.botSettings.chaos),
-      amplified: Boolean(state.botSettings.amplified),
-      timeMoney: Boolean(state.botSettings.timeMoney),
-      wildFire: Boolean(state.botSettings.wildFire),
-      partyMayhem: Boolean(state.botSettings.partyMayhem)
+      harsh: Boolean(state.botSettings.harsh) || (state.botSettings.randomModifiers && Math.random() < 0.5),
+      chaos: Boolean(state.botSettings.chaos) || (state.botSettings.randomModifiers && Math.random() < 0.5),
+      amplified: Boolean(state.botSettings.amplified) || (state.botSettings.randomModifiers && Math.random() < 0.5),
+      timeMoney: Boolean(state.botSettings.timeMoney) || (state.botSettings.randomModifiers && Math.random() < 0.5),
+      wildFire: Boolean(state.botSettings.wildFire) || (state.botSettings.randomModifiers && Math.random() < 0.5),
+      partyMayhem: Boolean(state.botSettings.partyMayhem) || (state.botSettings.randomModifiers && Math.random() < 0.5)
     };
   }
 
@@ -6625,6 +6638,9 @@ function applyRoundAmplifiedMultiplier(deltas, owners, events) {
 }
 
 function getActiveMatchModifierNames() {
+  if (isClassicModeEnabled()) {
+    return ["Classic"];
+  }
   const names = [];
   if (isMatchModifierEnabled("amplified")) names.push("Amplified");
   if (isMatchModifierEnabled("harsh")) names.push("Brutal");
@@ -8031,10 +8047,10 @@ function getRoomVariantNames() {
   if (state.roomSettings.classicMode) {
     return ["Classic"];
   }
-  if (state.roomSettings.randomModifiers) {
-    return ["Random"];
-  }
   const variants = [];
+  if (state.roomSettings.randomModifiers) {
+    variants.push("Random");
+  }
   if (state.roomSettings.amplified) {
     variants.push("Amplified");
   }
@@ -18934,7 +18950,6 @@ function updateRoomPlayerLimit(value) {
 
 function syncClassicRoomToggleState() {
   const classic = Boolean(elements.classicModeToggle?.checked);
-  const random = Boolean(elements.randomModeToggle?.checked);
   [
     elements.harshModeToggle,
     elements.chaosModeToggle,
@@ -18944,7 +18959,7 @@ function syncClassicRoomToggleState() {
     elements.partyMayhemModeToggle
   ].forEach((toggle) => {
     if (toggle) {
-      toggle.disabled = classic || random;
+      toggle.disabled = classic;
     }
   });
   if (elements.randomModeToggle) {
@@ -18955,14 +18970,6 @@ function syncClassicRoomToggleState() {
 function updateRoomVariants() {
   if (elements.classicModeToggle.checked) {
     elements.randomModeToggle.checked = false;
-    elements.harshModeToggle.checked = false;
-    elements.chaosModeToggle.checked = false;
-    elements.timeMoneyModeToggle.checked = false;
-    elements.amplifiedModeToggle.checked = false;
-    elements.wildFireModeToggle.checked = false;
-    elements.partyMayhemModeToggle.checked = false;
-  }
-  if (elements.randomModeToggle.checked) {
     elements.harshModeToggle.checked = false;
     elements.chaosModeToggle.checked = false;
     elements.timeMoneyModeToggle.checked = false;
@@ -18992,12 +18999,12 @@ function applyRandomRoomModifiersForMatch() {
     return;
   }
   const rolled = rollMatchModifiers("local");
-  state.roomSettings.harsh = rolled.harsh;
-  state.roomSettings.chaos = rolled.chaos;
-  state.roomSettings.timeMoney = rolled.timeMoney;
-  state.roomSettings.amplified = rolled.amplified;
-  state.roomSettings.wildFire = rolled.wildFire;
-  state.roomSettings.partyMayhem = rolled.partyMayhem;
+  state.roomSettings.harsh = state.roomSettings.harsh || rolled.harsh;
+  state.roomSettings.chaos = state.roomSettings.chaos || rolled.chaos;
+  state.roomSettings.timeMoney = state.roomSettings.timeMoney || rolled.timeMoney;
+  state.roomSettings.amplified = state.roomSettings.amplified || rolled.amplified;
+  state.roomSettings.wildFire = state.roomSettings.wildFire || rolled.wildFire;
+  state.roomSettings.partyMayhem = state.roomSettings.partyMayhem || rolled.partyMayhem;
   state.roomSettings.randomModifiers = false;
   syncRoomControls();
 }
@@ -20207,10 +20214,8 @@ function getRoomModeLabel(settings = state.roomSettings) {
   if (settings.classicMode) {
     return "Classic";
   }
-  if (settings.randomModifiers) {
-    return "Random";
-  }
   const modes = [];
+  if (settings.randomModifiers) modes.push("Random");
   if (settings.amplified) modes.push("Amplified");
   if (settings.harsh) modes.push("Brutal");
   if (settings.chaos) modes.push("Chaos");
@@ -23373,6 +23378,7 @@ elements.botAdvancedToggle?.addEventListener("click", () => {
 elements.botCountSlider?.addEventListener("input", updateBotSettingsFromControls);
 [
   elements.botRandomModeToggle,
+  elements.botClassicModeToggle,
   elements.botHarshModeToggle,
   elements.botChaosModeToggle,
   elements.botTimeMoneyModeToggle,
