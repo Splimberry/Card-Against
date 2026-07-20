@@ -2231,6 +2231,7 @@ const state = {
   isSpectator: false,
   currentOwner: "player",
   roomSubmissions: {},
+  localRoomSubmission: null,
   roomBotSequence: 0,
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
@@ -7985,7 +7986,55 @@ function setRoomSubmission(owner, submitted) {
   renderSubmissionStatus();
 }
 
+function clearLocalRoomSubmission() {
+  state.localRoomSubmission = null;
+}
+
+function rememberLocalRoomSubmission(owner, answer, remainingTime = state.answerRemainingTimes[owner] || 0) {
+  if (!isRoomMode() || state.isSpectator || !owner) {
+    return;
+  }
+  state.localRoomSubmission = {
+    owner,
+    participantId: getRoomParticipantIdForOwner(owner) || state.clientId,
+    round: Number(state.round) || 0,
+    answer: cleanInput(answer || ""),
+    remainingTime: Math.max(0, Number(remainingTime) || 0)
+  };
+  applyLocalRoomSubmission();
+}
+
+function applyLocalRoomSubmission() {
+  const localSubmission = state.localRoomSubmission;
+  if (!isRoomMode() || state.isSpectator || !localSubmission || Number(localSubmission.round) !== Number(state.round)) {
+    return false;
+  }
+  const owner = localSubmission.owner || state.currentOwner;
+  if (!owner || !getActiveOwners().includes(owner)) {
+    return false;
+  }
+  state.roomSubmissions[owner] = true;
+  state.answerRemainingTimes[owner] = Math.max(0, Number(localSubmission.remainingTime) || 0);
+  if (localSubmission.answer) {
+    lockRoundAnswer(owner, localSubmission.answer);
+    if (owner === "player") {
+      state.localAnswers.playerOne = localSubmission.answer;
+    }
+    if (owner === "opponent") {
+      state.localAnswers.playerTwo = localSubmission.answer;
+    }
+  }
+  const participantId = localSubmission.participantId || getRoomParticipantIdForOwner(owner) || state.clientId;
+  updateRoomParticipantSubmission(participantId, localSubmission.answer, localSubmission.round, localSubmission.remainingTime);
+  const player = getPlayer(owner);
+  if (player && player.active && !player.muted) {
+    player.connectionStatus = "submitted";
+  }
+  return true;
+}
+
 function resetRoomSubmissions() {
+  clearLocalRoomSubmission();
   state.roomSubmissions = Object.fromEntries(getActiveOwners().map((owner) => [owner, false]));
   state.roomRoundResolving = false;
   state.players.forEach((player) => {
@@ -16907,6 +16956,7 @@ function resetRoundUiForLoading(options = {}) {
   state.localAnswers = { playerOne: "", playerTwo: "" };
   resetRoundAnswers();
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
+  clearLocalRoomSubmission();
   state.roomSubmissions = {};
   resetPlayedPowersForRound();
   state.currentTableEvent = null;
@@ -20303,6 +20353,7 @@ function openRoomScreen() {
   state.roomPowerStateUpdatedAt = 0;
   state.roomPlayedResetSyncedRound = null;
   state.roomEventRevision = 0;
+  clearLocalRoomSubmission();
   state.roomSubmissions = {};
   state.currentOwner = "player";
   state.currentRoomStatus = "draft";
@@ -20436,6 +20487,7 @@ function clearLocalRoomState(options = {}) {
   state.roomPlayedResetSyncedRound = null;
   state.players = [];
   state.roomParticipants = [];
+  clearLocalRoomSubmission();
   state.roomSubmissions = {};
   state.roomMissingSince = 0;
   state.roomExitLeaveSent = false;
@@ -21085,6 +21137,7 @@ function applyRoomParticipantDelta(participant, payload = {}) {
     state.roomParticipants.push(normalized);
   }
   state.roomParticipants = normalizeRoomParticipantsList(state.roomParticipants);
+  applyLocalRoomSubmission();
   if (state.joiningRoom) {
     state.joiningRoom = {
       ...state.joiningRoom,
@@ -21142,6 +21195,7 @@ function applyRoomDirectoryRoom(room) {
   state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
   state.roomParticipants = normalizeRoomParticipantsList(room.participants);
   syncRoomPlayersFromParticipants({ preserveMatchStats: state.currentRoomStatus === "in-progress" });
+  applyLocalRoomSubmission();
   if (Array.isArray(room.chat)) {
     mergeRoomChatMessages(room.chat);
   }
@@ -21153,6 +21207,7 @@ function applyRoomDirectoryRoom(room) {
 
 function syncRoomSubmissionsFromParticipants() {
   if (!isRoomMode() || !state.roomParticipants.length || !state.round) {
+    applyLocalRoomSubmission();
     return;
   }
   state.roomParticipants.forEach((participant, index) => {
@@ -21179,6 +21234,7 @@ function syncRoomSubmissionsFromParticipants() {
       player.connectionStatus = "submitted";
     }
   });
+  applyLocalRoomSubmission();
 }
 
 function getSyncedRoomSetupForRound(round = state.round) {
@@ -23091,6 +23147,7 @@ function submitRoomAnswer(rawInput, options = {}) {
   }
 
   setRoomSubmission(owner, true);
+  rememberLocalRoomSubmission(owner, lockedInput, state.answerRemainingTimes[owner]);
   broadcastRoomAnswerSubmission(lockedInput);
   void publishCurrentRoomSubmission(lockedInput);
   maybeSubmitRoomBotsAfterRealPlayers();
