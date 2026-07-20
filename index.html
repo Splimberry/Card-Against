@@ -544,14 +544,16 @@
           <div class="settings-header">
             <div>
               <p class="eyebrow">Power-ups and table events</p>
-              <h2 id="abilitiesTitle">Abilities & Events</h2>
+              <div class="abilities-title-row">
+                <h2 id="abilitiesTitle">Abilities & Events</h2>
+                <label class="ability-chaos-toggle">
+                  <input id="abilityChaosPreviewToggle" type="checkbox">
+                  <span>Chaos preview</span>
+                </label>
+              </div>
             </div>
             <button type="button" class="icon-button" id="closeAbilitiesButton">Close</button>
           </div>
-          <label class="ability-chaos-toggle">
-            <input id="abilityChaosPreviewToggle" type="checkbox">
-            <span>Chaos preview</span>
-          </label>
           <div class="ability-library" id="abilityLibrary"></div>
         </div>
       </section>
