@@ -80,7 +80,7 @@
             <button type="button" class="mode-card" id="startBotsButton">
               <span>Solo vs Bots</span>
               <strong>Quick Start</strong>
-              <small>5 rounds, 30s timer, 2 bots, all themes, power-ups on.</small>
+              <small>5-10 rounds, 30s timer, 1-9 bots, all themes, power-ups on.</small>
             </button>
             <button type="button" class="secondary-button bot-advanced-toggle" id="botAdvancedToggle" aria-expanded="false" aria-controls="botAdvancedModal">Advanced</button>
           </div>
@@ -548,6 +548,10 @@
             </div>
             <button type="button" class="icon-button" id="closeAbilitiesButton">Close</button>
           </div>
+          <label class="ability-chaos-toggle">
+            <input id="abilityChaosPreviewToggle" type="checkbox">
+            <span>Chaos preview</span>
+          </label>
           <div class="ability-library" id="abilityLibrary"></div>
         </div>
       </section>
@@ -722,6 +726,11 @@
             <span>Bots</span>
             <input id="botCountSlider" type="range" min="1" max="9" step="1" value="2">
             <strong id="botCountValue">2</strong>
+          </label>
+          <label class="slider-row" for="botRoundsSlider">
+            <span>Rounds</span>
+            <input id="botRoundsSlider" type="range" min="5" max="10" step="1" value="5">
+            <strong id="botRoundsValue">5</strong>
           </label>
           <div class="room-mode-options bot-mode-options" aria-label="Bot game modifiers">
             <label class="mode-toggle">
