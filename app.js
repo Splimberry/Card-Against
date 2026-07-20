@@ -579,6 +579,51 @@ function writeUserStorageCache(snapshot = getUserStorageSnapshot()) {
   writeJsonStorage(userCacheStorageKey, snapshot);
 }
 
+function getUserStorageSnapshotWeight(snapshot = {}) {
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  const purchases = Array.isArray(source.unlockedCosmeticsCache?.purchases)
+    ? source.unlockedCosmeticsCache.purchases
+    : Array.isArray(source.shopDisplayCache?.purchases)
+      ? source.shopDisplayCache.purchases
+      : [];
+  const achievements = source.achievementProgressCache && typeof source.achievementProgressCache === "object"
+    ? source.achievementProgressCache
+    : {};
+  const unlockedCount = achievements.unlocked && typeof achievements.unlocked === "object"
+    ? Object.keys(achievements.unlocked).length
+    : 0;
+  const progressCount = achievements.progress && typeof achievements.progress === "object"
+    ? Object.keys(achievements.progress).length
+    : 0;
+  const milestoneCount = Array.isArray(achievements.claimedMilestones) ? achievements.claimedMilestones.length : 0;
+  return (
+    Math.max(0, Number(source.currencyDisplayCache?.coins) || 0)
+    + purchases.length * 1000
+    + unlockedCount * 1000
+    + progressCount * 100
+    + milestoneCount * 250
+  );
+}
+
+function chooseBestUserStorageSnapshot(localSnapshot = {}, remoteSnapshot = {}) {
+  const localValid = localSnapshot?.version === userStorageVersion;
+  const remoteValid = remoteSnapshot?.version === userStorageVersion;
+  if (localValid && remoteValid) {
+    const localWeight = getUserStorageSnapshotWeight(localSnapshot);
+    const remoteWeight = getUserStorageSnapshotWeight(remoteSnapshot);
+    if (localWeight > remoteWeight) {
+      return localSnapshot;
+    }
+    if (remoteWeight > localWeight) {
+      return remoteSnapshot;
+    }
+    return Number(remoteSnapshot.updatedAt || 0) >= Number(localSnapshot.updatedAt || 0)
+      ? remoteSnapshot
+      : localSnapshot;
+  }
+  return remoteValid ? remoteSnapshot : localValid ? localSnapshot : null;
+}
+
 function normalizeCachedThemes(themes) {
   const uniqueThemes = [...new Set((Array.isArray(themes) ? themes : [])
     .map((theme) => String(theme || "").trim())
@@ -867,22 +912,25 @@ async function hydrateSignedInUserStorage(user) {
   if (!user?.id) {
     return;
   }
+  let restoredSnapshot = false;
   state.userStorageHydrating = true;
   try {
     const localSnapshot = loadUserStorageCacheForUser(user.id);
     const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
-    const chosenSnapshot = remoteSnapshot && (!localSnapshot.updatedAt || Number(remoteSnapshot.updatedAt || 0) >= Number(localSnapshot.updatedAt || 0))
-      ? remoteSnapshot
-      : localSnapshot;
-    if (chosenSnapshot?.version === userStorageVersion) {
+    const chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
+    if (chosenSnapshot) {
       applyUserStorageSnapshot(chosenSnapshot, { fallbackName: state.profile.name });
+      writeUserStorageCache(chosenSnapshot);
+      restoredSnapshot = true;
     } else {
-      writeUserStorageCache(getUserStorageSnapshot());
+      console.warn("No saved user storage snapshot found; keeping current signed-in profile without overwriting user progress.");
     }
   } finally {
     state.userStorageHydrating = false;
   }
-  flushUserStorageSnapshot();
+  if (restoredSnapshot) {
+    flushUserStorageSnapshot();
+  }
 }
 const audioAssets = {
   music: "assets/bg-music.mp3",
@@ -7623,7 +7671,9 @@ async function ensureSupabaseAuthReady(options = {}) {
       }
     }
     const { data } = await client.auth.getSession();
-    applySupabaseSession(data?.session || null);
+    if (data?.session || !options.preserveGuest) {
+      applySupabaseSession(data?.session || null);
+    }
     if (!state.supabaseAuthListenerAttached) {
       state.supabaseAuthListenerAttached = true;
       client.auth.onAuthStateChange((_event, session) => {
@@ -8744,7 +8794,7 @@ function applySupabaseProfile(user) {
 }
 
 async function signInWithSupabaseGoogle() {
-  const client = await ensureSupabaseAuthReady({ realtime: true, force: true });
+  const client = await ensureSupabaseAuthReady({ realtime: true, force: true, preserveGuest: true });
   if (!client) {
     renderSupabaseAuthControls();
     return;
