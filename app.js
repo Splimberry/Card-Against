@@ -2819,6 +2819,14 @@ const elements = {
   devOverlayGrid: null,
   devOverlayStatus: null,
   devOverlayClearButton: null,
+  devPowerOwnerSelect: null,
+  devPowerSelect: null,
+  devPowerChaosToggle: null,
+  devPowerAddButton: null,
+  devPowerFillButton: null,
+  devPowerClearButton: null,
+  devPowerStatus: null,
+  devPowerHand: null,
   devProfileGrid: null,
   devProfileStatus: null,
   devProfileUnlockAllButton: null,
@@ -8118,8 +8126,8 @@ function getRoomPowerHandSyncEntry(owner) {
   return {
     participantId,
     owner,
-    hand: [...(state.powerHands[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => powerMap[powerId]).slice(0, 10),
-    fresh: [...(state.freshPowerUps[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => powerMap[powerId]).slice(0, 10)
+    hand: [...(state.powerHands[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10),
+    fresh: [...(state.freshPowerUps[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10)
   };
 }
 
@@ -17115,6 +17123,7 @@ function buildDevToolScreen() {
       <button type="button" data-dev-tab="achievements">Achievement Debug</button>
       <button type="button" data-dev-tab="profile">Profile Debug</button>
       <button type="button" data-dev-tab="overlays">Overlay Debug</button>
+      <button type="button" data-dev-tab="powers">Power Debug</button>
     </div>
     <section class="dev-tool-panel" data-dev-panel="questions">
       <div class="dev-tool-controls">
@@ -17270,6 +17279,33 @@ function buildDevToolScreen() {
         <div class="achievement-debug-grid" id="devAchievementGrid"></div>
       </div>
     </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="powers">
+      <div class="dev-panel-heading">
+        <div>
+          <p class="eyebrow">Power-up testing</p>
+          <h2>Power Debug</h2>
+        </div>
+      </div>
+      <div class="dev-tool-controls">
+        <label>
+          <span>Owner</span>
+          <select id="devPowerOwnerSelect"></select>
+        </label>
+        <label>
+          <span>Power-up</span>
+          <select id="devPowerSelect"></select>
+        </label>
+        <label class="mode-toggle">
+          <input id="devPowerChaosToggle" type="checkbox">
+          <span>Chaos version</span>
+        </label>
+        <button type="button" class="icon-button" id="devPowerAddButton">Add Power</button>
+        <button type="button" class="icon-button" id="devPowerFillButton">Fill Hand</button>
+        <button type="button" class="icon-button danger-button" id="devPowerClearButton">Clear Hand</button>
+      </div>
+      <div class="debug-status" id="devPowerStatus">Start a game, then add any power-up to a player hand.</div>
+      <div class="profile-debug-grid dev-power-hand" id="devPowerHand"></div>
+    </section>
     <section class="dev-tool-panel hidden" data-dev-panel="profile">
       <div class="dev-panel-heading">
         <div>
@@ -17379,6 +17415,14 @@ function buildDevToolScreen() {
   elements.devOverlayGrid = screen.querySelector("#devOverlayGrid");
   elements.devOverlayStatus = screen.querySelector("#devOverlayStatus");
   elements.devOverlayClearButton = screen.querySelector("#devOverlayClearButton");
+  elements.devPowerOwnerSelect = screen.querySelector("#devPowerOwnerSelect");
+  elements.devPowerSelect = screen.querySelector("#devPowerSelect");
+  elements.devPowerChaosToggle = screen.querySelector("#devPowerChaosToggle");
+  elements.devPowerAddButton = screen.querySelector("#devPowerAddButton");
+  elements.devPowerFillButton = screen.querySelector("#devPowerFillButton");
+  elements.devPowerClearButton = screen.querySelector("#devPowerClearButton");
+  elements.devPowerStatus = screen.querySelector("#devPowerStatus");
+  elements.devPowerHand = screen.querySelector("#devPowerHand");
   elements.devAchievementSearchInput = screen.querySelector("#devAchievementSearchInput");
   elements.devAchievementRarityFilter = screen.querySelector("#devAchievementRarityFilter");
   elements.devAchievementTypeFilter = screen.querySelector("#devAchievementTypeFilter");
@@ -17478,6 +17522,12 @@ function bindDevToolEvents() {
     elements.devOverlayStatus.textContent = "Overlay queue cleared.";
     playSound("click");
   });
+  elements.devPowerOwnerSelect.addEventListener("change", renderPowerDebug);
+  elements.devPowerSelect.addEventListener("change", renderPowerDebug);
+  elements.devPowerChaosToggle.addEventListener("change", renderPowerDebug);
+  elements.devPowerAddButton.addEventListener("click", addDebugPowerToHand);
+  elements.devPowerFillButton.addEventListener("click", fillDebugPowerHand);
+  elements.devPowerClearButton.addEventListener("click", clearDebugPowerHand);
   elements.devAchievementSearchInput.addEventListener("input", renderAchievementDebug);
   elements.devAchievementRarityFilter.addEventListener("change", renderAchievementDebug);
   elements.devAchievementTypeFilter.addEventListener("change", renderAchievementDebug);
@@ -18346,7 +18396,7 @@ async function requestDevToolTab(tab) {
 }
 
 function setDevToolTab(tab) {
-  const selectedTab = ["questions", "rooms", "submissions", "create", "achievements", "profile", "overlays"].includes(tab) ? tab : "questions";
+  const selectedTab = ["questions", "rooms", "submissions", "create", "achievements", "profile", "overlays", "powers"].includes(tab) ? tab : "questions";
   elements.devToolTabs.querySelectorAll("[data-dev-tab]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.devTab === selectedTab);
   });
@@ -18368,6 +18418,151 @@ function setDevToolTab(tab) {
   if (selectedTab === "profile") {
     renderProfileDebug();
   }
+  if (selectedTab === "powers") {
+    renderPowerDebug();
+  }
+}
+
+function getPowerDebugOwners() {
+  const owners = getActiveOwners();
+  return owners.length ? owners : ["player"];
+}
+
+function renderPowerDebugPowerOptions() {
+  if (!elements.devPowerSelect) {
+    return;
+  }
+  const selected = elements.devPowerSelect.value || "small_bounty";
+  elements.devPowerSelect.replaceChildren();
+  ["grey", "blue", "purple", "gold"].forEach((rarity) => {
+    const group = document.createElement("optgroup");
+    group.label = rarityInfo[rarity].label;
+    powerDeck
+      .filter((power) => power.rarity === rarity)
+      .forEach((power) => {
+        const option = document.createElement("option");
+        option.value = power.id;
+        option.textContent = `${power.name} (${power.id})`;
+        group.appendChild(option);
+      });
+    elements.devPowerSelect.appendChild(group);
+  });
+  elements.devPowerSelect.value = powerDeck.some((power) => power.id === selected) ? selected : "small_bounty";
+}
+
+function renderPowerDebug() {
+  if (!elements.devPowerOwnerSelect || !elements.devPowerSelect || !elements.devPowerHand) {
+    return;
+  }
+  const owners = getPowerDebugOwners();
+  const selectedOwner = owners.includes(elements.devPowerOwnerSelect.value) ? elements.devPowerOwnerSelect.value : owners[0];
+  elements.devPowerOwnerSelect.replaceChildren(...owners.map((owner) => {
+    const option = document.createElement("option");
+    option.value = owner;
+    option.textContent = getOwnerLabel(owner);
+    return option;
+  }));
+  elements.devPowerOwnerSelect.value = selectedOwner;
+  renderPowerDebugPowerOptions();
+  const basePowerId = elements.devPowerSelect.value;
+  const chaosAvailable = canPowerBecomeChaosInfused(basePowerId);
+  elements.devPowerChaosToggle.disabled = !chaosAvailable;
+  if (!chaosAvailable) {
+    elements.devPowerChaosToggle.checked = false;
+  }
+  const hand = state.powerHands[selectedOwner] || [];
+  elements.devPowerHand.replaceChildren(...hand.map((powerId) => {
+    const power = getPowerById(powerId);
+    const card = document.createElement("article");
+    card.className = "profile-debug-card";
+    card.dataset.state = isChaosInfusedPower(powerId) ? "enabled" : "natural";
+    card.innerHTML = `<strong>${power?.name || powerId}</strong><span>${power?.short || "Unknown"}</span><p>${isChaosInfusedPower(powerId) ? "Chaos-infused" : rarityInfo[power?.rarity]?.label || "Power-up"}</p>`;
+    return card;
+  }));
+  if (!hand.length) {
+    const empty = document.createElement("p");
+    empty.className = "debug-status";
+    empty.textContent = "Selected owner has no power-ups.";
+    elements.devPowerHand.appendChild(empty);
+  }
+}
+
+function getSelectedDebugPowerId() {
+  const basePowerId = elements.devPowerSelect?.value || "";
+  if (elements.devPowerChaosToggle?.checked && canPowerBecomeChaosInfused(basePowerId)) {
+    return getChaosInfusedPowerId(basePowerId);
+  }
+  return basePowerId;
+}
+
+function publishPowerDebugState() {
+  if (isRoomMode() && isCurrentHost()) {
+    publishRoomPowerState(getRoomPowerStatePayload()).catch(() => {});
+  }
+}
+
+function addDebugPowerToHand() {
+  const owner = elements.devPowerOwnerSelect?.value;
+  const powerId = getSelectedDebugPowerId();
+  const power = getPowerById(powerId);
+  if (!owner || !power) {
+    elements.devPowerStatus.textContent = "Choose a valid owner and power-up.";
+    return;
+  }
+  if (getPowerHandLimit(owner) <= 0) {
+    elements.devPowerStatus.textContent = "Start a match before adding power-ups.";
+    return;
+  }
+  addPurchasedPowerToHand(owner, powerId);
+  elements.devPowerStatus.textContent = `Added ${power.name} to ${getOwnerLabel(owner)}.`;
+  renderPowerDebug();
+  renderPowerUps();
+  publishPowerDebugState();
+  playSound("reveal");
+}
+
+function fillDebugPowerHand() {
+  const owner = elements.devPowerOwnerSelect?.value;
+  if (!owner || getPowerHandLimit(owner) <= 0) {
+    elements.devPowerStatus.textContent = "Start a match before filling a hand.";
+    return;
+  }
+  const powerId = getSelectedDebugPowerId();
+  if (!getPowerById(powerId)) {
+    elements.devPowerStatus.textContent = "Choose a valid power-up before filling a hand.";
+    return;
+  }
+  const limit = getPowerHandLimit(owner);
+  const hand = [powerId];
+  while (hand.length < limit) {
+    const drawnPowerId = drawPowerCard(hand, getPowerDrawOptions(owner));
+    if (!drawnPowerId) {
+      break;
+    }
+    hand.push(drawnPowerId);
+  }
+  state.powerHands[owner] = hand;
+  markFreshPowerUps(owner, hand);
+  elements.devPowerStatus.textContent = `Filled ${getOwnerLabel(owner)}'s hand starting with ${getPowerById(powerId).name}.`;
+  renderPowerDebug();
+  renderPowerUps();
+  publishPowerDebugState();
+  playSound("reveal");
+}
+
+function clearDebugPowerHand() {
+  const owner = elements.devPowerOwnerSelect?.value;
+  if (!owner) {
+    return;
+  }
+  state.powerHands[owner] = [];
+  state.freshPowerUps[owner] = [];
+  clearSelectedPowerUps(owner);
+  elements.devPowerStatus.textContent = `Cleared ${getOwnerLabel(owner)}'s hand.`;
+  renderPowerDebug();
+  renderPowerUps();
+  publishPowerDebugState();
+  playSound("click");
 }
 
 function isAchievementProgressBased(achievement) {
