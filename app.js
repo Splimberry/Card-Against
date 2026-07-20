@@ -8763,10 +8763,11 @@ async function signInWithSupabaseGoogle() {
   }
 }
 
-async function signOutSupabase() {
+async function signOutSupabase(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
   const signingOutUser = state.supabaseUser;
   const signingOutClient = state.supabaseClient;
-  const snapshot = signingOutUser ? getUserStorageSnapshot() : null;
   if (elements.profileSignOutButton) {
     elements.profileSignOutButton.disabled = true;
   }
@@ -8775,6 +8776,14 @@ async function signOutSupabase() {
     elements.profileAuthStatus.textContent = "Signing out...";
   }
 
+  let snapshot = null;
+  if (signingOutUser) {
+    try {
+      snapshot = getUserStorageSnapshot();
+    } catch (error) {
+      console.warn("Could not snapshot user storage before sign-out:", error.message || error);
+    }
+  }
   if (snapshot) {
     writeUserStorageCache(snapshot);
   }
@@ -8783,13 +8792,25 @@ async function signOutSupabase() {
   state.supabaseUser = null;
   state.adminAuthenticated = false;
   state.adminUser = null;
-  applyGuestProfile();
+  try {
+    applyGuestProfile();
+  } catch (error) {
+    console.warn("Guest profile reset failed during sign-out:", error.message || error);
+    renderSupabaseAuthControls();
+  }
   updateAdminControls();
   if (elements.profileSignOutButton) {
     elements.profileSignOutButton.disabled = false;
   }
 
   void completeSupabaseSignOut({ client: signingOutClient, user: signingOutUser, snapshot });
+}
+
+function handleProfileSignOutClick(event) {
+  if (!event.target.closest("#profileSignOutButton")) {
+    return;
+  }
+  signOutSupabase(event);
 }
 
 async function completeSupabaseSignOut({ client, user, snapshot } = {}) {
@@ -22174,6 +22195,7 @@ elements.profileNameInput?.addEventListener("blur", (event) => updateProfileName
 elements.profileAvatarInput.addEventListener("change", (event) => updateProfileAvatar(event.target.files?.[0]));
 elements.profileAuthButton?.addEventListener("click", signInWithSupabaseGoogle);
 elements.profileSignOutButton?.addEventListener("click", signOutSupabase);
+document.addEventListener("click", handleProfileSignOutClick);
 elements.backToMenuButton.addEventListener("click", closeRoomScreen);
 elements.backFromJoinButton.addEventListener("click", closeJoinScreen);
 elements.startRoomButton.addEventListener("click", startRoomGame);
