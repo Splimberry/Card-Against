@@ -3331,7 +3331,7 @@ function normalizeSetupPayload(setup) {
       source: String(image.source || "").trim(),
       missingReason: String(image.missingReason || "").trim()
     },
-    botCards: Array.isArray(setup.botCards) ? setup.botCards.map((card) => String(card).trim()).filter(Boolean).slice(0, 2) : [],
+    botCards: Array.isArray(setup.botCards) ? setup.botCards.map((card) => String(card).trim()).filter(Boolean).slice(0, 9) : [],
     judge: {
       name: String(judge.name || "Trivia Grader").trim(),
       avatar: String(judge.avatar || "AI").trim(),
