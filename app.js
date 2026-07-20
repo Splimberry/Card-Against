@@ -28,6 +28,7 @@ const equippedAchievementStorageKey = "cardsAgainstAiEquippedAchievement";
 const profileCustomizationStorageKey = "cardsAgainstAiProfileCustomization";
 const profileCustomizationDebugStorageKey = "cardsAgainstAiDebugProfileCustomizations";
 const profileSpecialBadgeDebugStorageKey = "cardsAgainstAiDebugSpecialBadges";
+const creatorApprovedCountStorageKey = "cardsAgainstAiCreatorApprovedCount";
 const profileShopPurchasesStorageKey = "cardsAgainstAiProfileShopPurchases";
 const questionUsageStorageKey = "cardsAgainstAiQuestionUsageStats";
 const currencyStorageKey = "cardsAgainstAiCurrency";
@@ -535,6 +536,11 @@ const fallbackBotUsernames = [
 function getUserProfileStorageKey(user, field) {
   const userId = String(user?.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
   return userId ? `cardsAgainstAiProfile:${userId}:${field}` : `cardsAgainstAiProfile:${field}`;
+}
+
+function getUserCreatorApprovedCountKey(user = state.supabaseUser) {
+  const userId = String(user?.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
+  return userId ? `${creatorApprovedCountStorageKey}:${userId}` : creatorApprovedCountStorageKey;
 }
 
 function readJsonStorage(key, fallback) {
@@ -1057,6 +1063,7 @@ function resetSignedOutAccountState() {
   [
     profileCustomizationDebugStorageKey,
     profileSpecialBadgeDebugStorageKey,
+    creatorApprovedCountStorageKey,
     disabledAchievementStorageKey,
     questionSubmissionSeenStorageKey,
     questionSubmissionRefundedStorageKey
@@ -1196,6 +1203,7 @@ async function hydrateSignedInUserStorage(user) {
   if (restoredSnapshot) {
     flushUserStorageSnapshot();
   }
+  void loadUserQuestionSubmissions();
 }
 const audioAssets = {
   music: "assets/bg-music.mp3",
@@ -10733,8 +10741,31 @@ function setSpecialBadgeDebugState(id, mode) {
   syncSpecialBadgesToProfile();
 }
 
+function getStoredCreatorApprovedQuestionCount() {
+  const scoped = Math.max(0, Math.floor(Number(localStorage.getItem(getUserCreatorApprovedCountKey())) || 0));
+  const legacy = Math.max(0, Math.floor(Number(localStorage.getItem(creatorApprovedCountStorageKey)) || 0));
+  const profileBadgeCount = Math.max(
+    0,
+    Math.floor(Number(normalizeSpecialBadges(state.profile?.specialBadges || []).find((badge) => badge.id === "creator")?.count) || 0)
+  );
+  return Math.max(scoped, legacy, profileBadgeCount);
+}
+
+function saveCreatorApprovedQuestionCount(count) {
+  const cleanCount = Math.max(0, Math.floor(Number(count) || 0));
+  localStorage.setItem(getUserCreatorApprovedCountKey(), String(cleanCount));
+  localStorage.setItem(creatorApprovedCountStorageKey, String(cleanCount));
+  scheduleUserStorageSnapshot();
+  return cleanCount;
+}
+
 function getApprovedCreatorQuestionCount() {
-  return state.userQuestionSubmissions.filter((submission) => submission.status === "approved").length;
+  const fetchedCount = state.userQuestionSubmissions.filter((submission) => submission.status === "approved").length;
+  const bestCount = Math.max(fetchedCount, getStoredCreatorApprovedQuestionCount());
+  if (bestCount > getStoredCreatorApprovedQuestionCount()) {
+    saveCreatorApprovedQuestionCount(bestCount);
+  }
+  return bestCount;
 }
 
 function getNaturalSpecialBadgeIds() {
