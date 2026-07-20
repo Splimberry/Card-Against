@@ -2152,6 +2152,7 @@ const state = {
   supabaseEnabled: false,
   supabaseSession: null,
   supabaseUser: null,
+  supabaseSignInInProgress: false,
   realtimeLobbyChannel: null,
   realtimeRoomChannel: null,
   realtimeRoomCode: "",
@@ -8419,11 +8420,14 @@ function renderSupabaseAuthControls() {
   }
   const signedIn = Boolean(state.supabaseUser);
   const configured = Boolean(state.supabaseEnabled);
+  const signInInProgress = Boolean(state.supabaseSignInInProgress);
   setHidden(elements.profileAuthButton, signedIn || !configured);
   setHidden(elements.profileSignOutButton, !signedIn);
-  elements.profileAuthButton.disabled = !configured;
+  elements.profileAuthButton.disabled = !configured || signInInProgress;
   setHidden(elements.profileAuthStatus, !configured);
-  elements.profileAuthStatus.textContent = signedIn
+  elements.profileAuthStatus.textContent = signInInProgress
+    ? "Opening Google sign-in..."
+    : signedIn
     ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
     : "Sign in to customize your card, username, and profile picture.";
   syncProfileEditControls();
@@ -9670,21 +9674,31 @@ function applySupabaseProfile(user) {
 }
 
 async function signInWithSupabaseGoogle() {
-  const client = await ensureSupabaseAuthReady({ realtime: true, force: true, preserveGuest: true });
-  if (!client) {
-    renderSupabaseAuthControls();
+  if (state.supabaseSignInInProgress) {
     return;
   }
-  const redirectTo = `${window.location.origin}${window.location.pathname}`;
-  const { error } = await client.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo }
-  });
-  if (error) {
+  state.supabaseSignInInProgress = true;
+  renderSupabaseAuthControls();
+  try {
+    const client = await ensureSupabaseAuthReady({ realtime: true, force: true, preserveGuest: true });
+    if (!client) {
+      return;
+    }
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await client.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo }
+    });
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
     console.warn("Google sign-in failed:", error.message || error);
+    state.supabaseSignInInProgress = false;
+    renderSupabaseAuthControls();
     if (elements.profileAuthStatus) {
       setHidden(elements.profileAuthStatus, false);
-      elements.profileAuthStatus.textContent = error.message || "Google sign-in failed.";
+      elements.profileAuthStatus.textContent = error.message || "Google sign-in failed. Check your connection, VPN, or browser privacy settings, then try again.";
     }
   }
 }
