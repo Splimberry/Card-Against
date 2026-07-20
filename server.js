@@ -2553,11 +2553,12 @@ function buildRoundPrompt(payload) {
     rules: [
       "Return only valid JSON. Do not wrap the JSON in markdown.",
       "Use submittedAnswers as the source of truth for every player/bot response. These answers are present and must be graded.",
-      "Grade answers against the question, canonicalAnswer, and acceptedAnswers.",
+      "Grade answers against the question and the intended meaning of canonicalAnswer. Treat acceptedAnswers as optional examples, not as the complete list of all valid answers.",
       "Blank or empty answers are always incorrect and must never appear in correctIndexes.",
-      "Accept common aliases, nicknames, abbreviations, swapped word order, missing accents, and minor spelling mistakes when the intended answer is clearly correct.",
-      "For person, creator, artist, author, composer, inventor, or 'who is this by' questions, accept a distinctive first name, last name, or well-known partial name when it clearly identifies the canonical person. Example: 'Vincent', 'Gogh', or a minor typo like 'Vicent' can be correct for Vincent van Gogh; do not require the full name unless the partial name is ambiguous.",
-      "Reject random objects, wrong-category guesses, or answers only vaguely related to the theme.",
+      "Use general trivia knowledge to accept semantically equivalent answers even when they are not listed in acceptedAnswers.",
+      "Accept common aliases, nicknames, abbreviations, acronyms, translations, alternate spellings, swapped word order, missing accents, and minor spelling mistakes when the intended answer is clearly correct.",
+      "Accept a distinctive partial answer when it clearly identifies the same thing as the canonical answer. This applies to all question types: people, places, teams, titles, objects, events, concepts, companies, artworks, games, and media. Do not require the full preset answer when the player gave enough information to identify it.",
+      "Reject answers that are only a broad category, a generic adjective, a random related word, or too ambiguous to identify the canonical answer.",
       "Every cards[index] value must exactly match submittedAnswers[index].answer with no added words, flavor text, punctuation, or rewrite.",
       isRoom
         ? "Do not generate any extra bot guesses in room mode; only grade the submitted room answers."
@@ -2640,12 +2641,12 @@ async function generateRoundWithResponses(payload, apiKey) {
     },
     body: JSON.stringify({
       model: getModel(),
-      temperature: 1.15,
+      temperature: 0.35,
       input: [
         {
           role: "system",
           content:
-            "You grade a short-answer trivia quiz. Accept clear aliases, abbreviations, missing accents, and minor spelling mistakes. Return only compact valid JSON matching the schema."
+            "You grade a short-answer trivia quiz. Accepted answer lists are examples, not exhaustive. Accept clear semantic equivalents, aliases, abbreviations, partial-but-identifying answers, missing accents, and minor spelling mistakes. Return only compact valid JSON matching the schema."
         },
         {
           role: "user",
@@ -2714,12 +2715,12 @@ async function generateRoundWithChatCompletions(payload, apiKey) {
     },
     body: JSON.stringify({
       model: getModel(),
-      temperature: 1.22,
+      temperature: 0.35,
       messages: [
         {
           role: "system",
           content:
-            "You grade a short-answer trivia quiz. Accept clear aliases, abbreviations, missing accents, and minor spelling mistakes. Return only valid JSON with keys cards, winnerIndex, and correctIndexes."
+            "You grade a short-answer trivia quiz. Accepted answer lists are examples, not exhaustive. Accept clear semantic equivalents, aliases, abbreviations, partial-but-identifying answers, missing accents, and minor spelling mistakes. Return only valid JSON with keys cards, winnerIndex, and correctIndexes."
         },
         {
           role: "user",
@@ -2798,9 +2799,9 @@ function scoreAnswerAgainstBank(answer, acceptedAnswers) {
       continue;
     }
 
-    const partialPersonScore = scoreDistinctivePartialName(normalizedAnswer, accepted);
-    if (partialPersonScore > 0) {
-      bestScore = Math.max(bestScore, partialPersonScore);
+    const partialAnswerScore = scoreDistinctivePartialAnswer(normalizedAnswer, accepted);
+    if (partialAnswerScore > 0) {
+      bestScore = Math.max(bestScore, partialAnswerScore);
     }
 
     const answerWords = new Set(normalizedAnswer.split(" ").filter(Boolean));
@@ -2822,7 +2823,7 @@ function scoreAnswerAgainstBank(answer, acceptedAnswers) {
   return bestScore;
 }
 
-function scoreDistinctivePartialName(normalizedAnswer, normalizedAccepted) {
+function scoreDistinctivePartialAnswer(normalizedAnswer, normalizedAccepted) {
   const answerWords = normalizedAnswer.split(" ").filter(Boolean);
   const acceptedWords = normalizedAccepted.split(" ").filter(Boolean);
   if (answerWords.length !== 1 || acceptedWords.length < 2) {
