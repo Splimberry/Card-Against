@@ -582,6 +582,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+  align-items: start;
 }
 
 .mode-card {
@@ -619,6 +620,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   display: grid;
   gap: 0.55rem;
   min-width: 0;
+  align-items: start;
 }
 
 .mode-card-shell .mode-card {
@@ -628,33 +630,20 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .bot-advanced-toggle {
   width: 100%;
   min-height: 2.55rem;
+  justify-content: center;
+  text-align: center;
 }
 
 .bot-advanced-panel {
   display: grid;
   gap: 0.75rem;
-  max-height: 40rem;
-  overflow: hidden;
-  padding: 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(15, 13, 24, 0.86);
-  opacity: 1;
-  transform: translateY(0);
-  transition:
-    max-height 360ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 260ms ease,
-    padding 360ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  width: min(100%, 42rem);
+  max-height: min(86vh, 46rem);
+  overflow: auto;
 }
 
-.bot-advanced-panel.collapsed {
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  opacity: 0;
-  transform: translateY(-0.45rem);
-  pointer-events: none;
+.bot-mode-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .room-header {
@@ -6390,6 +6379,7 @@ input:focus {
 .profile-shop-modal,
 .admin-auth-modal,
 .theme-modal,
+.bot-advanced-modal,
 .confirm-modal,
 .target-modal {
   position: fixed;
@@ -6411,6 +6401,7 @@ input:focus {
 .profile-shop-modal.closing,
 .admin-auth-modal.closing,
 .theme-modal.closing,
+.bot-advanced-modal.closing,
 .confirm-modal.closing,
 .target-modal.closing {
   animation: modalFadeOut 240ms ease-in both;
@@ -6424,6 +6415,7 @@ input:focus {
 .profile-shop-panel,
 .admin-auth-panel,
 .theme-panel,
+.bot-advanced-panel,
 .confirm-panel,
 .target-panel {
   width: min(100%, 34rem);
@@ -6445,9 +6437,16 @@ input:focus {
 .closing .profile-shop-panel,
 .closing .admin-auth-panel,
 .closing .theme-panel,
+.closing .bot-advanced-panel,
 .closing .confirm-panel,
 .closing .target-panel {
   animation: modalPanelOut 240ms ease-in both;
+}
+
+.bot-advanced-modal .bot-advanced-panel {
+  width: min(100%, 42rem);
+  max-height: min(86vh, 46rem);
+  overflow: auto;
 }
 
 .admin-auth-panel {

@@ -2220,7 +2220,9 @@ const elements = {
   roomProfileNamePreview: document.querySelector("#roomProfileNamePreview"),
   startBotsButton: document.querySelector("#startBotsButton"),
   botAdvancedToggle: document.querySelector("#botAdvancedToggle"),
+  botAdvancedModal: document.querySelector("#botAdvancedModal"),
   botAdvancedPanel: document.querySelector("#botAdvancedPanel"),
+  closeBotAdvancedButton: document.querySelector("#closeBotAdvancedButton"),
   botCountSlider: document.querySelector("#botCountSlider"),
   botCountValue: document.querySelector("#botCountValue"),
   botRandomModeToggle: document.querySelector("#botRandomModeToggle"),
@@ -5986,13 +5988,23 @@ function createOwnerValueMap(valueFactory) {
 }
 
 function setBotAdvancedOpen(open) {
-  if (!elements.botAdvancedPanel || !elements.botAdvancedToggle) {
+  if (!elements.botAdvancedModal || !elements.botAdvancedToggle) {
     return;
   }
   const expanded = Boolean(open);
   elements.botAdvancedToggle.setAttribute("aria-expanded", String(expanded));
-  elements.botAdvancedToggle.textContent = expanded ? "Advanced Settings" : "Advanced";
-  setCollapsed(elements.botAdvancedPanel, !expanded);
+  if (expanded) {
+    syncBotAdvancedControls();
+    setHidden(elements.botAdvancedModal, false);
+    elements.botCountSlider?.focus();
+    return;
+  }
+  hideModalWithMotion(elements.botAdvancedModal);
+}
+
+function closeBotAdvancedPanel() {
+  setBotAdvancedOpen(false);
+  playSound("click");
 }
 
 function syncBotAdvancedControls() {
@@ -21076,6 +21088,11 @@ function closeTopModal() {
     return true;
   }
 
+  if (isModalOpen(elements.botAdvancedModal)) {
+    closeBotAdvancedPanel();
+    return true;
+  }
+
   if (isModalOpen(elements.settingsModal)) {
     closeSettings();
     return true;
@@ -23615,6 +23632,11 @@ elements.roundHelpModal?.addEventListener("click", (event) => {
     hideModalWithMotion(elements.roundHelpModal);
   }
 });
+elements.botAdvancedModal?.addEventListener("click", (event) => {
+  if (event.target === elements.botAdvancedModal) {
+    closeBotAdvancedPanel();
+  }
+});
 elements.profileCustomModal.addEventListener("click", (event) => {
   if (event.target === elements.profileCustomModal) {
     closeProfileCustomization();
@@ -23632,6 +23654,7 @@ elements.profileShopModal?.addEventListener("click", (event) => {
 });
 elements.closeProfileCustomButton?.addEventListener("click", () => closeProfileCustomization());
 elements.closeProfileShopButton?.addEventListener("click", closeProfileShop);
+elements.closeBotAdvancedButton?.addEventListener("click", closeBotAdvancedPanel);
 elements.profileCardStyleGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profileEffectGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profilePatternGrid?.addEventListener("click", handleProfileCustomizationClick);
