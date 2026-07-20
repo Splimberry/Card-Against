@@ -7682,6 +7682,22 @@ function getCurrentParticipant(options = {}) {
 }
 
 function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
+  const preserveSubmissions = status === "in-progress";
+  const getLobbySafeStatus = (entry, existingParticipant = null) => {
+    if (preserveSubmissions) {
+      return entry.connectionStatus || existingParticipant?.status || (entry.host ? "host" : entry.bot || entry.type === "bot" ? "bot" : "ready");
+    }
+    if (entry.host) {
+      return "host";
+    }
+    if (entry.spectator) {
+      return "spectating";
+    }
+    if (entry.bot || entry.type === "bot") {
+      return "bot";
+    }
+    return "joined";
+  };
   const participants = state.players
     .filter((player) => player.active || player.spectator)
     .map((player) => {
@@ -7699,10 +7715,10 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
         bot: Boolean(player.bot || player.type === "bot"),
         active: player.active !== false,
         muted: Boolean(player.muted),
-        status: player.connectionStatus || existingParticipant?.status || (player.host ? "host" : player.bot || player.type === "bot" ? "bot" : "ready"),
-        answer: cleanInput(existingParticipant?.answer || ""),
-        submittedRound: Number(existingParticipant?.submittedRound) || 0,
-        remainingTime: Math.max(0, Number(existingParticipant?.remainingTime) || 0)
+        status: getLobbySafeStatus(player, existingParticipant),
+        answer: preserveSubmissions ? cleanInput(existingParticipant?.answer || "") : "",
+        submittedRound: preserveSubmissions ? Number(existingParticipant?.submittedRound) || 0 : 0,
+        remainingTime: preserveSubmissions ? Math.max(0, Number(existingParticipant?.remainingTime) || 0) : 0
       };
     });
 
@@ -7723,10 +7739,18 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
       bot: Boolean(participant.bot),
       active: participant.active !== false,
       muted: Boolean(participant.muted),
-      status: participant.status || (participant.bot ? "bot" : participant.spectator ? "spectating" : "joined"),
-      answer: cleanInput(participant.answer || ""),
-      submittedRound: Number(participant.submittedRound) || 0,
-      remainingTime: Math.max(0, Number(participant.remainingTime) || 0)
+      status: preserveSubmissions
+        ? participant.status || (participant.bot ? "bot" : participant.spectator ? "spectating" : "joined")
+        : participant.host
+          ? "host"
+          : participant.spectator
+            ? "spectating"
+            : participant.bot
+              ? "bot"
+              : "joined",
+      answer: preserveSubmissions ? cleanInput(participant.answer || "") : "",
+      submittedRound: preserveSubmissions ? Number(participant.submittedRound) || 0 : 0,
+      remainingTime: preserveSubmissions ? Math.max(0, Number(participant.remainingTime) || 0) : 0
     });
     participantIds.add(participant.id);
   });
@@ -25471,6 +25495,7 @@ function returnToRoomLobbyAfterMatch() {
   stopLoadingMessages();
   state.matchEnded = true;
   state.currentRoomStatus = "lobby";
+  state.roomGame = null;
   state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -25478,7 +25503,21 @@ function returnToRoomLobbyAfterMatch() {
   setHidden(elements.joinScreen, true);
   setHidden(elements.modeScreen, true);
   elements.gameStage.classList.remove("room-active");
-  upsertHostedRoom("lobby");
+  if (isCurrentHost() && !state.joiningRoom) {
+    upsertHostedRoom("lobby");
+  } else {
+    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
+    renderRoomPlayers();
+    if (room) {
+      void updateRoomPresence(room, {
+        spectator: state.isSpectator,
+        status: state.isSpectator ? "spectating" : "joined",
+        answer: "",
+        submittedRound: 0,
+        remainingTime: 0
+      });
+    }
+  }
   renderRoomLobby();
   startRoomRealtime(state.roomSettings.code);
   startRoomDirectoryPolling();
