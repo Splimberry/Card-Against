@@ -1065,7 +1065,15 @@ async function testUserInventoryPurchaseAndUnlockRowsPersist() {
       { id: "purchase-techno-font", type: "purchase-cosmetic", key: "font:techno", cost: 100 },
       { id: "unlock-first-blood", type: "achievement", achievementId: "first-blood", record: { source: "test" } },
       { id: "progress-room-regular", type: "achievement-progress", key: "publicMatchesFinished", value: 10, mode: "set" },
-      { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 50 }
+      { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 50 },
+      {
+        id: "profile-prefix",
+        type: "profile",
+        profile: {
+          equippedAchievementId: "first-blood",
+          cardCustomization: { fontId: "techno", titleColourId: "rarity" }
+        }
+      }
     ]
   });
   assert.equal(response.status, 200, payload.error);
@@ -1074,6 +1082,8 @@ async function testUserInventoryPurchaseAndUnlockRowsPersist() {
   assert.ok(payload.inventory.achievements["first-blood"]);
   assert.equal(payload.inventory.achievementProgress.publicMatchesFinished, 10);
   assert.deepEqual(payload.inventory.claimedMilestones, ["achievements-5"]);
+  assert.equal(payload.inventory.profile.equippedAchievementId, "first-blood");
+  assert.equal(payload.inventory.profile.cardCustomization.fontId, "techno");
 
   const duplicate = await request("POST", "/api/user/inventory/ops", {
     userId,

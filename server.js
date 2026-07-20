@@ -747,6 +747,7 @@ function normalizeUserInventory(source = {}) {
   const appliedOps = source.appliedOps && typeof source.appliedOps === "object" ? source.appliedOps : {};
   return {
     userId,
+    profile: normalizeInventoryProfile(source.profile),
     coins: Math.max(0, Math.floor(Number(source.coins) || 0)),
     coinTransactions: Array.isArray(source.coinTransactions)
       ? source.coinTransactions.map(normalizeCoinTransaction).filter(Boolean).slice(-250)
@@ -859,6 +860,14 @@ function applyUserInventoryOp(inventory, rawOp) {
       }
     }
     applied = true;
+  } else if (type === "profile") {
+    inventory.profile = normalizeInventoryProfile({
+      ...inventory.profile,
+      ...(op.profile && typeof op.profile === "object" ? op.profile : {}),
+      equippedAchievementId: op.equippedAchievementId ?? op.profile?.equippedAchievementId ?? inventory.profile?.equippedAchievementId,
+      cardCustomization: op.cardCustomization || op.profile?.cardCustomization || inventory.profile?.cardCustomization
+    });
+    applied = true;
   } else {
     return { applied: false, id, reason: "unknown-type" };
   }
@@ -895,6 +904,7 @@ function sanitizeUserInventoryForClient(inventory) {
   const normalized = normalizeUserInventory(inventory);
   return {
     userId: normalized.userId,
+    profile: normalized.profile,
     coins: normalized.coins,
     coinTransactions: normalized.coinTransactions,
     cosmetics: normalized.cosmetics,
@@ -926,6 +936,30 @@ function normalizeAchievementRecord(record) {
     unlockedAt: String(source.unlockedAt || "").slice(0, 40),
     source: String(source.source || (source.debug ? "debug" : "game")).slice(0, 40),
     debug: Boolean(source.debug)
+  };
+}
+
+function normalizeInventoryProfile(profile) {
+  const source = profile && typeof profile === "object" ? profile : {};
+  return {
+    equippedAchievementId: normalizeInventoryKey(source.equippedAchievementId || source.equippedTitleId || ""),
+    cardCustomization: normalizeInventoryCardCustomization(source.cardCustomization)
+  };
+}
+
+function normalizeInventoryCardCustomization(customization) {
+  const source = customization && typeof customization === "object" ? customization : {};
+  return {
+    styleId: normalizeInventoryKey(source.styleId || "default"),
+    gradientTop: normalizeInventoryKey(source.gradientTop || "blue"),
+    gradientBottom: normalizeInventoryKey(source.gradientBottom || "pink"),
+    effectIds: [...new Set((Array.isArray(source.effectIds) ? source.effectIds : []).map(normalizeInventoryKey).filter(Boolean))].slice(0, 12),
+    patternId: normalizeInventoryKey(source.patternId || "none"),
+    fontId: normalizeInventoryKey(source.fontId || "default"),
+    equippedTitleId: normalizeInventoryKey(source.equippedTitleId || ""),
+    titleColourId: normalizeInventoryKey(source.titleColourId || "rarity"),
+    titleRgb: Boolean(source.titleRgb),
+    titlePastel: Boolean(source.titlePastel)
   };
 }
 

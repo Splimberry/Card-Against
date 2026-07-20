@@ -914,6 +914,20 @@ function enqueueUserInventoryOps(ops) {
   void flushUserInventoryQueue();
 }
 
+function queueUserProfileInventorySync(reason = "profile") {
+  if (!state.supabaseUser?.id || state.userInventoryApplying) {
+    return;
+  }
+  enqueueUserInventoryOps({
+    id: createUserInventoryOpId("profile", reason),
+    type: "profile",
+    profile: {
+      equippedAchievementId: state.profile.equippedTitleId || "",
+      cardCustomization: normalizeProfileCustomization(state.profile.cardCustomization || loadProfileCustomization())
+    }
+  });
+}
+
 async function fetchServerUserInventory(user = state.supabaseUser) {
   const userId = getUserInventoryStorageId(user);
   if (!userId) {
@@ -993,11 +1007,28 @@ function applyServerUserInventory(inventory = {}) {
     const milestones = [...new Set((Array.isArray(inventory.claimedMilestones) ? inventory.claimedMilestones : [])
       .map(normalizeInventoryKey)
       .filter(Boolean))];
+    const profile = inventory.profile && typeof inventory.profile === "object" ? inventory.profile : {};
+    const profileCustomization = profile.cardCustomization
+      ? normalizeProfileCustomization(profile.cardCustomization)
+      : null;
+    const equippedAchievementId = achievementTitleMap[profile.equippedAchievementId] ? profile.equippedAchievementId : "";
     localStorage.setItem(currencyStorageKey, String(coins));
     setJsonLocalStorage(profileShopPurchasesStorageKey, cosmetics);
     setJsonLocalStorage(achievementStorageKey, achievements);
     setJsonLocalStorage(achievementProgressStorageKey, progress);
     setJsonLocalStorage(achievementMilestonesStorageKey, milestones);
+    if (profileCustomization) {
+      state.profile.cardCustomization = profileCustomization;
+      localStorage.setItem(profileCustomizationStorageKey, JSON.stringify(profileCustomization));
+    }
+    if (equippedAchievementId && isAchievementUnlocked(equippedAchievementId, achievements)) {
+      state.profile.equippedTitleId = equippedAchievementId;
+      localStorage.setItem(equippedAchievementStorageKey, equippedAchievementId);
+    } else if (profile.equippedAchievementId === "") {
+      state.profile.equippedTitleId = "";
+      localStorage.removeItem(equippedAchievementStorageKey);
+    }
+    syncProfileCustomizationToPlayers();
     writeUserInventoryCache(inventory);
     renderProfile();
     renderProfileShop();
@@ -1046,15 +1077,32 @@ function getInventoryMigrationOpsFromSnapshot(snapshot = {}, userId = getUserInv
   [...new Set((achievements.claimedMilestones || []).map(normalizeInventoryKey).filter(Boolean))].forEach((milestoneId) => {
     ops.push({ id: `migration:${userId}:milestone:${milestoneId}`, type: "milestone", milestoneId });
   });
+  const profile = source.profile && typeof source.profile === "object" ? source.profile : {};
+  if (profile.equippedAchievementId || profile.cardCustomization) {
+    ops.push({
+      id: `migration:${userId}:profile`,
+      type: "profile",
+      profile: {
+        equippedAchievementId: profile.equippedAchievementId || "",
+        cardCustomization: normalizeProfileCustomization(profile.cardCustomization || source.unlockedCosmeticsCache?.equipped || defaultProfileCustomization)
+      }
+    });
+  }
   return ops;
 }
 
 function isServerInventoryEmpty(inventory = {}) {
+  const profileCustomization = inventory.profile?.cardCustomization
+    ? normalizeProfileCustomization(inventory.profile.cardCustomization)
+    : null;
+  const hasSavedProfile = Boolean(inventory.profile?.equippedAchievementId)
+    || (profileCustomization && JSON.stringify(profileCustomization) !== JSON.stringify(normalizeProfileCustomization(defaultProfileCustomization)));
   return !Math.max(0, Math.floor(Number(inventory.coins) || 0))
     && !(Array.isArray(inventory.cosmetics) && inventory.cosmetics.length)
     && !(inventory.achievements && Object.keys(inventory.achievements).length)
     && !(inventory.achievementProgress && Object.keys(inventory.achievementProgress).length)
-    && !(Array.isArray(inventory.claimedMilestones) && inventory.claimedMilestones.length);
+    && !(Array.isArray(inventory.claimedMilestones) && inventory.claimedMilestones.length)
+    && !hasSavedProfile;
 }
 
 function resetSignedOutAccountState() {
@@ -11360,6 +11408,7 @@ function setEquippedAchievement(id) {
     localStorage.removeItem(equippedAchievementStorageKey);
   }
   scheduleUserStorageSnapshot();
+  queueUserProfileInventorySync("equipped-title");
   state.players.forEach((player) => {
     if (player.owner === state.currentOwner || (player.owner === "player" && !isRoomMode())) {
       player.equippedTitleId = nextId;
@@ -12019,6 +12068,7 @@ async function saveProfileCustomizationDraft() {
   const { customization, titleId } = sanitizeProfileCustomizationForSave(getProfileCustomizationDraft());
   state.profile.cardCustomization = saveProfileCustomization(customization);
   setEquippedAchievement(titleId);
+  queueUserProfileInventorySync("card-customization");
   syncProfileCustomizationToPlayers();
   applyAnswerCardCustomizations();
   state.profileCustomizationDraft = {
