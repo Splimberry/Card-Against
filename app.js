@@ -38,6 +38,7 @@ const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRe
 const userStorageVersion = 1;
 const userCacheStorageKey = "cardsAgainstAiUserCache:v1";
 const userInventoryQueueStorageKey = "cardsAgainstAiUserInventoryQueue:v1";
+const userInventoryMutationQueueStorageKey = "cardsAgainstAiUserInventoryMutationQueue:v1";
 const userInventoryCacheStorageKey = "cardsAgainstAiUserInventoryCache:v1";
 const setupCacheStorageKey = "cardsAgainstAiRecentQuestionCache:v1";
 const publicCatalogCacheStorageKey = "cardsAgainstAiPublicCatalog:v1";
@@ -848,6 +849,11 @@ function getUserInventoryQueueKey(userId = getUserInventoryStorageId()) {
   return `${userInventoryQueueStorageKey}:${safeUserId}`;
 }
 
+function getUserInventoryMutationQueueKey(userId = getUserInventoryStorageId()) {
+  const safeUserId = String(userId || "guest").replace(/[^a-zA-Z0-9_-]/g, "") || "guest";
+  return `${userInventoryMutationQueueStorageKey}:${safeUserId}`;
+}
+
 function getUserInventoryCacheKey(userId = getUserInventoryStorageId()) {
   const safeUserId = String(userId || "guest").replace(/[^a-zA-Z0-9_-]/g, "") || "guest";
   return `${userInventoryCacheStorageKey}:${safeUserId}`;
@@ -881,6 +887,79 @@ function saveUserInventoryQueue(queue, userId = getUserInventoryStorageId()) {
   } else {
     localStorage.removeItem(getUserInventoryQueueKey(userId));
   }
+}
+
+function normalizePendingInventoryMutation(entry) {
+  const source = entry && typeof entry === "object" ? entry : {};
+  const kind = ["purchase", "milestone"].includes(source.kind) ? source.kind : "";
+  const opId = normalizeInventoryOpId(source.opId);
+  const userId = getUserInventoryStorageId({ id: source.userId });
+  if (!kind || !opId || !userId) {
+    return null;
+  }
+  if (kind === "purchase") {
+    const type = normalizeInventoryKey(source.type);
+    const id = normalizeInventoryKey(source.id);
+    return type && id ? {
+      kind,
+      userId,
+      type,
+      id,
+      opId,
+      createdAt: Number(source.createdAt) || Date.now()
+    } : null;
+  }
+  const milestoneId = normalizeInventoryKey(source.milestoneId);
+  return milestoneId ? {
+    kind,
+    userId,
+    milestoneId,
+    opId,
+    createdAt: Number(source.createdAt) || Date.now()
+  } : null;
+}
+
+function loadUserInventoryMutationQueue(userId = getUserInventoryStorageId()) {
+  const queue = readJsonStorage(getUserInventoryMutationQueueKey(userId), []);
+  return (Array.isArray(queue) ? queue : [])
+    .map(normalizePendingInventoryMutation)
+    .filter(Boolean);
+}
+
+function saveUserInventoryMutationQueue(queue, userId = getUserInventoryStorageId()) {
+  const cleanQueue = (Array.isArray(queue) ? queue : [])
+    .map(normalizePendingInventoryMutation)
+    .filter(Boolean)
+    .slice(-100);
+  if (cleanQueue.length) {
+    writeJsonStorage(getUserInventoryMutationQueueKey(userId), cleanQueue);
+  } else {
+    localStorage.removeItem(getUserInventoryMutationQueueKey(userId));
+  }
+}
+
+function rememberPendingInventoryMutation(mutation) {
+  const normalized = normalizePendingInventoryMutation(mutation);
+  if (!normalized) {
+    return null;
+  }
+  const queue = loadUserInventoryMutationQueue(normalized.userId);
+  if (!queue.some((entry) => entry.opId === normalized.opId)) {
+    saveUserInventoryMutationQueue([...queue, normalized], normalized.userId);
+  }
+  return normalized;
+}
+
+function forgetPendingInventoryMutation(userId, opId) {
+  const safeUserId = getUserInventoryStorageId({ id: userId });
+  const cleanOpId = normalizeInventoryOpId(opId);
+  if (!safeUserId || !cleanOpId) {
+    return;
+  }
+  saveUserInventoryMutationQueue(
+    loadUserInventoryMutationQueue(safeUserId).filter((entry) => entry.opId !== cleanOpId),
+    safeUserId
+  );
 }
 
 function writeUserInventoryCache(inventory) {
@@ -947,6 +1026,7 @@ async function fetchServerUserInventory(user = state.supabaseUser, options = {})
 async function postUserInventoryOps(userId, ops, options = {}) {
   const response = await fetch("/api/user/inventory/ops", {
     method: "POST",
+    keepalive: Boolean(options.keepalive),
     headers: {
       "Content-Type": "application/json",
       ...(await getInventoryAuthHeaders(options))
@@ -981,43 +1061,74 @@ async function waitForTrackedUserInventoryWrites() {
 }
 
 async function postUserInventoryPurchase(userId, type, id, opId = "", options = {}) {
+  const mutation = {
+    kind: "purchase",
+    userId,
+    type,
+    id,
+    opId: normalizeInventoryOpId(opId || createUserInventoryOpId("purchase-cosmetic", `${type}:${id}`)),
+    createdAt: Date.now()
+  };
+  if (options.remember !== false) {
+    rememberPendingInventoryMutation(mutation);
+  }
   return trackUserInventoryWrite((async () => {
     const response = await fetch("/api/user/inventory/purchase", {
       method: "POST",
+      keepalive: Boolean(options.keepalive),
       headers: {
         "Content-Type": "application/json",
         ...(await getInventoryAuthHeaders(options))
       },
-      body: JSON.stringify({ userId, type, id, opId })
+      body: JSON.stringify({ userId, type, id, opId: mutation.opId })
     });
     const result = await response.json().catch(() => ({}));
     if (result.inventory) {
       applyServerUserInventory(result.inventory);
     }
     if (!response.ok) {
+      if ([400, 409].includes(response.status)) {
+        forgetPendingInventoryMutation(userId, mutation.opId);
+      }
       throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
     }
+    forgetPendingInventoryMutation(userId, mutation.opId);
     return result;
   })());
 }
 
 async function postUserInventoryMilestone(userId, milestoneId, opId = "", options = {}) {
+  const mutation = {
+    kind: "milestone",
+    userId,
+    milestoneId,
+    opId: normalizeInventoryOpId(opId || createUserInventoryOpId("milestone", milestoneId)),
+    createdAt: Date.now()
+  };
+  if (options.remember !== false) {
+    rememberPendingInventoryMutation(mutation);
+  }
   return trackUserInventoryWrite((async () => {
     const response = await fetch("/api/user/inventory/milestone", {
       method: "POST",
+      keepalive: Boolean(options.keepalive),
       headers: {
         "Content-Type": "application/json",
         ...(await getInventoryAuthHeaders(options))
       },
-      body: JSON.stringify({ userId, milestoneId, opId })
+      body: JSON.stringify({ userId, milestoneId, opId: mutation.opId })
     });
     const result = await response.json().catch(() => ({}));
     if (result.inventory) {
       applyServerUserInventory(result.inventory);
     }
     if (!response.ok) {
+      if ([400, 409].includes(response.status)) {
+        forgetPendingInventoryMutation(userId, mutation.opId);
+      }
       throw new Error(result.error || result.milestone?.reason || "Could not save milestone.");
     }
+    forgetPendingInventoryMutation(userId, mutation.opId);
     return result;
   })());
 }
@@ -1078,6 +1189,47 @@ async function flushUserInventoryQueue(options = {}) {
 
 async function flushPendingUserInventoryWrites(options = {}) {
   await flushUserInventoryQueue(options);
+}
+
+async function flushPendingUserInventoryMutations(options = {}) {
+  const userId = options.userId || getUserInventoryStorageId(options.user || state.supabaseUser);
+  if (!userId) {
+    return;
+  }
+  const queue = loadUserInventoryMutationQueue(userId);
+  if (!queue.length) {
+    return;
+  }
+  for (const mutation of queue) {
+    try {
+      if (mutation.kind === "purchase") {
+        await postUserInventoryPurchase(mutation.userId, mutation.type, mutation.id, mutation.opId, {
+          ...options,
+          remember: false
+        });
+      } else if (mutation.kind === "milestone") {
+        await postUserInventoryMilestone(mutation.userId, mutation.milestoneId, mutation.opId, {
+          ...options,
+          remember: false
+        });
+      }
+    } catch (error) {
+      console.warn("Pending inventory mutation sync failed:", error.message || error);
+      if (options.keepalive) {
+        return;
+      }
+    }
+  }
+}
+
+function flushPendingUserInventoryBeforePageExit() {
+  const user = state.supabaseUser;
+  if (!user?.id) {
+    return;
+  }
+  const session = state.supabaseSession;
+  void flushPendingUserInventoryWrites({ user, session, keepalive: true });
+  void flushPendingUserInventoryMutations({ user, session, keepalive: true });
 }
 
 function applyServerUserInventory(inventory = {}) {
@@ -1315,6 +1467,7 @@ async function hydrateSignedInUserStorage(user) {
     state.userStorageHydrating = false;
   }
   try {
+    await flushPendingUserInventoryMutations({ user });
     let inventory = await fetchServerUserInventory(user);
     const migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
     if (migrationOps.length) {
@@ -1329,7 +1482,7 @@ async function hydrateSignedInUserStorage(user) {
         applyServerUserInventory(cachedInventory);
       }
     }
-    await flushPendingUserInventoryWrites();
+    await flushPendingUserInventoryWrites({ user });
   } catch (error) {
     console.warn("Server inventory hydration failed:", error.message || error);
     const cachedInventory = loadUserInventoryCache(user.id);
@@ -9301,6 +9454,7 @@ async function signOutSupabase(event) {
     await Promise.race([
       (async () => {
         await flushPendingUserInventoryWrites({ user: signingOutUser, session: signingOutSession });
+        await flushPendingUserInventoryMutations({ user: signingOutUser, session: signingOutSession });
         await waitForTrackedUserInventoryWrites();
       })(),
       new Promise((resolve) => window.setTimeout(resolve, 5000))
@@ -18261,11 +18415,17 @@ function shouldSendRoomExitLeave() {
 
 function handleWindowBeforeUnload() {
   flushUserStorageSnapshot();
+  flushPendingUserInventoryBeforePageExit();
   if (!shouldSendRoomExitLeave()) {
     return;
   }
   state.roomExitLeaveSent = true;
   leavePublishedRoom({ keepalive: true, reason: "page-exit" });
+}
+
+function handleWindowPageHide() {
+  flushUserStorageSnapshot();
+  flushPendingUserInventoryBeforePageExit();
 }
 
 function handleCurrentRoomClosed(reason = "Room closed.") {
@@ -23176,6 +23336,7 @@ elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
 document.addEventListener("visibilitychange", handleRoomVisibilityChange);
+window.addEventListener("pagehide", handleWindowPageHide);
 window.addEventListener("beforeunload", handleWindowBeforeUnload);
 
 cleanupReloadedHostedRoomSession();
