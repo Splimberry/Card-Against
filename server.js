@@ -3670,7 +3670,10 @@ function normalizeRoundPayload(body) {
     ? body.acceptedAnswers.map((entry) => String(entry).trim().slice(0, 120)).filter(Boolean).slice(0, 10)
     : [];
   const image = normalizeQuestionImage(body.image);
-  const botCards = Array.isArray(body.botCards) ? body.botCards.map((card) => String(card).trim().slice(0, 140)).filter(Boolean).slice(0, 2) : [];
+  const botCards = Array.isArray(body.botCards) ? body.botCards.map((card) => String(card).trim().slice(0, 140)).filter(Boolean).slice(0, 9) : [];
+  const botLabels = Array.isArray(body.botLabels)
+    ? body.botLabels.map((label) => String(label || "").trim().slice(0, 60)).filter(Boolean).slice(0, 9)
+    : [];
   const answerCards = Array.isArray(body.answerCards)
     ? body.answerCards
       .map((card, index) => ({
@@ -3706,6 +3709,7 @@ function normalizeRoundPayload(body) {
     roomCode,
     participantId,
     botCards,
+    botLabels,
     answerCards,
     matchContext: {
       playerScore: Number(matchContext.playerScore) || 0,
@@ -3874,9 +3878,9 @@ function buildRoundPrompt(payload) {
       ? "Grade every multiplayer room participant's short trivia answer exactly as typed."
       : isLocal
       ? "Grade both local players' short trivia answers exactly as typed."
-      : payload.botCards.length === 2
-        ? "Grade the player's short trivia answer exactly as typed and keep the two pre-generated bot guesses exactly as provided."
-        : "Grade the player's short trivia answer exactly as typed and create two plausible competing bot guesses.",
+      : payload.botCards.length
+        ? "Grade the player's short trivia answer exactly as typed and keep the provided bot guesses exactly as provided."
+        : "Grade the player's short trivia answer exactly as typed and create plausible competing bot guesses.",
     outputShape: {
       cards: submittedAnswers.map((entry) => `${entry.label} answer`),
       winnerIndex: `internal scoring index from 0 to ${Math.max(0, submittedAnswers.length - 1)}`,
@@ -3896,9 +3900,9 @@ function buildRoundPrompt(payload) {
         ? "Do not generate any extra bot guesses in room mode; only grade the submitted room answers."
         : isLocal
         ? "cards[1] must be exactly Player 2's raw answer with no added words, flavor text, punctuation, or rewrite."
-        : payload.botCards.length === 2
-          ? "cards[1] and cards[2] must exactly match the provided botCards in order. Do not rewrite or replace them."
-          : "Generate cards[1] and cards[2] as short plausible trivia guesses. At least one bot guess may be wrong, but both should look like real quiz answers.",
+        : payload.botCards.length
+          ? `cards[1] through cards[${payload.botCards.length}] must exactly match the provided botCards in order. Do not rewrite or replace them.`
+          : "Generate the bot cards as short plausible trivia guesses. At least one bot guess may be wrong, but all should look like real quiz answers.",
       `winnerIndex must be a valid submittedAnswers index from 0 to ${Math.max(0, submittedAnswers.length - 1)}. If nobody is correct, use 0 as a harmless placeholder.`,
       "correctIndexes must include every card index that is accepted as correct. It can contain multiple indexes. If nobody is fully correct, return an empty array.",
       "winnerIndex is only for internal scoring: set it to one accepted answer if correctIndexes is not empty; otherwise set it to 0 as a harmless placeholder.",
@@ -3918,9 +3922,9 @@ function buildRoundPrompt(payload) {
         ? "Do not generate bot cards in room mode."
         : isLocal
         ? "Do not generate bot cards in local mode."
-        : payload.botCards.length === 2
+        : payload.botCards.length
           ? "Use the provided bot cards as the bot competition."
-          : "The two bot cards must be independent plausible guesses, not derived from the player's raw answer.",
+          : "The bot cards must be independent plausible guesses, not derived from the player's raw answer.",
       isRoom ? "Grade each submittedAnswers entry under its label exactly." : isLocal ? "Grade submittedAnswers[0].answer exactly as Player 1 and submittedAnswers[1].answer exactly as Player 2." : "Grade submittedAnswers[0].answer exactly as the player response. If bot answers are provided in submittedAnswers, grade those exact bot responses.",
       "Do not include explanations, flavour text, jokes, commentary, or a grading report.",
       "Keep the JSON compact and suitable for fast quiz grading."
@@ -3960,7 +3964,10 @@ function getExpectedRoundCardCount(payload) {
   if (payload.mode === "room") {
     return Math.max(2, Math.min(10, payload.answerCards?.length || 0));
   }
-  return payload.mode === "local" ? 2 : 3;
+  if (payload.mode === "local") {
+    return 2;
+  }
+  return 1 + Math.max(1, Math.min(9, payload.botCards?.length || 2));
 }
 
 async function generateRoundWithResponses(payload, apiKey) {
@@ -4094,7 +4101,7 @@ function createLocalRoundResult(payload) {
     ? payload.answerCards.map((card) => card.answer)
     : payload.mode === "local"
     ? [payload.answer, payload.opponentAnswer]
-    : [payload.answer, ...normalizeBotCards(payload.botCards)];
+    : [payload.answer, ...normalizeBotCards(payload.botCards, expectedCards - 1)];
   const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
   const correctIndexes = cards
     .map((card, index) => ({ index, score: scoreAnswerAgainstBank(card, answerBank) }))
@@ -4254,7 +4261,7 @@ function validateRoundResult(result, payload) {
       ? payload.answerCards.map((card) => card.answer)
       : payload.mode === "local"
       ? [payload.answer, payload.opponentAnswer]
-      : payload.botCards.length === 2
+      : payload.botCards.length
         ? [payload.answer, ...payload.botCards]
       : result.cards.map((card) => String(card).trim().slice(0, 140));
   if (payload.mode !== "room") {
@@ -4481,15 +4488,23 @@ function normalizeQuestionImage(image) {
   };
 }
 
-function normalizeBotCards(cards) {
-  const normalized = Array.isArray(cards) ? cards.map((card) => String(card).trim().slice(0, 140)).filter(Boolean).slice(0, 2) : [];
+function normalizeBotCards(cards, count = 2) {
+  const targetCount = Math.max(1, Math.min(9, Number(count) || 2));
+  const normalized = Array.isArray(cards) ? cards.map((card) => String(card).trim().slice(0, 140)).filter(Boolean).slice(0, targetCount) : [];
   const fallbacks = [
     "I don't know",
-    "Maybe Paris"
+    "Maybe Paris",
+    "Not sure",
+    "Could be London",
+    "No idea",
+    "Possibly Einstein",
+    "The Moon",
+    "New York",
+    "Shakespeare"
   ];
 
-  while (normalized.length < 2) {
-    normalized.push(fallbacks[normalized.length]);
+  while (normalized.length < targetCount) {
+    normalized.push(fallbacks[normalized.length] || `Bot guess ${normalized.length + 1}`);
   }
 
   return normalized;

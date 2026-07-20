@@ -73,11 +73,72 @@
           </div>
         </div>
         <div class="mode-grid">
-          <button type="button" class="mode-card" id="startBotsButton">
-            <span>Solo vs Bots</span>
-            <strong>1 player</strong>
-            <small>You vs two AI-generated disasters.</small>
-          </button>
+          <div class="mode-card-shell bot-mode-shell">
+            <button type="button" class="mode-card" id="startBotsButton">
+              <span>Solo vs Bots</span>
+              <strong>Quick Start</strong>
+              <small>5 rounds, 30s timer, 2 bots, all themes, power-ups on.</small>
+            </button>
+            <button type="button" class="secondary-button bot-advanced-toggle" id="botAdvancedToggle" aria-expanded="false" aria-controls="botAdvancedPanel">Advanced</button>
+            <div class="bot-advanced-panel collapsed" id="botAdvancedPanel">
+              <label class="slider-row" for="botCountSlider">
+                <span>Bots</span>
+                <input id="botCountSlider" type="range" min="1" max="9" step="1" value="2">
+                <strong id="botCountValue">2</strong>
+              </label>
+              <div class="room-mode-options" aria-label="Bot game modifiers">
+                <label class="mode-toggle">
+                  <input id="botRandomModeToggle" type="checkbox">
+                  <span>
+                    <strong>Random</strong>
+                    <small>Randomly rolls the modifiers below each match.</small>
+                  </span>
+                </label>
+                <label class="mode-toggle">
+                  <input id="botAmplifiedModeToggle" type="checkbox">
+                  <span>
+                    <strong>Amplified</strong>
+                    <small>Each round starts with a shared random score multiplier.</small>
+                  </span>
+                </label>
+                <label class="mode-toggle">
+                  <input id="botHarshModeToggle" type="checkbox">
+                  <span>
+                    <strong>Brutal</strong>
+                    <small>Every non-winner loses 500 points.</small>
+                  </span>
+                </label>
+                <label class="mode-toggle">
+                  <input id="botChaosModeToggle" type="checkbox">
+                  <span>
+                    <strong>Chaos</strong>
+                    <small>Power-ups refill and reroll every round.</small>
+                  </span>
+                </label>
+                <label class="mode-toggle">
+                  <input id="botTimeMoneyModeToggle" type="checkbox">
+                  <span>
+                    <strong>Time Is Money</strong>
+                    <small>Base win points become remaining time x 20.</small>
+                  </span>
+                </label>
+                <label class="mode-toggle">
+                  <input id="botWildFireModeToggle" type="checkbox">
+                  <span>
+                    <strong>Wild Fire</strong>
+                    <small>Everyone carries the permanent It's Getting Hot effect.</small>
+                  </span>
+                </label>
+                <label class="mode-toggle">
+                  <input id="botPartyMayhemModeToggle" type="checkbox">
+                  <span>
+                    <strong>Party Mayhem</strong>
+                    <small>Table events jump from 15% to 80% each round.</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
           <button type="button" class="mode-card" id="startLocalButton">
             <span>Local 1v1</span>
             <strong>2 players</strong>
@@ -194,6 +255,13 @@
                 <span>
                   <strong>Party Mayhem</strong>
                   <small>Table events jump from 15% to 80% each round.</small>
+                </span>
+              </label>
+              <label class="mode-toggle">
+                <input id="randomModeToggle" type="checkbox">
+                <span>
+                  <strong>Random</strong>
+                  <small>Randomly rolls all modifiers when the match begins.</small>
                 </span>
               </label>
               <label class="mode-toggle">

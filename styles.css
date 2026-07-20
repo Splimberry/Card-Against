@@ -615,6 +615,48 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   text-transform: uppercase;
 }
 
+.mode-card-shell {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.mode-card-shell .mode-card {
+  width: 100%;
+}
+
+.bot-advanced-toggle {
+  width: 100%;
+  min-height: 2.55rem;
+}
+
+.bot-advanced-panel {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 40rem;
+  overflow: hidden;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(15, 13, 24, 0.86);
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    max-height 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 260ms ease,
+    padding 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bot-advanced-panel.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  transform: translateY(-0.45rem);
+  pointer-events: none;
+}
+
 .room-header {
   display: flex;
   justify-content: space-between;

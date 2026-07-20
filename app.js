@@ -494,7 +494,8 @@ const savedUserCache = loadUserStorageCache();
 const savedEnabledThemes = normalizeCachedThemes(savedUserCache?.settings?.lastSelectedThemes);
 const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds") || savedUserCache?.settings?.maxRounds, 1, 10, 5);
 const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds") || savedUserCache?.settings?.timerSeconds, 10, 60, 30);
-const DEFAULT_OWNER_IDS = ["player", "opponent", "bot1", "bot2"];
+const BOT_OWNER_IDS = Array.from({ length: 9 }, (_, index) => `bot${index + 1}`);
+const DEFAULT_OWNER_IDS = ["player", "opponent", ...BOT_OWNER_IDS];
 
 function createGuestName() {
   const fallback = Math.floor(Math.random() * 1000000);
@@ -873,6 +874,16 @@ function createUserInventoryOpId(type, key = "") {
   return `${cleanType}:${cleanKey}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function hashInventoryPayload(value) {
+  const source = typeof value === "string" ? value : JSON.stringify(value || {});
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 function loadUserInventoryQueue(userId = getUserInventoryStorageId()) {
   const queue = readJsonStorage(getUserInventoryQueueKey(userId), []);
   return Array.isArray(queue) ? queue.filter((op) => op && typeof op === "object" && normalizeInventoryOpId(op.id)) : [];
@@ -982,15 +993,31 @@ function enqueueUserInventoryOps(ops) {
     return;
   }
   const userId = getUserInventoryStorageId();
+  const existingIds = new Set(loadUserInventoryQueue(userId).map((op) => normalizeInventoryOpId(op.id)).filter(Boolean));
   const cleanOps = (Array.isArray(ops) ? ops : [ops])
     .filter((op) => op && typeof op === "object")
     .map((op) => ({ ...op, id: normalizeInventoryOpId(op.id || createUserInventoryOpId(op.type, op.key || op.achievementId || op.milestoneId)) }))
-    .filter((op) => op.id && op.type);
+    .filter((op) => op.id && op.type && !existingIds.has(op.id));
   if (!cleanOps.length) {
     return;
   }
   saveUserInventoryQueue([...loadUserInventoryQueue(userId), ...cleanOps], userId);
   void flushUserInventoryQueue();
+}
+
+function enqueueUserInventoryOpsForUser(user, ops) {
+  const userId = getUserInventoryStorageId(user);
+  if (!userId) {
+    return;
+  }
+  const existingIds = new Set(loadUserInventoryQueue(userId).map((op) => normalizeInventoryOpId(op.id)).filter(Boolean));
+  const cleanOps = (Array.isArray(ops) ? ops : [ops])
+    .filter((op) => op && typeof op === "object")
+    .map((op) => ({ ...op, id: normalizeInventoryOpId(op.id || createUserInventoryOpId(op.type, op.key || op.achievementId || op.milestoneId)) }))
+    .filter((op) => op.id && op.type && !existingIds.has(op.id));
+  if (cleanOps.length) {
+    saveUserInventoryQueue([...loadUserInventoryQueue(userId), ...cleanOps], userId);
+  }
 }
 
 function queueUserProfileInventorySync(reason = "profile") {
@@ -1228,6 +1255,7 @@ function flushPendingUserInventoryBeforePageExit() {
     return;
   }
   const session = state.supabaseSession;
+  enqueueCurrentUserInventoryStateForUser(user);
   void flushPendingUserInventoryWrites({ user, session, keepalive: true });
   void flushPendingUserInventoryMutations({ user, session, keepalive: true });
 }
@@ -1330,6 +1358,88 @@ function getInventoryMigrationOpsFromSnapshot(snapshot = {}, userId = getUserInv
     });
   }
   return ops;
+}
+
+function getLocalUserInventorySnapshot(user = state.supabaseUser) {
+  const userId = getUserInventoryStorageId(user);
+  if (!userId) {
+    return null;
+  }
+  return {
+    userId,
+    profile: {
+      equippedAchievementId: state.profile?.equippedTitleId || "",
+      cardCustomization: normalizeProfileCustomization(state.profile?.cardCustomization || loadProfileCustomization())
+    },
+    coins: loadCurrencyBalance(),
+    coinTransactions: [],
+    cosmetics: [...new Set(loadProfileShopPurchases().map(normalizeInventoryKey).filter(Boolean))],
+    achievements: loadUnlockedAchievements(),
+    achievementProgress: loadAchievementProgress(),
+    claimedMilestones: [...new Set(loadClaimedAchievementMilestones().map(normalizeInventoryKey).filter(Boolean))],
+    updatedAt: Date.now()
+  };
+}
+
+function getInventoryStateOpsFromInventory(inventory = {}, options = {}) {
+  const userId = normalizeInventoryKey(inventory.userId || options.userId || getUserInventoryStorageId());
+  if (!userId) {
+    return [];
+  }
+  const prefix = normalizeInventoryKey(options.prefix || "state") || "state";
+  const achievements = inventory.achievements && typeof inventory.achievements === "object" ? inventory.achievements : {};
+  const progress = inventory.achievementProgress && typeof inventory.achievementProgress === "object" ? inventory.achievementProgress : {};
+  const ops = [];
+  [...new Set((Array.isArray(inventory.cosmetics) ? inventory.cosmetics : [])
+    .map(normalizeInventoryKey)
+    .filter(Boolean))].forEach((key) => {
+    ops.push({ id: `${prefix}:${userId}:cosmetic:${key}`, type: "cosmetic", key });
+  });
+  Object.entries(achievements).forEach(([achievementId, record]) => {
+    const key = normalizeInventoryKey(achievementId);
+    if (key) {
+      ops.push({ id: `${prefix}:${userId}:achievement:${key}`, type: "achievement", achievementId: key, record });
+    }
+  });
+  Object.entries(progress).forEach(([key, value]) => {
+    const cleanKey = normalizeInventoryKey(key);
+    const cleanValue = Math.max(0, Math.floor(Number(value) || 0));
+    if (cleanKey && cleanValue > 0) {
+      ops.push({
+        id: `${prefix}:${userId}:progress:${cleanKey}:${cleanValue}`,
+        type: "achievement-progress",
+        key: cleanKey,
+        value: cleanValue,
+        mode: "max"
+      });
+    }
+  });
+  [...new Set((Array.isArray(inventory.claimedMilestones) ? inventory.claimedMilestones : [])
+    .map(normalizeInventoryKey)
+    .filter(Boolean))].forEach((milestoneId) => {
+    ops.push({ id: `${prefix}:${userId}:milestone:${milestoneId}`, type: "milestone", milestoneId });
+  });
+  const profile = inventory.profile && typeof inventory.profile === "object" ? inventory.profile : {};
+  const profilePayload = {
+    equippedAchievementId: achievementTitleMap[profile.equippedAchievementId] ? profile.equippedAchievementId : "",
+    cardCustomization: normalizeProfileCustomization(profile.cardCustomization || defaultProfileCustomization)
+  };
+  ops.push({
+    id: `${prefix}:${userId}:profile:${hashInventoryPayload(profilePayload)}`,
+    type: "profile",
+    profile: profilePayload
+  });
+  return ops;
+}
+
+function enqueueCurrentUserInventoryStateForUser(user = state.supabaseUser) {
+  const snapshot = getLocalUserInventorySnapshot(user);
+  if (!snapshot) {
+    return null;
+  }
+  writeUserInventoryCache(snapshot);
+  enqueueUserInventoryOpsForUser(user, getInventoryStateOpsFromInventory(snapshot, { prefix: "state" }));
+  return snapshot;
 }
 
 function isServerInventoryEmpty(inventory = {}) {
@@ -1468,21 +1578,28 @@ async function hydrateSignedInUserStorage(user) {
   }
   try {
     await flushPendingUserInventoryMutations({ user });
+    await flushPendingUserInventoryWrites({ user });
     let inventory = await fetchServerUserInventory(user);
-    const migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
+    const cachedInventory = loadUserInventoryCache(user.id);
+    let migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
+    if (!migrationOps.length && isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
+      migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId: user.id, prefix: "cache" });
+    }
     if (migrationOps.length) {
       const migrated = await postUserInventoryOps(user.id, migrationOps);
       inventory = migrated.inventory || inventory;
     }
     if (inventory) {
-      applyServerUserInventory(inventory);
+      if (isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
+        applyServerUserInventory(cachedInventory);
+      } else {
+        applyServerUserInventory(inventory);
+      }
     } else {
-      const cachedInventory = loadUserInventoryCache(user.id);
       if (cachedInventory) {
         applyServerUserInventory(cachedInventory);
       }
     }
-    await flushPendingUserInventoryWrites({ user });
   } catch (error) {
     console.warn("Server inventory hydration failed:", error.message || error);
     const cachedInventory = loadUserInventoryCache(user.id);
@@ -1645,6 +1762,16 @@ const state = {
   botTwoScore: 0,
   randomUsernames: [],
   randomUsernamesPromise: null,
+  botSettings: {
+    botCount: 2,
+    randomModifiers: false,
+    harsh: false,
+    chaos: false,
+    timeMoney: false,
+    amplified: false,
+    wildFire: false,
+    partyMayhem: false
+  },
   roomSettings: {
     rounds: 10,
     timerSeconds: 30,
@@ -1656,6 +1783,7 @@ const state = {
     wildFire: false,
     partyMayhem: false,
     classicMode: false,
+    randomModifiers: false,
     autoAdvance: true,
     enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
     private: false,
@@ -2048,6 +2176,7 @@ const state = {
   userInventoryFlushPromise: null,
   userInventoryWritePromises: new Set(),
   userInventoryApplying: false,
+  supabaseSignOutInProgress: false,
   roomSettingsPublishTimerId: null,
   roomSettingsPublishKind: "",
   adminAuthenticated: false,
@@ -2089,6 +2218,17 @@ const elements = {
   roomProfileAvatarPreview: document.querySelector("#roomProfileAvatarPreview"),
   roomProfileNamePreview: document.querySelector("#roomProfileNamePreview"),
   startBotsButton: document.querySelector("#startBotsButton"),
+  botAdvancedToggle: document.querySelector("#botAdvancedToggle"),
+  botAdvancedPanel: document.querySelector("#botAdvancedPanel"),
+  botCountSlider: document.querySelector("#botCountSlider"),
+  botCountValue: document.querySelector("#botCountValue"),
+  botRandomModeToggle: document.querySelector("#botRandomModeToggle"),
+  botHarshModeToggle: document.querySelector("#botHarshModeToggle"),
+  botChaosModeToggle: document.querySelector("#botChaosModeToggle"),
+  botTimeMoneyModeToggle: document.querySelector("#botTimeMoneyModeToggle"),
+  botAmplifiedModeToggle: document.querySelector("#botAmplifiedModeToggle"),
+  botWildFireModeToggle: document.querySelector("#botWildFireModeToggle"),
+  botPartyMayhemModeToggle: document.querySelector("#botPartyMayhemModeToggle"),
   startLocalButton: document.querySelector("#startLocalButton"),
   createRoomButton: document.querySelector("#createRoomButton"),
   joinRoomButton: document.querySelector("#joinRoomButton"),
@@ -2146,6 +2286,7 @@ const elements = {
   amplifiedModeToggle: document.querySelector("#amplifiedModeToggle"),
   wildFireModeToggle: document.querySelector("#wildFireModeToggle"),
   partyMayhemModeToggle: document.querySelector("#partyMayhemModeToggle"),
+  randomModeToggle: document.querySelector("#randomModeToggle"),
   classicModeToggle: document.querySelector("#classicModeToggle"),
   autoAdvanceToggle: document.querySelector("#autoAdvanceToggle"),
   privateRoomToggle: document.querySelector("#privateRoomToggle"),
@@ -3404,6 +3545,8 @@ async function requestAiRound(rawInput, options = {}) {
   const roomMode = isRoomMode();
   const duelMode = isDuelMode() && !roomMode;
   const apiMode = roomMode ? "room" : duelMode ? "local" : "bots";
+  const botOwners = state.mode === "bots" ? getActiveBotOwners() : [];
+  const botLabels = botOwners.map(getOwnerLabel);
   const playerAnswer = getLockedRoundAnswer("player", rawInput);
   const opponentAnswer = duelMode ? getLockedRoundAnswer("opponent", state.localAnswers.playerTwo) : "";
   const answerCards = cardOwners.map((owner) => ({
@@ -3429,14 +3572,14 @@ async function requestAiRound(rawInput, options = {}) {
       roomCode: roomMode ? state.roomSettings.code : "",
       participantId: roomMode ? state.clientId : "",
       answerCards: roomMode ? answerCards : [],
-      botCards: state.mode === "bots" ? state.botCards : [],
-      botLabels: state.mode === "bots" ? [getOwnerLabel("bot1"), getOwnerLabel("bot2")] : [],
+      botCards: state.mode === "bots" ? botOwners.map((owner) => getRoundAnswerForOwner(owner)) : [],
+      botLabels: state.mode === "bots" ? botLabels : [],
       matchContext: {
         playerScore: getScore("player"),
-        opponentScore: state.mode === "bots" ? Math.max(getScore("bot1"), getScore("bot2")) : getScore("opponent"),
+        opponentScore: state.mode === "bots" ? Math.max(0, ...botOwners.map((owner) => getScore(owner))) : getScore("opponent"),
         playerWins: state.matchHistory.filter((round) => round.winner === getOwnerLabel("player")).length,
         opponentWins: state.mode === "bots"
-          ? state.matchHistory.filter((round) => round.winner === getOwnerLabel("bot1") || round.winner === getOwnerLabel("bot2")).length
+          ? state.matchHistory.filter((round) => botLabels.includes(round.winner)).length
           : state.matchHistory.filter((round) => round.winner === getOwnerLabel("opponent")).length,
         round: state.round,
         maxRounds: state.maxRounds
@@ -3451,7 +3594,7 @@ async function requestAiRound(rawInput, options = {}) {
   }
 
   const result = await response.json();
-  const expectedCards = roomMode ? cardOwners.length : duelMode ? 2 : 3;
+  const expectedCards = roomMode ? cardOwners.length : duelMode ? 2 : 1 + botOwners.length;
   if (!Array.isArray(result.cards) || result.cards.length !== expectedCards) {
     throw new Error(`AI round response did not include ${expectedCards} cards.`);
   }
@@ -3930,7 +4073,7 @@ function getRoundCardOwners() {
   if (isRoomMode()) {
     return getActiveOwners();
   }
-  return isDuelMode() ? ["player", "opponent"] : ["player", "bot1", "bot2"];
+  return isDuelMode() ? ["player", "opponent"] : ["player", ...getActiveBotOwnerIds()];
 }
 
 function getAnswerCardNodes() {
@@ -5822,13 +5965,99 @@ async function startBotsGame() {
   startGame("bots");
 }
 
+function getBotCount() {
+  return clampNumber(state.botSettings?.botCount, 1, 9, 2);
+}
+
+function getActiveBotOwnerIds() {
+  return BOT_OWNER_IDS.slice(0, getBotCount());
+}
+
+function getKnownOwnerIds() {
+  return [...new Set([...DEFAULT_OWNER_IDS, ...getActiveOwners()])];
+}
+
+function createOwnerValueMap(valueFactory) {
+  return Object.fromEntries(getKnownOwnerIds().map((owner) => [
+    owner,
+    typeof valueFactory === "function" ? valueFactory(owner) : valueFactory
+  ]));
+}
+
+function setBotAdvancedOpen(open) {
+  if (!elements.botAdvancedPanel || !elements.botAdvancedToggle) {
+    return;
+  }
+  const expanded = Boolean(open);
+  elements.botAdvancedToggle.setAttribute("aria-expanded", String(expanded));
+  elements.botAdvancedToggle.textContent = expanded ? "Advanced Settings" : "Advanced";
+  setCollapsed(elements.botAdvancedPanel, !expanded);
+}
+
+function syncBotAdvancedControls() {
+  if (!elements.botCountSlider) {
+    return;
+  }
+  const settings = state.botSettings;
+  elements.botCountSlider.value = getBotCount();
+  elements.botCountValue.textContent = String(getBotCount());
+  elements.botRandomModeToggle.checked = Boolean(settings.randomModifiers);
+  elements.botHarshModeToggle.checked = Boolean(settings.harsh);
+  elements.botChaosModeToggle.checked = Boolean(settings.chaos);
+  elements.botTimeMoneyModeToggle.checked = Boolean(settings.timeMoney);
+  elements.botAmplifiedModeToggle.checked = Boolean(settings.amplified);
+  elements.botWildFireModeToggle.checked = Boolean(settings.wildFire);
+  elements.botPartyMayhemModeToggle.checked = Boolean(settings.partyMayhem);
+  syncBotRandomToggleState();
+}
+
+function syncBotRandomToggleState() {
+  const random = Boolean(elements.botRandomModeToggle?.checked);
+  [
+    elements.botHarshModeToggle,
+    elements.botChaosModeToggle,
+    elements.botTimeMoneyModeToggle,
+    elements.botAmplifiedModeToggle,
+    elements.botWildFireModeToggle,
+    elements.botPartyMayhemModeToggle
+  ].forEach((toggle) => {
+    if (toggle) {
+      toggle.disabled = random;
+    }
+  });
+}
+
+function updateBotSettingsFromControls() {
+  if (!elements.botCountSlider) {
+    return;
+  }
+  state.botSettings.botCount = clampNumber(elements.botCountSlider.value, 1, 9, 2);
+  state.botSettings.randomModifiers = Boolean(elements.botRandomModeToggle.checked);
+  if (state.botSettings.randomModifiers) {
+    elements.botHarshModeToggle.checked = false;
+    elements.botChaosModeToggle.checked = false;
+    elements.botTimeMoneyModeToggle.checked = false;
+    elements.botAmplifiedModeToggle.checked = false;
+    elements.botWildFireModeToggle.checked = false;
+    elements.botPartyMayhemModeToggle.checked = false;
+  }
+  state.botSettings.harsh = Boolean(elements.botHarshModeToggle.checked);
+  state.botSettings.chaos = Boolean(elements.botChaosModeToggle.checked);
+  state.botSettings.timeMoney = Boolean(elements.botTimeMoneyModeToggle.checked);
+  state.botSettings.amplified = Boolean(elements.botAmplifiedModeToggle.checked);
+  state.botSettings.wildFire = Boolean(elements.botWildFireModeToggle.checked);
+  state.botSettings.partyMayhem = Boolean(elements.botPartyMayhemModeToggle.checked);
+  elements.botCountValue.textContent = String(state.botSettings.botCount);
+  syncBotRandomToggleState();
+}
+
 function getPlayersForMode(mode) {
   if (mode === "bots") {
-    const [botOneName, botTwoName] = getRandomBotUsernames(2);
+    const botOwners = getActiveBotOwnerIds();
+    const botNames = getRandomBotUsernames(botOwners.length);
     return [
       createPlayer("player", state.profile.name || "You", { type: "human", handLimit: 3, avatar: state.profile.avatar, equippedTitleId: state.profile.equippedTitleId, specialBadges: state.profile.specialBadges, cardCustomization: state.profile.cardCustomization }),
-      createPlayer("bot1", botOneName, { type: "bot", handLimit: 3, avatar: "" }),
-      createPlayer("bot2", botTwoName, { type: "bot", handLimit: 3, avatar: "" })
+      ...botOwners.map((owner, index) => createPlayer(owner, botNames[index], { type: "bot", handLimit: 3, avatar: "" }))
     ];
   }
 
@@ -6027,11 +6256,22 @@ function rollMatchModifiers(mode) {
     return { harsh: false, chaos: false, amplified: false, timeMoney: false, wildFire: false, partyMayhem: false };
   }
 
+  if (mode === "bots" && !state.botSettings.randomModifiers) {
+    return {
+      harsh: Boolean(state.botSettings.harsh),
+      chaos: Boolean(state.botSettings.chaos),
+      amplified: Boolean(state.botSettings.amplified),
+      timeMoney: Boolean(state.botSettings.timeMoney),
+      wildFire: Boolean(state.botSettings.wildFire),
+      partyMayhem: Boolean(state.botSettings.partyMayhem)
+    };
+  }
+
   return {
     harsh: Math.random() < 0.5,
     chaos: Math.random() < 0.5,
     amplified: Math.random() < 0.5,
-    timeMoney: mode === "local" ? Math.random() < 0.5 : false,
+    timeMoney: Math.random() < 0.5,
     wildFire: Math.random() < 0.5,
     partyMayhem: Math.random() < 0.5
   };
@@ -7549,6 +7789,24 @@ function maybeResolveRoomSubmissions() {
   }, 40);
 }
 
+function maybeResolveBotSubmissions() {
+  if (state.mode !== "bots" || !state.roomSubmissions.player || state.roomRoundResolving) {
+    return;
+  }
+  if (getPendingSubmitters().length > 0 || state.roomSubmissionResolveId) {
+    return;
+  }
+  const matchToken = state.matchWorkToken;
+  state.roomSubmissionResolveId = window.setTimeout(() => {
+    state.roomSubmissionResolveId = null;
+    if (state.mode !== "bots" || !isCurrentMatchWork(matchToken) || getPendingSubmitters().length > 0 || state.roomRoundResolving) {
+      return;
+    }
+    state.roomRoundResolving = true;
+    playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+  }, 40);
+}
+
 async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   const matchToken = state.matchWorkToken;
   const timeoutMs = Math.max(3200, (state.timerRemaining + 1) * 1000);
@@ -7759,6 +8017,9 @@ function skipRoomRoundToGrading() {
 function getRoomVariantNames() {
   if (state.roomSettings.classicMode) {
     return ["Classic"];
+  }
+  if (state.roomSettings.randomModifiers) {
+    return ["Random"];
   }
   const variants = [];
   if (state.roomSettings.amplified) {
@@ -9333,10 +9594,13 @@ function applySupabaseSession(session) {
   state.supabaseSession = session;
   state.supabaseUser = session?.user || null;
   if (state.supabaseUser) {
+    state.supabaseSignOutInProgress = false;
     applySupabaseProfile(state.supabaseUser);
     if (state.supabaseUser.id !== previousUserId) {
       void hydrateSignedInUserStorage(state.supabaseUser);
     }
+  } else if (state.supabaseSignOutInProgress) {
+    renderSupabaseAuthControls();
   } else {
     applyGuestProfile();
   }
@@ -9437,10 +9701,12 @@ async function signOutSupabase(event) {
     setHidden(elements.profileAuthStatus, false);
     elements.profileAuthStatus.textContent = "Signing out...";
   }
+  state.supabaseSignOutInProgress = true;
 
   let snapshot = null;
   if (signingOutUser) {
     try {
+      enqueueCurrentUserInventoryStateForUser(signingOutUser);
       snapshot = getUserStorageSnapshot();
     } catch (error) {
       console.warn("Could not snapshot user storage before sign-out:", error.message || error);
@@ -9506,6 +9772,7 @@ async function completeSupabaseSignOut({ client, user, snapshot } = {}) {
     console.warn("Supabase sign-out cleanup failed after local reset:", error.message || error);
   } finally {
     clearStoredSupabaseSession();
+    state.supabaseSignOutInProgress = false;
   }
 }
 
@@ -9652,7 +9919,8 @@ function updateWildFireBurningState() {
 }
 
 function renderSubmissionStatus() {
-  if (!isRoomMode() || !elements.roomSubmitStatus || elements.inputPanel.classList.contains("hidden")) {
+  const showsSubmissionStatus = isRoomMode() || state.mode === "bots";
+  if (!showsSubmissionStatus || !elements.roomSubmitStatus || elements.inputPanel.classList.contains("hidden")) {
     setHidden(elements.roomSubmitStatus, true);
     return;
   }
@@ -9681,7 +9949,7 @@ function renderSubmissionStatus() {
     chipRow.appendChild(chip);
   });
   elements.roomSubmitStatus.append(title, chipRow);
-  if (pending.length > 0 && isCurrentHost() && !state.joiningRoom && !state.roomRoundResolving) {
+  if (isRoomMode() && pending.length > 0 && isCurrentHost() && !state.joiningRoom && !state.roomRoundResolving) {
     const actions = document.createElement("div");
     actions.className = "room-submit-actions";
     const skipButton = document.createElement("button");
@@ -9693,8 +9961,13 @@ function renderSubmissionStatus() {
     actions.appendChild(skipButton);
     elements.roomSubmitStatus.appendChild(actions);
   }
-  if (pending.length === 0 && state.roomSubmissions[state.currentOwner] && !state.roomRoundResolving) {
-    window.setTimeout(() => maybeResolveRoomSubmissions(), 0);
+  if (pending.length === 0 && !state.roomRoundResolving) {
+    if (isRoomMode() && state.roomSubmissions[state.currentOwner]) {
+      window.setTimeout(() => maybeResolveRoomSubmissions(), 0);
+    }
+    if (state.mode === "bots" && state.roomSubmissions.player) {
+      window.setTimeout(() => maybeResolveBotSubmissions(), 0);
+    }
   }
   setHidden(elements.roomSubmitStatus, false);
 }
@@ -13302,11 +13575,8 @@ function getCardIndexFromOwner(owner) {
     return owner === "opponent" ? 1 : 0;
   }
 
-  if (owner === "bot1") {
-    return 1;
-  }
-
-  return owner === "bot2" ? 2 : 0;
+  const botIndex = getActiveBotOwnerIds().indexOf(owner);
+  return botIndex >= 0 ? botIndex + 1 : 0;
 }
 
 function getForcedWinnerOwner() {
@@ -14165,8 +14435,10 @@ function setupPowerHands() {
     : {
       player: drawPowerHand(3),
       opponent: [],
-      bot1: drawPowerHand(2, getPowerDrawOptions("bot1")),
-      bot2: drawPowerHand(2, getPowerDrawOptions("bot2"))
+      ...Object.fromEntries(getActiveBotOwners().map((owner) => [
+        owner,
+        drawPowerHand(2, getPowerDrawOptions(owner))
+      ]))
     };
   }
   state.activePowerUp = null;
@@ -14584,7 +14856,10 @@ function scheduleBotPowerUpsForRound() {
 
 function scheduleRoomBotAnswersForRound() {
   state.roomBotAnswerSchedule = {};
-  if (!isRoomMode() || !isCurrentHost() || state.isSpectator) {
+  if (state.mode !== "bots" && (!isRoomMode() || !isCurrentHost() || state.isSpectator)) {
+    return;
+  }
+  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
     return;
   }
 
@@ -14614,20 +14889,40 @@ function commitScheduledBotPowerUps() {
 }
 
 function commitRoomBotAnswer(owner, options = {}) {
-  if (!isRoomMode() || !isCurrentHost() || state.isSpectator || !isBotOwner(owner) || state.roomSubmissions[owner]) {
+  if (state.mode !== "bots" && (!isRoomMode() || !isCurrentHost() || state.isSpectator)) {
+    return false;
+  }
+  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
+    return false;
+  }
+  if (!isBotOwner(owner) || state.roomSubmissions[owner]) {
     return false;
   }
   const remainingTime = Math.max(0, Number(options.remainingTime ?? state.timerRemaining) || 0);
   const answer = lockRoundAnswer(owner, generateAutoAnswer(owner));
   state.answerRemainingTimes[owner] = remainingTime;
-  updateRoomParticipantSubmission(getRoomParticipantIdForOwner(owner), answer, state.round, remainingTime);
+  if (state.mode === "bots") {
+    const botIndex = getActiveBotOwners().indexOf(owner);
+    if (botIndex >= 0) {
+      state.botCards[botIndex] = answer;
+    }
+  }
+  if (isRoomMode()) {
+    updateRoomParticipantSubmission(getRoomParticipantIdForOwner(owner), answer, state.round, remainingTime);
+    broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime);
+  }
   setRoomSubmission(owner, true);
-  broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime);
   return true;
 }
 
 function commitScheduledRoomBotAnswers(options = {}) {
-  if (!isRoomMode() || !isCurrentHost() || state.isSpectator || !state.roomBotAnswerSchedule) {
+  if (state.mode !== "bots" && (!isRoomMode() || !isCurrentHost() || state.isSpectator)) {
+    return false;
+  }
+  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
+    return false;
+  }
+  if (!state.roomBotAnswerSchedule) {
     return false;
   }
   const force = Boolean(options.force);
@@ -14640,7 +14935,11 @@ function commitScheduledRoomBotAnswers(options = {}) {
     changed = commitRoomBotAnswer(owner) || changed;
   });
   if (changed) {
-    maybeResolveRoomSubmissions();
+    if (isRoomMode()) {
+      maybeResolveRoomSubmissions();
+    } else {
+      maybeResolveBotSubmissions();
+    }
   }
   return changed;
 }
@@ -14771,7 +15070,10 @@ function refreshBotAnswersForRound() {
   if (state.mode !== "bots") {
     return;
   }
-  state.botCards = ["bot1", "bot2"].map((owner) => generateAutoAnswer(owner));
+  state.botCards = getActiveBotOwners().map((owner, index) => {
+    const locked = getLockedRoundAnswer(owner);
+    return locked || cleanInput(state.botCards[index] || "") || generateAutoAnswer(owner);
+  });
 }
 
 function prepareRoundCardOwners(rawInput = "") {
@@ -14795,7 +15097,7 @@ function prepareRoundCardOwners(rawInput = "") {
   }
 
   refreshBotAnswersForRound();
-  state.roundCardOwners = ["player", "bot1", "bot2"];
+  state.roundCardOwners = ["player", ...getActiveBotOwners()];
   return state.roundCardOwners;
 }
 
@@ -14837,7 +15139,8 @@ function updateDangerFlash(activeAnswerTimer, submittedCurrentPlayer) {
 
 function renderTimer() {
   elements.timerCount.textContent = `${state.timerRemaining}s`;
-  const submittedCurrentPlayer = isRoomMode() && state.roomSubmissions[state.currentOwner];
+  const submittedCurrentPlayer = (isRoomMode() && state.roomSubmissions[state.currentOwner])
+    || (state.mode === "bots" && state.roomSubmissions.player);
   const activeAnswerTimer = Boolean(state.timerId)
     && !state.matchEnded
     && !elements.gameStage.classList.contains("hidden")
@@ -14919,6 +15222,16 @@ function handleTimerExpired() {
   if (isRoomMode()) {
     markAchievementTimeout(state.currentOwner);
     submitRoomAnswer(lockRoundAnswer(state.currentOwner, elements.answerInput.value, fallback), { allowBlank: true, timedOut: true });
+    return;
+  }
+
+  if (state.mode === "bots") {
+    if (!state.roomSubmissions.player) {
+      markAchievementTimeout("player");
+      submitBotModeAnswer(lockRoundAnswer("player", elements.answerInput.value, fallback), { allowBlank: true, timedOut: true });
+    }
+    commitScheduledRoomBotAnswers({ force: true });
+    maybeResolveBotSubmissions();
     return;
   }
 
@@ -15086,7 +15399,7 @@ function resetRoundUiForLoading(options = {}) {
   state.tableEventSabotageUsed = {};
   state.blackMarketPurchases = {};
   state.roundAmplifiedMultiplier = 1;
-  state.timerPenalties = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.timerPenalties = createOwnerValueMap(0);
   state.forcedWinnerOwner = null;
   elements.answerInput.disabled = true;
   elements.playerTwoInput.disabled = true;
@@ -15159,7 +15472,7 @@ function renderRound() {
   resetPlayedPowersForRound();
   rollRoundTableEvent();
   rollRoundAmplifiedMultiplier();
-  state.timerPenalties = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.timerPenalties = createOwnerValueMap(0);
   state.forcedWinnerOwner = null;
   elements.answerInput.disabled = state.isSpectator;
   elements.playerTwoInput.disabled = false;
@@ -15173,6 +15486,7 @@ function renderRound() {
   updateModeUi();
   scheduleBotPowerUpsForRound();
   scheduleRoomBotAnswersForRound();
+  renderSubmissionStatus();
   startTimer();
 
   getAnswerCardNodes().forEach((card) => card.classList.remove("winner", "launching"));
@@ -18024,31 +18338,34 @@ function resetMatch(mode) {
   state.roomPlayedResetSyncedRound = null;
   state.matchModifiers = rollMatchModifiers(mode);
   setPlayersForMode(mode);
+  if (mode === "bots") {
+    state.enabledThemes = [...triviaThemes];
+  }
   resetAchievementStats();
   discardPendingAchievementProgress();
-  state.pendingPowerBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.freezeProtection = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.pocketShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.permafrostProtection = { player: false, opponent: false, bot1: false, bot2: false };
-  state.eternalFlameProtection = { player: false, opponent: false, bot1: false, bot2: false };
-  state.streakAnchorCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.pendingStreakBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.heavenHellCurses = { player: false, opponent: false, bot1: false, bot2: false };
-  state.secretPointBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.fakePointDebts = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pendingPowerBonuses = createOwnerValueMap(0);
+  state.freezeProtection = createOwnerValueMap(0);
+  state.pocketShieldCharges = createOwnerValueMap(0);
+  state.permafrostProtection = createOwnerValueMap(false);
+  state.eternalFlameProtection = createOwnerValueMap(false);
+  state.streakAnchorCharges = createOwnerValueMap(0);
+  state.pendingStreakBonuses = createOwnerValueMap(0);
+  state.heavenHellCurses = createOwnerValueMap(false);
+  state.secretPointBonuses = createOwnerValueMap(0);
+  state.fakePointDebts = createOwnerValueMap(0);
   state.redHerringMasks = {};
-  state.bottomFeederRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.streakFreezeRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.streakLossProtectionRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.cocktailPenaltyRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.debuffShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.failedInvestmentDebuffs = { player: false, opponent: false, bot1: false, bot2: false };
-  state.timeDilationRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.pendingCocktailBuffs = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.bottomFeederRounds = createOwnerValueMap(0);
+  state.streakFreezeRounds = createOwnerValueMap(0);
+  state.streakLossProtectionRounds = createOwnerValueMap(0);
+  state.cocktailPenaltyRounds = createOwnerValueMap(0);
+  state.debuffShieldCharges = createOwnerValueMap(0);
+  state.failedInvestmentDebuffs = createOwnerValueMap(false);
+  state.timeDilationRounds = createOwnerValueMap(0);
+  state.pendingCocktailBuffs = createOwnerValueMap(0);
   state.insuranceFrauds = {};
   state.insurancePolicies = {};
   state.virusFactories = {};
-  state.luckRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.luckRounds = createOwnerValueMap(0);
   state.typhoonOwners = {};
   state.thornOwners = {};
   state.timeBombs = [];
@@ -18069,9 +18386,9 @@ function resetMatch(mode) {
   state.hotInHereOwners = {};
   state.worldBurnOwners = {};
   state.lawnMowerOwners = {};
-  state.lastPlayedPowerUps = { player: null, opponent: null, bot1: null, bot2: null };
+  state.lastPlayedPowerUps = createOwnerValueMap(null);
   state.loserPenaltyRounds = 0;
-  state.timerPenalties = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.timerPenalties = createOwnerValueMap(0);
   state.timerRemaining = state.timerSeconds;
   state.timerWarned = false;
   state.hotPotatoCount = 0;
@@ -18084,7 +18401,9 @@ function resetMatch(mode) {
   state.round = 1;
   state.maxRounds = mode === "room"
     ? state.roomSettings.rounds
-    : mode === "bots" || mode === "local"
+    : mode === "bots"
+      ? 5
+    : mode === "local"
       ? 10
       : clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, state.maxRounds || 5);
   state.timerSeconds = mode === "room"
@@ -18094,7 +18413,7 @@ function resetMatch(mode) {
       : clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds"), 10, 60, state.timerSeconds || 30);
   state.timerRemaining = state.timerSeconds;
   state.timerWarned = false;
-  state.streaks = Object.fromEntries(DEFAULT_OWNER_IDS.map((owner) => [owner, 0]));
+  state.streaks = createOwnerValueMap(0);
   state.players.forEach((player) => {
     player.score = 0;
     player.streak = 0;
@@ -18208,6 +18527,7 @@ function getDefaultRoomSettings(code = "CAI-0000") {
     wildFire: false,
     partyMayhem: false,
     classicMode: false,
+    randomModifiers: false,
     autoAdvance: true,
     enabledThemes: cachedThemes.length ? cachedThemes : [...triviaThemes],
     private: false,
@@ -18231,6 +18551,7 @@ function syncRoomControls() {
   elements.amplifiedModeToggle.checked = state.roomSettings.amplified;
   elements.wildFireModeToggle.checked = state.roomSettings.wildFire;
   elements.partyMayhemModeToggle.checked = state.roomSettings.partyMayhem;
+  elements.randomModeToggle.checked = Boolean(state.roomSettings.randomModifiers);
   elements.classicModeToggle.checked = state.roomSettings.classicMode;
   elements.autoAdvanceToggle.checked = state.roomSettings.autoAdvance !== false;
   elements.privateRoomToggle.checked = state.roomSettings.private;
@@ -18586,6 +18907,7 @@ function updateRoomPlayerLimit(value) {
 
 function syncClassicRoomToggleState() {
   const classic = Boolean(elements.classicModeToggle?.checked);
+  const random = Boolean(elements.randomModeToggle?.checked);
   [
     elements.harshModeToggle,
     elements.chaosModeToggle,
@@ -18595,13 +18917,25 @@ function syncClassicRoomToggleState() {
     elements.partyMayhemModeToggle
   ].forEach((toggle) => {
     if (toggle) {
-      toggle.disabled = classic;
+      toggle.disabled = classic || random;
     }
   });
+  if (elements.randomModeToggle) {
+    elements.randomModeToggle.disabled = classic;
+  }
 }
 
 function updateRoomVariants() {
   if (elements.classicModeToggle.checked) {
+    elements.randomModeToggle.checked = false;
+    elements.harshModeToggle.checked = false;
+    elements.chaosModeToggle.checked = false;
+    elements.timeMoneyModeToggle.checked = false;
+    elements.amplifiedModeToggle.checked = false;
+    elements.wildFireModeToggle.checked = false;
+    elements.partyMayhemModeToggle.checked = false;
+  }
+  if (elements.randomModeToggle.checked) {
     elements.harshModeToggle.checked = false;
     elements.chaosModeToggle.checked = false;
     elements.timeMoneyModeToggle.checked = false;
@@ -18616,6 +18950,7 @@ function updateRoomVariants() {
   state.roomSettings.wildFire = elements.wildFireModeToggle.checked;
   state.roomSettings.partyMayhem = elements.partyMayhemModeToggle.checked;
   state.roomSettings.classicMode = elements.classicModeToggle.checked;
+  state.roomSettings.randomModifiers = elements.randomModeToggle.checked;
   state.roomSettings.autoAdvance = elements.autoAdvanceToggle.checked;
   state.roomSettings.private = elements.privateRoomToggle.checked;
   state.roomSettings.password = cleanChatInput(elements.roomPasswordInput.value);
@@ -18623,6 +18958,21 @@ function updateRoomVariants() {
   syncClassicRoomToggleState();
   elements.roomVariantLabel.textContent = getRoomVariantNames().join(" + ");
   publishCurrentRoomSettingsSoon();
+}
+
+function applyRandomRoomModifiersForMatch() {
+  if (!state.roomSettings.randomModifiers || state.roomSettings.classicMode) {
+    return;
+  }
+  const rolled = rollMatchModifiers("local");
+  state.roomSettings.harsh = rolled.harsh;
+  state.roomSettings.chaos = rolled.chaos;
+  state.roomSettings.timeMoney = rolled.timeMoney;
+  state.roomSettings.amplified = rolled.amplified;
+  state.roomSettings.wildFire = rolled.wildFire;
+  state.roomSettings.partyMayhem = rolled.partyMayhem;
+  state.roomSettings.randomModifiers = false;
+  syncRoomControls();
 }
 
 async function handleClassicModeToggle() {
@@ -19830,6 +20180,9 @@ function getRoomModeLabel(settings = state.roomSettings) {
   if (settings.classicMode) {
     return "Classic";
   }
+  if (settings.randomModifiers) {
+    return "Random";
+  }
   const modes = [];
   if (settings.amplified) modes.push("Amplified");
   if (settings.harsh) modes.push("Brutal");
@@ -20137,6 +20490,7 @@ async function beginRoomMatch() {
   state.currentRoomStatus = "in-progress";
   state.roomGame = null;
   state.roomPowerStateUpdatedAt = 0;
+  applyRandomRoomModifiersForMatch();
   addSystemChat("The host started the match.");
   upsertHostedRoom("in-progress");
   publishRoomRoundAdvancing(1);
@@ -21033,6 +21387,30 @@ function submitRoomAnswer(rawInput, options = {}) {
   void waitForRoomSubmissionsThenPlay(lockedInput);
 }
 
+function submitBotModeAnswer(rawInput, options = {}) {
+  if (state.mode !== "bots" || state.roomSubmissions.player || state.matchEnded) {
+    return;
+  }
+
+  const lockedInput = lockRoundAnswer("player", rawInput);
+  if (!lockedInput && !options.allowBlank) {
+    elements.answerInput.focus();
+    return;
+  }
+  commitActivePowerUp("player");
+  state.answerRemainingTimes.player = Math.max(0, Number(state.timerRemaining) || 0);
+  if (!options.timedOut) {
+    markAchievementLateSubmission("player", state.timerRemaining);
+  }
+  state.localAnswers.playerOne = lockedInput;
+  setRoomSubmission("player", true);
+  elements.answerInput.disabled = true;
+  elements.submitButton.disabled = true;
+  document.querySelector("#inputTitle").textContent = "Waiting for bots...";
+  playSound("lock");
+  maybeResolveBotSubmissions();
+}
+
 function getRoundAnswerForOwner(owner) {
   const locked = getLockedRoundAnswer(owner);
   if (locked) {
@@ -21044,11 +21422,9 @@ function getRoundAnswerForOwner(owner) {
   if (isRoomMode() && getActiveOwners().includes(owner)) {
     return "";
   }
-  if (owner === "bot1") {
-    return cleanInput(state.botCards[0] || "");
-  }
-  if (owner === "bot2") {
-    return cleanInput(state.botCards[1] || "");
+  if (state.mode === "bots" && isBotOwner(owner)) {
+    const index = getActiveBotOwners().indexOf(owner);
+    return cleanInput(state.botCards[index] || "");
   }
   if (owner === "opponent") {
     return getLockedRoundAnswer("opponent", state.localAnswers.playerTwo);
@@ -21261,7 +21637,7 @@ function getOwnerFromCardIndex(index) {
     return index === 0 ? "player" : "opponent";
   }
 
-  return index === 0 ? "player" : index === 1 ? "bot1" : "bot2";
+  return index === 0 ? "player" : getActiveBotOwnerIds()[index - 1] || `bot${index}`;
 }
 
 function getUniqueOwnersFromCardIndexes(indexes) {
@@ -21860,29 +22236,29 @@ function applyReverseVerdicts(playedEntries, deltas, owners, events) {
 }
 
 function clearProlongedPowerEffects() {
-  state.pendingPowerBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.freezeProtection = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.pocketShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.permafrostProtection = { player: false, opponent: false, bot1: false, bot2: false };
-  state.eternalFlameProtection = { player: false, opponent: false, bot1: false, bot2: false };
-  state.streakAnchorCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.pendingStreakBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.heavenHellCurses = { player: false, opponent: false, bot1: false, bot2: false };
-  state.secretPointBonuses = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.fakePointDebts = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.pendingPowerBonuses = createOwnerValueMap(0);
+  state.freezeProtection = createOwnerValueMap(0);
+  state.pocketShieldCharges = createOwnerValueMap(0);
+  state.permafrostProtection = createOwnerValueMap(false);
+  state.eternalFlameProtection = createOwnerValueMap(false);
+  state.streakAnchorCharges = createOwnerValueMap(0);
+  state.pendingStreakBonuses = createOwnerValueMap(0);
+  state.heavenHellCurses = createOwnerValueMap(false);
+  state.secretPointBonuses = createOwnerValueMap(0);
+  state.fakePointDebts = createOwnerValueMap(0);
   state.redHerringMasks = {};
-  state.bottomFeederRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.streakFreezeRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.streakLossProtectionRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.cocktailPenaltyRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.debuffShieldCharges = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.failedInvestmentDebuffs = { player: false, opponent: false, bot1: false, bot2: false };
-  state.timeDilationRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
-  state.pendingCocktailBuffs = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.bottomFeederRounds = createOwnerValueMap(0);
+  state.streakFreezeRounds = createOwnerValueMap(0);
+  state.streakLossProtectionRounds = createOwnerValueMap(0);
+  state.cocktailPenaltyRounds = createOwnerValueMap(0);
+  state.debuffShieldCharges = createOwnerValueMap(0);
+  state.failedInvestmentDebuffs = createOwnerValueMap(false);
+  state.timeDilationRounds = createOwnerValueMap(0);
+  state.pendingCocktailBuffs = createOwnerValueMap(0);
   state.insuranceFrauds = {};
   state.insurancePolicies = {};
   state.virusFactories = {};
-  state.luckRounds = { player: 0, opponent: 0, bot1: 0, bot2: 0 };
+  state.luckRounds = createOwnerValueMap(0);
   state.typhoonOwners = {};
   state.thornOwners = {};
   state.timeBombs = [];
@@ -22888,6 +23264,11 @@ elements.answerForm.addEventListener("submit", (event) => {
     return;
   }
 
+  if (state.mode === "bots") {
+    submitBotModeAnswer(rawInput);
+    return;
+  }
+
   if (isDuelMode() && state.localEntryStep === 1) {
     commitActivePowerUp("player");
     state.answerRemainingTimes.player = state.timerRemaining;
@@ -22952,6 +23333,21 @@ elements.retryButton.addEventListener("click", () => {
 });
 
 elements.startBotsButton.addEventListener("click", startBotsGame);
+elements.botAdvancedToggle?.addEventListener("click", () => {
+  const expanded = elements.botAdvancedToggle.getAttribute("aria-expanded") === "true";
+  setBotAdvancedOpen(!expanded);
+  playSound("click");
+});
+elements.botCountSlider?.addEventListener("input", updateBotSettingsFromControls);
+[
+  elements.botRandomModeToggle,
+  elements.botHarshModeToggle,
+  elements.botChaosModeToggle,
+  elements.botTimeMoneyModeToggle,
+  elements.botAmplifiedModeToggle,
+  elements.botWildFireModeToggle,
+  elements.botPartyMayhemModeToggle
+].forEach((toggle) => toggle?.addEventListener("change", updateBotSettingsFromControls));
 elements.startLocalButton.addEventListener("click", () => startGame("local"));
 elements.createRoomButton.addEventListener("click", openRoomScreen);
 elements.joinRoomButton.addEventListener("click", openJoinScreen);
@@ -22987,6 +23383,7 @@ elements.timeMoneyModeToggle.addEventListener("change", updateRoomVariants);
 elements.amplifiedModeToggle.addEventListener("change", updateRoomVariants);
 elements.wildFireModeToggle.addEventListener("change", updateRoomVariants);
 elements.partyMayhemModeToggle.addEventListener("change", updateRoomVariants);
+elements.randomModeToggle.addEventListener("change", updateRoomVariants);
 elements.classicModeToggle.addEventListener("change", handleClassicModeToggle);
 elements.autoAdvanceToggle.addEventListener("change", updateRoomVariants);
 elements.privateRoomToggle.addEventListener("change", updateRoomVariants);
@@ -23344,6 +23741,7 @@ writePublicCatalogCache();
 updateSoundButton();
 syncSettingsControls();
 syncRoomControls();
+syncBotAdvancedControls();
 renderProfile();
 syncSpecialBadgesToProfile();
 initSupabaseAuth();
