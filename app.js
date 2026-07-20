@@ -1560,57 +1560,62 @@ async function hydrateSignedInUserStorage(user) {
     return;
   }
   let restoredSnapshot = false;
-  state.userStorageHydrating = true;
+  setProfileLoading(true);
   let chosenSnapshot = null;
   try {
-    const localSnapshot = loadUserStorageCacheForUser(user.id);
-    const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
-    chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
-    if (chosenSnapshot) {
-      applyUserStorageSnapshot(chosenSnapshot, { fallbackName: state.profile.name, applyInventory: false });
-      writeUserStorageCache(getDisplayUserStorageSnapshot(chosenSnapshot));
-      restoredSnapshot = true;
-    } else {
-      console.warn("No saved user storage snapshot found; keeping current signed-in profile without overwriting user progress.");
-    }
-  } finally {
-    state.userStorageHydrating = false;
-  }
-  try {
-    await flushPendingUserInventoryMutations({ user });
-    await flushPendingUserInventoryWrites({ user });
-    let inventory = await fetchServerUserInventory(user);
-    const cachedInventory = loadUserInventoryCache(user.id);
-    let migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
-    if (!migrationOps.length && isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
-      migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId: user.id, prefix: "cache" });
-    }
-    if (migrationOps.length) {
-      const migrated = await postUserInventoryOps(user.id, migrationOps);
-      inventory = migrated.inventory || inventory;
-    }
-    if (inventory) {
-      if (isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
-        applyServerUserInventory(cachedInventory);
+    state.userStorageHydrating = true;
+    try {
+      const localSnapshot = loadUserStorageCacheForUser(user.id);
+      const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
+      chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
+      if (chosenSnapshot) {
+        applyUserStorageSnapshot(chosenSnapshot, { fallbackName: state.profile.name, applyInventory: false });
+        writeUserStorageCache(getDisplayUserStorageSnapshot(chosenSnapshot));
+        restoredSnapshot = true;
       } else {
-        applyServerUserInventory(inventory);
+        console.warn("No saved user storage snapshot found; keeping current signed-in profile without overwriting user progress.");
       }
-    } else {
+    } finally {
+      state.userStorageHydrating = false;
+    }
+    try {
+      await flushPendingUserInventoryMutations({ user });
+      await flushPendingUserInventoryWrites({ user });
+      let inventory = await fetchServerUserInventory(user);
+      const cachedInventory = loadUserInventoryCache(user.id);
+      let migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
+      if (!migrationOps.length && isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
+        migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId: user.id, prefix: "cache" });
+      }
+      if (migrationOps.length) {
+        const migrated = await postUserInventoryOps(user.id, migrationOps);
+        inventory = migrated.inventory || inventory;
+      }
+      if (inventory) {
+        if (isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
+          applyServerUserInventory(cachedInventory);
+        } else {
+          applyServerUserInventory(inventory);
+        }
+      } else {
+        if (cachedInventory) {
+          applyServerUserInventory(cachedInventory);
+        }
+      }
+    } catch (error) {
+      console.warn("Server inventory hydration failed:", error.message || error);
+      const cachedInventory = loadUserInventoryCache(user.id);
       if (cachedInventory) {
         applyServerUserInventory(cachedInventory);
       }
     }
-  } catch (error) {
-    console.warn("Server inventory hydration failed:", error.message || error);
-    const cachedInventory = loadUserInventoryCache(user.id);
-    if (cachedInventory) {
-      applyServerUserInventory(cachedInventory);
+    if (restoredSnapshot) {
+      flushUserStorageSnapshot();
     }
+    void loadUserQuestionSubmissions();
+  } finally {
+    setProfileLoading(false);
   }
-  if (restoredSnapshot) {
-    flushUserStorageSnapshot();
-  }
-  void loadUserQuestionSubmissions();
 }
 const audioAssets = {
   music: "assets/bg-music.mp3",
@@ -2154,6 +2159,8 @@ const state = {
   supabaseSession: null,
   supabaseUser: null,
   supabaseSignInInProgress: false,
+  profileLoading: false,
+  profileLoadingTimerId: null,
   realtimeLobbyChannel: null,
   realtimeRoomChannel: null,
   realtimeRoomCode: "",
@@ -2211,6 +2218,7 @@ const elements = {
   profileNameInput: document.querySelector("#profileNameInput"),
   profileAvatarInput: document.querySelector("#profileAvatarInput"),
   profileCurrencyValue: document.querySelector("#profileCurrencyValue"),
+  profileLoadingOverlay: document.querySelector("#profileLoadingOverlay"),
   profileCustomizeControl: document.querySelector("#profileCustomizeControl"),
   profileCustomizeButton: document.querySelector("#profileCustomizeButton"),
   profileShopButton: document.querySelector("#profileShopButton"),
@@ -8376,6 +8384,7 @@ function applyAnswerCardCustomizations() {
 }
 
 function renderProfile() {
+  syncProfileLoadingState();
   if (elements.profileNameInput && document.activeElement !== elements.profileNameInput) {
     elements.profileNameInput.value = state.profile.name;
   }
@@ -8404,12 +8413,42 @@ function renderProfile() {
   renderSupabaseAuthControls();
 }
 
+function setProfileLoading(loading) {
+  state.profileLoading = Boolean(loading);
+  if (state.profileLoadingTimerId) {
+    window.clearTimeout(state.profileLoadingTimerId);
+    state.profileLoadingTimerId = null;
+  }
+  if (state.profileLoading) {
+    state.profileLoadingTimerId = window.setTimeout(() => {
+      state.profileLoadingTimerId = null;
+      if (state.profileLoading) {
+        state.profileLoading = false;
+        syncProfileLoadingState();
+        renderSupabaseAuthControls();
+      }
+    }, 9000);
+  }
+  syncProfileLoadingState();
+  renderSupabaseAuthControls();
+}
+
+function syncProfileLoadingState() {
+  const loading = Boolean(state.profileLoading);
+  elements.profileCard?.classList.toggle("is-loading", loading);
+  elements.profileCard?.setAttribute("aria-busy", String(loading));
+  if (elements.profileLoadingOverlay) {
+    setHidden(elements.profileLoadingOverlay, !loading);
+  }
+}
+
 function isPlayerSignedIn() {
   return Boolean(state.supabaseUser);
 }
 
 function syncProfileEditControls() {
   const signedIn = isPlayerSignedIn();
+  const loading = Boolean(state.profileLoading);
   const signInMessage = "Sign in with Google to customize your card.";
   if (elements.profileCustomizeControl) {
     elements.profileCustomizeControl.dataset.disabled = String(!signedIn);
@@ -8422,16 +8461,19 @@ function syncProfileEditControls() {
     }
   }
   if (elements.profileCustomizeButton) {
-    elements.profileCustomizeButton.disabled = !signedIn;
+    elements.profileCustomizeButton.disabled = !signedIn || loading;
     elements.profileCustomizeButton.title = signedIn ? "" : signInMessage;
     elements.profileCustomizeButton.setAttribute("aria-disabled", String(!signedIn));
   }
   if (elements.profileNameInput) {
-    elements.profileNameInput.disabled = !signedIn;
+    elements.profileNameInput.disabled = !signedIn || loading;
     elements.profileNameInput.title = signedIn ? "" : "Sign in with Google to edit your username.";
   }
   if (elements.profileAvatarInput) {
-    elements.profileAvatarInput.disabled = !signedIn;
+    elements.profileAvatarInput.disabled = !signedIn || loading;
+  }
+  if (elements.profileShopButton) {
+    elements.profileShopButton.disabled = loading;
   }
   if (elements.profileLoginNote) {
     elements.profileLoginNote.hidden = signedIn;
@@ -8449,12 +8491,15 @@ function renderSupabaseAuthControls() {
   const signedIn = Boolean(state.supabaseUser);
   const configured = Boolean(state.supabaseEnabled);
   const signInInProgress = Boolean(state.supabaseSignInInProgress);
+  const profileLoading = Boolean(state.profileLoading);
   setHidden(elements.profileAuthButton, signedIn || !configured);
   setHidden(elements.profileSignOutButton, !signedIn);
   elements.profileAuthButton.disabled = !configured || signInInProgress;
   setHidden(elements.profileAuthStatus, !configured);
   elements.profileAuthStatus.textContent = signInInProgress
     ? "Opening Google sign-in..."
+    : profileLoading
+    ? "Loading your saved profile..."
     : signedIn
     ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
     : "Sign in to customize your card, username, and profile picture.";
@@ -9627,6 +9672,9 @@ function applySupabaseSession(session) {
   state.supabaseUser = session?.user || null;
   if (state.supabaseUser) {
     state.supabaseSignOutInProgress = false;
+    if (state.supabaseUser.id !== previousUserId) {
+      setProfileLoading(true);
+    }
     applySupabaseProfile(state.supabaseUser);
     if (state.supabaseUser.id !== previousUserId) {
       void hydrateSignedInUserStorage(state.supabaseUser);
@@ -9710,6 +9758,8 @@ async function signInWithSupabaseGoogle() {
   try {
     const client = await ensureSupabaseAuthReady({ realtime: true, force: true, preserveGuest: true });
     if (!client) {
+      state.supabaseSignInInProgress = false;
+      renderSupabaseAuthControls();
       return;
     }
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
@@ -9740,11 +9790,12 @@ async function signOutSupabase(event) {
   if (elements.profileSignOutButton) {
     elements.profileSignOutButton.disabled = true;
   }
+  state.supabaseSignOutInProgress = true;
+  setProfileLoading(false);
   if (elements.profileAuthStatus) {
     setHidden(elements.profileAuthStatus, false);
     elements.profileAuthStatus.textContent = "Signing out...";
   }
-  state.supabaseSignOutInProgress = true;
 
   let snapshot = null;
   if (signingOutUser) {
