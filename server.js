@@ -2,7 +2,9 @@ const { createServer } = require("node:http");
 const { readFile, stat, writeFile } = require("node:fs/promises");
 const { createReadStream, existsSync, readFileSync } = require("node:fs");
 const { extname, join, normalize } = require("node:path");
-const { createHmac, timingSafeEqual } = require("node:crypto");
+const { createHmac, randomBytes, timingSafeEqual } = require("node:crypto");
+const { lookup } = require("node:dns/promises");
+const { isIP } = require("node:net");
 const { createGzip } = require("node:zlib");
 const { createBackendStore } = require("./lib/backend-store");
 
@@ -18,10 +20,57 @@ const backendStore = createBackendStore({
 });
 const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
+const imageCacheMaxEntries = 120;
+const imageCacheMaxBytes = 48 * 1024 * 1024;
+let imageCacheBytes = 0;
 const adminCookieName = "cai_admin_session";
+const roomHostCookiePrefix = "cai_room_host_";
+const roomParticipantCookiePrefix = "cai_room_participant_";
 const adminSessionTtlSeconds = 60 * 60 * 12;
+const roomHostSessionTtlSeconds = 60 * 60 * 12;
+const roomParticipantSessionTtlSeconds = 60 * 60 * 12;
 const maxRoomEvents = 100;
 const roomRequestMaxBytes = 750_000;
+const rateLimitBuckets = new Map();
+const chatCooldownBuckets = new Map();
+const aiRoundCache = new Map();
+const aiRoundCacheTtlMs = 2 * 60 * 1000;
+const aiRoundCacheMaxEntries = 250;
+const inventoryShopCatalog = new Map([
+  ["pattern:waves", { cost: 200 }],
+  ["pattern:geometric", { cost: 200 }],
+  ["pattern:scales", { cost: 200 }],
+  ["pattern:carbon", { cost: 300 }],
+  ["pattern:circuit", { cost: 200 }],
+  ["pattern:hearts", { cost: 200 }],
+  ["font:techno", { cost: 100 }],
+  ["font:pop", { cost: 100 }],
+  ["font:comic", { cost: 100 }],
+  ["font:cursive", { cost: 100 }],
+  ["font:minimalistic", { cost: 100 }],
+  ["font:neon", { cost: 100 }],
+  ["font:chunky", { cost: 100 }],
+  ["font:poofy", { cost: 100 }],
+  ["font:cutesy", { cost: 100 }],
+  ["font:bubble", { cost: 100 }],
+  ["font:gothic", { cost: 100 }]
+]);
+const inventoryMilestoneRewards = new Map([
+  ["achievements-5", 100],
+  ["achievements-10", 200],
+  ["achievements-15", 50],
+  ["achievements-20", 100],
+  ["achievements-25", 100],
+  ["achievements-30", 300],
+  ["achievements-35", 100],
+  ["achievements-40", 100],
+  ["achievements-45", 100],
+  ["achievements-50", 0],
+  ["achievements-55", 100],
+  ["achievements-60", 100],
+  ["achievements-65", 200],
+  ["achievements-70", 0]
+]);
 const triviaThemes = [
   "Pop Culture",
   "Gaming and Geek Culture",
@@ -58,6 +107,9 @@ const mimeTypes = {
 async function handleRequest(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+    if (!checkRateLimit(req, res, url)) {
+      return;
+    }
 
     if (req.method === "POST" && url.pathname === "/api/round") {
       await handleRound(req, res);
@@ -85,7 +137,17 @@ async function handleRequest(req, res) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/user/inventory") {
-      await handleGetUserInventory(url, res);
+      await handleGetUserInventory(req, url, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/user/inventory/purchase") {
+      await handleUserInventoryPurchase(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/user/inventory/milestone") {
+      await handleUserInventoryMilestone(req, res);
       return;
     }
 
@@ -105,7 +167,7 @@ async function handleRequest(req, res) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/question-submissions") {
-      await handleListOwnQuestionSubmissions(url, res);
+      await handleListOwnQuestionSubmissions(req, url, res);
       return;
     }
 
@@ -148,7 +210,7 @@ async function handleRequest(req, res) {
     }
 
     if (url.pathname === "/api/rooms" && req.method === "GET") {
-      await handleListRooms(res);
+      await handleListRooms(req, res);
       return;
     }
 
@@ -159,7 +221,7 @@ async function handleRequest(req, res) {
 
     const roomGetMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)$/);
     if (roomGetMatch && req.method === "GET") {
-      await handleGetRoom(res, roomGetMatch[1]);
+      await handleGetRoom(req, res, roomGetMatch[1]);
       return;
     }
 
@@ -207,7 +269,7 @@ async function handleRequest(req, res) {
 
     const roomEventsMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/events$/);
     if (roomEventsMatch && req.method === "GET") {
-      await handleRoomEvents(url, res, roomEventsMatch[1]);
+      await handleRoomEvents(req, url, res, roomEventsMatch[1]);
       return;
     }
 
@@ -325,14 +387,126 @@ function loadEnv() {
   }
 }
 
-async function handleListRooms(res) {
+function checkRateLimit(req, res, url) {
+  if (process.env.RATE_LIMIT_DISABLED === "true") {
+    return true;
+  }
+
+  const config = getRateLimitConfig(req.method, url.pathname);
+  if (!config) {
+    return true;
+  }
+
+  const now = Date.now();
+  const ip = getRequestIp(req);
+  const key = `${config.name}:${ip}`;
+  const bucket = rateLimitBuckets.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + config.windowMs });
+    pruneRateLimitBuckets(now);
+    return true;
+  }
+
+  bucket.count += 1;
+  if (bucket.count <= config.limit) {
+    return true;
+  }
+
+  const retryAfterSeconds = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+  sendJson(res, 429, { error: "Too many requests. Try again shortly." }, {
+    "Retry-After": String(retryAfterSeconds)
+  });
+  return false;
+}
+
+function getRateLimitConfig(method, pathname) {
+  if (!pathname.startsWith("/api/")) {
+    return null;
+  }
+
+  if (method === "POST" && pathname === "/api/auth/admin/login") {
+    return { name: "admin-login", limit: 8, windowMs: 5 * 60 * 1000 };
+  }
+  if (method === "POST" && pathname === "/api/round") {
+    return { name: "round-ai", limit: 30, windowMs: 60 * 1000 };
+  }
+  if (method === "GET" && pathname === "/api/image") {
+    return { name: "image-proxy", limit: 90, windowMs: 60 * 1000 };
+  }
+  if (pathname.startsWith("/api/user/inventory")) {
+    return { name: "inventory", limit: 180, windowMs: 60 * 1000 };
+  }
+  if (/^\/api\/rooms(?:\/|$)/.test(pathname)) {
+    return { name: "rooms", limit: 600, windowMs: 60 * 1000 };
+  }
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    return { name: "api-write", limit: 300, windowMs: 60 * 1000 };
+  }
+  return { name: "api-read", limit: 900, windowMs: 60 * 1000 };
+}
+
+function pruneRateLimitBuckets(now = Date.now()) {
+  if (rateLimitBuckets.size < 5000) {
+    return;
+  }
+  for (const [key, bucket] of rateLimitBuckets.entries()) {
+    if (bucket.resetAt <= now) {
+      rateLimitBuckets.delete(key);
+    }
+  }
+}
+
+function getRequestIp(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return forwarded || String(req.socket?.remoteAddress || req.connection?.remoteAddress || "unknown");
+}
+
+function checkServerChatCooldown(req, code, participantId) {
+  const now = Date.now();
+  const key = `${String(code || "").toUpperCase()}:${String(participantId || "")}:${getRequestIp(req)}`;
+  const existing = chatCooldownBuckets.get(key) || { timestamps: [], cooldownUntil: 0 };
+  if (existing.cooldownUntil > now) {
+    return { ok: false, retryAfterMs: existing.cooldownUntil - now };
+  }
+
+  const timestamps = existing.timestamps.filter((timestamp) => now - timestamp < 2000);
+  if (timestamps.length >= 3) {
+    const cooldownUntil = now + 10000;
+    chatCooldownBuckets.set(key, { timestamps: [], cooldownUntil });
+    pruneChatCooldownBuckets(now);
+    return { ok: false, retryAfterMs: cooldownUntil - now };
+  }
+
+  timestamps.push(now);
+  chatCooldownBuckets.set(key, { timestamps, cooldownUntil: 0 });
+  pruneChatCooldownBuckets(now);
+  return { ok: true, retryAfterMs: 0 };
+}
+
+function pruneChatCooldownBuckets(now = Date.now()) {
+  if (chatCooldownBuckets.size < 5000) {
+    return;
+  }
+  for (const [key, bucket] of chatCooldownBuckets.entries()) {
+    const recent = (bucket.timestamps || []).some((timestamp) => now - timestamp < 2000);
+    if (!recent && Number(bucket.cooldownUntil || 0) <= now) {
+      chatCooldownBuckets.delete(key);
+    }
+  }
+}
+
+async function handleListRooms(req, res) {
   const rooms = (await listRoomsForDirectory())
     .filter((room) => room.status !== "complete")
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map((room) => sanitizeRoomForClient(room, { includePrivateSecrets: hasRoomHostAuth(req, room) }));
   sendJson(res, 200, { rooms });
 }
 
-async function handleGetRoom(res, code) {
+async function handleGetRoom(reqOrRes, resOrCode, maybeCode) {
+  const req = maybeCode === undefined ? null : reqOrRes;
+  const res = maybeCode === undefined ? reqOrRes : resOrCode;
+  const code = maybeCode === undefined ? resOrCode : maybeCode;
   const normalizedCode = String(code || "").trim().toUpperCase();
   const room = await backendStore.getRoom(normalizedCode);
   if (!room) {
@@ -344,7 +518,9 @@ async function handleGetRoom(res, code) {
     sendJson(res, 404, { error: "Room not found.", code: normalizedCode });
     return;
   }
-  sendJson(res, 200, { room });
+  sendJson(res, 200, {
+    room: sanitizeRoomForClient(room, { includePrivateSecrets: req ? hasRoomHostAuth(req, room) : false })
+  });
 }
 
 async function handleAdminStatus(req, res) {
@@ -446,12 +622,12 @@ async function handleAdminCloseRoom(req, res, code) {
   stampRoomEvent(room, "room_closed", { reason: "admin" });
   const storedRoom = await backendStore.upsertRoom(room);
   await backendStore.upsertRoomClose(room.closed);
-  sendJson(res, 200, { room: storedRoom });
+  sendJson(res, 200, { room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true }) });
 }
 
 async function handleImageProxy(url, res) {
   const source = String(url.searchParams.get("src") || "");
-  if (!/^https:\/\/\S+$/i.test(source)) {
+  if (!isAllowedImageProxyUrl(source) || !(await isAllowedResolvedImageProxyUrl(source))) {
     sendText(res, 400, "Invalid image source");
     return;
   }
@@ -460,6 +636,7 @@ async function handleImageProxy(url, res) {
     const image = await fetchImageAsset(source, 14000);
 
     res.writeHead(200, {
+      ...getSecurityHeaders(),
       "Content-Type": image.contentType,
       "Cache-Control": "public, max-age=86400",
       "X-Content-Type-Options": "nosniff"
@@ -470,18 +647,27 @@ async function handleImageProxy(url, res) {
   }
 }
 
-async function handleListOwnQuestionSubmissions(url, res) {
+async function handleListOwnQuestionSubmissions(req, url, res) {
   const creatorId = String(url.searchParams.get("creatorId") || "").trim().slice(0, 120);
   if (!creatorId) {
     sendJson(res, 400, { error: "Missing creatorId." });
     return;
   }
+  const authContext = getQuestionSubmissionAuthContext(req, creatorId);
+  if (!authContext.ok) {
+    sendJson(res, authContext.status, { error: authContext.error });
+    return;
+  }
 
   const submissions = (await backendStore.listQuestionSubmissions())
-    .filter((submission) => submission.creator?.id === creatorId)
+    .filter((submission) => submission.creator?.id === authContext.userId)
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .map(sanitizeQuestionSubmissionForCreator);
-  sendJson(res, 200, { submissions });
+  sendJson(res, 200, {
+    submissions,
+    ...(authContext.warnings.length ? { warnings: authContext.warnings } : {}),
+    authenticated: authContext.authenticated
+  });
 }
 
 async function handleCreateQuestionSubmission(req, res) {
@@ -489,7 +675,13 @@ async function handleCreateQuestionSubmission(req, res) {
     const body = await readRequestJson(req);
     const question = normalizeCreatedQuestion(body.question || body);
     const creator = body.creator && typeof body.creator === "object" ? body.creator : {};
-    const creatorId = String(creator.id || "").trim().slice(0, 120);
+    const requestedCreatorId = String(creator.id || "").trim().slice(0, 120);
+    const authContext = getQuestionSubmissionAuthContext(req, requestedCreatorId);
+    if (!authContext.ok) {
+      sendJson(res, authContext.status, { error: authContext.error });
+      return;
+    }
+    const creatorId = authContext.userId;
     if (!creatorId) {
       throw new Error("Missing creator id.");
     }
@@ -509,7 +701,11 @@ async function handleCreateQuestionSubmission(req, res) {
       review: null
     };
     const storedSubmission = await backendStore.upsertQuestionSubmission(submission);
-    sendJson(res, 201, { submission: sanitizeQuestionSubmissionForCreator(storedSubmission) });
+    sendJson(res, 201, {
+      submission: sanitizeQuestionSubmissionForCreator(storedSubmission),
+      ...(authContext.warnings.length ? { warnings: authContext.warnings } : {}),
+      authenticated: authContext.authenticated
+    });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Question submission failed." });
   }
@@ -651,6 +847,7 @@ async function handleAdminLogin(req, res) {
     const expiresAt = Date.now() + adminSessionTtlSeconds * 1000;
     const value = createAdminSessionCookie(expiresAt);
     res.writeHead(200, {
+      ...getSecurityHeaders(),
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "Set-Cookie": serializeCookie(adminCookieName, value, {
@@ -672,6 +869,7 @@ async function handleAdminLogin(req, res) {
 
 function handleLogout(req, res) {
   res.writeHead(200, {
+    ...getSecurityHeaders(),
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "Set-Cookie": serializeCookie(adminCookieName, "", {
@@ -685,21 +883,36 @@ function handleLogout(req, res) {
   res.end(JSON.stringify({ authenticated: false }));
 }
 
-async function handleGetUserInventory(url, res) {
-  const userId = normalizeInventoryUserId(url.searchParams.get("userId"));
-  if (!userId) {
+async function handleGetUserInventory(req, url, res) {
+  const requestedUserId = normalizeInventoryUserId(url.searchParams.get("userId"));
+  const authContext = getInventoryAuthContext(req, requestedUserId);
+  if (!authContext.ok) {
+    sendJson(res, authContext.status, { error: authContext.error });
+    return;
+  }
+  if (!authContext.userId) {
     sendJson(res, 400, { error: "Missing userId." });
     return;
   }
 
-  const inventory = await getOrCreateUserInventory(userId);
-  sendJson(res, 200, { inventory: sanitizeUserInventoryForClient(inventory) });
+  const inventory = await getOrCreateUserInventory(authContext.userId);
+  sendJson(res, 200, {
+    inventory: sanitizeUserInventoryForClient(inventory),
+    ...(authContext.warnings.length ? { warnings: authContext.warnings } : {}),
+    authenticated: authContext.authenticated
+  });
 }
 
 async function handleUserInventoryOps(req, res) {
   try {
     const body = await readRequestJson(req, { maxBytes: 500_000 });
-    const userId = normalizeInventoryUserId(body.userId);
+    const requestedUserId = normalizeInventoryUserId(body.userId);
+    const authContext = getInventoryAuthContext(req, requestedUserId);
+    if (!authContext.ok) {
+      sendJson(res, authContext.status, { error: authContext.error });
+      return;
+    }
+    const userId = authContext.userId;
     if (!userId) {
       sendJson(res, 400, { error: "Missing userId." });
       return;
@@ -708,7 +921,13 @@ async function handleUserInventoryOps(req, res) {
     const ops = Array.isArray(body.ops) ? body.ops.slice(0, 100) : [];
     if (!ops.length) {
       const inventory = await getOrCreateUserInventory(userId);
-      sendJson(res, 200, { inventory: sanitizeUserInventoryForClient(inventory), applied: [], skipped: [] });
+      sendJson(res, 200, {
+        inventory: sanitizeUserInventoryForClient(inventory),
+        applied: [],
+        skipped: [],
+        ...(authContext.warnings.length ? { warnings: authContext.warnings } : {}),
+        authenticated: authContext.authenticated
+      });
       return;
     }
 
@@ -716,6 +935,11 @@ async function handleUserInventoryOps(req, res) {
     const applied = [];
     const skipped = [];
     ops.forEach((op) => {
+      const blocked = getBlockedLegacyEconomyOpResult(op, authContext);
+      if (blocked) {
+        skipped.push(blocked);
+        return;
+      }
       const result = applyUserInventoryOp(inventory, op);
       if (result.applied) {
         applied.push(result.id);
@@ -728,11 +952,334 @@ async function handleUserInventoryOps(req, res) {
     sendJson(res, 200, {
       inventory: sanitizeUserInventoryForClient(storedInventory),
       applied,
-      skipped
+      skipped,
+      ...(authContext.warnings.length ? { warnings: authContext.warnings } : {}),
+      authenticated: authContext.authenticated
     });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Inventory update failed." });
   }
+}
+
+async function handleUserInventoryPurchase(req, res) {
+  try {
+    const body = await readRequestJson(req, { maxBytes: 50_000 });
+    const authContext = getInventoryAuthContext(req, normalizeInventoryUserId(body.userId));
+    if (!authContext.ok) {
+      sendJson(res, authContext.status, { error: authContext.error });
+      return;
+    }
+    if (!authContext.userId) {
+      sendJson(res, 400, { error: "Missing userId." });
+      return;
+    }
+
+    const key = normalizeInventoryPurchaseKey(body);
+    const catalogItem = inventoryShopCatalog.get(key);
+    if (!key || !catalogItem) {
+      sendJson(res, 400, { error: "Invalid shop item." });
+      return;
+    }
+
+    const inventory = await getOrCreateUserInventory(authContext.userId);
+    const opId = normalizeInventoryOpId(body.opId || createServerInventoryOpId("purchase-cosmetic", key));
+    const result = applyUserInventoryOp(inventory, {
+      id: opId,
+      type: "purchase-cosmetic",
+      key
+    });
+    const shouldStore = result.applied;
+    const storedInventory = shouldStore
+      ? await backendStore.upsertUserInventory(pruneAndReturnUserInventory(inventory))
+      : inventory;
+    sendInventoryMutationResult(res, result.applied ? 200 : 409, storedInventory, {
+      applied: result.applied ? [result.id] : [],
+      skipped: result.applied ? [] : [{ id: result.id, reason: result.reason || "skipped" }],
+      authenticated: authContext.authenticated,
+      warnings: authContext.warnings,
+      purchase: {
+        key,
+        cost: catalogItem.cost,
+        purchased: result.applied,
+        reason: result.reason || ""
+      },
+      ...(result.applied ? {} : { error: result.reason || "Purchase failed." })
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Inventory purchase failed." });
+  }
+}
+
+async function handleUserInventoryMilestone(req, res) {
+  try {
+    const body = await readRequestJson(req, { maxBytes: 50_000 });
+    const authContext = getInventoryAuthContext(req, normalizeInventoryUserId(body.userId));
+    if (!authContext.ok) {
+      sendJson(res, authContext.status, { error: authContext.error });
+      return;
+    }
+    if (!authContext.userId) {
+      sendJson(res, 400, { error: "Missing userId." });
+      return;
+    }
+
+    const milestoneId = normalizeInventoryKey(body.milestoneId || body.key);
+    if (!milestoneId || !inventoryMilestoneRewards.has(milestoneId)) {
+      sendJson(res, 400, { error: "Invalid milestone." });
+      return;
+    }
+
+    const inventory = await getOrCreateUserInventory(authContext.userId);
+    const opId = normalizeInventoryOpId(body.opId || createServerInventoryOpId("milestone", milestoneId));
+    const result = applyUserInventoryOp(inventory, {
+      id: opId,
+      type: "milestone",
+      milestoneId,
+      coinDelta: inventoryMilestoneRewards.get(milestoneId)
+    });
+    const storedInventory = result.applied
+      ? await backendStore.upsertUserInventory(pruneAndReturnUserInventory(inventory))
+      : inventory;
+    sendInventoryMutationResult(res, 200, storedInventory, {
+      applied: result.applied ? [result.id] : [],
+      skipped: result.applied ? [] : [{ id: result.id, reason: result.reason || "skipped" }],
+      authenticated: authContext.authenticated,
+      warnings: authContext.warnings,
+      milestone: {
+        milestoneId,
+        coins: inventoryMilestoneRewards.get(milestoneId),
+        claimed: result.applied,
+        reason: result.reason || ""
+      }
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Inventory milestone claim failed." });
+  }
+}
+
+function sendInventoryMutationResult(res, status, inventory, details = {}) {
+  const warnings = Array.isArray(details.warnings) ? details.warnings : [];
+  sendJson(res, status, {
+    inventory: sanitizeUserInventoryForClient(inventory),
+    applied: Array.isArray(details.applied) ? details.applied : [],
+    skipped: Array.isArray(details.skipped) ? details.skipped : [],
+    ...(warnings.length ? { warnings } : {}),
+    authenticated: Boolean(details.authenticated),
+    ...(details.purchase ? { purchase: details.purchase } : {}),
+    ...(details.milestone ? { milestone: details.milestone } : {}),
+    ...(details.error ? { error: details.error } : {})
+  });
+}
+
+function normalizeInventoryPurchaseKey(body = {}) {
+  const explicitKey = normalizeInventoryKey(body.key);
+  if (explicitKey) {
+    return explicitKey;
+  }
+  const type = normalizeInventoryKey(body.type);
+  const id = normalizeInventoryKey(body.id);
+  return type && id ? `${type}:${id}` : "";
+}
+
+function createServerInventoryOpId(type, key) {
+  return normalizeInventoryOpId(`${type}:${key}:${Date.now()}:${randomBytes(4).toString("hex")}`);
+}
+
+function getBlockedLegacyEconomyOpResult(rawOp, authContext) {
+  if (authContext.mode !== "enforce") {
+    return null;
+  }
+
+  const op = rawOp && typeof rawOp === "object" ? rawOp : {};
+  const id = normalizeInventoryOpId(op.id);
+  const type = String(op.type || "").trim();
+  if (type === "purchase-cosmetic") {
+    return { id, reason: "use-purchase-endpoint" };
+  }
+  if (type === "milestone" && Object.prototype.hasOwnProperty.call(op, "coinDelta")) {
+    return { id, reason: "use-milestone-endpoint" };
+  }
+  return null;
+}
+
+function getInventoryAuthContext(req, requestedUserId) {
+  const mode = getInventoryAuthMode();
+  if (mode === "off") {
+    return {
+      ok: true,
+      userId: requestedUserId,
+      authenticated: false,
+      warnings: [],
+      mode
+    };
+  }
+
+  const warnings = [];
+  const auth = getAuthenticatedUser(req);
+  if (auth.ok) {
+    if (requestedUserId && requestedUserId !== auth.userId) {
+      if (mode === "enforce") {
+        return {
+          ok: false,
+          status: 403,
+          error: "Inventory user does not match authenticated user."
+        };
+      }
+      warnings.push("inventory-user-id-overridden-by-auth");
+    }
+    return {
+      ok: true,
+      userId: auth.userId,
+      authenticated: true,
+      warnings,
+      mode
+    };
+  }
+
+  if (mode === "enforce") {
+    return {
+      ok: false,
+      status: auth.status || 401,
+      error: auth.error || "Authentication is required for inventory."
+    };
+  }
+
+  if (auth.error) {
+    warnings.push("inventory-auth-token-not-verified");
+  } else {
+    warnings.push("inventory-auth-missing");
+  }
+
+  return {
+    ok: true,
+    userId: requestedUserId,
+    authenticated: false,
+    warnings,
+    mode
+  };
+}
+
+function getInventoryAuthMode() {
+  const fallback = process.env.NODE_ENV === "production" ? "enforce" : "warn";
+  const mode = String(process.env.INVENTORY_AUTH_MODE || fallback).trim().toLowerCase();
+  return ["off", "warn", "enforce"].includes(mode) ? mode : "warn";
+}
+
+function getQuestionSubmissionAuthContext(req, requestedCreatorId) {
+  const explicitMode = String(process.env.QUESTION_SUBMISSION_AUTH_MODE || "").trim().toLowerCase();
+  const mode = ["off", "warn", "enforce"].includes(explicitMode) ? explicitMode : getInventoryAuthMode();
+  if (mode === "off") {
+    return {
+      ok: true,
+      userId: requestedCreatorId,
+      authenticated: false,
+      warnings: []
+    };
+  }
+
+  const warnings = [];
+  const auth = getAuthenticatedUser(req);
+  if (auth.ok) {
+    if (requestedCreatorId && requestedCreatorId !== auth.userId) {
+      if (mode === "enforce") {
+        return {
+          ok: false,
+          status: 403,
+          error: "Submission creator does not match authenticated user."
+        };
+      }
+      warnings.push("submission-creator-id-overridden-by-auth");
+    }
+    return {
+      ok: true,
+      userId: auth.userId,
+      authenticated: true,
+      warnings
+    };
+  }
+
+  if (mode === "enforce") {
+    return {
+      ok: false,
+      status: auth.status || 401,
+      error: auth.error || "Authentication is required for question submissions."
+    };
+  }
+
+  warnings.push(auth.error ? "submission-auth-token-not-verified" : "submission-auth-missing");
+  return {
+    ok: true,
+    userId: requestedCreatorId,
+    authenticated: false,
+    warnings
+  };
+}
+
+function getAuthenticatedUser(req) {
+  const token = getBearerToken(req);
+  if (!token) {
+    return { ok: false, error: "" };
+  }
+
+  const secret = getSupabaseJwtSecret();
+  if (!secret) {
+    return {
+      ok: false,
+      status: 503,
+      error: "SUPABASE_JWT_SECRET is not configured."
+    };
+  }
+
+  try {
+    const payload = verifySupabaseJwt(token, secret);
+    const userId = normalizeInventoryUserId(payload.sub);
+    if (!userId) {
+      return { ok: false, status: 401, error: "Invalid authentication token." };
+    }
+    return {
+      ok: true,
+      userId,
+      payload
+    };
+  } catch {
+    return { ok: false, status: 401, error: "Invalid authentication token." };
+  }
+}
+
+function getBearerToken(req) {
+  const authorization = String(req?.headers?.authorization || "");
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : "";
+}
+
+function verifySupabaseJwt(token, secret) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3 || parts.some((part) => !part)) {
+    throw new Error("Invalid JWT.");
+  }
+
+  const [encodedHeader, encodedPayload, signature] = parts;
+  const header = JSON.parse(Buffer.from(encodedHeader, "base64url").toString("utf8"));
+  if (header.alg !== "HS256") {
+    throw new Error("Unsupported JWT algorithm.");
+  }
+
+  const expectedSignature = createHmac("sha256", secret)
+    .update(`${encodedHeader}.${encodedPayload}`)
+    .digest("base64url");
+  if (!secureEqual(signature, expectedSignature)) {
+    throw new Error("Invalid JWT signature.");
+  }
+
+  const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (payload.exp !== undefined && Number(payload.exp) <= nowSeconds) {
+    throw new Error("JWT expired.");
+  }
+  if (payload.nbf !== undefined && Number(payload.nbf) > nowSeconds + 60) {
+    throw new Error("JWT not active.");
+  }
+  return payload;
 }
 
 async function getOrCreateUserInventory(userId) {
@@ -797,10 +1344,14 @@ function applyUserInventoryOp(inventory, rawOp) {
     applied = true;
   } else if (type === "purchase-cosmetic") {
     const key = normalizeInventoryKey(op.key);
-    const cost = Math.max(0, Math.floor(Number(op.cost) || 0));
+    const catalogItem = inventoryShopCatalog.get(key);
     if (!key) {
       return { applied: false, id, reason: "missing-cosmetic" };
     }
+    if (!catalogItem) {
+      return { applied: false, id, reason: "invalid-shop-item" };
+    }
+    const cost = catalogItem.cost;
     if (inventory.cosmetics.includes(key)) {
       applied = true;
     } else {
@@ -852,9 +1403,14 @@ function applyUserInventoryOp(inventory, rawOp) {
     if (!milestoneId) {
       return { applied: false, id, reason: "missing-milestone" };
     }
+    if (!inventoryMilestoneRewards.has(milestoneId)) {
+      return { applied: false, id, reason: "invalid-milestone" };
+    }
     if (!inventory.claimedMilestones.includes(milestoneId)) {
       inventory.claimedMilestones.push(milestoneId);
-      const coinDelta = clampInventoryDelta(op.coinDelta);
+      const coinDelta = Object.prototype.hasOwnProperty.call(op, "coinDelta")
+        ? inventoryMilestoneRewards.get(milestoneId)
+        : 0;
       if (coinDelta) {
         applyCoinTransaction(inventory, id, coinDelta, `milestone:${milestoneId}`, now);
       }
@@ -898,6 +1454,11 @@ function pruneUserInventory(inventory) {
     .sort((a, b) => Number(a[1]) - Number(b[1]))
     .slice(-1000);
   inventory.appliedOps = Object.fromEntries(appliedEntries);
+}
+
+function pruneAndReturnUserInventory(inventory) {
+  pruneUserInventory(inventory);
+  return inventory;
 }
 
 function sanitizeUserInventoryForClient(inventory) {
@@ -1322,6 +1883,10 @@ async function handleUpsertRoom(req, res) {
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const rawRoom = body.room || body;
     const existingRoom = await backendStore.getRoom(rawRoom.code);
+    const authBody = { ...body, room: rawRoom, host: rawRoom.host };
+    if (existingRoom && !requireRoomHostAuth(req, res, existingRoom, authBody, "Only the host can update this room.")) {
+      return;
+    }
     if (existingRoom) {
       if (!Array.isArray(rawRoom.chat)) {
         rawRoom.chat = existingRoom.chat || [];
@@ -1337,6 +1902,10 @@ async function handleUpsertRoom(req, res) {
       }
     }
     const room = normalizeRoom(rawRoom);
+    const issueHostCookie = !existingRoom || !existingRoom.security?.hostToken;
+    room.security = existingRoom?.security
+      ? normalizeRoomSecurity(existingRoom.security)
+      : createRoomSecurity();
     const recentClose = existingRoom ? null : await backendStore.getRoomClose(room.code);
     if (recentClose) {
       sendJson(res, 409, {
@@ -1350,7 +1919,9 @@ async function handleUpsertRoom(req, res) {
     room.revision = clampServerNumber(existingRoom?.revision, 0, Number.MAX_SAFE_INTEGER, 0);
     stampRoomEvent(room, existingRoom ? "room_updated" : "room_created", { status: room.status });
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, { room: storedRoom });
+    sendJson(res, 200, {
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hasRoomHostAuth(req, storedRoom, authBody) || issueHostCookie })
+    }, issueHostCookie ? { "Set-Cookie": createRoomHostCookie(req, storedRoom) } : {});
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room update failed." });
   }
@@ -1371,6 +1942,238 @@ function normalizeRoomEvents(events) {
     }))
     .filter((event) => event.revision > 0 && event.type)
     .slice(-maxRoomEvents);
+}
+
+function sanitizeRoomEventForClient(event, options = {}) {
+  const sanitized = {
+    ...event,
+    payload: event.payload && typeof event.payload === "object" ? { ...event.payload } : {}
+  };
+  if (sanitized.payload.participant && typeof sanitized.payload.participant === "object") {
+    sanitized.payload.participant = sanitizeParticipantForClient(sanitized.payload.participant, options);
+  }
+  if (Array.isArray(sanitized.payload.submissions) && !options.includeSubmittedAnswers) {
+    sanitized.payload.submissions = sanitized.payload.submissions.map((submission) => ({
+      ...submission,
+      answer: ""
+    }));
+  }
+  if (sanitized.payload.settings && typeof sanitized.payload.settings === "object") {
+    sanitized.payload.settings = sanitizeRoomSettingsForClient(sanitized.payload.settings, options);
+  }
+  if (sanitized.payload.room && typeof sanitized.payload.room === "object") {
+    sanitized.payload.room = sanitizeRoomForClient(sanitized.payload.room, options);
+  }
+  if (!options.includePrivateSecrets) {
+    delete sanitized.payload.hostToken;
+    delete sanitized.payload.roomHostToken;
+    delete sanitized.payload.participantToken;
+    delete sanitized.payload.roomParticipantToken;
+  }
+  return sanitized;
+}
+
+function sanitizeRoomSettingsForClient(settings = {}, options = {}) {
+  const sanitized = { ...(settings && typeof settings === "object" ? settings : {}) };
+  const hasPassword = Boolean(String(sanitized.password || ""));
+  sanitized.passwordRequired = Boolean(sanitized.private && hasPassword);
+  delete sanitized.password;
+  return sanitized;
+}
+
+function sanitizeRoomForClient(room, options = {}) {
+  if (!room || typeof room !== "object") {
+    return room;
+  }
+
+  const includeSubmittedAnswers = shouldExposeRoomAnswers(room, options);
+  return {
+    ...room,
+    settings: sanitizeRoomSettingsForClient(room.settings, options),
+    participants: (Array.isArray(room.participants) ? room.participants : [])
+      .map((participant) => sanitizeParticipantForClient(participant, { ...options, includeSubmittedAnswers })),
+    events: normalizeRoomEvents(room.events).map((event) => sanitizeRoomEventForClient(event, { ...options, includeSubmittedAnswers })),
+    security: undefined,
+    secrets: undefined,
+    hostToken: undefined,
+    roomHostToken: undefined,
+    participantToken: undefined,
+    roomParticipantToken: undefined
+  };
+}
+
+function shouldExposeRoomAnswers(room, options = {}) {
+  if (options.includeSubmittedAnswers === true || options.includePrivateSecrets === true) {
+    return true;
+  }
+  const gameStatus = String(room?.game?.status || "").toLowerCase();
+  const roomStatus = String(room?.status || "").toLowerCase();
+  return gameStatus === "grading" || gameStatus === "ended" || roomStatus === "complete";
+}
+
+function sanitizeParticipantForClient(participant, options = {}) {
+  const sanitized = { ...(participant && typeof participant === "object" ? participant : {}) };
+  delete sanitized.token;
+  delete sanitized.participantToken;
+  delete sanitized.roomParticipantToken;
+  if (!options.includeSubmittedAnswers) {
+    sanitized.answer = "";
+  }
+  return sanitized;
+}
+
+function createRoomSecurity() {
+  return {
+    hostToken: randomBytes(32).toString("base64url"),
+    participantTokens: {},
+    createdAt: Date.now()
+  };
+}
+
+function normalizeRoomSecurity(security) {
+  const source = security && typeof security === "object" ? security : {};
+  const hostToken = String(source.hostToken || "").trim();
+  if (!hostToken) {
+    return createRoomSecurity();
+  }
+  return {
+    hostToken,
+    participantTokens: normalizeParticipantTokenMap(source.participantTokens),
+    createdAt: clampServerNumber(source.createdAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+  };
+}
+
+function normalizeParticipantTokenMap(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const entries = Object.entries(source)
+    .map(([id, token]) => [String(id || "").slice(0, 80), String(token || "").trim()])
+    .filter(([id, token]) => id && token);
+  return Object.fromEntries(entries.slice(-20));
+}
+
+function getRoomHostCookieName(code) {
+  return `${roomHostCookiePrefix}${String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+}
+
+function getRoomParticipantCookieName(code, participantId) {
+  const safeCode = String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "_");
+  const safeParticipantId = String(participantId || "").trim().replace(/[^a-zA-Z0-9]/g, "_").slice(0, 48);
+  return `${roomParticipantCookiePrefix}${safeCode}_${safeParticipantId}`;
+}
+
+function getRequestRoomHostToken(req, room, body = {}) {
+  return String(
+    body.hostToken
+    || body.roomHostToken
+    || req?.headers?.["x-room-host-token"]
+    || getCookie(req || { headers: {} }, getRoomHostCookieName(room?.code))
+    || ""
+  ).trim();
+}
+
+function hasRoomHostAuth(req, room, body = {}) {
+  const security = room?.security;
+  if (!security?.hostToken) {
+    const hostParticipantId = body.hostParticipantId || body.participantId || body.host?.id || body.room?.host?.id;
+    return isHostParticipant(room, hostParticipantId);
+  }
+  return secureEqual(getRequestRoomHostToken(req, room, body), security.hostToken);
+}
+
+function requireRoomHostAuth(req, res, room, body = {}, message = "Only the host can update this room.") {
+  if (hasRoomHostAuth(req, room, body)) {
+    return true;
+  }
+  sendJson(res, 403, { error: message });
+  return false;
+}
+
+function getRequestRoomParticipantToken(req, room, participantId, body = {}) {
+  return String(
+    body.participantToken
+    || body.roomParticipantToken
+    || req?.headers?.["x-room-participant-token"]
+    || getCookie(req || { headers: {} }, getRoomParticipantCookieName(room?.code, participantId))
+    || ""
+  ).trim();
+}
+
+function getStoredRoomParticipantToken(room, participantId) {
+  const id = String(participantId || "").slice(0, 80);
+  return String(room?.security?.participantTokens?.[id] || "").trim();
+}
+
+function ensureRoomParticipantToken(room, participantId) {
+  const id = String(participantId || "").slice(0, 80);
+  if (!id) {
+    return "";
+  }
+  room.security = normalizeRoomSecurity(room.security);
+  if (!room.security.participantTokens[id]) {
+    room.security.participantTokens[id] = randomBytes(32).toString("base64url");
+  }
+  return room.security.participantTokens[id];
+}
+
+function pruneRoomParticipantTokens(room) {
+  if (!room?.security?.participantTokens) {
+    return;
+  }
+  const validIds = new Set((Array.isArray(room.participants) ? room.participants : []).map((participant) => participant.id).filter(Boolean));
+  room.security.participantTokens = Object.fromEntries(
+    Object.entries(room.security.participantTokens).filter(([id]) => validIds.has(id))
+  );
+}
+
+function hasRoomParticipantAuth(req, room, participantId, body = {}) {
+  const id = String(participantId || "").slice(0, 80);
+  if (!id) {
+    return false;
+  }
+  if (hasRoomHostAuth(req, room, body)) {
+    return true;
+  }
+  const storedToken = getStoredRoomParticipantToken(room, id);
+  if (!storedToken) {
+    return false;
+  }
+  return secureEqual(getRequestRoomParticipantToken(req, room, id, body), storedToken);
+}
+
+function requireRoomParticipantAuth(req, res, room, participantId, body = {}, message = "Only this participant can update their room state.") {
+  if (hasRoomParticipantAuth(req, room, participantId, body)) {
+    return true;
+  }
+  sendJson(res, 403, { error: message });
+  return false;
+}
+
+function createRoomHostCookie(req, room) {
+  const token = room?.security?.hostToken;
+  if (!room?.code || !token) {
+    return "";
+  }
+  return serializeCookie(getRoomHostCookieName(room.code), token, {
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: isSecureRequest(req),
+    path: "/",
+    maxAge: roomHostSessionTtlSeconds
+  });
+}
+
+function createRoomParticipantCookie(req, room, participantId) {
+  const token = getStoredRoomParticipantToken(room, participantId);
+  if (!room?.code || !participantId || !token) {
+    return "";
+  }
+  return serializeCookie(getRoomParticipantCookieName(room.code, participantId), token, {
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: isSecureRequest(req),
+    path: "/",
+    maxAge: roomParticipantSessionTtlSeconds
+  });
 }
 
 function stampRoomEvent(room, type, payload = {}) {
@@ -1433,6 +2236,38 @@ async function handleRoomPresence(req, res, code) {
     const rawParticipant = body.participant || {};
     const participant = normalizeParticipant(rawParticipant);
     const existingIndex = room.participants.findIndex((entry) => entry.id === participant.id);
+    const hostAuthenticated = hasRoomHostAuth(req, room, body);
+    const isHostIdentity = participant.id === room.host?.id || participant.host;
+    if (isHostIdentity && !hostAuthenticated) {
+      sendJson(res, 403, { error: "Only the host can update the host participant." });
+      return;
+    }
+    if (participant.bot && !hostAuthenticated) {
+      sendJson(res, 403, { error: "Only the host can update bot participants." });
+      return;
+    }
+    if (existingIndex >= 0 && !hostAuthenticated && !hasRoomParticipantAuth(req, room, participant.id, body)) {
+      sendJson(res, 403, { error: "Only this participant can update their room state." });
+      return;
+    }
+    if (room.banned?.includes(participant.id) || room.banned?.includes(participant.name)) {
+      sendJson(res, 403, { error: "This participant is banned from the room." });
+      return;
+    }
+    if (room.settings?.private && existingIndex < 0 && !hostAuthenticated) {
+      const password = String(body.password || body.roomPassword || "").trim();
+      if (!secureEqual(password, room.settings.password || "")) {
+        sendJson(res, 403, { error: "Invalid room password." });
+        return;
+      }
+    }
+    if (existingIndex < 0 && !participant.spectator && !participant.bot && !participant.host) {
+      const activeRealPlayers = room.participants.filter((entry) => entry.active !== false && !entry.spectator && !entry.bot).length;
+      if (activeRealPlayers >= room.settings.maxPlayers) {
+        sendJson(res, 409, { error: "Room is full." });
+        return;
+      }
+    }
     if (existingIndex >= 0) {
       const existingParticipant = room.participants[existingIndex];
       room.participants[existingIndex] = {
@@ -1460,6 +2295,9 @@ async function handleRoomPresence(req, res, code) {
     if (participant.host || participant.id === room.host?.id) {
       room.hostExitPendingAt = 0;
     }
+    if (!participant.bot) {
+      ensureRoomParticipantToken(room, participant.id);
+    }
     finalizeRoom(room);
     stampRoomEvent(room, existingIndex >= 0 ? "participant_updated" : "participant_joined", {
       participantId: participant.id,
@@ -1469,6 +2307,7 @@ async function handleRoomPresence(req, res, code) {
       participant: room.participants.find((entry) => entry.id === participant.id) || participant
     });
     const storedRoom = await backendStore.upsertRoom(room);
+    const participantCookie = !participant.bot ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
     if (body.compact) {
       const storedParticipant = storedRoom.participants.find((entry) => entry.id === participant.id) || participant;
       sendJson(res, 200, {
@@ -1476,11 +2315,13 @@ async function handleRoomPresence(req, res, code) {
         status: storedRoom.status,
         revision: getRoomRevision(storedRoom),
         updatedAt: storedRoom.updatedAt,
-        participant: storedParticipant
-      });
+        participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true })
+      }, participantCookie ? { "Set-Cookie": participantCookie } : {});
       return;
     }
-    sendJson(res, 200, { room: storedRoom });
+    sendJson(res, 200, {
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hostAuthenticated })
+    }, participantCookie ? { "Set-Cookie": participantCookie } : {});
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room presence update failed." });
   }
@@ -1496,8 +2337,7 @@ async function handleRoomSettings(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
-    if (!isHostParticipant(room, body.hostParticipantId)) {
-      sendJson(res, 403, { error: "Only the host can update room settings." });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can update room settings.")) {
       return;
     }
     const nextSettings = normalizeRoomSettings({
@@ -1541,7 +2381,7 @@ async function handleRoomSettings(req, res, code) {
       status: storedRoom.status,
       revision: getRoomRevision(storedRoom),
       updatedAt: storedRoom.updatedAt,
-      settings: storedRoom.settings,
+      settings: sanitizeRoomSettingsForClient(storedRoom.settings, { includePrivateSecrets: true }),
       host: storedRoom.host
     });
   } catch (error) {
@@ -1560,12 +2400,10 @@ async function handleRoomHeartbeat(req, res, code) {
 
     const body = await readRequestJson(req);
     const participantId = String(body.participantId || "").slice(0, 80);
-    const participant = room.participants.find((entry) => entry.id === participantId);
-    const isHostHeartbeat = participantId && (participantId === room.host?.id || participant?.host);
-    if (!isHostHeartbeat) {
-      sendJson(res, 403, { error: "Only the host can heartbeat this room." });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can heartbeat this room.")) {
       return;
     }
+    const participant = room.participants.find((entry) => entry.id === participantId);
 
     room.hostExitPendingAt = 0;
     if (participant) {
@@ -1575,7 +2413,9 @@ async function handleRoomHeartbeat(req, res, code) {
     finalizeRoom(room);
     room.updatedAt = Date.now();
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, { room: storedRoom });
+    sendJson(res, 200, {
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
+    });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room heartbeat failed." });
   }
@@ -1596,10 +2436,32 @@ async function handleRoomChat(req, res, code) {
       sendJson(res, 400, { error: "Chat message is empty." });
       return;
     }
+    const participantId = message.participantId || String(body.participantId || "").slice(0, 80);
+    if (!participantId) {
+      sendJson(res, 400, { error: "Missing participant id." });
+      return;
+    }
+    if (!requireRoomParticipantAuth(req, res, room, participantId, body, "Only this participant can send chat messages.")) {
+      return;
+    }
+    const participant = room.participants.find((entry) => entry.id === participantId);
+    if (!participant || participant.active === false || participant.muted) {
+      sendJson(res, 403, { error: participant?.muted ? "You are muted." : "Participant is not active." });
+      return;
+    }
+    const cooldown = checkServerChatCooldown(req, normalizedCode, participantId);
+    if (!cooldown.ok) {
+      sendJson(res, 429, { error: "Chat cooldown active.", retryAfterMs: cooldown.retryAfterMs }, {
+        "Retry-After": String(Math.max(1, Math.ceil(cooldown.retryAfterMs / 1000)))
+      });
+      return;
+    }
+    message.participantId = participantId;
     room.chat = normalizeRoomChat([...(Array.isArray(room.chat) ? room.chat : []), message]);
     stampRoomEvent(room, "chat_message", {
       owner: message.owner,
       sender: message.sender,
+      participantId,
       private: Boolean(message.private),
       message
     });
@@ -1615,7 +2477,7 @@ async function handleRoomChat(req, res, code) {
       });
       return;
     }
-    sendJson(res, 200, { room: storedRoom, message });
+    sendJson(res, 200, { room: sanitizeRoomForClient(storedRoom), message });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room chat update failed." });
   }
@@ -1631,6 +2493,9 @@ async function handleRoomGame(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can update room game state.")) {
+      return;
+    }
     const game = normalizeRoomGame(body.game || body);
     if (!game || (!game.setup && game.status !== "ended")) {
       sendJson(res, 400, { error: "Room game update needs a setup payload." });
@@ -1653,7 +2518,9 @@ async function handleRoomGame(req, res, code) {
     }
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, { room: storedRoom });
+    sendJson(res, 200, {
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
+    });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room game update failed." });
   }
@@ -1669,6 +2536,16 @@ async function handleRoomPowerState(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const actorParticipantId = String(body.actorParticipantId || "").slice(0, 120);
+    if (!hasRoomHostAuth(req, room, body)) {
+      if (!actorParticipantId) {
+        sendJson(res, 400, { error: "Missing actor participant id." });
+        return;
+      }
+      if (!requireRoomParticipantAuth(req, res, room, actorParticipantId, body, "Only the acting participant can update power state.")) {
+        return;
+      }
+    }
     const powerState = normalizeRoomPowerState({
       updatedAt: Date.now(),
       hands: body.hands,
@@ -1697,7 +2574,7 @@ async function handleRoomPowerState(req, res, code) {
     stampRoomEvent(room, "power_state", {
       round: clampServerNumber(body.round, 0, 100, room.game.round || 0),
       powerId: String(body.powerId || "").slice(0, 80),
-      actorParticipantId: String(body.actorParticipantId || "").slice(0, 120),
+      actorParticipantId,
       targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
       deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
       stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
@@ -1712,7 +2589,7 @@ async function handleRoomPowerState(req, res, code) {
       updatedAt: storedRoom.updatedAt,
       round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
       powerId: String(body.powerId || "").slice(0, 80),
-      actorParticipantId: String(body.actorParticipantId || "").slice(0, 120),
+      actorParticipantId,
       targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
       deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
       stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
@@ -1752,8 +2629,7 @@ async function handleRoomRoundSkip(req, res, code) {
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
-    if (!isHostParticipant(room, hostParticipantId)) {
-      sendJson(res, 403, { error: "Only the host can skip to grading." });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can skip to grading.")) {
       return;
     }
 
@@ -1793,7 +2669,7 @@ async function handleRoomRoundSkip(req, res, code) {
   }
 }
 
-async function handleRoomEvents(url, res, code) {
+async function handleRoomEvents(req, url, res, code) {
   const room = await backendStore.getRoom(String(code || "").trim().toUpperCase());
   if (!room) {
     const close = await backendStore.getRoomClose(String(code || "").trim().toUpperCase());
@@ -1805,7 +2681,10 @@ async function handleRoomEvents(url, res, code) {
     return;
   }
   const since = clampServerNumber(url.searchParams.get("since"), 0, Number.MAX_SAFE_INTEGER, 0);
-  const events = normalizeRoomEvents(room.events).filter((event) => event.revision > since);
+  const includePrivateSecrets = hasRoomHostAuth(req, room);
+  const events = normalizeRoomEvents(room.events)
+    .filter((event) => event.revision > since)
+    .map((event) => sanitizeRoomEventForClient(event, { includePrivateSecrets }));
   sendJson(res, 200, {
     code: room.code,
     revision: getRoomRevision(room),
@@ -1829,8 +2708,7 @@ async function handleRoomModeration(req, res, code) {
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
-    if (!isHostParticipant(room, hostParticipantId)) {
-      sendJson(res, 403, { error: "Only the host can moderate this room." });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can moderate this room.")) {
       return;
     }
 
@@ -1899,8 +2777,7 @@ async function handleRoomClose(req, res, code) {
 
     const body = await readRequestJson(req);
     const participantId = String(body.participantId || "").slice(0, 80);
-    if (!isHostParticipant(room, participantId)) {
-      sendJson(res, 403, { error: "Only the host can close this room." });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can close this room.")) {
       return;
     }
     const reason = String(body.reason || "host-left").slice(0, 60);
@@ -2010,8 +2887,14 @@ async function handleRoomLeave(req, res, code) {
     const reason = String(body.reason || "manual").slice(0, 40);
     const isHostLeaving = isHostParticipant(room, participantId);
     if (isHostLeaving) {
+      if (!requireRoomHostAuth(req, res, room, body, "Only the host can close this room.")) {
+        return;
+      }
       await closeStoredRoom(normalizedCode, "host-left");
       sendJson(res, 200, { closed: true, code: normalizedCode, reason: "host-left" });
+      return;
+    }
+    if (!requireRoomParticipantAuth(req, res, room, participantId, body, "Only this participant can leave the room.")) {
       return;
     }
 
@@ -2030,7 +2913,7 @@ async function handleRoomLeave(req, res, code) {
       participant: leavingParticipant
     });
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, { room: storedRoom, participant: leavingParticipant, closed: false });
+    sendJson(res, 200, { room: sanitizeRoomForClient(storedRoom), participant: leavingParticipant, closed: false });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room leave failed." });
   }
@@ -2050,6 +2933,7 @@ function normalizeRoomChat(chat) {
         cardCustomization: normalizeCardCustomization(source.cardCustomization),
         text: String(source.text || "").trim().slice(0, 220),
         owner: String(source.owner || "").slice(0, 80),
+        participantId: String(source.participantId || "").slice(0, 80),
         host: Boolean(source.host),
         private: Boolean(source.private),
         audience: String(source.audience || "").slice(0, 80),
@@ -2272,6 +3156,7 @@ function finalizeRoom(room) {
   }
   room.activePlayers = room.participants.filter((participant) => participant.active && !participant.spectator).length;
   room.spectators = room.participants.filter((participant) => participant.active && participant.spectator).length;
+  pruneRoomParticipantTokens(room);
 }
 
 function clampServerNumber(value, min, max, fallback) {
@@ -2286,7 +3171,7 @@ async function serveStatic(pathname, res, isHead, req) {
   const safePath = pathname === "/" ? "/index.html" : pathname;
   const filePath = normalize(join(root, safePath));
 
-  if (!filePath.startsWith(root)) {
+  if (!filePath.startsWith(root) || isForbiddenStaticPath(filePath)) {
     sendText(res, 403, "Forbidden");
     return;
   }
@@ -2305,6 +3190,7 @@ async function serveStatic(pathname, res, isHead, req) {
     const etag = `W/"${fileStats.size}-${Math.floor(fileStats.mtimeMs)}"`;
     const lastModified = fileStats.mtime.toUTCString();
     const commonHeaders = {
+      ...getSecurityHeaders(),
       "Content-Type": contentType,
       "Cache-Control": cacheControl,
       "ETag": etag,
@@ -2361,6 +3247,28 @@ async function serveStatic(pathname, res, isHead, req) {
   } catch {
     sendText(res, 404, "Not found");
   }
+}
+
+function isForbiddenStaticPath(filePath) {
+  const relativePath = filePath.slice(root.length).replace(/^[/\\]+/, "");
+  const parts = relativePath.split(/[/\\]+/).filter(Boolean);
+  const firstPart = parts[0] || "";
+  const lastPart = parts.at(-1) || "";
+  const blockedTopLevel = new Set(["api", "lib", "tests"]);
+  const blockedFiles = new Set([
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.development",
+    ".gitignore",
+    "package.json",
+    "package-lock.json",
+    "server.js",
+    "supabase-user-storage.sql"
+  ]);
+  return parts.some((part) => part.startsWith("."))
+    || blockedTopLevel.has(firstPart)
+    || blockedFiles.has(lastPart);
 }
 
 function isGzipCandidate(filePath, contentType = "") {
@@ -2704,12 +3612,24 @@ async function handleRound(req, res) {
   try {
     const body = await readRequestJson(req);
     const payload = normalizeRoundPayload(body);
+    const roomAuth = await validateRoundRequestAuth(req, payload, body);
+    if (!roomAuth.ok) {
+      sendJson(res, roomAuth.status, { error: roomAuth.error });
+      return;
+    }
+    const cacheKey = createAiRoundCacheKey(payload);
+    const cached = await getAiRoundCache(cacheKey);
+    if (cached) {
+      sendJson(res, 200, cached);
+      return;
+    }
     let result;
     try {
-      result = await generateRoundWithModel(payload, apiKey);
+      result = await rememberAiRoundResult(cacheKey, () => generateRoundWithModel(payload, apiKey));
     } catch (error) {
       console.warn("AI round grading failed, using local trivia grader:", error.message || error);
       result = createLocalRoundResult(payload);
+      setAiRoundCache(cacheKey, result);
     }
     sendJson(res, 200, result);
   } catch (error) {
@@ -2764,6 +3684,8 @@ function normalizeRoundPayload(body) {
   const matchContext = body.matchContext && typeof body.matchContext === "object" ? body.matchContext : {};
   const roundSeed = String(body.roundSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
   const mode = body.mode === "local" ? "local" : body.mode === "room" ? "room" : "bots";
+  const roomCode = String(body.roomCode || body.code || "").trim().toUpperCase().slice(0, 12);
+  const participantId = String(body.participantId || "").trim().slice(0, 80);
 
   if (!blackCard) {
     throw new Error("Missing trivia question.");
@@ -2781,6 +3703,8 @@ function normalizeRoundPayload(body) {
     acceptedAnswers: acceptedAnswers.length ? acceptedAnswers : canonicalAnswer ? [canonicalAnswer] : [],
     image,
     mode,
+    roomCode,
+    participantId,
     botCards,
     answerCards,
     matchContext: {
@@ -2797,6 +3721,110 @@ function normalizeRoundPayload(body) {
 
 function getApiKey() {
   return process.env.AI_API_KEY || process.env.COMPUTINGER_API_KEY || process.env.OPENAI_API_KEY;
+}
+
+async function validateRoundRequestAuth(req, payload, body = {}) {
+  if (payload.mode !== "room") {
+    return { ok: true };
+  }
+  if (!/^CAI-\d{4}$/.test(payload.roomCode)) {
+    return { ok: false, status: 400, error: "Room grading needs a valid room code." };
+  }
+  const room = await backendStore.getRoom(payload.roomCode);
+  if (!room) {
+    return { ok: false, status: 404, error: "Room not found." };
+  }
+  if (String(room.status || "") !== "in-progress") {
+    return { ok: false, status: 409, error: "Room is not in progress." };
+  }
+  if (hasRoomHostAuth(req, room, body)) {
+    return { ok: true };
+  }
+  if (!payload.participantId) {
+    return { ok: false, status: 400, error: "Room grading needs a participant id." };
+  }
+  if (!hasRoomParticipantAuth(req, room, payload.participantId, body)) {
+    return { ok: false, status: 403, error: "Only room participants can grade this round." };
+  }
+  return { ok: true };
+}
+
+function createAiRoundCacheKey(payload) {
+  const stablePayload = {
+    mode: payload.mode,
+    roomCode: payload.roomCode,
+    blackCard: payload.blackCard,
+    triviaTheme: payload.triviaTheme,
+    canonicalAnswer: payload.canonicalAnswer,
+    acceptedAnswers: payload.acceptedAnswers,
+    imageUrl: payload.image?.url || "",
+    answer: payload.answer,
+    opponentAnswer: payload.opponentAnswer,
+    botCards: payload.botCards,
+    answerCards: payload.answerCards
+      .map((card) => ({
+        owner: card.owner,
+        label: card.label,
+        answer: card.answer
+      }))
+      .sort((a, b) => `${a.owner}:${a.label}`.localeCompare(`${b.owner}:${b.label}`))
+  };
+  return Buffer.from(JSON.stringify(stablePayload)).toString("base64url").slice(0, 512);
+}
+
+function getAiRoundCache(key) {
+  const cached = aiRoundCache.get(key);
+  if (!cached) {
+    return null;
+  }
+  if (cached.expiresAt <= Date.now()) {
+    aiRoundCache.delete(key);
+    return null;
+  }
+  if (cached.promise) {
+    return cached.promise;
+  }
+  return cached.result || null;
+}
+
+async function rememberAiRoundResult(key, producer) {
+  const existing = getAiRoundCache(key);
+  if (existing) {
+    return existing;
+  }
+  const promise = Promise.resolve()
+    .then(producer)
+    .then((result) => {
+      setAiRoundCache(key, result);
+      return result;
+    })
+    .catch((error) => {
+      aiRoundCache.delete(key);
+      throw error;
+    });
+  aiRoundCache.set(key, { promise, expiresAt: Date.now() + aiRoundCacheTtlMs });
+  pruneAiRoundCache();
+  return promise;
+}
+
+function setAiRoundCache(key, result) {
+  aiRoundCache.set(key, { result, expiresAt: Date.now() + aiRoundCacheTtlMs });
+  pruneAiRoundCache();
+}
+
+function pruneAiRoundCache(now = Date.now()) {
+  for (const [key, entry] of aiRoundCache.entries()) {
+    if (entry.expiresAt <= now) {
+      aiRoundCache.delete(key);
+    }
+  }
+  while (aiRoundCache.size > aiRoundCacheMaxEntries) {
+    const firstKey = aiRoundCache.keys().next().value;
+    if (!firstKey) {
+      break;
+    }
+    aiRoundCache.delete(firstKey);
+  }
 }
 
 function getBaseUrl() {
@@ -3289,10 +4317,70 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 3000) {
   }
 }
 
+function isAllowedImageProxyUrl(value) {
+  try {
+    const parsed = new URL(String(value || ""));
+    if (parsed.protocol !== "https:") {
+      return false;
+    }
+    const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (!hostname || hostname === "localhost" || hostname.endsWith(".localhost")) {
+      return false;
+    }
+    return !isBlockedNetworkAddress(hostname);
+  } catch {
+    return false;
+  }
+}
+
+async function isAllowedResolvedImageProxyUrl(value) {
+  try {
+    const parsed = new URL(String(value || ""));
+    const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (!hostname || isIP(hostname)) {
+      return isAllowedImageProxyUrl(value);
+    }
+    const addresses = await lookup(hostname, { all: true, verbatim: true });
+    return Array.isArray(addresses)
+      && addresses.length > 0
+      && addresses.every((entry) => !isBlockedNetworkAddress(entry.address));
+  } catch {
+    return false;
+  }
+}
+
+function isBlockedNetworkAddress(address) {
+  const hostname = String(address || "").toLowerCase().replace(/^\[|\]$/g, "");
+  const ipVersion = isIP(hostname);
+  if (ipVersion === 4) {
+    const [a, b] = hostname.split(".").map((part) => Number(part));
+    return a === 10
+      || a === 127
+      || a === 0
+      || (a === 100 && b >= 64 && b <= 127)
+      || (a === 169 && b === 254)
+      || (a === 172 && b >= 16 && b <= 31)
+      || (a === 192 && b === 168)
+      || (a === 192 && b === 0)
+      || (a === 198 && (b === 18 || b === 19));
+  }
+  if (ipVersion === 6) {
+    return hostname === "::1"
+      || hostname === "::"
+      || hostname.startsWith("fc")
+      || hostname.startsWith("fd")
+      || hostname.startsWith("fe80:");
+  }
+  return false;
+}
+
 async function fetchImageAsset(source, timeoutMs = 5000) {
   const cached = imageCache.get(source);
   if (cached && cached.expiresAt > Date.now()) {
     return cached;
+  }
+  if (cached) {
+    deleteImageCacheEntry(source);
   }
 
   const response = await fetchWithTimeout(source, {
@@ -3301,6 +4389,12 @@ async function fetchImageAsset(source, timeoutMs = 5000) {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
     }
   }, timeoutMs);
+  if (!isAllowedImageProxyUrl(response.url || source)) {
+    throw new Error("Image fetch redirected to a blocked host");
+  }
+  if (!(await isAllowedResolvedImageProxyUrl(response.url || source))) {
+    throw new Error("Image fetch redirected to a blocked address");
+  }
   const contentType = String(response.headers.get("content-type") || "");
   if (!response.ok || !contentType.startsWith("image/")) {
     throw new Error("Image fetch failed");
@@ -3314,10 +4408,41 @@ async function fetchImageAsset(source, timeoutMs = 5000) {
   const image = {
     buffer: Buffer.from(arrayBuffer),
     contentType,
+    byteLength: arrayBuffer.byteLength,
     expiresAt: Date.now() + imageCacheTtlMs
   };
-  imageCache.set(source, image);
+  setImageCacheEntry(source, image);
   return image;
+}
+
+function setImageCacheEntry(source, image) {
+  deleteImageCacheEntry(source);
+  imageCache.set(source, image);
+  imageCacheBytes += Number(image.byteLength || image.buffer?.byteLength || 0);
+  pruneImageCache();
+}
+
+function deleteImageCacheEntry(source) {
+  const existing = imageCache.get(source);
+  if (existing) {
+    imageCacheBytes = Math.max(0, imageCacheBytes - Number(existing.byteLength || existing.buffer?.byteLength || 0));
+    imageCache.delete(source);
+  }
+}
+
+function pruneImageCache(now = Date.now()) {
+  for (const [source, image] of imageCache.entries()) {
+    if (image.expiresAt <= now) {
+      deleteImageCacheEntry(source);
+    }
+  }
+  while (imageCache.size > imageCacheMaxEntries || imageCacheBytes > imageCacheMaxBytes) {
+    const firstKey = imageCache.keys().next().value;
+    if (!firstKey) {
+      break;
+    }
+    deleteImageCacheEntry(firstKey);
+  }
 }
 
 function isUsableImageUrl(url) {
@@ -3404,6 +4529,10 @@ function getSupabaseAnonKey() {
   return String(process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
 }
 
+function getSupabaseJwtSecret() {
+  return String(process.env.SUPABASE_JWT_SECRET || "").trim();
+}
+
 function createAdminSessionCookie(expiresAt) {
   const payload = Buffer.from(JSON.stringify({
     role: "admin",
@@ -3487,16 +4616,41 @@ function isSecureRequest(req) {
   return String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim() === "https";
 }
 
-function sendJson(res, status, payload) {
+function getSecurityHeaders() {
+  return {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Content-Security-Policy": [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' https: data: blob:",
+      "font-src 'self' data:",
+      "media-src 'self' https: data: blob:",
+      "connect-src 'self' https: wss:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "frame-ancestors 'self'",
+      "form-action 'self'"
+    ].join("; ")
+  };
+}
+
+function sendJson(res, status, payload, headers = {}) {
   res.writeHead(status, {
+    ...getSecurityHeaders(),
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    ...headers
   });
   res.end(JSON.stringify(payload));
 }
 
 function sendText(res, status, message) {
   res.writeHead(status, {
+    ...getSecurityHeaders(),
     "Content-Type": "text/plain; charset=utf-8",
     "Cache-Control": "no-store"
   });

@@ -66,8 +66,15 @@ UPSTASH_REDIS_REST_URL=your_redis_rest_url
 UPSTASH_REDIS_REST_TOKEN=your_redis_rest_token
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_JWT_SECRET=your_supabase_jwt_secret
+INVENTORY_AUTH_MODE=enforce
+QUESTION_SUBMISSION_AUTH_MODE=enforce
 ROOM_TTL_SECONDS=21600
 ```
+
+Inventory, economy, and question-submission writes accept Supabase bearer tokens when `SUPABASE_JWT_SECRET` is configured. Use `INVENTORY_AUTH_MODE=enforce` and `QUESTION_SUBMISSION_AUTH_MODE=enforce` in production so user-owned data must match the signed-in Supabase user. Use `warn` only while confirming signed-in traffic is authenticated, and use `off` only for local compatibility testing.
+
+Shop purchases should go through `POST /api/user/inventory/purchase`, and milestone claims should go through `POST /api/user/inventory/milestone`. In `enforce` mode, legacy purchase and reward-bearing milestone operations sent through `/api/user/inventory/ops` are skipped so the server-owned economy endpoints are the source of truth.
 
 Protected admin endpoints require:
 

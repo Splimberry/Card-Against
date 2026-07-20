@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const { createHmac } = require("node:crypto");
 const { Readable } = require("node:stream");
 
 process.env.BACKEND_STORE = "memory";
@@ -6,8 +7,10 @@ process.env.ADMIN_TOKEN = "room-test-admin-token";
 process.env.QUESTION_FILE_WRITES = "disabled";
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_ANON_KEY = "test-anon-key";
+process.env.SUPABASE_JWT_SECRET = "room-test-supabase-jwt-secret";
 
 const handleRequest = require("../server");
+const cookieJar = new Map();
 
 function makeCode(seed) {
   return `CAI-${String(seed).padStart(4, "0")}`;
@@ -80,9 +83,11 @@ async function request(method, path, body, headers = {}) {
   const req = Readable.from(chunks);
   req.method = method;
   req.url = path;
+  const cookieHeader = [...cookieJar.entries()].map(([name, value]) => `${name}=${value}`).join("; ");
   req.headers = {
     host: "test.local",
     ...(body === undefined ? {} : { "content-type": "application/json" }),
+    ...(cookieHeader ? { cookie: cookieHeader } : {}),
     ...headers
   };
 
@@ -108,9 +113,18 @@ async function request(method, path, body, headers = {}) {
     handleRequest(req, res).catch(reject);
   });
 
+  const setCookie = result.response.headers["Set-Cookie"] || result.response.headers["set-cookie"];
+  (Array.isArray(setCookie) ? setCookie : [setCookie]).filter(Boolean).forEach((entry) => {
+    const [pair] = String(entry).split(";");
+    const splitAt = pair.indexOf("=");
+    if (splitAt > 0) {
+      cookieJar.set(pair.slice(0, splitAt), pair.slice(splitAt + 1));
+    }
+  });
+
   return {
     response: result.response,
-    payload: result.text ? JSON.parse(result.text) : {}
+    payload: /^[\[{]/.test(result.text.trim()) ? JSON.parse(result.text) : result.text
   };
 }
 
@@ -147,6 +161,33 @@ function makeQuestion(id, overrides = {}) {
 
 function adminHeaders() {
   return { authorization: `Bearer ${process.env.ADMIN_TOKEN}` };
+}
+
+function makeJwt(payload = {}, secret = process.env.SUPABASE_JWT_SECRET) {
+  const encodedHeader = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const encodedPayload = Buffer.from(JSON.stringify({
+    sub: "auth-user-default",
+    aud: "authenticated",
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...payload
+  })).toString("base64url");
+  const signature = createHmac("sha256", secret)
+    .update(`${encodedHeader}.${encodedPayload}`)
+    .digest("base64url");
+  return `${encodedHeader}.${encodedPayload}.${signature}`;
+}
+
+function authHeaders(userId) {
+  return { authorization: `Bearer ${makeJwt({ sub: userId })}` };
+}
+
+function roomParticipantCookieHeader(code, participantId) {
+  const safeCode = String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "_");
+  const safeParticipantId = String(participantId || "").trim().replace(/[^a-zA-Z0-9]/g, "_").slice(0, 48);
+  const name = `cai_room_participant_${safeCode}_${safeParticipantId}`;
+  const value = cookieJar.get(name);
+  assert.ok(value, `Missing participant cookie ${name}`);
+  return { cookie: `${name}=${value}` };
 }
 
 async function getDebugQuestions() {
@@ -395,6 +436,248 @@ async function testRoomDirectoryPreservesProfileStyleFields() {
   assert.equal(hostParticipant.cardCustomization.fontId, "mono");
 }
 
+async function testPrivateRoomPasswordIsRedactedAndServerValidated() {
+  const code = makeCode(8120);
+  await upsertRoom(makeRoom(code, {
+    settings: {
+      ...makeRoom(code).settings,
+      private: true,
+      password: "secret-pass"
+    }
+  }));
+
+  const rooms = await listRooms();
+  const listed = rooms.find((room) => room.code === code);
+  assert.ok(listed);
+  assert.equal(Object.hasOwn(listed.settings, "password"), false);
+  assert.equal(listed.settings.passwordRequired, true);
+
+  const direct = await request("GET", `/api/rooms/${code}`, undefined, { cookie: "" });
+  assert.equal(direct.response.status, 200, direct.payload.error);
+  assert.equal(Object.hasOwn(direct.payload.room.settings, "password"), false);
+  assert.equal(direct.payload.room.settings.passwordRequired, true);
+
+  const wrongPassword = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "private-guest-wrong",
+      name: "Guest",
+      active: true,
+      status: "joined"
+    },
+    password: "wrong"
+  }, { cookie: "" });
+  assert.equal(wrongPassword.response.status, 403);
+
+  const correctPassword = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    participant: {
+      id: "private-guest-right",
+      name: "Guest",
+      active: true,
+      status: "joined"
+    },
+    password: "secret-pass"
+  }, { cookie: "" });
+  assert.equal(correctPassword.response.status, 200, correctPassword.payload.error);
+  assert.equal(correctPassword.payload.participant.id, "private-guest-right");
+
+  const settingsUpdate = await request("PATCH", `/api/rooms/${code}/settings`, {
+    hostParticipantId: "host-client",
+    status: "lobby",
+    settings: {
+      private: true,
+      password: "new-secret",
+      enabledThemes: ["Science"]
+    }
+  });
+  assert.equal(settingsUpdate.response.status, 200, settingsUpdate.payload.error);
+  const events = await request("GET", `/api/rooms/${code}/events?since=0`, undefined, { cookie: "" });
+  assert.equal(events.response.status, 200, events.payload.error);
+  const settingsEvent = events.payload.events.find((event) => event.type === "settings_updated");
+  assert.ok(settingsEvent);
+  assert.equal(Object.hasOwn(settingsEvent.payload.settings, "password"), false);
+}
+
+async function testHostCookieRequiredForPrivilegedRoomActions() {
+  const code = makeCode(8121);
+  await upsertRoom(makeRoom(code));
+
+  const forgedClose = await request("POST", `/api/rooms/${code}/close`, {
+    participantId: "host-client",
+    reason: "forged"
+  }, { cookie: "" });
+  assert.equal(forgedClose.response.status, 403);
+
+  const forgedHostPresence = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "attacker-client",
+      name: "Attacker",
+      host: true,
+      active: true,
+      status: "host"
+    }
+  }, { cookie: "" });
+  assert.equal(forgedHostPresence.response.status, 403);
+
+  const realClose = await request("POST", `/api/rooms/${code}/close`, {
+    participantId: "host-client",
+    reason: "manual"
+  });
+  assert.equal(realClose.response.status, 200, realClose.payload.error);
+  assert.equal(realClose.payload.closed, true);
+}
+
+async function testParticipantCookieRequiredForRoomActions() {
+  const code = makeCode(8122);
+  await upsertRoom(makeRoom(code));
+  const join = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    participant: {
+      id: "secure-guest",
+      name: "Guest",
+      active: true,
+      status: "joined"
+    }
+  }, { cookie: "" });
+  assert.equal(join.response.status, 200, join.payload.error);
+  assert.equal(join.payload.participant.id, "secure-guest");
+
+  const forgedPresence = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    participant: {
+      id: "secure-guest",
+      name: "Attacker",
+      active: true,
+      status: "submitted",
+      answer: "Forged"
+    }
+  }, { cookie: "" });
+  assert.equal(forgedPresence.response.status, 403);
+
+  const forgedChat = await request("POST", `/api/rooms/${code}/chat`, {
+    compact: true,
+    message: {
+      id: "forged-chat",
+      sender: "Guest",
+      owner: "opponent",
+      participantId: "secure-guest",
+      text: "Forged",
+      createdAt: Date.now()
+    }
+  }, { cookie: "" });
+  assert.equal(forgedChat.response.status, 403);
+
+  const realChat = await request("POST", `/api/rooms/${code}/chat`, {
+    compact: true,
+    message: {
+      id: "secure-chat",
+      sender: "Guest",
+      owner: "opponent",
+      participantId: "secure-guest",
+      text: "Real",
+      createdAt: Date.now()
+    }
+  }, roomParticipantCookieHeader(code, "secure-guest"));
+  assert.equal(realChat.response.status, 200, realChat.payload.error);
+
+  const forgedPower = await request("POST", `/api/rooms/${code}/power-state`, {
+    round: 1,
+    powerId: "xray_hacks",
+    actorParticipantId: "secure-guest",
+    hands: []
+  }, { cookie: "" });
+  assert.equal(forgedPower.response.status, 403);
+
+  const forgedLeave = await request("POST", `/api/rooms/${code}/leave`, {
+    participantId: "secure-guest",
+    reason: "forged"
+  }, { cookie: "" });
+  assert.equal(forgedLeave.response.status, 403);
+
+  const realLeave = await request("POST", `/api/rooms/${code}/leave`, {
+    participantId: "secure-guest",
+    reason: "manual"
+  }, roomParticipantCookieHeader(code, "secure-guest"));
+  assert.equal(realLeave.response.status, 200, realLeave.payload.error);
+  assert.equal(realLeave.payload.closed, false);
+}
+
+async function testRoomAnswersAreRedactedFromPublicFetches() {
+  const code = makeCode(8123);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Secret answer",
+        submittedRound: 1,
+        remainingTime: 12
+      }
+    ],
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const publicRoom = await request("GET", `/api/rooms/${code}`, undefined, { cookie: "" });
+  assert.equal(publicRoom.response.status, 200, publicRoom.payload.error);
+  assert.equal(publicRoom.payload.room.participants[0].answer, "");
+
+  const hostRoom = await getRoom(code);
+  assert.equal(hostRoom.response.status, 200, hostRoom.payload.error);
+  assert.equal(hostRoom.payload.room.participants[0].answer, "Secret answer");
+}
+
+async function testStaticSensitiveFilesAreForbidden() {
+  for (const path of ["/.env", "/server.js", "/lib/backend-store.js", "/tests/room-integration.test.js", "/package.json"]) {
+    const { response, payload } = await request("GET", path);
+    assert.equal(response.status, 403, `${path} should be forbidden, got ${response.status}: ${payload}`);
+  }
+}
+
+async function testImageProxyRejectsPrivateHosts() {
+  for (const source of ["https://localhost/image.png", "https://127.0.0.1/image.png", "https://10.0.0.2/image.png", "http://example.com/image.png"]) {
+    const { response } = await request("GET", `/api/image?src=${encodeURIComponent(source)}`);
+    assert.equal(response.status, 400, `${source} should be rejected`);
+  }
+}
+
+async function testSecurityHeadersAreApplied() {
+  const staticResponse = await request("HEAD", "/index.html");
+  assert.equal(staticResponse.response.status, 200);
+  assert.equal(staticResponse.response.headers["X-Content-Type-Options"], "nosniff");
+  assert.equal(staticResponse.response.headers["X-Frame-Options"], "SAMEORIGIN");
+  assert.match(staticResponse.response.headers["Content-Security-Policy"], /default-src 'self'/);
+
+  const apiResponse = await request("GET", "/api/auth/session");
+  assert.equal(apiResponse.response.status, 200, apiResponse.payload.error);
+  assert.equal(apiResponse.response.headers["X-Content-Type-Options"], "nosniff");
+  assert.match(apiResponse.response.headers["Content-Security-Policy"], /connect-src 'self' https: wss:/);
+}
+
+async function testAdminLoginRateLimit() {
+  const headers = { "x-forwarded-for": "203.0.113.44" };
+  for (let index = 0; index < 8; index += 1) {
+    const result = await request("POST", "/api/auth/admin/login", { token: `wrong-${index}` }, headers);
+    assert.equal(result.response.status, 401, result.payload.error);
+  }
+  const limited = await request("POST", "/api/auth/admin/login", { token: "wrong-limited" }, headers);
+  assert.equal(limited.response.status, 429);
+  const retryAfter = Number(limited.response.headers["Retry-After"]);
+  assert.ok(retryAfter > 0 && retryAfter <= 300);
+}
+
 async function testHostPageExitDeletesRoom() {
   const code = makeCode(8102);
   await upsertRoom(makeRoom(code));
@@ -502,6 +785,7 @@ async function testRoomChatPreservesMessageIds() {
       id: "chat-test-message-1",
       sender: "Host",
       owner: "player",
+      participantId: "host-client",
       text: "Hello room",
       createdAt: Date.now()
     }
@@ -521,6 +805,7 @@ async function testCompactRoomDeltasAvoidFullRoomPayloads() {
       id: "chat-compact-message-1",
       sender: "Host",
       owner: "player",
+      participantId: "host-client",
       text: "Compact hello",
       createdAt: Date.now()
     }
@@ -615,6 +900,7 @@ async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
       id: "settings-preserve-chat",
       sender: "Host",
       owner: "player",
+      participantId: "host-client",
       text: "Preserve me",
       createdAt: Date.now()
     }
@@ -1065,7 +1351,7 @@ async function testUserInventoryPurchaseAndUnlockRowsPersist() {
       { id: "purchase-techno-font", type: "purchase-cosmetic", key: "font:techno", cost: 100 },
       { id: "unlock-first-blood", type: "achievement", achievementId: "first-blood", record: { source: "test" } },
       { id: "progress-room-regular", type: "achievement-progress", key: "publicMatchesFinished", value: 10, mode: "set" },
-      { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 50 },
+      { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 100 },
       {
         id: "profile-prefix",
         type: "profile",
@@ -1077,7 +1363,7 @@ async function testUserInventoryPurchaseAndUnlockRowsPersist() {
     ]
   });
   assert.equal(response.status, 200, payload.error);
-  assert.equal(payload.inventory.coins, 250);
+  assert.equal(payload.inventory.coins, 300);
   assert.deepEqual(payload.inventory.cosmetics, ["font:techno"]);
   assert.ok(payload.inventory.achievements["first-blood"]);
   assert.equal(payload.inventory.achievementProgress.publicMatchesFinished, 10);
@@ -1093,8 +1379,236 @@ async function testUserInventoryPurchaseAndUnlockRowsPersist() {
     ]
   });
   assert.equal(duplicate.response.status, 200, duplicate.payload.error);
-  assert.equal(duplicate.payload.inventory.coins, 250);
+  assert.equal(duplicate.payload.inventory.coins, 300);
   assert.deepEqual(duplicate.payload.inventory.cosmetics, ["font:techno"]);
+}
+
+async function testUserInventoryEconomyValuesUseServerCatalog() {
+  const userId = "inventory-user-economy-catalog";
+  const { response, payload } = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [
+      { id: "catalog-seed-coins", type: "coin", delta: 300, reason: "seed" },
+      { id: "catalog-cheap-techno", type: "purchase-cosmetic", key: "font:techno", cost: 1 },
+      { id: "catalog-free-unknown", type: "purchase-cosmetic", key: "font:not-real", cost: 0 },
+      { id: "catalog-inflated-milestone", type: "milestone", milestoneId: "achievements-10", coinDelta: 999999 },
+      { id: "catalog-unknown-milestone", type: "milestone", milestoneId: "achievements-999", coinDelta: 1000 }
+    ]
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.inventory.coins, 400);
+  assert.deepEqual(payload.inventory.cosmetics, ["font:techno"]);
+  assert.deepEqual(payload.inventory.claimedMilestones, ["achievements-10"]);
+  assert.equal(payload.skipped.some((entry) => entry.id === "catalog-free-unknown" && entry.reason === "invalid-shop-item"), true);
+  assert.equal(payload.skipped.some((entry) => entry.id === "catalog-unknown-milestone" && entry.reason === "invalid-milestone"), true);
+}
+
+async function testUserInventoryPurchaseEndpointUsesServerCatalog() {
+  const userId = "inventory-user-purchase-endpoint";
+  const seeded = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [{ id: "purchase-endpoint-seed", type: "coin", delta: 150, reason: "seed" }]
+  });
+  assert.equal(seeded.response.status, 200, seeded.payload.error);
+
+  const purchased = await request("POST", "/api/user/inventory/purchase", {
+    userId,
+    type: "font",
+    id: "techno",
+    cost: 1
+  });
+  assert.equal(purchased.response.status, 200, purchased.payload.error);
+  assert.equal(purchased.payload.purchase.key, "font:techno");
+  assert.equal(purchased.payload.purchase.cost, 100);
+  assert.equal(purchased.payload.inventory.coins, 50);
+  assert.deepEqual(purchased.payload.inventory.cosmetics, ["font:techno"]);
+
+  const duplicate = await request("POST", "/api/user/inventory/purchase", {
+    userId,
+    type: "font",
+    id: "techno"
+  });
+  assert.equal(duplicate.response.status, 200, duplicate.payload.error);
+  assert.equal(duplicate.payload.inventory.coins, 50);
+
+  const invalid = await request("POST", "/api/user/inventory/purchase", {
+    userId,
+    type: "font",
+    id: "not-real"
+  });
+  assert.equal(invalid.response.status, 400);
+
+  const insufficient = await request("POST", "/api/user/inventory/purchase", {
+    userId: "inventory-user-purchase-endpoint-empty",
+    type: "pattern",
+    id: "carbon"
+  });
+  assert.equal(insufficient.response.status, 409);
+  assert.equal(insufficient.payload.purchase.reason, "insufficient-coins");
+  assert.equal(insufficient.payload.inventory.coins, 0);
+}
+
+async function testUserInventoryMilestoneEndpointUsesServerRewards() {
+  const userId = "inventory-user-milestone-endpoint";
+  const claimed = await request("POST", "/api/user/inventory/milestone", {
+    userId,
+    milestoneId: "achievements-10",
+    coinDelta: 999999
+  });
+  assert.equal(claimed.response.status, 200, claimed.payload.error);
+  assert.equal(claimed.payload.milestone.coins, 200);
+  assert.equal(claimed.payload.inventory.coins, 200);
+  assert.deepEqual(claimed.payload.inventory.claimedMilestones, ["achievements-10"]);
+
+  const duplicate = await request("POST", "/api/user/inventory/milestone", {
+    userId,
+    milestoneId: "achievements-10"
+  });
+  assert.equal(duplicate.response.status, 200, duplicate.payload.error);
+  assert.equal(duplicate.payload.inventory.coins, 200);
+
+  const invalid = await request("POST", "/api/user/inventory/milestone", {
+    userId,
+    milestoneId: "achievements-999"
+  });
+  assert.equal(invalid.response.status, 400);
+}
+
+async function testAuthenticatedInventoryUsesTokenUser() {
+  const previousMode = process.env.INVENTORY_AUTH_MODE;
+  process.env.INVENTORY_AUTH_MODE = "warn";
+  try {
+    const result = await request("POST", "/api/user/inventory/ops", {
+      userId: "spoofed-inventory-user",
+      ops: [{ id: "auth-coin-start", type: "coin", delta: 77, reason: "auth-test" }]
+    }, authHeaders("auth-inventory-user"));
+    assert.equal(result.response.status, 200, result.payload.error);
+    assert.equal(result.payload.authenticated, true);
+    assert.equal(result.payload.inventory.userId, "auth-inventory-user");
+    assert.equal(result.payload.inventory.coins, 77);
+    assert.equal(result.payload.warnings.includes("inventory-user-id-overridden-by-auth"), true);
+
+    const spoofed = await request("GET", "/api/user/inventory?userId=spoofed-inventory-user");
+    assert.equal(spoofed.response.status, 200, spoofed.payload.error);
+    assert.equal(spoofed.payload.inventory.coins, 0);
+  } finally {
+    if (previousMode === undefined) {
+      delete process.env.INVENTORY_AUTH_MODE;
+    } else {
+      process.env.INVENTORY_AUTH_MODE = previousMode;
+    }
+  }
+}
+
+async function testInventoryEnforceModeTightensLegacyEconomyOps() {
+  const previousMode = process.env.INVENTORY_AUTH_MODE;
+  process.env.INVENTORY_AUTH_MODE = "enforce";
+  try {
+    const userId = "enforce-economy-user";
+    const seeded = await request("POST", "/api/user/inventory/ops", {
+      userId,
+      ops: [{ id: "enforce-economy-seed", type: "coin", delta: 300 }]
+    }, authHeaders(userId));
+    assert.equal(seeded.response.status, 200, seeded.payload.error);
+    assert.equal(seeded.payload.inventory.coins, 300);
+
+    const legacy = await request("POST", "/api/user/inventory/ops", {
+      userId,
+      ops: [
+        { id: "enforce-legacy-purchase", type: "purchase-cosmetic", key: "font:techno", cost: 1 },
+        { id: "enforce-legacy-milestone", type: "milestone", milestoneId: "achievements-10", coinDelta: 999999 }
+      ]
+    }, authHeaders(userId));
+    assert.equal(legacy.response.status, 200, legacy.payload.error);
+    assert.equal(legacy.payload.inventory.coins, 300);
+    assert.deepEqual(legacy.payload.inventory.cosmetics, []);
+    assert.deepEqual(legacy.payload.inventory.claimedMilestones, []);
+    assert.equal(legacy.payload.skipped.some((entry) => entry.id === "enforce-legacy-purchase" && entry.reason === "use-purchase-endpoint"), true);
+    assert.equal(legacy.payload.skipped.some((entry) => entry.id === "enforce-legacy-milestone" && entry.reason === "use-milestone-endpoint"), true);
+
+    const purchase = await request("POST", "/api/user/inventory/purchase", {
+      userId,
+      type: "font",
+      id: "techno"
+    }, authHeaders(userId));
+    assert.equal(purchase.response.status, 200, purchase.payload.error);
+    assert.equal(purchase.payload.inventory.coins, 200);
+    assert.deepEqual(purchase.payload.inventory.cosmetics, ["font:techno"]);
+  } finally {
+    if (previousMode === undefined) {
+      delete process.env.INVENTORY_AUTH_MODE;
+    } else {
+      process.env.INVENTORY_AUTH_MODE = previousMode;
+    }
+  }
+}
+
+async function testInventoryEnforceModeRequiresMatchingAuth() {
+  const previousMode = process.env.INVENTORY_AUTH_MODE;
+  process.env.INVENTORY_AUTH_MODE = "enforce";
+  try {
+    const missing = await request("POST", "/api/user/inventory/ops", {
+      userId: "enforce-user",
+      ops: [{ id: "enforce-missing", type: "coin", delta: 1 }]
+    });
+    assert.equal(missing.response.status, 401);
+
+    const mismatch = await request("POST", "/api/user/inventory/ops", {
+      userId: "other-user",
+      ops: [{ id: "enforce-mismatch", type: "coin", delta: 1 }]
+    }, authHeaders("enforce-user"));
+    assert.equal(mismatch.response.status, 403);
+
+    const ok = await request("POST", "/api/user/inventory/ops", {
+      userId: "enforce-user",
+      ops: [{ id: "enforce-ok", type: "coin", delta: 5 }]
+    }, authHeaders("enforce-user"));
+    assert.equal(ok.response.status, 200, ok.payload.error);
+    assert.equal(ok.payload.authenticated, true);
+    assert.equal(ok.payload.inventory.userId, "enforce-user");
+    assert.equal(ok.payload.inventory.coins, 5);
+  } finally {
+    if (previousMode === undefined) {
+      delete process.env.INVENTORY_AUTH_MODE;
+    } else {
+      process.env.INVENTORY_AUTH_MODE = previousMode;
+    }
+  }
+}
+
+async function testQuestionSubmissionEnforceModeUsesAuthenticatedCreator() {
+  const previousMode = process.env.QUESTION_SUBMISSION_AUTH_MODE;
+  process.env.QUESTION_SUBMISSION_AUTH_MODE = "enforce";
+  try {
+    const unauthenticated = await request("POST", "/api/question-submissions", {
+      question: makeQuestion("secure-submission-unauthenticated"),
+      creator: { id: "secure-creator", name: "Creator" }
+    });
+    assert.equal(unauthenticated.response.status, 401);
+
+    const spoofed = await request("POST", "/api/question-submissions", {
+      question: makeQuestion("secure-submission-spoofed"),
+      creator: { id: "spoofed-creator", name: "Creator" }
+    }, authHeaders("real-creator"));
+    assert.equal(spoofed.response.status, 403);
+
+    const created = await request("POST", "/api/question-submissions", {
+      question: makeQuestion("secure-submission-real"),
+      creator: { id: "real-creator", name: "Creator" }
+    }, authHeaders("real-creator"));
+    assert.equal(created.response.status, 201, created.payload.error);
+    assert.equal(created.payload.authenticated, true);
+
+    const listed = await request("GET", "/api/question-submissions?creatorId=real-creator", undefined, authHeaders("real-creator"));
+    assert.equal(listed.response.status, 200, listed.payload.error);
+    assert.equal(listed.payload.submissions.some((submission) => submission.id === created.payload.submission.id), true);
+  } finally {
+    if (previousMode === undefined) {
+      delete process.env.QUESTION_SUBMISSION_AUTH_MODE;
+    } else {
+      process.env.QUESTION_SUBMISSION_AUTH_MODE = previousMode;
+    }
+  }
 }
 
 async function testDebugQuestionCreateUsesBackendStorage() {
@@ -1157,6 +1671,14 @@ async function main() {
   await testRoomListUsesParticipantsWhenActiveCountIsMissing();
   await testRoomDirectoryAcceptsProfileImagePayload();
   await testRoomDirectoryPreservesProfileStyleFields();
+  await testPrivateRoomPasswordIsRedactedAndServerValidated();
+  await testHostCookieRequiredForPrivilegedRoomActions();
+  await testParticipantCookieRequiredForRoomActions();
+  await testRoomAnswersAreRedactedFromPublicFetches();
+  await testStaticSensitiveFilesAreForbidden();
+  await testImageProxyRejectsPrivateHosts();
+  await testSecurityHeadersAreApplied();
+  await testAdminLoginRateLimit();
   await testHostPageExitDeletesRoom();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
@@ -1174,6 +1696,13 @@ async function main() {
   await testHostCloseEndpointDeletesRoom();
   await testUserInventoryOpsAreIdempotent();
   await testUserInventoryPurchaseAndUnlockRowsPersist();
+  await testUserInventoryEconomyValuesUseServerCatalog();
+  await testUserInventoryPurchaseEndpointUsesServerCatalog();
+  await testUserInventoryMilestoneEndpointUsesServerRewards();
+  await testAuthenticatedInventoryUsesTokenUser();
+  await testInventoryEnforceModeTightensLegacyEconomyOps();
+  await testInventoryEnforceModeRequiresMatchingAuth();
+  await testQuestionSubmissionEnforceModeUsesAuthenticatedCreator();
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();

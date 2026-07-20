@@ -933,7 +933,10 @@ async function fetchServerUserInventory(user = state.supabaseUser) {
   if (!userId) {
     return null;
   }
-  const response = await fetch(`/api/user/inventory?userId=${encodeURIComponent(userId)}`, { cache: "no-store" });
+  const response = await fetch(`/api/user/inventory?userId=${encodeURIComponent(userId)}`, {
+    cache: "no-store",
+    headers: await getInventoryAuthHeaders()
+  });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(result.error || "Could not load server inventory.");
@@ -944,7 +947,10 @@ async function fetchServerUserInventory(user = state.supabaseUser) {
 async function postUserInventoryOps(userId, ops) {
   const response = await fetch("/api/user/inventory/ops", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(await getInventoryAuthHeaders())
+    },
     body: JSON.stringify({ userId, ops })
   });
   const result = await response.json().catch(() => ({}));
@@ -952,6 +958,56 @@ async function postUserInventoryOps(userId, ops) {
     throw new Error(result.error || "Could not save inventory.");
   }
   return result;
+}
+
+async function postUserInventoryPurchase(userId, type, id, opId = "") {
+  const response = await fetch("/api/user/inventory/purchase", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(await getInventoryAuthHeaders())
+    },
+    body: JSON.stringify({ userId, type, id, opId })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (result.inventory) {
+    applyServerUserInventory(result.inventory);
+  }
+  if (!response.ok) {
+    throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
+  }
+  return result;
+}
+
+async function postUserInventoryMilestone(userId, milestoneId, opId = "") {
+  const response = await fetch("/api/user/inventory/milestone", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(await getInventoryAuthHeaders())
+    },
+    body: JSON.stringify({ userId, milestoneId, opId })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (result.inventory) {
+    applyServerUserInventory(result.inventory);
+  }
+  if (!response.ok) {
+    throw new Error(result.error || result.milestone?.reason || "Could not save milestone.");
+  }
+  return result;
+}
+
+async function getInventoryAuthHeaders() {
+  try {
+    const session = state.supabaseSession || (state.supabaseClient
+      ? (await state.supabaseClient.auth.getSession())?.data?.session
+      : null);
+    const token = String(session?.access_token || "").trim();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
 }
 
 async function flushUserInventoryQueue() {
@@ -3182,6 +3238,8 @@ async function requestAiRound(rawInput, options = {}) {
       acceptedAnswers: state.acceptedAnswers,
       image: state.questionImage,
       mode: apiMode,
+      roomCode: roomMode ? state.roomSettings.code : "",
+      participantId: roomMode ? state.clientId : "",
       answerCards: roomMode ? answerCards : [],
       botCards: state.mode === "bots" ? state.botCards : [],
       botLabels: state.mode === "bots" ? [getOwnerLabel("bot1"), getOwnerLabel("bot2")] : [],
@@ -5242,12 +5300,10 @@ function claimAchievementMilestone(id) {
   if (milestone.coins) {
     addCurrency(milestone.coins, "milestone", { sync: false });
   }
-  enqueueUserInventoryOps({
-    id: createUserInventoryOpId("milestone", id),
-    type: "milestone",
-    milestoneId: id,
-    coinDelta: milestone.coins || 0
-  });
+  if (state.supabaseUser?.id) {
+    void postUserInventoryMilestone(getUserInventoryStorageId(), id, createUserInventoryOpId("milestone", id))
+      .catch((error) => console.warn("Milestone sync failed:", error.message || error));
+  }
   renderProfile();
   renderAchievementLibraryPreservingScroll();
   if (isModalOpen(elements.profileCustomModal)) {
@@ -6272,6 +6328,7 @@ function getRoomSyncChatMessage(message = {}) {
   return {
     ...message,
     id: String(message.id || "").slice(0, 120),
+    participantId: String(message.participantId || state.clientId || "").slice(0, 80),
     avatar: getRoomSyncAvatar(message.avatar),
     specialBadges: getRoomSyncSpecialBadges(message.specialBadges || []),
     cardCustomization: getRoomSyncCardCustomization(message.cardCustomization)
@@ -6447,6 +6504,7 @@ function mergeRoomChatMessages(remoteMessages = []) {
       cardCustomization: getRoomSyncCardCustomization(source.cardCustomization),
       text: cleanChatInput(source.text || "").slice(0, 220),
       owner: source.owner || "",
+      participantId: source.participantId || "",
       own: Boolean(source.owner && source.owner === state.currentOwner),
       host: Boolean(source.host),
       private: Boolean(source.private),
@@ -11840,14 +11898,18 @@ function buyProfileShopItem(type, id) {
     return;
   }
   const purchaseKey = getProfileShopKey(type, id);
+  const opId = createUserInventoryOpId("purchase-cosmetic", purchaseKey);
   saveCurrencyBalance(balance - item.cost);
   saveProfileShopPurchases([...purchases, purchaseKey], { sync: false });
-  enqueueUserInventoryOps({
-    id: createUserInventoryOpId("purchase-cosmetic", purchaseKey),
-    type: "purchase-cosmetic",
-    key: purchaseKey,
-    cost: item.cost
-  });
+  if (state.supabaseUser?.id) {
+    void postUserInventoryPurchase(getUserInventoryStorageId(), type, id, opId)
+      .catch((error) => {
+        console.warn("Purchase sync failed:", error.message || error);
+        if (elements.profileShopStatus) {
+          elements.profileShopStatus.textContent = "Purchase could not be saved. Server inventory was refreshed.";
+        }
+      });
+  }
   renderProfile();
   renderProfileShop();
   if (isModalOpen(elements.profileCustomModal)) {
@@ -15661,10 +15723,10 @@ async function submitUserQuestion(event) {
   try {
     const response = await fetch("/api/question-submissions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await getInventoryAuthHeaders()) },
       body: JSON.stringify({
         question: payload,
-        creator: { id: state.clientId, name: state.profile.name || "Player" }
+        creator: { id: state.supabaseUser?.id || state.clientId, name: state.profile.name || "Player" }
       })
     });
     const result = await response.json().catch(() => ({}));
@@ -15723,7 +15785,11 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
     return;
   }
   try {
-    const response = await fetch(`/api/question-submissions?creatorId=${encodeURIComponent(state.clientId)}`, { cache: "no-store" });
+    const creatorId = state.supabaseUser?.id || state.clientId;
+    const response = await fetch(`/api/question-submissions?creatorId=${encodeURIComponent(creatorId)}`, {
+      cache: "no-store",
+      headers: await getInventoryAuthHeaders()
+    });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Could not load your submissions.");
     state.userQuestionSubmissions = Array.isArray(result.submissions) ? result.submissions : [];
@@ -17976,7 +18042,7 @@ function syncRoomControls() {
   elements.autoAdvanceToggle.checked = state.roomSettings.autoAdvance !== false;
   elements.privateRoomToggle.checked = state.roomSettings.private;
   syncClassicRoomToggleState();
-  elements.roomPasswordInput.value = state.roomSettings.password;
+  elements.roomPasswordInput.value = state.roomSettings.password || "";
   setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
   renderThemeSummary();
   elements.roomCodePreview.textContent = state.roomSettings.code;
@@ -18650,7 +18716,8 @@ async function updateRoomPresence(room, options = {}) {
       },
       body: JSON.stringify({
         participant,
-        compact: options.compactResponse !== false
+        compact: options.compactResponse !== false,
+        ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
       })
     }, roomPresenceFetchTimeoutMs);
     if (!response.ok) {
@@ -19594,16 +19661,22 @@ function setJoinRoomBusy(isBusy, code = "") {
   });
 }
 
-async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessionId) {
+async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessionId, options = {}) {
   let serverRoom = await updateRoomPresence(room, {
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined",
-    compactResponse: true
+    compactResponse: true,
+    ...(Object.hasOwn(options, "roomPassword") ? { roomPassword: options.roomPassword } : {})
   });
   if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
     return null;
   }
   if (!serverRoom) {
+    if (room.settings?.private) {
+      elements.joinRoomPasswordInput.focus();
+      addSystemChat("Room password did not match.", { private: true, sync: false });
+      return null;
+    }
     const lookup = await fetchRoomByCode(room.code);
     if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
       return null;
@@ -19667,14 +19740,11 @@ async function joinHostedRoom(code, options = {}) {
       addSystemChat(`${normalizedCode} is full. Join as a spectator instead.`, { private: true });
       return;
     }
+    let typedPassword = "";
     if (room.settings.private) {
-      let typedPassword = cleanChatInput(options.password || elements.joinRoomPasswordInput.value);
+      typedPassword = cleanChatInput(options.password || elements.joinRoomPasswordInput.value);
       if (!typedPassword) {
         typedPassword = cleanChatInput(window.prompt(`Password for ${normalizedCode}`) || "");
-      }
-      if (typedPassword !== room.settings.password) {
-        elements.joinRoomPasswordInput.focus();
-        return;
       }
     }
 
@@ -19689,7 +19759,7 @@ async function joinHostedRoom(code, options = {}) {
     state.currentOwner = state.isSpectator ? "spectator" : "opponent";
     state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
     state.roomParticipants = normalizeRoomParticipantsList(room.participants);
-    const joinedRoom = await syncJoinedRoomPresence(room, state.roomSessionId);
+    const joinedRoom = await syncJoinedRoomPresence(room, state.roomSessionId, { roomPassword: typedPassword });
     if (!joinedRoom) {
       clearLocalRoomState();
       startSupabaseRealtime();
