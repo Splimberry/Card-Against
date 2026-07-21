@@ -9279,15 +9279,12 @@ input:focus {
 }
 
 .stat-flash.coin::before {
-  inset: 16% 12%;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 221, 122, 0.22);
+  inset: 30% 22%;
+  border-radius: 0.9rem;
   background:
-    radial-gradient(circle at center, rgba(255, 226, 144, 0.16), transparent 38%),
-    linear-gradient(90deg, transparent, rgba(255, 230, 150, 0.18), transparent);
-  box-shadow:
-    0 0 2.8rem rgba(255, 201, 74, 0.12),
-    inset 0 0 2.2rem rgba(255, 214, 93, 0.08);
+    radial-gradient(ellipse at center, rgba(255, 226, 144, 0.18), rgba(255, 202, 74, 0.08) 42%, transparent 72%),
+    linear-gradient(90deg, transparent, rgba(255, 230, 150, 0.12), transparent);
+  filter: blur(14px);
   opacity: 0;
 }
 
