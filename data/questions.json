@@ -12684,5 +12684,1005 @@
     "canonicalAnswer": "Opera",
     "multipleChoiceOptions": ["Opera", "Ballet", "Oratorio", "Musical theater"],
     "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/La_Traviata_at_Hamburgische_Staatsoper_2013_-_Photo_No_274_by_Monika_Rittershaus.jpg", "alt": "Opera stage image clue", "credit": "Wikimedia Commons"}
+  },
+  {
+    "id": "popculture-textmcq-blade-runner-origami",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In Blade Runner, which recurring small object is most closely associated with Gaff?",
+    "canonicalAnswer": "Origami figures",
+    "multipleChoiceOptions": ["Origami figures", "Silver coins", "Chess pieces", "Polaroid photos"]
+  },
+  {
+    "id": "popculture-textmcq-twin-peaks-pie",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Twin Peaks, Agent Cooper repeatedly praises which diner dessert?",
+    "canonicalAnswer": "Cherry pie",
+    "multipleChoiceOptions": ["Apple crumble", "Cherry pie", "Lemon tart", "Chocolate gateau"]
+  },
+  {
+    "id": "popculture-textmcq-akira-bike",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Akira, which character is famous for the red motorcycle slide shot?",
+    "canonicalAnswer": "Kaneda",
+    "multipleChoiceOptions": ["Tetsuo", "Kaneda", "Kei", "Yamagata"]
+  },
+  {
+    "id": "popculture-textmcq-office-teapot",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In The Office, Jim's Christmas gift for Pam is hidden inside what item?",
+    "canonicalAnswer": "A teapot",
+    "multipleChoiceOptions": ["A teapot", "A stapler", "A snow globe", "A coffee mug"]
+  },
+  {
+    "id": "popculture-textmcq-spinal-tap-amp",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In This Is Spinal Tap, the band's amplifiers famously go up to what number?",
+    "canonicalAnswer": "11",
+    "multipleChoiceOptions": ["10", "11", "12", "13"]
+  },
+  {
+    "id": "popculture-textmcq-watchmen-comedian-pin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In Watchmen, the blood-stained smiley-face badge belongs to which character?",
+    "canonicalAnswer": "The Comedian",
+    "multipleChoiceOptions": ["Rorschach", "The Comedian", "Ozymandias", "Nite Owl"]
+  },
+  {
+    "id": "popculture-textmcq-mad-men-carousel",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In Mad Men, Don Draper's famous 'Carousel' pitch is for which company?",
+    "canonicalAnswer": "Kodak",
+    "multipleChoiceOptions": ["Kodak", "Polaroid", "Nikon", "Leica"]
+  },
+  {
+    "id": "popculture-textmcq-star-trek-kobayashi",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Star Trek, the Kobayashi Maru is best known as what kind of test?",
+    "canonicalAnswer": "A no-win scenario",
+    "multipleChoiceOptions": ["A no-win scenario", "A warp-speed trial", "A medical exam", "A diplomacy ritual"]
+  },
+  {
+    "id": "popculture-textmcq-buffy-library",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In Buffy the Vampire Slayer, Giles works at Sunnydale High in which role?",
+    "canonicalAnswer": "Librarian",
+    "multipleChoiceOptions": ["Librarian", "History teacher", "Principal", "School counselor"]
+  },
+  {
+    "id": "popculture-textmcq-inception-totem",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Inception, Cobb's totem is most often shown as which object?",
+    "canonicalAnswer": "A spinning top",
+    "multipleChoiceOptions": ["A loaded die", "A chess bishop", "A spinning top", "A brass key"]
+  },
+  {
+    "id": "gaming-textmcq-zelda-mask-moon",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In The Legend of Zelda: Majora's Mask, how many in-game days repeat before the moon falls?",
+    "canonicalAnswer": "Three days",
+    "multipleChoiceOptions": ["Two days", "Three days", "Five days", "Seven days"]
+  },
+  {
+    "id": "gaming-textmcq-dark-souls-bonfire",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Dark Souls, resting at a bonfire usually has which downside?",
+    "canonicalAnswer": "Most defeated enemies respawn",
+    "multipleChoiceOptions": ["Most defeated enemies respawn", "Your weapon breaks instantly", "Your level resets", "Bosses regain extra phases"]
+  },
+  {
+    "id": "gaming-textmcq-catan-longest-road",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Settlers of Catan, the Longest Road bonus is worth how many victory points?",
+    "canonicalAnswer": "2",
+    "multipleChoiceOptions": ["1", "2", "3", "4"]
+  },
+  {
+    "id": "gaming-textmcq-magic-stack",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Magic: The Gathering, spells and abilities waiting to resolve are placed on what shared game zone?",
+    "canonicalAnswer": "The stack",
+    "multipleChoiceOptions": ["The stack", "The graveyard", "The command zone", "The exile zone"]
+  },
+  {
+    "id": "gaming-textmcq-pokemon-nuzlocke",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In a common Pokemon Nuzlocke challenge, what usually happens to a Pokemon that faints?",
+    "canonicalAnswer": "It is treated as unusable",
+    "multipleChoiceOptions": ["It is traded away", "It is treated as unusable", "It loses all moves", "It must hold an item"]
+  },
+  {
+    "id": "gaming-textmcq-doom-idkfa",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In classic Doom, the cheat code IDKFA is associated with which benefit?",
+    "canonicalAnswer": "Weapons, ammo, and keys",
+    "multipleChoiceOptions": ["God mode only", "No clipping", "Weapons, ammo, and keys", "Level skip"]
+  },
+  {
+    "id": "gaming-textmcq-dnd-armor-class",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Dungeons & Dragons, Armor Class most directly measures how hard a creature is to do what?",
+    "canonicalAnswer": "Hit with an attack",
+    "multipleChoiceOptions": ["Hit with an attack", "Convince in dialogue", "Heal with magic", "Track in the wild"]
+  },
+  {
+    "id": "gaming-textmcq-portal-cake",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Portal, the promised cake is mainly used by GLaDOS as what?",
+    "canonicalAnswer": "A false reward",
+    "multipleChoiceOptions": ["A false reward", "A healing item", "A level key", "A companion cube upgrade"]
+  },
+  {
+    "id": "gaming-textmcq-speedrun-any-percent",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In speedrunning, an 'any%' run is mainly judged by what goal?",
+    "canonicalAnswer": "Finish as fast as possible with any completion amount",
+    "multipleChoiceOptions": ["Collect every item", "Finish as fast as possible with any completion amount", "Use no glitches", "Beat every side quest"]
+  },
+  {
+    "id": "gaming-textmcq-final-fantasy-limit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Final Fantasy VII, Cloud's famous ultimate Limit Break is called what?",
+    "canonicalAnswer": "Omnislash",
+    "multipleChoiceOptions": ["Lion Heart", "Omnislash", "Zantetsuken", "Meteorain"]
+  },
+  {
+    "id": "geohistory-textmcq-hanseatic-league",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Hanseatic League was most closely connected with trade around which region?",
+    "canonicalAnswer": "The Baltic and North Seas",
+    "multipleChoiceOptions": ["The Baltic and North Seas", "The Persian Gulf", "The Caribbean Sea", "The Red Sea"]
+  },
+  {
+    "id": "geohistory-textmcq-rosenbergs-trial",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Julius and Ethel Rosenberg were convicted in the United States during which Cold War-era controversy?",
+    "canonicalAnswer": "Atomic espionage",
+    "multipleChoiceOptions": ["Atomic espionage", "Watergate burglary", "Iran-Contra funding", "Pentagon Papers leaking"]
+  },
+  {
+    "id": "geohistory-textmcq-suez-canal-seas",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The Suez Canal connects the Mediterranean Sea to which body of water?",
+    "canonicalAnswer": "The Red Sea",
+    "multipleChoiceOptions": ["The Black Sea", "The Red Sea", "The Caspian Sea", "The Arabian Sea"]
+  },
+  {
+    "id": "geohistory-textmcq-hagia-sophia-city",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Hagia Sophia is located in which modern city?",
+    "canonicalAnswer": "Istanbul",
+    "multipleChoiceOptions": ["Athens", "Istanbul", "Rome", "Jerusalem"]
+  },
+  {
+    "id": "geohistory-textmcq-taiping-rebellion",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Taiping Rebellion took place primarily in which country?",
+    "canonicalAnswer": "China",
+    "multipleChoiceOptions": ["China", "Japan", "Korea", "Vietnam"]
+  },
+  {
+    "id": "geohistory-textmcq-treaty-tordesillas",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Treaty of Tordesillas divided overseas claims mainly between Spain and which other power?",
+    "canonicalAnswer": "Portugal",
+    "multipleChoiceOptions": ["Portugal", "France", "England", "The Netherlands"]
+  },
+  {
+    "id": "geohistory-textmcq-mali-mansa-musa",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Mansa Musa is most closely associated with which medieval West African empire?",
+    "canonicalAnswer": "Mali Empire",
+    "multipleChoiceOptions": ["Mali Empire", "Songhai Empire", "Ghana Empire", "Benin Empire"]
+  },
+  {
+    "id": "geohistory-textmcq-prague-defenestration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The 1618 Defenestration of Prague helped spark which major European conflict?",
+    "canonicalAnswer": "The Thirty Years' War",
+    "multipleChoiceOptions": ["The Thirty Years' War", "The War of Spanish Succession", "The Seven Years' War", "The Crimean War"]
+  },
+  {
+    "id": "geohistory-textmcq-andes-altiplano",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Altiplano plateau lies mainly within which mountain system?",
+    "canonicalAnswer": "The Andes",
+    "multipleChoiceOptions": ["The Andes", "The Alps", "The Himalayas", "The Atlas Mountains"]
+  },
+  {
+    "id": "geohistory-textmcq-meiji-restoration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The Meiji Restoration is most closely linked with the modernization of which country?",
+    "canonicalAnswer": "Japan",
+    "multipleChoiceOptions": ["Japan", "Thailand", "China", "Korea"]
+  },
+  {
+    "id": "animals-textmcq-platypus-order",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Platypuses and echidnas belong to which egg-laying mammal group?",
+    "canonicalAnswer": "Monotremes",
+    "multipleChoiceOptions": ["Marsupials", "Monotremes", "Cetaceans", "Ungulates"]
+  },
+  {
+    "id": "animals-textmcq-nudibranch",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "A nudibranch is best described as which kind of animal?",
+    "canonicalAnswer": "A sea slug",
+    "multipleChoiceOptions": ["A sea slug", "A deep-sea fish", "A coral polyp", "A small squid"]
+  },
+  {
+    "id": "animals-textmcq-okapi-family",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "The okapi is the closest living relative of which animal?",
+    "canonicalAnswer": "Giraffe",
+    "multipleChoiceOptions": ["Zebra", "Giraffe", "Antelope", "Tapir"]
+  },
+  {
+    "id": "animals-textmcq-axolotl-regeneration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Axolotls are famous for their ability to regenerate which body parts?",
+    "canonicalAnswer": "Limbs",
+    "multipleChoiceOptions": ["Limbs", "Feathers", "Shells", "Horns"]
+  },
+  {
+    "id": "animals-textmcq-baleen-whale-food",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Baleen whales use baleen plates mainly to filter which food from water?",
+    "canonicalAnswer": "Small prey like krill",
+    "multipleChoiceOptions": ["Sea grass", "Small prey like krill", "Hard-shelled clams", "Floating seeds"]
+  },
+  {
+    "id": "animals-textmcq-mantis-shrimp-eyes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Mantis shrimp are especially famous for unusually complex what?",
+    "canonicalAnswer": "Eyesight",
+    "multipleChoiceOptions": ["Eyesight", "Nest building", "Feather displays", "Milk production"]
+  },
+  {
+    "id": "animals-textmcq-tarsier-eyes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Tarsiers are small primates especially known for which striking feature?",
+    "canonicalAnswer": "Very large eyes",
+    "multipleChoiceOptions": ["Very large eyes", "Venomous spurs", "Armored tails", "Transparent skin"]
+  },
+  {
+    "id": "animals-textmcq-coral-animal",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Corals are colonies of tiny animals called what?",
+    "canonicalAnswer": "Polyps",
+    "multipleChoiceOptions": ["Polyps", "Spores", "Larvae", "Scales"]
+  },
+  {
+    "id": "animals-textmcq-cuttlefish-camouflage",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Cuttlefish rapidly change color using specialized skin cells called what?",
+    "canonicalAnswer": "Chromatophores",
+    "multipleChoiceOptions": ["Chromatophores", "Photophores", "Osteoderms", "Ampullae"]
+  },
+  {
+    "id": "animals-textmcq-albatross-wingspan",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "The wandering albatross is especially noted for having one of the largest what among living birds?",
+    "canonicalAnswer": "Wingspans",
+    "multipleChoiceOptions": ["Wingspans", "Beaks", "Clutch sizes", "Running speeds"]
+  },
+  {
+    "id": "fooddrinks-textmcq-kombucha-culture",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Kombucha is fermented using a culture commonly shortened to what acronym?",
+    "canonicalAnswer": "SCOBY",
+    "multipleChoiceOptions": ["SCOBY", "MISO", "UMAMI", "KAPPA"]
+  },
+  {
+    "id": "fooddrinks-textmcq-paella-saffron",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which spice is traditionally prized for giving paella its golden color?",
+    "canonicalAnswer": "Saffron",
+    "multipleChoiceOptions": ["Turmeric", "Saffron", "Paprika", "Cumin"]
+  },
+  {
+    "id": "fooddrinks-textmcq-mole-origin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Mole poblano is most strongly associated with which country's cuisine?",
+    "canonicalAnswer": "Mexico",
+    "multipleChoiceOptions": ["Peru", "Mexico", "Spain", "Guatemala"]
+  },
+  {
+    "id": "fooddrinks-textmcq-kimchi-fermentation",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Kimchi's tangy flavor mainly comes from which process?",
+    "canonicalAnswer": "Lactic acid fermentation",
+    "multipleChoiceOptions": ["Caramelization", "Lactic acid fermentation", "Freeze drying", "Distillation"]
+  },
+  {
+    "id": "fooddrinks-textmcq-mascarpone-dessert",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Mascarpone cheese is a classic ingredient in which Italian dessert?",
+    "canonicalAnswer": "Tiramisu",
+    "multipleChoiceOptions": ["Cannoli", "Tiramisu", "Panna cotta", "Sfogliatella"]
+  },
+  {
+    "id": "fooddrinks-textmcq-pisco-sour",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "A pisco sour is built around which grape brandy?",
+    "canonicalAnswer": "Pisco",
+    "multipleChoiceOptions": ["Cognac", "Pisco", "Grappa", "Armagnac"]
+  },
+  {
+    "id": "fooddrinks-textmcq-roux-thickener",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "A roux is usually made by cooking flour with which ingredient?",
+    "canonicalAnswer": "Fat",
+    "multipleChoiceOptions": ["Vinegar", "Fat", "Sugar syrup", "Egg whites"]
+  },
+  {
+    "id": "fooddrinks-textmcq-espresso-crema",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "The tan foam on top of a well-pulled espresso is called what?",
+    "canonicalAnswer": "Crema",
+    "multipleChoiceOptions": ["Crema", "Bloom", "Head", "Froth cap"]
+  },
+  {
+    "id": "fooddrinks-textmcq-yuzu-citrus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Yuzu is best described as which type of ingredient?",
+    "canonicalAnswer": "A citrus fruit",
+    "multipleChoiceOptions": ["A seaweed", "A citrus fruit", "A rice wine", "A fermented bean paste"]
+  },
+  {
+    "id": "fooddrinks-textmcq-tempeh-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Traditional tempeh is mainly made by fermenting which food?",
+    "canonicalAnswer": "Soybeans",
+    "multipleChoiceOptions": ["Soybeans", "Chickpeas", "Rice noodles", "Cassava root"]
+  },
+  {
+    "id": "sports-textmcq-cricket-duck",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In cricket, a batter dismissed without scoring is said to be out for what?",
+    "canonicalAnswer": "A duck",
+    "multipleChoiceOptions": ["A duck", "A bagel", "A goose egg", "A blank"]
+  },
+  {
+    "id": "sports-textmcq-tennis-let",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In tennis, a serve that clips the net and lands in the correct service box is usually called what?",
+    "canonicalAnswer": "A let",
+    "multipleChoiceOptions": ["A let", "A fault", "An ace", "A volley"]
+  },
+  {
+    "id": "sports-textmcq-baseball-cycle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In baseball, hitting for the cycle means one player records which set of hits in a game?",
+    "canonicalAnswer": "Single, double, triple, and home run",
+    "multipleChoiceOptions": ["Four home runs", "Single, double, triple, and home run", "Three doubles and a walk", "A hit in every inning"]
+  },
+  {
+    "id": "sports-textmcq-rugby-conversion",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In rugby union, a successful conversion kick after a try is worth how many points?",
+    "canonicalAnswer": "2",
+    "multipleChoiceOptions": ["1", "2", "3", "5"]
+  },
+  {
+    "id": "sports-textmcq-f1-undercut",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In Formula 1 strategy, an undercut usually means pitting earlier to gain time on what?",
+    "canonicalAnswer": "Fresh tyres",
+    "multipleChoiceOptions": ["Fresh tyres", "Less fuel weight", "A safety car restart", "DRS activation"]
+  },
+  {
+    "id": "sports-textmcq-basketball-eurostep",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In basketball, a Eurostep is mainly used by a driving player to do what?",
+    "canonicalAnswer": "Evade a defender with side steps",
+    "multipleChoiceOptions": ["Evade a defender with side steps", "Set a legal screen", "Box out for a rebound", "Shoot while fading backward"]
+  },
+  {
+    "id": "sports-textmcq-golf-albatross",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In golf, an albatross means a score of how many under par on one hole?",
+    "canonicalAnswer": "Three under par",
+    "multipleChoiceOptions": ["Two under par", "Three under par", "Four under par", "One over par"]
+  },
+  {
+    "id": "sports-textmcq-cycling-peloton",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In road cycling, the main group of riders is called what?",
+    "canonicalAnswer": "The peloton",
+    "multipleChoiceOptions": ["The scrum", "The peloton", "The packline", "The bullpen"]
+  },
+  {
+    "id": "sports-textmcq-volleyball-libero",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In volleyball, the libero is primarily a specialist in which area?",
+    "canonicalAnswer": "Back-row defense and passing",
+    "multipleChoiceOptions": ["Back-row defense and passing", "Serving only", "Net blocking", "Referee challenges"]
+  },
+  {
+    "id": "sports-textmcq-snooker-maximum-break",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In snooker, the standard maximum break is worth how many points?",
+    "canonicalAnswer": "147",
+    "multipleChoiceOptions": ["120", "147", "155", "180"]
+  },
+  {
+    "id": "internet-textmcq-rfc-meaning",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "In internet standards, RFC stands for what?",
+    "canonicalAnswer": "Request for Comments",
+    "multipleChoiceOptions": ["Request for Comments", "Remote File Command", "Runtime Format Code", "Registered Firewall Certificate"]
+  },
+  {
+    "id": "internet-textmcq-http-404",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "HTTP status code 404 most specifically means what?",
+    "canonicalAnswer": "Not Found",
+    "multipleChoiceOptions": ["Forbidden", "Not Found", "Bad Gateway", "Moved Permanently"]
+  },
+  {
+    "id": "internet-textmcq-captcha",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "CAPTCHA tests are mainly used online to distinguish humans from what?",
+    "canonicalAnswer": "Automated bots",
+    "multipleChoiceOptions": ["Automated bots", "Search engines", "VPN users", "Password managers"]
+  },
+  {
+    "id": "internet-textmcq-rss-feed",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "RSS feeds are most commonly used to let people subscribe to what kind of updates?",
+    "canonicalAnswer": "New posts or articles",
+    "multipleChoiceOptions": ["New posts or articles", "Encrypted passwords", "Payment receipts", "Browser cookies"]
+  },
+  {
+    "id": "internet-textmcq-dns-cache",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "DNS caching mainly helps browsers and networks avoid repeatedly looking up what?",
+    "canonicalAnswer": "Domain name records",
+    "multipleChoiceOptions": ["Domain name records", "Screen resolutions", "Video subtitles", "User avatars"]
+  },
+  {
+    "id": "internet-textmcq-archive-wayback",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "The Wayback Machine is best known for storing what?",
+    "canonicalAnswer": "Archived web pages",
+    "multipleChoiceOptions": ["Archived web pages", "Live chat logs", "Private passwords", "Streaming playlists"]
+  },
+  {
+    "id": "internet-textmcq-two-factor-totp",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "In two-factor authentication, a TOTP code is mainly based on a secret key and what changing value?",
+    "canonicalAnswer": "Time",
+    "multipleChoiceOptions": ["Time", "Screen brightness", "IP address", "Battery level"]
+  },
+  {
+    "id": "internet-textmcq-meme-loss",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "The internet meme 'Loss' is based on a minimalist layout from which webcomic?",
+    "canonicalAnswer": "Ctrl+Alt+Del",
+    "multipleChoiceOptions": ["xkcd", "Ctrl+Alt+Del", "Penny Arcade", "The Perry Bible Fellowship"]
+  },
+  {
+    "id": "internet-textmcq-irc-channel",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "On IRC, chat rooms are traditionally called what?",
+    "canonicalAnswer": "Channels",
+    "multipleChoiceOptions": ["Channels", "Subreddits", "Servers", "Threads"]
+  },
+  {
+    "id": "internet-textmcq-open-source-fork",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "In open-source culture, a fork is usually a separate copy of a project made for what purpose?",
+    "canonicalAnswer": "Independent development",
+    "multipleChoiceOptions": ["Independent development", "Deleting old issues", "Compressing files", "Banning contributors"]
+  },
+  {
+    "id": "science-textmcq-doppler-effect",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "The Doppler effect explains a change in observed wave frequency caused by what?",
+    "canonicalAnswer": "Relative motion",
+    "multipleChoiceOptions": ["Relative motion", "Chemical bonding", "Radioactive decay", "Thermal insulation"]
+  },
+  {
+    "id": "science-textmcq-crispr-cas9",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "CRISPR-Cas9 is most closely associated with which biological technique?",
+    "canonicalAnswer": "Gene editing",
+    "multipleChoiceOptions": ["Gene editing", "Protein crystallization", "Carbon dating", "MRI scanning"]
+  },
+  {
+    "id": "science-textmcq-lagrange-point",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "A Lagrange point is a location where gravitational and orbital effects allow what?",
+    "canonicalAnswer": "An object to stay in a relatively stable position",
+    "multipleChoiceOptions": ["An object to stay in a relatively stable position", "Light to stop moving", "A planet to reverse rotation", "A vacuum to create sound"]
+  },
+  {
+    "id": "science-textmcq-ph-scale",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "On the pH scale, a value below 7 usually indicates a substance is what?",
+    "canonicalAnswer": "Acidic",
+    "multipleChoiceOptions": ["Acidic", "Neutral", "Basic", "Radioactive"]
+  },
+  {
+    "id": "science-textmcq-mitochondrial-dna",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "In humans, mitochondrial DNA is usually inherited from which parent?",
+    "canonicalAnswer": "Mother",
+    "multipleChoiceOptions": ["Mother", "Father", "Both equally", "Neither parent"]
+  },
+  {
+    "id": "science-textmcq-hubble-redshift",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "In astronomy, redshift in distant galaxies is key evidence for what broad idea?",
+    "canonicalAnswer": "The expansion of the universe",
+    "multipleChoiceOptions": ["The expansion of the universe", "The flatness of Earth", "The shrinking of stars", "The absence of gravity"]
+  },
+  {
+    "id": "science-textmcq-absolute-zero",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Absolute zero is equal to which temperature on the Celsius scale?",
+    "canonicalAnswer": "-273.15 C",
+    "multipleChoiceOptions": ["0 C", "-100 C", "-273.15 C", "-459.67 C"]
+  },
+  {
+    "id": "science-textmcq-plate-tectonics",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Plate tectonics mainly describes the motion of large sections of what?",
+    "canonicalAnswer": "Earth's lithosphere",
+    "multipleChoiceOptions": ["Earth's lithosphere", "Ocean currents", "Cloud systems", "Magnetic field lines"]
+  },
+  {
+    "id": "science-textmcq-photosynthesis-electrons",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "During oxygenic photosynthesis, the oxygen released by plants comes mainly from splitting what?",
+    "canonicalAnswer": "Water",
+    "multipleChoiceOptions": ["Water", "Carbon dioxide", "Glucose", "Nitrogen gas"]
+  },
+  {
+    "id": "science-textmcq-periodic-noble-gases",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Helium, neon, and argon belong to which group of elements?",
+    "canonicalAnswer": "Noble gases",
+    "multipleChoiceOptions": ["Halogens", "Noble gases", "Alkali metals", "Lanthanides"]
+  },
+  {
+    "id": "mythology-textmcq-hermes-caduceus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In Greek mythology, the caduceus is most closely associated with which god?",
+    "canonicalAnswer": "Hermes",
+    "multipleChoiceOptions": ["Apollo", "Hermes", "Ares", "Dionysus"]
+  },
+  {
+    "id": "mythology-textmcq-norse-yggdrasil",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Norse mythology, Yggdrasil is best described as what?",
+    "canonicalAnswer": "The world tree",
+    "multipleChoiceOptions": ["The world tree", "A magic hammer", "A sea serpent", "A golden hall"]
+  },
+  {
+    "id": "mythology-textmcq-egyptian-judgement",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In ancient Egyptian belief, a dead person's heart was weighed against what?",
+    "canonicalAnswer": "The feather of Ma'at",
+    "multipleChoiceOptions": ["The feather of Ma'at", "A scarab shell", "A solar disk", "A lotus flower"]
+  },
+  {
+    "id": "mythology-textmcq-athena-birth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Athena is famously said to have been born from which part of Zeus?",
+    "canonicalAnswer": "His head",
+    "multipleChoiceOptions": ["His hand", "His head", "His shadow", "His heart"]
+  },
+  {
+    "id": "mythology-textmcq-ragnarok-wolf",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In Norse mythology, which wolf is foretold to kill Odin at Ragnarok?",
+    "canonicalAnswer": "Fenrir",
+    "multipleChoiceOptions": ["Fenrir", "Garmr", "Skoll", "Hati"]
+  },
+  {
+    "id": "mythology-textmcq-orpheus-underworld",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Orpheus travels to the underworld to retrieve which figure?",
+    "canonicalAnswer": "Eurydice",
+    "multipleChoiceOptions": ["Eurydice", "Ariadne", "Helen", "Medea"]
+  },
+  {
+    "id": "mythology-textmcq-japanese-kitsune",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Japanese folklore, kitsune are supernatural beings usually taking the form of what animal?",
+    "canonicalAnswer": "Foxes",
+    "multipleChoiceOptions": ["Foxes", "Cranes", "Cats", "Serpents"]
+  },
+  {
+    "id": "mythology-textmcq-mayan-feathered-serpent",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Kukulkan and Quetzalcoatl are both associated with which mythic figure?",
+    "canonicalAnswer": "A feathered serpent",
+    "multipleChoiceOptions": ["A feathered serpent", "A storm giant", "A moon rabbit", "A firebird"]
+  },
+  {
+    "id": "mythology-textmcq-greek-ambrosia",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Greek mythology, ambrosia is most often described as food or drink for whom?",
+    "canonicalAnswer": "The gods",
+    "multipleChoiceOptions": ["The gods", "The dead", "Heroes only", "Sea monsters"]
+  },
+  {
+    "id": "mythology-textmcq-irish-cu-chulainn",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Cu Chulainn is a hero from which mythological tradition?",
+    "canonicalAnswer": "Irish mythology",
+    "multipleChoiceOptions": ["Irish mythology", "Greek mythology", "Aztec mythology", "Hindu mythology"]
+  },
+  {
+    "id": "artmusic-textmcq-blue-period",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "The Blue Period is associated with which artist?",
+    "canonicalAnswer": "Pablo Picasso",
+    "multipleChoiceOptions": ["Pablo Picasso", "Claude Monet", "Frida Kahlo", "Henri Matisse"]
+  },
+  {
+    "id": "artmusic-textmcq-fugue",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "In classical music, a fugue is built around a main musical idea usually called what?",
+    "canonicalAnswer": "A subject",
+    "multipleChoiceOptions": ["A subject", "A bridge", "A chorus", "A coda"]
+  },
+  {
+    "id": "artmusic-textmcq-impasto",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Impasto painting is recognized by paint applied in what way?",
+    "canonicalAnswer": "Thickly so it stands out from the surface",
+    "multipleChoiceOptions": ["Thickly so it stands out from the surface", "Only in transparent washes", "Without visible brush marks", "Using powdered pigment with no binder"]
+  },
+  {
+    "id": "artmusic-textmcq-baroque-basso-continuo",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Basso continuo is especially associated with which period of Western classical music?",
+    "canonicalAnswer": "Baroque",
+    "multipleChoiceOptions": ["Baroque", "Romantic", "Impressionist", "Minimalist"]
+  },
+  {
+    "id": "artmusic-textmcq-triptych",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "A triptych is an artwork made of how many panels?",
+    "canonicalAnswer": "Three",
+    "multipleChoiceOptions": ["Two", "Three", "Four", "Five"]
+  },
+  {
+    "id": "artmusic-textmcq-kintsugi",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Kintsugi is a Japanese repair art that highlights cracks with which material?",
+    "canonicalAnswer": "Gold",
+    "multipleChoiceOptions": ["Gold", "Ink", "Silk", "Bamboo"]
+  },
+  {
+    "id": "artmusic-textmcq-synesthesia-scriabin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Composer Alexander Scriabin is often linked with music that connects sound to what sensory idea?",
+    "canonicalAnswer": "Color",
+    "multipleChoiceOptions": ["Color", "Taste", "Smell", "Temperature"]
+  },
+  {
+    "id": "artmusic-textmcq-dada-origin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "The Dada art movement began during which major conflict?",
+    "canonicalAnswer": "World War I",
+    "multipleChoiceOptions": ["World War I", "World War II", "The Franco-Prussian War", "The Cold War"]
+  },
+  {
+    "id": "artmusic-textmcq-sitars-strings",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "The sitar is most strongly associated with classical music from which region?",
+    "canonicalAnswer": "South Asia",
+    "multipleChoiceOptions": ["South Asia", "West Africa", "The Andes", "Scandinavia"]
+  },
+  {
+    "id": "artmusic-textmcq-woodcut-print",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "A woodcut is created by carving an image into wood and using it for what?",
+    "canonicalAnswer": "Printing",
+    "multipleChoiceOptions": ["Printing", "Casting bronze", "Weaving fabric", "Tuning strings"]
   }
 ]
