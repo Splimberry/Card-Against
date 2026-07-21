@@ -3136,7 +3136,7 @@ function finalizeRoom(room) {
     room.participants = room.participants.filter((participant) => !staleHostIds.has(participant.id));
   }
   if (!room.participants.some((participant) => participant.host)) {
-    room.participants.unshift({
+    const repairedHost = {
       id: room.host.id,
       name: room.host.name,
       avatar: room.host.avatar,
@@ -3152,7 +3152,16 @@ function finalizeRoom(room) {
       answer: "",
       submittedRound: 0,
       remainingTime: 0
-    });
+    };
+    const existingHostIndex = room.participants.findIndex((participant) => participant.id === room.host.id);
+    if (existingHostIndex >= 0) {
+      room.participants[existingHostIndex] = {
+        ...room.participants[existingHostIndex],
+        ...repairedHost
+      };
+    } else {
+      room.participants.unshift(repairedHost);
+    }
   }
   room.activePlayers = room.participants.filter((participant) => participant.active && !participant.spectator).length;
   room.spectators = room.participants.filter((participant) => participant.active && participant.spectator).length;

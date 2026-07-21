@@ -7966,6 +7966,20 @@ function setButtonHint(button, hint = "") {
   }
 }
 
+function setFloatingButtonHint(button, hint = "") {
+  if (!button) {
+    return;
+  }
+  button.title = hint;
+  delete button.dataset.tooltip;
+  if (hint) {
+    button.dataset.description = hint;
+    attachFloatingDescriptionTooltip(button);
+  } else {
+    delete button.dataset.description;
+  }
+}
+
 function addSystemChat(text, options = {}) {
   const message = pushRoomChatMessage({
     sender: options.sender || "System",
@@ -8847,6 +8861,7 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
 }
 
 function getPendingSubmitters() {
+  applyLocalRoomSubmission();
   return getActiveOwners().filter((owner) => !state.roomSubmissions[owner]);
 }
 
@@ -11261,6 +11276,30 @@ function applyPendingLegendaryPowerRewards() {
 }
 
 function getActiveOwners() {
+  if (isRoomMode()) {
+    const playersByParticipant = new Map();
+    state.players
+      .filter((player) => player.active && !player.spectator)
+      .forEach((player) => {
+        const key = String(player.participantId || player.owner || "");
+        if (!key) {
+          return;
+        }
+        const existing = playersByParticipant.get(key);
+        const shouldReplace = !existing
+          || player.owner === state.currentOwner
+          || (player.host && !existing.host)
+          || (existing.connectionStatus === "waiting" && player.connectionStatus !== "waiting");
+        if (shouldReplace) {
+          playersByParticipant.set(key, player);
+        }
+      });
+    return [...new Set(
+      [...playersByParticipant.values()]
+        .map((player) => player.owner)
+        .filter(Boolean)
+    )];
+  }
   return [
     ...new Set(
       state.players
@@ -21031,7 +21070,7 @@ async function fetchRoomByCode(code = state.roomSettings.code) {
 async function updateRoomPresence(room, options = {}) {
   try {
     const participant = getCurrentParticipant({
-      host: Boolean(options.host),
+      host: Object.hasOwn(options, "host") ? Boolean(options.host) : isCurrentHost() && !state.joiningRoom,
       spectator: Boolean(options.spectator),
       active: options.active !== false,
       status: options.status || (options.spectator ? "spectating" : "joined"),
@@ -21124,9 +21163,17 @@ function normalizeRoomParticipantsList(participants = []) {
     if (!normalized) {
       return;
     }
+    const previous = byId.get(normalized.id) || {};
     byId.set(normalized.id, {
-      ...(byId.get(normalized.id) || {}),
-      ...normalized
+      ...previous,
+      ...normalized,
+      host: Boolean(previous.host || normalized.host),
+      bot: Boolean(previous.bot || normalized.bot),
+      active: normalized.active !== false,
+      spectator: Boolean(previous.spectator && normalized.spectator),
+      status: previous.host || normalized.host
+        ? "host"
+        : normalized.status || previous.status || (normalized.bot ? "bot" : normalized.spectator ? "spectating" : "joined")
     });
   });
 
@@ -21949,14 +21996,14 @@ function renderHostedRooms() {
         ? "This room is full, but you can still watch as a spectator."
         : room.settings.private ? "Enter the room password to join before the match starts." : "Join this lobby as an active player before the match starts."
       : "This game already started. You can spectate instead.";
-    setButtonHint(joinButton, joinHint);
+    setFloatingButtonHint(joinButton, joinHint);
     const spectateButton = document.createElement("button");
     spectateButton.type = "button";
     spectateButton.className = "secondary-button";
     spectateButton.dataset.roomAction = "spectate";
     spectateButton.dataset.joinRoom = room.code;
     spectateButton.textContent = "Spectate";
-    setButtonHint(spectateButton, room.settings.private ? "Enter the password to watch this private room." : "Watch the game without taking a player slot.");
+    setFloatingButtonHint(spectateButton, room.settings.private ? "Enter the password to watch this private room." : "Watch the game without taking a player slot.");
     actions.append(joinButton, spectateButton);
     card.append(details, actions);
     elements.joinRoomList.appendChild(card);
@@ -22434,6 +22481,10 @@ function renderRoomPlayerList(target) {
   const isLobbyPanel = target === elements.roomLobbyPlayerList;
   const isRoomSetupList = isCreationPanel || isLobbyPanel;
   const hostProfileIsShown = isCreationPanel && !state.joiningRoom;
+  const featuredHostId = (state.roomParticipants.find((participant) => participant.host)?.id
+    || state.joiningRoom?.host?.id
+    || state.hostedRooms.find((room) => room.code === state.roomSettings.code)?.host?.id
+    || (!state.joiningRoom && isCurrentHost() ? state.clientId : ""));
   const participantPlayers = state.roomParticipants
     .filter((participant) => participant.active)
     .map((participant, index) => createPlayer(
@@ -22463,7 +22514,11 @@ function renderRoomPlayerList(target) {
     ];
   const activePlayers = basePlayers.filter((player) => player.active && !player.spectator);
   const visiblePlayers = activePlayers.filter((player) => {
-    if (isLobbyPanel && player.host) {
+    const isFeaturedHost = player.host
+      || (featuredHostId && player.participantId === featuredHostId)
+      || (player.participantId === state.clientId && isCurrentHost() && !state.joiningRoom)
+      || String(player.connectionStatus || "").toLowerCase() === "host";
+    if (isLobbyPanel && isFeaturedHost) {
       return false;
     }
     return !(hostProfileIsShown && player.owner === "player");
