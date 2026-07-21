@@ -2821,6 +2821,7 @@ const elements = {
   devOverlayStatus: null,
   devOverlayClearButton: null,
   devPowerOwnerSelect: null,
+  devPowerSearchInput: null,
   devPowerSelect: null,
   devPowerChaosToggle: null,
   devPowerAddButton: null,
@@ -2828,6 +2829,17 @@ const elements = {
   devPowerClearButton: null,
   devPowerStatus: null,
   devPowerHand: null,
+  botPowerDebugPanel: document.querySelector("#botPowerDebugPanel"),
+  botPowerDebugPauseStatus: document.querySelector("#botPowerDebugPauseStatus"),
+  botPowerOwnerSelect: document.querySelector("#botPowerOwnerSelect"),
+  botPowerSearchInput: document.querySelector("#botPowerSearchInput"),
+  botPowerSelect: document.querySelector("#botPowerSelect"),
+  botPowerChaosToggle: document.querySelector("#botPowerChaosToggle"),
+  botPowerAddButton: document.querySelector("#botPowerAddButton"),
+  botPowerFillButton: document.querySelector("#botPowerFillButton"),
+  botPowerClearButton: document.querySelector("#botPowerClearButton"),
+  botPowerStatus: document.querySelector("#botPowerStatus"),
+  botPowerHand: document.querySelector("#botPowerHand"),
   devProfileGrid: null,
   devProfileStatus: null,
   devProfileUnlockAllButton: null,
@@ -16580,7 +16592,7 @@ function maybeSubmitRoomBotsAfterRealPlayers() {
   return commitScheduledRoomBotAnswers({ force: true });
 }
 
-function commitSingleBotPowerUp(owner) {
+function commitSingleBotPowerUp(owner, options = {}) {
   if ((state.mode !== "bots" && !isRoomMode()) || !canPlayPower(owner) || !state.powerHands[owner]?.length) {
     return false;
   }
@@ -16593,7 +16605,10 @@ function commitSingleBotPowerUp(owner) {
     return false;
   }
 
-  const powerId = chooseBotPowerUp(owner, usable);
+  const forcedPowerId = options.forcePowerId || state.botPowerSchedule?.[owner]?.forcedPowerId || "";
+  const powerId = forcedPowerId && usable.includes(forcedPowerId)
+    ? forcedPowerId
+    : chooseBotPowerUp(owner, usable);
   if (!powerId) {
     return false;
   }
@@ -16798,14 +16813,17 @@ function resetTimerDisplay() {
   renderTimer();
 }
 
-function startTimer() {
+function startTimer(options = {}) {
   stopTimer();
   const timerSessionId = state.timerSessionId;
   const owner = getCurrentPowerOwner();
-  const penalty = state.timerPenalties[owner] || 0;
-  const bonus = (state.timeDilationRounds[owner] || 0) > 0 ? 10 : 0;
-  state.timerRemaining = Math.max(5, state.timerSeconds - penalty + bonus);
-  state.timerWarned = false;
+  if (!options.resume) {
+    state.powerDebugTimerPaused = false;
+    const penalty = state.timerPenalties[owner] || 0;
+    const bonus = (state.timeDilationRounds[owner] || 0) > 0 ? 10 : 0;
+    state.timerRemaining = Math.max(5, state.timerSeconds - penalty + bonus);
+    state.timerWarned = false;
+  }
   renderTimer();
 
   state.timerId = setInterval(() => {
@@ -16837,6 +16855,69 @@ function startTimer() {
       handleTimerExpired();
     }
   }, 1000);
+}
+
+function canShowBotPowerDebugPanel() {
+  return Boolean(
+    state.adminAuthenticated
+    && state.mode === "bots"
+    && !state.matchEnded
+    && elements.botPowerDebugPanel
+    && !elements.gameStage.classList.contains("hidden")
+  );
+}
+
+function updateBotPowerDebugPauseStatus() {
+  if (!elements.botPowerDebugPauseStatus) {
+    return;
+  }
+  elements.botPowerDebugPauseStatus.textContent = state.powerDebugTimerPaused
+    ? "Timer paused while testing."
+    : "Timer runs until you use this panel.";
+}
+
+function pauseBotPowerDebugTimer() {
+  if (!canShowBotPowerDebugPanel() || state.powerDebugTimerPaused) {
+    return;
+  }
+  if (!state.timerId || elements.inputPanel.classList.contains("hidden") || state.timerRemaining <= 0) {
+    return;
+  }
+  stopTimer();
+  state.powerDebugTimerPaused = true;
+  updateBotPowerDebugPauseStatus();
+  renderTimer();
+}
+
+function resumeBotPowerDebugTimer() {
+  if (!state.powerDebugTimerPaused) {
+    return;
+  }
+  state.powerDebugTimerPaused = false;
+  updateBotPowerDebugPauseStatus();
+  if (
+    canShowBotPowerDebugPanel()
+    && state.timerRemaining > 0
+    && !state.roomSubmissions.player
+    && !elements.inputPanel.classList.contains("hidden")
+    && elements.verdictPanel.classList.contains("hidden")
+  ) {
+    startTimer({ resume: true });
+  }
+}
+
+function renderBotPowerDebugPanel() {
+  if (!elements.botPowerDebugPanel) {
+    return;
+  }
+  const visible = canShowBotPowerDebugPanel();
+  setHidden(elements.botPowerDebugPanel, !visible);
+  if (!visible) {
+    resumeBotPowerDebugTimer();
+    return;
+  }
+  updateBotPowerDebugPauseStatus();
+  renderPowerDebug("bot-match");
 }
 
 function handleTimerExpired() {
@@ -17039,6 +17120,7 @@ function resetRoundUiForLoading(options = {}) {
   setHidden(elements.tableEventActionPanel, true);
   setHidden(elements.answerProgressPanel, true);
   setHidden(elements.powerPanel, true);
+  setHidden(elements.botPowerDebugPanel, true);
   setHidden(elements.effectPanel, true);
   setHidden(elements.loadingPanel, false);
   setHidden(elements.cardsArea, true);
@@ -17125,6 +17207,7 @@ function renderRound() {
   renderTableEventControls();
   setHidden(elements.answerProgressPanel, false);
   setHidden(elements.powerPanel, false);
+  renderBotPowerDebugPanel();
   setHidden(elements.effectPanel, false);
   setHidden(elements.loadingPanel, true);
   setHidden(elements.cardsArea, true);
@@ -17160,6 +17243,7 @@ function updateModeUi() {
   updateWildFireBurningState();
   elements.modeLabel.textContent = `${state.maxRounds}-round ${modeName}${variants}${matchSuffix}`;
   renderAnswerCardsForOwners(getRoundCardOwners());
+  renderBotPowerDebugPanel();
   elements.answerInput.placeholder = isRoomMode()
     ? `${getOwnerLabel(state.currentOwner)} answer`
     : isDuel
@@ -17405,6 +17489,10 @@ function buildDevToolScreen() {
           <select id="devPowerOwnerSelect"></select>
         </label>
         <label>
+          <span>Search</span>
+          <input id="devPowerSearchInput" type="search" placeholder="Find power-up">
+        </label>
+        <label>
           <span>Power-up</span>
           <select id="devPowerSelect"></select>
         </label>
@@ -17529,6 +17617,7 @@ function buildDevToolScreen() {
   elements.devOverlayStatus = screen.querySelector("#devOverlayStatus");
   elements.devOverlayClearButton = screen.querySelector("#devOverlayClearButton");
   elements.devPowerOwnerSelect = screen.querySelector("#devPowerOwnerSelect");
+  elements.devPowerSearchInput = screen.querySelector("#devPowerSearchInput");
   elements.devPowerSelect = screen.querySelector("#devPowerSelect");
   elements.devPowerChaosToggle = screen.querySelector("#devPowerChaosToggle");
   elements.devPowerAddButton = screen.querySelector("#devPowerAddButton");
@@ -17635,12 +17724,13 @@ function bindDevToolEvents() {
     elements.devOverlayStatus.textContent = "Overlay queue cleared.";
     playSound("click");
   });
-  elements.devPowerOwnerSelect.addEventListener("change", renderPowerDebug);
-  elements.devPowerSelect.addEventListener("change", renderPowerDebug);
-  elements.devPowerChaosToggle.addEventListener("change", renderPowerDebug);
-  elements.devPowerAddButton.addEventListener("click", addDebugPowerToHand);
-  elements.devPowerFillButton.addEventListener("click", fillDebugPowerHand);
-  elements.devPowerClearButton.addEventListener("click", clearDebugPowerHand);
+  elements.devPowerOwnerSelect.addEventListener("change", () => renderPowerDebug("dev"));
+  elements.devPowerSearchInput.addEventListener("input", () => renderPowerDebug("dev"));
+  elements.devPowerSelect.addEventListener("change", () => renderPowerDebug("dev"));
+  elements.devPowerChaosToggle.addEventListener("change", () => renderPowerDebug("dev"));
+  elements.devPowerAddButton.addEventListener("click", () => addDebugPowerToHand("dev"));
+  elements.devPowerFillButton.addEventListener("click", () => fillDebugPowerHand("dev"));
+  elements.devPowerClearButton.addEventListener("click", () => clearDebugPowerHand("dev"));
   elements.devAchievementSearchInput.addEventListener("input", renderAchievementDebug);
   elements.devAchievementRarityFilter.addEventListener("change", renderAchievementDebug);
   elements.devAchievementTypeFilter.addEventListener("change", renderAchievementDebug);
@@ -18536,55 +18626,111 @@ function setDevToolTab(tab) {
   }
 }
 
-function getPowerDebugOwners() {
+function getPowerDebugRefs(scope = "dev") {
+  if (scope === "bot-match") {
+    return {
+      panel: elements.botPowerDebugPanel,
+      pauseStatus: elements.botPowerDebugPauseStatus,
+      ownerSelect: elements.botPowerOwnerSelect,
+      searchInput: elements.botPowerSearchInput,
+      powerSelect: elements.botPowerSelect,
+      chaosToggle: elements.botPowerChaosToggle,
+      status: elements.botPowerStatus,
+      hand: elements.botPowerHand
+    };
+  }
+  return {
+    panel: elements.devToolScreen,
+    ownerSelect: elements.devPowerOwnerSelect,
+    searchInput: elements.devPowerSearchInput,
+    powerSelect: elements.devPowerSelect,
+    chaosToggle: elements.devPowerChaosToggle,
+    status: elements.devPowerStatus,
+    hand: elements.devPowerHand
+  };
+}
+
+function getPowerDebugOwners(scope = "dev") {
+  if (scope === "bot-match") {
+    const owners = getActiveOwners().filter((owner) => owner === "player" || isBotOwner(owner));
+    return owners.length ? owners : ["player"];
+  }
   const owners = getActiveOwners();
   return owners.length ? owners : ["player"];
 }
 
-function renderPowerDebugPowerOptions() {
-  if (!elements.devPowerSelect) {
-    return;
+function matchesPowerDebugSearch(power, searchText) {
+  if (!searchText) {
+    return true;
   }
-  const selected = elements.devPowerSelect.value || "small_bounty";
-  elements.devPowerSelect.replaceChildren();
-  ["grey", "blue", "purple", "gold"].forEach((rarity) => {
-    const group = document.createElement("optgroup");
-    group.label = rarityInfo[rarity].label;
-    powerDeck
-      .filter((power) => power.rarity === rarity)
-      .forEach((power) => {
-        const option = document.createElement("option");
-        option.value = power.id;
-        option.textContent = `${power.name} (${power.id})`;
-        group.appendChild(option);
-      });
-    elements.devPowerSelect.appendChild(group);
-  });
-  elements.devPowerSelect.value = powerDeck.some((power) => power.id === selected) ? selected : "small_bounty";
+  const haystack = [
+    power.id,
+    power.name,
+    power.short,
+    power.description,
+    getDisplayedPowerDescription(power, "player"),
+    rarityInfo[power.rarity]?.label
+  ].join(" ").toLowerCase();
+  return haystack.includes(searchText);
 }
 
-function renderPowerDebug() {
-  if (!elements.devPowerOwnerSelect || !elements.devPowerSelect || !elements.devPowerHand) {
+function renderPowerDebugPowerOptions(scope = "dev") {
+  const refs = getPowerDebugRefs(scope);
+  if (!refs.powerSelect) {
     return;
   }
-  const owners = getPowerDebugOwners();
-  const selectedOwner = owners.includes(elements.devPowerOwnerSelect.value) ? elements.devPowerOwnerSelect.value : owners[0];
-  elements.devPowerOwnerSelect.replaceChildren(...owners.map((owner) => {
+  const selected = refs.powerSelect.value || "small_bounty";
+  const searchText = String(refs.searchInput?.value || "").trim().toLowerCase();
+  const matches = powerDeck.filter((power) => matchesPowerDebugSearch(power, searchText));
+  refs.powerSelect.replaceChildren();
+  ["grey", "blue", "purple", "gold"].forEach((rarity) => {
+    const rarityMatches = matches.filter((power) => power.rarity === rarity);
+    if (!rarityMatches.length) {
+      return;
+    }
+    const group = document.createElement("optgroup");
+    group.label = rarityInfo[rarity].label;
+    rarityMatches.forEach((power) => {
+      const option = document.createElement("option");
+      option.value = power.id;
+      option.textContent = `${power.name} (${power.id})`;
+      group.appendChild(option);
+    });
+    refs.powerSelect.appendChild(group);
+  });
+  if (!matches.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No matching power-ups";
+    option.disabled = true;
+    refs.powerSelect.appendChild(option);
+  }
+  refs.powerSelect.value = matches.some((power) => power.id === selected) ? selected : matches[0]?.id || "";
+}
+
+function renderPowerDebug(scope = "dev") {
+  const refs = getPowerDebugRefs(scope);
+  if (!refs.ownerSelect || !refs.powerSelect || !refs.hand) {
+    return;
+  }
+  const owners = getPowerDebugOwners(scope);
+  const selectedOwner = owners.includes(refs.ownerSelect.value) ? refs.ownerSelect.value : owners[0];
+  refs.ownerSelect.replaceChildren(...owners.map((owner) => {
     const option = document.createElement("option");
     option.value = owner;
     option.textContent = getOwnerLabel(owner);
     return option;
   }));
-  elements.devPowerOwnerSelect.value = selectedOwner;
-  renderPowerDebugPowerOptions();
-  const basePowerId = elements.devPowerSelect.value;
+  refs.ownerSelect.value = selectedOwner;
+  renderPowerDebugPowerOptions(scope);
+  const basePowerId = refs.powerSelect.value;
   const chaosAvailable = canPowerBecomeChaosInfused(basePowerId);
-  elements.devPowerChaosToggle.disabled = !chaosAvailable;
+  refs.chaosToggle.disabled = !chaosAvailable;
   if (!chaosAvailable) {
-    elements.devPowerChaosToggle.checked = false;
+    refs.chaosToggle.checked = false;
   }
   const hand = state.powerHands[selectedOwner] || [];
-  elements.devPowerHand.replaceChildren(...hand.map((powerId) => {
+  refs.hand.replaceChildren(...hand.map((powerId) => {
     const power = getPowerById(powerId);
     const card = document.createElement("article");
     card.className = "profile-debug-card";
@@ -18596,16 +18742,29 @@ function renderPowerDebug() {
     const empty = document.createElement("p");
     empty.className = "debug-status";
     empty.textContent = "Selected owner has no power-ups.";
-    elements.devPowerHand.appendChild(empty);
+    refs.hand.appendChild(empty);
   }
 }
 
-function getSelectedDebugPowerId() {
-  const basePowerId = elements.devPowerSelect?.value || "";
-  if (elements.devPowerChaosToggle?.checked && canPowerBecomeChaosInfused(basePowerId)) {
+function renderAllPowerDebugPanels() {
+  renderPowerDebug("dev");
+  renderPowerDebug("bot-match");
+}
+
+function getSelectedDebugPowerId(scope = "dev") {
+  const refs = getPowerDebugRefs(scope);
+  const basePowerId = refs.powerSelect?.value || "";
+  if (refs.chaosToggle?.checked && canPowerBecomeChaosInfused(basePowerId)) {
     return getChaosInfusedPowerId(basePowerId);
   }
   return basePowerId;
+}
+
+function setPowerDebugStatus(scope, message) {
+  const refs = getPowerDebugRefs(scope);
+  if (refs.status) {
+    refs.status.textContent = message;
+  }
 }
 
 function publishPowerDebugState() {
@@ -18614,35 +18773,61 @@ function publishPowerDebugState() {
   }
 }
 
-function addDebugPowerToHand() {
-  const owner = elements.devPowerOwnerSelect?.value;
-  const powerId = getSelectedDebugPowerId();
+function forceDebugBotPowerUse(owner, powerId) {
+  if (state.mode !== "bots" || !isBotOwner(owner) || !powerId) {
+    return null;
+  }
+  state.botPowerSchedule = state.botPowerSchedule || {};
+  state.botPowerSchedule[owner] = {
+    ...(state.botPowerSchedule[owner] || {}),
+    triggerAt: state.timerRemaining,
+    used: false,
+    forcedPowerId: powerId
+  };
+  const used = commitSingleBotPowerUp(owner, { forcePowerId: powerId });
+  if (used && state.botPowerSchedule[owner]) {
+    state.botPowerSchedule[owner].used = true;
+  }
+  return used;
+}
+
+function addDebugPowerToHand(scope = "dev") {
+  const owner = getPowerDebugRefs(scope).ownerSelect?.value;
+  const powerId = getSelectedDebugPowerId(scope);
   const power = getPowerById(powerId);
   if (!owner || !power) {
-    elements.devPowerStatus.textContent = "Choose a valid owner and power-up.";
+    setPowerDebugStatus(scope, "Choose a valid owner and power-up.");
     return;
   }
   if (getPowerHandLimit(owner) <= 0) {
-    elements.devPowerStatus.textContent = "Start a match before adding power-ups.";
+    setPowerDebugStatus(scope, "Start a match before adding power-ups.");
     return;
   }
   addPurchasedPowerToHand(owner, powerId);
-  elements.devPowerStatus.textContent = `Added ${power.name} to ${getOwnerLabel(owner)}.`;
-  renderPowerDebug();
+  const botUsed = scope === "bot-match" && isBotOwner(owner)
+    ? forceDebugBotPowerUse(owner, powerId)
+    : null;
+  const botSuffix = botUsed === true
+    ? " The bot used it immediately."
+    : botUsed === false
+      ? " The bot could not use it right now."
+      : "";
+  setPowerDebugStatus(scope, `Added ${power.name} to ${getOwnerLabel(owner)}.${botSuffix}`);
+  renderAllPowerDebugPanels();
   renderPowerUps();
   publishPowerDebugState();
   playSound("reveal");
 }
 
-function fillDebugPowerHand() {
-  const owner = elements.devPowerOwnerSelect?.value;
+function fillDebugPowerHand(scope = "dev") {
+  const owner = getPowerDebugRefs(scope).ownerSelect?.value;
   if (!owner || getPowerHandLimit(owner) <= 0) {
-    elements.devPowerStatus.textContent = "Start a match before filling a hand.";
+    setPowerDebugStatus(scope, "Start a match before filling a hand.");
     return;
   }
-  const powerId = getSelectedDebugPowerId();
+  const powerId = getSelectedDebugPowerId(scope);
   if (!getPowerById(powerId)) {
-    elements.devPowerStatus.textContent = "Choose a valid power-up before filling a hand.";
+    setPowerDebugStatus(scope, "Choose a valid power-up before filling a hand.");
     return;
   }
   const limit = getPowerHandLimit(owner);
@@ -18656,23 +18841,34 @@ function fillDebugPowerHand() {
   }
   state.powerHands[owner] = hand;
   markFreshPowerUps(owner, hand);
-  elements.devPowerStatus.textContent = `Filled ${getOwnerLabel(owner)}'s hand starting with ${getPowerById(powerId).name}.`;
-  renderPowerDebug();
+  const botUsed = scope === "bot-match" && isBotOwner(owner)
+    ? forceDebugBotPowerUse(owner, powerId)
+    : null;
+  const botSuffix = botUsed === true
+    ? " The bot used the first card immediately."
+    : botUsed === false
+      ? " The bot could not use the first card right now."
+      : "";
+  setPowerDebugStatus(scope, `Filled ${getOwnerLabel(owner)}'s hand starting with ${getPowerById(powerId).name}.${botSuffix}`);
+  renderAllPowerDebugPanels();
   renderPowerUps();
   publishPowerDebugState();
   playSound("reveal");
 }
 
-function clearDebugPowerHand() {
-  const owner = elements.devPowerOwnerSelect?.value;
+function clearDebugPowerHand(scope = "dev") {
+  const owner = getPowerDebugRefs(scope).ownerSelect?.value;
   if (!owner) {
     return;
   }
   state.powerHands[owner] = [];
   state.freshPowerUps[owner] = [];
   clearSelectedPowerUps(owner);
-  elements.devPowerStatus.textContent = `Cleared ${getOwnerLabel(owner)}'s hand.`;
-  renderPowerDebug();
+  if (state.botPowerSchedule?.[owner]) {
+    delete state.botPowerSchedule[owner].forcedPowerId;
+  }
+  setPowerDebugStatus(scope, `Cleared ${getOwnerLabel(owner)}'s hand.`);
+  renderAllPowerDebugPanels();
   renderPowerUps();
   publishPowerDebugState();
   playSound("click");
@@ -19057,6 +19253,7 @@ function updateAdminControls() {
   if (elements.adminLogoutButton) {
     setHidden(elements.adminLogoutButton, !state.adminAuthenticated);
   }
+  renderBotPowerDebugPanel();
 }
 
 async function refreshAdminSession() {
@@ -25418,6 +25615,28 @@ buildDevToolScreen();
 updateAdminControls();
 refreshAdminSession();
 elements.menuDevToolButton?.addEventListener("click", handleDevToolButtonClick);
+elements.botPowerDebugPanel?.addEventListener("focusin", pauseBotPowerDebugTimer);
+elements.botPowerDebugPanel?.addEventListener("pointerdown", pauseBotPowerDebugTimer);
+elements.botPowerDebugPanel?.addEventListener("mouseenter", pauseBotPowerDebugTimer);
+elements.botPowerDebugPanel?.addEventListener("focusout", () => {
+  window.setTimeout(() => {
+    if (!elements.botPowerDebugPanel?.contains(document.activeElement)) {
+      resumeBotPowerDebugTimer();
+    }
+  }, 0);
+});
+elements.botPowerDebugPanel?.addEventListener("mouseleave", () => {
+  if (!elements.botPowerDebugPanel?.contains(document.activeElement)) {
+    resumeBotPowerDebugTimer();
+  }
+});
+elements.botPowerOwnerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
+elements.botPowerSearchInput?.addEventListener("input", () => renderPowerDebug("bot-match"));
+elements.botPowerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
+elements.botPowerChaosToggle?.addEventListener("change", () => renderPowerDebug("bot-match"));
+elements.botPowerAddButton?.addEventListener("click", () => addDebugPowerToHand("bot-match"));
+elements.botPowerFillButton?.addEventListener("click", () => fillDebugPowerHand("bot-match"));
+elements.botPowerClearButton?.addEventListener("click", () => clearDebugPowerHand("bot-match"));
 elements.profileCustomizeButton?.addEventListener("click", openProfileCustomization);
 elements.profileShopButton?.addEventListener("click", openProfileShop);
 elements.profileNameInput?.addEventListener("input", (event) => updateProfileName(event.target.value));

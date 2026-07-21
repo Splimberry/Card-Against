@@ -32,6 +32,7 @@
       }
     </script>
     <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./bot-power-debug.css">
   </head>
   <body>
     <main class="app-shell">
@@ -371,6 +372,38 @@
           </section>
 
           <section class="power-panel" id="powerPanel" aria-label="Power ups"></section>
+          <section class="bot-power-debug-panel hidden" id="botPowerDebugPanel" aria-label="Admin power debug">
+            <div class="bot-power-debug-heading">
+              <div>
+                <p class="eyebrow">Admin testing</p>
+                <h2>Power Debug</h2>
+              </div>
+              <span id="botPowerDebugPauseStatus">Timer runs until you use this panel.</span>
+            </div>
+            <div class="bot-power-debug-controls">
+              <label>
+                <span>Owner</span>
+                <select id="botPowerOwnerSelect"></select>
+              </label>
+              <label>
+                <span>Search</span>
+                <input id="botPowerSearchInput" type="search" placeholder="Find power-up">
+              </label>
+              <label>
+                <span>Power-up</span>
+                <select id="botPowerSelect"></select>
+              </label>
+              <label class="mode-toggle">
+                <input id="botPowerChaosToggle" type="checkbox">
+                <span>Chaos version</span>
+              </label>
+              <button type="button" class="icon-button" id="botPowerAddButton">Give Power</button>
+              <button type="button" class="icon-button" id="botPowerFillButton">Fill Hand</button>
+              <button type="button" class="icon-button danger-button" id="botPowerClearButton">Clear Hand</button>
+            </div>
+            <div class="debug-status" id="botPowerStatus">Give yourself or a bot any power-up. Bots use forced power-ups immediately.</div>
+            <div class="profile-debug-grid dev-power-hand" id="botPowerHand"></div>
+          </section>
           <section class="effect-panel hidden" id="effectPanel" aria-label="Active effects"></section>
 
           <section class="input-panel" id="inputPanel" aria-labelledby="inputTitle">
