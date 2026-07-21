@@ -3695,6 +3695,37 @@ function setupMatchesThemes(setup, enabledThemes = getEnabledTriviaThemes()) {
   return !theme || theme === "Mixed Trivia" || enabledThemes.includes(theme);
 }
 
+function getMultipleChoiceChancePercent(round = state.round, totalRounds = state.maxRounds) {
+  const cleanTotalRounds = Math.max(1, Math.floor(Number(totalRounds) || 1));
+  const cleanRound = Math.min(cleanTotalRounds, Math.max(1, Math.floor(Number(round) || 1)));
+  if (cleanTotalRounds <= 1 || cleanRound >= cleanTotalRounds) {
+    return 0;
+  }
+  return 30 * ((cleanTotalRounds - cleanRound) / (cleanTotalRounds - 1));
+}
+
+function getRoundQuestionStylePreference(options = {}, seed = "") {
+  const { round, totalRounds } = getRoundSetupTimingOptions(options);
+  const chance = getMultipleChoiceChancePercent(round, totalRounds);
+  const rollSeed = String(seed || `${Date.now()}-${Math.random()}`);
+  const rollPercent = (Math.abs(hashString(`${rollSeed}-question-style`)) % 10000) / 100;
+  return chance > 0 && rollPercent < chance ? MULTIPLE_CHOICE_STYLE : "standard";
+}
+
+function getRoundSetupTimingOptions(options = {}) {
+  const round = clampNumber(options.round ?? state.round, 1, 100, 1);
+  const totalRounds = clampNumber(options.totalRounds ?? state.maxRounds, 1, 100, state.maxRounds || 10);
+  return { round, totalRounds };
+}
+
+function setupMatchesRoundMultipleChoiceChance(setup, options = {}) {
+  if (options.questionStylePreference === MULTIPLE_CHOICE_STYLE || options.questionStylePreference === "standard") {
+    return setup?.questionStyle === options.questionStylePreference;
+  }
+  const { round, totalRounds } = getRoundSetupTimingOptions(options);
+  return getMultipleChoiceChancePercent(round, totalRounds) > 0 || setup?.questionStyle !== MULTIPLE_CHOICE_STYLE;
+}
+
 function getThemeSetupOptions(theme = "") {
   const enabledThemes = getEnabledTriviaThemes();
   const preferredTheme = enabledThemes.includes(theme) ? theme : "";
@@ -3810,11 +3841,14 @@ function preloadQuestionImageInBackground(setup) {
   runBackgroundTaskWhenIdle(() => preloadQuestionImage(setup), 250);
 }
 
-function takeReservedSetup(enabledThemes = getEnabledTriviaThemes(), previousBlackCard = "") {
+function takeReservedSetup(enabledThemes = getEnabledTriviaThemes(), previousBlackCard = "", options = {}) {
   const previousKey = normalizePromptText(previousBlackCard);
   const index = state.questionReserve.findIndex((setup) => {
     const key = normalizePromptText(setup?.blackCard);
-    return key && key !== previousKey && setupMatchesThemes(setup, enabledThemes);
+    return key
+      && key !== previousKey
+      && setupMatchesThemes(setup, enabledThemes)
+      && setupMatchesRoundMultipleChoiceChance(setup, options);
   });
   if (index < 0) {
     return null;
@@ -3835,8 +3869,8 @@ function stashUnusedQuestionSetups() {
   state.warmSetup = null;
 }
 
-function hasReservedSetupForThemes(enabledThemes = getEnabledTriviaThemes()) {
-  return state.questionReserve.some((setup) => setupMatchesThemes(setup, enabledThemes));
+function hasReservedSetupForThemes(enabledThemes = getEnabledTriviaThemes(), options = {}) {
+  return state.questionReserve.some((setup) => setupMatchesThemes(setup, enabledThemes) && setupMatchesRoundMultipleChoiceChance(setup, options));
 }
 
 function clearWarmSetup() {
@@ -3877,12 +3911,16 @@ function startWarmSetupPreload(options = {}) {
   }
 
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
+  const timingOptions = getRoundSetupTimingOptions(options);
   const signature = getThemeSignature(enabledThemes);
-  if (hasReservedSetupForThemes(enabledThemes)) {
-    return Promise.resolve(state.questionReserve.find((setup) => setupMatchesThemes(setup, enabledThemes)));
+  if (hasReservedSetupForThemes(enabledThemes, timingOptions)) {
+    return Promise.resolve(state.questionReserve.find((setup) => setupMatchesThemes(setup, enabledThemes) && setupMatchesRoundMultipleChoiceChance(setup, timingOptions)));
   }
   if (state.warmSetup && state.warmSetupSignature === signature) {
-    return Promise.resolve(state.warmSetup);
+    if (setupMatchesRoundMultipleChoiceChance(state.warmSetup, timingOptions)) {
+      return Promise.resolve(state.warmSetup);
+    }
+    clearWarmSetup();
   }
   if (state.warmSetupPromise && state.warmSetupSignature === signature) {
     return state.warmSetupPromise;
@@ -3896,7 +3934,8 @@ function startWarmSetupPreload(options = {}) {
     recentBlackCards: state.recentBlackCards,
     enabledThemes,
     preferredTheme: options.preferredTheme || "",
-    backgroundMode: true
+    backgroundMode: true,
+    ...timingOptions
   });
   state.warmSetupPromise = promise;
   promise
@@ -3926,15 +3965,20 @@ function startWarmSetupPreload(options = {}) {
 
 function ensureQuestionReserve(options = {}) {
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
-  if (hasReservedSetupForThemes(enabledThemes)) {
+  const timingOptions = getRoundSetupTimingOptions(options);
+  if (hasReservedSetupForThemes(enabledThemes, timingOptions)) {
     return null;
   }
-  return startWarmSetupPreload({ ...options, enabledThemes });
+  return startWarmSetupPreload({ ...options, enabledThemes, ...timingOptions });
 }
 
-function takeWarmSetup(enabledThemes = getEnabledTriviaThemes()) {
+function takeWarmSetup(enabledThemes = getEnabledTriviaThemes(), options = {}) {
   const signature = getThemeSignature(enabledThemes);
   if (!state.warmSetup || state.warmSetupSignature !== signature) {
+    return null;
+  }
+  if (!setupMatchesRoundMultipleChoiceChance(state.warmSetup, options)) {
+    clearWarmSetup();
     return null;
   }
 
@@ -3945,9 +3989,9 @@ function takeWarmSetup(enabledThemes = getEnabledTriviaThemes()) {
   return setup;
 }
 
-function getWarmSetupPromise(enabledThemes = getEnabledTriviaThemes()) {
+function getWarmSetupPromise(enabledThemes = getEnabledTriviaThemes(), options = {}) {
   const signature = getThemeSignature(enabledThemes);
-  return state.warmSetupPromise && state.warmSetupSignature === signature
+  return state.warmSetupPromise && state.warmSetupSignature === signature && getMultipleChoiceChancePercent(options.round, options.totalRounds) > 0
     ? state.warmSetupPromise
     : null;
 }
@@ -4081,10 +4125,12 @@ async function requestRoundSetup(options = {}) {
     throw createAbortError();
   }
   const setupSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const timingOptions = getRoundSetupTimingOptions(options);
+  const questionStylePreference = getRoundQuestionStylePreference(timingOptions, setupSeed);
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards;
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = options.preferredTheme || "";
-  const cachedSetup = takeCachedRoundSetup({ recentBlackCards, enabledThemes, preferredTheme });
+  const cachedSetup = takeCachedRoundSetup({ recentBlackCards, enabledThemes, preferredTheme, ...timingOptions, questionStylePreference });
   if (cachedSetup) {
     return cachedSetup;
   }
@@ -4106,7 +4152,7 @@ async function requestRoundSetup(options = {}) {
         preferredTheme,
         backgroundMode: Boolean(options.backgroundMode),
         setupSeed,
-        round: state.round
+        ...timingOptions
       })
     });
 
@@ -4170,7 +4216,12 @@ function isSetupUsableFromCache(setup, options = {}) {
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = String(options.preferredTheme || "").trim();
   const prompt = normalizePromptText(setup?.blackCard);
-  if (!prompt || getRecentPromptSet(options.recentBlackCards).has(prompt) || !setupMatchesThemes(setup, enabledThemes)) {
+  if (
+    !prompt
+    || getRecentPromptSet(options.recentBlackCards).has(prompt)
+    || !setupMatchesThemes(setup, enabledThemes)
+    || !setupMatchesRoundMultipleChoiceChance(setup, options)
+  ) {
     return false;
   }
   const usage = loadQuestionUsageStats();
@@ -21304,7 +21355,7 @@ function prefetchNextSetup() {
 
   const setupVersion = state.setupVersion;
   const matchToken = state.matchWorkToken;
-  const promise = requestRoundSetup();
+  const promise = requestRoundSetup({ round: state.round + 1, totalRounds: state.maxRounds });
   state.nextSetupPromise = promise;
   state.nextSetupStatus = "loading";
   promise
@@ -21415,11 +21466,15 @@ async function newRound() {
 
   const cachedSetup = state.setupStack.length
     ? state.setupStack.shift()
-    : takeReservedSetup(getEnabledTriviaThemes(), previousBlackCard) || state.nextSetup;
+    : takeReservedSetup(getEnabledTriviaThemes(), previousBlackCard, { round: state.round, totalRounds: state.maxRounds }) || state.nextSetup;
   state.nextSetup = null;
   state.nextSetupStatus = "idle";
 
-  if (cachedSetup && !isRepeatedBlackCard(cachedSetup, previousBlackCard)) {
+  if (
+    cachedSetup
+    && !isRepeatedBlackCard(cachedSetup, previousBlackCard)
+    && setupMatchesRoundMultipleChoiceChance(cachedSetup, { round: state.round, totalRounds: state.maxRounds })
+  ) {
     applyRoundSetup(cachedSetup);
     return;
   }
@@ -21436,7 +21491,10 @@ async function newRound() {
       : pendingSetup
         ? await pendingSetup
         : await requestRoundSetup();
-    if (isRepeatedBlackCard(setup, previousBlackCard)) {
+    if (
+      isRepeatedBlackCard(setup, previousBlackCard)
+      || !setupMatchesRoundMultipleChoiceChance(setup, { round: state.round, totalRounds: state.maxRounds })
+    ) {
       setup = state.setupStack.length ? state.setupStack.shift() : await requestRoundSetup();
     }
     if (!isCurrentMatchWork(matchToken)) {
@@ -21638,14 +21696,15 @@ async function startGame(mode) {
   resetRoundUiForLoading();
   try {
     const enabledThemes = getEnabledTriviaThemes();
+    const firstRoundSetupOptions = { round: 1, totalRounds: state.maxRounds };
     const syncedSetup = mode === "room" && !isCurrentHost()
       ? getSyncedRoomSetupForRound(1) || await waitForSyncedRoomSetupForRound(1)
       : null;
     const firstSetup = syncedSetup
-      || takeReservedSetup(enabledThemes)
-      || takeWarmSetup(enabledThemes)
-      || await getWarmSetupPromise(enabledThemes)
-      || await requestRoundSetup();
+      || takeReservedSetup(enabledThemes, "", firstRoundSetupOptions)
+      || takeWarmSetup(enabledThemes, firstRoundSetupOptions)
+      || await getWarmSetupPromise(enabledThemes, firstRoundSetupOptions)
+      || await requestRoundSetup(firstRoundSetupOptions);
     if (!isCurrentMatchWork(matchToken)) {
       return;
     }

@@ -3542,12 +3542,16 @@ async function handleSetup(req, res) {
     const preferredTheme = normalizePreferredTheme(body.preferredTheme, enabledThemes);
     const baseSeed = String(body.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
     const backgroundMode = Boolean(body.backgroundMode);
+    const round = clampServerNumber(body.round, 1, 100, 1);
+    const totalRounds = clampServerNumber(body.totalRounds, 1, 100, 10);
     const result = await getSeedQuestionSetup({
       recentBlackCards,
       enabledThemes,
       preferredTheme,
       setupSeed: baseSeed,
-      backgroundMode
+      backgroundMode,
+      round,
+      totalRounds
     });
     if (!result) {
       throw new Error("No seed questions are available for the selected themes.");
@@ -3800,11 +3804,21 @@ function shuffleQuestionOptions(options, seed) {
     .map((entry) => entry.option);
 }
 
+function getMultipleChoiceChancePercent(round, totalRounds) {
+  const cleanTotalRounds = Math.max(1, Math.floor(Number(totalRounds) || 1));
+  const cleanRound = Math.min(cleanTotalRounds, Math.max(1, Math.floor(Number(round) || 1)));
+  if (cleanTotalRounds <= 1 || cleanRound >= cleanTotalRounds) {
+    return 0;
+  }
+  return 30 * ((cleanTotalRounds - cleanRound) / (cleanTotalRounds - 1));
+}
+
 async function getSeedQuestionSetup(options = {}) {
   const enabledThemes = normalizeEnabledThemes(options.enabledThemes);
   const preferredTheme = normalizePreferredTheme(options.preferredTheme, enabledThemes);
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : [];
   const seed = String(options.setupSeed || `${Date.now()}-${Math.random()}`);
+  const multipleChoiceChancePercent = getMultipleChoiceChancePercent(options.round, options.totalRounds);
   const runtimeQuestionBank = await getRuntimeQuestionBank();
   const preferredPool = preferredTheme
     ? runtimeQuestionBank.filter((question) => question.theme === preferredTheme && !isRepeatedQuestion(question.blackCard, recentBlackCards))
@@ -3818,8 +3832,11 @@ async function getSeedQuestionSetup(options = {}) {
 
   const multipleChoicePool = pool.filter(isMultipleChoiceQuestion);
   const standardPool = pool.filter((question) => !isMultipleChoiceQuestion(question));
+  if (multipleChoiceChancePercent <= 0 && !standardPool.length) {
+    return null;
+  }
   const wantsMultipleChoice = multipleChoicePool.length
-    && (Math.abs(hashString(`${seed}-question-style`)) % 100) < 30;
+    && (Math.abs(hashString(`${seed}-question-style`)) % 10000) / 100 < multipleChoiceChancePercent;
   const pickPool = wantsMultipleChoice
     ? multipleChoicePool
     : standardPool.length ? standardPool : pool;
@@ -3838,6 +3855,10 @@ async function getSeedQuestionSetup(options = {}) {
     multipleChoiceOptions: isMultipleChoiceQuestion(picked)
       ? shuffleQuestionOptions(picked.multipleChoiceOptions, seed)
       : [],
+    debug: {
+      multipleChoiceChancePercent: Math.round(multipleChoiceChancePercent * 100) / 100,
+      wantedMultipleChoice: Boolean(wantsMultipleChoice)
+    },
     source: "seed",
     id: picked.id
   };
