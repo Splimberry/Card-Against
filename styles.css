@@ -3367,12 +3367,18 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     linear-gradient(180deg, transparent 0 18%, rgba(255, 255, 255, 0.08) 20%, transparent 28%, transparent 68%, rgba(34, 211, 238, 0.1) 72%, transparent 82%),
     linear-gradient(125deg, rgb(var(--chaos-rarity-rgb) / 0.2), rgb(255 77 125 / 0.11) 42%, rgba(64, 222, 164, 0.16)),
     rgba(8, 10, 18, 0.78);
+  background-size:
+    100% 150%,
+    100% 100%,
+    100% 100%;
   box-shadow:
     0 0 1.5rem rgba(64, 222, 164, 0.3),
     -0.22rem 0 1.2rem rgba(255, 77, 125, 0.16),
     0.22rem 0 1.2rem rgba(34, 211, 238, 0.14),
     inset 0 0 1.1rem rgb(255 255 255 / 0.08);
-  animation: cardChaosGlitch 2300ms steps(2, end) infinite;
+  animation:
+    cardChaosBgDrift 3600ms linear infinite,
+    cardChaosGlitch 2300ms steps(2, end) infinite;
 }
 
 .power-card.chaos-infused[data-rarity="blue"] {
@@ -3395,8 +3401,14 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   z-index: 1;
   pointer-events: none;
   background:
-    linear-gradient(90deg, transparent, rgba(64, 222, 164, 0.16), transparent),
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 9px);
+    linear-gradient(180deg, transparent 0 37%, rgba(64, 222, 164, 0.18) 47%, rgba(34, 211, 238, 0.13) 52%, transparent 63%),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 9px);
+  background-size:
+    100% 190%,
+    100% 10px;
+  background-position:
+    0 -80%,
+    0 0;
   mix-blend-mode: screen;
   opacity: 0.34;
   animation:
@@ -3408,6 +3420,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   animation:
     freshPowerPop 560ms cubic-bezier(0.16, 1, 0.3, 1),
     chaosInfusedTransform 900ms steps(3, end),
+    cardChaosBgDrift 3600ms linear infinite,
     cardChaosGlitch 2300ms steps(2, end) infinite;
 }
 
@@ -5297,17 +5310,17 @@ input:focus {
   0%,
   100% {
     opacity: 0.24;
-    transform: translateY(0);
+    filter: brightness(1);
   }
 
   34% {
     opacity: 0.36;
-    transform: translateY(0.18rem);
+    filter: brightness(1.16);
   }
 
   62% {
     opacity: 0.2;
-    transform: translateY(-0.1rem);
+    filter: brightness(0.92);
   }
 }
 
@@ -7026,24 +7039,60 @@ input:focus {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
+  align-self: center;
+  flex: 0 0 auto;
   margin: 0.3rem 0 0;
-  padding: 0.42rem 0.58rem;
+  min-height: 2.35rem;
+  max-height: 2.75rem;
+  padding: 0.38rem 0.58rem;
+  overflow: hidden;
   border: 1px solid rgba(34, 211, 238, 0.32);
   border-radius: 8px;
   background:
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 6px),
     linear-gradient(110deg, rgba(255, 77, 125, 0.15), rgba(34, 211, 238, 0.12));
   color: var(--ink);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
 }
 
 .ability-chaos-toggle input {
-  width: 1rem;
-  height: 1rem;
-  accent-color: #22d3ee;
+  appearance: none;
+  flex: 0 0 auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(34, 211, 238, 0.8);
+  border-radius: 4px;
+  background: rgba(8, 12, 20, 0.82);
+  box-shadow: inset 0 0 0.35rem rgba(34, 211, 238, 0.16);
+}
+
+.ability-chaos-toggle input::after {
+  content: "";
+  width: 0.36rem;
+  height: 0.62rem;
+  border-right: 3px solid #091017;
+  border-bottom: 3px solid #091017;
+  opacity: 0;
+  transform: rotate(45deg) translate(-0.05rem, -0.08rem);
+}
+
+.ability-chaos-toggle input:checked {
+  border-color: #3be8f5;
+  background: #3be8f5;
+}
+
+.ability-chaos-toggle input:checked::after {
+  opacity: 1;
+}
+
+.ability-chaos-toggle span {
+  white-space: nowrap;
 }
 
 .ability-section {
@@ -7270,12 +7319,17 @@ input:focus {
   background:
     linear-gradient(180deg, transparent 0 18%, rgba(255, 255, 255, 0.08) 20%, transparent 28%, transparent 68%, rgba(34, 211, 238, 0.1) 72%, transparent 82%),
     linear-gradient(125deg, rgb(var(--chaos-rarity-rgb) / 0.18), rgb(255 77 125 / 0.11), rgba(64, 222, 164, 0.16));
+  background-size:
+    100% 150%,
+    100% 100%;
   box-shadow:
     0 0 1.2rem rgba(64, 222, 164, 0.24),
     -0.16rem 0 1rem rgba(255, 77, 125, 0.12),
     0.16rem 0 1rem rgba(34, 211, 238, 0.12),
     inset 0 0 0.9rem rgb(255 255 255 / 0.06);
-  animation: cardChaosGlitch 2300ms steps(2, end) infinite;
+  animation:
+    cardChaosBgDrift 3600ms linear infinite,
+    cardChaosGlitch 2300ms steps(2, end) infinite;
 }
 
 .ability-card.chaos-infused::after {
@@ -7285,8 +7339,14 @@ input:focus {
   border-radius: inherit;
   pointer-events: none;
   background:
-    linear-gradient(90deg, transparent, rgba(64, 222, 164, 0.16), transparent),
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 9px);
+    linear-gradient(180deg, transparent 0 37%, rgba(64, 222, 164, 0.18) 47%, rgba(34, 211, 238, 0.13) 52%, transparent 63%),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 9px);
+  background-size:
+    100% 190%,
+    100% 10px;
+  background-position:
+    0 -80%,
+    0 0;
   mix-blend-mode: screen;
   opacity: 0.34;
   animation:
