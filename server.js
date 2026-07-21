@@ -358,6 +358,11 @@ if (require.main === module) {
   });
 }
 
+handleRequest._test = {
+  normalizeTriviaAnswer,
+  scoreAnswerAgainstBank
+};
+
 module.exports = handleRequest;
 
 function loadEnv() {
@@ -3902,6 +3907,8 @@ function buildRoundPrompt(payload) {
       "Blank or empty answers are always incorrect and must never appear in correctIndexes.",
       "Use general trivia knowledge to accept semantically equivalent answers even when they are not listed in acceptedAnswers.",
       "Accept common aliases, nicknames, abbreviations, acronyms, translations, alternate spellings, swapped word order, missing accents, and minor spelling mistakes when the intended answer is clearly correct.",
+      "Be deliberately forgiving with obvious typos and phonetic spellings: examples like 'Jackle' for 'Jackal', 'lui 14th' for 'Louis XIV', or 'vicent' for 'Vincent van Gogh' should be accepted when the intended answer is clear.",
+      "Accept roman numerals, regular numbers, and ordinals as equivalent when they identify the same name/title/event, such as 'XIV', '14', and '14th'.",
       "Accept a distinctive partial answer when it clearly identifies the same thing as the canonical answer. This applies to all question types: people, places, teams, titles, objects, events, concepts, companies, artworks, games, and media. Do not require the full preset answer when the player gave enough information to identify it.",
       "Reject answers that are only a broad category, a generic adjective, a random related word, or too ambiguous to identify the canonical answer.",
       "Every cards[index] value must exactly match submittedAnswers[index].answer with no added words, flavor text, punctuation, or rewrite.",
@@ -4147,6 +4154,11 @@ function scoreAnswerAgainstBank(answer, acceptedAnswers) {
       continue;
     }
 
+    const tokenAwareScore = scoreTokenAwareAnswer(normalizedAnswer, accepted);
+    if (tokenAwareScore > 0) {
+      bestScore = Math.max(bestScore, tokenAwareScore);
+    }
+
     const partialAnswerScore = scoreDistinctivePartialAnswer(normalizedAnswer, accepted);
     if (partialAnswerScore > 0) {
       bestScore = Math.max(bestScore, partialAnswerScore);
@@ -4166,6 +4178,91 @@ function scoreAnswerAgainstBank(answer, acceptedAnswers) {
     if (similarity >= typoFloor) {
       bestScore = Math.max(bestScore, similarity);
     }
+  }
+
+  return bestScore;
+}
+
+function scoreTokenAwareAnswer(normalizedAnswer, normalizedAccepted) {
+  const answerWords = normalizedAnswer.split(" ").filter(Boolean);
+  const acceptedWords = normalizedAccepted.split(" ").filter(Boolean);
+  if (!answerWords.length || !acceptedWords.length) {
+    return 0;
+  }
+
+  if (acceptedWords.length === 1 && answerWords.length === 1) {
+    return scoreTriviaToken(answerWords[0], acceptedWords[0]);
+  }
+
+  const acceptedNumbers = acceptedWords.filter((word) => /^\d+$/.test(word));
+  const answerNumbers = new Set(answerWords.filter((word) => /^\d+$/.test(word)));
+  const numericAnchored = acceptedNumbers.length > 0 && acceptedNumbers.every((word) => answerNumbers.has(word));
+  const tokenMatchThreshold = numericAnchored ? 0.58 : 0.72;
+  const usedAnswerIndexes = new Set();
+  let scoreTotal = 0;
+  let matchedCount = 0;
+  for (const acceptedWord of acceptedWords) {
+    let best = { index: -1, score: 0 };
+    answerWords.forEach((answerWord, index) => {
+      if (usedAnswerIndexes.has(index)) {
+        return;
+      }
+      const score = scoreTriviaToken(answerWord, acceptedWord);
+      if (score > best.score) {
+        best = { index, score };
+      }
+    });
+    if (best.score >= tokenMatchThreshold) {
+      usedAnswerIndexes.add(best.index);
+      scoreTotal += best.score;
+      matchedCount += 1;
+    }
+  }
+
+  const coverage = matchedCount / acceptedWords.length;
+  if (coverage < 0.68) {
+    return 0;
+  }
+  if (acceptedNumbers.length && !numericAnchored) {
+    return 0;
+  }
+  const score = Math.min(0.96, (scoreTotal / Math.max(1, acceptedWords.length)) * coverage);
+  return numericAnchored && coverage >= 1 ? Math.max(0.86, score) : score;
+}
+
+function scoreTriviaToken(answerWord, acceptedWord) {
+  if (!answerWord || !acceptedWord) {
+    return 0;
+  }
+  if (answerWord === acceptedWord) {
+    return 1;
+  }
+  if (/^\d+$/.test(answerWord) || /^\d+$/.test(acceptedWord)) {
+    return answerWord === acceptedWord ? 1 : 0;
+  }
+  if (answerWord.length >= 4 && acceptedWord.length >= 4 && (answerWord.includes(acceptedWord) || acceptedWord.includes(answerWord))) {
+    return 0.88;
+  }
+
+  let bestScore = 0;
+  const distance = levenshteinDistance(answerWord, acceptedWord);
+  const longest = Math.max(answerWord.length, acceptedWord.length, 1);
+  const similarity = 1 - (distance / longest);
+  const shortest = Math.min(answerWord.length, acceptedWord.length);
+  if (shortest <= 4 && distance <= 1) {
+    bestScore = Math.max(bestScore, 0.78, similarity);
+  }
+  if (shortest <= 6 && distance <= 2 && similarity >= 0.58) {
+    bestScore = Math.max(bestScore, 0.58, similarity);
+  }
+  if (similarity >= 0.78) {
+    bestScore = Math.max(bestScore, similarity);
+  }
+
+  const answerPhonetic = createLoosePhoneticKey(answerWord);
+  const acceptedPhonetic = createLoosePhoneticKey(acceptedWord);
+  if (answerPhonetic && acceptedPhonetic && answerPhonetic === acceptedPhonetic && Math.max(answerPhonetic.length, acceptedPhonetic.length) >= 2) {
+    bestScore = Math.max(bestScore, 0.9);
   }
 
   return bestScore;
@@ -4207,10 +4304,14 @@ function normalizeTriviaAnswer(value) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, " and ")
+    .replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\b(the|a|an)\b/g, " ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .split(" ")
+    .map(normalizeTriviaAnswerToken)
+    .join(" ");
 }
 
 function createAcronym(value) {
@@ -4219,6 +4320,68 @@ function createAcronym(value) {
     .filter(Boolean)
     .map((word) => word[0])
     .join("");
+}
+
+function normalizeTriviaAnswerToken(token) {
+  const value = String(token || "").trim();
+  if (!value) {
+    return "";
+  }
+  const romanNumber = romanNumeralToNumber(value);
+  return romanNumber ? String(romanNumber) : value;
+}
+
+function romanNumeralToNumber(value) {
+  const token = String(value || "").toUpperCase();
+  if (!/^[IVXLCDM]+$/.test(token)) {
+    return 0;
+  }
+  const values = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+  let total = 0;
+  for (let index = 0; index < token.length; index += 1) {
+    const current = values[token[index]] || 0;
+    const next = values[token[index + 1]] || 0;
+    total += current < next ? -current : current;
+  }
+  if (total <= 0 || total > 3999 || numberToRomanNumeral(total) !== token) {
+    return 0;
+  }
+  return total;
+}
+
+function numberToRomanNumeral(number) {
+  const entries = [
+    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
+    [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
+    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]
+  ];
+  let remaining = Number(number) || 0;
+  let result = "";
+  for (const [value, numeral] of entries) {
+    while (remaining >= value) {
+      result += numeral;
+      remaining -= value;
+    }
+  }
+  return result;
+}
+
+function createLoosePhoneticKey(value) {
+  const cleaned = String(value || "")
+    .toLowerCase()
+    .replace(/ph/g, "f")
+    .replace(/ght/g, "t")
+    .replace(/[cq]/g, "k")
+    .replace(/x/g, "ks")
+    .replace(/z/g, "s")
+    .replace(/(.)\1+/g, "$1")
+    .replace(/[sxz]+$/g, "");
+  if (!cleaned) {
+    return "";
+  }
+  const first = cleaned[0];
+  const rest = cleaned.slice(1).replace(/[aeiouy]/g, "");
+  return `${first}${rest}`;
 }
 
 function levenshteinDistance(a, b) {
