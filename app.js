@@ -1404,6 +1404,21 @@ function loadUserInventoryCache(userId = getUserInventoryStorageId()) {
   return cache && typeof cache === "object" ? cache : null;
 }
 
+function hasPendingUserInventoryWork(userId = getUserInventoryStorageId()) {
+  return Boolean(userId && (loadUserInventoryQueue(userId).length || loadUserInventoryMutationQueue(userId).length));
+}
+
+function cacheCurrentUserInventoryState(user = state.supabaseUser) {
+  if (state.userInventoryApplying || !user?.id) {
+    return null;
+  }
+  const snapshot = getLocalUserInventorySnapshot(user);
+  if (snapshot) {
+    writeUserInventoryCache(snapshot);
+  }
+  return snapshot;
+}
+
 function enqueueUserInventoryOps(ops) {
   if (state.userInventoryApplying || !state.supabaseUser?.id) {
     return;
@@ -1534,7 +1549,7 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
       if (result.inventory && !loadUserInventoryQueue(userId).length) {
-        applyServerUserInventory(result.inventory);
+        applyServerUserInventory(result.inventory, { authoritative: true });
       }
       if ([400, 409].includes(response.status)) {
         forgetPendingInventoryMutation(userId, mutation.opId);
@@ -1542,7 +1557,7 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
       throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
     }
     if (result.inventory) {
-      applyServerUserInventory(result.inventory);
+      applyServerUserInventory(result.inventory, { authoritative: true });
     }
     forgetPendingInventoryMutation(userId, mutation.opId);
     return result;
@@ -1572,7 +1587,7 @@ async function postUserInventoryMilestone(userId, milestoneId, opId = "", option
     });
     const result = await response.json().catch(() => ({}));
     if (result.inventory) {
-      applyServerUserInventory(result.inventory);
+      applyServerUserInventory(result.inventory, { authoritative: true });
     }
     if (!response.ok) {
       if ([400, 409].includes(response.status)) {
@@ -1690,7 +1705,7 @@ async function flushUserInventoryQueue(options = {}) {
       saveUserInventoryQueue(loadUserInventoryQueue(userId).filter((op) => !completedIds.has(normalizeInventoryOpId(op.id))), userId);
     }
     if (result.inventory) {
-      applyServerUserInventory(result.inventory);
+      applyServerUserInventory(result.inventory, { authoritative: true });
     }
     if (loadUserInventoryQueue(userId).length) {
       window.setTimeout(() => flushUserInventoryQueue(options), 750);
@@ -1755,23 +1770,38 @@ function flushPendingUserInventoryBeforePageExit() {
   void flushPendingUserInventoryMutations({ user, session, keepalive: true });
 }
 
-function applyServerUserInventory(inventory = {}) {
-  const userId = getUserInventoryStorageId();
-  if (!userId || inventory.userId !== userId) {
+function applyServerUserInventory(inventory = {}, options = {}) {
+  const userId = getUserInventoryStorageId(options.user || state.supabaseUser);
+  const inventoryUserId = getUserInventoryStorageId({ id: inventory.userId || userId });
+  if (!userId || inventoryUserId !== userId) {
     return;
   }
+  const serverInventory = {
+    ...inventory,
+    userId: inventoryUserId
+  };
+  const shouldMergeLocal = options.authoritative !== true && options.mergeLocal !== false;
+  const includeLocalSnapshot = options.includeLocalSnapshot === true
+    || (options.includeLocalSnapshot !== false && hasPendingUserInventoryWork(userId));
+  const inventoryToApply = shouldMergeLocal
+    ? mergeUserInventoriesForHydration({ id: userId }, [
+      serverInventory,
+      loadUserInventoryCache(userId),
+      includeLocalSnapshot ? getLocalUserInventorySnapshot({ id: userId }) : null
+    ]) || serverInventory
+    : serverInventory;
   state.userInventoryApplying = true;
   try {
-    const coins = Math.max(0, Math.floor(Number(inventory.coins) || 0));
-    const cosmetics = [...new Set((Array.isArray(inventory.cosmetics) ? inventory.cosmetics : [])
+    const coins = Math.max(0, Math.floor(Number(inventoryToApply.coins) || 0));
+    const cosmetics = [...new Set((Array.isArray(inventoryToApply.cosmetics) ? inventoryToApply.cosmetics : [])
       .map(normalizeInventoryKey)
       .filter(Boolean))];
-    const achievements = inventory.achievements && typeof inventory.achievements === "object" ? inventory.achievements : {};
-    const progress = inventory.achievementProgress && typeof inventory.achievementProgress === "object" ? inventory.achievementProgress : {};
-    const milestones = [...new Set((Array.isArray(inventory.claimedMilestones) ? inventory.claimedMilestones : [])
+    const achievements = inventoryToApply.achievements && typeof inventoryToApply.achievements === "object" ? inventoryToApply.achievements : {};
+    const progress = inventoryToApply.achievementProgress && typeof inventoryToApply.achievementProgress === "object" ? inventoryToApply.achievementProgress : {};
+    const milestones = [...new Set((Array.isArray(inventoryToApply.claimedMilestones) ? inventoryToApply.claimedMilestones : [])
       .map(normalizeInventoryKey)
       .filter(Boolean))];
-    const profile = inventory.profile && typeof inventory.profile === "object" ? inventory.profile : {};
+    const profile = inventoryToApply.profile && typeof inventoryToApply.profile === "object" ? inventoryToApply.profile : {};
     const profileCustomization = profile.cardCustomization
       ? normalizeProfileCustomization(profile.cardCustomization)
       : null;
@@ -1793,7 +1823,7 @@ function applyServerUserInventory(inventory = {}) {
       localStorage.removeItem(equippedAchievementStorageKey);
     }
     syncProfileCustomizationToPlayers();
-    writeUserInventoryCache(inventory);
+    writeUserInventoryCache(inventoryToApply);
     renderProfile();
     renderProfileShop();
     renderAchievementLibraryPreservingScroll();
@@ -2263,7 +2293,7 @@ async function hydrateSignedInUserStorage(user) {
             ? cachedInventory
             : inventory
         );
-        applyServerUserInventory(inventoryToApply);
+        applyServerUserInventory(inventoryToApply, { includeLocalSnapshot: hasUserScopedLocalState });
         const recoveryOps = getInventoryStateOpsFromInventory(inventoryToApply, {
           userId: user.id,
           prefix: "hydration",
@@ -2275,7 +2305,7 @@ async function hydrateSignedInUserStorage(user) {
         }
       } else {
         if (cachedInventory) {
-          applyServerUserInventory(cachedInventory);
+          applyServerUserInventory(cachedInventory, { includeLocalSnapshot: hasUserScopedLocalState });
         }
       }
     } catch (error) {
@@ -7628,6 +7658,7 @@ function loadCurrencyBalance() {
 function saveCurrencyBalance(value) {
   const cleanValue = Math.max(0, Math.floor(Number(value) || 0));
   localStorage.setItem(currencyStorageKey, String(cleanValue));
+  cacheCurrentUserInventoryState();
   scheduleUserStorageSnapshot();
   return cleanValue;
 }
@@ -13116,6 +13147,7 @@ function saveUnlockedAchievements(records, options = {}) {
   const previous = loadUnlockedAchievements();
   const nextRecords = records || {};
   localStorage.setItem(achievementStorageKey, JSON.stringify(nextRecords));
+  cacheCurrentUserInventoryState();
   if (options.sync !== false && !state.userInventoryApplying) {
     const ops = Object.entries(nextRecords)
       .filter(([id]) => !previous[id])
@@ -13143,6 +13175,7 @@ function saveAchievementProgress(progress, options = {}) {
   const previous = loadAchievementProgress();
   const nextProgress = progress || {};
   localStorage.setItem(achievementProgressStorageKey, JSON.stringify(nextProgress));
+  cacheCurrentUserInventoryState();
   if (options.sync !== false && !state.userInventoryApplying) {
     const ops = Object.entries(nextProgress)
       .filter(([key, value]) => Math.max(0, Math.floor(Number(previous[key]) || 0)) !== Math.max(0, Math.floor(Number(value) || 0)))
@@ -13175,6 +13208,7 @@ function saveClaimedAchievementMilestones(ids, options = {}) {
   } else {
     localStorage.removeItem(achievementMilestonesStorageKey);
   }
+  cacheCurrentUserInventoryState();
   if (options.sync !== false && !state.userInventoryApplying) {
     const ops = uniqueIds
       .filter((id) => !previous.includes(id))
@@ -13310,6 +13344,7 @@ function loadProfileCustomization() {
 function saveProfileCustomization(customization) {
   const normalized = normalizeProfileCustomization(customization);
   localStorage.setItem(profileCustomizationStorageKey, JSON.stringify(normalized));
+  cacheCurrentUserInventoryState();
   scheduleUserStorageSnapshot();
   return normalized;
 }
@@ -13505,6 +13540,7 @@ function saveProfileShopPurchases(keys, options = {}) {
   } else {
     localStorage.removeItem(profileShopPurchasesStorageKey);
   }
+  cacheCurrentUserInventoryState();
   if (options.sync !== false && !state.userInventoryApplying) {
     const ops = uniqueKeys
       .filter((key) => !previous.includes(key))
@@ -13998,6 +14034,7 @@ function setEquippedAchievement(id) {
   } else {
     localStorage.removeItem(equippedAchievementStorageKey);
   }
+  cacheCurrentUserInventoryState();
   scheduleUserStorageSnapshot();
   queueUserProfileInventorySync("equipped-title");
   state.players.forEach((player) => {
