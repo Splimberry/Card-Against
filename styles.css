@@ -1505,7 +1505,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .leaderboard-power-pill.chaos-infused,
 .power-play.chaos-infused,
-.result-power-pill.chaos-infused {
+.result-power-pill.chaos-infused,
+.effect-badge.chaos-infused {
   --chaos-rarity-rgb: 180 187 198;
   border-color: rgb(var(--chaos-rarity-rgb) / 0.72);
   background:
@@ -1519,19 +1520,22 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .leaderboard-power-pill.chaos-infused[data-rarity="blue"],
 .power-play.chaos-infused[data-rarity="blue"],
-.result-power-pill.chaos-infused[data-rarity="blue"] {
+.result-power-pill.chaos-infused[data-rarity="blue"],
+.effect-badge.chaos-infused[data-rarity="blue"] {
   --chaos-rarity-rgb: 34 211 238;
 }
 
 .leaderboard-power-pill.chaos-infused[data-rarity="purple"],
 .power-play.chaos-infused[data-rarity="purple"],
-.result-power-pill.chaos-infused[data-rarity="purple"] {
+.result-power-pill.chaos-infused[data-rarity="purple"],
+.effect-badge.chaos-infused[data-rarity="purple"] {
   --chaos-rarity-rgb: 168 85 247;
 }
 
 .leaderboard-power-pill.chaos-infused[data-rarity="gold"],
 .power-play.chaos-infused[data-rarity="gold"],
-.result-power-pill.chaos-infused[data-rarity="gold"] {
+.result-power-pill.chaos-infused[data-rarity="gold"],
+.effect-badge.chaos-infused[data-rarity="gold"] {
   --chaos-rarity-rgb: 251 191 36;
 }
 
@@ -3235,6 +3239,34 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .effect-badge[data-rarity="gold"] strong {
   color: #facc15;
+}
+
+.effect-badge.chaos-infused {
+  --chaos-rarity-rgb: 180 187 198;
+  border-color: rgb(var(--chaos-rarity-rgb) / 0.72);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.12) 0 1px, transparent 1px 5px),
+    linear-gradient(110deg, rgb(var(--chaos-rarity-rgb) / 0.24), rgb(255 77 125 / 0.14), rgb(34 211 238 / 0.16));
+  box-shadow:
+    0 0 0.8rem rgb(var(--chaos-rarity-rgb) / 0.22),
+    inset 0 0 0.65rem rgb(255 255 255 / 0.08);
+  animation: chaosInfusedPillGlitch 980ms steps(2, end) infinite;
+}
+
+.effect-badge.chaos-infused[data-rarity="blue"] {
+  --chaos-rarity-rgb: 34 211 238;
+}
+
+.effect-badge.chaos-infused[data-rarity="purple"] {
+  --chaos-rarity-rgb: 168 85 247;
+}
+
+.effect-badge.chaos-infused[data-rarity="gold"] {
+  --chaos-rarity-rgb: 251 191 36;
+}
+
+.effect-badge.chaos-infused strong {
+  color: inherit;
 }
 
 .effect-badge:hover::after {

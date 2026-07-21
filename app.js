@@ -4915,13 +4915,18 @@ function renderPowerLog(awarded) {
 }
 
 function createActiveEffect(owner, powerId, name, description, options = {}) {
-  const power = getPowerById(powerId);
+  const effectPowerId = options.chaosInfused && canPowerBecomeChaosInfused(powerId)
+    ? getChaosInfusedPowerId(powerId)
+    : powerId;
+  const power = getPowerById(effectPowerId);
   return {
     owner,
     label: owner === "table" ? "Table" : getOwnerLabel(owner),
     name,
     description,
     rarity: power?.rarity || "grey",
+    powerId: effectPowerId,
+    chaosInfused: Boolean(options.chaosInfused || isChaosInfusedPower(effectPowerId)),
     private: Boolean(options.private)
   };
 }
@@ -4937,11 +4942,11 @@ function getActiveEffectEntries() {
       [(state.pocketShieldCharges[owner] || 0) > 0, createActiveEffect(owner, "shield", `Pocket Shield x${state.pocketShieldCharges[owner]}`, "Blocks the next point deduction against this player.")],
       [(state.streakAnchorCharges[owner] || 0) > 0, createActiveEffect(owner, "streak_retainer", `Streak Anchor x${state.streakAnchorCharges[owner]}`, "Blocks the next streak loss against this player.")],
       [state.freezeProtection[owner] > 0, createActiveEffect(owner, "deep_freeze", `Deep Freeze x${state.freezeProtection[owner]}`, "Blocks deductions for remaining rounds.")],
-      [state.freezeReflectionRounds[owner] > 0, createActiveEffect(owner, "deep_freeze", `Uno Reverse x${state.freezeReflectionRounds[owner]}`, "Blocked point losses are gained instead.")],
+      [state.freezeReflectionRounds[owner] > 0, createActiveEffect(owner, "deep_freeze", `Uno Reverse x${state.freezeReflectionRounds[owner]}`, "Blocked point losses are gained instead.", { chaosInfused: true })],
       [state.streakFreezeRounds[owner] > 0, createActiveEffect(owner, "freeze_ray", `Freeze Ray x${state.streakFreezeRounds[owner]}`, "Blocks streak gains and losses.")],
       [state.streakLossProtectionRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Streak Guard x${state.streakLossProtectionRounds[owner]}`, "Blocks streak losses.")],
       [(state.debuffShieldCharges[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Antivirus x${state.debuffShieldCharges[owner]}`, "Blocks the next debuff applied to this player.")],
-      [(state.debuffShieldRounds[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Encryption x${state.debuffShieldRounds[owner]}`, "Blocks debuffs for remaining rounds.")],
+      [(state.debuffShieldRounds[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Encryption x${state.debuffShieldRounds[owner]}`, "Blocks debuffs for remaining rounds.", { chaosInfused: true })],
       [state.cocktailPenaltyRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Cocktail Debt x${state.cocktailPenaltyRounds[owner]}`, "Loses 2.5% of total score after wrong answers.")],
       [state.failedInvestmentDebuffs[owner], createActiveEffect(owner, "cocktail_mix", "Failed Investment", "Next correct answer only pays 80% of gained points.")],
       [state.timeDilationRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Time Dilation x${state.timeDilationRounds[owner]}`, "Adds 10 seconds to this player's answer timer.")],
@@ -4955,28 +4960,28 @@ function getActiveEffectEntries() {
       )],
       [state.pendingCocktailBuffs[owner] > 0, createActiveEffect(owner, "overachiever", `Overachiever Buff x${state.pendingCocktailBuffs[owner]}`, "Adds a random Cocktail Mix buff next round.")],
       [state.pendingLegendaryPowers[owner] > 0, createActiveEffect(owner, "overachiever", `Pending Legendary x${state.pendingLegendaryPowers[owner]}`, "Adds a random Legendary power-up next round after Chaos refresh.")],
-      [(state.pocketShieldBreakThresholds[owner] || 0) > 0, createActiveEffect(owner, "shield", "Resistant Shield", "Shield only breaks after blocking more than 2,000 points in a round.")],
-      [state.chaosInfusionBoostRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Four Leaf Clover x${state.chaosInfusionBoostRounds[owner]}`, "Chaos infusion chance is boosted to 25%.")],
+      [(state.pocketShieldBreakThresholds[owner] || 0) > 0, createActiveEffect(owner, "shield", "Resistant Shield", "Shield only breaks after blocking more than 2,000 points in a round.", { chaosInfused: true })],
+      [state.chaosInfusionBoostRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Four Leaf Clover x${state.chaosInfusionBoostRounds[owner]}`, "Chaos infusion chance is boosted to 25%.", { chaosInfused: true })],
       [state.luckRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Lucky Side x${state.luckRounds[owner]}`, "Buff/debuff rolls become buffs, and new power-ups are Rare or better.")],
       [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", "Heaven/Hell Curse", "Loses 250 points each round.")],
       [state.bottomFeederRounds[owner] > 0, createActiveEffect(owner, "bottom_feeder", `Bottom Feeder x${state.bottomFeederRounds[owner]}`, `Gains ${(state.bottomFeederRounds[owner] * 100).toLocaleString()} points after every loss for the rest of the game.`)],
       [state.worldBurnOwners[owner], createActiveEffect(owner, "world_burn", "Let the World Burn", "First place loses 5% each round.")],
-      [state.lawnMowerOwners[owner], createActiveEffect(owner, "law_mower", state.lawnMowerOwners[owner] === "chaos" ? "Cut Down to Size" : "Lawn Mower", state.lawnMowerOwners[owner] === "chaos" ? "Players ahead lose 15% and get trimmed after Chaos refresh." : "Players ahead lose 12% of this player's total each round.")],
+      [state.lawnMowerOwners[owner], createActiveEffect(owner, "law_mower", state.lawnMowerOwners[owner] === "chaos" ? "Cut Down to Size" : "Lawn Mower", state.lawnMowerOwners[owner] === "chaos" ? "Players ahead lose 15% and get trimmed after Chaos refresh." : "Players ahead lose 12% of this player's total each round.", { chaosInfused: state.lawnMowerOwners[owner] === "chaos" })],
       [state.arsonists[owner], createActiveEffect(owner, "arsonist", "Arsonist", "Adds streaks at round start.")],
-      [state.bartenders[owner], createActiveEffect(owner, "bartender", state.bartenders[owner] === "chaos" ? "Pharmacy" : "Bartender", state.bartenders[owner] === "chaos" ? "Serves Blue Pill at round start." : "Serves Cocktail Mix at round start.")],
+      [state.bartenders[owner], createActiveEffect(owner, "bartender", state.bartenders[owner] === "chaos" ? "Pharmacy" : "Bartender", state.bartenders[owner] === "chaos" ? "Serves Blue Pill at round start." : "Serves Cocktail Mix at round start.", { chaosInfused: state.bartenders[owner] === "chaos" })],
       [state.virusFactories[owner], createActiveEffect(owner, "virus_factory", "Virus Factory", "Each player may roll a debuff at round start.")],
       [state.error404Owners[owner], createActiveEffect(owner, "crawler_virus", "Error 404", "Each player has a 33% chance each round to get scrambled at a random timer moment.")],
       [state.typhoonOwners[owner], createActiveEffect(owner, "typhoon_season", "Typhoon Season", "Each player may self-zap at round start.")],
       [state.eternalSlumberOwners[owner], createActiveEffect(owner, "sin_sloth", "Eternal Slumber", "No player can keep a streak higher than this player's streak.")],
-      [state.wrathOwners[owner], createActiveEffect(owner, "sin_wrath", "Explosive Temper", "Losses plant delayed 10% bombs on other players.")],
+      [state.wrathOwners[owner], createActiveEffect(owner, "sin_wrath", "Explosive Temper", "Losses plant delayed 10% bombs on other players.", { chaosInfused: true })],
       [state.divineBlessingOwners[owner], createActiveEffect(owner, "blessing", "Devine Blessing", "Gains 500 plus 5% score every round.")],
-      [state.superFuelOwners[owner], createActiveEffect(owner, "rocket", "Super Fuel", "Future win streak gains are doubled.")],
-      [state.vultureSwarmOwners[owner], createActiveEffect(owner, "vulture", "Vulture Swarm", "Pays for past losses every round.")],
+      [state.superFuelOwners[owner], createActiveEffect(owner, "rocket", "Super Fuel", "Future win streak gains are doubled.", { chaosInfused: true })],
+      [state.vultureSwarmOwners[owner], createActiveEffect(owner, "vulture", "Vulture Swarm", "Pays for past losses every round.", { chaosInfused: true })],
       [state.chaosRefreshOwners[owner], createActiveEffect(owner, "reign_chaos", "Chaos Infusioner", "The next power-up refresh becomes chaos-infused.")],
-      [state.permanentDeathMarks[owner], createActiveEffect(owner, "time_bomb", "Permanent Death Mark", "Point losses are doubled for the rest of the game.")],
-      [state.chaosEnvyOwners[owner], createActiveEffect(owner, "sin_envy", "Virus Corruption", "Wrong-answer history drains everyone each round.")],
-      [state.chaosBottomFeederOwners[owner], createActiveEffect(owner, "bottom_feeder", "Scavenger", "Adds a Bottom Feeder stack at the end of every round.")],
-      [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for remaining rounds.")],
+      [state.permanentDeathMarks[owner], createActiveEffect(owner, "time_bomb", "Permanent Death Mark", "Point losses are doubled for the rest of the game.", { chaosInfused: true })],
+      [state.chaosEnvyOwners[owner], createActiveEffect(owner, "sin_envy", "Virus Corruption", "Wrong-answer history drains everyone each round.", { chaosInfused: true })],
+      [state.chaosBottomFeederOwners[owner], createActiveEffect(owner, "bottom_feeder", "Scavenger", "Adds a Bottom Feeder stack at the end of every round.", { chaosInfused: true })],
+      [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for remaining rounds.", { chaosInfused: true })],
       [state.thornOwners[owner], createActiveEffect(owner, "thorns", "Thorns", "Reflects 33% of this player's scoring losses to everyone else.")],
       [state.hotInHereOwners[owner], createActiveEffect(owner, "hot_in_here", "It's Getting Hot", "Burns other players at round start.")],
       [state.redHerringMasks[owner] && owner === getFocusedOwner(), createActiveEffect(
@@ -5027,7 +5032,8 @@ function getActiveEffectEntries() {
       mark.targetOwner,
       "time_bomb",
       `Death Mark x${mark.remaining || 0}`,
-      "Point losses are doubled. At the end, this player loses 10% of their score."
+      "Point losses are doubled. At the end, this player loses 10% of their score.",
+      { chaosInfused: true }
     ));
   });
 
@@ -5040,7 +5046,8 @@ function getActiveEffectEntries() {
       bomb.targetOwner,
       "sin_wrath",
       `Wrath Bomb x${roundsLeft}`,
-      "Explodes next round for 10% of this player's score."
+      "Explodes next round for 10% of this player's score.",
+      { chaosInfused: true }
     ));
   });
 
@@ -5064,7 +5071,8 @@ function getActiveEffectEntries() {
       bomb.targetOwner,
       "execution",
       `Death Bomb x${bomb.remaining || 0}`,
-      "Explodes if this player answers incorrectly."
+      "Explodes if this player answers incorrectly.",
+      { chaosInfused: true }
     ));
   });
 
@@ -5076,7 +5084,8 @@ function getActiveEffectEntries() {
       target,
       "void_bomb",
       "Event Horizon",
-      `Repeats when this player loses${sourceOwner && owners.includes(sourceOwner) ? `, from ${getOwnerLabel(sourceOwner)}` : ""}.`
+      `Repeats when this player loses${sourceOwner && owners.includes(sourceOwner) ? `, from ${getOwnerLabel(sourceOwner)}` : ""}.`,
+      { chaosInfused: true }
     ));
   });
 
@@ -5141,6 +5150,7 @@ function renderEffectPanel() {
     badge.className = "effect-badge";
     badge.dataset.rarity = entry.rarity;
     badge.dataset.description = entry.description;
+    badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
     badge.title = entry.description;
     badge.innerHTML = `<strong>${entry.label}</strong> ${entry.name}`;
     elements.effectPanel.appendChild(badge);
