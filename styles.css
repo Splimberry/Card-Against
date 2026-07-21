@@ -6923,6 +6923,39 @@ input:focus {
   padding: 0.58rem 0.72rem;
 }
 
+.target-modal:is([data-mode="merchant"], [data-mode="black-market"]) .target-list {
+  gap: 0.45rem;
+}
+
+.target-modal:is([data-mode="merchant"], [data-mode="black-market"]) .target-option {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 3.1rem;
+  padding: 0.58rem 0.72rem;
+}
+
+.target-modal:is([data-mode="merchant"], [data-mode="black-market"]) .target-option > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.target-modal:is([data-mode="merchant"], [data-mode="black-market"]) .target-option strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.target-modal:is([data-mode="merchant"], [data-mode="black-market"]) .target-option small {
+  flex: 0 0 auto;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .target-modal[data-mode="xray-result"] .target-list {
   gap: 0.35rem;
 }
