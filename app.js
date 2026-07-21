@@ -1964,6 +1964,77 @@ function getInventoryStateOpsFromInventory(inventory = {}, options = {}) {
   return ops;
 }
 
+function mergeAchievementProgressSources(sources = []) {
+  const merged = {};
+  sources.forEach((source) => {
+    const progress = source?.achievementProgress && typeof source.achievementProgress === "object" ? source.achievementProgress : {};
+    Object.entries(progress).forEach(([key, value]) => {
+      const cleanKey = normalizeInventoryKey(key);
+      const cleanValue = Math.max(0, Math.floor(Number(value) || 0));
+      if (cleanKey && cleanValue > Math.max(0, Math.floor(Number(merged[cleanKey]) || 0))) {
+        merged[cleanKey] = cleanValue;
+      }
+    });
+  });
+  return merged;
+}
+
+function getInventoryMergeWeight(inventory = {}) {
+  const source = inventory && typeof inventory === "object" ? inventory : {};
+  const cosmetics = Array.isArray(source.cosmetics) ? source.cosmetics.length : 0;
+  const achievements = source.achievements && typeof source.achievements === "object"
+    ? Object.keys(source.achievements).length
+    : 0;
+  const progress = source.achievementProgress && typeof source.achievementProgress === "object"
+    ? Object.values(source.achievementProgress).reduce((total, value) => total + Math.max(0, Math.floor(Number(value) || 0)), 0)
+    : 0;
+  const milestones = Array.isArray(source.claimedMilestones) ? source.claimedMilestones.length : 0;
+  const coins = Math.max(0, Math.floor(Number(source.coins) || 0));
+  return coins + cosmetics * 1000 + achievements * 1000 + progress + milestones * 250;
+}
+
+function mergeUserInventoriesForHydration(user, inventories = []) {
+  const userId = getUserInventoryStorageId(user);
+  const sources = (Array.isArray(inventories) ? inventories : [])
+    .filter((inventory) => inventory && typeof inventory === "object")
+    .map((inventory) => ({
+      ...inventory,
+      userId: normalizeInventoryKey(inventory.userId || userId)
+    }))
+    .filter((inventory) => inventory.userId === userId);
+  if (!sources.length) {
+    return null;
+  }
+  const profileSource = [...sources]
+    .sort((a, b) => {
+      const timeDelta = (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0);
+      return timeDelta || getInventoryMergeWeight(b) - getInventoryMergeWeight(a);
+    })
+    .find((source) => source.profile && typeof source.profile === "object") || sources[0];
+  const mergedProfile = profileSource.profile && typeof profileSource.profile === "object" ? profileSource.profile : {};
+  return {
+    userId,
+    coins: Math.max(...sources.map((source) => Math.max(0, Math.floor(Number(source.coins) || 0)))),
+    coinTransactions: [],
+    cosmetics: [...new Set(sources.flatMap((source) => Array.isArray(source.cosmetics) ? source.cosmetics : [])
+      .map(normalizeInventoryKey)
+      .filter(Boolean))],
+    achievements: sources.reduce((merged, source) => ({
+      ...merged,
+      ...(source.achievements && typeof source.achievements === "object" ? source.achievements : {})
+    }), {}),
+    achievementProgress: mergeAchievementProgressSources(sources),
+    claimedMilestones: [...new Set(sources.flatMap((source) => Array.isArray(source.claimedMilestones) ? source.claimedMilestones : [])
+      .map(normalizeInventoryKey)
+      .filter(Boolean))],
+    profile: {
+      equippedAchievementId: achievementTitleMap[mergedProfile.equippedAchievementId] ? mergedProfile.equippedAchievementId : "",
+      cardCustomization: normalizeProfileCustomization(mergedProfile.cardCustomization || defaultProfileCustomization)
+    },
+    updatedAt: Math.max(...sources.map((source) => Number(source.updatedAt) || 0), Date.now())
+  };
+}
+
 function enqueueCurrentUserInventoryStateForUser(user = state.supabaseUser, options = {}) {
   const snapshot = getLocalUserInventorySnapshot(user);
   if (!snapshot) {
@@ -2180,10 +2251,27 @@ async function hydrateSignedInUserStorage(user) {
         inventory = migrated.inventory || inventory;
       }
       if (inventory) {
-        if (isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
-          applyServerUserInventory(cachedInventory);
-        } else {
-          applyServerUserInventory(inventory);
+        const mergedInventory = mergeUserInventoriesForHydration(user, [
+          inventory,
+          cachedInventory,
+          getInventoryFromUserStorageSnapshot(localSnapshot, user.id),
+          getInventoryFromUserStorageSnapshot(chosenSnapshot, user.id),
+          hasUserScopedLocalState ? getLocalUserInventorySnapshot(user) : null
+        ]);
+        const inventoryToApply = mergedInventory || (
+          isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)
+            ? cachedInventory
+            : inventory
+        );
+        applyServerUserInventory(inventoryToApply);
+        const recoveryOps = getInventoryStateOpsFromInventory(inventoryToApply, {
+          userId: user.id,
+          prefix: "hydration",
+          coveredCoinOps: getCoveredCoinOpsForInventoryQueue(userId)
+        });
+        if (recoveryOps.length) {
+          enqueueUserInventoryOpsForUser(user, recoveryOps);
+          void flushPendingUserInventoryWrites({ user });
         }
       } else {
         if (cachedInventory) {
