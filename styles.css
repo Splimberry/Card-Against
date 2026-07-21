@@ -5292,17 +5292,39 @@ input:focus {
   }
 }
 
-@keyframes cardChaosScanline {
+@keyframes cardChaosBgDrift {
   0% {
-    transform: translateY(-34%);
-  }
-
-  54% {
-    transform: translateY(16%);
+    background-position:
+      0 0,
+      0 0,
+      0 0;
   }
 
   100% {
-    transform: translateY(44%);
+    background-position:
+      0 140%,
+      0 0,
+      0 0;
+  }
+}
+
+@keyframes cardChaosScanline {
+  0% {
+    background-position:
+      0 -95%,
+      0 0;
+  }
+
+  54% {
+    background-position:
+      0 25%,
+      0 4px;
+  }
+
+  100% {
+    background-position:
+      0 95%,
+      0 10px;
   }
 }
 
@@ -7060,10 +7082,17 @@ input:focus {
 
 .ability-chaos-toggle input {
   appearance: none;
+  -webkit-appearance: none;
   flex: 0 0 auto;
+  box-sizing: border-box;
   width: 1.05rem;
   height: 1.05rem;
+  min-width: 1.05rem;
+  max-width: 1.05rem;
+  min-height: 1.05rem;
+  max-height: 1.05rem;
   margin: 0;
+  padding: 0;
   display: grid;
   place-items: center;
   border: 2px solid rgba(34, 211, 238, 0.8);
