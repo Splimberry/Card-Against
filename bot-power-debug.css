@@ -93,17 +93,27 @@
 .bot-power-debug-controls .mode-toggle {
   grid-column: span 2;
   grid-template-columns: auto minmax(0, 1fr);
-  min-height: 2.42rem;
+  height: 3rem;
+  min-height: 3rem;
   align-content: center;
+  align-items: center;
   gap: 0.42rem;
   padding: 0.42rem 0.5rem;
+  overflow: hidden;
 }
 
 .bot-power-debug-controls .icon-button {
   grid-column: span 2;
-  min-height: 2.42rem;
+  height: 3rem;
+  min-height: 3rem;
   padding: 0.48rem 0.5rem;
-  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 0.74rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .bot-power-debug-controls .bot-power-debug-toggle input[type="checkbox"] {
@@ -149,6 +159,8 @@
   min-width: 0;
   font-size: 0.7rem;
   line-height: 1.05;
+  overflow-wrap: normal;
+  text-wrap: balance;
 }
 
 .bot-power-debug-panel .debug-status {

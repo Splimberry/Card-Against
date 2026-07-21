@@ -496,7 +496,8 @@ const chaosInfusedPowerOverrides = {
   freeze_ray: {
     name: "Absolute Zero",
     short: "-3 + freeze",
-    description: "Pick a player. They lose 3 streak, and their streak cannot go up or down for 3 rounds."
+    description: "Pick a player. They lose 3 streak, and their streak cannot go up or down for 3 rounds.",
+    immediate: true
   },
   speed_answer: {
     name: "Quantum Time Splicing",
@@ -5327,6 +5328,10 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
       const target = getEntryTarget(entry);
       if (!target || !getActiveOwners().includes(target)) {
         events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
+        return;
+      }
+      if (isEntryImmediateResolved(entry)) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} already froze ${getOwnerLabel(target)}.`));
         return;
       }
       if (isChaosInfusedPower(entry.power)) {
@@ -15484,6 +15489,21 @@ function consumeImmediatePower(owner, power, meta = {}) {
     renderScore();
   }
 
+  if (power.type === "freeze_ray" && isChaosInfusedPower(power)) {
+    const target = meta.targetOwner;
+    if (target && getActiveOwners().includes(target)) {
+      setOwnerStreak(target, Math.max(0, getOwnerStreak(target) - 3), { force: true });
+      state.streakFreezeRounds[target] = Math.max(state.streakFreezeRounds[target] || 0, 3);
+      state.playedPowerMeta[owner] = {
+        ...(state.playedPowerMeta[owner] || {}),
+        targetOwner: target,
+        immediateResolved: true
+      };
+      queueStatFlash("shield", power.name, "Streaks Locked", getTargetedFlashOptions(owner, target, { complex: true }));
+      renderScore();
+    }
+  }
+
   if (power.type === "sin_sloth") {
     if (isChaosInfusedPower(power)) {
       state.eternalSlumberOwners[owner] = true;
@@ -18758,8 +18778,12 @@ function renderPowerDebugPowerOptions(scope = "dev") {
   const searchText = String(refs.searchInput?.value || "").trim().toLowerCase();
   const showChaosVersions = Boolean(refs.chaosToggle?.checked);
   const optionPowers = powerDeck
-    .filter((power) => !showChaosVersions || canPowerBecomeChaosInfused(power.id))
-    .map((power) => showChaosVersions ? getPowerById(getChaosInfusedPowerId(power.id)) : power)
+    .flatMap((power) => {
+      const chaosPower = canPowerBecomeChaosInfused(power.id)
+        ? getPowerById(getChaosInfusedPowerId(power.id))
+        : null;
+      return showChaosVersions ? [chaosPower] : [power, chaosPower];
+    })
     .filter(Boolean);
   const matches = optionPowers.filter((power) => matchesPowerDebugSearch(power, searchText));
   refs.powerSelect.replaceChildren();
@@ -18785,9 +18809,7 @@ function renderPowerDebugPowerOptions(scope = "dev") {
     option.disabled = true;
     refs.powerSelect.appendChild(option);
   }
-  const normalizedSelected = showChaosVersions
-    ? getChaosInfusedPowerId(selected)
-    : getBasePowerId(selected);
+  const normalizedSelected = showChaosVersions ? getChaosInfusedPowerId(selected) : selected;
   refs.powerSelect.value = matches.some((power) => power.id === normalizedSelected) ? normalizedSelected : matches[0]?.id || "";
 }
 
