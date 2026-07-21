@@ -2429,6 +2429,8 @@ const state = {
   chaosInputLockId: "",
   allOutRounds: {},
   extraPowerUses: {},
+  powerDebugTimerPaused: false,
+  powerDebugTimerManualPaused: false,
   botPowerSchedule: {},
   roomBotAnswerSchedule: {},
   nextPreferredTheme: "",
@@ -2835,6 +2837,7 @@ const elements = {
   botPowerSearchInput: document.querySelector("#botPowerSearchInput"),
   botPowerSelect: document.querySelector("#botPowerSelect"),
   botPowerChaosToggle: document.querySelector("#botPowerChaosToggle"),
+  botPowerPauseToggle: document.querySelector("#botPowerPauseToggle"),
   botPowerAddButton: document.querySelector("#botPowerAddButton"),
   botPowerFillButton: document.querySelector("#botPowerFillButton"),
   botPowerClearButton: document.querySelector("#botPowerClearButton"),
@@ -16872,8 +16875,10 @@ function updateBotPowerDebugPauseStatus() {
     return;
   }
   elements.botPowerDebugPauseStatus.textContent = state.powerDebugTimerPaused
-    ? "Timer paused while testing."
-    : "Timer runs until you use this panel.";
+    ? "Timer paused manually."
+    : state.powerDebugTimerManualPaused
+      ? "Timer will pause when answer timing starts."
+    : "Timer running. Enable Pause timer to freeze it.";
 }
 
 function pauseBotPowerDebugTimer() {
@@ -16906,6 +16911,23 @@ function resumeBotPowerDebugTimer() {
   }
 }
 
+function syncBotPowerDebugPauseToggle() {
+  if (elements.botPowerPauseToggle) {
+    elements.botPowerPauseToggle.checked = Boolean(state.powerDebugTimerManualPaused);
+  }
+}
+
+function handleBotPowerDebugPauseToggle() {
+  state.powerDebugTimerManualPaused = Boolean(elements.botPowerPauseToggle?.checked);
+  if (state.powerDebugTimerManualPaused) {
+    pauseBotPowerDebugTimer();
+    updateBotPowerDebugPauseStatus();
+    return;
+  }
+  resumeBotPowerDebugTimer();
+  updateBotPowerDebugPauseStatus();
+}
+
 function renderBotPowerDebugPanel() {
   if (!elements.botPowerDebugPanel) {
     return;
@@ -16913,8 +16935,14 @@ function renderBotPowerDebugPanel() {
   const visible = canShowBotPowerDebugPanel();
   setHidden(elements.botPowerDebugPanel, !visible);
   if (!visible) {
-    resumeBotPowerDebugTimer();
+    if (!state.powerDebugTimerManualPaused) {
+      resumeBotPowerDebugTimer();
+    }
     return;
+  }
+  syncBotPowerDebugPauseToggle();
+  if (state.powerDebugTimerManualPaused) {
+    pauseBotPowerDebugTimer();
   }
   updateBotPowerDebugPauseStatus();
   renderPowerDebug("bot-match");
@@ -18635,6 +18663,7 @@ function getPowerDebugRefs(scope = "dev") {
       searchInput: elements.botPowerSearchInput,
       powerSelect: elements.botPowerSelect,
       chaosToggle: elements.botPowerChaosToggle,
+      pauseToggle: elements.botPowerPauseToggle,
       status: elements.botPowerStatus,
       hand: elements.botPowerHand
     };
@@ -18665,6 +18694,8 @@ function matchesPowerDebugSearch(power, searchText) {
   }
   const haystack = [
     power.id,
+    power.baseId,
+    power.originalName,
     power.name,
     power.short,
     power.description,
@@ -18681,10 +18712,15 @@ function renderPowerDebugPowerOptions(scope = "dev") {
   }
   const selected = refs.powerSelect.value || "small_bounty";
   const searchText = String(refs.searchInput?.value || "").trim().toLowerCase();
-  const matches = powerDeck.filter((power) => matchesPowerDebugSearch(power, searchText));
+  const showChaosVersions = Boolean(refs.chaosToggle?.checked);
+  const optionPowers = powerDeck
+    .filter((power) => !showChaosVersions || canPowerBecomeChaosInfused(power.id))
+    .map((power) => showChaosVersions ? getPowerById(getChaosInfusedPowerId(power.id)) : power)
+    .filter(Boolean);
+  const matches = optionPowers.filter((power) => matchesPowerDebugSearch(power, searchText));
   refs.powerSelect.replaceChildren();
   ["grey", "blue", "purple", "gold"].forEach((rarity) => {
-    const rarityMatches = matches.filter((power) => power.rarity === rarity);
+    const rarityMatches = matches.filter((power) => getPowerById(getBasePowerId(power.id))?.rarity === rarity);
     if (!rarityMatches.length) {
       return;
     }
@@ -18701,11 +18737,14 @@ function renderPowerDebugPowerOptions(scope = "dev") {
   if (!matches.length) {
     const option = document.createElement("option");
     option.value = "";
-    option.textContent = "No matching power-ups";
+    option.textContent = showChaosVersions ? "No matching chaos powers" : "No matching power-ups";
     option.disabled = true;
     refs.powerSelect.appendChild(option);
   }
-  refs.powerSelect.value = matches.some((power) => power.id === selected) ? selected : matches[0]?.id || "";
+  const normalizedSelected = showChaosVersions
+    ? getChaosInfusedPowerId(selected)
+    : getBasePowerId(selected);
+  refs.powerSelect.value = matches.some((power) => power.id === normalizedSelected) ? normalizedSelected : matches[0]?.id || "";
 }
 
 function renderPowerDebug(scope = "dev") {
@@ -18723,17 +18762,18 @@ function renderPowerDebug(scope = "dev") {
   }));
   refs.ownerSelect.value = selectedOwner;
   renderPowerDebugPowerOptions(scope);
-  const basePowerId = refs.powerSelect.value;
-  const chaosAvailable = canPowerBecomeChaosInfused(basePowerId);
-  refs.chaosToggle.disabled = !chaosAvailable;
-  if (!chaosAvailable) {
-    refs.chaosToggle.checked = false;
-  }
+  refs.chaosToggle.disabled = false;
   const hand = state.powerHands[selectedOwner] || [];
   refs.hand.replaceChildren(...hand.map((powerId) => {
     const power = getPowerById(powerId);
-    const card = document.createElement("article");
-    card.className = "profile-debug-card";
+    const card = document.createElement(scope === "bot-match" ? "button" : "article");
+    card.className = scope === "bot-match" ? "profile-debug-card bot-power-debug-card" : "profile-debug-card";
+    if (scope === "bot-match") {
+      card.type = "button";
+      card.dataset.owner = selectedOwner;
+      card.dataset.powerId = powerId;
+      card.dataset.tooltip = "Click to remove this power-up";
+    }
     card.dataset.state = isChaosInfusedPower(powerId) ? "enabled" : "natural";
     card.innerHTML = `<strong>${power?.name || powerId}</strong><span>${power?.short || "Unknown"}</span><p>${isChaosInfusedPower(powerId) ? "Chaos-infused" : rarityInfo[power?.rarity]?.label || "Power-up"}</p>`;
     return card;
@@ -18754,6 +18794,9 @@ function renderAllPowerDebugPanels() {
 function getSelectedDebugPowerId(scope = "dev") {
   const refs = getPowerDebugRefs(scope);
   const basePowerId = refs.powerSelect?.value || "";
+  if (isChaosInfusedPower(basePowerId)) {
+    return basePowerId;
+  }
   if (refs.chaosToggle?.checked && canPowerBecomeChaosInfused(basePowerId)) {
     return getChaosInfusedPowerId(basePowerId);
   }
@@ -18791,6 +18834,25 @@ function forceDebugBotPowerUse(owner, powerId) {
   return used;
 }
 
+function addDebugPowerSlot(owner, powerId) {
+  if (!owner || !powerId) {
+    return false;
+  }
+  const limit = getPowerHandLimit(owner);
+  if (limit <= 0) {
+    return false;
+  }
+  const hand = [...(state.powerHands[owner] || [])].slice(0, limit);
+  if (hand.length < limit) {
+    hand.push(powerId);
+  } else {
+    hand[limit - 1] = powerId;
+  }
+  state.powerHands[owner] = hand;
+  markFreshPowerUps(owner, [powerId]);
+  return true;
+}
+
 function addDebugPowerToHand(scope = "dev") {
   const owner = getPowerDebugRefs(scope).ownerSelect?.value;
   const powerId = getSelectedDebugPowerId(scope);
@@ -18803,7 +18865,7 @@ function addDebugPowerToHand(scope = "dev") {
     setPowerDebugStatus(scope, "Start a match before adding power-ups.");
     return;
   }
-  addPurchasedPowerToHand(owner, powerId);
+  addDebugPowerSlot(owner, powerId);
   const botUsed = scope === "bot-match" && isBotOwner(owner)
     ? forceDebugBotPowerUse(owner, powerId)
     : null;
@@ -18817,6 +18879,27 @@ function addDebugPowerToHand(scope = "dev") {
   renderPowerUps();
   publishPowerDebugState();
   playSound("reveal");
+}
+
+function removeDebugPowerFromHand(scope = "dev", owner, powerId) {
+  if (!owner || !powerId || !state.powerHands[owner]?.length) {
+    return;
+  }
+  const removeIndex = state.powerHands[owner].indexOf(powerId);
+  if (removeIndex < 0) {
+    return;
+  }
+  state.powerHands[owner] = state.powerHands[owner].filter((_, index) => index !== removeIndex);
+  state.freshPowerUps[owner] = (state.freshPowerUps[owner] || []).filter((id) => id !== powerId);
+  setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((id) => id !== powerId));
+  if (state.botPowerSchedule?.[owner]?.forcedPowerId === powerId) {
+    delete state.botPowerSchedule[owner].forcedPowerId;
+  }
+  setPowerDebugStatus(scope, `Removed ${getPowerById(powerId)?.name || powerId} from ${getOwnerLabel(owner)}.`);
+  renderAllPowerDebugPanels();
+  renderPowerUps();
+  publishPowerDebugState();
+  playSound("click");
 }
 
 function fillDebugPowerHand(scope = "dev") {
@@ -25615,28 +25698,21 @@ buildDevToolScreen();
 updateAdminControls();
 refreshAdminSession();
 elements.menuDevToolButton?.addEventListener("click", handleDevToolButtonClick);
-elements.botPowerDebugPanel?.addEventListener("focusin", pauseBotPowerDebugTimer);
-elements.botPowerDebugPanel?.addEventListener("pointerdown", pauseBotPowerDebugTimer);
-elements.botPowerDebugPanel?.addEventListener("mouseenter", pauseBotPowerDebugTimer);
-elements.botPowerDebugPanel?.addEventListener("focusout", () => {
-  window.setTimeout(() => {
-    if (!elements.botPowerDebugPanel?.contains(document.activeElement)) {
-      resumeBotPowerDebugTimer();
-    }
-  }, 0);
-});
-elements.botPowerDebugPanel?.addEventListener("mouseleave", () => {
-  if (!elements.botPowerDebugPanel?.contains(document.activeElement)) {
-    resumeBotPowerDebugTimer();
-  }
-});
 elements.botPowerOwnerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerSearchInput?.addEventListener("input", () => renderPowerDebug("bot-match"));
 elements.botPowerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerChaosToggle?.addEventListener("change", () => renderPowerDebug("bot-match"));
+elements.botPowerPauseToggle?.addEventListener("change", handleBotPowerDebugPauseToggle);
 elements.botPowerAddButton?.addEventListener("click", () => addDebugPowerToHand("bot-match"));
 elements.botPowerFillButton?.addEventListener("click", () => fillDebugPowerHand("bot-match"));
 elements.botPowerClearButton?.addEventListener("click", () => clearDebugPowerHand("bot-match"));
+elements.botPowerHand?.addEventListener("click", (event) => {
+  const card = event.target.closest(".bot-power-debug-card");
+  if (!card || !elements.botPowerHand.contains(card)) {
+    return;
+  }
+  removeDebugPowerFromHand("bot-match", card.dataset.owner, card.dataset.powerId);
+});
 elements.profileCustomizeButton?.addEventListener("click", openProfileCustomization);
 elements.profileShopButton?.addEventListener("click", openProfileShop);
 elements.profileNameInput?.addEventListener("input", (event) => updateProfileName(event.target.value));
