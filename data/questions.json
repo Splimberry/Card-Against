@@ -10584,5 +10584,1005 @@
       "alt": "An old violin resting on a surface",
       "credit": "Wikimedia Commons"
     }
+  },
+  {
+    "id": "popculture-mcq-toy-story-first-pixar",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which movie was Pixar's first feature-length theatrical film?",
+    "canonicalAnswer": "Toy Story",
+    "multipleChoiceOptions": ["A Bug's Life", "Toy Story", "Shrek", "The Iron Giant"]
+  },
+  {
+    "id": "popculture-mcq-central-perk",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "In Friends, what is the name of the coffeehouse where the main characters often hang out?",
+    "canonicalAnswer": "Central Perk",
+    "multipleChoiceOptions": ["Monk's Cafe", "Central Perk", "MacLaren's Pub", "Cafe Nervosa"]
+  },
+  {
+    "id": "popculture-mcq-katniss-everdeen",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Who is the main heroine of The Hunger Games novels and films?",
+    "canonicalAnswer": "Katniss Everdeen",
+    "multipleChoiceOptions": ["Tris Prior", "Katniss Everdeen", "Clary Fray", "Bella Swan"]
+  },
+  {
+    "id": "popculture-mcq-neo-actor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which actor plays Neo in The Matrix?",
+    "canonicalAnswer": "Keanu Reeves",
+    "multipleChoiceOptions": ["Keanu Reeves", "Johnny Depp", "Christian Bale", "Brad Pitt"]
+  },
+  {
+    "id": "popculture-mcq-spirited-away-director",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which director made the animated film Spirited Away?",
+    "canonicalAnswer": "Hayao Miyazaki",
+    "multipleChoiceOptions": ["Mamoru Hosoda", "Makoto Shinkai", "Hayao Miyazaki", "Satoshi Kon"]
+  },
+  {
+    "id": "popculture-mcq-dunder-mifflin-product",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In The Office, what product does Dunder Mifflin mainly sell?",
+    "canonicalAnswer": "Paper",
+    "multipleChoiceOptions": ["Printers", "Paper", "Office chairs", "Stationery software"]
+  },
+  {
+    "id": "popculture-mcq-bad-guy-singer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which singer released the hit song Bad Guy?",
+    "canonicalAnswer": "Billie Eilish",
+    "multipleChoiceOptions": ["Lorde", "Billie Eilish", "Olivia Rodrigo", "Dua Lipa"]
+  },
+  {
+    "id": "popculture-mcq-minas-tirith",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In The Lord of the Rings, which city is the capital of Gondor?",
+    "canonicalAnswer": "Minas Tirith",
+    "multipleChoiceOptions": ["Minas Morgul", "Osgiliath", "Edoras", "Minas Tirith"]
+  },
+  {
+    "id": "popculture-mcq-the-wire-city",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "The crime drama The Wire is primarily set in which U.S. city?",
+    "canonicalAnswer": "Baltimore",
+    "multipleChoiceOptions": ["Baltimore", "Detroit", "Philadelphia", "Chicago"]
+  },
+  {
+    "id": "popculture-mcq-blue-box-doctor-who",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In Doctor Who, what is the name of the Doctor's blue police-box time machine?",
+    "canonicalAnswer": "TARDIS",
+    "multipleChoiceOptions": ["TARDIS", "Borg Cube", "Serenity", "Nostromo"]
+  },
+  {
+    "id": "gaming-mcq-minecraft-creator",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "Who originally created Minecraft?",
+    "canonicalAnswer": "Markus Persson",
+    "multipleChoiceOptions": ["Markus Persson", "Gabe Newell", "Will Wright", "John Carmack"]
+  },
+  {
+    "id": "gaming-mcq-portal-cube",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "In Portal, what is the heart-marked cube called?",
+    "canonicalAnswer": "Weighted Companion Cube",
+    "multipleChoiceOptions": ["Weighted Companion Cube", "Weighted Storage Cube", "Aperture Friend Cube", "Thermal Discouragement Cube"]
+  },
+  {
+    "id": "gaming-mcq-npc-meaning",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "In games, what does NPC usually stand for?",
+    "canonicalAnswer": "Non-player character",
+    "multipleChoiceOptions": ["Network player character", "Non-player character", "New player class", "Neutral party companion"]
+  },
+  {
+    "id": "gaming-mcq-vaporeon-stone",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In many Pokemon games, Eevee evolves into Vaporeon when exposed to which stone?",
+    "canonicalAnswer": "Water Stone",
+    "multipleChoiceOptions": ["Moon Stone", "Water Stone", "Dawn Stone", "Ice Stone"]
+  },
+  {
+    "id": "gaming-mcq-git-stage-command",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which Git command stages changed files before a commit?",
+    "canonicalAnswer": "git add",
+    "multipleChoiceOptions": ["git save", "git add", "git push", "git merge"]
+  },
+  {
+    "id": "gaming-mcq-python-creator",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which programming language was created by Guido van Rossum?",
+    "canonicalAnswer": "Python",
+    "multipleChoiceOptions": ["Ruby", "Python", "Perl", "Lua"]
+  },
+  {
+    "id": "gaming-mcq-d20-checks",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Dungeons and Dragons, which die is most commonly rolled for ability checks?",
+    "canonicalAnswer": "d20",
+    "multipleChoiceOptions": ["d12", "d20", "d10", "d8"]
+  },
+  {
+    "id": "gaming-mcq-doom-developer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "Which studio developed the original 1993 game Doom?",
+    "canonicalAnswer": "id Software",
+    "multipleChoiceOptions": ["id Software", "Raven Software", "Apogee Software", "Looking Glass Studios"]
+  },
+  {
+    "id": "gaming-mcq-tetris-blocks",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "What are the four-square shapes in Tetris commonly called?",
+    "canonicalAnswer": "Tetrominoes",
+    "multipleChoiceOptions": ["Polyominoes", "Tetrominoes", "Tetrads", "Tetracubes"]
+  },
+  {
+    "id": "gaming-mcq-halo-ringworld",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Halo lore, what are the massive ring-shaped superweapons called?",
+    "canonicalAnswer": "Halos",
+    "multipleChoiceOptions": ["Mass Relays", "Halos", "Arks", "Citadels"]
+  },
+  {
+    "id": "geohistory-mcq-canada-capital",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "What is the capital city of Canada?",
+    "canonicalAnswer": "Ottawa",
+    "multipleChoiceOptions": ["Toronto", "Ottawa", "Montreal", "Vancouver"]
+  },
+  {
+    "id": "geohistory-mcq-pompeii-vesuvius",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "Which ancient Roman city was buried by the eruption of Mount Vesuvius in 79 CE?",
+    "canonicalAnswer": "Pompeii",
+    "multipleChoiceOptions": ["Pompeii", "Herculaneum", "Ostia", "Capua"]
+  },
+  {
+    "id": "geohistory-mcq-japan-currency",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "What is the official currency of Japan?",
+    "canonicalAnswer": "Yen",
+    "multipleChoiceOptions": ["Won", "Yuan", "Yen", "Ringgit"]
+  },
+  {
+    "id": "geohistory-mcq-versailles-treaty",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which treaty formally ended World War I between Germany and the Allied Powers?",
+    "canonicalAnswer": "Treaty of Versailles",
+    "multipleChoiceOptions": ["Treaty of Versailles", "Treaty of Paris", "Treaty of Trianon", "Treaty of Brest-Litovsk"]
+  },
+  {
+    "id": "geohistory-mcq-inca-capital",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "What was the capital of the Inca Empire?",
+    "canonicalAnswer": "Cusco",
+    "multipleChoiceOptions": ["Tenochtitlan", "Cusco", "Machu Picchu", "Quito"]
+  },
+  {
+    "id": "geohistory-mcq-magna-carta-king",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which English king sealed Magna Carta in 1215?",
+    "canonicalAnswer": "King John",
+    "multipleChoiceOptions": ["King Richard I", "King John", "King Henry II", "King Edward I"]
+  },
+  {
+    "id": "geohistory-mcq-kilimanjaro-country",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Mount Kilimanjaro is located in which country?",
+    "canonicalAnswer": "Tanzania",
+    "multipleChoiceOptions": ["Kenya", "Tanzania", "Uganda", "Ethiopia"]
+  },
+  {
+    "id": "geohistory-mcq-berlin-wall-year",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "In which year did the Berlin Wall fall?",
+    "canonicalAnswer": "1989",
+    "multipleChoiceOptions": ["1987", "1989", "1991", "1993"]
+  },
+  {
+    "id": "geohistory-mcq-silk-road-terminus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which Chinese city is often named as the eastern starting point of the ancient Silk Road?",
+    "canonicalAnswer": "Chang'an",
+    "multipleChoiceOptions": ["Luoyang", "Chang'an", "Nanjing", "Kaifeng"]
+  },
+  {
+    "id": "geohistory-mcq-byzantine-capital",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "What was the capital of the Byzantine Empire for most of its history?",
+    "canonicalAnswer": "Constantinople",
+    "multipleChoiceOptions": ["Constantinople", "Antioch", "Nicaea", "Thessalonica"]
+  },
+  {
+    "id": "animals-mcq-cheetah-speed",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which animal is usually considered the fastest land animal?",
+    "canonicalAnswer": "Cheetah",
+    "multipleChoiceOptions": ["Pronghorn", "Cheetah", "Leopard", "Springbok"]
+  },
+  {
+    "id": "animals-mcq-platypus-bill",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which egg-laying mammal has a duck-like bill?",
+    "canonicalAnswer": "Platypus",
+    "multipleChoiceOptions": ["Echidna", "Platypus", "Otter", "Beaver"]
+  },
+  {
+    "id": "animals-mcq-koala-food",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Koalas mainly eat leaves from which tree?",
+    "canonicalAnswer": "Eucalyptus",
+    "multipleChoiceOptions": ["Acacia", "Eucalyptus", "Bamboo", "Mangrove"]
+  },
+  {
+    "id": "animals-mcq-whale-shark",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which shark is the largest living fish species?",
+    "canonicalAnswer": "Whale shark",
+    "multipleChoiceOptions": ["Basking shark", "Great white shark", "Whale shark", "Tiger shark"]
+  },
+  {
+    "id": "animals-mcq-bee-waggle-dance",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Honeybees use which behavior to share the direction of food sources?",
+    "canonicalAnswer": "Waggle dance",
+    "multipleChoiceOptions": ["Tremble dance", "Waggle dance", "Round dance", "Figure-eight grooming"]
+  },
+  {
+    "id": "animals-mcq-octopus-blood",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What color is octopus blood when oxygenated?",
+    "canonicalAnswer": "Blue",
+    "multipleChoiceOptions": ["Green", "Blue", "Purple", "Red"]
+  },
+  {
+    "id": "animals-mcq-seahorse-babies",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "In seahorses, which sex carries the developing young?",
+    "canonicalAnswer": "Male",
+    "multipleChoiceOptions": ["Female", "Male", "Both parents", "Neither parent"]
+  },
+  {
+    "id": "animals-mcq-monarch-migration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Many eastern North American monarch butterflies migrate to overwinter in which country?",
+    "canonicalAnswer": "Mexico",
+    "multipleChoiceOptions": ["Mexico", "Costa Rica", "Brazil", "Cuba"]
+  },
+  {
+    "id": "animals-mcq-elephant-gestation",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Which land mammal is famous for having a pregnancy lasting close to 22 months?",
+    "canonicalAnswer": "African elephant",
+    "multipleChoiceOptions": ["White rhinoceros", "African elephant", "Hippopotamus", "Giraffe"]
+  },
+  {
+    "id": "animals-mcq-peregrine-dive",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Which bird is famous for the extremely fast hunting dive called a stoop?",
+    "canonicalAnswer": "Peregrine falcon",
+    "multipleChoiceOptions": ["Golden eagle", "Peregrine falcon", "Gyrfalcon", "Red-tailed hawk"]
+  },
+  {
+    "id": "fooddrinks-mcq-guacamole-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Which fruit is the main ingredient in guacamole?",
+    "canonicalAnswer": "Avocado",
+    "multipleChoiceOptions": ["Tomatillo", "Avocado", "Plantain", "Lime"]
+  },
+  {
+    "id": "fooddrinks-mcq-latte-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "A cafe latte is normally built around a shot of what coffee?",
+    "canonicalAnswer": "Espresso",
+    "multipleChoiceOptions": ["Cold brew", "Espresso", "Turkish coffee", "Filter coffee"]
+  },
+  {
+    "id": "fooddrinks-mcq-hummus-chickpeas",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Which legume is the main base of traditional hummus?",
+    "canonicalAnswer": "Chickpeas",
+    "multipleChoiceOptions": ["Lentils", "Chickpeas", "Fava beans", "White beans"]
+  },
+  {
+    "id": "fooddrinks-mcq-sushi-rice",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "The word sushi originally refers most directly to what prepared ingredient?",
+    "canonicalAnswer": "Vinegared rice",
+    "multipleChoiceOptions": ["Raw fish", "Vinegared rice", "Seaweed wrapper", "Wasabi paste"]
+  },
+  {
+    "id": "fooddrinks-mcq-miso-soybeans",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Miso paste is most commonly made by fermenting which bean?",
+    "canonicalAnswer": "Soybeans",
+    "multipleChoiceOptions": ["Soybeans", "Adzuki beans", "Mung beans", "Black beans"]
+  },
+  {
+    "id": "fooddrinks-mcq-tequila-agave",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Tequila is made primarily from which plant?",
+    "canonicalAnswer": "Blue agave",
+    "multipleChoiceOptions": ["Blue agave", "Sugarcane", "Prickly pear", "Yucca"]
+  },
+  {
+    "id": "fooddrinks-mcq-kimchi-cabbage",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Baechu kimchi is most often made with which vegetable?",
+    "canonicalAnswer": "Napa cabbage",
+    "multipleChoiceOptions": ["Daikon radish", "Bok choy", "Napa cabbage", "Mustard greens"]
+  },
+  {
+    "id": "fooddrinks-mcq-parmigiano-country",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Parmigiano Reggiano is a protected cheese from which country?",
+    "canonicalAnswer": "Italy",
+    "multipleChoiceOptions": ["France", "Italy", "Switzerland", "Spain"]
+  },
+  {
+    "id": "fooddrinks-mcq-roux-ingredients",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "A classic roux is made by cooking flour with what fat?",
+    "canonicalAnswer": "Butter",
+    "multipleChoiceOptions": ["Olive oil", "Butter", "Cream", "Egg yolk"]
+  },
+  {
+    "id": "fooddrinks-mcq-pisco-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Pisco is a brandy distilled mainly from which fruit?",
+    "canonicalAnswer": "Grapes",
+    "multipleChoiceOptions": ["Apples", "Grapes", "Plums", "Pears"]
+  },
+  {
+    "id": "sports-mcq-baseball-strikes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In baseball, how many strikes usually make an out?",
+    "canonicalAnswer": "Three",
+    "multipleChoiceOptions": ["Two", "Three", "Four", "Five"]
+  },
+  {
+    "id": "sports-mcq-golf-birdie",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In golf, what is a score of one stroke under par called?",
+    "canonicalAnswer": "Birdie",
+    "multipleChoiceOptions": ["Birdie", "Eagle", "Bogey", "Par"]
+  },
+  {
+    "id": "sports-mcq-basketball-three",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In basketball, a made shot from behind the arc is worth how many points?",
+    "canonicalAnswer": "Three",
+    "multipleChoiceOptions": ["Two", "Three", "Four", "One"]
+  },
+  {
+    "id": "sports-mcq-ashes-teams",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "The Ashes is a cricket rivalry between England and which country?",
+    "canonicalAnswer": "Australia",
+    "multipleChoiceOptions": ["India", "Australia", "New Zealand", "South Africa"]
+  },
+  {
+    "id": "sports-mcq-marathon-distance",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "A marathon is officially about how many kilometers long?",
+    "canonicalAnswer": "42.195 km",
+    "multipleChoiceOptions": ["40 km", "42.195 km", "45 km", "50 km"]
+  },
+  {
+    "id": "sports-mcq-boxing-tko",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In boxing, what does TKO stand for?",
+    "canonicalAnswer": "Technical knockout",
+    "multipleChoiceOptions": ["Timed knockout", "Technical knockout", "Total knock-out", "Tournament knockout"]
+  },
+  {
+    "id": "sports-mcq-rugby-try-points",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In rugby union, how many points is a try worth?",
+    "canonicalAnswer": "Five",
+    "multipleChoiceOptions": ["Four", "Five", "Six", "Seven"]
+  },
+  {
+    "id": "sports-mcq-tennis-deuce",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In tennis scoring, what term comes immediately after deuce when one player wins the next point?",
+    "canonicalAnswer": "Advantage",
+    "multipleChoiceOptions": ["Advantage", "Break point", "Set point", "Game point"]
+  },
+  {
+    "id": "sports-mcq-olympic-rings",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "The five Olympic rings traditionally represent what?",
+    "canonicalAnswer": "Five inhabited continents",
+    "multipleChoiceOptions": ["Five founding cities", "Five inhabited continents", "Five ancient sports", "Five original nations"]
+  },
+  {
+    "id": "sports-mcq-f1-checkered-flag",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In motor racing, which flag signals the end of the race?",
+    "canonicalAnswer": "Checkered flag",
+    "multipleChoiceOptions": ["Black flag", "Yellow flag", "Checkered flag", "Blue flag"]
+  },
+  {
+    "id": "internet-mcq-http-404",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "On the web, HTTP status code 404 usually means what?",
+    "canonicalAnswer": "Not Found",
+    "multipleChoiceOptions": ["Forbidden", "Not Found", "Bad Gateway", "Moved Permanently"]
+  },
+  {
+    "id": "internet-mcq-rickroll-song",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "A rickroll usually sends someone to which Rick Astley song?",
+    "canonicalAnswer": "Never Gonna Give You Up",
+    "multipleChoiceOptions": ["Together Forever", "Never Gonna Give You Up", "Take On Me", "Africa"]
+  },
+  {
+    "id": "internet-mcq-tldr",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "What does TL;DR usually mean online?",
+    "canonicalAnswer": "Too long; didn't read",
+    "multipleChoiceOptions": ["Too long; didn't read", "Talk later; doing research", "Text link; direct reply", "Thread locked; do not repost"]
+  },
+  {
+    "id": "internet-mcq-dns-purpose",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What does DNS mainly translate for internet users?",
+    "canonicalAnswer": "Domain names to IP addresses",
+    "multipleChoiceOptions": ["Passwords to hashes", "Domain names to IP addresses", "Images to thumbnails", "Emails to usernames"]
+  },
+  {
+    "id": "internet-mcq-captcha-purpose",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "CAPTCHA tests are mainly used to tell humans apart from what?",
+    "canonicalAnswer": "Bots",
+    "multipleChoiceOptions": ["Admins", "Bots", "Browsers", "Moderators"]
+  },
+  {
+    "id": "internet-mcq-two-factor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Two-factor authentication adds what to a password login?",
+    "canonicalAnswer": "A second proof of identity",
+    "multipleChoiceOptions": ["A public profile", "A second proof of identity", "A longer username", "A browser bookmark"]
+  },
+  {
+    "id": "internet-mcq-phishing-goal",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Phishing messages are usually trying to steal what?",
+    "canonicalAnswer": "Login or personal information",
+    "multipleChoiceOptions": ["Login or personal information", "Screen brightness", "Keyboard shortcuts", "Browser history only"]
+  },
+  {
+    "id": "internet-mcq-rss-format",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "RSS feeds are commonly written using which markup format family?",
+    "canonicalAnswer": "XML",
+    "multipleChoiceOptions": ["YAML", "XML", "Markdown", "SQL"]
+  },
+  {
+    "id": "internet-mcq-gpl-linux",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "The Linux kernel is famously distributed under which open-source license family?",
+    "canonicalAnswer": "GPL",
+    "multipleChoiceOptions": ["MIT", "GPL", "Apache", "BSD"]
+  },
+  {
+    "id": "internet-mcq-hashtag-origin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "Which symbol is used to create hashtags on most social platforms?",
+    "canonicalAnswer": "#",
+    "multipleChoiceOptions": ["@", "#", "&", "%"]
+  },
+  {
+    "id": "science-mcq-force-unit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "What is the SI unit of force?",
+    "canonicalAnswer": "Newton",
+    "multipleChoiceOptions": ["Joule", "Newton", "Watt", "Pascal"]
+  },
+  {
+    "id": "science-mcq-ph-acidic",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "A solution with a pH below 7 is usually described as what?",
+    "canonicalAnswer": "Acidic",
+    "multipleChoiceOptions": ["Basic", "Neutral", "Acidic", "Saline"]
+  },
+  {
+    "id": "science-mcq-photosynthesis",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "What process do plants use to make sugar from light, carbon dioxide, and water?",
+    "canonicalAnswer": "Photosynthesis",
+    "multipleChoiceOptions": ["Respiration", "Photosynthesis", "Fermentation", "Transpiration"]
+  },
+  {
+    "id": "science-mcq-potassium-symbol",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What is the chemical symbol for potassium?",
+    "canonicalAnswer": "K",
+    "multipleChoiceOptions": ["P", "Pt", "K", "Po"]
+  },
+  {
+    "id": "science-mcq-dna-a-pairs",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "In DNA, adenine normally pairs with which base?",
+    "canonicalAnswer": "Thymine",
+    "multipleChoiceOptions": ["Uracil", "Thymine", "Guanine", "Cytosine"]
+  },
+  {
+    "id": "science-mcq-great-red-spot",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "The Great Red Spot is a giant storm on which planet?",
+    "canonicalAnswer": "Jupiter",
+    "multipleChoiceOptions": ["Saturn", "Jupiter", "Neptune", "Mars"]
+  },
+  {
+    "id": "science-mcq-helium-atomic-number",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which noble gas has atomic number 2?",
+    "canonicalAnswer": "Helium",
+    "multipleChoiceOptions": ["Neon", "Helium", "Argon", "Krypton"]
+  },
+  {
+    "id": "science-mcq-speed-of-light",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "What is the exact defined speed of light in a vacuum?",
+    "canonicalAnswer": "299,792,458 m/s",
+    "multipleChoiceOptions": ["299,792,458 m/s", "300,000,000 m/s", "186,000 miles/s", "299,792 km/s"]
+  },
+  {
+    "id": "science-mcq-water-angle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "The bond angle in a water molecule is closest to which value?",
+    "canonicalAnswer": "104.5 degrees",
+    "multipleChoiceOptions": ["90 degrees", "104.5 degrees", "109.5 degrees", "120 degrees"]
+  },
+  {
+    "id": "science-mcq-avogadro",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Avogadro's constant counts the number of particles in one what?",
+    "canonicalAnswer": "Mole",
+    "multipleChoiceOptions": ["Mole", "Gram", "Liter", "Kelvin"]
+  },
+  {
+    "id": "mythology-mcq-thor-hammer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "In Norse mythology, what is the name of Thor's hammer?",
+    "canonicalAnswer": "Mjolnir",
+    "multipleChoiceOptions": ["Gungnir", "Mjolnir", "Gram", "Draupnir"]
+  },
+  {
+    "id": "mythology-mcq-athena-birth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "In Greek myth, Athena is famously born from whose head?",
+    "canonicalAnswer": "Zeus",
+    "multipleChoiceOptions": ["Ares", "Zeus", "Poseidon", "Apollo"]
+  },
+  {
+    "id": "mythology-mcq-anubis-role",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Anubis is most closely associated with which part of ancient Egyptian belief?",
+    "canonicalAnswer": "The dead and embalming",
+    "multipleChoiceOptions": ["The Nile flood", "The dead and embalming", "The harvest", "The rising sun"]
+  },
+  {
+    "id": "mythology-mcq-persephone-mother",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Greek mythology, who is Persephone's mother?",
+    "canonicalAnswer": "Demeter",
+    "multipleChoiceOptions": ["Hera", "Demeter", "Hestia", "Rhea"]
+  },
+  {
+    "id": "mythology-mcq-odin-ravens",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What are the names of Odin's two ravens?",
+    "canonicalAnswer": "Huginn and Muninn",
+    "multipleChoiceOptions": ["Huginn and Muninn", "Geri and Freki", "Ask and Embla", "Skoll and Hati"]
+  },
+  {
+    "id": "mythology-mcq-achilles-weakness",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Achilles is famously vulnerable in which part of his body?",
+    "canonicalAnswer": "Heel",
+    "multipleChoiceOptions": ["Heel", "Shoulder", "Wrist", "Neck"]
+  },
+  {
+    "id": "mythology-mcq-charon-ferry",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Greek myth, who ferries souls across the river to the underworld?",
+    "canonicalAnswer": "Charon",
+    "multipleChoiceOptions": ["Charon", "Thanatos", "Hermes", "Orpheus"]
+  },
+  {
+    "id": "mythology-mcq-loki-fenrir",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In Norse mythology, which trickster god is the father of Fenrir?",
+    "canonicalAnswer": "Loki",
+    "multipleChoiceOptions": ["Loki", "Odin", "Tyr", "Baldr"]
+  },
+  {
+    "id": "mythology-mcq-susanoo",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In Japanese mythology, Susanoo is mainly known as a god of what?",
+    "canonicalAnswer": "Storms and the sea",
+    "multipleChoiceOptions": ["Storms and the sea", "Rice and foxes", "Mountains and iron", "The moon and night"]
+  },
+  {
+    "id": "mythology-mcq-heracles-labors",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "How many labors is Heracles most famous for completing?",
+    "canonicalAnswer": "Twelve",
+    "multipleChoiceOptions": ["Nine", "Ten", "Twelve", "Fourteen"]
+  },
+  {
+    "id": "artmusic-mcq-cage-433",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which composer wrote the silent piece 4'33\"?",
+    "canonicalAnswer": "John Cage",
+    "multipleChoiceOptions": ["John Cage", "Philip Glass", "Steve Reich", "Terry Riley"]
+  },
+  {
+    "id": "artmusic-mcq-primary-colors",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which set lists the traditional primary colors in painting?",
+    "canonicalAnswer": "Red, yellow, and blue",
+    "multipleChoiceOptions": ["Red, yellow, and blue", "Red, green, and blue", "Cyan, magenta, and yellow", "Orange, green, and purple"]
+  },
+  {
+    "id": "artmusic-mcq-reggae-jamaica",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Reggae music is most strongly associated with which country?",
+    "canonicalAnswer": "Jamaica",
+    "multipleChoiceOptions": ["Trinidad and Tobago", "Jamaica", "Barbados", "Cuba"]
+  },
+  {
+    "id": "artmusic-mcq-pollock-style",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Jackson Pollock is especially known for which painting technique?",
+    "canonicalAnswer": "Drip painting",
+    "multipleChoiceOptions": ["Pointillism", "Drip painting", "Fresco", "Woodcut"]
+  },
+  {
+    "id": "artmusic-mcq-duchamp-fountain",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which artist submitted the readymade artwork Fountain?",
+    "canonicalAnswer": "Marcel Duchamp",
+    "multipleChoiceOptions": ["Marcel Duchamp", "Man Ray", "Francis Picabia", "Jean Arp"]
+  },
+  {
+    "id": "artmusic-mcq-piano-keys",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "A standard full-size piano has how many keys?",
+    "canonicalAnswer": "88",
+    "multipleChoiceOptions": ["76", "88", "92", "96"]
+  },
+  {
+    "id": "artmusic-mcq-flamenco-country",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Flamenco music and dance are most closely associated with which country?",
+    "canonicalAnswer": "Spain",
+    "multipleChoiceOptions": ["Portugal", "Spain", "Argentina", "Mexico"]
+  },
+  {
+    "id": "artmusic-mcq-blue-note",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "In jazz and blues, a deliberately flattened expressive pitch is commonly called what?",
+    "canonicalAnswer": "Blue note",
+    "multipleChoiceOptions": ["Grace note", "Blue note", "Pedal tone", "Leading tone"]
+  },
+  {
+    "id": "artmusic-mcq-ballet-swan-lake",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Which composer wrote the music for the ballet Swan Lake?",
+    "canonicalAnswer": "Pyotr Ilyich Tchaikovsky",
+    "multipleChoiceOptions": ["Sergei Prokofiev", "Pyotr Ilyich Tchaikovsky", "Igor Stravinsky", "Nikolai Rimsky-Korsakov"]
+  },
+  {
+    "id": "artmusic-mcq-woodblock-japan",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Ukiyo-e is a historic Japanese art form best known for what medium?",
+    "canonicalAnswer": "Woodblock prints",
+    "multipleChoiceOptions": ["Ink wash scrolls", "Woodblock prints", "Bronze casting", "Lacquered ceramics"]
   }
 ]
