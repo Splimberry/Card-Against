@@ -2900,6 +2900,11 @@ const state = {
   realtimeRoomReady: false,
   realtimeJoinRefreshTimerId: null,
   realtimeRoomRefreshTimerId: null,
+  roomFallbackStartTimerId: null,
+  roomFallbackActive: false,
+  roomRealtimeStatus: "idle",
+  roomRealtimeUnhealthySince: 0,
+  roomLastCatchupAt: 0,
   realtimeSourceId: `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   hostedRoomsRefreshPromise: null,
   currentRoomRefreshPromise: null,
@@ -10324,9 +10329,7 @@ function startSupabaseRealtime() {
     if (state.realtimeLobbyReady) {
       stopJoinDirectoryPolling();
       if (hasActiveRoomContext()) {
-        stopRoomDirectoryPolling();
-        startRoomHeartbeat();
-        startRoomEventPolling();
+        startRoomDirectoryPolling();
       }
       syncUserQuestionSubmissionPolling();
     }
@@ -10362,19 +10365,16 @@ function startRoomRealtime(code = state.roomSettings.code) {
   channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
     handleRealtimeRoomChange(payload || {});
   });
-  channel.subscribe((status) => {
-    state.realtimeRoomReady = status === "SUBSCRIBED";
-    if (state.realtimeRoomReady) {
-      stopRoomEventPolling();
-      startRoomEventPolling();
-    }
-  });
+  channel.subscribe((status) => handleRoomRealtimeStatus(status));
   state.realtimeRoomChannel = channel;
   state.realtimeRoomCode = roomCode;
+  state.roomRealtimeStatus = "connecting";
+  state.realtimeRoomReady = false;
+  scheduleRoomFallbackPolling("connecting");
 }
 
 function stopRoomRealtime() {
-  stopRoomEventPolling();
+  stopRoomFallbackPolling();
   if (state.realtimeRoomRefreshTimerId) {
     window.clearTimeout(state.realtimeRoomRefreshTimerId);
     state.realtimeRoomRefreshTimerId = null;
@@ -10385,6 +10385,8 @@ function stopRoomRealtime() {
   state.realtimeRoomChannel = null;
   state.realtimeRoomCode = "";
   state.realtimeRoomReady = false;
+  state.roomRealtimeStatus = "idle";
+  state.roomRealtimeUnhealthySince = 0;
 }
 
 function getRealtimeRoomPayload(room = {}, options = {}) {
@@ -10825,7 +10827,7 @@ async function refreshRoomEventsSinceLastRevision(options = {}) {
   if (!hasActiveRoomContext() || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return false;
   }
-  if (state.roomEventRefreshPromise && !options.force) {
+  if (state.roomEventRefreshPromise) {
     return state.roomEventRefreshPromise;
   }
   const since = Math.max(0, Number(options.since ?? state.roomEventRevision) || 0);
@@ -23325,7 +23327,10 @@ function handleRoomVisibilityChange() {
     return;
   }
   state.roomMissingSince = 0;
-  refreshCurrentRoomDirectory(state.roomSessionId);
+  requestRoomRealtimeCatchup("visible", { force: true, snapshot: false });
+  if (!isRoomRealtimeHealthy()) {
+    startRoomDirectoryPolling();
+  }
 }
 
 function startRoomHeartbeat() {
@@ -23372,6 +23377,101 @@ function stopRoomHeartbeat() {
   }
 }
 
+function isRoomRealtimeHealthy() {
+  return Boolean(state.supabaseEnabled && state.realtimeRoomChannel && state.realtimeRoomReady);
+}
+
+function handleRoomRealtimeStatus(status = "") {
+  state.roomRealtimeStatus = String(status || "unknown");
+  state.realtimeRoomReady = status === "SUBSCRIBED";
+  if (state.realtimeRoomReady) {
+    state.roomRealtimeUnhealthySince = 0;
+    stopRoomFallbackPolling({ keepHeartbeat: true });
+    startRoomHeartbeat();
+    requestRoomRealtimeCatchup("subscribed", { force: true, snapshot: false });
+    return;
+  }
+  if (!state.roomRealtimeUnhealthySince) {
+    state.roomRealtimeUnhealthySince = Date.now();
+  }
+  scheduleRoomFallbackPolling(`realtime-${state.roomRealtimeStatus.toLowerCase()}`);
+}
+
+function getRoomFallbackDelayMs() {
+  if (!state.supabaseEnabled || !state.realtimeRoomChannel) {
+    return 3500;
+  }
+  return isRoomTabBackgrounded() ? 15000 : 9000;
+}
+
+function requestRoomRealtimeCatchup(reason = "sync", options = {}) {
+  if (!hasActiveRoomContext()) {
+    return Promise.resolve(false);
+  }
+  const now = Date.now();
+  if (!options.force && now - (state.roomLastCatchupAt || 0) < 1200) {
+    return Promise.resolve(false);
+  }
+  state.roomLastCatchupAt = now;
+  return refreshRoomEventsSinceLastRevision({ force: true }).then((hadEvents) => {
+    if (hadEvents || options.snapshot === false) {
+      return hadEvents;
+    }
+    return refreshCurrentRoomDirectory(state.roomSessionId).then(() => false);
+  });
+}
+
+function scheduleRoomFallbackPolling(reason = "realtime-unhealthy") {
+  if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
+    stopRoomFallbackPolling({ keepHeartbeat: true });
+    return;
+  }
+  startRoomHeartbeat();
+  if (state.roomFallbackActive || state.roomFallbackStartTimerId) {
+    return;
+  }
+  const delayMs = getRoomFallbackDelayMs();
+  state.roomFallbackStartTimerId = window.setTimeout(() => {
+    state.roomFallbackStartTimerId = null;
+    if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
+      stopRoomFallbackPolling({ keepHeartbeat: true });
+      return;
+    }
+    startRoomFallbackPolling(reason);
+  }, delayMs);
+}
+
+function startRoomFallbackPolling(reason = "realtime-unhealthy") {
+  if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
+    stopRoomFallbackPolling({ keepHeartbeat: true });
+    return;
+  }
+  state.roomFallbackActive = true;
+  startRoomEventPolling();
+  refreshRoomEventsSinceLastRevision({ force: true });
+  if (!state.roomDirectoryPollId) {
+    const sessionId = state.roomSessionId;
+    const intervalMs = getRoomSnapshotPollIntervalMs();
+    state.roomDirectoryPollId = window.setInterval(() => refreshCurrentRoomDirectory(sessionId), intervalMs);
+  }
+}
+
+function stopRoomFallbackPolling(options = {}) {
+  if (state.roomFallbackStartTimerId) {
+    window.clearTimeout(state.roomFallbackStartTimerId);
+    state.roomFallbackStartTimerId = null;
+  }
+  if (state.roomDirectoryPollId) {
+    window.clearInterval(state.roomDirectoryPollId);
+    state.roomDirectoryPollId = null;
+  }
+  stopRoomEventPolling();
+  state.roomFallbackActive = false;
+  if (!options.keepHeartbeat) {
+    stopRoomHeartbeat();
+  }
+}
+
 function isRoomInWaitingSyncState() {
   return state.currentRoomStatus === "lobby"
     || state.currentRoomStatus === "complete"
@@ -23387,33 +23487,26 @@ function getRoomEventPollIntervalMs() {
 
 function getRoomSnapshotPollIntervalMs() {
   if (isRoomTabBackgrounded()) {
-    return 30000;
+    return 45000;
   }
   if (isRoomInWaitingSyncState()) {
-    return 12000;
+    return 20000;
   }
-  return state.supabaseEnabled ? 12000 : 8000;
+  return state.supabaseEnabled ? 20000 : 15000;
 }
 
 function startRoomDirectoryPolling() {
-  stopRoomDirectoryPolling();
+  stopRoomFallbackPolling({ keepHeartbeat: true });
   startRoomHeartbeat();
-  startRoomEventPolling();
-  if (state.supabaseEnabled && state.realtimeLobbyReady) {
+  if (isRoomRealtimeHealthy()) {
+    requestRoomRealtimeCatchup("start", { force: true, snapshot: false });
     return;
   }
-  const sessionId = state.roomSessionId;
-  const intervalMs = getRoomSnapshotPollIntervalMs();
-  state.roomDirectoryPollId = window.setInterval(() => refreshCurrentRoomDirectory(sessionId), intervalMs);
+  scheduleRoomFallbackPolling("start");
 }
 
 function stopRoomDirectoryPolling() {
-  if (state.roomDirectoryPollId) {
-    window.clearInterval(state.roomDirectoryPollId);
-    state.roomDirectoryPollId = null;
-  }
-  stopRoomEventPolling();
-  stopRoomHeartbeat();
+  stopRoomFallbackPolling();
 }
 
 function getKickableRoomBotTarget(owner = "", participantId = "") {
