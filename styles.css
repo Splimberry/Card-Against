@@ -283,6 +283,60 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   gap: 0.4rem;
 }
 
+.mode-screen:not(.hidden) :is(.mode-title-stack, .profile-card, .menu-actions, .mode-grid > *, .menu-help-button) {
+  animation: mainMenuElementIn 820ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--menu-enter-delay, 0ms);
+  will-change: opacity, transform, filter;
+}
+
+.mode-screen:not(.hidden) .mode-title-stack {
+  --menu-enter-x: -2.4rem;
+  --menu-enter-y: 0.18rem;
+  --menu-enter-delay: 40ms;
+}
+
+.mode-screen:not(.hidden) .profile-card {
+  --menu-enter-x: 2.25rem;
+  --menu-enter-y: 0.18rem;
+  --menu-enter-delay: 150ms;
+}
+
+.mode-screen:not(.hidden) .menu-actions {
+  --menu-enter-x: -1.6rem;
+  --menu-enter-y: 0.18rem;
+  --menu-enter-delay: 240ms;
+}
+
+.mode-screen:not(.hidden) .mode-grid > :nth-child(1) {
+  --menu-enter-x: -1.6rem;
+  --menu-enter-y: 0.7rem;
+  --menu-enter-delay: 330ms;
+}
+
+.mode-screen:not(.hidden) .mode-grid > :nth-child(2) {
+  --menu-enter-x: -0.7rem;
+  --menu-enter-y: 0.7rem;
+  --menu-enter-delay: 390ms;
+}
+
+.mode-screen:not(.hidden) .mode-grid > :nth-child(3) {
+  --menu-enter-x: 0.7rem;
+  --menu-enter-y: 0.7rem;
+  --menu-enter-delay: 450ms;
+}
+
+.mode-screen:not(.hidden) .mode-grid > :nth-child(4) {
+  --menu-enter-x: 1.6rem;
+  --menu-enter-y: 0.7rem;
+  --menu-enter-delay: 510ms;
+}
+
+.mode-screen:not(.hidden) .menu-help-button {
+  --menu-enter-x: 0.8rem;
+  --menu-enter-y: 0.45rem;
+  --menu-enter-delay: 580ms;
+}
+
 .room-screen,
 .join-screen,
 .dev-tool-screen,
@@ -9674,6 +9728,10 @@ input:focus {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mode-screen:not(.hidden) :is(.mode-title-stack, .profile-card, .menu-actions, .mode-grid > *, .menu-help-button) {
+    animation: none;
+  }
+
   .room-submit-status,
   .room-player-list-resizing {
     transition: none;
@@ -9707,6 +9765,25 @@ input:focus {
   100% {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes mainMenuElementIn {
+  0% {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translate3d(var(--menu-enter-x, -1.5rem), var(--menu-enter-y, 0.4rem), 0) scale(0.985);
+  }
+
+  58% {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
