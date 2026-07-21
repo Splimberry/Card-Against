@@ -2586,6 +2586,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.dev-create-meta-grid {
+  grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+}
+
 .dev-create-answer-grid {
   grid-template-columns: minmax(11rem, 0.42fr) minmax(18rem, 1fr);
 }

@@ -17932,12 +17932,12 @@ function buildDevToolScreen() {
     <section class="dev-tool-panel hidden" data-dev-panel="create">
       <div class="dev-create-layout">
         <form class="dev-create-form" id="devQuestionCreateForm">
-          <div class="dev-create-grid">
+          <div class="dev-create-grid dev-create-meta-grid">
             <label><span>Theme</span><select id="devCreateTheme"></select></label>
             <label><span>Difficulty</span><select id="devCreateDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
             <label><span>Question type</span><select id="devCreateType"><option value="text">Text</option><option value="image">Image</option></select></label>
             <label><span>Question style</span><select id="devCreateQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
-            <label><span>ID</span><input id="devCreateId" required placeholder="theme-short-unique-id"></label>
+            <label><span>ID</span><input id="devCreateId" required placeholder="popculture-short-unique-id"></label>
           </div>
           <label class="dev-create-question-field"><span>Question</span><textarea id="devCreateQuestion" required rows="5" placeholder="Question text"></textarea></label>
           <div class="dev-create-answer-grid">
@@ -17945,7 +17945,7 @@ function buildDevToolScreen() {
             <label id="devCreateAcceptedWrap"><span>Accepted answers</span><textarea id="devCreateAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
           </div>
           <div class="dev-create-answer-grid">
-            <label id="devCreateBotsWrap"><span>Bot answers</span><textarea id="devCreateBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
+            <label id="devCreateBotsWrap"><span>Incorrect answers</span><textarea id="devCreateBots" required rows="3" placeholder="wrong one, wrong two, wrong three"></textarea></label>
             <label id="devCreateRejectedWrap"><span>Rejected answers</span><textarea id="devCreateRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
           </div>
           <fieldset class="dev-create-image-fields hidden" id="devCreateImageFields">
@@ -18075,6 +18075,7 @@ function buildDevToolScreen() {
   elements.devCreatePreviewQuestion = screen.querySelector("#devCreatePreviewQuestion");
 
   populateDevToolThemeSelects();
+  syncDevCreateIdPrefix();
   updateDevCreatePreview();
   bindDevToolEvents();
 }
@@ -18159,7 +18160,15 @@ function bindDevToolEvents() {
     syncDevCreateIdPrefix();
     updateDevCreatePreview();
   });
-  elements.devCreateId.addEventListener("input", normalizeDevCreateIdInput);
+  elements.devCreateId.addEventListener("input", () => {
+    elements.devCreateId.setCustomValidity("");
+    normalizeDevCreateIdInput();
+  });
+  [elements.devCreateCanonical, elements.devCreateBots].forEach((input) => {
+    input?.addEventListener("input", () => {
+      input.setCustomValidity("");
+    });
+  });
   elements.devQuestionCreateForm.addEventListener("input", updateDevCreatePreview);
   elements.devQuestionCreateForm.addEventListener("change", updateDevCreatePreview);
   elements.devCreateSaveAsNewButton.addEventListener("click", saveEditedQuestionAsNew);
@@ -18189,12 +18198,12 @@ function buildUserQuestionScreen() {
     </div>
     <div class="dev-create-layout user-question-layout">
       <form class="dev-create-form" id="userQuestionForm">
-        <div class="dev-create-grid">
+        <div class="dev-create-grid dev-create-meta-grid">
           <label><span>Theme</span><select id="userQuestionTheme"></select></label>
           <label><span>Difficulty</span><select id="userQuestionDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
           <label><span>Question type</span><select id="userQuestionType"><option value="text">Text</option><option value="image">Image</option></select></label>
           <label><span>Question style</span><select id="userQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
-          <label><span>ID</span><input id="userQuestionId" required placeholder="theme-short-unique-id"></label>
+          <label><span>ID</span><input id="userQuestionId" required placeholder="popculture-short-unique-id"></label>
         </div>
         <label class="dev-create-question-field"><span>Question</span><textarea id="userQuestionText" required rows="5" placeholder="Question text"></textarea></label>
         <div class="dev-create-answer-grid">
@@ -18202,7 +18211,7 @@ function buildUserQuestionScreen() {
           <label id="userQuestionAcceptedWrap"><span>Accepted answers</span><textarea id="userQuestionAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
         </div>
         <div class="dev-create-answer-grid">
-          <label id="userQuestionBotsWrap"><span>Wrong bot answers</span><textarea id="userQuestionBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
+          <label id="userQuestionBotsWrap"><span>Incorrect answers</span><textarea id="userQuestionBots" required rows="3" placeholder="wrong one, wrong two, wrong three"></textarea></label>
           <label id="userQuestionRejectedWrap"><span>Rejected answers</span><textarea id="userQuestionRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
         </div>
         <fieldset class="dev-create-image-fields hidden" id="userQuestionImageFields">
@@ -18283,7 +18292,15 @@ function buildUserQuestionScreen() {
   });
   elements.userQuestionType.addEventListener("change", updateUserQuestionImageFields);
   elements.userQuestionStyle.addEventListener("change", updateUserQuestionImageFields);
-  elements.userQuestionId.addEventListener("input", normalizeUserQuestionIdInput);
+  elements.userQuestionId.addEventListener("input", () => {
+    elements.userQuestionId.setCustomValidity("");
+    normalizeUserQuestionIdInput();
+  });
+  [elements.userQuestionCanonical, elements.userQuestionBots].forEach((input) => {
+    input?.addEventListener("input", () => {
+      input.setCustomValidity("");
+    });
+  });
   elements.userQuestionForm.addEventListener("input", updateUserQuestionPreview);
   elements.userQuestionForm.addEventListener("change", updateUserQuestionPreview);
   elements.userQuestionForm.addEventListener("submit", submitUserQuestion);
@@ -18314,6 +18331,8 @@ function updateUserQuestionImageFields() {
   elements.userQuestionImageUrl.required = isImage;
   setHidden(elements.userQuestionAcceptedWrap, isMultipleChoice);
   setHidden(elements.userQuestionRejectedWrap, isMultipleChoice);
+  elements.userQuestionAccepted.disabled = isMultipleChoice;
+  elements.userQuestionRejected.disabled = isMultipleChoice;
   elements.userQuestionAccepted.required = false;
   elements.userQuestionRejected.required = false;
   elements.userQuestionCanonical.closest("label").querySelector("span").textContent = isMultipleChoice ? "Correct answer" : "Main answer";
@@ -18385,7 +18404,7 @@ function getUserQuestionPayload() {
     rejectedAnswers: parseCommaSeparatedAnswers(elements.userQuestionRejected.value)
   };
   if (payload.questionStyle === MULTIPLE_CHOICE_STYLE) {
-    const incorrect = parseCommaSeparatedAnswers(elements.userQuestionBots.value).slice(0, 3);
+    const incorrect = parseCommaSeparatedAnswers(elements.userQuestionBots.value);
     payload.acceptedAnswers = [];
     payload.botCards = [];
     payload.rejectedAnswers = [];
@@ -18413,6 +18432,9 @@ function clearUserQuestionForm() {
 async function submitUserQuestion(event) {
   event.preventDefault();
   if (!elements.userQuestionForm.reportValidity()) return;
+  if (!validateQuestionEditorId(elements.userQuestionId, elements.userQuestionTheme.value, elements.userQuestionStatus)) {
+    return;
+  }
   if (elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE
     && !validateMultipleChoiceDraft(
       elements.userQuestionCanonical.value,
@@ -20340,10 +20362,18 @@ function syncDevCreateIdPrefix() {
   elements.devCreateId.value = suffix ? `${prefix}-${suffix}` : `${prefix}-`;
 }
 
+function getCurrentDevCreateIdPrefixValue() {
+  return `${getThemeIdPrefix(elements.devCreateTheme.value)}-`;
+}
+
+function isDevCreateIdOnlyThemePrefix() {
+  return formatDevQuestionId(elements.devCreateId.value, { keepTrailingDash: true }) === getCurrentDevCreateIdPrefixValue();
+}
+
 function hasDevCreateFormProgress() {
   return Boolean(
     state.questionEditOriginalId
-    || elements.devCreateId.value.trim()
+    || (elements.devCreateId.value.trim() && !isDevCreateIdOnlyThemePrefix())
     || elements.devCreateQuestion.value.trim()
     || elements.devCreateCanonical.value.trim()
     || elements.devCreateAccepted.value.trim()
@@ -20373,6 +20403,7 @@ function resetDevQuestionCreateForm(options = {}) {
   state.questionEditOriginalId = "";
   state.questionEditReturnId = "";
   elements.devQuestionCreateForm.reset();
+  syncDevCreateIdPrefix();
   updateDevCreateImageFields();
   setHidden(elements.devCreateExitButton, true);
   if (!keepStatus) {
@@ -20481,6 +20512,7 @@ async function clearDevQuestionCreateFormWithConfirm() {
     return;
   }
   elements.devQuestionCreateForm.reset();
+  syncDevCreateIdPrefix();
   updateDevCreateImageFields();
   elements.devCreateStatus.textContent = state.questionEditOriginalId
     ? `Editing ${state.questionEditOriginalId}. Save will overwrite the original question.`
@@ -20565,6 +20597,8 @@ function updateDevCreateImageFields() {
   elements.devCreateImageUrl.required = isImage;
   setHidden(elements.devCreateAcceptedWrap, isMultipleChoice);
   setHidden(elements.devCreateRejectedWrap, isMultipleChoice);
+  elements.devCreateAccepted.disabled = isMultipleChoice;
+  elements.devCreateRejected.disabled = isMultipleChoice;
   elements.devCreateAccepted.required = false;
   elements.devCreateRejected.required = false;
   elements.devCreateCanonical.closest("label").querySelector("span").textContent = isMultipleChoice ? "Correct answer" : "Answer";
@@ -20610,14 +20644,50 @@ function validateMultipleChoiceDraft(correctAnswer, wrongAnswers, input, statusE
   if (!input) {
     return true;
   }
+  const correct = cleanInput(correctAnswer || "");
   const parsedWrongAnswers = (wrongAnswers || []).map((answer) => cleanInput(answer || "")).filter(Boolean);
   const options = getMultipleChoiceDraftOptions(correctAnswer, parsedWrongAnswers);
-  const valid = Boolean(cleanInput(correctAnswer || "")) && parsedWrongAnswers.length === 3 && options.length === 4;
-  input.setCustomValidity(valid ? "" : "Enter exactly three unique incorrect answers, each different from the correct answer.");
+  const valid = Boolean(correct) && parsedWrongAnswers.length === 3 && options.length === 4;
+  const message = !correct
+    ? "Enter one correct answer for this multiple-choice question."
+    : parsedWrongAnswers.length !== 3
+      ? "Enter exactly three incorrect answers separated by commas."
+      : "Incorrect answers must be unique and different from the correct answer.";
+  input.setCustomValidity(valid ? "" : message);
   if (!valid) {
     input.reportValidity();
     if (statusElement) {
-      statusElement.textContent = "Multiple-choice questions need one correct answer and exactly three unique incorrect answers.";
+      statusElement.textContent = `${message} Multiple-choice saves require 1 correct answer and exactly 3 incorrect answers.`;
+    }
+    playSound("error");
+  }
+  return valid;
+}
+
+function validateDevCreateId(payload) {
+  const prefix = `${getThemeIdPrefix(payload.theme)}-`;
+  const id = formatDevQuestionId(payload.id, { keepTrailingDash: true });
+  const valid = id.startsWith(prefix) && id.length > prefix.length;
+  elements.devCreateId.setCustomValidity(valid ? "" : `Add a short unique ID after ${prefix}.`);
+  if (!valid) {
+    elements.devCreateId.reportValidity();
+    elements.devCreateId.focus();
+    elements.devCreateStatus.textContent = `Add a short unique ID after ${prefix} before saving.`;
+    playSound("error");
+  }
+  return valid;
+}
+
+function validateQuestionEditorId(input, theme, statusElement) {
+  const prefix = `${getThemeIdPrefix(theme)}-`;
+  const id = formatDevQuestionId(input?.value || "", { keepTrailingDash: true });
+  const valid = id.startsWith(prefix) && id.length > prefix.length;
+  input?.setCustomValidity(valid ? "" : `Add a short unique ID after ${prefix}.`);
+  if (!valid) {
+    input?.reportValidity();
+    input?.focus();
+    if (statusElement) {
+      statusElement.textContent = `Add a short unique ID after ${prefix} before saving.`;
     }
     playSound("error");
   }
@@ -20642,7 +20712,7 @@ function getDevQuestionCreatePayload() {
     rejectedAnswers: parseCommaSeparatedAnswers(elements.devCreateRejected.value)
   };
   if (payload.questionStyle === MULTIPLE_CHOICE_STYLE) {
-    const incorrect = parseCommaSeparatedAnswers(elements.devCreateBots.value).slice(0, 3);
+    const incorrect = parseCommaSeparatedAnswers(elements.devCreateBots.value);
     payload.acceptedAnswers = [];
     payload.botCards = [];
     payload.rejectedAnswers = [];
@@ -20693,6 +20763,9 @@ async function saveDevQuestionPayload(options = {}) {
   }
   const payload = getDevQuestionCreatePayload();
   elements.devCreateId.value = payload.id;
+  if (!validateDevCreateId(payload)) {
+    return;
+  }
   if (options.saveAsNew && !requireNewDevQuestionId(payload)) {
     return;
   }
