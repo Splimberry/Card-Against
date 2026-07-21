@@ -1061,6 +1061,58 @@ async function testRoomPowerStateDeltaPreservesStoredFullState() {
   assert.equal(powerState.players.find((entry) => entry.participantId === "host-client").score, 100);
 }
 
+async function testRoomPowerStateIgnoresStaleHandEntries() {
+  const code = makeCode(8118);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      }
+    ],
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["shuffle"], fresh: ["shuffle"] }
+        ],
+        played: [],
+        players: [],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+    round: 1,
+    powerId: "stale-hand",
+    actorParticipantId: "host-client",
+    hands: [
+      { participantId: "host-client", owner: "player", updatedAt: 1000, hand: ["software_downgrade"], fresh: [] }
+    ]
+  });
+  assert.equal(response.status, 200, payload.error);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const hand = stored.payload.room.game.powerState.hands.find((entry) => entry.participantId === "host-client");
+  assert.deepEqual(hand.hand, ["shuffle"]);
+  assert.deepEqual(hand.fresh, ["shuffle"]);
+  assert.equal(hand.updatedAt, 2000);
+}
+
 async function testRoomPowerStateCanClearPlayedHistory() {
   const code = makeCode(8116);
   await upsertRoom(makeRoom(code, {
@@ -1728,6 +1780,7 @@ async function main() {
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
   await testRoomPowerStateDeltaPreservesStoredFullState();
+  await testRoomPowerStateIgnoresStaleHandEntries();
   await testRoomPowerStateCanClearPlayedHistory();
   await testRoomRoundSkipEndpointStampsEvent();
   await testRoomModerationEndpointMutesAndBans();

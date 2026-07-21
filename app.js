@@ -2530,6 +2530,9 @@ const state = {
   roomGame: null,
   roomRoundResult: null,
   roomPowerStateUpdatedAt: 0,
+  roomPowerHandUpdatedAt: {},
+  roomPowerPlayedUpdatedAt: {},
+  roomPowerPlayerUpdatedAt: {},
   roomPlayedResetSyncedRound: null,
   achievementMilestoneScrollLeft: 0,
   joiningRoom: null,
@@ -8808,6 +8811,7 @@ function normalizeRoomRoundResultPayload(payload = {}) {
     powerState: source.powerState && typeof source.powerState === "object" ? cloneRoomAbilitySyncValue(source.powerState, null) : null,
     scoreState: Array.isArray(source.scoreState) ? cloneRoomAbilitySyncValue(source.scoreState, []) : [],
     source: String(source.source || "host").slice(0, 40),
+    nextRoundAt: Math.max(0, Number(source.nextRoundAt) || 0),
     updatedAt: Number(source.updatedAt) || Date.now()
   };
 }
@@ -8870,6 +8874,27 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   return true;
 }
 
+function getRoomPowerEntryUpdatedAt(kind, owner, fallback = Date.now()) {
+  const store = kind === "played"
+    ? state.roomPowerPlayedUpdatedAt
+    : kind === "players"
+      ? state.roomPowerPlayerUpdatedAt
+      : state.roomPowerHandUpdatedAt;
+  const current = Math.max(0, Number(store?.[owner]) || 0);
+  const updatedAt = Math.max(current, Math.max(0, Number(fallback) || Date.now()));
+  if (owner && store) {
+    store[owner] = updatedAt;
+  }
+  return updatedAt;
+}
+
+function resetRoomPowerSyncClocks() {
+  state.roomPowerStateUpdatedAt = 0;
+  state.roomPowerHandUpdatedAt = {};
+  state.roomPowerPlayedUpdatedAt = {};
+  state.roomPowerPlayerUpdatedAt = {};
+}
+
 function getRoomPowerHandSyncEntry(owner) {
   const participantId = getRoomParticipantIdForOwner(owner);
   if (!participantId) {
@@ -8878,6 +8903,7 @@ function getRoomPowerHandSyncEntry(owner) {
   return {
     participantId,
     owner,
+    updatedAt: getRoomPowerEntryUpdatedAt("hands", owner),
     hand: [...(state.powerHands[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10),
     fresh: [...(state.freshPowerUps[owner] || [])].map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10)
   };
@@ -8899,6 +8925,7 @@ function getRoomPlayedPowerSyncEntry(owner) {
   return {
     participantId,
     owner,
+    updatedAt: getRoomPowerEntryUpdatedAt("played", owner),
     stacks,
     primaryPowerId: String(state.playedPowerUps[owner] || ""),
     meta: state.playedPowerMeta[owner] && typeof state.playedPowerMeta[owner] === "object"
@@ -8917,6 +8944,7 @@ function getRoomPlayedPowerResetEntries(owners = getActiveOwners()) {
       return {
         participantId,
         owner,
+        updatedAt: getRoomPowerEntryUpdatedAt("played", owner),
         stacks: [],
         primaryPowerId: "",
         meta: null
@@ -8934,6 +8962,7 @@ function getRoomAbilityPlayerSyncEntry(owner) {
   return {
     participantId,
     owner,
+    updatedAt: getRoomPowerEntryUpdatedAt("players", owner),
     score: getScore(owner),
     streak: getOwnerStreak(owner)
   };
@@ -9108,6 +9137,7 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
   if (!result) {
     return null;
   }
+  result.nextRoundAt = state.roomSettings.autoAdvance === false ? 0 : result.updatedAt + 30000;
   const winnerOwner = getOwnerFromCardIndex(result.winnerIndex);
   const revealOwner = getOwnerFromCardIndex(result.revealAnswerIndex);
   result.winnerParticipantId = getRoomParticipantIdForOwner(winnerOwner);
@@ -9352,9 +9382,14 @@ function applyRoomPowerState(payload = {}) {
     if (!owner || !getPlayer(owner)) {
       return;
     }
+    const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
+    if (entryUpdatedAt && entryUpdatedAt < Math.max(0, Number(state.roomPowerHandUpdatedAt?.[owner]) || 0)) {
+      return;
+    }
     const nextHand = Array.isArray(entry.hand)
       ? entry.hand.map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10)
       : [];
+    getRoomPowerEntryUpdatedAt("hands", owner, entryUpdatedAt || Date.now());
     state.powerHands[owner] = nextHand;
     state.freshPowerUps[owner] = Array.isArray(entry.fresh)
       ? entry.fresh.map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10)
@@ -9365,6 +9400,10 @@ function applyRoomPowerState(payload = {}) {
   played.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId);
     if (!owner || !getPlayer(owner)) {
+      return;
+    }
+    const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
+    if (entryUpdatedAt && entryUpdatedAt < Math.max(0, Number(state.roomPowerPlayedUpdatedAt?.[owner]) || 0)) {
       return;
     }
     const nextStacks = (Array.isArray(entry.stacks) ? entry.stacks : [])
@@ -9390,6 +9429,7 @@ function applyRoomPowerState(payload = {}) {
     state.playedPowerMeta[owner] = entry.meta && typeof entry.meta === "object"
       ? { ...entry.meta }
       : nextStacks.at(-1)?.meta || null;
+    getRoomPowerEntryUpdatedAt("played", owner, entryUpdatedAt || Date.now());
     changed = true;
   });
   players.forEach((entry) => {
@@ -9397,8 +9437,13 @@ function applyRoomPowerState(payload = {}) {
     if (!owner || !getPlayer(owner)) {
       return;
     }
+    const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
+    if (entryUpdatedAt && entryUpdatedAt < Math.max(0, Number(state.roomPowerPlayerUpdatedAt?.[owner]) || 0)) {
+      return;
+    }
     setScore(owner, Number(entry.score) || 0);
     setOwnerStreak(owner, Number(entry.streak) || 0, { force: true });
+    getRoomPowerEntryUpdatedAt("players", owner, entryUpdatedAt || Date.now());
     changed = true;
   });
   if (applyRoomAbilityEffectStatePayload(effects)) {
@@ -18398,13 +18443,13 @@ function applyRoundSetup(setup) {
   state.judge = setup.judge;
   state.botCards = setup.botCards || [];
   state.multipleChoiceOptions = Array.isArray(setup.multipleChoiceOptions) ? setup.multipleChoiceOptions.slice(0, 4) : [];
-  publishRoomRoundSetup(setup);
   state.recentJudgeNames = [...state.recentJudgeNames, state.judge.name].slice(-5);
   state.recentBlackCards = [...state.recentBlackCards, state.blackCard].slice(-20);
   state.recentTriviaThemes = [...state.recentTriviaThemes, state.triviaTheme].filter(Boolean).slice(-triviaThemes.length);
   recordQuestionUsage(setup);
   preloadQuestionImage(setup);
   renderRound();
+  publishRoomRoundSetup(setup);
   scheduleNextSetupPrefetch();
   playSound("reveal");
 }
@@ -21748,7 +21793,7 @@ function resetMatch(mode) {
   clearStatFlashes();
   clearBackgroundSetupPrefetch();
   state.mode = mode;
-  state.roomPowerStateUpdatedAt = 0;
+  resetRoomPowerSyncClocks();
   state.roomPlayedResetSyncedRound = null;
   state.roomRoundResult = null;
   state.matchModifiers = rollMatchModifiers(mode);
@@ -22019,7 +22064,7 @@ function openRoomScreen() {
   state.roomClosedNotice = "";
   state.roomGame = null;
   state.roomRoundResult = null;
-  state.roomPowerStateUpdatedAt = 0;
+  resetRoomPowerSyncClocks();
   state.roomPlayedResetSyncedRound = null;
   state.roomEventRevision = 0;
   clearLocalRoomSubmission();
@@ -22153,7 +22198,7 @@ function clearLocalRoomState(options = {}) {
   state.isSpectator = false;
   state.roomGame = null;
   state.roomRoundResult = null;
-  state.roomPowerStateUpdatedAt = 0;
+  resetRoomPowerSyncClocks();
   state.roomPlayedResetSyncedRound = null;
   state.players = [];
   state.roomParticipants = [];
@@ -24125,7 +24170,7 @@ async function beginRoomMatch() {
   state.currentRoomStatus = "in-progress";
   state.roomGame = null;
   state.roomRoundResult = null;
-  state.roomPowerStateUpdatedAt = 0;
+  resetRoomPowerSyncClocks();
   clearRoundSubmissionState();
   applyRandomRoomModifiersForMatch();
   addSystemChat("The host started the match.");
@@ -24508,7 +24553,7 @@ function startRoomGame() {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomGame = null;
-  state.roomPowerStateUpdatedAt = 0;
+  resetRoomPowerSyncClocks();
   state.roomSessionId += 1;
   state.roomMissingSince = 0;
   state.roomClosedNotice = "";
@@ -24831,10 +24876,16 @@ function startNextRoundCountdown() {
     updateNextRoundButtonLabel();
     return;
   }
-  state.nextRoundCountdown = 30;
+  const syncedDeadline = isRoomMode()
+    ? Math.max(0, Number(getRoomRoundResultForCurrentRound()?.nextRoundAt) || 0)
+    : 0;
+  const getRemainingSeconds = () => syncedDeadline
+    ? Math.max(0, Math.ceil((syncedDeadline - Date.now()) / 1000))
+    : state.nextRoundCountdown - 1;
+  state.nextRoundCountdown = syncedDeadline ? getRemainingSeconds() : 30;
   updateNextRoundButtonLabel();
   state.nextRoundAutoTimerId = setInterval(() => {
-    state.nextRoundCountdown -= 1;
+    state.nextRoundCountdown = getRemainingSeconds();
     updateNextRoundButtonLabel();
     if (state.nextRoundCountdown <= 0) {
       stopNextRoundCountdown();

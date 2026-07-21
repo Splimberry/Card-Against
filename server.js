@@ -3179,6 +3179,7 @@ function normalizeRoomRoundResult(result) {
     powerState,
     scoreState,
     source: String(result.source || "host").slice(0, 40),
+    nextRoundAt: clampServerNumber(result.nextRoundAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(result.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
   };
 }
@@ -3234,6 +3235,7 @@ function normalizeRoomPowerState(powerState) {
         return {
           participantId: String(source.participantId || "").slice(0, 120),
           owner: String(source.owner || "").slice(0, 80),
+          updatedAt: clampServerNumber(source.updatedAt, 0, Number.MAX_SAFE_INTEGER, powerState.updatedAt || Date.now()),
           hand: Array.isArray(source.hand)
             ? source.hand.map((powerId) => String(powerId || "").slice(0, 80)).filter(Boolean).slice(0, 10)
             : [],
@@ -3250,6 +3252,7 @@ function normalizeRoomPowerState(powerState) {
         return {
           participantId: String(source.participantId || "").slice(0, 120),
           owner: String(source.owner || "").slice(0, 80),
+          updatedAt: clampServerNumber(source.updatedAt, 0, Number.MAX_SAFE_INTEGER, powerState.updatedAt || Date.now()),
           stacks: (Array.isArray(source.stacks) ? source.stacks : [])
             .map((stack) => {
               const stackSource = stack && typeof stack === "object" ? stack : {};
@@ -3273,6 +3276,7 @@ function normalizeRoomPowerState(powerState) {
         return {
           participantId: String(source.participantId || "").slice(0, 120),
           owner: String(source.owner || "").slice(0, 80),
+          updatedAt: clampServerNumber(source.updatedAt, 0, Number.MAX_SAFE_INTEGER, powerState.updatedAt || Date.now()),
           score: clampServerNumber(source.score, 0, Number.MAX_SAFE_INTEGER, 0),
           streak: clampServerNumber(source.streak, 0, Number.MAX_SAFE_INTEGER, 0)
         };
@@ -3292,7 +3296,12 @@ function mergePowerStateEntries(previousEntries = [], nextEntries = []) {
   });
   nextEntries.forEach((entry) => {
     if (entry?.participantId) {
-      byParticipantId.set(entry.participantId, entry);
+      const previous = byParticipantId.get(entry.participantId);
+      const previousUpdatedAt = Number(previous?.updatedAt) || 0;
+      const nextUpdatedAt = Number(entry.updatedAt) || 0;
+      if (!previous || nextUpdatedAt >= previousUpdatedAt) {
+        byParticipantId.set(entry.participantId, entry);
+      }
     }
   });
   return [...byParticipantId.values()].slice(0, 10);
