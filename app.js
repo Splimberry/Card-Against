@@ -4942,12 +4942,41 @@ function levenshteinDistance(a, b) {
   return previous[b.length];
 }
 
+function getCharacterOverlapRatio(left, right) {
+  const counts = new Map();
+  String(left || "").split("").forEach((char) => {
+    counts.set(char, (counts.get(char) || 0) + 1);
+  });
+  let shared = 0;
+  String(right || "").split("").forEach((char) => {
+    const count = counts.get(char) || 0;
+    if (count > 0) {
+      shared += 1;
+      counts.set(char, count - 1);
+    }
+  });
+  return shared / Math.max(String(right || "").length, 1);
+}
+
+function isMessyTriviaTypo(answer, acceptedAnswer) {
+  const answerWord = normalizeTriviaAnswer(answer);
+  const acceptedWord = normalizeTriviaAnswer(acceptedAnswer);
+  const shortest = Math.min(answerWord.length, acceptedWord.length);
+  const longest = Math.max(answerWord.length, acceptedWord.length);
+  return shortest >= 7
+    && longest - shortest <= 2
+    && answerWord[0] === acceptedWord[0]
+    && answerWord[answerWord.length - 1] === acceptedWord[acceptedWord.length - 1]
+    && getCharacterOverlapRatio(answerWord, acceptedWord) >= 0.8;
+}
+
 function isNearTriviaMatch(answer, acceptedAnswer) {
   const normalized = normalizeTriviaAnswer(answer);
   const accepted = normalizeTriviaAnswer(acceptedAnswer);
   if (!normalized || !accepted) return false;
   if (normalized === accepted) return true;
   if (accepted.length >= 5 && (normalized.includes(accepted) || accepted.includes(normalized))) return true;
+  if (isMessyTriviaTypo(normalized, accepted)) return true;
   const distance = levenshteinDistance(normalized, accepted);
   const allowedDistance = accepted.length >= 10 ? 2 : 1;
   return distance <= allowedDistance;
@@ -24785,6 +24814,9 @@ function scoreAnswerAgainstAcceptedAnswers(answer, acceptedAnswers) {
   }
   if (accepted.includes(normalized)) {
     return 1;
+  }
+  if (accepted.some((target) => isMessyTriviaTypo(normalized, target))) {
+    return 0.84;
   }
   const bestDistance = Math.min(...accepted.map((target) => levenshteinDistance(normalized, target)));
   const longest = Math.max(normalized.length, ...accepted.map((target) => target.length), 1);

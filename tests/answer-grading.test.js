@@ -19,8 +19,11 @@ assert.equal(normalizeTriviaAnswer("lui 14th"), "lui 14");
 assertAccepted("Jackle", ["Jackal"], "obvious Jackal misspelling");
 assertAccepted("lui 14th", ["Louis XIV"], "Louis XIV numeric/phonetic alias");
 assertAccepted("vicent", ["Vincent van Gogh"], "distinctive typo partial");
+assertAccepted("magerihta", ["Margherita"], "messy Margherita letter swap");
+assertAccepted("margarita", ["Margherita"], "common Margherita spelling mix-up");
 
 assertRejected("cat", ["Jackal"], "unrelated animal");
 assertRejected("14th", ["Louis XIV"], "number alone is too ambiguous");
+assertRejected("marinara", ["Margherita"], "different pizza variety");
 
 console.log("Answer grading tests passed.");

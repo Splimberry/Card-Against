@@ -4284,7 +4284,7 @@ async function generateRoundWithResponses(payload, apiKey) {
         {
           role: "system",
           content:
-            "You grade a short-answer trivia quiz. Accepted answer lists are examples, not exhaustive. Accept clear semantic equivalents, aliases, abbreviations, partial-but-identifying answers, missing accents, and minor spelling mistakes. Return only compact valid JSON matching the schema."
+            "You grade a short-answer trivia quiz. Accepted answer lists are examples, not exhaustive. Accept clear semantic equivalents, aliases, abbreviations, partial-but-identifying answers, missing accents, and spelling mistakes with swapped, missing, or extra letters when the intended answer is clear. Return only compact valid JSON matching the schema."
         },
         {
           role: "user",
@@ -4358,7 +4358,7 @@ async function generateRoundWithChatCompletions(payload, apiKey) {
         {
           role: "system",
           content:
-            "You grade a short-answer trivia quiz. Accepted answer lists are examples, not exhaustive. Accept clear semantic equivalents, aliases, abbreviations, partial-but-identifying answers, missing accents, and minor spelling mistakes. Return only valid JSON with keys cards, winnerIndex, and correctIndexes."
+            "You grade a short-answer trivia quiz. Accepted answer lists are examples, not exhaustive. Accept clear semantic equivalents, aliases, abbreviations, partial-but-identifying answers, missing accents, and spelling mistakes with swapped, missing, or extra letters when the intended answer is clear. Return only valid JSON with keys cards, winnerIndex, and correctIndexes."
         },
         {
           role: "user",
@@ -4532,6 +4532,10 @@ function scoreTriviaToken(answerWord, acceptedWord) {
   const longest = Math.max(answerWord.length, acceptedWord.length, 1);
   const similarity = 1 - (distance / longest);
   const shortest = Math.min(answerWord.length, acceptedWord.length);
+  const messyTypoScore = scoreMessyTriviaTypo(answerWord, acceptedWord);
+  if (messyTypoScore > 0) {
+    bestScore = Math.max(bestScore, messyTypoScore);
+  }
   if (shortest <= 4 && distance <= 1) {
     bestScore = Math.max(bestScore, 0.78, similarity);
   }
@@ -4549,6 +4553,41 @@ function scoreTriviaToken(answerWord, acceptedWord) {
   }
 
   return bestScore;
+}
+
+function scoreMessyTriviaTypo(answerWord, acceptedWord) {
+  const shortest = Math.min(answerWord.length, acceptedWord.length);
+  const longest = Math.max(answerWord.length, acceptedWord.length);
+  if (shortest < 7 || longest - shortest > 2) {
+    return 0;
+  }
+  if (answerWord[0] !== acceptedWord[0] || answerWord[answerWord.length - 1] !== acceptedWord[acceptedWord.length - 1]) {
+    return 0;
+  }
+  const overlap = getCharacterOverlapRatio(answerWord, acceptedWord);
+  if (overlap >= 0.88) {
+    return 0.88;
+  }
+  if (overlap >= 0.8 && levenshteinDistance(createLoosePhoneticKey(answerWord), createLoosePhoneticKey(acceptedWord)) <= 1) {
+    return 0.84;
+  }
+  return 0;
+}
+
+function getCharacterOverlapRatio(left, right) {
+  const counts = new Map();
+  String(left || "").split("").forEach((char) => {
+    counts.set(char, (counts.get(char) || 0) + 1);
+  });
+  let shared = 0;
+  String(right || "").split("").forEach((char) => {
+    const count = counts.get(char) || 0;
+    if (count > 0) {
+      shared += 1;
+      counts.set(char, count - 1);
+    }
+  });
+  return shared / Math.max(String(right || "").length, 1);
 }
 
 function scoreDistinctivePartialAnswer(normalizedAnswer, normalizedAccepted) {
