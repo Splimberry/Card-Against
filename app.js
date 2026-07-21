@@ -22828,14 +22828,17 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
 }
 
 function shouldStartJoinedRoomMatch(room) {
+  const canStartFromWaitingState = state.currentRoomStatus === "lobby"
+    || state.currentRoomStatus === "complete"
+    || elements.gameStage.classList.contains("hidden")
+    || !elements.endPanel.classList.contains("hidden");
   return Boolean(
     room
       && state.joiningRoom
       && !isCurrentHost()
-      && state.currentRoomStatus === "lobby"
+      && canStartFromWaitingState
       && room.status === "in-progress"
       && room.game?.setup
-      && elements.gameStage.classList.contains("hidden")
   );
 }
 
@@ -22873,7 +22876,10 @@ function startJoinedRoomMatchFromRealtime(payload = {}, game = null) {
 
 function applyRealtimeRoundAdvancing(payload = {}) {
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
-  const canStartFromLobby = state.currentRoomStatus === "lobby" || elements.gameStage.classList.contains("hidden");
+  const canStartFromLobby = state.currentRoomStatus === "lobby"
+    || state.currentRoomStatus === "complete"
+    || elements.gameStage.classList.contains("hidden")
+    || !elements.endPanel.classList.contains("hidden");
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || (state.matchEnded && !canStartFromLobby)) {
     return false;
   }
@@ -22924,7 +22930,10 @@ function applyRealtimeRoundAdvancing(payload = {}) {
 
 function applyRealtimeRoundStarted(payload = {}) {
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
-  const canStartFromLobby = state.currentRoomStatus === "lobby" || elements.gameStage.classList.contains("hidden");
+  const canStartFromLobby = state.currentRoomStatus === "lobby"
+    || state.currentRoomStatus === "complete"
+    || elements.gameStage.classList.contains("hidden")
+    || !elements.endPanel.classList.contains("hidden");
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || (state.matchEnded && !canStartFromLobby)) {
     return false;
   }
@@ -23035,6 +23044,34 @@ function applyRealtimeRoomGameEnded(payload = {}) {
   return true;
 }
 
+function applyRealtimeRoomReturnedToLobby(room = {}) {
+  const code = String(room.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext()) {
+    return false;
+  }
+  if (!isRoomMode() && state.currentRoomStatus !== "complete" && state.currentRoomStatus !== "in-progress") {
+    return false;
+  }
+  const shouldShowLobby = elements.roomLobbyScreen.classList.contains("hidden")
+    && (!elements.gameStage.classList.contains("hidden") || state.currentRoomStatus === "complete" || state.matchEnded);
+  if (!shouldShowLobby) {
+    return false;
+  }
+  state.roomGame = null;
+  state.roomRoundResult = null;
+  if (state.joiningRoom) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      ...(room || {}),
+      status: "lobby",
+      game: null
+    };
+  }
+  returnToRoomLobbyAfterMatch({ sync: false, playSound: false, participants: room.participants });
+  addSystemChat("The host returned everyone to the room.", { private: true, sync: false });
+  return true;
+}
+
 function hasActiveRoomContext() {
   return state.roomSettings.code !== "CAI-0000"
     && (isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft");
@@ -23047,6 +23084,9 @@ function isRoomTabBackgrounded() {
 function syncActiveRoomFromDirectory(room, options = {}) {
   state.roomMissingSince = 0;
   applyRoomDirectoryRoom(room);
+  if (room?.status === "lobby" && applyRealtimeRoomReturnedToLobby(room)) {
+    return true;
+  }
   if (room?.status === "complete" && !state.matchEnded) {
     applyRealtimeRoomGameEnded({
       code: room.code,
@@ -26675,8 +26715,11 @@ function endMatch(wasExited = false, options = {}) {
   elements.matchTimelineButton.textContent = "View Timeline";
   elements.matchTimelineButton.setAttribute("aria-expanded", "false");
   setHidden(elements.matchTimeline, true);
-  setHidden(elements.continueAsPlayerButton, !isRoomMode());
-  setHidden(elements.spectateAgainButton, !isRoomMode() || (isCurrentHost() && !state.joiningRoom));
+  const hostCanControlRoomEnd = isRoomMode() && isCurrentHost() && !state.joiningRoom;
+  setHidden(elements.continueAsPlayerButton, true);
+  setHidden(elements.spectateAgainButton, true);
+  setHidden(elements.rematchButton, isRoomMode() && !hostCanControlRoomEnd);
+  setHidden(elements.changeModeButton, isRoomMode() && !hostCanControlRoomEnd);
   elements.changeModeButton.textContent = isRoomMode() ? "Back to Room" : "Change Mode";
   let roomEndPublish = null;
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
@@ -26702,15 +26745,16 @@ function endMatch(wasExited = false, options = {}) {
     ensureQuestionReserve({ enabledThemes: getEnabledTriviaThemes() });
   }
   if (isRoomMode()) {
-    const stopRoomAfterEndPublish = () => {
-      if (state.matchEnded && state.currentRoomStatus === "complete") {
-        stopRoomRealtime();
+    const keepRoomSyncAfterEnd = () => {
+      if (state.matchEnded && state.roomSettings.code && state.roomSettings.code !== "CAI-0000") {
+        startRoomRealtime(state.roomSettings.code);
+        startRoomDirectoryPolling();
       }
     };
     if (roomEndPublish && typeof roomEndPublish.finally === "function") {
-      roomEndPublish.finally(stopRoomAfterEndPublish);
+      roomEndPublish.finally(keepRoomSyncAfterEnd);
     } else {
-      stopRoomAfterEndPublish();
+      keepRoomSyncAfterEnd();
     }
   }
   playSound("matchEnd");
@@ -26941,6 +26985,10 @@ elements.joinCodeForm.addEventListener("submit", (event) => {
 elements.createFromJoinButton.addEventListener("click", openRoomScreen);
 elements.rematchButton.addEventListener("click", () => {
   if (isRoomMode()) {
+    if (!isCurrentHost() || state.joiningRoom) {
+      addSystemChat("Only the host can start a rematch.", { private: true, sync: false });
+      return;
+    }
     addSystemChat("Rematch started in the same room.");
   }
   startGame(state.mode);
@@ -26985,8 +27033,11 @@ elements.continueAsPlayerButton.addEventListener("click", () => {
 elements.spectateAgainButton.addEventListener("click", () => {
   startNextRoomMatchWithSpectatorMode(true);
 });
-function returnToRoomLobbyAfterMatch() {
-  playSound("click");
+function returnToRoomLobbyAfterMatch(options = {}) {
+  if (options.playSound !== false) {
+    playSound("click");
+  }
+  const sync = options.sync !== false;
   clearRoomAutoResolve();
   stopNextRoundCountdown();
   resetTimerDisplay();
@@ -26994,16 +27045,19 @@ function returnToRoomLobbyAfterMatch() {
   state.matchEnded = true;
   state.currentRoomStatus = "lobby";
   state.roomGame = null;
-  state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
+  state.roomRoundResult = null;
+  state.roomParticipants = normalizeRoomParticipantsList(
+    Array.isArray(options.participants) ? options.participants : getRoomParticipantsFromPlayers("lobby")
+  );
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
   setHidden(elements.roomScreen, true);
   setHidden(elements.joinScreen, true);
   setHidden(elements.modeScreen, true);
   elements.gameStage.classList.remove("room-active");
-  if (isCurrentHost() && !state.joiningRoom) {
+  if (sync && isCurrentHost() && !state.joiningRoom) {
     upsertHostedRoom("lobby");
-  } else {
+  } else if (sync) {
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
     renderRoomPlayers();
     if (room) {
@@ -27024,6 +27078,10 @@ function returnToRoomLobbyAfterMatch() {
 
 elements.changeModeButton.addEventListener("click", () => {
   if (isRoomMode() && !elements.endPanel.classList.contains("hidden")) {
+    if (!isCurrentHost() || state.joiningRoom) {
+      addSystemChat("Only the host can return everyone to the room.", { private: true, sync: false });
+      return;
+    }
     returnToRoomLobbyAfterMatch();
     return;
   }
