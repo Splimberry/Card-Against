@@ -2430,8 +2430,10 @@ const state = {
   chaosInputLockId: "",
   allOutRounds: {},
   extraPowerUses: {},
+  powerDebugPanelOpen: false,
   powerDebugTimerPaused: false,
   powerDebugTimerManualPaused: false,
+  powerDebugTimerAutoPaused: false,
   powerDebugUnlimitedPowers: false,
   botPowerSchedule: {},
   roomBotAnswerSchedule: {},
@@ -2833,7 +2835,10 @@ const elements = {
   devPowerClearButton: null,
   devPowerStatus: null,
   devPowerHand: null,
+  botPowerDebugOpenButton: document.querySelector("#botPowerDebugOpenButton"),
+  botPowerDebugModal: document.querySelector("#botPowerDebugModal"),
   botPowerDebugPanel: document.querySelector("#botPowerDebugPanel"),
+  botPowerDebugCloseButton: document.querySelector("#botPowerDebugCloseButton"),
   botPowerDebugPauseStatus: document.querySelector("#botPowerDebugPauseStatus"),
   botPowerOwnerSelect: document.querySelector("#botPowerOwnerSelect"),
   botPowerSearchInput: document.querySelector("#botPowerSearchInput"),
@@ -16921,29 +16926,39 @@ function startTimer(options = {}) {
   }, 1000);
 }
 
-function canShowBotPowerDebugPanel() {
+function canUseBotPowerDebugPanel() {
   return Boolean(
     state.adminAuthenticated
     && state.mode === "bots"
     && !state.matchEnded
-    && elements.botPowerDebugPanel
+    && elements.botPowerDebugModal
     && !elements.gameStage.classList.contains("hidden")
   );
+}
+
+function canShowBotPowerDebugPanel() {
+  return Boolean(canUseBotPowerDebugPanel() && state.powerDebugPanelOpen);
 }
 
 function updateBotPowerDebugPauseStatus() {
   if (!elements.botPowerDebugPauseStatus) {
     return;
   }
-  elements.botPowerDebugPauseStatus.textContent = state.powerDebugTimerPaused
+  elements.botPowerDebugPauseStatus.textContent = state.powerDebugTimerManualPaused && state.powerDebugTimerPaused
     ? "Timer paused manually."
-    : state.powerDebugTimerManualPaused
+    : state.powerDebugTimerAutoPaused && state.powerDebugTimerPaused
+      ? "Timer paused while Power Debug is open."
+      : state.powerDebugTimerManualPaused
       ? "Timer will pause when answer timing starts."
-    : "Timer running. Enable Pause timer to freeze it.";
+      : state.powerDebugTimerAutoPaused
+        ? "Timer will pause while Power Debug is open."
+        : canShowBotPowerDebugPanel()
+          ? "Timer pauses while Power Debug is open."
+          : "Timer running. Enable Pause timer to freeze it.";
 }
 
 function pauseBotPowerDebugTimer() {
-  if (!canShowBotPowerDebugPanel() || state.powerDebugTimerPaused) {
+  if (!canUseBotPowerDebugPanel() || state.powerDebugTimerPaused) {
     return;
   }
   if (!state.timerId || elements.inputPanel.classList.contains("hidden") || state.timerRemaining <= 0) {
@@ -16962,13 +16977,24 @@ function resumeBotPowerDebugTimer() {
   state.powerDebugTimerPaused = false;
   updateBotPowerDebugPauseStatus();
   if (
-    canShowBotPowerDebugPanel()
+    canUseBotPowerDebugPanel()
     && state.timerRemaining > 0
     && !elements.inputPanel.classList.contains("hidden")
     && elements.verdictPanel.classList.contains("hidden")
   ) {
     startTimer({ resume: true });
   }
+}
+
+function reconcileBotPowerDebugPause() {
+  state.powerDebugTimerAutoPaused = Boolean(canShowBotPowerDebugPanel());
+  const shouldPause = state.powerDebugTimerManualPaused || state.powerDebugTimerAutoPaused;
+  if (shouldPause) {
+    pauseBotPowerDebugTimer();
+  } else {
+    resumeBotPowerDebugTimer();
+  }
+  updateBotPowerDebugPauseStatus();
 }
 
 function syncBotPowerDebugPauseToggle() {
@@ -16985,13 +17011,7 @@ function syncBotPowerDebugUnlimitedToggle() {
 
 function handleBotPowerDebugPauseToggle() {
   state.powerDebugTimerManualPaused = Boolean(elements.botPowerPauseToggle?.checked);
-  if (state.powerDebugTimerManualPaused) {
-    pauseBotPowerDebugTimer();
-    updateBotPowerDebugPauseStatus();
-    return;
-  }
-  resumeBotPowerDebugTimer();
-  updateBotPowerDebugPauseStatus();
+  reconcileBotPowerDebugPause();
 }
 
 function handleBotPowerDebugUnlimitedToggle() {
@@ -17000,24 +17020,42 @@ function handleBotPowerDebugUnlimitedToggle() {
   renderPowerDebug("bot-match");
 }
 
-function renderBotPowerDebugPanel() {
-  if (!elements.botPowerDebugPanel) {
+function openBotPowerDebugPanel() {
+  if (!canUseBotPowerDebugPanel()) {
     return;
   }
-  const visible = canShowBotPowerDebugPanel();
-  setHidden(elements.botPowerDebugPanel, !visible);
+  state.powerDebugPanelOpen = true;
+  renderBotPowerDebugPanel();
+  playSound("click");
+}
+
+function closeBotPowerDebugPanel() {
+  if (!state.powerDebugPanelOpen) {
+    return;
+  }
+  state.powerDebugPanelOpen = false;
+  renderBotPowerDebugPanel();
+  playSound("click");
+}
+
+function renderBotPowerDebugPanel() {
+  if (!elements.botPowerDebugModal || !elements.botPowerDebugOpenButton) {
+    return;
+  }
+  const available = canUseBotPowerDebugPanel();
+  if (!available) {
+    state.powerDebugPanelOpen = false;
+  }
+  setHidden(elements.botPowerDebugOpenButton, !available);
+  const visible = available && state.powerDebugPanelOpen;
+  setHidden(elements.botPowerDebugModal, !visible);
   if (!visible) {
-    if (!state.powerDebugTimerManualPaused) {
-      resumeBotPowerDebugTimer();
-    }
+    reconcileBotPowerDebugPause();
     return;
   }
   syncBotPowerDebugPauseToggle();
   syncBotPowerDebugUnlimitedToggle();
-  if (state.powerDebugTimerManualPaused) {
-    pauseBotPowerDebugTimer();
-  }
-  updateBotPowerDebugPauseStatus();
+  reconcileBotPowerDebugPause();
   renderPowerDebug("bot-match");
 }
 
@@ -17221,7 +17259,10 @@ function resetRoundUiForLoading(options = {}) {
   setHidden(elements.tableEventActionPanel, true);
   setHidden(elements.answerProgressPanel, true);
   setHidden(elements.powerPanel, true);
-  setHidden(elements.botPowerDebugPanel, true);
+  state.powerDebugPanelOpen = false;
+  setHidden(elements.botPowerDebugModal, true);
+  setHidden(elements.botPowerDebugOpenButton, true);
+  reconcileBotPowerDebugPause();
   setHidden(elements.effectPanel, true);
   setHidden(elements.loadingPanel, false);
   setHidden(elements.cardsArea, true);
@@ -18850,7 +18891,11 @@ function renderPowerDebug(scope = "dev") {
       card.dataset.powerId = powerId;
       card.dataset.tooltip = "Click to remove this power-up";
     }
+    if (power?.rarity) {
+      card.dataset.rarity = power.rarity;
+    }
     card.dataset.state = isChaosInfusedPower(powerId) ? "enabled" : "natural";
+    card.classList.toggle("chaos-infused", isChaosInfusedPower(powerId));
     card.innerHTML = `<strong>${power?.name || powerId}</strong><span>${power?.short || "Unknown"}</span><p>${isChaosInfusedPower(powerId) ? "Chaos-infused" : rarityInfo[power?.rarity]?.label || "Power-up"}</p>`;
     return card;
   }));
@@ -25775,6 +25820,13 @@ buildDevToolScreen();
 updateAdminControls();
 refreshAdminSession();
 elements.menuDevToolButton?.addEventListener("click", handleDevToolButtonClick);
+elements.botPowerDebugOpenButton?.addEventListener("click", openBotPowerDebugPanel);
+elements.botPowerDebugCloseButton?.addEventListener("click", closeBotPowerDebugPanel);
+elements.botPowerDebugModal?.addEventListener("click", (event) => {
+  if (event.target === elements.botPowerDebugModal) {
+    closeBotPowerDebugPanel();
+  }
+});
 elements.botPowerOwnerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerSearchInput?.addEventListener("input", () => renderPowerDebug("bot-match"));
 elements.botPowerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));

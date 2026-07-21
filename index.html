@@ -372,46 +372,7 @@
           </section>
 
           <section class="power-panel" id="powerPanel" aria-label="Power ups"></section>
-          <section class="bot-power-debug-panel hidden" id="botPowerDebugPanel" aria-label="Admin power debug">
-            <div class="bot-power-debug-heading">
-              <div>
-                <p class="eyebrow">Admin testing</p>
-                <h2>Power Debug</h2>
-              </div>
-              <span id="botPowerDebugPauseStatus">Timer runs until you use this panel.</span>
-            </div>
-            <div class="bot-power-debug-controls">
-              <label>
-                <span>Owner</span>
-                <select id="botPowerOwnerSelect"></select>
-              </label>
-              <label>
-                <span>Search</span>
-                <input id="botPowerSearchInput" type="search" placeholder="Find power-up">
-              </label>
-              <label>
-                <span>Power-up</span>
-                <select id="botPowerSelect"></select>
-              </label>
-              <label class="mode-toggle bot-power-debug-toggle">
-                <input id="botPowerChaosToggle" type="checkbox">
-                <span>Chaos version</span>
-              </label>
-              <label class="mode-toggle bot-power-debug-toggle">
-                <input id="botPowerPauseToggle" type="checkbox">
-                <span>Pause timer</span>
-              </label>
-              <label class="mode-toggle bot-power-debug-toggle">
-                <input id="botPowerUnlimitedToggle" type="checkbox">
-                <span>Unlimited powers</span>
-              </label>
-              <button type="button" class="icon-button" id="botPowerAddButton">Give Power</button>
-              <button type="button" class="icon-button" id="botPowerFillButton">Fill Hand</button>
-              <button type="button" class="icon-button danger-button" id="botPowerClearButton">Clear Hand</button>
-            </div>
-            <div class="debug-status" id="botPowerStatus">Give yourself or a bot any power-up. Bots use forced power-ups immediately.</div>
-            <div class="profile-debug-grid dev-power-hand" id="botPowerHand"></div>
-          </section>
+          <button type="button" class="secondary-button bot-power-debug-open hidden" id="botPowerDebugOpenButton">Power Debug</button>
           <section class="effect-panel hidden" id="effectPanel" aria-label="Active effects"></section>
 
           <section class="input-panel" id="inputPanel" aria-labelledby="inputTitle">
@@ -737,6 +698,52 @@
           </div>
           <div class="profile-shop-library" id="profileShopLibrary"></div>
           <p class="profile-shop-status" id="profileShopStatus">Buy cosmetics here, then equip them in Customize Card.</p>
+        </div>
+      </section>
+
+      <section class="bot-power-debug-modal hidden" id="botPowerDebugModal" aria-labelledby="botPowerDebugTitle" aria-modal="true" role="dialog">
+        <div class="bot-power-debug-panel" id="botPowerDebugPanel">
+          <div class="bot-power-debug-heading">
+            <div>
+              <p class="eyebrow">Admin testing</p>
+              <h2 id="botPowerDebugTitle">Power Debug</h2>
+            </div>
+            <div class="bot-power-debug-heading-actions">
+              <span id="botPowerDebugPauseStatus">Timer runs until you use this panel.</span>
+              <button type="button" class="icon-button" id="botPowerDebugCloseButton">Close</button>
+            </div>
+          </div>
+          <div class="bot-power-debug-controls">
+            <label>
+              <span>Owner</span>
+              <select id="botPowerOwnerSelect"></select>
+            </label>
+            <label>
+              <span>Search</span>
+              <input id="botPowerSearchInput" type="search" placeholder="Find power-up">
+            </label>
+            <label>
+              <span>Power-up</span>
+              <select id="botPowerSelect"></select>
+            </label>
+            <label class="mode-toggle bot-power-debug-toggle">
+              <input id="botPowerChaosToggle" type="checkbox">
+              <span>Chaos version</span>
+            </label>
+            <label class="mode-toggle bot-power-debug-toggle">
+              <input id="botPowerPauseToggle" type="checkbox">
+              <span>Pause timer</span>
+            </label>
+            <label class="mode-toggle bot-power-debug-toggle">
+              <input id="botPowerUnlimitedToggle" type="checkbox">
+              <span>Unlimited powers</span>
+            </label>
+            <button type="button" class="icon-button" id="botPowerAddButton">Give Power</button>
+            <button type="button" class="icon-button" id="botPowerFillButton">Fill Hand</button>
+            <button type="button" class="icon-button danger-button" id="botPowerClearButton">Clear Hand</button>
+          </div>
+          <div class="debug-status" id="botPowerStatus">Give yourself or a bot any power-up. Bots use forced power-ups immediately.</div>
+          <div class="profile-debug-grid dev-power-hand" id="botPowerHand"></div>
         </div>
       </section>
 
