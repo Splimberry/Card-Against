@@ -7579,6 +7579,11 @@ input:focus {
     cardChaosLines 1900ms steps(4, end) infinite;
 }
 
+.abilities-modal .ability-card.chaos-infused,
+.abilities-modal .ability-card.chaos-infused::after {
+  animation-play-state: paused;
+}
+
 .ability-card.chaos-infused[data-rarity="blue"] {
   --chaos-rarity-rgb: 34 211 238;
 }
