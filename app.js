@@ -22929,7 +22929,7 @@ function syncRoomSubmissionsFromParticipants() {
 
 function getSyncedRoomSetupForRound(round = state.round) {
   const game = state.roomGame || state.joiningRoom?.game || null;
-  if (!game || Number(game.round) !== Number(round) || !game.setup) {
+  if (!game || game.status === "ended" || Number(game.round) !== Number(round) || !game.setup) {
     return null;
   }
   try {
@@ -23138,7 +23138,8 @@ function startJoinedRoomMatchFromRealtime(payload = {}, game = null) {
     return false;
   }
   const sourceRoom = payload.room && typeof payload.room === "object" ? payload.room : state.joiningRoom;
-  state.roomGame = game || sourceRoom?.game || state.roomGame;
+  const nextGame = game || sourceRoom?.game || null;
+  state.roomGame = nextGame?.status === "ended" ? null : nextGame;
   applyRoomGameMatchSettings(state.roomGame, payload, { render: false, resetTimer: true });
   state.joiningRoom = {
     ...(state.joiningRoom || {}),
@@ -23184,12 +23185,16 @@ function applyRealtimeRoundAdvancing(payload = {}) {
       state.joiningRoom = {
         ...state.joiningRoom,
         status: "in-progress",
+        game: null,
         revision: Number(payload.revision) || state.joiningRoom.revision || 0,
         updatedAt: Number(payload.updatedAt) || Date.now()
       };
     }
+    state.roomGame = null;
+    state.roomRoundResult = null;
+    clearRoundSubmissionState();
     updateRoomEventRevision(payload.revision);
-    return startJoinedRoomMatchFromRealtime(payload, state.roomGame);
+    return startJoinedRoomMatchFromRealtime(payload, null);
   }
   cancelActiveMatchWork();
   state.currentRoomStatus = "in-progress";
@@ -27401,6 +27406,8 @@ elements.rematchButton.addEventListener("click", () => {
       return;
     }
     addSystemChat("Rematch started in the same room.");
+    void beginRoomMatch();
+    return;
   }
   startGame(state.mode);
 });
