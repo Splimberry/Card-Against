@@ -7640,6 +7640,13 @@ function hashStringToUnit(value) {
   return (hash >>> 0) / 4294967296;
 }
 
+function hashString(value) {
+  return String(value).split("").reduce((hash, char) => {
+    const next = ((hash << 5) - hash) + char.charCodeAt(0);
+    return next | 0;
+  }, 0);
+}
+
 function getRoundRandom(label = "event") {
   if (isRoomMode()) {
     return hashStringToUnit(`${state.roomSettings.code}:${state.round}:${label}`);
