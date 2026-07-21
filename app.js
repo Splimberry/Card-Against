@@ -1035,6 +1035,11 @@ function chooseBestUserStorageSnapshot(localSnapshot = {}, remoteSnapshot = {}) 
   const localValid = localSnapshot?.version === userStorageVersion;
   const remoteValid = remoteSnapshot?.version === userStorageVersion;
   if (localValid && remoteValid) {
+    const localUpdatedAt = Number(localSnapshot.updatedAt || 0);
+    const remoteUpdatedAt = Number(remoteSnapshot.updatedAt || 0);
+    if (Math.abs(localUpdatedAt - remoteUpdatedAt) > userStorageWriteDelayMs) {
+      return localUpdatedAt > remoteUpdatedAt ? localSnapshot : remoteSnapshot;
+    }
     const localWeight = getUserStorageSnapshotWeight(localSnapshot);
     const remoteWeight = getUserStorageSnapshotWeight(remoteSnapshot);
     if (localWeight > remoteWeight) {
@@ -1043,7 +1048,7 @@ function chooseBestUserStorageSnapshot(localSnapshot = {}, remoteSnapshot = {}) 
     if (remoteWeight > localWeight) {
       return remoteSnapshot;
     }
-    return Number(remoteSnapshot.updatedAt || 0) >= Number(localSnapshot.updatedAt || 0)
+    return remoteUpdatedAt >= localUpdatedAt
       ? remoteSnapshot
       : localSnapshot;
   }
@@ -1149,6 +1154,15 @@ function flushUserStorageSnapshot() {
   if (state.supabaseUser) {
     void saveRemoteUserStorageSnapshot(snapshot);
   }
+}
+
+function cacheUserStorageSnapshotNow() {
+  if (state.userStorageHydrating || state.userStorageApplying) {
+    return null;
+  }
+  const snapshot = getDisplayUserStorageSnapshot(getUserStorageSnapshot());
+  writeUserStorageCache(snapshot);
+  return snapshot;
 }
 
 function scheduleUserStorageSnapshot() {
@@ -3766,6 +3780,44 @@ function resetRoundAnswers() {
   state.currentRoundCards = [];
   state.currentRoundCardRatings = [];
   state.currentRoundCorrectIndexes = [];
+}
+
+function clearRoomParticipantSubmissionState() {
+  const clearParticipants = (participants = []) => normalizeRoomParticipantsList(participants).map((participant) => ({
+    ...participant,
+    answer: "",
+    submittedRound: 0,
+    remainingTime: 0,
+    status: participant.host
+      ? "host"
+      : participant.spectator
+        ? "spectating"
+        : participant.bot
+          ? "bot"
+          : "joined"
+  }));
+  state.roomParticipants = clearParticipants(state.roomParticipants);
+  if (state.joiningRoom?.participants) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      participants: clearParticipants(state.joiningRoom.participants)
+    };
+  }
+  const hostedRoom = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
+  if (hostedRoom?.participants) {
+    hostedRoom.participants = clearParticipants(hostedRoom.participants);
+  }
+}
+
+function clearRoundSubmissionState(options = {}) {
+  clearLocalRoomSubmission();
+  resetRoundAnswers();
+  state.roomSubmissions = {};
+  state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
+  state.localAnswers = { playerOne: "", playerTwo: "" };
+  if (options.clearParticipants !== false) {
+    clearRoomParticipantSubmissionState();
+  }
 }
 
 function lockRoundAnswer(owner, input, fallback = "") {
@@ -21813,9 +21865,7 @@ function resetMatch(mode) {
   state.roundProgress = Array.from({ length: state.maxRounds }, () => "unanswered");
   state.matchEnded = false;
   state.localEntryStep = 1;
-  state.localAnswers = { playerOne: "", playerTwo: "" };
-  resetRoundAnswers();
-  state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
+  clearRoundSubmissionState({ clearParticipants: mode === "room" });
   state.activePowerUp = null;
   state.freshPowerUps = {};
   setupPowerHands();
@@ -24071,6 +24121,7 @@ async function beginRoomMatch() {
   state.roomGame = null;
   state.roomRoundResult = null;
   state.roomPowerStateUpdatedAt = 0;
+  clearRoundSubmissionState();
   applyRandomRoomModifiersForMatch();
   addSystemChat("The host started the match.");
   upsertHostedRoom("in-progress");
@@ -24691,6 +24742,7 @@ function syncSettingsControls() {
 function updateSfxVolume(value) {
   soundState.sfxVolume = Number(value) / 100;
   localStorage.setItem("cardsAgainstAiSfxVolume", String(value));
+  cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
   elements.sfxVolumeValue.textContent = `${value}`;
   playSound("click");
@@ -24699,6 +24751,7 @@ function updateSfxVolume(value) {
 function updateMusicSetting(value) {
   soundState.musicVolume = Number(value) / 100;
   localStorage.setItem("cardsAgainstAiMusicVolume", String(value));
+  cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
   elements.musicVolumeValue.textContent = `${value}`;
   updateMusicVolume();
@@ -24707,6 +24760,7 @@ function updateMusicSetting(value) {
 function updateTimerSetting(value) {
   state.timerSeconds = Number(value);
   localStorage.setItem("cardsAgainstAiTimerSeconds", String(state.timerSeconds));
+  cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
   elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
   if (!elements.inputPanel.classList.contains("hidden")) {
@@ -24722,6 +24776,7 @@ function updateRoundsSetting(value) {
   const activeGame = !elements.gameStage.classList.contains("hidden") && !state.matchEnded;
   state.maxRounds = activeGame ? Math.max(requestedRounds, state.round) : requestedRounds;
   localStorage.setItem("cardsAgainstAiMaxRounds", String(requestedRounds));
+  cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
   elements.roundsSlider.value = state.maxRounds;
   elements.roundsValue.textContent = `${state.maxRounds}`;
@@ -27047,6 +27102,7 @@ function endMatch(wasExited = false, options = {}) {
   state.nextSetupPromise = null;
   state.nextSetupStatus = "idle";
   state.setupStack = [];
+  clearRoundSubmissionState();
   const redHerringOwnersAtEnd = new Set(Object.keys(state.redHerringMasks || {}));
   const finalEffects = applyFinalMatchEffects();
   const titlesByOwner = wasExited ? {} : evaluateMatchTitles(redHerringOwnersAtEnd);
@@ -27401,9 +27457,11 @@ function returnToRoomLobbyAfterMatch(options = {}) {
   state.currentRoomStatus = "lobby";
   state.roomGame = null;
   state.roomRoundResult = null;
+  clearRoundSubmissionState();
   state.roomParticipants = normalizeRoomParticipantsList(
     Array.isArray(options.participants) ? options.participants : getRoomParticipantsFromPlayers("lobby")
   );
+  clearRoomParticipantSubmissionState();
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
   setHidden(elements.roomScreen, true);
