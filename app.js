@@ -23261,14 +23261,27 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
   if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
     return;
   }
-  await refreshHostedRooms();
+  const directRoom = await fetchRoomByCode(state.roomSettings.code);
   if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
     return;
   }
-  const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
-  if (room) {
-    syncActiveRoomFromDirectory(room);
-  } else if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
+  if (directRoom.status === "found" && directRoom.room) {
+    state.roomMissingSince = 0;
+    mergeHostedRoom(directRoom.room);
+    const closeEvent = Array.isArray(directRoom.room.events)
+      && directRoom.room.events.some((event) => event.type === "room_closed");
+    if (directRoom.room.closed || closeEvent) {
+      handleCurrentRoomClosed("The room was closed by the host or an admin.");
+      return;
+    }
+    syncActiveRoomFromDirectory(directRoom.room, { skipHeartbeat: true });
+    return;
+  }
+  if (directRoom.status === "closed") {
+    handleCurrentRoomClosed("The room was closed by the host or an admin.");
+    return;
+  }
+  if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomSettings.code !== "CAI-0000") {
     if (isRoomTabBackgrounded()) {
       state.roomMissingSince = 0;
       return;
@@ -23281,26 +23294,8 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
     if (now - state.roomMissingSince < roomMissingGraceMs) {
       return;
     }
-    const directRoom = await fetchRoomByCode(state.roomSettings.code);
-    if (expectedSessionId !== state.roomSessionId || !hasActiveRoomContext()) {
-      return;
-    }
-    if (directRoom.status === "found" && directRoom.room) {
-      mergeHostedRoom(directRoom.room);
-      const closeEvent = Array.isArray(directRoom.room.events)
-        && directRoom.room.events.some((event) => event.type === "room_closed");
-      if (directRoom.room.closed || closeEvent) {
-        handleCurrentRoomClosed("The room was closed by the host or an admin.");
-        return;
-      }
-      syncActiveRoomFromDirectory(directRoom.room);
-      return;
-    }
     if (directRoom.status === "missing") {
       state.roomMissingSince = 0;
-    }
-    if (directRoom.status === "closed") {
-      handleCurrentRoomClosed("The room was closed by the host or an admin.");
     }
   }
 }
@@ -23364,7 +23359,7 @@ function startRoomDirectoryPolling() {
     return;
   }
   const sessionId = state.roomSessionId;
-  const intervalMs = state.supabaseEnabled ? 5000 : 1400;
+  const intervalMs = state.supabaseEnabled ? 6000 : 2500;
   state.roomDirectoryPollId = window.setInterval(() => refreshCurrentRoomDirectory(sessionId), intervalMs);
 }
 
