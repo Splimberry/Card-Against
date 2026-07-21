@@ -8481,5 +8481,2108 @@
       "4-4-4",
       "8-8-8"
     ]
+  },
+  {
+    "id": "popculture-img2-holmes-detective",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which fictional detective is shown in this classic illustration?",
+    "canonicalAnswer": "Sherlock Holmes",
+    "acceptedAnswers": [
+      "sherlock holmes",
+      "holmes"
+    ],
+    "botCards": [
+      "Hercule Poirot",
+      "Sam Spade"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Sherlock_Holmes_Portrait_Paget.jpg",
+      "alt": "A Sidney Paget illustration of Sherlock Holmes",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-ghostbusters-logo",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "This no-ghost logo belongs to which movie franchise?",
+    "canonicalAnswer": "Ghostbusters",
+    "acceptedAnswers": [
+      "ghostbusters",
+      "ghost busters"
+    ],
+    "botCards": [
+      "Beetlejuice",
+      "Men in Black"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ghostbusters_1984_logo.svg",
+      "alt": "The no-ghost logo from Ghostbusters",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-godzilla-monster",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which giant movie monster is named in this film poster?",
+    "canonicalAnswer": "Godzilla",
+    "acceptedAnswers": [
+      "godzilla",
+      "gojira"
+    ],
+    "botCards": [
+      "King Kong",
+      "Mothra"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Godzilla_1954_poster.jpg",
+      "alt": "A poster for the original Godzilla film",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-beatles-band",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which band is arriving in America in this photo?",
+    "canonicalAnswer": "The Beatles",
+    "acceptedAnswers": [
+      "the beatles",
+      "beatles"
+    ],
+    "botCards": [
+      "The Rolling Stones",
+      "The Beach Boys"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Beatles_arrive_at_JFK_Airport.jpg",
+      "alt": "The Beatles arriving at JFK Airport",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-bela-lugosi-dracula",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which vampire count did Bela Lugosi famously play?",
+    "canonicalAnswer": "Dracula",
+    "acceptedAnswers": [
+      "dracula",
+      "count dracula"
+    ],
+    "botCards": [
+      "Nosferatu",
+      "Frankenstein"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bela_Lugosi_as_Dracula%2C_anonymous_photograph_from_1931%2C_Universal_Studios.jpg",
+      "alt": "Bela Lugosi dressed as Dracula",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-william-shatner-kirk",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which Star Trek captain was famously played by William Shatner?",
+    "canonicalAnswer": "Captain Kirk",
+    "acceptedAnswers": [
+      "captain kirk",
+      "james t kirk",
+      "james kirk",
+      "kirk"
+    ],
+    "botCards": [
+      "Jean-Luc Picard",
+      "Benjamin Sisko"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/William_Shatner_Star_Trek.JPG",
+      "alt": "William Shatner in a Star Trek costume",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-king-kong-ape",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which giant ape starred in the 1933 film advertised here?",
+    "canonicalAnswer": "King Kong",
+    "acceptedAnswers": [
+      "king kong",
+      "kong"
+    ],
+    "botCards": [
+      "Mighty Joe Young",
+      "Godzilla"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kingkongposter.jpg",
+      "alt": "A poster for the 1933 film King Kong",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-akira-kurosawa-country",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "Akira Kurosawa, shown here, made classic films in which country?",
+    "canonicalAnswer": "Japan",
+    "acceptedAnswers": [
+      "japan",
+      "japanese cinema"
+    ],
+    "botCards": [
+      "France",
+      "Italy"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Akira_Kurosawa_1953_Scan10008_161029.jpg",
+      "alt": "A portrait of filmmaker Akira Kurosawa",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-metropolis-director",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "Which director made the 1927 science-fiction film Metropolis?",
+    "canonicalAnswer": "Fritz Lang",
+    "acceptedAnswers": [
+      "fritz lang",
+      "lang"
+    ],
+    "botCards": [
+      "F. W. Murnau",
+      "Orson Welles"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Metropolisposter.jpg",
+      "alt": "A poster for the film Metropolis",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-img2-laurel-hardy-duo",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "This comedy duo is best known by what paired name?",
+    "canonicalAnswer": "Laurel and Hardy",
+    "acceptedAnswers": [
+      "laurel and hardy",
+      "stan laurel and oliver hardy"
+    ],
+    "botCards": [
+      "Abbott and Costello",
+      "Martin and Lewis"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Laurel_and_Hardy.png",
+      "alt": "Stan Laurel and Oliver Hardy in a black-and-white image",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-atari-2600",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "Which early home console is shown here?",
+    "canonicalAnswer": "Atari 2600",
+    "acceptedAnswers": [
+      "atari 2600",
+      "atari vcs"
+    ],
+    "botCards": [
+      "ColecoVision",
+      "Intellivision"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Atari-2600-Wood-4Sw-Set.jpg",
+      "alt": "An Atari 2600 console with woodgrain front panel",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-nintendo-64",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "Which Nintendo console used this three-pronged controller?",
+    "canonicalAnswer": "Nintendo 64",
+    "acceptedAnswers": [
+      "nintendo 64",
+      "n64"
+    ],
+    "botCards": [
+      "GameCube",
+      "Wii"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo-64-wController-L.jpg",
+      "alt": "A Nintendo 64 console and controller",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-xbox-original",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "This black-and-green console was the first entry in which Microsoft game console line?",
+    "canonicalAnswer": "Xbox",
+    "acceptedAnswers": [
+      "xbox",
+      "original xbox"
+    ],
+    "botCards": [
+      "PlayStation",
+      "Dreamcast"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Xbox-console.jpg",
+      "alt": "An original Microsoft Xbox console",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-gamecube-console",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which cube-shaped Nintendo console is pictured here?",
+    "canonicalAnswer": "GameCube",
+    "acceptedAnswers": [
+      "gamecube",
+      "nintendo gamecube"
+    ],
+    "botCards": [
+      "Nintendo 64",
+      "Wii U"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/GameCube-Console-Set.jpg",
+      "alt": "A purple Nintendo GameCube with controller",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-tux-linux",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "This penguin is the mascot of which operating-system kernel?",
+    "canonicalAnswer": "Linux",
+    "acceptedAnswers": [
+      "linux"
+    ],
+    "botCards": [
+      "Unix",
+      "Android"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tux.svg",
+      "alt": "Tux the Linux penguin mascot",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-arduino-board",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which open-source electronics platform is represented by this board?",
+    "canonicalAnswer": "Arduino",
+    "acceptedAnswers": [
+      "arduino",
+      "arduino uno"
+    ],
+    "botCards": [
+      "Raspberry Pi",
+      "BeagleBone"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arduino_Uno_-_R3.jpg",
+      "alt": "An Arduino Uno circuit board",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-raspberry-pi",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which tiny single-board computer family is shown here?",
+    "canonicalAnswer": "Raspberry Pi",
+    "acceptedAnswers": [
+      "raspberry pi",
+      "raspberry pi 4"
+    ],
+    "botCards": [
+      "Arduino",
+      "Steam Deck"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Raspberry_Pi_4_Model_B_-_Side.jpg",
+      "alt": "A Raspberry Pi 4 Model B board",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-dualshock-controller",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "This controller design is associated with which PlayStation controller brand?",
+    "canonicalAnswer": "DualShock",
+    "acceptedAnswers": [
+      "dualshock",
+      "dual shock"
+    ],
+    "botCards": [
+      "Joy-Con",
+      "WaveBird"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/DualShock_4.jpg",
+      "alt": "A Sony DualShock 4 controller",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-rubiks-cube-inventor",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "This puzzle cube was invented by which Hungarian designer?",
+    "canonicalAnswer": "Erno Rubik",
+    "acceptedAnswers": [
+      "erno rubik",
+      "ernő rubik",
+      "rubik"
+    ],
+    "botCards": [
+      "Alexey Pajitnov",
+      "Gunpei Yokoi"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rubik%2527s_cube.svg",
+      "alt": "A solved Rubik cube illustration",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-img2-vr-headset",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "This headset style is used for what immersive technology?",
+    "canonicalAnswer": "Virtual reality",
+    "acceptedAnswers": [
+      "virtual reality",
+      "vr"
+    ],
+    "botCards": [
+      "Augmented typing",
+      "Motion capture only"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Oculus-Rift-CV1-Headset-Front.jpg",
+      "alt": "A front view of an Oculus Rift virtual reality headset",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-mount-rushmore-state",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "Mount Rushmore is located in which U.S. state?",
+    "canonicalAnswer": "South Dakota",
+    "acceptedAnswers": [
+      "south dakota"
+    ],
+    "botCards": [
+      "North Dakota",
+      "Wyoming"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mount_Rushmore_detail_view_(100MP).jpg",
+      "alt": "The carved presidential faces of Mount Rushmore",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-leaning-tower-city",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "This leaning tower stands in which Italian city?",
+    "canonicalAnswer": "Pisa",
+    "acceptedAnswers": [
+      "pisa"
+    ],
+    "botCards": [
+      "Florence",
+      "Venice"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Leaning_Tower_of_Pisa_2.jpg",
+      "alt": "The Leaning Tower of Pisa",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-moai-island",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "These moai statues are most associated with which island?",
+    "canonicalAnswer": "Easter Island",
+    "acceptedAnswers": [
+      "easter island",
+      "rapa nui"
+    ],
+    "botCards": [
+      "Sicily",
+      "Bali"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Moai_Rano_raraku.jpg",
+      "alt": "Moai statues at Rano Raraku",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-sagrada-familia-city",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The Sagrada Familia is a landmark of which Spanish city?",
+    "canonicalAnswer": "Barcelona",
+    "acceptedAnswers": [
+      "barcelona"
+    ],
+    "botCards": [
+      "Madrid",
+      "Seville"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Sagrada_Familia_01.jpg",
+      "alt": "The Sagrada Familia basilica in Barcelona",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-hagia-sophia-city",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Hagia Sophia stands in which city?",
+    "canonicalAnswer": "Istanbul",
+    "acceptedAnswers": [
+      "istanbul",
+      "constantinople"
+    ],
+    "botCards": [
+      "Athens",
+      "Cairo"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hagia_Sophia_Mars_2013.jpg",
+      "alt": "Hagia Sophia in Istanbul",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-mont-saint-michel-country",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Mont-Saint-Michel is located in which country?",
+    "canonicalAnswer": "France",
+    "acceptedAnswers": [
+      "france"
+    ],
+    "botCards": [
+      "Belgium",
+      "Portugal"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mont-Saint-Michel_vu_du_ciel.jpg",
+      "alt": "An aerial view of Mont-Saint-Michel",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-kremlin-city",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "This fortified complex is in which capital city?",
+    "canonicalAnswer": "Moscow",
+    "acceptedAnswers": [
+      "moscow"
+    ],
+    "botCards": [
+      "Kyiv",
+      "Warsaw"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Moscow_Kremlin_from_Bolshoy_Kamenny_Bridge.jpg",
+      "alt": "The Moscow Kremlin beside the river",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-great-zimbabwe-civilization",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "These stone ruins gave their name to which modern country?",
+    "canonicalAnswer": "Zimbabwe",
+    "acceptedAnswers": [
+      "zimbabwe"
+    ],
+    "botCards": [
+      "Zambia",
+      "Botswana"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Great_Zimbabwe_Closeup.jpg",
+      "alt": "Stone walls at Great Zimbabwe",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-lalibela-churches",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The rock-hewn churches of Lalibela are in which country?",
+    "canonicalAnswer": "Ethiopia",
+    "acceptedAnswers": [
+      "ethiopia"
+    ],
+    "botCards": [
+      "Egypt",
+      "Sudan"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Lalibela%2C_church_of_Saint_George.jpg",
+      "alt": "The rock-hewn Church of Saint George in Lalibela",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-img2-alhambra-city",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Alhambra palace complex is in which Spanish city?",
+    "canonicalAnswer": "Granada",
+    "acceptedAnswers": [
+      "granada"
+    ],
+    "botCards": [
+      "Cordoba",
+      "Toledo"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Alhambra_(Granada).jpg",
+      "alt": "The Alhambra palace complex in Granada",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-cheetah-speed",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which spotted big cat is famous as the fastest land animal?",
+    "canonicalAnswer": "Cheetah",
+    "acceptedAnswers": [
+      "cheetah",
+      "cheetahs"
+    ],
+    "botCards": [
+      "Leopard",
+      "Jaguar"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cheetah_Kruger.jpg",
+      "alt": "A cheetah standing in grass",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-polar-bear-arctic",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which bear species is shown here?",
+    "canonicalAnswer": "Polar bear",
+    "acceptedAnswers": [
+      "polar bear",
+      "polar bears"
+    ],
+    "botCards": [
+      "Grizzly bear",
+      "Sun bear"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Polar_Bear_AdF.jpg",
+      "alt": "A polar bear walking on snow",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-green-sea-turtle",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "What kind of marine reptile is shown grazing underwater?",
+    "canonicalAnswer": "Sea turtle",
+    "acceptedAnswers": [
+      "sea turtle",
+      "green sea turtle",
+      "turtle"
+    ],
+    "botCards": [
+      "Sea lion",
+      "Manatee"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Green_Sea_Turtle_grazing_seagrass.jpg",
+      "alt": "A green sea turtle grazing seagrass",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-okapi-relative",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "The okapi is most closely related to which tall African mammal?",
+    "canonicalAnswer": "Giraffe",
+    "acceptedAnswers": [
+      "giraffe",
+      "giraffes"
+    ],
+    "botCards": [
+      "Zebra",
+      "Antelope"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Okapi2.jpg",
+      "alt": "An okapi standing in a forested enclosure",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-kiwi-bird-country",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "This flightless bird is a national symbol of which country?",
+    "canonicalAnswer": "New Zealand",
+    "acceptedAnswers": [
+      "new zealand",
+      "aotearoa"
+    ],
+    "botCards": [
+      "Australia",
+      "Madagascar"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Apteryx_mantelli_-Rotorua%2C_North_Island%2C_New_Zealand-8a.jpg",
+      "alt": "A kiwi bird walking on leaf litter",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-mantis-shrimp-colors",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which colorful marine crustacean is known for extremely powerful strikes?",
+    "canonicalAnswer": "Mantis shrimp",
+    "acceptedAnswers": [
+      "mantis shrimp",
+      "stomatopod"
+    ],
+    "botCards": [
+      "Cleaner shrimp",
+      "Hermit crab"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Odontodactylus_scyllarus1.jpg",
+      "alt": "A peacock mantis shrimp with bright colors",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-tasmanian-devil",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which carnivorous marsupial from Tasmania is shown here?",
+    "canonicalAnswer": "Tasmanian devil",
+    "acceptedAnswers": [
+      "tasmanian devil",
+      "devil"
+    ],
+    "botCards": [
+      "Wombat",
+      "Quoll"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tasmanian_Devil_2.jpg",
+      "alt": "A Tasmanian devil standing on the ground",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-axolotl-regeneration",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Which aquatic salamander is famous for regenerating limbs?",
+    "canonicalAnswer": "Axolotl",
+    "acceptedAnswers": [
+      "axolotl",
+      "axolotls"
+    ],
+    "botCards": [
+      "Newt",
+      "Mudskipper"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ambystoma_mexicanum_1.jpg",
+      "alt": "A pale axolotl in water",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-hummingbird-hover",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Which bird group is famous for hovering in place while feeding?",
+    "canonicalAnswer": "Hummingbirds",
+    "acceptedAnswers": [
+      "hummingbird",
+      "hummingbirds"
+    ],
+    "botCards": [
+      "Swifts",
+      "Kingfishers"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Archilochus_colubris_-Ruby-throated_Hummingbird_-male.jpg",
+      "alt": "A male ruby-throated hummingbird",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-img2-gorilla-group",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "A group of gorillas is often led by what kind of adult male?",
+    "canonicalAnswer": "Silverback",
+    "acceptedAnswers": [
+      "silverback",
+      "silverback male"
+    ],
+    "botCards": [
+      "Alpha mare",
+      "Bull seal"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Gorilla_gorilla_gorilla4.jpg",
+      "alt": "A western gorilla sitting in vegetation",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-pho-country",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Pho is a noodle soup from which country?",
+    "canonicalAnswer": "Vietnam",
+    "acceptedAnswers": [
+      "vietnam",
+      "viet nam"
+    ],
+    "botCards": [
+      "Thailand",
+      "Japan"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pho-Beef-Noodles-2008.jpg",
+      "alt": "A bowl of beef pho with herbs",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-fish-and-chips-country",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Fish and chips is especially associated with which country?",
+    "canonicalAnswer": "United Kingdom",
+    "acceptedAnswers": [
+      "united kingdom",
+      "uk",
+      "britain",
+      "england"
+    ],
+    "botCards": [
+      "Italy",
+      "Mexico"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fish_and_chips_blackpool.jpg",
+      "alt": "A serving of fish and chips",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-burrito-wrap",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "A burrito is usually wrapped in what flatbread?",
+    "canonicalAnswer": "Tortilla",
+    "acceptedAnswers": [
+      "tortilla",
+      "flour tortilla"
+    ],
+    "botCards": [
+      "Pita",
+      "Naan"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Burrito.JPG",
+      "alt": "A burrito cut open on a plate",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-poutine-country",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Poutine originated in which country?",
+    "canonicalAnswer": "Canada",
+    "acceptedAnswers": [
+      "canada"
+    ],
+    "botCards": [
+      "France",
+      "United States"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Poutine.JPG",
+      "alt": "French fries topped with gravy and cheese curds",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-bibimbap-country",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Bibimbap is a mixed rice dish from which country?",
+    "canonicalAnswer": "South Korea",
+    "acceptedAnswers": [
+      "south korea",
+      "korea",
+      "republic of korea"
+    ],
+    "botCards": [
+      "Japan",
+      "China"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bibimbap.jpg",
+      "alt": "A bowl of bibimbap with vegetables and egg",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-couscous-grain",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Couscous is traditionally made from tiny granules of what wheat product?",
+    "canonicalAnswer": "Semolina",
+    "acceptedAnswers": [
+      "semolina"
+    ],
+    "botCards": [
+      "Cornmeal",
+      "Rice flour"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Couscous-1.jpg",
+      "alt": "A plate of couscous with vegetables",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-gyoza-style",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Gyoza are Japanese versions of what kind of food?",
+    "canonicalAnswer": "Dumplings",
+    "acceptedAnswers": [
+      "dumplings",
+      "dumpling",
+      "potstickers"
+    ],
+    "botCards": [
+      "Noodles",
+      "Rice cakes"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Yaki_Gyoza.jpg",
+      "alt": "Pan-fried gyoza dumplings",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-borscht-color",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Borscht often gets its deep red color from which root vegetable?",
+    "canonicalAnswer": "Beetroot",
+    "acceptedAnswers": [
+      "beetroot",
+      "beet",
+      "beets"
+    ],
+    "botCards": [
+      "Carrot",
+      "Radish"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Borscht_served.jpg",
+      "alt": "A bowl of red borscht soup",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-mango-lassi-base",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Mango lassi is usually made with mango and what dairy base?",
+    "canonicalAnswer": "Yogurt",
+    "acceptedAnswers": [
+      "yogurt",
+      "yoghurt"
+    ],
+    "botCards": [
+      "Cream cheese",
+      "Butter"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mango_lassi.jpg",
+      "alt": "Glasses of mango lassi",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-img2-baklava-sweetener",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Baklava is commonly soaked in syrup or what natural sweetener?",
+    "canonicalAnswer": "Honey",
+    "acceptedAnswers": [
+      "honey"
+    ],
+    "botCards": [
+      "Molasses",
+      "Maple syrup"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Baklava_-_Turkish_special%2C_80-ply.JPEG",
+      "alt": "Layered baklava pastries",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-cricket-equipment",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "This bat and ball are used in which sport?",
+    "canonicalAnswer": "Cricket",
+    "acceptedAnswers": [
+      "cricket"
+    ],
+    "botCards": [
+      "Baseball",
+      "Rounders"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cricket_bat_and_ball.jpg",
+      "alt": "A cricket bat and ball",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-golf-ball",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "This dimpled ball is used in which sport?",
+    "canonicalAnswer": "Golf",
+    "acceptedAnswers": [
+      "golf"
+    ],
+    "botCards": [
+      "Polo",
+      "Croquet"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Golfball.jpg",
+      "alt": "A white golf ball on grass",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-volleyball-court",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "Which net sport is being played here?",
+    "canonicalAnswer": "Volleyball",
+    "acceptedAnswers": [
+      "volleyball"
+    ],
+    "botCards": [
+      "Handball",
+      "Basketball"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Volleyball_game.jpg",
+      "alt": "Players competing in a volleyball match",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-karate-martial-art",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Which Japanese martial art is shown in this competition scene?",
+    "canonicalAnswer": "Karate",
+    "acceptedAnswers": [
+      "karate"
+    ],
+    "botCards": [
+      "Taekwondo",
+      "Judo"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Karate_WC_Tampere_2006-1.jpg",
+      "alt": "Karate competitors during a match",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-skiing-snow",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "This winter sport uses long narrow boards attached to boots. What is it?",
+    "canonicalAnswer": "Skiing",
+    "acceptedAnswers": [
+      "skiing",
+      "ski"
+    ],
+    "botCards": [
+      "Snowboarding",
+      "Skating"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Skiing_at_Loveland.jpg",
+      "alt": "A skier moving downhill on snow",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-formula-one",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "This open-wheel racing style is most associated with which top motorsport series?",
+    "canonicalAnswer": "Formula One",
+    "acceptedAnswers": [
+      "formula one",
+      "f1",
+      "formula 1"
+    ],
+    "botCards": [
+      "NASCAR",
+      "IndyCar"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Formula1_car.jpg",
+      "alt": "A Formula One racing car",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-water-polo",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Which team sport is played in a pool with this kind of ball?",
+    "canonicalAnswer": "Water polo",
+    "acceptedAnswers": [
+      "water polo"
+    ],
+    "botCards": [
+      "Diving",
+      "Synchronized swimming"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Water_polo_ball.jpg",
+      "alt": "A yellow water polo ball",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-rings-gymnastics",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "This apparatus belongs to which Olympic sport?",
+    "canonicalAnswer": "Gymnastics",
+    "acceptedAnswers": [
+      "gymnastics",
+      "artistic gymnastics"
+    ],
+    "botCards": [
+      "Weightlifting",
+      "Wrestling"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Gymnastics_rings.jpg",
+      "alt": "A gymnast using still rings",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-darts-target",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "On a standard dartboard, what number sits at the very top?",
+    "canonicalAnswer": "20",
+    "acceptedAnswers": [
+      "20",
+      "twenty"
+    ],
+    "botCards": [
+      "1",
+      "18"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dartboard.svg",
+      "alt": "A standard dartboard diagram",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-img2-lacrosse-stick",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "Which sport uses sticks with netted heads like this?",
+    "canonicalAnswer": "Lacrosse",
+    "acceptedAnswers": [
+      "lacrosse"
+    ],
+    "botCards": [
+      "Field hockey",
+      "Hurling"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Lacrosse_stick_and_ball.jpg",
+      "alt": "A lacrosse stick and ball",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-bluetooth-logo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "This angular blue symbol represents which wireless technology?",
+    "canonicalAnswer": "Bluetooth",
+    "acceptedAnswers": [
+      "bluetooth"
+    ],
+    "botCards": [
+      "Wi-Fi",
+      "NFC"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bluetooth.svg",
+      "alt": "The Bluetooth logo",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-wifi-logo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "This logo represents which wireless networking technology?",
+    "canonicalAnswer": "Wi-Fi",
+    "acceptedAnswers": [
+      "wi-fi",
+      "wifi",
+      "wi fi"
+    ],
+    "botCards": [
+      "Bluetooth",
+      "Ethernet"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Wi-Fi_Logo.svg",
+      "alt": "The Wi-Fi logo",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-usb-symbol",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "This trident-like symbol marks which common computer connection standard?",
+    "canonicalAnswer": "USB",
+    "acceptedAnswers": [
+      "usb",
+      "universal serial bus"
+    ],
+    "botCards": [
+      "HDMI",
+      "VGA"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/USB_Icon.svg",
+      "alt": "The USB trident symbol",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-firefox-browser",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "This logo belongs to which web browser?",
+    "canonicalAnswer": "Firefox",
+    "acceptedAnswers": [
+      "firefox",
+      "mozilla firefox"
+    ],
+    "botCards": [
+      "Chrome",
+      "Safari"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Firefox_logo%2C_2019.svg",
+      "alt": "The Firefox browser logo",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-mastodon-platform",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "This logo belongs to which decentralized social network?",
+    "canonicalAnswer": "Mastodon",
+    "acceptedAnswers": [
+      "mastodon"
+    ],
+    "botCards": [
+      "Threads",
+      "Bluesky"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mastodon_Logotype_(Simple).svg",
+      "alt": "The Mastodon wordmark and mascot mark",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-tor-logo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "This onion logo represents which privacy-focused network/browser project?",
+    "canonicalAnswer": "Tor",
+    "acceptedAnswers": [
+      "tor",
+      "tor browser",
+      "the onion router"
+    ],
+    "botCards": [
+      "Opera",
+      "Brave"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tor-logo-2011-flat.svg",
+      "alt": "The Tor onion logo",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-markdown-logo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "This logo represents which lightweight text formatting language?",
+    "canonicalAnswer": "Markdown",
+    "acceptedAnswers": [
+      "markdown",
+      "md"
+    ],
+    "botCards": [
+      "HTML",
+      "YAML"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Markdown-mark.svg",
+      "alt": "The Markdown logo",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-internet-archive",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "This temple-like logo belongs to which web preservation site?",
+    "canonicalAnswer": "Internet Archive",
+    "acceptedAnswers": [
+      "internet archive",
+      "archive.org",
+      "wayback machine"
+    ],
+    "botCards": [
+      "Wikidata",
+      "Project Gutenberg"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Internet_Archive_logo_and_wordmark.svg",
+      "alt": "The Internet Archive logo and wordmark",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-fediverse-logo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "This connected-node symbol is associated with what decentralized social-web ecosystem?",
+    "canonicalAnswer": "Fediverse",
+    "acceptedAnswers": [
+      "fediverse",
+      "the fediverse"
+    ],
+    "botCards": [
+      "Metaverse",
+      "Dark web"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fediverse_logo_proposal.svg",
+      "alt": "A connected-node Fediverse symbol",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-img2-signal-logo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "This blue speech-bubble icon belongs to which encrypted messaging app?",
+    "canonicalAnswer": "Signal",
+    "acceptedAnswers": [
+      "signal",
+      "signal messenger"
+    ],
+    "botCards": [
+      "Telegram",
+      "WhatsApp"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Signal-Logo.svg",
+      "alt": "The Signal Messenger logo",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-earth-hemisphere",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "This NASA image shows which planet?",
+    "canonicalAnswer": "Earth",
+    "acceptedAnswers": [
+      "earth",
+      "planet earth"
+    ],
+    "botCards": [
+      "Mars",
+      "Venus"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Earth_Eastern_Hemisphere.jpg",
+      "alt": "A NASA image of Earth from space",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-water-molecule",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "This molecule is made from two hydrogen atoms and one oxygen atom. What is it?",
+    "canonicalAnswer": "Water",
+    "acceptedAnswers": [
+      "water",
+      "h2o",
+      "h₂o"
+    ],
+    "botCards": [
+      "Hydrogen peroxide",
+      "Carbon dioxide"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Water_molecule_3D.svg",
+      "alt": "A 3D diagram of a water molecule",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-human-heart",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "Which organ is shown in this anatomy diagram?",
+    "canonicalAnswer": "Heart",
+    "acceptedAnswers": [
+      "heart",
+      "human heart"
+    ],
+    "botCards": [
+      "Liver",
+      "Lung"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Diagram_of_the_human_heart_(cropped).svg",
+      "alt": "A diagram of the human heart",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-andromeda-galaxy",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which nearby spiral galaxy is shown here?",
+    "canonicalAnswer": "Andromeda Galaxy",
+    "acceptedAnswers": [
+      "andromeda galaxy",
+      "andromeda",
+      "m31"
+    ],
+    "botCards": [
+      "Milky Way",
+      "Triangulum Galaxy"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Andromeda_Galaxy_(with_h-alpha).jpg",
+      "alt": "The Andromeda Galaxy in space",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-caffeine-molecule",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "This chemical structure represents which stimulant found in coffee?",
+    "canonicalAnswer": "Caffeine",
+    "acceptedAnswers": [
+      "caffeine"
+    ],
+    "botCards": [
+      "Nicotine",
+      "Glucose"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Caffeine.svg",
+      "alt": "A chemical structure diagram of caffeine",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-lhc-collider",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "This large physics machine is part of what particle collider?",
+    "canonicalAnswer": "Large Hadron Collider",
+    "acceptedAnswers": [
+      "large hadron collider",
+      "lhc"
+    ],
+    "botCards": [
+      "Tevatron",
+      "Cyclotron"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/CERN_LHC_tunnel.jpg",
+      "alt": "A tunnel section of the Large Hadron Collider",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-electron-orbitals",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "These shapes show probability regions for what subatomic particles?",
+    "canonicalAnswer": "Electrons",
+    "acceptedAnswers": [
+      "electrons",
+      "electron"
+    ],
+    "botCards": [
+      "Protons",
+      "Neutrons"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Electron_orbitals.svg",
+      "alt": "Colored diagrams of electron orbitals",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-cosmic-background",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "This map shows ancient radiation known as the cosmic microwave what?",
+    "canonicalAnswer": "Background",
+    "acceptedAnswers": [
+      "background",
+      "cosmic microwave background",
+      "cmb"
+    ],
+    "botCards": [
+      "Foreground",
+      "Echo"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/CMB_Timeline300_no_WMAP.jpg",
+      "alt": "A cosmic microwave background timeline diagram",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-newtons-cradle",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "This desktop toy demonstrates conservation of momentum and what else?",
+    "canonicalAnswer": "Energy",
+    "acceptedAnswers": [
+      "energy",
+      "kinetic energy"
+    ],
+    "botCards": [
+      "Mass only",
+      "Temperature"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Newtons_cradle_animation_book_2.gif",
+      "alt": "An animation of a Newton cradle",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-img2-james-webb-telescope",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Which space telescope is shown with its gold mirror segments?",
+    "canonicalAnswer": "James Webb Space Telescope",
+    "acceptedAnswers": [
+      "james webb space telescope",
+      "jwst",
+      "webb telescope"
+    ],
+    "botCards": [
+      "Hubble Space Telescope",
+      "Kepler Telescope"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/James_Webb_Space_Telescope_2009_top.jpg",
+      "alt": "A model of the James Webb Space Telescope",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-trojan-horse",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "This wooden-horse story belongs to which ancient war?",
+    "canonicalAnswer": "Trojan War",
+    "acceptedAnswers": [
+      "trojan war",
+      "the trojan war"
+    ],
+    "botCards": [
+      "Peloponnesian War",
+      "Punic War"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Trojan_Horse%2C_Tiepolo.jpg",
+      "alt": "A painting of the Trojan Horse",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-heracles-lion",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Which Greek hero is famous for defeating the Nemean Lion?",
+    "canonicalAnswer": "Heracles",
+    "acceptedAnswers": [
+      "heracles",
+      "hercules"
+    ],
+    "botCards": [
+      "Perseus",
+      "Theseus"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Heracles_and_the_Nemea_Lion.jpg",
+      "alt": "Heracles wrestling the Nemean Lion",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-ra-sun-god",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "This falcon-headed Egyptian deity is associated with the sun. Who is he?",
+    "canonicalAnswer": "Ra",
+    "acceptedAnswers": [
+      "ra",
+      "re"
+    ],
+    "botCards": [
+      "Anubis",
+      "Horus"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Re-Horakhty.svg",
+      "alt": "An Egyptian falcon-headed sun deity",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-jason-golden-fleece",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which hero led the Argonauts in the quest for the Golden Fleece?",
+    "canonicalAnswer": "Jason",
+    "acceptedAnswers": [
+      "jason"
+    ],
+    "botCards": [
+      "Odysseus",
+      "Bellerophon"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Jason_Pelias_Louvre_K127.jpg",
+      "alt": "Ancient artwork showing Jason and Pelias",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-amaterasu-cave",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Amaterasu is a sun goddess from which mythology?",
+    "canonicalAnswer": "Japanese mythology",
+    "acceptedAnswers": [
+      "japanese mythology",
+      "japan",
+      "shinto"
+    ],
+    "botCards": [
+      "Greek mythology",
+      "Norse mythology"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Amaterasu_cave_crop.jpg",
+      "alt": "Artwork of Amaterasu emerging from a cave",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-durga-demon",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Hindu goddess is often shown defeating the buffalo demon Mahishasura?",
+    "canonicalAnswer": "Durga",
+    "acceptedAnswers": [
+      "durga"
+    ],
+    "botCards": [
+      "Lakshmi",
+      "Saraswati"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Durga_Mahisasuramardini.JPG",
+      "alt": "A sculpture of Durga slaying Mahishasura",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-quetzalcoatl-serpent",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Quetzalcoatl is usually described as what kind of serpent?",
+    "canonicalAnswer": "Feathered serpent",
+    "acceptedAnswers": [
+      "feathered serpent",
+      "plumed serpent"
+    ],
+    "botCards": [
+      "Sea serpent",
+      "Two-headed serpent"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Quetzalcoatl_telleriano.jpg",
+      "alt": "A codex image of Quetzalcoatl",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-fenrir-wolf",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In Norse myth, which giant wolf is shown bound here?",
+    "canonicalAnswer": "Fenrir",
+    "acceptedAnswers": [
+      "fenrir",
+      "fenris wolf",
+      "fenris"
+    ],
+    "botCards": [
+      "Sleipnir",
+      "Jormungandr"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Odin_and_Fenris_(1909)_by_Dorothy_Hardy.png",
+      "alt": "An illustration of Odin and the wolf Fenrir",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-kali-goddess",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Which Hindu goddess is shown in this dramatic painting by Ravi Varma?",
+    "canonicalAnswer": "Kali",
+    "acceptedAnswers": [
+      "kali",
+      "kaali"
+    ],
+    "botCards": [
+      "Parvati",
+      "Radha"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kali_by_Raja_Ravi_Varma.jpg",
+      "alt": "A painting of the goddess Kali",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-img2-pele-volcano",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Pele is a volcano goddess from which island tradition?",
+    "canonicalAnswer": "Hawaiian mythology",
+    "acceptedAnswers": [
+      "hawaiian mythology",
+      "hawaii",
+      "hawaiian"
+    ],
+    "botCards": [
+      "Maori mythology",
+      "Aztec mythology"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pele_Hawaii_Volcano_Goddess.jpg",
+      "alt": "An artwork of Pele, Hawaiian volcano goddess",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-bach-composer",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which Baroque composer is shown in this portrait?",
+    "canonicalAnswer": "Johann Sebastian Bach",
+    "acceptedAnswers": [
+      "johann sebastian bach",
+      "bach"
+    ],
+    "botCards": [
+      "Handel",
+      "Haydn"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Johann_Sebastian_Bach.jpg",
+      "alt": "A portrait of Johann Sebastian Bach",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-night-watch-artist",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which Dutch painter created The Night Watch?",
+    "canonicalAnswer": "Rembrandt",
+    "acceptedAnswers": [
+      "rembrandt",
+      "rembrandt van rijn"
+    ],
+    "botCards": [
+      "Vermeer",
+      "Rubens"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Nightwatch_by_Rembrandt.jpg",
+      "alt": "Rembrandt painting The Night Watch",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-louis-armstrong",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which jazz trumpeter and singer is shown here?",
+    "canonicalAnswer": "Louis Armstrong",
+    "acceptedAnswers": [
+      "louis armstrong",
+      "armstrong",
+      "satchmo"
+    ],
+    "botCards": [
+      "Duke Ellington",
+      "Miles Davis"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Louis_Armstrong_restored.jpg",
+      "alt": "A portrait of Louis Armstrong",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-claude-monet",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Impressionist painter is shown in this photograph?",
+    "canonicalAnswer": "Claude Monet",
+    "acceptedAnswers": [
+      "claude monet",
+      "monet"
+    ],
+    "botCards": [
+      "Edgar Degas",
+      "Paul Cezanne"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Claude_Monet_1899_Nadar_crop.jpg",
+      "alt": "A black-and-white portrait of Claude Monet",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-las-meninas",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Spanish painter created Las Meninas?",
+    "canonicalAnswer": "Diego Velazquez",
+    "acceptedAnswers": [
+      "diego velazquez",
+      "velazquez",
+      "diego velázquez",
+      "velázquez"
+    ],
+    "botCards": [
+      "El Greco",
+      "Francisco Goya"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Las_Meninas%2C_by_Diego_Vel%C3%A1zquez%2C_from_Prado_in_Google_Earth.jpg",
+      "alt": "The painting Las Meninas",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-mondrian-primary-grid",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which artist is known for grids of black lines and primary colors like this?",
+    "canonicalAnswer": "Piet Mondrian",
+    "acceptedAnswers": [
+      "piet mondrian",
+      "mondrian"
+    ],
+    "botCards": [
+      "Kazimir Malevich",
+      "Wassily Kandinsky"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Piet_Mondriaan%2C_1921_-_Composition_en_rouge%2C_jaune%2C_bleu_et_noir.jpg",
+      "alt": "A Mondrian composition with red, yellow, blue, and black",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-duke-ellington",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which jazz bandleader and composer is shown at the piano?",
+    "canonicalAnswer": "Duke Ellington",
+    "acceptedAnswers": [
+      "duke ellington",
+      "ellington"
+    ],
+    "botCards": [
+      "Count Basie",
+      "Thelonious Monk"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Duke_Ellington_at_the_Hurricane_Club_1943.jpg",
+      "alt": "Duke Ellington seated at a piano",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-edvard-munch",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Which Norwegian artist painted The Scream?",
+    "canonicalAnswer": "Edvard Munch",
+    "acceptedAnswers": [
+      "edvard munch",
+      "munch"
+    ],
+    "botCards": [
+      "Gustav Klimt",
+      "Egon Schiele"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Edvard_Munch_1921.jpg",
+      "alt": "A portrait of Edvard Munch",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-okeeffe-flowers",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Which American artist is famous for large close-up flower paintings?",
+    "canonicalAnswer": "Georgia O'Keeffe",
+    "acceptedAnswers": [
+      "georgia okeeffe",
+      "georgia o'keeffe",
+      "okeeffe",
+      "o'keeffe"
+    ],
+    "botCards": [
+      "Mary Cassatt",
+      "Helen Frankenthaler"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Georgia_O'Keeffe_1918.jpg",
+      "alt": "A black-and-white portrait of Georgia O'Keeffe",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-img2-violin-instrument",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "This bowed instrument is the smallest common member of which orchestral family?",
+    "canonicalAnswer": "String family",
+    "acceptedAnswers": [
+      "string family",
+      "strings",
+      "string"
+    ],
+    "botCards": [
+      "Woodwind family",
+      "Brass family"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Old_violin.jpg",
+      "alt": "An old violin resting on a surface",
+      "credit": "Wikimedia Commons"
+    }
   }
 ]
