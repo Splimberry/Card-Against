@@ -261,6 +261,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomRoundResultMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/round-result$/);
+    if (roomRoundResultMatch && req.method === "POST") {
+      await handleRoomRoundResult(req, res, roomRoundResultMatch[1]);
+      return;
+    }
+
     const roomRoundSkipMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/round-skip$/);
     if (roomRoundSkipMatch && req.method === "POST") {
       await handleRoomRoundSkip(req, res, roomRoundSkipMatch[1]);
@@ -2640,6 +2646,54 @@ async function handleRoomPowerState(req, res, code) {
   }
 }
 
+async function handleRoomRoundResult(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can publish round results.")) {
+      return;
+    }
+    const roundResult = normalizeRoomRoundResult(body.roundResult || body);
+    if (!roundResult) {
+      sendJson(res, 400, { error: "Round result payload is incomplete." });
+      return;
+    }
+
+    room.status = "in-progress";
+    room.game = normalizeRoomGame({
+      ...(room.game || {}),
+      status: "grading",
+      round: roundResult.round,
+      roundResult,
+      updatedAt: Date.now()
+    });
+    stampRoomEvent(room, "round_result", {
+      round: roundResult.round,
+      matchId: room.game?.matchId || "",
+      roundResult,
+      game: room.game
+    });
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, {
+      code: storedRoom.code,
+      status: storedRoom.status,
+      revision: getRoomRevision(storedRoom),
+      updatedAt: storedRoom.updatedAt,
+      roundResult: storedRoom.game?.roundResult || roundResult,
+      game: storedRoom.game || room.game
+    });
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Round result sync failed." });
+  }
+}
+
 function normalizeRoundSkipSubmissions(submissions) {
   return (Array.isArray(submissions) ? submissions : [])
     .map((entry) => {
@@ -3039,6 +3093,9 @@ function normalizeRoomGame(game) {
     : game.settings && typeof game.settings === "object"
       ? normalizeRoomGameSettings(game.settings)
       : null;
+  const roundResult = game.roundResult && typeof game.roundResult === "object"
+    ? normalizeRoomRoundResult(game.roundResult)
+    : null;
 
   return {
     matchId: String(game.matchId || "").slice(0, 80),
@@ -3046,9 +3103,76 @@ function normalizeRoomGame(game) {
     round: clampServerNumber(game.round, 1, 100, 1),
     setup,
     matchSettings,
+    roundResult,
     powerState: normalizeRoomPowerState(game.powerState),
     updatedAt: clampServerNumber(game.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
   };
+}
+
+function normalizeRoomRoundResult(result) {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+  const cards = Array.isArray(result.cards)
+    ? result.cards.map((card) => String(card || "").trim().slice(0, 500)).slice(0, 10)
+    : [];
+  if (!cards.length) {
+    return null;
+  }
+  const winnerIndex = clampServerNumber(result.winnerIndex ?? result.winner?.index, 0, Math.max(cards.length - 1, 0), 0);
+  const correctIndexes = Array.isArray(result.correctIndexes)
+    ? [...new Set(result.correctIndexes.map((index) => clampServerNumber(index, 0, cards.length - 1, -1)).filter((index) => index >= 0))]
+    : [];
+  const revealAnswerIndex = clampServerNumber(result.revealAnswerIndex, 0, Math.max(cards.length - 1, 0), winnerIndex);
+  const powerState = result.powerState && typeof result.powerState === "object"
+    ? normalizeRoomPowerState(result.powerState)
+    : null;
+  const scoreState = Array.isArray(result.scoreState)
+    ? result.scoreState.map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      return {
+        participantId: String(source.participantId || "").slice(0, 120),
+        owner: String(source.owner || "").slice(0, 80),
+        score: clampServerNumber(source.score, 0, Number.MAX_SAFE_INTEGER, 0),
+        streak: clampServerNumber(source.streak, 0, Number.MAX_SAFE_INTEGER, 0)
+      };
+    }).filter((entry) => entry.participantId).slice(0, 10)
+    : [];
+  return {
+    round: clampServerNumber(result.round, 1, 100, 1),
+    questionId: String(result.questionId || "").slice(0, 120),
+    cards,
+    winner: { index: winnerIndex },
+    winnerIndex,
+    correctIndexes,
+    revealAnswerIndex,
+    winnerParticipantId: String(result.winnerParticipantId || "").slice(0, 120),
+    revealParticipantId: String(result.revealParticipantId || result.winnerParticipantId || "").slice(0, 120),
+    winningParticipantIds: Array.isArray(result.winningParticipantIds)
+      ? [...new Set(result.winningParticipantIds.map((id) => String(id || "").slice(0, 120)).filter(Boolean))].slice(0, 10)
+      : [],
+    cardCustomization: normalizeCardCustomization(result.cardCustomization),
+    awarded: normalizeRoomRoundAward(result.awarded),
+    powerState,
+    scoreState,
+    source: String(result.source || "host").slice(0, 40),
+    updatedAt: clampServerNumber(result.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+  };
+}
+
+function normalizeRoomRoundAward(awarded) {
+  if (!awarded || typeof awarded !== "object") {
+    return null;
+  }
+  try {
+    const serialized = JSON.stringify(awarded);
+    if (serialized.length > 80000) {
+      return null;
+    }
+    return JSON.parse(serialized);
+  } catch {
+    return null;
+  }
 }
 
 function normalizeRoomGameSettings(settings = {}) {
