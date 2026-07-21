@@ -12308,19 +12308,36 @@ function shouldKeepStreakAfterRoundLoss(owner) {
 
 function enforceEternalSlumberStreakCaps() {
   if (state.enforcingEternalSlumberCaps) {
-    return;
+    return [];
   }
   const owners = getActiveOwners();
   const slumberOwners = Object.keys(state.eternalSlumberOwners || {}).filter((owner) => owners.includes(owner));
   if (!slumberOwners.length) {
-    return;
+    return [];
   }
   const cap = Math.min(...slumberOwners.map((owner) => getOwnerStreak(owner)));
+  const cappedOwners = [];
   state.enforcingEternalSlumberCaps = true;
   owners
     .filter((owner) => getOwnerStreak(owner) > cap)
-    .forEach((owner) => setOwnerStreak(owner, cap, { force: true, skipEternalSlumberCap: true }));
+    .forEach((owner) => {
+      setOwnerStreak(owner, cap, { force: true, skipEternalSlumberCap: true });
+      cappedOwners.push(owner);
+    });
   state.enforcingEternalSlumberCaps = false;
+  return cappedOwners;
+}
+
+function capStreaksToOwner(owner) {
+  const cap = getOwnerStreak(owner);
+  const cappedOwners = [];
+  getActiveOwners()
+    .filter((participant) => getOwnerStreak(participant) > cap)
+    .forEach((participant) => {
+      setOwnerStreak(participant, cap, { force: true, skipEternalSlumberCap: true });
+      cappedOwners.push(participant);
+    });
+  return cappedOwners;
 }
 
 function compareScoreRowsForLeaderboard(a, b) {
@@ -16451,12 +16468,20 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "sin_sloth") {
+    const before = Object.fromEntries(getActiveOwners().map((participant) => [participant, getOwnerStreak(participant)]));
+    let cappedOwners = [];
     if (isChaosInfusedPower(power)) {
       state.eternalSlumberOwners[owner] = true;
+      cappedOwners = enforceEternalSlumberStreakCaps();
+    } else {
+      cappedOwners = [...new Set([...capStreaksToOwner(owner), ...enforceEternalSlumberStreakCaps()])];
     }
-    const before = Object.fromEntries(getActiveOwners().map((participant) => [participant, getOwnerStreak(participant)]));
-    enforceEternalSlumberStreakCaps();
-    const changed = getActiveOwners().filter((participant) => getOwnerStreak(participant) !== before[participant]).length;
+    const changedOwners = getActiveOwners().filter((participant) => getOwnerStreak(participant) !== before[participant] || cappedOwners.includes(participant));
+    const changed = changedOwners.length;
+    state.playedPowerMeta[owner] = {
+      ...(state.playedPowerMeta[owner] || {}),
+      cappedOwners: changedOwners
+    };
     queueStatFlash(changed ? "negative" : "mixed", power.name, changed ? `${changed} Streak${changed === 1 ? "" : "s"} Capped` : "No Higher Streaks", { owners: getActiveOwners(), complex: true });
     renderScore();
   }
