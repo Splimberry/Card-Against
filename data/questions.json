@@ -11594,7 +11594,7 @@
     "question": "This image clue points to which classic movie-theater snack?",
     "canonicalAnswer": "Popcorn",
     "multipleChoiceOptions": ["Nachos", "Popcorn", "Pretzel", "Hot dog"],
-    "image": {"url": "https://loremflickr.com/800/600/popcorn?lock=21001", "alt": "Popcorn image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Popcorn02.jpg", "alt": "Popcorn image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-superhero-costume",
@@ -11605,7 +11605,7 @@
     "question": "This costume-style image clue is most associated with which pop-culture role?",
     "canonicalAnswer": "Superhero",
     "multipleChoiceOptions": ["Superhero", "Detective", "Pirate", "Wizard"],
-    "image": {"url": "https://loremflickr.com/800/600/superhero?lock=21002", "alt": "Superhero image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/San_Diego_Comic-Con_2011_-_superhero_cosplay.jpg", "alt": "Superhero image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-film-camera",
@@ -11616,7 +11616,7 @@
     "question": "Which entertainment medium is represented by this camera clue?",
     "canonicalAnswer": "Film",
     "multipleChoiceOptions": ["Theater", "Film", "Radio", "Podcasting"],
-    "image": {"url": "https://loremflickr.com/800/600/film,camera?lock=21003", "alt": "Film camera image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arriflex_35_IIC_35mm_movie_camera.jpg", "alt": "Film camera image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-vinyl-record",
@@ -11627,7 +11627,7 @@
     "question": "This round music format is best identified as what?",
     "canonicalAnswer": "Vinyl record",
     "multipleChoiceOptions": ["LaserDisc", "Vinyl record", "Compact disc", "Cassette tape"],
-    "image": {"url": "https://loremflickr.com/800/600/vinyl,record?lock=21004", "alt": "Vinyl record image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Vinyl_record.svg", "alt": "Vinyl record image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-cosplay",
@@ -11638,7 +11638,7 @@
     "question": "Dressing as a fictional character at fan events is commonly called what?",
     "canonicalAnswer": "Cosplay",
     "multipleChoiceOptions": ["Cosplay", "LARPing", "Method acting", "Role casting"],
-    "image": {"url": "https://loremflickr.com/800/600/cosplay?lock=21005", "alt": "Cosplay image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Anime_Expo_2012_-_Cosplay.jpg", "alt": "Cosplay image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-comic-book",
@@ -11649,7 +11649,7 @@
     "question": "This panel-based printed format is usually called what?",
     "canonicalAnswer": "Comic book",
     "multipleChoiceOptions": ["Comic book", "Storyboard", "Graphic memo", "Flipbook"],
-    "image": {"url": "https://loremflickr.com/800/600/comic,book?lock=21006", "alt": "Comic book image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Comic_books_on_shelf.jpg", "alt": "Comic book image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-red-carpet",
@@ -11660,7 +11660,7 @@
     "question": "Celebrity premieres and award shows are famously linked with what walkway?",
     "canonicalAnswer": "Red carpet",
     "multipleChoiceOptions": ["Runway", "Red carpet", "Stage apron", "Press pit"],
-    "image": {"url": "https://loremflickr.com/800/600/red,carpet?lock=21007", "alt": "Red carpet image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Red_carpet.jpg", "alt": "Red carpet image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-stage-microphone",
@@ -11671,7 +11671,7 @@
     "question": "This performance clue most directly points to which live entertainment role?",
     "canonicalAnswer": "Singer",
     "multipleChoiceOptions": ["Singer", "Director", "Producer", "Stunt double"],
-    "image": {"url": "https://loremflickr.com/800/600/microphone,stage?lock=21008", "alt": "Stage microphone image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Shure_SM58_microphone.jpg", "alt": "Stage microphone image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-animation-cel",
@@ -11682,7 +11682,7 @@
     "question": "A sequence of drawn or rendered frames creates which screen art form?",
     "canonicalAnswer": "Animation",
     "multipleChoiceOptions": ["Animation", "Cinematography", "Typography", "Improvisation"],
-    "image": {"url": "https://loremflickr.com/800/600/animation?lock=21009", "alt": "Animation image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Praxinoscope_animation.gif", "alt": "Animation image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-television-set",
@@ -11693,7 +11693,7 @@
     "question": "This household screen is most directly tied to which broadcast medium?",
     "canonicalAnswer": "Television",
     "multipleChoiceOptions": ["Cinema", "Television", "Livestreaming", "Radio"],
-    "image": {"url": "https://loremflickr.com/800/600/television?lock=21010", "alt": "Television image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Philips_TV_Set.jpg", "alt": "Television image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-arcade-cabinet",
@@ -11704,7 +11704,7 @@
     "question": "This coin-operated game machine is usually called what?",
     "canonicalAnswer": "Arcade cabinet",
     "multipleChoiceOptions": ["Arcade cabinet", "Pinball plunger", "Server rack", "Console dock"],
-    "image": {"url": "https://loremflickr.com/800/600/arcade,cabinet?lock=21101", "alt": "Arcade cabinet image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arcade_video_game_cabinet.jpg", "alt": "Arcade cabinet image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-joystick",
@@ -11715,7 +11715,7 @@
     "question": "Which input device is suggested by this gaming controller clue?",
     "canonicalAnswer": "Joystick",
     "multipleChoiceOptions": ["Trackball", "Joystick", "Steering wheel", "Light gun"],
-    "image": {"url": "https://loremflickr.com/800/600/joystick?lock=21102", "alt": "Joystick image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Joystick_black_red_petri_01.jpg", "alt": "Joystick image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-chessboard",
@@ -11726,7 +11726,7 @@
     "question": "This strategy-game board belongs to which classic game?",
     "canonicalAnswer": "Chess",
     "multipleChoiceOptions": ["Checkers", "Chess", "Go", "Backgammon"],
-    "image": {"url": "https://loremflickr.com/800/600/chessboard?lock=21103", "alt": "Chessboard image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Chess_board_opening_staunton.jpg", "alt": "Chessboard image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-pixel-art",
@@ -11737,7 +11737,7 @@
     "question": "This blocky digital art style is usually called what?",
     "canonicalAnswer": "Pixel art",
     "multipleChoiceOptions": ["Voxel sculpting", "Pixel art", "Vector tracing", "Ray tracing"],
-    "image": {"url": "https://loremflickr.com/800/600/pixel,art?lock=21104", "alt": "Pixel art image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pixel_art_smiley.png", "alt": "Pixel art image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-tabletop-dice",
@@ -11748,7 +11748,7 @@
     "question": "These numbered objects are most commonly used to randomize what in tabletop games?",
     "canonicalAnswer": "Dice rolls",
     "multipleChoiceOptions": ["Card drafts", "Dice rolls", "Token trades", "Board resets"],
-    "image": {"url": "https://loremflickr.com/800/600/dice,tabletop?lock=21105", "alt": "Tabletop dice image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Roleplaying_dice.jpg", "alt": "Tabletop dice image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-game-controller",
@@ -11759,7 +11759,7 @@
     "question": "This handheld device is used mainly for what activity?",
     "canonicalAnswer": "Playing video games",
     "multipleChoiceOptions": ["Playing video games", "Mixing audio", "Scanning codes", "Editing photos"],
-    "image": {"url": "https://loremflickr.com/800/600/game,controller?lock=21106", "alt": "Game controller image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Gamepad.svg", "alt": "Game controller image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-robotics",
@@ -11770,7 +11770,7 @@
     "question": "Building programmable machines like this belongs to which tech hobby?",
     "canonicalAnswer": "Robotics",
     "multipleChoiceOptions": ["Cryptography", "Robotics", "Speedrunning", "Model painting"],
-    "image": {"url": "https://loremflickr.com/800/600/robotics?lock=21107", "alt": "Robotics image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Robot_at_RoboCup_2004.jpg", "alt": "Robotics image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-motherboard",
@@ -11781,7 +11781,7 @@
     "question": "The main circuit board inside many computers is called what?",
     "canonicalAnswer": "Motherboard",
     "multipleChoiceOptions": ["Motherboard", "Graphics card", "Power supply", "Heat sink"],
-    "image": {"url": "https://loremflickr.com/800/600/motherboard?lock=21108", "alt": "Motherboard image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Motherboard.jpg", "alt": "Motherboard image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-mechanical-keyboard",
@@ -11792,7 +11792,7 @@
     "question": "This clicky computer input device is popular with programmers and PC gamers. What is it?",
     "canonicalAnswer": "Mechanical keyboard",
     "multipleChoiceOptions": ["Mechanical keyboard", "MIDI controller", "Stream deck", "Drawing tablet"],
-    "image": {"url": "https://loremflickr.com/800/600/mechanical,keyboard?lock=21109", "alt": "Mechanical keyboard image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mechanical_keyboard.jpg", "alt": "Mechanical keyboard image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-circuit-board",
@@ -11803,7 +11803,7 @@
     "question": "The patterned electronic board in this clue is most generally called what?",
     "canonicalAnswer": "Circuit board",
     "multipleChoiceOptions": ["Circuit board", "Optical disc", "Cooling fan", "Battery cell"],
-    "image": {"url": "https://loremflickr.com/800/600/circuit,board?lock=21110", "alt": "Circuit board image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Printed_circuit_board.jpg", "alt": "Circuit board image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-eiffel-tower",
@@ -11814,7 +11814,7 @@
     "question": "Which Paris landmark is shown by this image clue?",
     "canonicalAnswer": "Eiffel Tower",
     "multipleChoiceOptions": ["Eiffel Tower", "Arc de Triomphe", "Louvre Pyramid", "Notre-Dame"],
-    "image": {"url": "https://loremflickr.com/800/600/eiffel,tower?lock=21201", "alt": "Eiffel Tower image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tour_Eiffel_Wikimedia_Commons.jpg", "alt": "Eiffel Tower image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-colosseum",
@@ -11825,7 +11825,7 @@
     "question": "Which ancient Roman amphitheater is represented by this image clue?",
     "canonicalAnswer": "Colosseum",
     "multipleChoiceOptions": ["Pantheon", "Colosseum", "Circus Maximus", "Roman Forum"],
-    "image": {"url": "https://loremflickr.com/800/600/colosseum?lock=21202", "alt": "Colosseum image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Colosseum_in_Rome%2C_Italy_-_April_2007.jpg", "alt": "Colosseum image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-pyramids",
@@ -11836,7 +11836,7 @@
     "question": "These ancient stone structures are most strongly linked with which civilization?",
     "canonicalAnswer": "Ancient Egypt",
     "multipleChoiceOptions": ["Ancient Egypt", "Ancient Greece", "Ancient Rome", "Ancient Persia"],
-    "image": {"url": "https://loremflickr.com/800/600/pyramids,egypt?lock=21203", "alt": "Egyptian pyramids image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/All_Gizah_Pyramids.jpg", "alt": "Egyptian pyramids image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-stonehenge",
@@ -11847,7 +11847,7 @@
     "question": "Which prehistoric stone circle in England is suggested by this image?",
     "canonicalAnswer": "Stonehenge",
     "multipleChoiceOptions": ["Avebury", "Stonehenge", "Callanish Stones", "Newgrange"],
-    "image": {"url": "https://loremflickr.com/800/600/stonehenge?lock=21204", "alt": "Stonehenge image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Stonehenge2007_07_30.jpg", "alt": "Stonehenge image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-statue-liberty",
@@ -11858,7 +11858,7 @@
     "question": "Which New York Harbor monument is represented by this image clue?",
     "canonicalAnswer": "Statue of Liberty",
     "multipleChoiceOptions": ["Statue of Liberty", "Washington Monument", "Lincoln Memorial", "Gateway Arch"],
-    "image": {"url": "https://loremflickr.com/800/600/statue,liberty?lock=21205", "alt": "Statue of Liberty image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Statue_of_Liberty_7.jpg", "alt": "Statue of Liberty image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-taj-mahal",
@@ -11869,7 +11869,7 @@
     "question": "Which white marble mausoleum in Agra is shown by this clue?",
     "canonicalAnswer": "Taj Mahal",
     "multipleChoiceOptions": ["Taj Mahal", "Humayun's Tomb", "Hawa Mahal", "Jama Masjid"],
-    "image": {"url": "https://loremflickr.com/800/600/taj,mahal?lock=21206", "alt": "Taj Mahal image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Taj_Mahal_(Edited).jpeg", "alt": "Taj Mahal image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-machu-picchu",
@@ -11880,7 +11880,7 @@
     "question": "Which Inca site in Peru is suggested by this mountain-ruin image?",
     "canonicalAnswer": "Machu Picchu",
     "multipleChoiceOptions": ["Machu Picchu", "Chichen Itza", "Teotihuacan", "Petra"],
-    "image": {"url": "https://loremflickr.com/800/600/machu,picchu?lock=21207", "alt": "Machu Picchu image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Machu_Picchu%2C_Peru.jpg", "alt": "Machu Picchu image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-great-wall",
@@ -11891,7 +11891,7 @@
     "question": "Which long defensive structure in China is represented here?",
     "canonicalAnswer": "Great Wall of China",
     "multipleChoiceOptions": ["Great Wall of China", "Hadrian's Wall", "Walls of Benin", "Antonine Wall"],
-    "image": {"url": "https://loremflickr.com/800/600/great,wall,china?lock=21208", "alt": "Great Wall of China image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Great_Wall_of_China_at_Jinshanling-edit.jpg", "alt": "Great Wall of China image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-acropolis",
@@ -11902,7 +11902,7 @@
     "question": "The hilltop complex in Athens shown by this clue is best known as what?",
     "canonicalAnswer": "Acropolis",
     "multipleChoiceOptions": ["Acropolis", "Agora", "Olympieion", "Delphi"],
-    "image": {"url": "https://loremflickr.com/800/600/acropolis,athens?lock=21209", "alt": "Acropolis image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Acropolis_of_Athens_01361.JPG", "alt": "Acropolis image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-petra",
@@ -11913,7 +11913,7 @@
     "question": "Which rock-cut ancient city in Jordan is suggested by this image clue?",
     "canonicalAnswer": "Petra",
     "multipleChoiceOptions": ["Petra", "Palmyra", "Persepolis", "Baalbek"],
-    "image": {"url": "https://loremflickr.com/800/600/petra,jordan?lock=21210", "alt": "Petra image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Al_Khazneh_Petra_edit_2.jpg", "alt": "Petra image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-red-panda",
@@ -11924,7 +11924,7 @@
     "question": "Which reddish tree-climbing mammal is shown by this image clue?",
     "canonicalAnswer": "Red panda",
     "multipleChoiceOptions": ["Raccoon dog", "Red panda", "Coati", "Ringtail"],
-    "image": {"url": "https://loremflickr.com/800/600/red,panda?lock=21301", "alt": "Red panda image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/RedPandaFullBody.JPG", "alt": "Red panda image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-meerkat",
@@ -11935,7 +11935,7 @@
     "question": "This upright desert mammal is most likely which animal?",
     "canonicalAnswer": "Meerkat",
     "multipleChoiceOptions": ["Mongoose", "Meerkat", "Prairie dog", "Suricate"],
-    "image": {"url": "https://loremflickr.com/800/600/meerkat?lock=21302", "alt": "Meerkat image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Suricata_suricatta_2.jpg", "alt": "Meerkat image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-sloth",
@@ -11946,7 +11946,7 @@
     "question": "Which slow-moving tree mammal is represented by this image?",
     "canonicalAnswer": "Sloth",
     "multipleChoiceOptions": ["Sloth", "Koala", "Anteater", "Lemur"],
-    "image": {"url": "https://loremflickr.com/800/600/sloth?lock=21303", "alt": "Sloth image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bradypus.jpg", "alt": "Sloth image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-puffin",
@@ -11957,7 +11957,7 @@
     "question": "Which seabird with a colorful bill is suggested by this image?",
     "canonicalAnswer": "Puffin",
     "multipleChoiceOptions": ["Puffin", "Penguin", "Auklet", "Gannet"],
-    "image": {"url": "https://loremflickr.com/800/600/puffin?lock=21304", "alt": "Puffin image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Atlantic_Puffin_Fratercula_arctica.jpg", "alt": "Puffin image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-flamingo",
@@ -11968,7 +11968,7 @@
     "question": "Which long-legged pink bird is represented by this image clue?",
     "canonicalAnswer": "Flamingo",
     "multipleChoiceOptions": ["Flamingo", "Spoonbill", "Ibis", "Heron"],
-    "image": {"url": "https://loremflickr.com/800/600/flamingo?lock=21305", "alt": "Flamingo image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Flamingo_Santacruz.jpg", "alt": "Flamingo image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-camel",
@@ -11979,7 +11979,7 @@
     "question": "Which desert-adapted animal is shown by this image clue?",
     "canonicalAnswer": "Camel",
     "multipleChoiceOptions": ["Camel", "Llama", "Alpaca", "Guanaco"],
-    "image": {"url": "https://loremflickr.com/800/600/camel?lock=21306", "alt": "Camel image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Camelus_dromedarius_in_Sahara.jpg", "alt": "Camel image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-capybara",
@@ -11990,7 +11990,7 @@
     "question": "This large semiaquatic rodent is best identified as what?",
     "canonicalAnswer": "Capybara",
     "multipleChoiceOptions": ["Beaver", "Capybara", "Nutria", "Marmot"],
-    "image": {"url": "https://loremflickr.com/800/600/capybara?lock=21307", "alt": "Capybara image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hydrochoerus_hydrochaeris_(Linnaeus_1766).jpg", "alt": "Capybara image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-jellyfish",
@@ -12001,7 +12001,7 @@
     "question": "Which soft-bodied marine animal is suggested by this drifting image clue?",
     "canonicalAnswer": "Jellyfish",
     "multipleChoiceOptions": ["Jellyfish", "Sea anemone", "Portuguese man o' war", "Comb jelly"],
-    "image": {"url": "https://loremflickr.com/800/600/jellyfish?lock=21308", "alt": "Jellyfish image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Aurelia_aurita_(Cnidaria)_Luc_Viatour.jpg", "alt": "Jellyfish image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-peacock",
@@ -12012,7 +12012,7 @@
     "question": "Which bird is famous for the dramatic tail display hinted at here?",
     "canonicalAnswer": "Peacock",
     "multipleChoiceOptions": ["Peacock", "Pheasant", "Bird-of-paradise", "Turkey"],
-    "image": {"url": "https://loremflickr.com/800/600/peacock?lock=21309", "alt": "Peacock image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Peacock_Plumage.jpg", "alt": "Peacock image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "animals-imgmcq-crocodile",
@@ -12023,7 +12023,7 @@
     "question": "Which large semiaquatic reptile is represented by this image clue?",
     "canonicalAnswer": "Crocodile",
     "multipleChoiceOptions": ["Alligator", "Crocodile", "Caiman", "Gharial"],
-    "image": {"url": "https://loremflickr.com/800/600/crocodile?lock=21310", "alt": "Crocodile image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Crocodile_(Crocodylus_niloticus)_head.jpg", "alt": "Crocodile image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-ramen",
@@ -12034,7 +12034,7 @@
     "question": "Which noodle soup is represented by this image clue?",
     "canonicalAnswer": "Ramen",
     "multipleChoiceOptions": ["Pho", "Ramen", "Laksa", "Udon"],
-    "image": {"url": "https://loremflickr.com/800/600/ramen?lock=21401", "alt": "Ramen image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fresh_ramen_noodle_001.jpg", "alt": "Ramen image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-croissant",
@@ -12045,7 +12045,7 @@
     "question": "Which flaky crescent-shaped pastry is shown by this clue?",
     "canonicalAnswer": "Croissant",
     "multipleChoiceOptions": ["Brioche", "Croissant", "Danish", "Palmier"],
-    "image": {"url": "https://loremflickr.com/800/600/croissant?lock=21402", "alt": "Croissant image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Croissant-Petr_Kratochvil.jpg", "alt": "Croissant image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-pizza",
@@ -12056,7 +12056,7 @@
     "question": "Which round Italian-inspired dish is suggested by this image?",
     "canonicalAnswer": "Pizza",
     "multipleChoiceOptions": ["Flatbread", "Pizza", "Focaccia", "Quesadilla"],
-    "image": {"url": "https://loremflickr.com/800/600/pizza?lock=21403", "alt": "Pizza image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Eq_it-na_pizza-margherita_sep2005_sml.jpg", "alt": "Pizza image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-paella",
@@ -12067,7 +12067,7 @@
     "question": "Which Spanish rice dish is represented by this pan of food?",
     "canonicalAnswer": "Paella",
     "multipleChoiceOptions": ["Risotto", "Paella", "Jambalaya", "Pilaf"],
-    "image": {"url": "https://loremflickr.com/800/600/paella?lock=21404", "alt": "Paella image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Paella_01.jpg", "alt": "Paella image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-taco",
@@ -12078,7 +12078,7 @@
     "question": "Which folded Mexican dish is suggested by this image clue?",
     "canonicalAnswer": "Taco",
     "multipleChoiceOptions": ["Taco", "Empanada", "Arepa", "Tamale"],
-    "image": {"url": "https://loremflickr.com/800/600/taco?lock=21405", "alt": "Taco image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/001_Tacos_de_carnitas%2C_carne_asada_y_al_pastor.jpg", "alt": "Taco image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-espresso",
@@ -12089,7 +12089,7 @@
     "question": "This small strong coffee drink is best identified as what?",
     "canonicalAnswer": "Espresso",
     "multipleChoiceOptions": ["Espresso", "Americano", "Cappuccino", "Macchiato"],
-    "image": {"url": "https://loremflickr.com/800/600/espresso?lock=21406", "alt": "Espresso image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Espresso_BW_1.jpg", "alt": "Espresso image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-macarons",
@@ -12100,7 +12100,7 @@
     "question": "Which colorful French sandwich cookie is represented by this clue?",
     "canonicalAnswer": "Macaron",
     "multipleChoiceOptions": ["Macaron", "Madeleine", "Meringue", "Petit four"],
-    "image": {"url": "https://loremflickr.com/800/600/macaron?lock=21407", "alt": "Macaron image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Macarons%2C_French_made_mini_meringue_based_confection.JPG", "alt": "Macaron image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-curry",
@@ -12111,7 +12111,7 @@
     "question": "This spiced saucy dish is most generally called what?",
     "canonicalAnswer": "Curry",
     "multipleChoiceOptions": ["Stew", "Curry", "Ragout", "Bisque"],
-    "image": {"url": "https://loremflickr.com/800/600/curry?lock=21408", "alt": "Curry image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Thai_Red_Curry.jpg", "alt": "Curry image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-pretzel",
@@ -12122,7 +12122,7 @@
     "question": "Which twisted baked snack is shown by this clue?",
     "canonicalAnswer": "Pretzel",
     "multipleChoiceOptions": ["Pretzel", "Bagel", "Bialy", "Breadstick"],
-    "image": {"url": "https://loremflickr.com/800/600/pretzel?lock=21409", "alt": "Pretzel image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pretzel.jpg", "alt": "Pretzel image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "fooddrinks-imgmcq-dim-sum",
@@ -12133,7 +12133,7 @@
     "question": "Small shared Cantonese dishes like these are commonly grouped under what name?",
     "canonicalAnswer": "Dim sum",
     "multipleChoiceOptions": ["Dim sum", "Banchan", "Tapas", "Meze"],
-    "image": {"url": "https://loremflickr.com/800/600/dim,sum?lock=21410", "alt": "Dim sum image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dim_sum_breakfast.jpg", "alt": "Dim sum image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-archery",
@@ -12144,7 +12144,7 @@
     "question": "Which sport uses a bow to shoot arrows at a target?",
     "canonicalAnswer": "Archery",
     "multipleChoiceOptions": ["Archery", "Fencing", "Shooting", "Darts"],
-    "image": {"url": "https://loremflickr.com/800/600/archery?lock=21501", "alt": "Archery image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Archery_competition.jpg", "alt": "Archery image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-fencing",
@@ -12155,7 +12155,7 @@
     "question": "Which Olympic combat sport is represented by this masked duel?",
     "canonicalAnswer": "Fencing",
     "multipleChoiceOptions": ["Kendo", "Fencing", "Boxing", "Taekwondo"],
-    "image": {"url": "https://loremflickr.com/800/600/fencing?lock=21502", "alt": "Fencing image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fencing_foil_valid_surfaces.svg", "alt": "Fencing image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-rowing",
@@ -12166,7 +12166,7 @@
     "question": "Which boat sport is suggested by this image clue?",
     "canonicalAnswer": "Rowing",
     "multipleChoiceOptions": ["Rowing", "Sailing", "Kayaking", "Rafting"],
-    "image": {"url": "https://loremflickr.com/800/600/rowing?lock=21503", "alt": "Rowing image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rowing_at_the_2012_Summer_Olympics.jpg", "alt": "Rowing image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-surfing",
@@ -12177,7 +12177,7 @@
     "question": "Which board sport is represented by this wave-riding image?",
     "canonicalAnswer": "Surfing",
     "multipleChoiceOptions": ["Surfing", "Wakeboarding", "Windsurfing", "Paddleboarding"],
-    "image": {"url": "https://loremflickr.com/800/600/surfing?lock=21504", "alt": "Surfing image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Surfing_in_Hawaii.jpg", "alt": "Surfing image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-ice-hockey",
@@ -12188,7 +12188,7 @@
     "question": "Which rink sport uses sticks and a puck?",
     "canonicalAnswer": "Ice hockey",
     "multipleChoiceOptions": ["Field hockey", "Ice hockey", "Lacrosse", "Bandy"],
-    "image": {"url": "https://loremflickr.com/800/600/ice,hockey?lock=21505", "alt": "Ice hockey image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ice_hockey_game.jpg", "alt": "Ice hockey image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-table-tennis",
@@ -12199,7 +12199,7 @@
     "question": "Which fast indoor racket sport is represented by this clue?",
     "canonicalAnswer": "Table tennis",
     "multipleChoiceOptions": ["Badminton", "Squash", "Table tennis", "Padel"],
-    "image": {"url": "https://loremflickr.com/800/600/table,tennis?lock=21506", "alt": "Table tennis image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Table_Tennis_2.jpg", "alt": "Table tennis image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-skateboarding",
@@ -12210,7 +12210,7 @@
     "question": "Which street-and-park sport is suggested by this board clue?",
     "canonicalAnswer": "Skateboarding",
     "multipleChoiceOptions": ["Skateboarding", "Snowboarding", "Longboarding", "Scootering"],
-    "image": {"url": "https://loremflickr.com/800/600/skateboarding?lock=21507", "alt": "Skateboarding image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Skateboarding.jpg", "alt": "Skateboarding image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-cricket",
@@ -12221,7 +12221,7 @@
     "question": "Which bat-and-ball sport with wickets is represented by this clue?",
     "canonicalAnswer": "Cricket",
     "multipleChoiceOptions": ["Baseball", "Cricket", "Rounders", "Softball"],
-    "image": {"url": "https://loremflickr.com/800/600/cricket,sport?lock=21508", "alt": "Cricket image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cricket_at_the_Gabba.jpg", "alt": "Cricket image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-boxing",
@@ -12232,7 +12232,7 @@
     "question": "Which ring combat sport is represented by this gloves clue?",
     "canonicalAnswer": "Boxing",
     "multipleChoiceOptions": ["Kickboxing", "Boxing", "Wrestling", "Judo"],
-    "image": {"url": "https://loremflickr.com/800/600/boxing,gloves?lock=21509", "alt": "Boxing image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Boxing_gloves_red.jpg", "alt": "Boxing image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-cycling",
@@ -12243,7 +12243,7 @@
     "question": "Which racing sport is hinted at by this bicycle image?",
     "canonicalAnswer": "Cycling",
     "multipleChoiceOptions": ["Triathlon", "Cycling", "Speed skating", "Biathlon"],
-    "image": {"url": "https://loremflickr.com/800/600/cycling,race?lock=21510", "alt": "Cycling image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tour_de_France_2005_01.jpg", "alt": "Cycling image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-wifi-router",
@@ -12254,7 +12254,7 @@
     "question": "This home networking device is most commonly called what?",
     "canonicalAnswer": "Wi-Fi router",
     "multipleChoiceOptions": ["Modem", "Wi-Fi router", "Switch", "Firewall"],
-    "image": {"url": "https://loremflickr.com/800/600/wifi,router?lock=21601", "alt": "Wi-Fi router image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Wireless_router.jpg", "alt": "Wi-Fi router image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-emoji",
@@ -12265,7 +12265,7 @@
     "question": "Small pictorial symbols used in chats and posts are called what?",
     "canonicalAnswer": "Emoji",
     "multipleChoiceOptions": ["Emoji", "Captcha", "Avatar", "Sticker pack"],
-    "image": {"url": "https://loremflickr.com/800/600/emoji?lock=21602", "alt": "Emoji image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Twemoji_1f600.svg", "alt": "Emoji image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-laptop",
@@ -12276,7 +12276,7 @@
     "question": "Which portable computer is represented by this image clue?",
     "canonicalAnswer": "Laptop",
     "multipleChoiceOptions": ["Tablet", "Laptop", "Desktop tower", "Smartwatch"],
-    "image": {"url": "https://loremflickr.com/800/600/laptop?lock=21603", "alt": "Laptop image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Laptop.jpg", "alt": "Laptop image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-smartphone",
@@ -12287,7 +12287,7 @@
     "question": "Which pocket device is central to mobile internet culture?",
     "canonicalAnswer": "Smartphone",
     "multipleChoiceOptions": ["Smartphone", "E-reader", "Calculator", "Portable console"],
-    "image": {"url": "https://loremflickr.com/800/600/smartphone?lock=21604", "alt": "Smartphone image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Smartphone.jpg", "alt": "Smartphone image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-podcast",
@@ -12298,7 +12298,7 @@
     "question": "This microphone setup most strongly suggests which online audio format?",
     "canonicalAnswer": "Podcast",
     "multipleChoiceOptions": ["Podcast", "Webinar", "Blog post", "Newsletter"],
-    "image": {"url": "https://loremflickr.com/800/600/podcast,microphone?lock=21605", "alt": "Podcast image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Podcast_mic.jpg", "alt": "Podcast image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-hashtag-sign",
@@ -12309,7 +12309,7 @@
     "question": "This symbol is used online to label searchable topics. What is it called?",
     "canonicalAnswer": "Hashtag",
     "multipleChoiceOptions": ["Mention", "Hashtag", "Handle", "Permalink"],
-    "image": {"url": "https://loremflickr.com/800/600/hashtag?lock=21606", "alt": "Hashtag image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hashtag.svg", "alt": "Hashtag image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-qr-code",
@@ -12320,7 +12320,7 @@
     "question": "Which scannable square code is represented by this image clue?",
     "canonicalAnswer": "QR code",
     "multipleChoiceOptions": ["Barcode", "QR code", "Captcha", "Shortlink"],
-    "image": {"url": "https://loremflickr.com/800/600/qr,code?lock=21607", "alt": "QR code image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/QR_code_for_mobile_English_Wikipedia.svg", "alt": "QR code image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-livestream",
@@ -12331,7 +12331,7 @@
     "question": "Broadcasting video live to viewers online is usually called what?",
     "canonicalAnswer": "Livestreaming",
     "multipleChoiceOptions": ["Livestreaming", "Caching", "Sideloading", "Mirroring"],
-    "image": {"url": "https://loremflickr.com/800/600/livestream?lock=21608", "alt": "Livestream image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Livestreaming_setup.jpg", "alt": "Livestream image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-server-rack",
@@ -12342,7 +12342,7 @@
     "question": "Rows of machines like these are commonly found in what internet infrastructure?",
     "canonicalAnswer": "Data center",
     "multipleChoiceOptions": ["Data center", "Search bar", "Browser tab", "Mod queue"],
-    "image": {"url": "https://loremflickr.com/800/600/server,rack?lock=21609", "alt": "Server rack image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Server_Rack.jpg", "alt": "Server rack image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-drone-camera",
@@ -12353,7 +12353,7 @@
     "question": "This flying camera gadget often appears in online creator videos. What is it?",
     "canonicalAnswer": "Drone",
     "multipleChoiceOptions": ["Drone", "Webcam", "Gimbal", "Action camera"],
-    "image": {"url": "https://loremflickr.com/800/600/drone,camera?lock=21610", "alt": "Drone camera image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/DJI_Phantom_2_Vision%2B_V3_hovering.jpg", "alt": "Drone camera image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-microscope",
@@ -12364,7 +12364,7 @@
     "question": "Which lab instrument is used to view very small objects?",
     "canonicalAnswer": "Microscope",
     "multipleChoiceOptions": ["Telescope", "Microscope", "Spectrometer", "Barometer"],
-    "image": {"url": "https://loremflickr.com/800/600/microscope?lock=21701", "alt": "Microscope image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Microscope_(PSF).png", "alt": "Microscope image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-telescope",
@@ -12375,7 +12375,7 @@
     "question": "Which instrument is used to observe distant objects in the sky?",
     "canonicalAnswer": "Telescope",
     "multipleChoiceOptions": ["Telescope", "Microscope", "Periscope", "Seismograph"],
-    "image": {"url": "https://loremflickr.com/800/600/telescope?lock=21702", "alt": "Telescope image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Amateur_telescope.jpg", "alt": "Telescope image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-fossil",
@@ -12386,7 +12386,7 @@
     "question": "Preserved remains or traces of ancient life are called what?",
     "canonicalAnswer": "Fossils",
     "multipleChoiceOptions": ["Fossils", "Crystals", "Meteorites", "Sediments"],
-    "image": {"url": "https://loremflickr.com/800/600/fossil?lock=21703", "alt": "Fossil image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fossil.jpg", "alt": "Fossil image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-volcano",
@@ -12397,7 +12397,7 @@
     "question": "Which geological feature is represented by this eruption clue?",
     "canonicalAnswer": "Volcano",
     "multipleChoiceOptions": ["Geyser", "Volcano", "Fault line", "Sinkhole"],
-    "image": {"url": "https://loremflickr.com/800/600/volcano?lock=21704", "alt": "Volcano image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mayon_Volcano_as_of_March_2020.jpg", "alt": "Volcano image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-solar-panel",
@@ -12408,7 +12408,7 @@
     "question": "Which technology converts sunlight directly into electricity?",
     "canonicalAnswer": "Solar panel",
     "multipleChoiceOptions": ["Solar panel", "Wind turbine", "Fuel cell", "Battery pack"],
-    "image": {"url": "https://loremflickr.com/800/600/solar,panel?lock=21705", "alt": "Solar panel image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Solar_panels_on_a_roof.jpg", "alt": "Solar panel image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-beaker",
@@ -12419,7 +12419,7 @@
     "question": "Which common lab glassware item is shown by this clue?",
     "canonicalAnswer": "Beaker",
     "multipleChoiceOptions": ["Beaker", "Petri dish", "Burette", "Test tube rack"],
-    "image": {"url": "https://loremflickr.com/800/600/beaker,laboratory?lock=21706", "alt": "Beaker image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Beaker.jpg", "alt": "Beaker image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-neuron",
@@ -12430,7 +12430,7 @@
     "question": "This branching cell clue represents which nervous-system cell?",
     "canonicalAnswer": "Neuron",
     "multipleChoiceOptions": ["Neuron", "Platelet", "Osteocyte", "Lymphocyte"],
-    "image": {"url": "https://loremflickr.com/800/600/neuron?lock=21707", "alt": "Neuron image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Neuron.svg", "alt": "Neuron image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-magnet",
@@ -12441,7 +12441,7 @@
     "question": "Which object creates an invisible field that can attract iron?",
     "canonicalAnswer": "Magnet",
     "multipleChoiceOptions": ["Magnet", "Battery", "Lens", "Thermometer"],
-    "image": {"url": "https://loremflickr.com/800/600/magnet?lock=21708", "alt": "Magnet image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/VFPt_magnet_field.svg", "alt": "Magnet image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-atom-model",
@@ -12452,7 +12452,7 @@
     "question": "A diagram like this commonly represents which basic unit of matter?",
     "canonicalAnswer": "Atom",
     "multipleChoiceOptions": ["Atom", "Molecule", "Cell", "Crystal"],
-    "image": {"url": "https://loremflickr.com/800/600/atom,model?lock=21709", "alt": "Atom model image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Helium_atom_QM.svg", "alt": "Atom model image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-rocket",
@@ -12463,7 +12463,7 @@
     "question": "Which vehicle is designed to launch payloads into space?",
     "canonicalAnswer": "Rocket",
     "multipleChoiceOptions": ["Rocket", "Airship", "Glider", "Submarine"],
-    "image": {"url": "https://loremflickr.com/800/600/rocket,space?lock=21710", "alt": "Rocket image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Soyuz_TMA-9_launch.jpg", "alt": "Rocket image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-trident",
@@ -12474,7 +12474,7 @@
     "question": "This three-pronged weapon is strongly linked to which Greek sea god?",
     "canonicalAnswer": "Poseidon",
     "multipleChoiceOptions": ["Zeus", "Poseidon", "Ares", "Hermes"],
-    "image": {"url": "https://loremflickr.com/800/600/trident?lock=21801", "alt": "Trident image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Trident.svg", "alt": "Trident image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-labyrinth",
@@ -12485,7 +12485,7 @@
     "question": "A maze-like structure in Greek myth is best known as what?",
     "canonicalAnswer": "Labyrinth",
     "multipleChoiceOptions": ["Labyrinth", "Oracle", "Agora", "Acropolis"],
-    "image": {"url": "https://loremflickr.com/800/600/labyrinth?lock=21802", "alt": "Labyrinth image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Labyrinth_(simple).svg", "alt": "Labyrinth image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-thunderbolt",
@@ -12496,7 +12496,7 @@
     "question": "A thunderbolt is the signature weapon of which Greek god?",
     "canonicalAnswer": "Zeus",
     "multipleChoiceOptions": ["Zeus", "Hades", "Apollo", "Hephaestus"],
-    "image": {"url": "https://loremflickr.com/800/600/thunderbolt?lock=21803", "alt": "Thunderbolt image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Lightning_Bolt.svg", "alt": "Thunderbolt image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-phoenix",
@@ -12507,7 +12507,7 @@
     "question": "Which mythical bird is famous for rising from ashes?",
     "canonicalAnswer": "Phoenix",
     "multipleChoiceOptions": ["Phoenix", "Griffin", "Harpy", "Roc"],
-    "image": {"url": "https://loremflickr.com/800/600/phoenix,bird?lock=21804", "alt": "Phoenix image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Phoenix-Fabelwesen.jpg", "alt": "Phoenix image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-dragon",
@@ -12518,7 +12518,7 @@
     "question": "Which legendary reptilian creature is suggested by this image clue?",
     "canonicalAnswer": "Dragon",
     "multipleChoiceOptions": ["Dragon", "Hydra", "Basilisk", "Wyvern"],
-    "image": {"url": "https://loremflickr.com/800/600/dragon?lock=21805", "alt": "Dragon image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dragon_Chinese.svg", "alt": "Dragon image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-sphinx",
@@ -12529,7 +12529,7 @@
     "question": "Which riddle-asking creature with a lion body is represented here?",
     "canonicalAnswer": "Sphinx",
     "multipleChoiceOptions": ["Sphinx", "Manticore", "Chimera", "Griffin"],
-    "image": {"url": "https://loremflickr.com/800/600/sphinx?lock=21806", "alt": "Sphinx image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Great_Sphinx_of_Giza_-_20080716a.jpg", "alt": "Sphinx image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-valkyrie",
@@ -12540,7 +12540,7 @@
     "question": "In Norse myth, a warrior maiden who chooses slain fighters is called what?",
     "canonicalAnswer": "Valkyrie",
     "multipleChoiceOptions": ["Valkyrie", "Norn", "Muse", "Fury"],
-    "image": {"url": "https://loremflickr.com/800/600/valkyrie?lock=21807", "alt": "Valkyrie image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Valkyrie_by_Peter_Nicolai_Arbo.jpg", "alt": "Valkyrie image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-mermaid",
@@ -12551,7 +12551,7 @@
     "question": "Which half-human, half-fish figure is represented by this sea legend clue?",
     "canonicalAnswer": "Mermaid",
     "multipleChoiceOptions": ["Mermaid", "Siren", "Nereid", "Selkie"],
-    "image": {"url": "https://loremflickr.com/800/600/mermaid?lock=21808", "alt": "Mermaid image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mermaid_statue_Copenhagen.jpg", "alt": "Mermaid image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-minotaur",
@@ -12562,7 +12562,7 @@
     "question": "Which bull-headed figure lived at the center of the Labyrinth?",
     "canonicalAnswer": "Minotaur",
     "multipleChoiceOptions": ["Minotaur", "Centaur", "Satyr", "Cyclops"],
-    "image": {"url": "https://loremflickr.com/800/600/minotaur?lock=21809", "alt": "Minotaur image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Minotaur.jpg", "alt": "Minotaur image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-unicorn",
@@ -12573,7 +12573,7 @@
     "question": "Which horned horse-like creature is suggested by this image clue?",
     "canonicalAnswer": "Unicorn",
     "multipleChoiceOptions": ["Unicorn", "Pegasus", "Hippocampus", "Kelpie"],
-    "image": {"url": "https://loremflickr.com/800/600/unicorn?lock=21810", "alt": "Unicorn image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Unicorn_(PSF).png", "alt": "Unicorn image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-paintbrush",
@@ -12584,7 +12584,7 @@
     "question": "Which artist's tool is represented by this image clue?",
     "canonicalAnswer": "Paintbrush",
     "multipleChoiceOptions": ["Palette knife", "Paintbrush", "Charcoal stick", "Stylus"],
-    "image": {"url": "https://loremflickr.com/800/600/paintbrush?lock=21901", "alt": "Paintbrush image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Paintbrushes.jpg", "alt": "Paintbrush image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-guitar",
@@ -12595,7 +12595,7 @@
     "question": "Which string instrument is shown by this music clue?",
     "canonicalAnswer": "Guitar",
     "multipleChoiceOptions": ["Guitar", "Violin", "Mandolin", "Banjo"],
-    "image": {"url": "https://loremflickr.com/800/600/guitar?lock=21902", "alt": "Guitar image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Acoustic_guitar.jpg", "alt": "Guitar image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-ballet",
@@ -12606,7 +12606,7 @@
     "question": "Which dance form is suggested by this pointe-shoe image?",
     "canonicalAnswer": "Ballet",
     "multipleChoiceOptions": ["Ballet", "Tap dance", "Flamenco", "Ballroom"],
-    "image": {"url": "https://loremflickr.com/800/600/ballet,pointe?lock=21903", "alt": "Ballet image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ballet_shoes.jpg", "alt": "Ballet image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-graffiti",
@@ -12617,7 +12617,7 @@
     "question": "Spray-painted public wall art like this is usually called what?",
     "canonicalAnswer": "Graffiti",
     "multipleChoiceOptions": ["Graffiti", "Fresco", "Mosaic", "Etching"],
-    "image": {"url": "https://loremflickr.com/800/600/graffiti?lock=21904", "alt": "Graffiti image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Graffiti_in_Berlin.jpg", "alt": "Graffiti image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-trumpet",
@@ -12628,7 +12628,7 @@
     "question": "Which brass instrument is represented by this image clue?",
     "canonicalAnswer": "Trumpet",
     "multipleChoiceOptions": ["Trumpet", "Trombone", "French horn", "Cornet"],
-    "image": {"url": "https://loremflickr.com/800/600/trumpet?lock=21905", "alt": "Trumpet image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Trumpet_1.jpg", "alt": "Trumpet image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-pottery",
@@ -12639,7 +12639,7 @@
     "question": "Shaping clay into vessels belongs most directly to which craft?",
     "canonicalAnswer": "Pottery",
     "multipleChoiceOptions": ["Pottery", "Printmaking", "Weaving", "Calligraphy"],
-    "image": {"url": "https://loremflickr.com/800/600/pottery?lock=21906", "alt": "Pottery image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Potter_at_work%2C_Jaura%2C_Madhya_Pradesh%2C_India.jpg", "alt": "Pottery image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-sculpture",
@@ -12650,7 +12650,7 @@
     "question": "Three-dimensional carved or modeled artwork is called what?",
     "canonicalAnswer": "Sculpture",
     "multipleChoiceOptions": ["Sculpture", "Collage", "Watercolor", "Lithograph"],
-    "image": {"url": "https://loremflickr.com/800/600/sculpture?lock=21907", "alt": "Sculpture image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/David_von_Michelangelo.jpg", "alt": "Sculpture image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-piano",
@@ -12661,7 +12661,7 @@
     "question": "Which keyboard instrument is represented by this music image?",
     "canonicalAnswer": "Piano",
     "multipleChoiceOptions": ["Piano", "Harpsichord", "Organ", "Synthesizer"],
-    "image": {"url": "https://loremflickr.com/800/600/piano?lock=21908", "alt": "Piano image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Piano.jpg", "alt": "Piano image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-mural",
@@ -12672,7 +12672,7 @@
     "question": "A large artwork painted directly on a wall is called what?",
     "canonicalAnswer": "Mural",
     "multipleChoiceOptions": ["Mural", "Portrait", "Triptych", "Still life"],
-    "image": {"url": "https://loremflickr.com/800/600/mural?lock=21909", "alt": "Mural image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Belfast_Mural.jpg", "alt": "Mural image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-opera-stage",
@@ -12683,6 +12683,6 @@
     "question": "This staged classical singing performance is most likely which art form?",
     "canonicalAnswer": "Opera",
     "multipleChoiceOptions": ["Opera", "Ballet", "Oratorio", "Musical theater"],
-    "image": {"url": "https://loremflickr.com/800/600/opera,stage?lock=21910", "alt": "Opera stage image clue", "credit": "LoremFlickr"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Opera_Garnier_Grand_Escalier.jpg", "alt": "Opera stage image clue", "credit": "Wikimedia Commons"}
   }
 ]
