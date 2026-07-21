@@ -1588,6 +1588,75 @@ async function getInventoryAuthHeaders(options = {}) {
   }
 }
 
+function getInventoryAuthHeadersSync(options = {}) {
+  const session = options.session || state.supabaseSession;
+  const token = String(session?.access_token || "").trim();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function getCoveredCoinOpsForInventoryQueue(userId = getUserInventoryStorageId()) {
+  return loadUserInventoryQueue(userId)
+    .filter((op) => op?.type === "coin" && !op.mode && normalizeInventoryOpId(op.id))
+    .map((op) => ({
+      id: normalizeInventoryOpId(op.id),
+      delta: Math.floor(Number(op.delta) || 0)
+    }))
+    .filter((op) => op.id && op.delta);
+}
+
+function getKeepaliveInventoryOps(userId, priorityOps = []) {
+  const seenIds = new Set();
+  return [...(Array.isArray(priorityOps) ? priorityOps : []), ...loadUserInventoryQueue(userId)]
+    .filter((op) => op && typeof op === "object")
+    .map((op) => ({ ...op, id: normalizeInventoryOpId(op.id) }))
+    .filter((op) => {
+      if (!op.id || !op.type || seenIds.has(op.id)) {
+        return false;
+      }
+      seenIds.add(op.id);
+      return true;
+    });
+}
+
+function sendUserInventoryQueueKeepalive(user, options = {}) {
+  const userId = getUserInventoryStorageId(user || options.user || state.supabaseUser);
+  if (!userId || typeof fetch !== "function") {
+    return false;
+  }
+  const ops = getKeepaliveInventoryOps(userId, options.priorityOps).slice(0, 100);
+  if (!ops.length) {
+    return false;
+  }
+  let batch = [];
+  let body = "";
+  for (const op of ops) {
+    const nextBatch = [...batch, op];
+    const nextBody = JSON.stringify({ userId, ops: nextBatch });
+    if (nextBody.length > 60000 && batch.length) {
+      break;
+    }
+    batch = nextBatch;
+    body = nextBody;
+  }
+  if (!batch.length || !body) {
+    return false;
+  }
+  try {
+    void fetch("/api/user/inventory/ops", {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+        ...getInventoryAuthHeadersSync(options)
+      },
+      body
+    }).catch(() => {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function flushUserInventoryQueue(options = {}) {
   const userId = options.userId || getUserInventoryStorageId(options.user || state.supabaseUser);
   if (!userId) {
@@ -1671,7 +1740,8 @@ function flushPendingUserInventoryBeforePageExit() {
     return;
   }
   const session = state.supabaseSession;
-  enqueueCurrentUserInventoryStateForUser(user);
+  const stateSync = enqueueCurrentUserInventoryStateForUser(user, { includeOps: true });
+  sendUserInventoryQueueKeepalive(user, { session, priorityOps: stateSync?.ops || [] });
   void flushPendingUserInventoryWrites({ user, session, keepalive: true });
   void flushPendingUserInventoryMutations({ user, session, keepalive: true });
 }
@@ -1805,7 +1875,25 @@ function getInventoryStateOpsFromInventory(inventory = {}, options = {}) {
   const prefix = normalizeInventoryKey(options.prefix || "state") || "state";
   const achievements = inventory.achievements && typeof inventory.achievements === "object" ? inventory.achievements : {};
   const progress = inventory.achievementProgress && typeof inventory.achievementProgress === "object" ? inventory.achievementProgress : {};
+  const coins = Math.max(0, Math.floor(Number(inventory.coins) || 0));
+  const coveredCoinOps = (Array.isArray(options.coveredCoinOps) ? options.coveredCoinOps : [])
+    .map((op) => ({
+      id: normalizeInventoryOpId(op?.id),
+      delta: Math.floor(Number(op?.delta) || 0)
+    }))
+    .filter((op) => op.id && op.delta)
+    .slice(0, 200);
   const ops = [];
+  if (coins > 0 || coveredCoinOps.length) {
+    ops.push({
+      id: `${prefix}:${userId}:coins:${coins}:${hashInventoryPayload(coveredCoinOps)}`,
+      type: "coin",
+      mode: "reconcile",
+      value: coins,
+      reason: "state-sync",
+      coveredCoinOps
+    });
+  }
   [...new Set((Array.isArray(inventory.cosmetics) ? inventory.cosmetics : [])
     .map(normalizeInventoryKey)
     .filter(Boolean))].forEach((key) => {
@@ -1848,14 +1936,20 @@ function getInventoryStateOpsFromInventory(inventory = {}, options = {}) {
   return ops;
 }
 
-function enqueueCurrentUserInventoryStateForUser(user = state.supabaseUser) {
+function enqueueCurrentUserInventoryStateForUser(user = state.supabaseUser, options = {}) {
   const snapshot = getLocalUserInventorySnapshot(user);
   if (!snapshot) {
     return null;
   }
+  const userId = getUserInventoryStorageId(user);
+  const coveredCoinOps = getCoveredCoinOpsForInventoryQueue(userId);
+  const ops = getInventoryStateOpsFromInventory(snapshot, {
+    prefix: "state",
+    coveredCoinOps
+  });
   writeUserInventoryCache(snapshot);
-  enqueueUserInventoryOpsForUser(user, getInventoryStateOpsFromInventory(snapshot, { prefix: "state" }));
-  return snapshot;
+  enqueueUserInventoryOpsForUser(user, ops);
+  return options.includeOps ? { snapshot, ops } : snapshot;
 }
 
 function isServerInventoryEmpty(inventory = {}) {

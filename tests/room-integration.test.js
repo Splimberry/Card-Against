@@ -1342,6 +1342,45 @@ async function testUserInventoryOpsAreIdempotent() {
   assert.equal(fetched.payload.inventory.coinTransactions.length, 1);
 }
 
+async function testUserInventoryCoinReconcilePersistsExitBalance() {
+  const userId = "inventory-user-coin-reconcile";
+  const seed = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [{ id: "coin-reconcile-seed", type: "coin", delta: 100, reason: "seed" }]
+  });
+  assert.equal(seed.response.status, 200, seed.payload.error);
+  assert.equal(seed.payload.inventory.coins, 100);
+
+  const reconcile = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [{
+      id: "state-coin-reconcile-150",
+      type: "coin",
+      mode: "reconcile",
+      value: 150,
+      reason: "state-sync",
+      coveredCoinOps: [{ id: "pending-round-win", delta: 50 }]
+    }]
+  });
+  assert.equal(reconcile.response.status, 200, reconcile.payload.error);
+  assert.equal(reconcile.payload.inventory.coins, 150);
+
+  const replay = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [{ id: "pending-round-win", type: "coin", delta: 50, reason: "round-win" }]
+  });
+  assert.equal(replay.response.status, 200, replay.payload.error);
+  assert.equal(replay.payload.inventory.coins, 150);
+  assert.equal(replay.payload.skipped[0].reason, "already-applied");
+
+  const lower = await request("POST", "/api/user/inventory/ops", {
+    userId,
+    ops: [{ id: "state-coin-reconcile-120", type: "coin", mode: "max", value: 120, reason: "state-sync" }]
+  });
+  assert.equal(lower.response.status, 200, lower.payload.error);
+  assert.equal(lower.payload.inventory.coins, 150);
+}
+
 async function testUserInventoryPurchaseAndUnlockRowsPersist() {
   const userId = "inventory-user-purchase";
   const { response, payload } = await request("POST", "/api/user/inventory/ops", {
@@ -1695,6 +1734,7 @@ async function main() {
   await testRoomModerationEndpointKicksBot();
   await testHostCloseEndpointDeletesRoom();
   await testUserInventoryOpsAreIdempotent();
+  await testUserInventoryCoinReconcilePersistsExitBalance();
   await testUserInventoryPurchaseAndUnlockRowsPersist();
   await testUserInventoryEconomyValuesUseServerCatalog();
   await testUserInventoryPurchaseEndpointUsesServerCatalog();

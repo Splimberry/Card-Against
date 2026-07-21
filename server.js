@@ -1344,15 +1344,38 @@ function applyUserInventoryOp(inventory, rawOp) {
   const now = Date.now();
   let applied = false;
   if (type === "coin") {
-    const delta = clampInventoryDelta(op.delta);
-    if (!delta) {
-      return { applied: false, id, reason: "empty-delta" };
+    const mode = String(op.mode || "").trim().toLowerCase();
+    if (mode === "max" || mode === "reconcile") {
+      const value = clampServerNumber(op.value, 0, 1_000_000_000, inventory.coins);
+      const coveredCoinOps = Array.isArray(op.coveredCoinOps) ? op.coveredCoinOps.slice(0, 200) : [];
+      const coveredDelta = coveredCoinOps.reduce((total, coveredOp) => {
+        const coveredId = normalizeInventoryOpId(coveredOp?.id);
+        if (!coveredId || coveredId === id || inventory.appliedOps[coveredId]) {
+          return total;
+        }
+        inventory.appliedOps[coveredId] = now;
+        return total + clampInventoryDelta(coveredOp?.delta);
+      }, 0);
+      const reconciledBalance = Math.max(0, Math.floor(Number(inventory.coins) || 0) + coveredDelta);
+      const targetBalance = Math.max(reconciledBalance, value);
+      const delta = targetBalance - Math.max(0, Math.floor(Number(inventory.coins) || 0));
+      if (delta) {
+        applyCoinTransaction(inventory, id, delta, op.reason || "state-sync", now);
+      } else {
+        inventory.coins = targetBalance;
+      }
+      applied = true;
+    } else {
+      const delta = clampInventoryDelta(op.delta);
+      if (!delta) {
+        return { applied: false, id, reason: "empty-delta" };
+      }
+      if (inventory.coins + delta < 0) {
+        return { applied: false, id, reason: "insufficient-coins" };
+      }
+      applyCoinTransaction(inventory, id, delta, op.reason || "adjustment", now);
+      applied = true;
     }
-    if (inventory.coins + delta < 0) {
-      return { applied: false, id, reason: "insufficient-coins" };
-    }
-    applyCoinTransaction(inventory, id, delta, op.reason || "adjustment", now);
-    applied = true;
   } else if (type === "purchase-cosmetic") {
     const key = normalizeInventoryKey(op.key);
     const catalogItem = inventoryShopCatalog.get(key);
