@@ -3034,14 +3034,43 @@ function normalizeRoomGame(game) {
       setup = null;
     }
   }
+  const matchSettings = game.matchSettings && typeof game.matchSettings === "object"
+    ? normalizeRoomGameSettings(game.matchSettings)
+    : game.settings && typeof game.settings === "object"
+      ? normalizeRoomGameSettings(game.settings)
+      : null;
 
   return {
     matchId: String(game.matchId || "").slice(0, 80),
     status: String(game.status || "playing").slice(0, 32),
     round: clampServerNumber(game.round, 1, 100, 1),
     setup,
+    matchSettings,
     powerState: normalizeRoomPowerState(game.powerState),
     updatedAt: clampServerNumber(game.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
+  };
+}
+
+function normalizeRoomGameSettings(settings = {}) {
+  const source = settings && typeof settings === "object" ? settings : {};
+  const classicMode = Boolean(source.classicMode);
+  const enabledThemes = Array.isArray(source.enabledThemes)
+    ? source.enabledThemes.map((theme) => String(theme).trim()).filter((theme) => triviaThemes.includes(theme)).slice(0, triviaThemes.length)
+    : [];
+  return {
+    rounds: clampServerNumber(source.rounds, 1, 10, 10),
+    timerSeconds: clampServerNumber(source.timerSeconds, 10, 60, 30),
+    maxPlayers: clampServerNumber(source.maxPlayers, 2, 10, 5),
+    harsh: classicMode ? false : Boolean(source.harsh),
+    chaos: classicMode ? false : Boolean(source.chaos),
+    timeMoney: classicMode ? false : Boolean(source.timeMoney),
+    amplified: classicMode ? false : Boolean(source.amplified),
+    wildFire: classicMode ? false : Boolean(source.wildFire),
+    partyMayhem: classicMode ? false : Boolean(source.partyMayhem),
+    classicMode,
+    randomModifiers: classicMode ? false : Boolean(source.randomModifiers),
+    autoAdvance: source.autoAdvance !== false,
+    enabledThemes: enabledThemes.length ? enabledThemes : [...triviaThemes]
   };
 }
 

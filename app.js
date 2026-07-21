@@ -3860,6 +3860,7 @@ function normalizeSetupPayload(setup) {
     tone: "fair"
   };
   const image = setup.image && typeof setup.image === "object" ? setup.image : {};
+  const triviaTheme = String(setup.triviaTheme || setup.theme || "Mixed Trivia").trim();
 
   return {
     id: String(setup.id || "").trim(),
@@ -3869,7 +3870,8 @@ function normalizeSetupPayload(setup) {
     difficulty: ["easy", "medium", "hard"].includes(String(setup.difficulty || "").toLowerCase())
       ? String(setup.difficulty).toLowerCase()
       : "medium",
-    triviaTheme: String(setup.theme || "Mixed Trivia").trim(),
+    triviaTheme,
+    theme: triviaTheme,
     canonicalAnswer: String(setup.canonicalAnswer || "").trim(),
     acceptedAnswers: Array.isArray(setup.acceptedAnswers)
       ? setup.acceptedAnswers.map((answer) => String(answer).trim()).filter(Boolean).slice(0, 10)
@@ -10109,6 +10111,90 @@ function mergeRoomSettingsFresh(currentSettings = {}, incomingSettings = {}, pay
   };
 }
 
+function getRoomMatchSettingsPayload(settings = state.roomSettings) {
+  const source = settings && typeof settings === "object" ? settings : {};
+  const enabledThemes = normalizeCachedThemes(source.enabledThemes);
+  return {
+    rounds: clampNumber(source.rounds, 1, 10, 10),
+    timerSeconds: clampNumber(source.timerSeconds, 10, 60, 30),
+    maxPlayers: clampNumber(source.maxPlayers, 2, 10, 5),
+    harsh: Boolean(source.harsh),
+    chaos: Boolean(source.chaos),
+    timeMoney: Boolean(source.timeMoney),
+    amplified: Boolean(source.amplified),
+    wildFire: Boolean(source.wildFire),
+    partyMayhem: Boolean(source.partyMayhem),
+    classicMode: Boolean(source.classicMode),
+    randomModifiers: Boolean(source.randomModifiers),
+    autoAdvance: source.autoAdvance !== false,
+    enabledThemes: enabledThemes.length ? enabledThemes : [...triviaThemes],
+    private: Boolean(source.private),
+    code: String(source.code || state.roomSettings.code || "").trim().toUpperCase()
+  };
+}
+
+function syncRoomMatchStateFromSettings(settings = state.roomSettings, options = {}) {
+  if (!settings || typeof settings !== "object") {
+    return false;
+  }
+  const roomSettings = getRoomMatchSettingsPayload(settings);
+  const activeRoomMatch = isRoomMode() && !elements.gameStage.classList.contains("hidden") && !state.matchEnded;
+  const nextMaxRounds = activeRoomMatch
+    ? Math.max(roomSettings.rounds, Number(state.round) || 1)
+    : roomSettings.rounds;
+  const nextTimerSeconds = roomSettings.timerSeconds;
+  const roundsChanged = Number(state.maxRounds) !== nextMaxRounds;
+  const timerChanged = Number(state.timerSeconds) !== nextTimerSeconds;
+
+  if (!roundsChanged && !timerChanged) {
+    return false;
+  }
+
+  state.maxRounds = nextMaxRounds;
+  state.timerSeconds = nextTimerSeconds;
+  if (roundsChanged) {
+    const previousProgress = Array.isArray(state.roundProgress) ? state.roundProgress : [];
+    state.roundProgress = Array.from({ length: state.maxRounds }, (_, index) => previousProgress[index] || "unanswered");
+  }
+  if (timerChanged && (!activeRoomMatch || options.resetTimer)) {
+    state.timerRemaining = state.timerSeconds;
+  }
+  if (options.render !== false && isRoomMode()) {
+    updateModeUi();
+    renderScore();
+  }
+  return true;
+}
+
+function getRoomGameMatchSettings(game = null) {
+  if (!game || typeof game !== "object") {
+    return null;
+  }
+  const settings = game.matchSettings && typeof game.matchSettings === "object"
+    ? game.matchSettings
+    : game.settings && typeof game.settings === "object"
+      ? game.settings
+      : null;
+  return settings ? getRoomMatchSettingsPayload(settings) : null;
+}
+
+function applyRoomGameMatchSettings(game = null, payload = {}, options = {}) {
+  const settings = getRoomGameMatchSettings(game);
+  if (!settings) {
+    return false;
+  }
+  const code = String(payload.code || payload.room?.code || state.roomSettings.code || settings.code || "").trim().toUpperCase();
+  const incomingSettings = { ...settings, code };
+  state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, incomingSettings, { ...payload, code, settings: incomingSettings });
+  if (state.joiningRoom) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      settings: mergeRoomSettingsFresh(state.joiningRoom.settings || {}, incomingSettings, { ...payload, code, settings: incomingSettings })
+    };
+  }
+  return syncRoomMatchStateFromSettings(state.roomSettings, options);
+}
+
 function applyRoomServerEvent(event = {}) {
   const type = String(event.type || "");
   const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
@@ -10281,6 +10367,7 @@ function applyRealtimeRoomSettings(payload = {}) {
   if (code === state.roomSettings.code && hasActiveRoomContext()) {
     if (settings && settingsAreFresh) {
       state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, settings, { ...payload, code });
+      syncRoomMatchStateFromSettings(state.roomSettings);
       syncRoomControls();
     }
     if (state.joiningRoom) {
@@ -17568,6 +17655,23 @@ function focusAnswerControl() {
   elements.answerInput.focus();
 }
 
+function syncCurrentRoundSetupMetadata(setup) {
+  if (!setup || typeof setup !== "object") {
+    return;
+  }
+  const difficulty = normalizeDifficulty(setup.difficulty || state.questionDifficulty);
+  const theme = String(setup.triviaTheme || setup.theme || state.triviaTheme || "Mixed Trivia").trim();
+  state.questionDifficulty = difficulty;
+  state.triviaTheme = theme;
+  if (elements.questionThemeBadge) {
+    elements.questionThemeBadge.textContent = theme || "Mixed Trivia";
+  }
+  if (elements.questionDifficultyBadge) {
+    elements.questionDifficultyBadge.textContent = getDifficultyLabel(difficulty);
+    elements.questionDifficultyBadge.className = `difficulty-badge difficulty-${difficulty}`;
+  }
+}
+
 function applyRoundSetup(setup) {
   state.questionId = setup.id || "";
   state.blackCard = setup.blackCard;
@@ -20940,14 +21044,14 @@ function resetMatch(mode) {
   state.blackMarketPurchases = {};
   state.round = 1;
   state.maxRounds = mode === "room"
-    ? state.roomSettings.rounds
+    ? clampNumber(state.roomSettings.rounds, 1, 10, 10)
     : mode === "bots"
       ? getBotRoundCount()
     : mode === "local"
       ? 10
       : clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, state.maxRounds || 5);
   state.timerSeconds = mode === "room"
-    ? state.roomSettings.timerSeconds
+    ? clampNumber(state.roomSettings.timerSeconds, 10, 60, 30)
     : mode === "bots" || mode === "local"
       ? 30
       : clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds"), 10, 60, state.timerSeconds || 30);
@@ -21006,6 +21110,10 @@ async function startGame(mode) {
   playSound("click");
   clearRoomAutoResolve();
   stopRoomDirectoryPolling();
+  if (mode === "room") {
+    applyRoomGameMatchSettings(state.roomGame || state.joiningRoom?.game, { code: state.roomSettings.code }, { render: false, resetTimer: true });
+    syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
+  }
   resetMatch(mode);
   const matchToken = state.matchWorkToken;
   setHidden(elements.modeScreen, true);
@@ -21970,6 +22078,7 @@ function applyRoomDirectoryRoom(room) {
   }
   updateRoomEventRevision(room.revision);
   state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
+  syncRoomMatchStateFromSettings(state.roomSettings);
   state.roomParticipants = normalizeRoomParticipantsList(room.participants);
   syncRoomPlayersFromParticipants({ preserveMatchStats: state.currentRoomStatus === "in-progress" });
   applyLocalRoomSubmission();
@@ -21977,6 +22086,7 @@ function applyRoomDirectoryRoom(room) {
     mergeRoomChatMessages(room.chat);
   }
   state.roomGame = room.game && typeof room.game === "object" ? room.game : null;
+  applyRoomGameMatchSettings(state.roomGame, room);
   applyRoomGamePowerState(state.roomGame);
   state.joiningRoom = state.joiningRoom ? room : state.joiningRoom;
   syncRoomSubmissionsFromParticipants();
@@ -22030,11 +22140,13 @@ function publishRoomRoundSetup(setup) {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !setup) {
     return;
   }
+  const syncedSetup = normalizeSetupPayload(setup);
   state.roomGame = {
     matchId: state.roomGame?.matchId || `${state.roomSettings.code}-${Date.now()}`,
     status: "playing",
     round: state.round,
-    setup,
+    setup: syncedSetup,
+    matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
     powerState: getRoomPowerStatePayload(),
     updatedAt: Date.now()
   };
@@ -22072,6 +22184,7 @@ function publishRoomRoundAdvancing(round = state.round) {
   broadcastRealtimeRoomChange("round-advancing", state.roomSettings.code, {
     status: "in-progress",
     round: Number(round) || state.round,
+    matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
     updatedAt: Date.now()
   });
 }
@@ -22220,6 +22333,7 @@ function startJoinedRoomMatchFromRealtime(payload = {}, game = null) {
   }
   const sourceRoom = payload.room && typeof payload.room === "object" ? payload.room : state.joiningRoom;
   state.roomGame = game || sourceRoom?.game || state.roomGame;
+  applyRoomGameMatchSettings(state.roomGame, payload, { render: false, resetTimer: true });
   state.joiningRoom = {
     ...(state.joiningRoom || {}),
     ...(sourceRoom || {}),
@@ -22248,6 +22362,9 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   const nextRound = Number(payload.round || payload.nextRound) || 0;
   if (!nextRound || nextRound < Number(state.round)) {
     return false;
+  }
+  if (payload.matchSettings || payload.settings) {
+    applyRoomGameMatchSettings({ matchSettings: payload.matchSettings || payload.settings }, payload, { render: false, resetTimer: canStartFromLobby });
   }
   if (nextRound === Number(state.round) && elements.verdictPanel.classList.contains("hidden")) {
     updateRoomEventRevision(payload.revision);
@@ -22305,6 +22422,7 @@ function applyRealtimeRoundStarted(payload = {}) {
   if (!nextRound || nextRound < Number(state.round)) {
     return false;
   }
+  applyRoomGameMatchSettings(game, payload, { render: false, resetTimer: true });
   let setup;
   try {
     setup = normalizeSetupPayload(game.setup);
@@ -22333,6 +22451,7 @@ function applyRealtimeRoundStarted(payload = {}) {
     && elements.verdictPanel.classList.contains("hidden");
   if (alreadyShowingSetup) {
     state.roomGame = game;
+    syncCurrentRoundSetupMetadata(setup);
     applyRoomGamePowerState(state.roomGame);
     updateRoomEventRevision(payload.revision);
     return true;
@@ -22848,6 +22967,7 @@ async function joinHostedRoom(code, options = {}) {
     }
 
     state.roomSettings = { ...room.settings };
+    syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
     startRoomRealtime(state.roomSettings.code);
     state.joiningRoom = room;
     state.isSpectator = options.spectate || room.status !== "lobby";
