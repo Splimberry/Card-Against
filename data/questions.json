@@ -11605,7 +11605,7 @@
     "question": "This costume-style image clue is most associated with which pop-culture role?",
     "canonicalAnswer": "Superhero",
     "multipleChoiceOptions": ["Superhero", "Detective", "Pirate", "Wizard"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/San_Diego_Comic-Con_2011_-_superhero_cosplay.jpg", "alt": "Superhero image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Spider-Man_2011_San_Diego_Comic-Con_Cosplay.jpg", "alt": "Superhero image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-film-camera",
@@ -11616,7 +11616,7 @@
     "question": "Which entertainment medium is represented by this camera clue?",
     "canonicalAnswer": "Film",
     "multipleChoiceOptions": ["Theater", "Film", "Radio", "Podcasting"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arriflex_35_IIC_35mm_movie_camera.jpg", "alt": "Film camera image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arriflex_-_35mm_Movie_Camera_-_Kolkata_2012-10-09_1590.JPG", "alt": "Film camera image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-vinyl-record",
@@ -11649,7 +11649,7 @@
     "question": "This panel-based printed format is usually called what?",
     "canonicalAnswer": "Comic book",
     "multipleChoiceOptions": ["Comic book", "Storyboard", "Graphic memo", "Flipbook"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Comic_books_on_shelf.jpg", "alt": "Comic book image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fan_Expo_2013_-_Comics_(9669561784).jpg", "alt": "Comic book image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "popculture-imgmcq-red-carpet",
@@ -11693,7 +11693,7 @@
     "question": "This household screen is most directly tied to which broadcast medium?",
     "canonicalAnswer": "Television",
     "multipleChoiceOptions": ["Cinema", "Television", "Livestreaming", "Radio"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Philips_TV_Set.jpg", "alt": "Television image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Old_television_set.png", "alt": "Television image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-arcade-cabinet",
@@ -11704,7 +11704,7 @@
     "question": "This coin-operated game machine is usually called what?",
     "canonicalAnswer": "Arcade cabinet",
     "multipleChoiceOptions": ["Arcade cabinet", "Pinball plunger", "Server rack", "Console dock"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arcade_video_game_cabinet.jpg", "alt": "Arcade cabinet image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arcade_cabinet.png", "alt": "Arcade cabinet image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-joystick",
@@ -11715,7 +11715,7 @@
     "question": "Which input device is suggested by this gaming controller clue?",
     "canonicalAnswer": "Joystick",
     "multipleChoiceOptions": ["Trackball", "Joystick", "Steering wheel", "Light gun"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Joystick_black_red_petri_01.jpg", "alt": "Joystick image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Joystick_black_red_petri_01.svg", "alt": "Joystick image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-chessboard",
@@ -11726,7 +11726,7 @@
     "question": "This strategy-game board belongs to which classic game?",
     "canonicalAnswer": "Chess",
     "multipleChoiceOptions": ["Checkers", "Chess", "Go", "Backgammon"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Chess_board_opening_staunton.jpg", "alt": "Chessboard image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/ChessSet.jpg", "alt": "Chessboard image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-pixel-art",
@@ -11748,7 +11748,7 @@
     "question": "These numbered objects are most commonly used to randomize what in tabletop games?",
     "canonicalAnswer": "Dice rolls",
     "multipleChoiceOptions": ["Card drafts", "Dice rolls", "Token trades", "Board resets"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Roleplaying_dice.jpg", "alt": "Tabletop dice image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dice_(typical_role_playing_game_dice).jpg", "alt": "Tabletop dice image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-game-controller",
@@ -11770,7 +11770,7 @@
     "question": "Building programmable machines like this belongs to which tech hobby?",
     "canonicalAnswer": "Robotics",
     "multipleChoiceOptions": ["Cryptography", "Robotics", "Speedrunning", "Model painting"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Robot_at_RoboCup_2004.jpg", "alt": "Robotics image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Small_size_robocup.jpg", "alt": "Robotics image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-motherboard",
@@ -11781,7 +11781,7 @@
     "question": "The main circuit board inside many computers is called what?",
     "canonicalAnswer": "Motherboard",
     "multipleChoiceOptions": ["Motherboard", "Graphics card", "Power supply", "Heat sink"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Motherboard.jpg", "alt": "Motherboard image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/S479-Motherboard.jpg", "alt": "Motherboard image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-mechanical-keyboard",
@@ -11792,7 +11792,7 @@
     "question": "This clicky computer input device is popular with programmers and PC gamers. What is it?",
     "canonicalAnswer": "Mechanical keyboard",
     "multipleChoiceOptions": ["Mechanical keyboard", "MIDI controller", "Stream deck", "Drawing tablet"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mechanical_keyboard.jpg", "alt": "Mechanical keyboard image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mechanical_Keyboard.jpg", "alt": "Mechanical keyboard image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "gaming-imgmcq-circuit-board",
@@ -11803,7 +11803,7 @@
     "question": "The patterned electronic board in this clue is most generally called what?",
     "canonicalAnswer": "Circuit board",
     "multipleChoiceOptions": ["Circuit board", "Optical disc", "Cooling fan", "Battery cell"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Printed_circuit_board.jpg", "alt": "Circuit board image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Printed_Circuit_Board.jpg", "alt": "Circuit board image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "geohistory-imgmcq-eiffel-tower",
@@ -12188,7 +12188,7 @@
     "question": "Which rink sport uses sticks and a puck?",
     "canonicalAnswer": "Ice hockey",
     "multipleChoiceOptions": ["Field hockey", "Ice hockey", "Lacrosse", "Bandy"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ice_hockey_game.jpg", "alt": "Ice hockey image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/NHL_hockey.jpg", "alt": "Ice hockey image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "sports-imgmcq-table-tennis",
@@ -12287,7 +12287,7 @@
     "question": "Which pocket device is central to mobile internet culture?",
     "canonicalAnswer": "Smartphone",
     "multipleChoiceOptions": ["Smartphone", "E-reader", "Calculator", "Portable console"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Smartphone.jpg", "alt": "Smartphone image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/SmartPhone.jpg", "alt": "Smartphone image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-podcast",
@@ -12298,7 +12298,7 @@
     "question": "This microphone setup most strongly suggests which online audio format?",
     "canonicalAnswer": "Podcast",
     "multipleChoiceOptions": ["Podcast", "Webinar", "Blog post", "Newsletter"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Podcast_mic.jpg", "alt": "Podcast image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/USB-Microphone.jpg", "alt": "Podcast image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-hashtag-sign",
@@ -12331,7 +12331,7 @@
     "question": "Broadcasting video live to viewers online is usually called what?",
     "canonicalAnswer": "Livestreaming",
     "multipleChoiceOptions": ["Livestreaming", "Caching", "Sideloading", "Mirroring"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Livestreaming_setup.jpg", "alt": "Livestream image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Live_Stream_Video_Equipment_(51837785879).jpg", "alt": "Livestream image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-server-rack",
@@ -12342,7 +12342,7 @@
     "question": "Rows of machines like these are commonly found in what internet infrastructure?",
     "canonicalAnswer": "Data center",
     "multipleChoiceOptions": ["Data center", "Search bar", "Browser tab", "Mod queue"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Server_Rack.jpg", "alt": "Server rack image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rack001.jpg", "alt": "Server rack image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "internet-imgmcq-drone-camera",
@@ -12386,7 +12386,7 @@
     "question": "Preserved remains or traces of ancient life are called what?",
     "canonicalAnswer": "Fossils",
     "multipleChoiceOptions": ["Fossils", "Crystals", "Meteorites", "Sediments"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fossil.jpg", "alt": "Fossil image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fossil_trilobite_(128894561).jpg", "alt": "Fossil image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-volcano",
@@ -12419,7 +12419,7 @@
     "question": "Which common lab glassware item is shown by this clue?",
     "canonicalAnswer": "Beaker",
     "multipleChoiceOptions": ["Beaker", "Petri dish", "Burette", "Test tube rack"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Beaker.jpg", "alt": "Beaker image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/A_glass_beaker.jpg", "alt": "Beaker image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "science-imgmcq-neuron",
@@ -12551,7 +12551,7 @@
     "question": "Which half-human, half-fish figure is represented by this sea legend clue?",
     "canonicalAnswer": "Mermaid",
     "multipleChoiceOptions": ["Mermaid", "Siren", "Nereid", "Selkie"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mermaid_statue_Copenhagen.jpg", "alt": "Mermaid image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Edna_Hart_Little_Mermaid_Den_lille_havfrue_1915.jpg", "alt": "Mermaid image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "mythology-imgmcq-minotaur",
@@ -12661,7 +12661,7 @@
     "question": "Which keyboard instrument is represented by this music image?",
     "canonicalAnswer": "Piano",
     "multipleChoiceOptions": ["Piano", "Harpsichord", "Organ", "Synthesizer"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Piano.jpg", "alt": "Piano image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Two_pianos_-_grand_piano_and_upright_piano.jpg", "alt": "Piano image clue", "credit": "Wikimedia Commons"}
   },
   {
     "id": "artmusic-imgmcq-mural",
@@ -12683,6 +12683,6 @@
     "question": "This staged classical singing performance is most likely which art form?",
     "canonicalAnswer": "Opera",
     "multipleChoiceOptions": ["Opera", "Ballet", "Oratorio", "Musical theater"],
-    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/Opera_Garnier_Grand_Escalier.jpg", "alt": "Opera stage image clue", "credit": "Wikimedia Commons"}
+    "image": {"url": "https://commons.wikimedia.org/wiki/Special:FilePath/La_Traviata_at_Hamburgische_Staatsoper_2013_-_Photo_No_274_by_Monika_Rittershaus.jpg", "alt": "Opera stage image clue", "credit": "Wikimedia Commons"}
   }
 ]
