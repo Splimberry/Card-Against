@@ -1516,6 +1516,12 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
     rememberPendingInventoryMutation(mutation);
   }
   return trackUserInventoryWrite((async () => {
+    if (options.flushWritesBefore !== false) {
+      await flushPendingUserInventoryWrites({
+        user: { id: userId },
+        session: options.session
+      });
+    }
     const response = await fetch("/api/user/inventory/purchase", {
       method: "POST",
       keepalive: Boolean(options.keepalive),
@@ -1526,14 +1532,17 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
       body: JSON.stringify({ userId, type, id, opId: mutation.opId })
     });
     const result = await response.json().catch(() => ({}));
-    if (result.inventory) {
-      applyServerUserInventory(result.inventory);
-    }
     if (!response.ok) {
+      if (result.inventory && !loadUserInventoryQueue(userId).length) {
+        applyServerUserInventory(result.inventory);
+      }
       if ([400, 409].includes(response.status)) {
         forgetPendingInventoryMutation(userId, mutation.opId);
       }
       throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
+    }
+    if (result.inventory) {
+      applyServerUserInventory(result.inventory);
     }
     forgetPendingInventoryMutation(userId, mutation.opId);
     return result;
@@ -1799,7 +1808,7 @@ function applyServerUserInventory(inventory = {}) {
   }
 }
 
-function getInventoryMigrationOpsFromSnapshot(snapshot = {}, userId = getUserInventoryStorageId()) {
+function getInventoryFromUserStorageSnapshot(snapshot = {}, userId = getUserInventoryStorageId()) {
   const source = snapshot && typeof snapshot === "object" ? snapshot : {};
   const achievements = source.achievementProgressCache && typeof source.achievementProgressCache === "object"
     ? source.achievementProgressCache
@@ -1809,39 +1818,58 @@ function getInventoryMigrationOpsFromSnapshot(snapshot = {}, userId = getUserInv
     : Array.isArray(source.shopDisplayCache?.purchases)
       ? source.shopDisplayCache.purchases
       : [];
-  const ops = [];
-  const coins = Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0));
-  if (coins > 0) {
-    ops.push({ id: `migration:${userId}:coins`, type: "coin", delta: coins, reason: "migration" });
-  }
-  [...new Set(purchases.map(normalizeInventoryKey).filter(Boolean))].forEach((key) => {
-    ops.push({ id: `migration:${userId}:cosmetic:${key}`, type: "cosmetic", key });
-  });
-  Object.entries(achievements.unlocked || {}).forEach(([achievementId, record]) => {
-    const key = normalizeInventoryKey(achievementId);
-    if (key) {
-      ops.push({ id: `migration:${userId}:achievement:${key}`, type: "achievement", achievementId: key, record });
-    }
-  });
-  Object.entries(achievements.progress || {}).forEach(([key, value]) => {
-    const cleanKey = normalizeInventoryKey(key);
-    if (cleanKey) {
-      ops.push({ id: `migration:${userId}:progress:${cleanKey}`, type: "achievement-progress", key: cleanKey, value, mode: "max" });
-    }
-  });
-  [...new Set((achievements.claimedMilestones || []).map(normalizeInventoryKey).filter(Boolean))].forEach((milestoneId) => {
-    ops.push({ id: `migration:${userId}:milestone:${milestoneId}`, type: "milestone", milestoneId });
-  });
   const profile = source.profile && typeof source.profile === "object" ? source.profile : {};
-  if (profile.equippedAchievementId || profile.cardCustomization) {
-    ops.push({
-      id: `migration:${userId}:profile`,
-      type: "profile",
-      profile: {
-        equippedAchievementId: profile.equippedAchievementId || "",
-        cardCustomization: normalizeProfileCustomization(profile.cardCustomization || source.unlockedCosmeticsCache?.equipped || defaultProfileCustomization)
+  return {
+    userId,
+    coins: Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0)),
+    cosmetics: [...new Set(purchases.map(normalizeInventoryKey).filter(Boolean))],
+    achievements: achievements.unlocked && typeof achievements.unlocked === "object" ? achievements.unlocked : {},
+    achievementProgress: achievements.progress && typeof achievements.progress === "object" ? achievements.progress : {},
+    claimedMilestones: [...new Set((Array.isArray(achievements.claimedMilestones) ? achievements.claimedMilestones : [])
+      .map(normalizeInventoryKey)
+      .filter(Boolean))],
+    profile: {
+      equippedAchievementId: achievementTitleMap[profile.equippedAchievementId] ? profile.equippedAchievementId : "",
+      cardCustomization: normalizeProfileCustomization(profile.cardCustomization || source.unlockedCosmeticsCache?.equipped || defaultProfileCustomization)
+    },
+    updatedAt: source.updatedAt || Date.now()
+  };
+}
+
+function getInventoryMigrationOpsFromSnapshot(snapshot = {}, userId = getUserInventoryStorageId()) {
+  return getInventoryStateOpsFromInventory(getInventoryFromUserStorageSnapshot(snapshot, userId), {
+    userId,
+    prefix: "migration"
+  });
+}
+
+function enqueueInventoryRecoveryOpsForUser(user, sources = [], options = {}) {
+  const userId = getUserInventoryStorageId(user);
+  if (!userId) {
+    return [];
+  }
+  const coveredCoinOps = getCoveredCoinOpsForInventoryQueue(userId);
+  const seenIds = new Set(loadUserInventoryQueue(userId).map((op) => normalizeInventoryOpId(op.id)).filter(Boolean));
+  const ops = [];
+  sources.forEach((source, index) => {
+    if (!source || isServerInventoryEmpty(source)) {
+      return;
+    }
+    getInventoryStateOpsFromInventory(source, {
+      userId,
+      prefix: options.prefix || `recovery-${index + 1}`,
+      coveredCoinOps
+    }).forEach((op) => {
+      const id = normalizeInventoryOpId(op.id);
+      if (!id || seenIds.has(id)) {
+        return;
       }
+      seenIds.add(id);
+      ops.push(op);
     });
+  });
+  if (ops.length) {
+    enqueueUserInventoryOpsForUser(user, ops);
   }
   return ops;
 }
@@ -2030,18 +2058,51 @@ async function saveRemoteUserStorageSnapshot(snapshot = getUserStorageSnapshot()
 
 function getDisplayUserStorageSnapshot(snapshot = getUserStorageSnapshot()) {
   const source = snapshot && typeof snapshot === "object" ? snapshot : getUserStorageSnapshot();
+  const sourcePurchases = Array.isArray(source.unlockedCosmeticsCache?.purchases)
+    ? source.unlockedCosmeticsCache.purchases
+    : Array.isArray(source.shopDisplayCache?.purchases)
+      ? source.shopDisplayCache.purchases
+      : null;
+  const purchases = [...new Set([...(sourcePurchases || []), ...loadProfileShopPurchases()].map(normalizeInventoryKey).filter(Boolean))];
+  const achievements = source.achievementProgressCache && typeof source.achievementProgressCache === "object"
+    ? source.achievementProgressCache
+    : {};
+  const unlocked = achievements.unlocked && typeof achievements.unlocked === "object"
+    ? { ...loadUnlockedAchievements(), ...achievements.unlocked }
+    : loadUnlockedAchievements();
+  const localProgress = loadAchievementProgress();
+  const sourceProgress = achievements.progress && typeof achievements.progress === "object" ? achievements.progress : {};
+  const progress = { ...localProgress };
+  Object.entries(sourceProgress).forEach(([key, value]) => {
+    progress[key] = Math.max(
+      Math.max(0, Math.floor(Number(progress[key]) || 0)),
+      Math.max(0, Math.floor(Number(value) || 0))
+    );
+  });
+  const claimedMilestones = [...new Set([
+    ...(Array.isArray(achievements.claimedMilestones) ? achievements.claimedMilestones : []),
+    ...loadClaimedAchievementMilestones()
+  ].map(normalizeInventoryKey).filter(Boolean))];
+  const sourceCoins = Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0));
+  const localCoins = Math.max(0, Math.floor(Number(localStorage.getItem(currencyStorageKey)) || 0));
   return {
     ...source,
     currencyDisplayCache: {
-      coins: Math.max(0, Math.floor(Number(localStorage.getItem(currencyStorageKey)) || 0))
+      coins: Math.max(sourceCoins, localCoins)
     },
     unlockedCosmeticsCache: {
+      purchases,
       equipped: source.unlockedCosmeticsCache?.equipped || source.profile?.cardCustomization || defaultProfileCustomization
     },
     shopDisplayCache: {
+      purchases,
       catalogVersion: publicCatalogVersion
     },
-    achievementProgressCache: {}
+    achievementProgressCache: {
+      unlocked,
+      progress,
+      claimedMilestones
+    }
   };
 }
 
@@ -2072,10 +2133,12 @@ async function hydrateSignedInUserStorage(user) {
   let restoredSnapshot = false;
   setProfileLoading(true);
   let chosenSnapshot = null;
+  let localSnapshot = null;
+  let cachedInventory = null;
   try {
     state.userStorageHydrating = true;
     try {
-      const localSnapshot = loadUserStorageCacheForUser(user.id);
+      localSnapshot = loadUserStorageCacheForUser(user.id);
       const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
       chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
       if (chosenSnapshot) {
@@ -2089,10 +2152,25 @@ async function hydrateSignedInUserStorage(user) {
       state.userStorageHydrating = false;
     }
     try {
-      await flushPendingUserInventoryMutations({ user });
+      const userId = getUserInventoryStorageId(user);
+      cachedInventory = loadUserInventoryCache(user.id);
+      const hasUserScopedLocalState = localSnapshot?.userId === user.id
+        || cachedInventory?.userId === user.id
+        || loadUserInventoryQueue(userId).length > 0
+        || loadUserInventoryMutationQueue(userId).length > 0;
+      const recoverySources = [
+        cachedInventory,
+        getInventoryFromUserStorageSnapshot(localSnapshot, user.id),
+        getInventoryFromUserStorageSnapshot(chosenSnapshot, user.id)
+      ];
+      if (hasUserScopedLocalState) {
+        recoverySources.unshift(getLocalUserInventorySnapshot(user));
+      }
+      enqueueInventoryRecoveryOpsForUser(user, recoverySources);
       await flushPendingUserInventoryWrites({ user });
+      await flushPendingUserInventoryMutations({ user });
       let inventory = await fetchServerUserInventory(user);
-      const cachedInventory = loadUserInventoryCache(user.id);
+      cachedInventory = loadUserInventoryCache(user.id);
       let migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
       if (!migrationOps.length && isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
         migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId: user.id, prefix: "cache" });
