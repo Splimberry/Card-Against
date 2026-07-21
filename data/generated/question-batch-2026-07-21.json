@@ -1,0 +1,1991 @@
+[
+  {
+    "id": "popculture-exp2-hogwarts-sorting-ceremony",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "This talking hat is used during the first-year ceremony at which wizarding school?",
+    "canonicalAnswer": "Hogwarts",
+    "acceptedAnswers": [
+      "hogwarts",
+      "hogwarts school",
+      "hogwarts school of witchcraft and wizardry"
+    ],
+    "botCards": [
+      "Ilvermorny",
+      "Beauxbatons"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Talking_Wizard_Hat_of_Harry_Potter_world_choosing_the_best-fitting_house_of_magic_school_%28Hogwarts_Legacy%29.jpg/500px-Talking_Wizard_Hat_of_Harry_Potter_world_choosing_the_best-fitting_house_of_magic_school_%28Hogwarts_Legacy%29.jpg",
+      "alt": "A pointed brown wizard hat with folds resembling a face",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-exp2-ecto1-ambulance",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Before becoming the team vehicle, Ecto-1 was built from what kind of emergency vehicle?",
+    "canonicalAnswer": "Ambulance",
+    "acceptedAnswers": [
+      "ambulance",
+      "miller-meteor ambulance",
+      "cadillac ambulance"
+    ],
+    "botCards": [
+      "Taxi cab",
+      "Fire engine"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/4/47/Ectomobile.png",
+      "alt": "The Ectomobile vehicle from Ghostbusters",
+      "credit": "Wikipedia"
+    }
+  },
+  {
+    "id": "popculture-exp2-docbrown-delorean",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which eccentric scientist turns this car into a time machine?",
+    "canonicalAnswer": "Doc Brown",
+    "acceptedAnswers": [
+      "doc brown",
+      "doctor emmett brown",
+      "emmett brown"
+    ],
+    "botCards": [
+      "Marty McFly",
+      "Biff Tannen"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/DeLorean_Replica_Kovacs_Time_Machine.png/500px-DeLorean_Replica_Kovacs_Time_Machine.png",
+      "alt": "A DeLorean time machine replica based on Back to the Future",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-exp2-ingen-jurassic",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Jurassic Park lore, what biotechnology company cloned the dinosaurs?",
+    "canonicalAnswer": "InGen",
+    "acceptedAnswers": [
+      "ingen",
+      "international genetic technologies",
+      "international genetic technologies inc"
+    ],
+    "botCards": [
+      "Tyrell Corporation",
+      "Weyland-Yutani"
+    ],
+    "image": {
+      "url": "https://static.wikia.nocookie.net/jurassicpark/images/c/c6/JP-JuanitoRostagno.jpg/revision/latest?cb=20090430165419",
+      "alt": "A mosquito preserved inside amber from Jurassic Park",
+      "credit": "Jurassic Park Wiki"
+    }
+  },
+  {
+    "id": "popculture-exp2-squidgame-country",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "The survival drama associated with these guard outfits was produced in which country?",
+    "canonicalAnswer": "South Korea",
+    "acceptedAnswers": [
+      "south korea",
+      "republic of korea",
+      "korea"
+    ],
+    "botCards": [
+      "Japan",
+      "Thailand"
+    ],
+    "image": {
+      "url": "https://img.asmedia.epimg.net/resizer/v2/HODUMRVMCFESLNSMW4HNJ3Q26A.png?auth=2073e612b4eb92d7ea441abca5236548b3282f4491835448a939af94089acf95&width=1152&height=648&smart=true",
+      "alt": "Masked guards from Squid Game in pink uniforms",
+      "credit": "AS Media"
+    }
+  },
+  {
+    "id": "popculture-exp2-grogu-din-djarin",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In The Mandalorian, what is the name of the bounty hunter who protects Grogu?",
+    "canonicalAnswer": "Din Djarin",
+    "acceptedAnswers": [
+      "din djarin",
+      "mando",
+      "the mandalorian"
+    ],
+    "botCards": [
+      "Boba Fett",
+      "Cassian Andor"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/a/a0/Grogu_%28Star_Wars%29.jpg",
+      "alt": "Grogu from Star Wars The Mandalorian",
+      "credit": "Wikimedia / Lucasfilm promotional image"
+    }
+  },
+  {
+    "id": "popculture-exp2-bladerunner-director",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "Which director made the original 1982 cyberpunk film represented by this image?",
+    "canonicalAnswer": "Ridley Scott",
+    "acceptedAnswers": [
+      "ridley scott",
+      "sir ridley scott"
+    ],
+    "botCards": [
+      "James Cameron",
+      "Denis Villeneuve"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/4/49/Blade_Runner_spinner_flyby.png",
+      "alt": "A futuristic flying vehicle from Blade Runner over a dark cityscape",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-exp2-upside-down",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In Stranger Things, what is the dark alternate dimension connected to Hawkins called?",
+    "canonicalAnswer": "The Upside Down",
+    "acceptedAnswers": [
+      "upside down",
+      "the upside down"
+    ],
+    "botCards": [
+      "The Further",
+      "The Nether"
+    ]
+  },
+  {
+    "id": "popculture-exp2-xavier-school",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In X-Men stories, Professor Xavier trains young mutants at a school located in which U.S. state?",
+    "canonicalAnswer": "New York",
+    "acceptedAnswers": [
+      "new york",
+      "new york state"
+    ],
+    "botCards": [
+      "Massachusetts",
+      "California"
+    ]
+  },
+  {
+    "id": "gaming-exp2-minecraft-creator",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "Which programmer, often nicknamed Notch, originally created Minecraft?",
+    "canonicalAnswer": "Markus Persson",
+    "acceptedAnswers": [
+      "markus persson",
+      "notch"
+    ],
+    "botCards": [
+      "Gabe Newell",
+      "Sid Meier"
+    ],
+    "image": {
+      "url": "https://static.wikia.nocookie.net/minecraft_gamepedia/images/9/96/CreeperFaceArtwork.png",
+      "alt": "A pixelated green creature with four legs and a sad expression",
+      "credit": "Minecraft Wiki"
+    }
+  },
+  {
+    "id": "gaming-exp2-pokeball-color",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "On a standard Poké Ball, what color covers the top half?",
+    "canonicalAnswer": "Red",
+    "acceptedAnswers": [
+      "red"
+    ],
+    "botCards": [
+      "Blue",
+      "Green"
+    ],
+    "image": {
+      "url": "https://static0.gamerantimages.com/wordpress/wp-content/uploads/2024/09/every-type-of-poke-ball-in-pokemon-go.jpg?w=1600&h=900&fit=crop",
+      "alt": "Several Poké Ball devices from the Pokémon series",
+      "credit": "Bulbagarden Archives"
+    }
+  },
+  {
+    "id": "gaming-exp2-mario-one-up-color",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "In many Mario games, the 1-Up Mushroom associated with extra lives is usually what color?",
+    "canonicalAnswer": "Green",
+    "acceptedAnswers": [
+      "green"
+    ],
+    "botCards": [
+      "Red",
+      "Purple"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/6/61/Supermushroom.png",
+      "alt": "The red and white Super Mushroom power-up from the Super Mario series",
+      "credit": "Wikipedia"
+    }
+  },
+  {
+    "id": "gaming-exp2-pacman-year",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "The original arcade game Pac-Man was first released in what year?",
+    "canonicalAnswer": "1980",
+    "acceptedAnswers": [
+      "1980",
+      "nineteen eighty"
+    ],
+    "botCards": [
+      "1977",
+      "1985"
+    ],
+    "image": {
+      "url": "https://static.wikia.nocookie.net/pacman/images/1/11/Pinky_stock_art_sprite_pacman_website.png/revision/latest/scale-to-width/360?cb=20221230134650",
+      "alt": "A pink pixelated ghost character with big eyes looking left",
+      "credit": "Pac-Man Wiki"
+    }
+  },
+  {
+    "id": "gaming-exp2-portal-developer",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which game studio developed Portal and introduced this testing facility universe?",
+    "canonicalAnswer": "Valve",
+    "acceptedAnswers": [
+      "valve",
+      "valve corporation"
+    ],
+    "botCards": [
+      "Bethesda",
+      "id Software"
+    ],
+    "image": {
+      "url": "https://i1.theportalwiki.net/img/thumb/6/6b/Portal2_CompanionCube.png/600px-Portal2_CompanionCube.png",
+      "alt": "The Weighted Companion Cube from Portal 2",
+      "credit": "Portal Wiki"
+    }
+  },
+  {
+    "id": "gaming-exp2-fortnite-genre",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Fortnite is best known for popularizing which last-player-standing multiplayer genre?",
+    "canonicalAnswer": "Battle royale",
+    "acceptedAnswers": [
+      "battle royale",
+      "battle royal"
+    ],
+    "botCards": [
+      "MOBA",
+      "Real-time strategy"
+    ],
+    "image": {
+      "url": "https://static.wikia.nocookie.net/fortnite/images/d/d7/Battle_Bus_-*Vehicle*-_Fortnite.png/revision/latest/scale-to-width-down/536?cb=20210927140325",
+      "alt": "The Fortnite Battle Bus flying with a balloon",
+      "credit": "Fortnite Wiki"
+    }
+  },
+  {
+    "id": "gaming-exp2-hades-father",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Hades, Zagreus is trying to escape the realm ruled by which father?",
+    "canonicalAnswer": "Hades",
+    "acceptedAnswers": [
+      "hades"
+    ],
+    "botCards": [
+      "Zeus",
+      "Ares"
+    ],
+    "image": {
+      "url": "https://images.ctfassets.net/5owu3y35gz1g/5LpElH2nmE7iS4v593VJvo/55f74bd209f45dc179c5279926cb2ea5/hades_09-dec-2019_05.jpg?w=600&h=338&q=80",
+      "alt": "Zagreus from the game Hades",
+      "credit": "Supergiant Games media image"
+    }
+  },
+  {
+    "id": "gaming-exp2-lambda-wavelength",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "The Greek letter lambda, used in Half-Life branding, commonly represents what property of a wave in physics?",
+    "canonicalAnswer": "Wavelength",
+    "acceptedAnswers": [
+      "wavelength",
+      "wave length"
+    ],
+    "botCards": [
+      "Amplitude",
+      "Frequency"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Orange_lambda.svg/500px-Orange_lambda.svg.png",
+      "alt": "An orange lowercase lambda symbol associated with Half-Life",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-exp2-konami-code",
+    "type": "text",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "The classic Konami Code begins with which two directional inputs repeated twice?",
+    "canonicalAnswer": "Up",
+    "acceptedAnswers": [
+      "up",
+      "up up",
+      "up up down down"
+    ],
+    "botCards": [
+      "Left",
+      "A button"
+    ]
+  },
+  {
+    "id": "gaming-exp2-d20-rpg",
+    "type": "text",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "Which tabletop role-playing game is most famously associated with rolling a twenty-sided die called a d20?",
+    "canonicalAnswer": "Dungeons & Dragons",
+    "acceptedAnswers": [
+      "dungeons and dragons",
+      "dungeons & dragons",
+      "dnd",
+      "d&d"
+    ],
+    "botCards": [
+      "Warhammer 40,000",
+      "Magic: The Gathering"
+    ]
+  },
+  {
+    "id": "geohistory-exp2-eiffel-fair-year",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "This Paris landmark was built as the entrance arch for the World Fair held in what year?",
+    "canonicalAnswer": "1889",
+    "acceptedAnswers": [
+      "1889",
+      "eighteen eighty nine"
+    ],
+    "botCards": [
+      "1789",
+      "1900"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg/960px-Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg",
+      "alt": "The Eiffel Tower rising above Paris",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-taj-commissioner",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "Which Mughal emperor commissioned this mausoleum for Mumtaz Mahal?",
+    "canonicalAnswer": "Shah Jahan",
+    "acceptedAnswers": [
+      "shah jahan"
+    ],
+    "botCards": [
+      "Akbar",
+      "Aurangzeb"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Taj_Mahal_%28Edited%29.jpeg/500px-Taj_Mahal_%28Edited%29.jpeg",
+      "alt": "The Taj Mahal, a white marble mausoleum with a central dome and minarets",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-parthenon-goddess",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "The Parthenon was dedicated to which Greek goddess?",
+    "canonicalAnswer": "Athena",
+    "acceptedAnswers": [
+      "athena"
+    ],
+    "botCards": [
+      "Aphrodite",
+      "Hera"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/The_Parthenon_in_Athens.jpg/960px-The_Parthenon_in_Athens.jpg",
+      "alt": "The Parthenon on the Acropolis in Athens",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-stonehenge-plain",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "This prehistoric monument stands on which English plain?",
+    "canonicalAnswer": "Salisbury Plain",
+    "acceptedAnswers": [
+      "salisbury plain"
+    ],
+    "botCards": [
+      "Dartmoor",
+      "Bodmin Moor"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Stonehenge2007_07_30.jpg/960px-Stonehenge2007_07_30.jpg",
+      "alt": "Stonehenge, a ring of large prehistoric standing stones",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-christ-corcovado",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Christ the Redeemer stands on which mountain above Rio de Janeiro?",
+    "canonicalAnswer": "Corcovado",
+    "acceptedAnswers": [
+      "corcovado",
+      "mount corcovado"
+    ],
+    "botCards": [
+      "Sugarloaf Mountain",
+      "Mount Roraima"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Christ_the_Redeemer_-_Cristo_Redentor.jpg/500px-Christ_the_Redeemer_-_Cristo_Redentor.jpg",
+      "alt": "Christ the Redeemer statue overlooking Rio de Janeiro",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-panama-locks",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The Panama Canal raises and lowers ships using what kind of water-control structures?",
+    "canonicalAnswer": "Locks",
+    "acceptedAnswers": [
+      "locks",
+      "canal locks",
+      "lock gates"
+    ],
+    "botCards": [
+      "Aqueducts",
+      "Drawbridges"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Panama_Canal_Gatun_Locks_opening.jpg/500px-Panama_Canal_Gatun_Locks_opening.jpg",
+      "alt": "A ship passing through the Gatun Locks of the Panama Canal",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-machu-empire",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Machu Picchu was built by which Andean empire?",
+    "canonicalAnswer": "Inca Empire",
+    "acceptedAnswers": [
+      "inca",
+      "inca empire",
+      "incas"
+    ],
+    "botCards": [
+      "Aztec Empire",
+      "Maya civilization"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Machu_Picchu%2C_2023_%28012%29.jpg/960px-Machu_Picchu%2C_2023_%28012%29.jpg",
+      "alt": "Stone ruins of an ancient city built on a green mountain ridge surrounded by peaks",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-colosseum-games",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Roman Colosseum is most famously associated with public spectacles featuring which professional fighters?",
+    "canonicalAnswer": "Gladiators",
+    "acceptedAnswers": [
+      "gladiators",
+      "gladiator"
+    ],
+    "botCards": [
+      "Centurions",
+      "Senators"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Colosseo_2020.jpg/960px-Colosseo_2020.jpg",
+      "alt": "The stone ruins of a massive ancient Roman amphitheater under a blue sky",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-exp2-versailles-treaty",
+    "type": "text",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which 1919 treaty formally ended World War I between Germany and the Allied Powers?",
+    "canonicalAnswer": "Treaty of Versailles",
+    "acceptedAnswers": [
+      "treaty of versailles",
+      "versailles treaty"
+    ],
+    "botCards": [
+      "Treaty of Paris",
+      "Treaty of Tordesillas"
+    ]
+  },
+  {
+    "id": "geohistory-exp2-ottawa-capital",
+    "type": "text",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "What is the capital city of Canada?",
+    "canonicalAnswer": "Ottawa",
+    "acceptedAnswers": [
+      "ottawa"
+    ],
+    "botCards": [
+      "Toronto",
+      "Vancouver"
+    ]
+  },
+  {
+    "id": "animals-exp2-lion-scientific",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "What is the scientific species name of the lion?",
+    "canonicalAnswer": "Panthera leo",
+    "acceptedAnswers": [
+      "panthera leo"
+    ],
+    "botCards": [
+      "Panthera tigris",
+      "Felis catus"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/020_The_lion_king_Snyggve_in_the_Serengeti_National_Park_Photo_by_Giles_Laurent.jpg/500px-020_The_lion_king_Snyggve_in_the_Serengeti_National_Park_Photo_by_Giles_Laurent.jpg",
+      "alt": "A large male lion with a thick mane resting in grass",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-kangaroo-infant",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "A baby kangaroo is commonly called what?",
+    "canonicalAnswer": "Joey",
+    "acceptedAnswers": [
+      "joey"
+    ],
+    "botCards": [
+      "Calf",
+      "Kit"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Forester_kangaroo_%28Macropus_giganteus_tasmaniensis%29_juvenile_hopping_Esk_Valley.jpg/500px-Forester_kangaroo_%28Macropus_giganteus_tasmaniensis%29_juvenile_hopping_Esk_Valley.jpg",
+      "alt": "A large marsupial standing upright in a grassy field looking forward",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-capybara-continent",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Capybaras are native to which continent?",
+    "canonicalAnswer": "South America",
+    "acceptedAnswers": [
+      "south america"
+    ],
+    "botCards": [
+      "Australia",
+      "Africa"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/055_Capybara_swimming_in_Encontro_das_%C3%81guas_State_Park_Photo_by_Giles_Laurent.jpg/500px-055_Capybara_swimming_in_Encontro_das_%C3%81guas_State_Park_Photo_by_Giles_Laurent.jpg",
+      "alt": "A large blunt-muzzled brown rodent swimming through water",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-platypus-monotreme",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "The platypus belongs to which rare egg-laying mammal group?",
+    "canonicalAnswer": "Monotremes",
+    "acceptedAnswers": [
+      "monotreme",
+      "monotremes"
+    ],
+    "botCards": [
+      "Marsupials",
+      "Cetaceans"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Duck-billed_platypus_%28Ornithorhynchus_anatinus%29_Scottsdale.jpg/500px-Duck-billed_platypus_%28Ornithorhynchus_anatinus%29_Scottsdale.jpg",
+      "alt": "An animal swimming in water showing a flat duck-like bill and beaver-like tail",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-narwhal-tusk-tooth",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "A narwhal tusk is actually an elongated spiral what?",
+    "canonicalAnswer": "Tooth",
+    "acceptedAnswers": [
+      "tooth",
+      "canine tooth",
+      "tusk tooth"
+    ],
+    "botCards": [
+      "Horn",
+      "Antler"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/%D0%9D%D0%B0%D1%80%D0%B2%D0%B0%D0%BB_%D0%B2_%D1%80%D0%BE%D1%81%D1%81%D0%B8%D0%B9%D1%81%D0%BA%D0%BE%D0%B9_%D0%90%D1%80%D0%BA%D1%82%D0%B8%D0%BA%D0%B5.jpg/500px-%D0%9D%D0%B0%D1%80%D0%B2%D0%B0%D0%BB_%D0%B2_%D1%80%D0%BE%D1%81%D1%81%D0%B8%D0%B9%D1%81%D0%BA%D0%BE%D0%B9_%D0%90%D1%80%D0%BA%D1%82%D0%B8%D0%BA%D0%B5.jpg",
+      "alt": "A spotted whale breaching icy waters with a long straight horn-like tooth pointing forward",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-axolotl-lake",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Wild axolotls are famously associated with the lake system around which Mexican city?",
+    "canonicalAnswer": "Mexico City",
+    "acceptedAnswers": [
+      "mexico city",
+      "xochimilco",
+      "lake xochimilco"
+    ],
+    "botCards": [
+      "Guadalajara",
+      "Cancun"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f6/AxolotlBE.jpg",
+      "alt": "A pink aquatic creature with frilly red external gill stalks smiling underwater",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-komodo-country",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Komodo dragons are native to islands in which country?",
+    "canonicalAnswer": "Indonesia",
+    "acceptedAnswers": [
+      "indonesia"
+    ],
+    "botCards": [
+      "Philippines",
+      "Madagascar"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/202306_Varanus_komodoensis.jpg/500px-202306_Varanus_komodoensis.jpg",
+      "alt": "A massive gray-brown lizard walking on dusty ground",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-peregrine-hunt",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "A peregrine falcon reaches its highest speed during what steep hunting dive?",
+    "canonicalAnswer": "Stoop",
+    "acceptedAnswers": [
+      "stoop",
+      "hunting stoop",
+      "dive"
+    ],
+    "botCards": [
+      "Hover",
+      "Glide"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Falco_peregrinus_m_Humber_Bay_Park_Toronto.jpg/500px-Falco_peregrinus_m_Humber_Bay_Park_Toronto.jpg",
+      "alt": "A peregrine falcon perched with gray wings and barred white underparts",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-exp2-amphibian-group",
+    "type": "text",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Frogs, salamanders, and caecilians all belong to which vertebrate class?",
+    "canonicalAnswer": "Amphibians",
+    "acceptedAnswers": [
+      "amphibians",
+      "amphibia"
+    ],
+    "botCards": [
+      "Reptiles",
+      "Mammals"
+    ]
+  },
+  {
+    "id": "animals-exp2-galapagos-finches",
+    "type": "text",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Darwin’s famous finches are most strongly associated with which Pacific island chain?",
+    "canonicalAnswer": "Galapagos Islands",
+    "acceptedAnswers": [
+      "galapagos",
+      "galapagos islands"
+    ],
+    "botCards": [
+      "Canary Islands",
+      "Hawaiian Islands"
+    ]
+  },
+  {
+    "id": "fooddrinks-exp2-sushi-seaweed",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "The dark edible seaweed wrapped around many sushi rolls is commonly called what?",
+    "canonicalAnswer": "Nori",
+    "acceptedAnswers": [
+      "nori",
+      "seaweed"
+    ],
+    "botCards": [
+      "Wakame",
+      "Kombu"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Typical_japanese_sushi_set.jpg/500px-Typical_japanese_sushi_set.jpg",
+      "alt": "Sliced rolls of rice wrapped in dark seaweed filled with salmon and avocado",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-croissant-dough",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Croissants are made from what layered pastry technique involving butter folded into dough?",
+    "canonicalAnswer": "Lamination",
+    "acceptedAnswers": [
+      "lamination",
+      "laminated dough",
+      "laminated pastry"
+    ],
+    "botCards": [
+      "Fermentation",
+      "Caramelization"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Croissant-Petr_Kratochvil.jpg/960px-Croissant-Petr_Kratochvil.jpg",
+      "alt": "A golden brown baked pastry shaped like a crescent",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-avocado-origin",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Guacamole is most strongly associated with the cuisine of which country?",
+    "canonicalAnswer": "Mexico",
+    "acceptedAnswers": [
+      "mexico",
+      "mexican cuisine"
+    ],
+    "botCards": [
+      "Peru",
+      "Spain"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Avocado_Hass_-_single_and_halved.jpg/500px-Avocado_Hass_-_single_and_halved.jpg",
+      "alt": "A fruit cut in half showing smooth green flesh and a large round central pit",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-espresso-foam",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "The golden foam layer on top of a well-pulled espresso shot is called what?",
+    "canonicalAnswer": "Crema",
+    "acceptedAnswers": [
+      "crema"
+    ],
+    "botCards": [
+      "Froth",
+      "Ganache"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Tazzina_di_caff%C3%A8_a_Ventimiglia.jpg/960px-Tazzina_di_caff%C3%A8_a_Ventimiglia.jpg",
+      "alt": "A small white ceramic cup containing a dark coffee shot with a light brown foam layer on top",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-pizza-flag",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "The colors of a Margherita pizza are often said to echo the flag of which country?",
+    "canonicalAnswer": "Italy",
+    "acceptedAnswers": [
+      "italy",
+      "italian flag"
+    ],
+    "botCards": [
+      "Mexico",
+      "Hungary"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Margherita_Originale.JPG",
+      "alt": "A thin crust pizza baked with red sauce, melted white cheese spots, and fresh green leaves",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-kimchi-process",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Kimchi develops its tangy flavor through what preservation process?",
+    "canonicalAnswer": "Fermentation",
+    "acceptedAnswers": [
+      "fermentation",
+      "lactic acid fermentation",
+      "lacto-fermentation"
+    ],
+    "botCards": [
+      "Distillation",
+      "Pasteurization"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Various_kimchi.jpg/500px-Various_kimchi.jpg",
+      "alt": "Several varieties of red and orange fermented Korean vegetables served in dishes",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-hummus-tahini",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What sesame paste is traditionally blended into hummus?",
+    "canonicalAnswer": "Tahini",
+    "acceptedAnswers": [
+      "tahini",
+      "sesame paste"
+    ],
+    "botCards": [
+      "Harissa",
+      "Molasses"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Lebanese_style_hummus.jpg/500px-Lebanese_style_hummus.jpg",
+      "alt": "A bowl of smooth beige chickpea dip with olive oil and garnish",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-gnocchi-shape",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Gnocchi are often pressed with a fork or board to create ridges that help hold what?",
+    "canonicalAnswer": "Sauce",
+    "acceptedAnswers": [
+      "sauce"
+    ],
+    "botCards": [
+      "Steam",
+      "Sugar"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gnocchi_di_ricotta_burro_e_salvia.jpg/500px-Gnocchi_di_ricotta_burro_e_salvia.jpg",
+      "alt": "Small Italian dumplings served with butter and sage on a plate",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "fooddrinks-exp2-vitamin-c",
+    "type": "text",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Citrus fruits are especially famous for providing which vitamin?",
+    "canonicalAnswer": "Vitamin C",
+    "acceptedAnswers": [
+      "vitamin c",
+      "ascorbic acid"
+    ],
+    "botCards": [
+      "Vitamin D",
+      "Vitamin K"
+    ]
+  },
+  {
+    "id": "fooddrinks-exp2-yeast-gas",
+    "type": "text",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "During bread fermentation, yeast releases which gas that helps dough rise?",
+    "canonicalAnswer": "Carbon dioxide",
+    "acceptedAnswers": [
+      "carbon dioxide",
+      "co2",
+      "carbon dioxide gas"
+    ],
+    "botCards": [
+      "Oxygen",
+      "Nitrogen"
+    ]
+  },
+  {
+    "id": "sports-exp2-olympic-rings-continents",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "The five Olympic rings are often said to represent the union of how many inhabited continents?",
+    "canonicalAnswer": "Five",
+    "acceptedAnswers": [
+      "five",
+      "5"
+    ],
+    "botCards": [
+      "Six",
+      "Seven"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Olympic_rings_without_rims.svg/500px-Olympic_rings_without_rims.svg.png",
+      "alt": "Five interlocking rings in blue, yellow, black, green, and red against a white background",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-basketball-inventor",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "Which Canadian-American physical educator invented basketball in 1891?",
+    "canonicalAnswer": "James Naismith",
+    "acceptedAnswers": [
+      "james naismith",
+      "naismith"
+    ],
+    "botCards": [
+      "Abner Doubleday",
+      "Walter Camp"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Basketball_net.jpg/500px-Basketball_net.jpg",
+      "alt": "An orange metal rim attached to a glass backboard with a hanging white mesh net",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-hockey-puck-material",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "An ice hockey puck is made primarily from what material?",
+    "canonicalAnswer": "Vulcanized rubber",
+    "acceptedAnswers": [
+      "rubber",
+      "vulcanized rubber",
+      "vulcanised rubber"
+    ],
+    "botCards": [
+      "Cork",
+      "Granite"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Ice_hockey_puck_-_2.jpg/500px-Ice_hockey_puck_-_2.jpg",
+      "alt": "A black ice hockey puck on a white background",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-curling-ice",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In curling, players sweep the ice to affect the stone’s speed and what curved path?",
+    "canonicalAnswer": "Curl",
+    "acceptedAnswers": [
+      "curl",
+      "curling path",
+      "trajectory"
+    ],
+    "botCards": [
+      "Bounce",
+      "Spin serve"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Curling%2C_overall_view_of_the_Tim_Hortons_Brier_venue_-_Edmonton%2C_Canada.jpg",
+      "alt": "A heavy circular granite stone with a colored handle resting on dimpled ice",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-baseball-innings",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "A regulation Major League Baseball game normally lasts how many innings?",
+    "canonicalAnswer": "Nine",
+    "acceptedAnswers": [
+      "nine",
+      "9"
+    ],
+    "botCards": [
+      "Seven",
+      "Eleven"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Dow_Diamond.jpg/500px-Dow_Diamond.jpg",
+      "alt": "Aerial view of a dirt and grass playing field with a home plate and paths forming a square",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-badminton-net",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Badminton is played across a raised what?",
+    "canonicalAnswer": "Net",
+    "acceptedAnswers": [
+      "net",
+      "raised net"
+    ],
+    "botCards": [
+      "Wall",
+      "Hoop"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Shuttlecocks_Yonex_Aerosensa_20.jpg/500px-Shuttlecocks_Yonex_Aerosensa_20.jpg",
+      "alt": "A conical object made of feathers attached to a rounded cork base",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-snooker-highest-ball",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In snooker, which colored ball is worth the most points?",
+    "canonicalAnswer": "Black",
+    "acceptedAnswers": [
+      "black",
+      "black ball"
+    ],
+    "botCards": [
+      "Blue",
+      "Pink"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Snooker_table_selby.JPG/960px-Snooker_table_selby.JPG",
+      "alt": "A snooker table set up with colored balls and a cluster of red balls",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-sumo-ring",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "The circular ring used for sumo wrestling is called what?",
+    "canonicalAnswer": "Dohyo",
+    "acceptedAnswers": [
+      "dohyo",
+      "dohyō"
+    ],
+    "botCards": [
+      "Tatami",
+      "Dojo"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Asashoryu_fight_Jan08.JPG/500px-Asashoryu_fight_Jan08.JPG",
+      "alt": "Two sumo wrestlers grappling in a ring",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-exp2-hat-trick",
+    "type": "text",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In many sports, what term describes one player scoring three goals in a single game?",
+    "canonicalAnswer": "Hat-trick",
+    "acceptedAnswers": [
+      "hat trick",
+      "hat-trick",
+      "hattrick"
+    ],
+    "botCards": [
+      "Clean sheet",
+      "Brace"
+    ]
+  },
+  {
+    "id": "sports-exp2-decathlon-events",
+    "type": "text",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "The Olympic decathlon consists of how many track and field events?",
+    "canonicalAnswer": "Ten",
+    "acceptedAnswers": [
+      "ten",
+      "10"
+    ],
+    "botCards": [
+      "Eight",
+      "Twelve"
+    ]
+  },
+  {
+    "id": "internet-exp2-wikipedia-language",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "The globe logo shown here belongs to a project whose articles are written collaboratively in many what?",
+    "canonicalAnswer": "Languages",
+    "acceptedAnswers": [
+      "languages",
+      "different languages",
+      "many languages"
+    ],
+    "botCards": [
+      "Currencies",
+      "Time zones"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/500px-Wikipedia-logo-v2.svg.png",
+      "alt": "A spherical puzzle made of white pieces missing a few at the top, inscribed with characters",
+      "credit": "Wikipedia"
+    }
+  },
+  {
+    "id": "internet-exp2-bitcoin-creator",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "Bitcoin was introduced under what pseudonymous creator name?",
+    "canonicalAnswer": "Satoshi Nakamoto",
+    "acceptedAnswers": [
+      "satoshi nakamoto",
+      "satoshi"
+    ],
+    "botCards": [
+      "Vitalik Buterin",
+      "Hal Finney"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/330px-Bitcoin.svg.png",
+      "alt": "A bright orange circle containing a white stylized capital letter B crossed by two vertical lines",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-exp2-wordle-green",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "In Wordle, a green square means the letter is correct and in what position?",
+    "canonicalAnswer": "Correct position",
+    "acceptedAnswers": [
+      "correct position",
+      "right position",
+      "exact position"
+    ],
+    "botCards": [
+      "Wrong word",
+      "Wrong keyboard row"
+    ],
+    "image": {
+      "url": "https://static01.nyt.com/images/2022/01/06/multimedia/03xp-wordle/03xp-wordle-superJumbo.png?quality=75&auto=webp",
+      "alt": "A Wordle grid showing colored letter tiles",
+      "credit": "The New York Times"
+    }
+  },
+  {
+    "id": "internet-exp2-youtube-subs",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "YouTube’s Silver Creator Award is traditionally given after a channel reaches how many subscribers?",
+    "canonicalAnswer": "100,000",
+    "acceptedAnswers": [
+      "100000",
+      "100,000",
+      "one hundred thousand"
+    ],
+    "botCards": [
+      "10,000",
+      "1,000,000"
+    ],
+    "image": {
+      "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcykOaf4wgU4y26Ztp1_AJdDRQphmqEfwk5-FFRBJLfA&s=10",
+      "alt": "A metallic silver plaque featuring a prominent central sideways triangle play symbol",
+      "credit": "Manual image URL"
+    }
+  },
+  {
+    "id": "internet-exp2-reddit-karma",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "On Reddit, upvotes and downvotes contribute to a user score commonly called what?",
+    "canonicalAnswer": "Karma",
+    "acceptedAnswers": [
+      "karma",
+      "reddit karma"
+    ],
+    "botCards": [
+      "Clout",
+      "XP"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/thumb/b/bd/Reddit_Logo_Icon.svg/500px-Reddit_Logo_Icon.svg.png",
+      "alt": "A minimalist white cartoon alien with orange eyes and a single bent antenna on its head",
+      "credit": "Wikipedia"
+    }
+  },
+  {
+    "id": "internet-exp2-doge-crypto",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "The Doge meme inspired which cryptocurrency launched as a joke in 2013?",
+    "canonicalAnswer": "Dogecoin",
+    "acceptedAnswers": [
+      "dogecoin",
+      "doge coin"
+    ],
+    "botCards": [
+      "Litecoin",
+      "Ethereum"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/5/5f/Original_Doge_meme.jpg",
+      "alt": "A light brown Shiba Inu dog sitting on a couch glancing sideways at the camera",
+      "credit": "Wikipedia"
+    }
+  },
+  {
+    "id": "internet-exp2-discord-game",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Discord originally became popular as a voice-chat platform for what broad hobby community?",
+    "canonicalAnswer": "Gaming",
+    "acceptedAnswers": [
+      "gaming",
+      "gamers",
+      "video games"
+    ],
+    "botCards": [
+      "Gardening",
+      "Book clubs"
+    ],
+    "image": {
+      "url": "https://res.cloudinary.com/apideck/image/upload/w_196,f_auto/v1678484810/marketplaces/ckhg56iu1mkpc0b66vj7fsj3o/listings/tried-to-make-the-discord-clyde-logo-more-similar-to-the-v0-g2bha52fh9v91_w9wnla.webp",
+      "alt": "Discord controller-shaped mascot logo Clyde",
+      "credit": "Cloudinary hosted image"
+    }
+  },
+  {
+    "id": "internet-exp2-youtube-zoo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "The first YouTube video, Me at the zoo, was filmed at which city’s zoo?",
+    "canonicalAnswer": "San Diego",
+    "acceptedAnswers": [
+      "san diego",
+      "san diego zoo"
+    ],
+    "botCards": [
+      "Los Angeles",
+      "San Francisco"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Me_at_the_zoo.webm/250px--Me_at_the_zoo.webm.jpg",
+      "alt": "Still frame from the first YouTube video Me at the zoo",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-exp2-http-404",
+    "type": "text",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "On the web, the HTTP status code 404 indicates that a page or resource was not what?",
+    "canonicalAnswer": "Found",
+    "acceptedAnswers": [
+      "found",
+      "not found"
+    ],
+    "botCards": [
+      "Encrypted",
+      "Cached"
+    ]
+  },
+  {
+    "id": "internet-exp2-captcha",
+    "type": "text",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "What acronym names the challenge-response tests used online to tell humans and bots apart?",
+    "canonicalAnswer": "CAPTCHA",
+    "acceptedAnswers": [
+      "captcha"
+    ],
+    "botCards": [
+      "URL",
+      "HTTPS"
+    ]
+  },
+  {
+    "id": "science-exp2-hydrogen-atomic-number",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "What number identifies hydrogen's proton count in the periodic table tile shown here?",
+    "canonicalAnswer": "1",
+    "acceptedAnswers": [
+      "1",
+      "one"
+    ],
+    "botCards": [
+      "2",
+      "8"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Hydrogen_discharge_tube.jpg/960px-Hydrogen_discharge_tube.jpg",
+      "alt": "A periodic table square containing the capital letter H and atomic number 1",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-saturn-position",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "Saturn is the how-many-th planet from the Sun?",
+    "canonicalAnswer": "Sixth",
+    "acceptedAnswers": [
+      "sixth",
+      "6th",
+      "six"
+    ],
+    "botCards": [
+      "Fourth",
+      "Eighth"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Saturn_global_view_from_Cassini%2C_rings_open_Better_Colour.png/960px-Saturn_global_view_from_Cassini%2C_rings_open_Better_Colour.png",
+      "alt": "A large gas giant planet with broad flat concentric rings orbiting its equator",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-moon-tides",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "The Moon’s gravity most visibly helps drive Earth’s ocean what?",
+    "canonicalAnswer": "Tides",
+    "acceptedAnswers": [
+      "tides",
+      "ocean tides"
+    ],
+    "botCards": [
+      "Earthquakes",
+      "Rainbows"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/960px-FullMoon2010.jpg",
+      "alt": "A clear full moon with visible craters",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-dna-bases",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "DNA uses four chemical bases abbreviated A, T, C, and what fourth letter?",
+    "canonicalAnswer": "G",
+    "acceptedAnswers": [
+      "g",
+      "guanine"
+    ],
+    "botCards": [
+      "U",
+      "R"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Dnaconformations.png/500px-Dnaconformations.png",
+      "alt": "A model of two spiraling strands connected by rungs resembling a twisted ladder",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-mitochondria-atp",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Mitochondria produce most of a cell’s supply of what energy-carrying molecule?",
+    "canonicalAnswer": "ATP",
+    "acceptedAnswers": [
+      "atp",
+      "adenosine triphosphate"
+    ],
+    "botCards": [
+      "DNA",
+      "Insulin"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Animal_mitochondrion_diagram_en.svg/960px-Animal_mitochondrion_diagram_en.svg.png",
+      "alt": "An oval-shaped cell organelle diagram showing an outer membrane and folded inner inner structures",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-seismograph-study",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Scientists who use instruments like this to study earthquakes work in what field?",
+    "canonicalAnswer": "Seismology",
+    "acceptedAnswers": [
+      "seismology"
+    ],
+    "botCards": [
+      "Meteorology",
+      "Paleontology"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Kinemetrics_seismograph.jpg/960px-Kinemetrics_seismograph.jpg",
+      "alt": "A scientific seismograph instrument used for measuring ground motion",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-mars-rust",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Mars looks red because its surface dust contains iron compounds commonly known as what?",
+    "canonicalAnswer": "Rust",
+    "acceptedAnswers": [
+      "rust",
+      "iron oxide",
+      "iron oxides"
+    ],
+    "botCards": [
+      "Sulfur",
+      "Chalk"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Mars_-_August_30_2021_-_Flickr_-_Kevin_M._Gill.png/960px-Mars_-_August_30_2021_-_Flickr_-_Kevin_M._Gill.png",
+      "alt": "Mars shown as an orange-red planet",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-event-horizon-black-hole",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "An event horizon is most closely associated with what extremely dense astronomical object?",
+    "canonicalAnswer": "Black hole",
+    "acceptedAnswers": [
+      "black hole",
+      "black holes"
+    ],
+    "botCards": [
+      "Neutron star",
+      "White dwarf"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Black_Hole_Desktop_%26_Phone_Wallpapers_%28SVS14146_-_BH_accretion_disk_viz_desktop%29.png/500px-Black_Hole_Desktop_%26_Phone_Wallpapers_%28SVS14146_-_BH_accretion_disk_viz_desktop%29.png",
+      "alt": "A black hole visualization with a dark center surrounded by a bright accretion disk",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-exp2-avogadro",
+    "type": "text",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Avogadro’s number counts the number of particles in one what of a substance?",
+    "canonicalAnswer": "Mole",
+    "acceptedAnswers": [
+      "mole",
+      "one mole"
+    ],
+    "botCards": [
+      "Liter",
+      "Watt"
+    ]
+  },
+  {
+    "id": "science-exp2-ph-scale",
+    "type": "text",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "On the pH scale, values below 7 are classified as what?",
+    "canonicalAnswer": "Acidic",
+    "acceptedAnswers": [
+      "acidic",
+      "acid"
+    ],
+    "botCards": [
+      "Basic",
+      "Neutral"
+    ]
+  },
+  {
+    "id": "mythology-exp2-zeus-roman",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "The Roman counterpart of the Greek god Zeus is known by what name?",
+    "canonicalAnswer": "Jupiter",
+    "acceptedAnswers": [
+      "jupiter",
+      "jove"
+    ],
+    "botCards": [
+      "Mars",
+      "Neptune"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Zeus_Otricoli_Pio-Clementino_Inv257.jpg/500px-Zeus_Otricoli_Pio-Clementino_Inv257.jpg",
+      "alt": "Ancient marble statue of a bearded man holding a stylized jagged lightning rod",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-poseidon-weapon",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Poseidon is commonly depicted carrying what three-pronged weapon?",
+    "canonicalAnswer": "Trident",
+    "acceptedAnswers": [
+      "trident"
+    ],
+    "botCards": [
+      "Spear",
+      "Bow"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Statue_of_Poseidon_NAMA_235_%28DerHexer%29%2C_part_2.JPG/500px-Statue_of_Poseidon_NAMA_235_%28DerHexer%29%2C_part_2.JPG",
+      "alt": "Ancient statue associated with Poseidon",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-sphinx-riddle",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "The Sphinx is famous in Greek myth for challenging travelers with what?",
+    "canonicalAnswer": "Riddles",
+    "acceptedAnswers": [
+      "riddles",
+      "a riddle"
+    ],
+    "botCards": [
+      "Songs",
+      "Taxes"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Great_Sphinx_of_Giza_-_20080716a.jpg/500px-Great_Sphinx_of_Giza_-_20080716a.jpg",
+      "alt": "The Great Sphinx of Giza",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-medusa-gorgon",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Medusa belongs to which monstrous sisterhood in Greek mythology?",
+    "canonicalAnswer": "Gorgons",
+    "acceptedAnswers": [
+      "gorgon",
+      "gorgons"
+    ],
+    "botCards": [
+      "Furies",
+      "Muses"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Sousse_mosaic_Gorgon_03.JPG/960px-Sousse_mosaic_Gorgon_03.JPG",
+      "alt": "Carved stone relief sculpture of a woman's face surrounded by twisting snake bodies",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-pegasus-father",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Pegasus is often said to have been fathered by which sea god?",
+    "canonicalAnswer": "Poseidon",
+    "acceptedAnswers": [
+      "poseidon"
+    ],
+    "botCards": [
+      "Apollo",
+      "Hermes"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Lakonian_Black-Figure_Kylix%3B_detached_fragments.jpg/960px-Lakonian_Black-Figure_Kylix%3B_detached_fragments.jpg",
+      "alt": "Statue silhouette of a majestic horse with large eagle-like wings reared back",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-yggdrasil-worlds",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Yggdrasil connects how many worlds in Norse mythology?",
+    "canonicalAnswer": "Nine",
+    "acceptedAnswers": [
+      "nine",
+      "9"
+    ],
+    "botCards": [
+      "Seven",
+      "Twelve"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Om_Yggdrasil_by_Fr%C3%B8lich.jpg/500px-Om_Yggdrasil_by_Fr%C3%B8lich.jpg",
+      "alt": "Illustration of a massive cosmic tree with roots spreading wide holding up different realms",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-hermes-sandals",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Hermes is often shown with winged what that help him move swiftly?",
+    "canonicalAnswer": "Sandals",
+    "acceptedAnswers": [
+      "sandals",
+      "winged sandals"
+    ],
+    "botCards": [
+      "Gloves",
+      "Crown"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Caduceus.svg/500px-Caduceus.svg.png",
+      "alt": "Caduceus symbol with two snakes and wings",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-ouroboros-symbol",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "The ouroboros most commonly symbolizes an endless cycle of life, death, and what?",
+    "canonicalAnswer": "Rebirth",
+    "acceptedAnswers": [
+      "rebirth",
+      "renewal",
+      "regeneration"
+    ],
+    "botCards": [
+      "Victory",
+      "Harvest"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/87/Ouroboros_1.jpg",
+      "alt": "A serpent curled into a circle while biting its own tail",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-exp2-ragnarok",
+    "type": "text",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In Norse mythology, what name is given to the prophesied world-ending battle of the gods?",
+    "canonicalAnswer": "Ragnarok",
+    "acceptedAnswers": [
+      "ragnarok",
+      "ragnarök"
+    ],
+    "botCards": [
+      "Valhalla",
+      "Bifrost"
+    ]
+  },
+  {
+    "id": "mythology-exp2-styx",
+    "type": "text",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In Greek myth, which underworld river is commonly associated with oaths and crossing into the realm of the dead?",
+    "canonicalAnswer": "Styx",
+    "acceptedAnswers": [
+      "styx",
+      "river styx"
+    ],
+    "botCards": [
+      "Nile",
+      "Lethe"
+    ]
+  },
+  {
+    "id": "artmusic-exp2-sunflowers-location",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Van Gogh painted several Sunflowers still lifes while living in which French city?",
+    "canonicalAnswer": "Arles",
+    "acceptedAnswers": [
+      "arles"
+    ],
+    "botCards": [
+      "Paris",
+      "Delft"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Vincent_Willem_van_Gogh_127.jpg/500px-Vincent_Willem_van_Gogh_127.jpg",
+      "alt": "A portrait of Vincent van Gogh with a blue-green background",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-mona-lisa-artist",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which Renaissance artist painted the Mona Lisa?",
+    "canonicalAnswer": "Leonardo da Vinci",
+    "acceptedAnswers": [
+      "leonardo da vinci",
+      "da vinci",
+      "leonardo"
+    ],
+    "botCards": [
+      "Michelangelo",
+      "Raphael"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Louvre_Museum_Wikimedia_Commons.jpg/960px-Louvre_Museum_Wikimedia_Commons.jpg",
+      "alt": "The Louvre Museum courtyard and glass pyramid in Paris",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-harp-family",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "The orchestral harp belongs to which broad instrument family?",
+    "canonicalAnswer": "String family",
+    "acceptedAnswers": [
+      "string",
+      "strings",
+      "string family"
+    ],
+    "botCards": [
+      "Brass family",
+      "Woodwind family"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Paraguayan_harp_1.jpg/500px-Paraguayan_harp_1.jpg",
+      "alt": "A Paraguayan harp with many strings",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-scream-art-movement",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "The Scream is most closely associated with which modern art movement?",
+    "canonicalAnswer": "Expressionism",
+    "acceptedAnswers": [
+      "expressionism",
+      "expressionist"
+    ],
+    "botCards": [
+      "Cubism",
+      "Impressionism"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/The_Scream.jpg/500px-The_Scream.jpg",
+      "alt": "An Expressionist painting showing a figure with an agonized expression holding its face under a swirling orange and red sky",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-thinker-sculptor",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Who sculpted The Thinker?",
+    "canonicalAnswer": "Auguste Rodin",
+    "acceptedAnswers": [
+      "auguste rodin",
+      "rodin"
+    ],
+    "botCards": [
+      "Donatello",
+      "Henry Moore"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Le_Penseur_by_Rodin_%28Kunsthalle_Bielefeld%29_2014-04-10.JPG/500px-Le_Penseur_by_Rodin_%28Kunsthalle_Bielefeld%29_2014-04-10.JPG",
+      "alt": "A bronze sculpture of a seated figure leaning forward with one hand supporting his chin",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-trumpet-family",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "The trumpet is part of which orchestral instrument family?",
+    "canonicalAnswer": "Brass",
+    "acceptedAnswers": [
+      "brass",
+      "brass family"
+    ],
+    "botCards": [
+      "Percussion",
+      "String"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Yamaha_Trumpet_YTR-8335LA_crop.jpg/500px-Yamaha_Trumpet_YTR-8335LA_crop.jpg",
+      "alt": "A Yamaha trumpet",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-hokusai-country",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Hokusai, creator of The Great Wave off Kanagawa, was from which country?",
+    "canonicalAnswer": "Japan",
+    "acceptedAnswers": [
+      "japan",
+      "japanese"
+    ],
+    "botCards": [
+      "China",
+      "Korea"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Tsunami_by_hokusai_19th_century.jpg/960px-Tsunami_by_hokusai_19th_century.jpg",
+      "alt": "The Great Wave off Kanagawa by Hokusai",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-dali-art-style",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Salvador Dalí’s melting-clock painting is a landmark of which art movement?",
+    "canonicalAnswer": "Surrealism",
+    "acceptedAnswers": [
+      "surrealism",
+      "surrealist"
+    ],
+    "botCards": [
+      "Baroque",
+      "Realism"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Salvador_Dal%C3%AD_1939.jpg/500px-Salvador_Dal%C3%AD_1939.jpg",
+      "alt": "Portrait photograph of Salvador Dali",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-exp2-circle-fifths",
+    "type": "text",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "In music theory, what diagram arranges the twelve pitch classes by perfect fifth relationships?",
+    "canonicalAnswer": "Circle of fifths",
+    "acceptedAnswers": [
+      "circle of fifths",
+      "the circle of fifths"
+    ],
+    "botCards": [
+      "Treble clef",
+      "Chromatic scale"
+    ]
+  },
+  {
+    "id": "artmusic-exp2-opera-libretto",
+    "type": "text",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "What Italian-derived term refers to the written text or script of an opera?",
+    "canonicalAnswer": "Libretto",
+    "acceptedAnswers": [
+      "libretto"
+    ],
+    "botCards": [
+      "Cadenza",
+      "Overture"
+    ]
+  }
+]
