@@ -1551,6 +1551,7 @@ async function handleDebugQuestions(res) {
     total: 0,
     image: 0,
     text: 0,
+    multipleChoice: 0,
     easy: 0,
     medium: 0,
     hard: 0
@@ -1561,12 +1562,16 @@ async function handleDebugQuestions(res) {
       total: 0,
       image: 0,
       text: 0,
+      multipleChoice: 0,
       easy: 0,
       medium: 0,
       hard: 0
     });
     bucket.total += 1;
     bucket[question.type] = (bucket[question.type] || 0) + 1;
+    if (question.questionStyle === "multiple-choice") {
+      bucket.multipleChoice += 1;
+    }
     bucket[question.difficulty] = (bucket[question.difficulty] || 0) + 1;
   });
 
@@ -1578,6 +1583,7 @@ async function handleDebugQuestions(res) {
       index,
       id: question.id,
       type: question.type,
+      questionStyle: question.questionStyle || "standard",
       theme: question.theme,
       difficulty: question.difficulty,
       question: question.blackCard,
@@ -1585,6 +1591,7 @@ async function handleDebugQuestions(res) {
       canonicalAnswer: question.canonicalAnswer,
       acceptedAnswers: question.acceptedAnswers,
       botCards: question.botCards,
+      multipleChoiceOptions: question.multipleChoiceOptions || [],
       rejectedAnswers: question.rejectedAnswers || []
     }))
   });
@@ -1829,21 +1836,43 @@ function normalizeCreatedQuestion(body) {
   }
 
   const type = source.type === "image" ? "image" : "text";
+  const questionStyle = source.questionStyle === "multiple-choice" || source.style === "multiple-choice" || source.type === "multiple-choice"
+    ? "multiple-choice"
+    : "standard";
   const question = String(source.question || "").trim().replace(/\s+/g, " ").slice(0, 260);
   const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
   if (!question || !canonicalAnswer) {
     throw new Error("Question text and canonical answer are required.");
   }
 
-  const acceptedAnswers = normalizeAnswerList(source.acceptedAnswers, 16);
-  const botCards = normalizeAnswerList(source.botCards, 2);
-  if (botCards.length !== 2) {
+  let acceptedAnswers = normalizeAnswerList(source.acceptedAnswers, 16);
+  let botCards = normalizeAnswerList(source.botCards, questionStyle === "multiple-choice" ? 3 : 2);
+  let multipleChoiceOptions = [];
+  if (questionStyle === "multiple-choice") {
+    const providedOptions = normalizeAnswerList(source.multipleChoiceOptions || source.options, 4);
+    const incorrectAnswers = normalizeAnswerList(source.incorrectAnswers || source.wrongAnswers, 3);
+    const wrongChoices = uniqueAnswers([
+      ...providedOptions.filter((answer) => normalizeQuestionText(answer) !== normalizeQuestionText(canonicalAnswer)),
+      ...incorrectAnswers,
+      ...botCards
+    ]).slice(0, 3);
+    if (wrongChoices.length !== 3) {
+      throw new Error("Multiple-choice questions need exactly three incorrect answers.");
+    }
+    multipleChoiceOptions = uniqueAnswers([canonicalAnswer, ...wrongChoices]).slice(0, 4);
+    if (multipleChoiceOptions.length !== 4) {
+      throw new Error("Multiple-choice questions need four unique options.");
+    }
+    acceptedAnswers = [];
+    botCards = [];
+  } else if (botCards.length !== 2) {
     throw new Error("Enter exactly two bot answers.");
   }
 
   const created = {
     id,
     type,
+    questionStyle,
     theme,
     difficulty,
     question,
@@ -1851,6 +1880,9 @@ function normalizeCreatedQuestion(body) {
     acceptedAnswers: uniqueAnswers(acceptedAnswers).slice(0, 16),
     botCards
   };
+  if (questionStyle === "multiple-choice") {
+    created.multipleChoiceOptions = multipleChoiceOptions;
+  }
 
   const rejectedAnswers = normalizeAnswerList(source.rejectedAnswers, 12);
   if (rejectedAnswers.length) {
@@ -3427,6 +3459,9 @@ async function getRuntimeQuestionBank() {
 function normalizeSeedQuestion(question) {
   const source = question && typeof question === "object" ? question : {};
   const type = source.type === "image" ? "image" : "text";
+  const questionStyle = source.questionStyle === "multiple-choice" || source.style === "multiple-choice" || source.type === "multiple-choice"
+    ? "multiple-choice"
+    : "standard";
   const theme = triviaThemes.includes(source.theme) ? source.theme : "Pop Culture";
   const blackCard = String(source.question || source.blackCard || "").trim().replace(/\s+/g, " ").slice(0, 220);
   const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
@@ -3437,7 +3472,27 @@ function normalizeSeedQuestion(question) {
   const acceptedAnswers = Array.isArray(source.acceptedAnswers)
     ? source.acceptedAnswers.map((answer) => String(answer).trim().slice(0, 120)).filter(Boolean)
     : [];
-  const botCards = normalizeBotCards(source.botCards);
+  const rawBotCards = questionStyle === "multiple-choice"
+    ? normalizeAnswerList(source.botCards, 3)
+    : normalizeBotCards(source.botCards);
+  const providedMultipleChoiceOptions = uniqueAnswers(
+    Array.isArray(source.multipleChoiceOptions || source.options)
+      ? (source.multipleChoiceOptions || source.options).map((answer) => String(answer).trim().slice(0, 120)).filter(Boolean)
+      : []
+  );
+  const multipleChoiceOptions = questionStyle === "multiple-choice"
+    ? uniqueAnswers([
+      canonicalAnswer,
+      ...providedMultipleChoiceOptions.filter((answer) => normalizeQuestionText(answer) !== normalizeQuestionText(canonicalAnswer)),
+      ...rawBotCards.filter((answer) => normalizeQuestionText(answer) !== normalizeQuestionText(canonicalAnswer))
+    ]).slice(0, 4)
+    : [];
+  if (questionStyle === "multiple-choice" && multipleChoiceOptions.length !== 4) {
+    return null;
+  }
+  const botCards = questionStyle === "multiple-choice"
+    ? multipleChoiceOptions.filter((answer) => normalizeQuestionText(answer) !== normalizeQuestionText(canonicalAnswer)).slice(0, 3)
+    : rawBotCards;
   const botCorrectPool = uniqueAnswers([canonicalAnswer, ...acceptedAnswers]);
   const botWrongPool = uniqueAnswers(botCards).filter((answer) => {
     const accepted = [canonicalAnswer, ...acceptedAnswers].filter(Boolean);
@@ -3452,6 +3507,7 @@ function normalizeSeedQuestion(question) {
   return {
     id: String(source.id || `${theme}-${canonicalAnswer}`).trim().slice(0, 120),
     type,
+    questionStyle,
     theme,
     difficulty: String(source.difficulty || "medium").trim().slice(0, 30),
     blackCard,
@@ -3464,7 +3520,12 @@ function normalizeSeedQuestion(question) {
       : null,
     canonicalAnswer,
     acceptedAnswers: uniqueAnswers(acceptedAnswers).slice(0, 10),
-    botCards: botCards.length === 2 ? botCards : createFallbackBotCards(canonicalAnswer),
+    botCards: questionStyle === "multiple-choice"
+      ? []
+      : botCards.length === 2 ? botCards : createFallbackBotCards(canonicalAnswer),
+    multipleChoiceOptions: questionStyle === "multiple-choice" && multipleChoiceOptions.length === 4
+      ? multipleChoiceOptions
+      : [],
     rejectedAnswers: Array.isArray(source.rejectedAnswers)
       ? source.rejectedAnswers.map((answer) => String(answer).trim().slice(0, 120)).filter(Boolean).slice(0, 12)
       : [],
@@ -3513,6 +3574,9 @@ function pickFromPool(pool, seed) {
 }
 
 function pickBotAnswersForSetup(question, seed) {
+  if (question.questionStyle === "multiple-choice") {
+    return [];
+  }
   const correctPool = uniqueAnswers(
     Array.isArray(question.botCorrectPool) && question.botCorrectPool.length
       ? question.botCorrectPool
@@ -3549,6 +3613,17 @@ function pickBotAnswersForSetup(question, seed) {
   return normalizeBotCards(picked);
 }
 
+function isMultipleChoiceQuestion(question) {
+  return question?.questionStyle === "multiple-choice" && Array.isArray(question.multipleChoiceOptions) && question.multipleChoiceOptions.length === 4;
+}
+
+function shuffleQuestionOptions(options, seed) {
+  return [...options]
+    .map((option, index) => ({ option, rank: Math.abs(hashString(`${seed}-${option}-${index}`)) }))
+    .sort((a, b) => a.rank - b.rank)
+    .map((entry) => entry.option);
+}
+
 async function getSeedQuestionSetup(options = {}) {
   const enabledThemes = normalizeEnabledThemes(options.enabledThemes);
   const preferredTheme = normalizePreferredTheme(options.preferredTheme, enabledThemes);
@@ -3565,9 +3640,17 @@ async function getSeedQuestionSetup(options = {}) {
     return null;
   }
 
-  const picked = pool[Math.abs(hashString(seed)) % pool.length];
+  const multipleChoicePool = pool.filter(isMultipleChoiceQuestion);
+  const standardPool = pool.filter((question) => !isMultipleChoiceQuestion(question));
+  const wantsMultipleChoice = multipleChoicePool.length
+    && (Math.abs(hashString(`${seed}-question-style`)) % 100) < 15;
+  const pickPool = wantsMultipleChoice
+    ? multipleChoicePool
+    : standardPool.length ? standardPool : pool;
+  const picked = pickPool[Math.abs(hashString(seed)) % pickPool.length];
   const setup = {
     type: picked.type,
+    questionStyle: picked.questionStyle || "standard",
     theme: picked.theme,
     difficulty: picked.difficulty,
     blackCard: picked.blackCard,
@@ -3576,6 +3659,9 @@ async function getSeedQuestionSetup(options = {}) {
     acceptedAnswers: picked.acceptedAnswers,
     judge: getGenericJudge(),
     botCards: pickBotAnswersForSetup(picked, options.setupSeed),
+    multipleChoiceOptions: isMultipleChoiceQuestion(picked)
+      ? shuffleQuestionOptions(picked.multipleChoiceOptions, seed)
+      : [],
     source: "seed",
     id: picked.id
   };

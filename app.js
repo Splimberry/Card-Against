@@ -889,6 +889,13 @@ const loserBadgeTiers = [
   { minScore: 48, label: "Wrong Category", bonus: 0 },
   { minScore: 0, label: "Incorrect", bonus: 0 }
 ];
+const MULTIPLE_CHOICE_STYLE = "multiple-choice";
+const multipleChoiceTimingBadges = [
+  { maxElapsed: 5, label: "Speed demon", bonus: 250 },
+  { maxElapsed: 7, label: "Quick reaction", bonus: 200 },
+  { maxElapsed: 10, label: "Fast enough", bonus: 150 },
+  { maxElapsed: Infinity, label: "Correct", bonus: 50 }
+];
 function clampNumber(value, min, max, fallback) {
   const number = Number(value);
   if (!Number.isFinite(number)) {
@@ -2528,6 +2535,7 @@ const state = {
   recentBlackCards: [],
   recentTriviaThemes: [],
   botCards: [],
+  multipleChoiceOptions: [],
   activePowerUp: null,
   selectedPowerUps: {
     player: [],
@@ -2585,6 +2593,7 @@ const state = {
   blackCard: "",
   questionId: "",
   questionType: "image",
+  questionStyle: "standard",
   questionDifficulty: "medium",
   triviaTheme: "",
   questionImage: null,
@@ -2716,11 +2725,15 @@ const elements = {
   userQuestionTheme: null,
   userQuestionDifficulty: null,
   userQuestionType: null,
+  userQuestionStyle: null,
   userQuestionId: null,
   userQuestionText: null,
   userQuestionCanonical: null,
+  userQuestionAcceptedWrap: null,
   userQuestionAccepted: null,
+  userQuestionBotsWrap: null,
   userQuestionBots: null,
+  userQuestionRejectedWrap: null,
   userQuestionRejected: null,
   userQuestionImageFields: null,
   userQuestionImageUrl: null,
@@ -2860,11 +2873,15 @@ const elements = {
   devCreateTheme: null,
   devCreateDifficulty: null,
   devCreateType: null,
+  devCreateQuestionStyle: null,
   devCreateId: null,
   devCreateQuestion: null,
   devCreateCanonical: null,
+  devCreateAcceptedWrap: null,
   devCreateAccepted: null,
+  devCreateBotsWrap: null,
   devCreateBots: null,
+  devCreateRejectedWrap: null,
   devCreateRejected: null,
   devCreateImageFields: null,
   devCreateImageUrl: null,
@@ -2968,6 +2985,7 @@ const elements = {
   effectPanel: document.querySelector("#effectPanel"),
   answerForm: document.querySelector("#answerForm"),
   answerInput: document.querySelector("#answerInput"),
+  multipleChoiceOptions: document.querySelector("#multipleChoiceOptions"),
   playerTwoInput: document.querySelector("#playerTwoInput"),
   submitButton: document.querySelector("#submitButton"),
   roomSubmitStatus: document.querySelector("#roomSubmitStatus"),
@@ -3413,6 +3431,34 @@ function cleanInput(input) {
     .slice(0, 80);
 }
 
+function isMultipleChoiceRound() {
+  return state.questionStyle === MULTIPLE_CHOICE_STYLE;
+}
+
+function normalizeMultipleChoiceOption(answer) {
+  return normalizeTriviaAnswer(cleanInput(answer));
+}
+
+function getCurrentMultipleChoiceOptions() {
+  const options = Array.isArray(state.multipleChoiceOptions) ? state.multipleChoiceOptions : [];
+  const unique = [];
+  const seen = new Set();
+  options.forEach((answer) => {
+    const cleanAnswer = cleanInput(String(answer || ""));
+    const key = normalizeMultipleChoiceOption(cleanAnswer);
+    if (cleanAnswer && key && !seen.has(key)) {
+      seen.add(key);
+      unique.push(cleanAnswer);
+    }
+  });
+  return unique.slice(0, 4);
+}
+
+function isMultipleChoiceAnswerCorrect(answer) {
+  const correct = normalizeMultipleChoiceOption(state.canonicalAnswer);
+  return Boolean(correct && normalizeMultipleChoiceOption(answer) === correct);
+}
+
 function resetRoundAnswers() {
   const owners = new Set([...DEFAULT_OWNER_IDS, ...getActiveOwners()]);
   state.roundAnswers = Object.fromEntries([...owners].map((owner) => [owner, ""]));
@@ -3819,6 +3865,7 @@ function normalizeSetupPayload(setup) {
     id: String(setup.id || "").trim(),
     blackCard: String(setup.blackCard || "").trim(),
     type: setup.type === "text" ? "text" : "image",
+    questionStyle: setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
     difficulty: ["easy", "medium", "hard"].includes(String(setup.difficulty || "").toLowerCase())
       ? String(setup.difficulty).toLowerCase()
       : "medium",
@@ -3835,6 +3882,9 @@ function normalizeSetupPayload(setup) {
       missingReason: String(image.missingReason || "").trim()
     },
     botCards: Array.isArray(setup.botCards) ? setup.botCards.map((card) => String(card).trim()).filter(Boolean).slice(0, 9) : [],
+    multipleChoiceOptions: Array.isArray(setup.multipleChoiceOptions)
+      ? setup.multipleChoiceOptions.map((answer) => cleanInput(String(answer || ""))).filter(Boolean).slice(0, 4)
+      : [],
     judge: {
       name: String(judge.name || "Trivia Grader").trim(),
       avatar: String(judge.avatar || "AI").trim(),
@@ -4111,6 +4161,43 @@ async function requestAiRound(rawInput, options = {}) {
       ? result.correctIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < expectedCards)
       : [],
     source: result.source || "api"
+  };
+}
+
+function getMultipleChoiceRatingForOwner(owner, isCorrect) {
+  if (!isCorrect) {
+    return { label: "Incorrect", bonus: 0, correct: false, score: 0 };
+  }
+  const remaining = Number(state.answerRemainingTimes?.[owner]);
+  const elapsed = Math.max(0, (Number(state.timerSeconds) || 0) - (Number.isFinite(remaining) ? remaining : 0));
+  const badge = multipleChoiceTimingBadges.find((tier) => elapsed <= tier.maxElapsed) || multipleChoiceTimingBadges[multipleChoiceTimingBadges.length - 1];
+  return {
+    label: badge.label,
+    bonus: badge.bonus,
+    correct: true,
+    score: Math.max(55, 140 - Math.round(elapsed * 6))
+  };
+}
+
+function createMultipleChoiceRoundResult(rawInput = "") {
+  const cardOwners = prepareRoundCardOwners(rawInput);
+  const cards = cardOwners.map((owner) => getRoundAnswerForOwner(owner));
+  const correctIndexes = cards
+    .map((answer, index) => ({ answer, index }))
+    .filter((entry) => isMultipleChoiceAnswerCorrect(entry.answer))
+    .map((entry) => entry.index);
+  const winnerIndex = correctIndexes
+    .map((index) => ({
+      index,
+      remaining: Number(state.answerRemainingTimes?.[cardOwners[index]]) || 0
+    }))
+    .sort((a, b) => b.remaining - a.remaining || a.index - b.index)[0]?.index ?? 0;
+
+  return {
+    cards,
+    winner: { index: winnerIndex },
+    correctIndexes,
+    source: "multiple-choice"
   };
 }
 
@@ -4558,6 +4645,9 @@ function getCardRatings(cards, winnerIndex, correctIndexes = [winnerIndex]) {
   const correctSet = new Set(correctIndexes);
   return cards.map((card, index) => {
     const isCorrect = correctSet.has(index);
+    if (isMultipleChoiceRound()) {
+      return getMultipleChoiceRatingForOwner(getOwnerFromCardIndex(index), isCorrect);
+    }
     const score = scoreTriviaAnswer(card, isCorrect);
     const badge = pickBadgeForScore(score, isCorrect);
     return {
@@ -16201,7 +16291,7 @@ function renderPowerUps() {
     const hasUseAvailable = canPlayPower(owner);
     const usable = hasUseAvailable && isPowerUsable(power, owner);
     button.dataset.usable = String(usable);
-    const unavailableReason = hasUseAvailable ? "Not usable right now" : "Power already used this round";
+    const unavailableReason = getPowerUnavailableReason(power, hasUseAvailable);
     button.dataset.description = `${rarityInfo[power.rarity].label}: ${description}${usable ? "" : ` (${unavailableReason})`}`;
     const selected = isPowerSelected(owner, power.id);
     button.setAttribute("aria-pressed", String(selected));
@@ -16306,6 +16396,10 @@ function isPowerUsable(power, owner) {
     return false;
   }
 
+  if (isPowerDisabledByQuestionStyle(power)) {
+    return false;
+  }
+
   if (power.type === "last_chance") {
     return state.round === state.maxRounds && isLastPlace(owner);
   }
@@ -16375,6 +16469,20 @@ function isPowerUsable(power, owner) {
   }
 
   return true;
+}
+
+function isPowerDisabledByQuestionStyle(power) {
+  return Boolean(isMultipleChoiceRound() && power && (power.type === "ai_answer" || power.type === "multiple_choice"));
+}
+
+function getPowerUnavailableReason(power, hasUseAvailable) {
+  if (!hasUseAvailable) {
+    return "Power already used this round";
+  }
+  if (isPowerDisabledByQuestionStyle(power)) {
+    return "Disabled during multiple-choice questions";
+  }
+  return "Not usable right now";
 }
 
 function commitActivePowerUp(owner = getCurrentPowerOwner()) {
@@ -16762,6 +16870,16 @@ function getQuestionWrongAnswerPool(correctPool = getQuestionCorrectAnswerPool()
 }
 
 function generateAutoAnswer(owner = "player", options = {}) {
+  if (isMultipleChoiceRound()) {
+    const choices = getCurrentMultipleChoiceOptions();
+    const correct = choices.find((answer) => isMultipleChoiceAnswerCorrect(answer));
+    const wrong = choices.filter((answer) => !isMultipleChoiceAnswerCorrect(answer));
+    const correctChance = Number.isFinite(options.correctChance)
+      ? options.correctChance
+      : getBotCorrectChanceForCurrentQuestion(owner);
+    const pool = correct && Math.random() < correctChance ? [correct] : wrong.length ? wrong : choices;
+    return pool[Math.floor(Math.random() * pool.length)] || correct || state.canonicalAnswer || "not sure";
+  }
   const correctPool = getQuestionCorrectAnswerPool();
   const botPool = getQuestionWrongAnswerPool(correctPool);
   const correctChance = Number.isFinite(options.correctChance)
@@ -17328,14 +17446,14 @@ function renderRound() {
   elements.answerInput.disabled = state.isSpectator;
   elements.playerTwoInput.disabled = false;
   elements.submitButton.disabled = state.isSpectator;
-  if (!state.isSpectator) {
-    elements.answerInput.focus();
-  }
   applyRoundStartEffects();
   applyRoundStartTableEventEffects();
   applyRoomRoundStartModifiers();
   applyPendingLegendaryPowerRewards();
   updateModeUi();
+  if (!state.isSpectator) {
+    focusAnswerControl();
+  }
   scheduleBotPowerUpsForRound();
   scheduleRoomBotAnswersForRound();
   renderSubmissionStatus();
@@ -17376,6 +17494,7 @@ function renderRound() {
 
 function updateModeUi() {
   const isDuel = isDuelMode();
+  const multipleChoice = isMultipleChoiceRound();
   const modeName = state.mode === "room" ? "multiplayer room" : isDuel ? "local 1v1" : "solo vs bots";
   const activeModifierNames = state.mode === "room" ? getRoomVariantNames() : getActiveMatchModifierNames();
   const variants = ` - ${activeModifierNames.join(" + ")}`;
@@ -17396,18 +17515,57 @@ function updateModeUi() {
   elements.playerTwoInput.required = false;
   elements.playerTwoInput.disabled = true;
   setHidden(elements.playerTwoInput, true);
+  setHidden(elements.answerInput.closest(".input-fields"), multipleChoice);
+  setHidden(elements.multipleChoiceOptions, !multipleChoice);
+  setHidden(elements.submitButton, multipleChoice);
   elements.submitButton.textContent = isDuel && !isRoomMode() && state.localEntryStep === 1 ? "Lock In" : "Submit";
   document.querySelector("#inputTitle").textContent = isRoomMode()
-    ? `${getOwnerLabel(state.currentOwner)}, enter your trivia answer.`
+    ? `${getOwnerLabel(state.currentOwner)}, ${multipleChoice ? "choose an answer." : "enter your trivia answer."}`
     : isDuel
     ? state.localEntryStep === 1
-      ? `${getOwnerLabel("player")}, enter your trivia answer. It disappears after locking.`
+      ? `${getOwnerLabel("player")}, ${multipleChoice ? "choose an answer." : "enter your trivia answer. It disappears after locking."}`
       : `${getOwnerLabel("opponent")}, your turn. ${getOwnerLabel("player")}'s answer is hidden.`
-    : "Answer the trivia question.";
+    : multipleChoice ? "Choose the correct answer." : "Answer the trivia question.";
+  renderMultipleChoiceOptions();
   setHidden(elements.exitGameButton, isRoomMode() && !isCurrentHost());
   setHidden(elements.leaveGameButton, false);
   renderRoomChat();
   renderPowerUps();
+}
+
+function renderMultipleChoiceOptions() {
+  if (!elements.multipleChoiceOptions) {
+    return;
+  }
+  elements.multipleChoiceOptions.replaceChildren();
+  if (!isMultipleChoiceRound()) {
+    return;
+  }
+  const owner = getCurrentPowerOwner();
+  const lockedAnswer = getLockedRoundAnswer(owner);
+  const submitted = (isRoomMode() && state.roomSubmissions[state.currentOwner])
+    || (state.mode === "bots" && state.roomSubmissions.player);
+  const disabled = Boolean(state.isSpectator || submitted || state.matchEnded || elements.inputPanel.classList.contains("hidden"));
+  getCurrentMultipleChoiceOptions().forEach((answer, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "multiple-choice-option";
+    button.dataset.answerChoice = answer;
+    button.disabled = disabled;
+    button.textContent = `${String.fromCharCode(65 + index)}. ${answer}`;
+    button.setAttribute("aria-label", `Choose ${answer} for ${getOwnerLabel(owner)}`);
+    button.setAttribute("aria-pressed", String(Boolean(lockedAnswer) && normalizeMultipleChoiceOption(lockedAnswer) === normalizeMultipleChoiceOption(answer)));
+    button.classList.toggle("selected", Boolean(lockedAnswer) && normalizeMultipleChoiceOption(lockedAnswer) === normalizeMultipleChoiceOption(answer));
+    elements.multipleChoiceOptions.appendChild(button);
+  });
+}
+
+function focusAnswerControl() {
+  if (isMultipleChoiceRound()) {
+    elements.multipleChoiceOptions?.querySelector(".multiple-choice-option:not(:disabled)")?.focus();
+    return;
+  }
+  elements.answerInput.focus();
 }
 
 function applyRoundSetup(setup) {
@@ -17416,6 +17574,7 @@ function applyRoundSetup(setup) {
   removeReservedQuestionSetup(setup);
   removeCachedRoundSetup(setup);
   state.questionType = setup.type === "text" ? "text" : "image";
+  state.questionStyle = setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
   state.questionDifficulty = normalizeDifficulty(setup.difficulty);
   state.triviaTheme = setup.triviaTheme || "Mixed Trivia";
   state.questionImage = setup.image && setup.image.url ? setup.image : null;
@@ -17423,6 +17582,7 @@ function applyRoundSetup(setup) {
   state.acceptedAnswers = setup.acceptedAnswers || [];
   state.judge = setup.judge;
   state.botCards = setup.botCards || [];
+  state.multipleChoiceOptions = Array.isArray(setup.multipleChoiceOptions) ? setup.multipleChoiceOptions.slice(0, 4) : [];
   publishRoomRoundSetup(setup);
   state.recentJudgeNames = [...state.recentJudgeNames, state.judge.name].slice(-5);
   state.recentBlackCards = [...state.recentBlackCards, state.blackCard].slice(-20);
@@ -17480,6 +17640,7 @@ function buildDevToolScreen() {
             <option value="all">All questions</option>
             <option value="image">Image only</option>
             <option value="text">Text only</option>
+            <option value="multiple-choice">Multiple choice</option>
           </select>
         </label>
       </div>
@@ -17671,16 +17832,17 @@ function buildDevToolScreen() {
             <label><span>Theme</span><select id="devCreateTheme"></select></label>
             <label><span>Difficulty</span><select id="devCreateDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
             <label><span>Question type</span><select id="devCreateType"><option value="text">Text</option><option value="image">Image</option></select></label>
+            <label><span>Question style</span><select id="devCreateQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
             <label><span>ID</span><input id="devCreateId" required placeholder="theme-short-unique-id"></label>
           </div>
           <label class="dev-create-question-field"><span>Question</span><textarea id="devCreateQuestion" required rows="5" placeholder="Question text"></textarea></label>
           <div class="dev-create-answer-grid">
             <label class="dev-create-canonical"><span>Answer</span><textarea id="devCreateCanonical" required rows="3" placeholder="Main answer"></textarea></label>
-            <label><span>Accepted answers</span><textarea id="devCreateAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
+            <label id="devCreateAcceptedWrap"><span>Accepted answers</span><textarea id="devCreateAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
           </div>
           <div class="dev-create-answer-grid">
-            <label><span>Bot answers</span><textarea id="devCreateBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
-            <label><span>Rejected answers</span><textarea id="devCreateRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
+            <label id="devCreateBotsWrap"><span>Bot answers</span><textarea id="devCreateBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
+            <label id="devCreateRejectedWrap"><span>Rejected answers</span><textarea id="devCreateRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
           </div>
           <fieldset class="dev-create-image-fields hidden" id="devCreateImageFields">
             <legend>Image</legend>
@@ -17782,11 +17944,15 @@ function buildDevToolScreen() {
   elements.devCreateTheme = screen.querySelector("#devCreateTheme");
   elements.devCreateDifficulty = screen.querySelector("#devCreateDifficulty");
   elements.devCreateType = screen.querySelector("#devCreateType");
+  elements.devCreateQuestionStyle = screen.querySelector("#devCreateQuestionStyle");
   elements.devCreateId = screen.querySelector("#devCreateId");
   elements.devCreateQuestion = screen.querySelector("#devCreateQuestion");
   elements.devCreateCanonical = screen.querySelector("#devCreateCanonical");
+  elements.devCreateAcceptedWrap = screen.querySelector("#devCreateAcceptedWrap");
   elements.devCreateAccepted = screen.querySelector("#devCreateAccepted");
+  elements.devCreateBotsWrap = screen.querySelector("#devCreateBotsWrap");
   elements.devCreateBots = screen.querySelector("#devCreateBots");
+  elements.devCreateRejectedWrap = screen.querySelector("#devCreateRejectedWrap");
   elements.devCreateRejected = screen.querySelector("#devCreateRejected");
   elements.devCreateImageFields = screen.querySelector("#devCreateImageFields");
   elements.devCreateImageUrl = screen.querySelector("#devCreateImageUrl");
@@ -17884,6 +18050,7 @@ function bindDevToolEvents() {
   elements.devProfileLockAllButton.addEventListener("click", () => setAllProfileDebugStates("disabled"));
   elements.devProfileResetButton.addEventListener("click", () => setAllProfileDebugStates("reset"));
   elements.devCreateType.addEventListener("change", updateDevCreateImageFields);
+  elements.devCreateQuestionStyle.addEventListener("change", updateDevCreateImageFields);
   elements.devCreateTheme.addEventListener("change", () => {
     syncDevCreateIdPrefix();
     updateDevCreatePreview();
@@ -17922,16 +18089,17 @@ function buildUserQuestionScreen() {
           <label><span>Theme</span><select id="userQuestionTheme"></select></label>
           <label><span>Difficulty</span><select id="userQuestionDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
           <label><span>Question type</span><select id="userQuestionType"><option value="text">Text</option><option value="image">Image</option></select></label>
+          <label><span>Question style</span><select id="userQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
           <label><span>ID</span><input id="userQuestionId" required placeholder="theme-short-unique-id"></label>
         </div>
         <label class="dev-create-question-field"><span>Question</span><textarea id="userQuestionText" required rows="5" placeholder="Question text"></textarea></label>
         <div class="dev-create-answer-grid">
           <label class="dev-create-canonical"><span>Main answer</span><textarea id="userQuestionCanonical" required rows="3" placeholder="Main answer"></textarea></label>
-          <label><span>Accepted answers</span><textarea id="userQuestionAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
+          <label id="userQuestionAcceptedWrap"><span>Accepted answers</span><textarea id="userQuestionAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
         </div>
         <div class="dev-create-answer-grid">
-          <label><span>Wrong bot answers</span><textarea id="userQuestionBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
-          <label><span>Rejected answers</span><textarea id="userQuestionRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
+          <label id="userQuestionBotsWrap"><span>Wrong bot answers</span><textarea id="userQuestionBots" required rows="3" placeholder="wrong one, wrong two"></textarea></label>
+          <label id="userQuestionRejectedWrap"><span>Rejected answers</span><textarea id="userQuestionRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
         </div>
         <fieldset class="dev-create-image-fields hidden" id="userQuestionImageFields">
           <legend>Image</legend>
@@ -17980,11 +18148,15 @@ function buildUserQuestionScreen() {
   elements.userQuestionTheme = screen.querySelector("#userQuestionTheme");
   elements.userQuestionDifficulty = screen.querySelector("#userQuestionDifficulty");
   elements.userQuestionType = screen.querySelector("#userQuestionType");
+  elements.userQuestionStyle = screen.querySelector("#userQuestionStyle");
   elements.userQuestionId = screen.querySelector("#userQuestionId");
   elements.userQuestionText = screen.querySelector("#userQuestionText");
   elements.userQuestionCanonical = screen.querySelector("#userQuestionCanonical");
+  elements.userQuestionAcceptedWrap = screen.querySelector("#userQuestionAcceptedWrap");
   elements.userQuestionAccepted = screen.querySelector("#userQuestionAccepted");
+  elements.userQuestionBotsWrap = screen.querySelector("#userQuestionBotsWrap");
   elements.userQuestionBots = screen.querySelector("#userQuestionBots");
+  elements.userQuestionRejectedWrap = screen.querySelector("#userQuestionRejectedWrap");
   elements.userQuestionRejected = screen.querySelector("#userQuestionRejected");
   elements.userQuestionImageFields = screen.querySelector("#userQuestionImageFields");
   elements.userQuestionImageUrl = screen.querySelector("#userQuestionImageUrl");
@@ -18006,6 +18178,7 @@ function buildUserQuestionScreen() {
     updateUserQuestionPreview();
   });
   elements.userQuestionType.addEventListener("change", updateUserQuestionImageFields);
+  elements.userQuestionStyle.addEventListener("change", updateUserQuestionImageFields);
   elements.userQuestionId.addEventListener("input", normalizeUserQuestionIdInput);
   elements.userQuestionForm.addEventListener("input", updateUserQuestionPreview);
   elements.userQuestionForm.addEventListener("change", updateUserQuestionPreview);
@@ -18032,14 +18205,23 @@ function syncUserQuestionIdPrefix() {
 
 function updateUserQuestionImageFields() {
   const isImage = elements.userQuestionType.value === "image";
+  const isMultipleChoice = elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE;
   setHidden(elements.userQuestionImageFields, !isImage);
   elements.userQuestionImageUrl.required = isImage;
+  setHidden(elements.userQuestionAcceptedWrap, isMultipleChoice);
+  setHidden(elements.userQuestionRejectedWrap, isMultipleChoice);
+  elements.userQuestionAccepted.required = false;
+  elements.userQuestionRejected.required = false;
+  elements.userQuestionCanonical.closest("label").querySelector("span").textContent = isMultipleChoice ? "Correct answer" : "Main answer";
+  elements.userQuestionBotsWrap.querySelector("span").textContent = isMultipleChoice ? "Incorrect answers" : "Wrong bot answers";
+  elements.userQuestionBots.placeholder = isMultipleChoice ? "wrong one, wrong two, wrong three" : "wrong one, wrong two";
   updateUserQuestionPreview();
 }
 
 function updateUserQuestionPreview() {
   if (!elements.userQuestionPreview) return;
   const type = elements.userQuestionType.value === "image" ? "image" : "text";
+  const style = elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
   const theme = elements.userQuestionTheme.value || "Theme";
   const difficulty = normalizeDifficulty(elements.userQuestionDifficulty.value);
   const question = elements.userQuestionText.value.trim() || "Question preview";
@@ -18048,7 +18230,7 @@ function updateUserQuestionPreview() {
   const imageCredit = elements.userQuestionImageCredit.value.trim();
   elements.userQuestionPreview.classList.toggle("text-only", type !== "image");
   elements.userQuestionPreviewMeta.replaceChildren();
-  [theme, type === "image" ? "Image" : "Text", difficulty].forEach((text) => {
+  [theme, type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "", difficulty].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     elements.userQuestionPreviewMeta.appendChild(badge);
@@ -18089,6 +18271,7 @@ function getUserQuestionPayload() {
   const payload = {
     id: formatDevQuestionId(elements.userQuestionId.value),
     type: elements.userQuestionType.value,
+    questionStyle: elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
     theme: elements.userQuestionTheme.value,
     difficulty: elements.userQuestionDifficulty.value,
     question: elements.userQuestionText.value.trim(),
@@ -18097,6 +18280,13 @@ function getUserQuestionPayload() {
     botCards: parseCommaSeparatedAnswers(elements.userQuestionBots.value),
     rejectedAnswers: parseCommaSeparatedAnswers(elements.userQuestionRejected.value)
   };
+  if (payload.questionStyle === MULTIPLE_CHOICE_STYLE) {
+    const incorrect = parseCommaSeparatedAnswers(elements.userQuestionBots.value).slice(0, 3);
+    payload.acceptedAnswers = [];
+    payload.botCards = [];
+    payload.rejectedAnswers = [];
+    payload.multipleChoiceOptions = getMultipleChoiceDraftOptions(payload.canonicalAnswer, incorrect);
+  }
   if (payload.type === "image") {
     payload.image = {
       url: elements.userQuestionImageUrl.value.trim(),
@@ -18119,6 +18309,15 @@ function clearUserQuestionForm() {
 async function submitUserQuestion(event) {
   event.preventDefault();
   if (!elements.userQuestionForm.reportValidity()) return;
+  if (elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE
+    && !validateMultipleChoiceDraft(
+      elements.userQuestionCanonical.value,
+      parseCommaSeparatedAnswers(elements.userQuestionBots.value),
+      elements.userQuestionBots,
+      elements.userQuestionStatus
+    )) {
+    return;
+  }
   if (loadCurrencyBalance() < userQuestionSubmissionCost) {
     elements.userQuestionStatus.textContent = `You need ${formatCoins(userQuestionSubmissionCost)} to submit a question.`;
     playSound("error");
@@ -18404,6 +18603,7 @@ function createDevSubmissionCard(submission) {
     createReviewSelect("theme", "Theme", triviaThemes, question.theme || triviaThemes[0]),
     createReviewSelect("difficulty", "Difficulty", ["easy", "medium", "hard"], normalizeDifficulty(question.difficulty)),
     createReviewSelect("type", "Type", ["text", "image"], question.type === "image" ? "image" : "text"),
+    createReviewSelect("questionStyle", "Style", ["standard", "multiple-choice"], question.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard"),
     createReviewField("id", "ID", question.id || "", "input")
   );
   const body = document.createElement("div");
@@ -18412,7 +18612,9 @@ function createDevSubmissionCard(submission) {
     createReviewField("question", "Question", question.question || "", "textarea"),
     createReviewField("canonicalAnswer", "Main answer", question.canonicalAnswer || "", "textarea"),
     createReviewField("acceptedAnswers", "Accepted answers", (question.acceptedAnswers || []).join(", "), "textarea"),
-    createReviewField("botCards", "Wrong bot answers", (question.botCards || []).join(", "), "textarea"),
+    createReviewField("botCards", question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Incorrect answers" : "Wrong bot answers", question.questionStyle === MULTIPLE_CHOICE_STYLE
+      ? (question.multipleChoiceOptions || []).filter((answer) => normalizeMultipleChoiceOption(answer) !== normalizeMultipleChoiceOption(question.canonicalAnswer)).join(", ")
+      : (question.botCards || []).join(", "), "textarea"),
     createReviewField("rejectedAnswers", "Rejected answers", (question.rejectedAnswers || []).join(", "), "textarea"),
     createReviewField("imageUrl", "Image URL", question.image?.url || "", "input"),
     createReviewField("imageAlt", "Image alt", question.image?.alt || "", "input"),
@@ -18497,6 +18699,7 @@ function getReviewCardPayload(card) {
   const payload = {
     id: formatDevQuestionId(field("id")),
     type: field("type") === "image" ? "image" : "text",
+    questionStyle: field("questionStyle") === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
     theme: field("theme"),
     difficulty: normalizeDifficulty(field("difficulty")),
     question: field("question").trim(),
@@ -18505,6 +18708,13 @@ function getReviewCardPayload(card) {
     botCards: parseCommaSeparatedAnswers(field("botCards")),
     rejectedAnswers: parseCommaSeparatedAnswers(field("rejectedAnswers"))
   };
+  if (payload.questionStyle === MULTIPLE_CHOICE_STYLE) {
+    const incorrect = parseCommaSeparatedAnswers(field("botCards")).slice(0, 3);
+    payload.acceptedAnswers = [];
+    payload.botCards = [];
+    payload.rejectedAnswers = [];
+    payload.multipleChoiceOptions = getMultipleChoiceDraftOptions(payload.canonicalAnswer, incorrect);
+  }
   if (payload.type === "image") {
     payload.image = {
       url: field("imageUrl").trim(),
@@ -18513,6 +18723,19 @@ function getReviewCardPayload(card) {
     };
   }
   return payload;
+}
+
+function validateReviewMultipleChoiceDraft(card) {
+  const style = card?.querySelector('[data-review-field="questionStyle"]')?.value || "standard";
+  if (style !== MULTIPLE_CHOICE_STYLE) {
+    return true;
+  }
+  return validateMultipleChoiceDraft(
+    card.querySelector('[data-review-field="canonicalAnswer"]')?.value || "",
+    parseCommaSeparatedAnswers(card.querySelector('[data-review-field="botCards"]')?.value || ""),
+    card.querySelector('[data-review-field="botCards"]'),
+    elements.devSubmissionStatus
+  );
 }
 
 function updateDevSubmissionReviewPreview() {
@@ -18530,7 +18753,7 @@ function updateDevSubmissionReviewPreview() {
   const isImage = payload.type === "image";
   preview.classList.toggle("text-only", !isImage);
   meta.replaceChildren();
-  [payload.theme || "Theme", isImage ? "Image" : "Text", payload.difficulty].forEach((text) => {
+  [payload.theme || "Theme", isImage ? "Image" : "Text", payload.questionStyle === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "", payload.difficulty].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     meta.appendChild(badge);
@@ -18576,6 +18799,9 @@ async function handleDevSubmissionClick(event) {
   const id = card?.dataset.submissionId;
   if (!id) return;
   const action = button.dataset.submissionAction;
+  if (action === "approve" && !validateReviewMultipleChoiceDraft(card)) {
+    return;
+  }
   button.disabled = true;
   try {
     const body = action === "approve"
@@ -19612,7 +19838,7 @@ function renderQuestionDebugCounts(counts = {}) {
     item.className = "dev-count-chip";
     item.classList.toggle("selected", selectedTheme === theme);
     item.dataset.theme = theme;
-    item.innerHTML = `<strong>${theme}</strong><span>${Number(count.total || 0)} total</span><small>${Number(count.image || 0)} image / ${Number(count.text || 0)} text</small>`;
+    item.innerHTML = `<strong>${theme}</strong><span>${Number(count.total || 0)} total</span><small>${Number(count.image || 0)} image / ${Number(count.text || 0)} text / ${Number(count.multipleChoice || 0)} MC</small>`;
     item.addEventListener("click", () => {
       elements.devQuestionThemeFilter.value = theme;
       filterQuestionDebugBank();
@@ -19632,7 +19858,10 @@ function filterQuestionDebugBank() {
     if (theme !== "all" && question.theme !== theme) {
       return false;
     }
-    if (type !== "all" && question.type !== type) {
+    if (type === "multiple-choice" && question.questionStyle !== MULTIPLE_CHOICE_STYLE) {
+      return false;
+    }
+    if (type !== "all" && type !== "multiple-choice" && question.type !== type) {
       return false;
     }
     if (!query) {
@@ -19643,10 +19872,12 @@ function filterQuestionDebugBank() {
       question.theme,
       question.difficulty,
       question.type,
+      question.questionStyle,
       question.question,
       question.canonicalAnswer,
       ...(question.acceptedAnswers || []),
       ...(question.botCards || []),
+      ...(question.multipleChoiceOptions || []),
       ...(question.rejectedAnswers || []),
       question.image?.url
     ].filter(Boolean).join(" ");
@@ -19675,7 +19906,7 @@ function renderQuestionDebugResults() {
     button.dataset.questionDebugIndex = String(index);
     const answer = document.createElement("span");
     answer.textContent = question.canonicalAnswer || "-";
-    button.title = `${question.id}\n${question.theme} - ${question.difficulty} - ${question.type}`;
+    button.title = `${question.id}\n${question.theme} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ""}`;
     button.append(answer);
     elements.devQuestionResults.appendChild(button);
   });
@@ -19720,20 +19951,26 @@ function renderQuestionDebugPreview() {
   [
     question.theme,
     question.type === "image" ? "Image" : "Text",
+    question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "",
     normalizeDifficulty(question.difficulty)
-  ].forEach((text) => {
+  ].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     elements.devQuestionMeta.appendChild(badge);
   });
   elements.devQuestionText.textContent = question.question || "Question preview";
   elements.devQuestionAnswer.textContent = question.canonicalAnswer || "-";
-  elements.devQuestionAccepted.textContent = (question.acceptedAnswers || []).length
-    ? `Accepted: ${question.acceptedAnswers.join(", ")}`
-    : "No accepted answers listed.";
-  elements.devQuestionRejected.textContent = (question.rejectedAnswers || []).length
-    ? `Rejected: ${question.rejectedAnswers.join(", ")}`
-    : "No explicit rejections listed.";
+  if (question.questionStyle === MULTIPLE_CHOICE_STYLE) {
+    elements.devQuestionAccepted.textContent = `Options: ${(question.multipleChoiceOptions || []).join(", ") || "No options listed."}`;
+    elements.devQuestionRejected.textContent = "AI grading disabled. Exact option match only.";
+  } else {
+    elements.devQuestionAccepted.textContent = (question.acceptedAnswers || []).length
+      ? `Accepted: ${question.acceptedAnswers.join(", ")}`
+      : "No accepted answers listed.";
+    elements.devQuestionRejected.textContent = (question.rejectedAnswers || []).length
+      ? `Rejected: ${question.rejectedAnswers.join(", ")}`
+      : "No explicit rejections listed.";
+  }
   elements.devQuestionStatus.textContent = `Seed id: ${question.id}`;
   renderDevQuestionImage(question);
 }
@@ -20045,6 +20282,7 @@ function updateDevCreatePreview() {
     return;
   }
   const type = elements.devCreateType.value === "image" ? "image" : "text";
+  const style = elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
   const theme = elements.devCreateTheme.value || "Theme";
   const difficulty = normalizeDifficulty(elements.devCreateDifficulty.value);
   const question = elements.devCreateQuestion.value.trim() || "Question preview";
@@ -20054,7 +20292,7 @@ function updateDevCreatePreview() {
 
   elements.devCreatePreview.classList.toggle("text-only", type !== "image");
   elements.devCreatePreviewMeta.replaceChildren();
-  [theme, type === "image" ? "Image" : "Text", difficulty].forEach((text) => {
+  [theme, type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "", difficulty].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     elements.devCreatePreviewMeta.appendChild(badge);
@@ -20157,11 +20395,14 @@ function startEditingDebugQuestion() {
   elements.devCreateTheme.value = question.theme || triviaThemes[0];
   elements.devCreateDifficulty.value = normalizeDifficulty(question.difficulty);
   elements.devCreateType.value = question.type === "image" ? "image" : "text";
+  elements.devCreateQuestionStyle.value = question.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
   elements.devCreateId.value = question.id || "";
   elements.devCreateQuestion.value = question.question || "";
   elements.devCreateCanonical.value = question.canonicalAnswer || "";
   elements.devCreateAccepted.value = (question.acceptedAnswers || []).join(", ");
-  elements.devCreateBots.value = (question.botCards || []).join(", ");
+  elements.devCreateBots.value = question.questionStyle === MULTIPLE_CHOICE_STYLE
+    ? (question.multipleChoiceOptions || []).filter((answer) => normalizeMultipleChoiceOption(answer) !== normalizeMultipleChoiceOption(question.canonicalAnswer)).join(", ")
+    : (question.botCards || []).join(", ");
   elements.devCreateRejected.value = (question.rejectedAnswers || []).join(", ");
   elements.devCreateImageUrl.value = question.image?.url || "";
   elements.devCreateImageAlt.value = question.image?.alt || "";
@@ -20215,8 +20456,16 @@ async function deleteSelectedDebugQuestion() {
 
 function updateDevCreateImageFields() {
   const isImage = elements.devCreateType.value === "image";
+  const isMultipleChoice = elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE;
   setHidden(elements.devCreateImageFields, !isImage);
   elements.devCreateImageUrl.required = isImage;
+  setHidden(elements.devCreateAcceptedWrap, isMultipleChoice);
+  setHidden(elements.devCreateRejectedWrap, isMultipleChoice);
+  elements.devCreateAccepted.required = false;
+  elements.devCreateRejected.required = false;
+  elements.devCreateCanonical.closest("label").querySelector("span").textContent = isMultipleChoice ? "Correct answer" : "Answer";
+  elements.devCreateBotsWrap.querySelector("span").textContent = isMultipleChoice ? "Incorrect answers" : "Bot answers";
+  elements.devCreateBots.placeholder = isMultipleChoice ? "wrong one, wrong two, wrong three" : "wrong one, wrong two";
   if (elements.devCreateSubmitButton) {
     elements.devCreateSubmitButton.textContent = state.questionEditOriginalId ? "Save Question" : "Create Question";
   }
@@ -20236,6 +20485,41 @@ function parseCommaSeparatedAnswers(value) {
     .filter(Boolean);
 }
 
+function getMultipleChoiceDraftOptions(correctAnswer, wrongAnswers) {
+  const correct = cleanInput(correctAnswer || "");
+  const correctKey = normalizeMultipleChoiceOption(correct);
+  const wrong = [];
+  const seen = new Set();
+  (wrongAnswers || []).forEach((answer) => {
+    const cleaned = cleanInput(answer || "");
+    const key = normalizeMultipleChoiceOption(cleaned);
+    if (!cleaned || !key || key === correctKey || seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    wrong.push(cleaned);
+  });
+  return correct ? [correct, ...wrong] : [];
+}
+
+function validateMultipleChoiceDraft(correctAnswer, wrongAnswers, input, statusElement) {
+  if (!input) {
+    return true;
+  }
+  const parsedWrongAnswers = (wrongAnswers || []).map((answer) => cleanInput(answer || "")).filter(Boolean);
+  const options = getMultipleChoiceDraftOptions(correctAnswer, parsedWrongAnswers);
+  const valid = Boolean(cleanInput(correctAnswer || "")) && parsedWrongAnswers.length === 3 && options.length === 4;
+  input.setCustomValidity(valid ? "" : "Enter exactly three unique incorrect answers, each different from the correct answer.");
+  if (!valid) {
+    input.reportValidity();
+    if (statusElement) {
+      statusElement.textContent = "Multiple-choice questions need one correct answer and exactly three unique incorrect answers.";
+    }
+    playSound("error");
+  }
+  return valid;
+}
+
 function normalizeDevQuestionIdForComparison(id) {
   return normalizePromptText(id).replace(/\s+/g, "-");
 }
@@ -20244,6 +20528,7 @@ function getDevQuestionCreatePayload() {
   const payload = {
     id: formatDevQuestionId(elements.devCreateId.value),
     type: elements.devCreateType.value,
+    questionStyle: elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
     theme: elements.devCreateTheme.value,
     difficulty: elements.devCreateDifficulty.value,
     question: elements.devCreateQuestion.value.trim(),
@@ -20252,6 +20537,13 @@ function getDevQuestionCreatePayload() {
     botCards: parseCommaSeparatedAnswers(elements.devCreateBots.value),
     rejectedAnswers: parseCommaSeparatedAnswers(elements.devCreateRejected.value)
   };
+  if (payload.questionStyle === MULTIPLE_CHOICE_STYLE) {
+    const incorrect = parseCommaSeparatedAnswers(elements.devCreateBots.value).slice(0, 3);
+    payload.acceptedAnswers = [];
+    payload.botCards = [];
+    payload.rejectedAnswers = [];
+    payload.multipleChoiceOptions = getMultipleChoiceDraftOptions(payload.canonicalAnswer, incorrect);
+  }
   if (payload.type === "image") {
     payload.image = {
       url: elements.devCreateImageUrl.value.trim(),
@@ -20286,6 +20578,15 @@ function requireNewDevQuestionId(payload) {
 }
 
 async function saveDevQuestionPayload(options = {}) {
+  if (elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE
+    && !validateMultipleChoiceDraft(
+      elements.devCreateCanonical.value,
+      parseCommaSeparatedAnswers(elements.devCreateBots.value),
+      elements.devCreateBots,
+      elements.devCreateStatus
+    )) {
+    return;
+  }
   const payload = getDevQuestionCreatePayload();
   elements.devCreateId.value = payload.id;
   if (options.saveAsNew && !requireNewDevQuestionId(payload)) {
@@ -20441,6 +20742,7 @@ async function newRound() {
   state.questionId = "";
   state.blackCard = "";
   state.questionType = "image";
+  state.questionStyle = "standard";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
   state.questionImage = null;
@@ -20448,6 +20750,7 @@ async function newRound() {
   state.acceptedAnswers = [];
   state.judge = null;
   state.botCards = [];
+  state.multipleChoiceOptions = [];
   resetPlayedPowersForRound();
   if (isRoomMode() && !isCurrentHost()) {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
@@ -20676,6 +20979,7 @@ function resetMatch(mode) {
   state.recentBlackCards = [];
   state.recentTriviaThemes = [];
   state.botCards = [];
+  state.multipleChoiceOptions = [];
   state.nextSetup = null;
   state.nextSetupPromise = null;
   state.nextSetupStatus = "idle";
@@ -20685,6 +20989,7 @@ function resetMatch(mode) {
   state.setupVersion += 1;
   state.blackCard = "";
   state.questionType = "image";
+  state.questionStyle = "standard";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
   state.questionImage = null;
@@ -21966,12 +22271,14 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   state.questionId = "";
   state.blackCard = "";
   state.questionType = "image";
+  state.questionStyle = "standard";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
   state.questionImage = null;
   state.canonicalAnswer = "";
   state.acceptedAnswers = [];
   state.judge = null;
+  state.multipleChoiceOptions = [];
   resetRoundUiForLoading({ resetBlackCardTheme: true });
   updateRoomEventRevision(payload.revision);
   return true;
@@ -23633,6 +23940,7 @@ function submitRoomAnswer(rawInput, options = {}) {
   maybeSubmitRoomBotsAfterRealPlayers();
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
+  renderMultipleChoiceOptions();
   document.querySelector("#inputTitle").textContent = hasPendingTimeBenderSubmitter()
     ? "Waiting for Time Bender bonus time..."
     : "Waiting for the other player...";
@@ -23660,6 +23968,7 @@ function submitBotModeAnswer(rawInput, options = {}) {
   setRoomSubmission("player", true);
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
+  renderMultipleChoiceOptions();
   document.querySelector("#inputTitle").textContent = "Waiting for bots...";
   playSound("lock");
   commitScheduledRoomBotAnswers({ force: true });
@@ -23725,44 +24034,49 @@ async function playRound(rawInput) {
     setHidden(elements.errorPanel, true);
     setHidden(elements.loadingPanel, false);
   });
-  startLoadingMessages("round", `${state.judge.name} is checking the answers...`);
+  startLoadingMessages("round", isMultipleChoiceRound() ? "Checking the selected options..." : `${state.judge.name} is checking the answers...`);
   playSound("submit");
 
   let roundResult;
-  if (state.roundRequestAbortController) {
+  if (isMultipleChoiceRound()) {
+    roundResult = createMultipleChoiceRoundResult(rawInput);
+  } else if (state.roundRequestAbortController) {
     state.roundRequestAbortController.abort();
   }
-  const roundAbortController = new AbortController();
-  state.roundRequestAbortController = roundAbortController;
-  try {
-    setGradingActive(true);
+  if (!roundResult) {
+    const roundAbortController = new AbortController();
+    state.roundRequestAbortController = roundAbortController;
     try {
-      roundResult = await requestAiRound(rawInput, { signal: roundAbortController.signal });
-    } finally {
-      setGradingActive(false);
-      if (state.roundRequestAbortController === roundAbortController) {
-        state.roundRequestAbortController = null;
+      setGradingActive(true);
+      try {
+        roundResult = await requestAiRound(rawInput, { signal: roundAbortController.signal });
+      } finally {
+        setGradingActive(false);
+        if (state.roundRequestAbortController === roundAbortController) {
+          state.roundRequestAbortController = null;
+        }
       }
-    }
-    if (!isCurrentMatchWork(matchToken)) {
+      if (!isCurrentMatchWork(matchToken)) {
+        state.roomRoundResolving = false;
+        return;
+      }
+    } catch (error) {
+      if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+        state.roomRoundResolving = false;
+        return;
+      }
+      console.warn(error);
+      playSound("error");
+      stopLoadingMessages();
+      elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+      elements.answerInput.disabled = false;
+      elements.submitButton.disabled = false;
+      renderMultipleChoiceOptions();
+      setHidden(elements.loadingPanel, true);
+      setHidden(elements.errorPanel, false);
       state.roomRoundResolving = false;
       return;
     }
-  } catch (error) {
-    if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
-      state.roomRoundResolving = false;
-      return;
-    }
-    console.warn(error);
-    playSound("error");
-    stopLoadingMessages();
-    elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
-    elements.answerInput.disabled = false;
-    elements.submitButton.disabled = false;
-    setHidden(elements.loadingPanel, true);
-    setHidden(elements.errorPanel, false);
-    state.roomRoundResolving = false;
-    return;
   }
 
   if (!isCurrentMatchWork(matchToken)) {
@@ -25714,11 +26028,10 @@ function endMatch(wasExited = false, options = {}) {
   playSound("matchEnd");
 }
 
-elements.answerForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const rawInput = cleanInput(elements.answerInput.value);
+function submitCurrentAnswer(rawInput) {
+  rawInput = cleanInput(rawInput);
   if (!rawInput) {
-    elements.answerInput.focus();
+    focusAnswerControl();
     return;
   }
 
@@ -25743,7 +26056,7 @@ elements.answerForm.addEventListener("submit", (event) => {
     elements.answerInput.value = "";
     updateModeUi();
     startTimer();
-    elements.answerInput.focus();
+    focusAnswerControl();
     playSound("lock");
     return;
   }
@@ -25762,6 +26075,23 @@ elements.answerForm.addEventListener("submit", (event) => {
   commitActivePowerUp("player");
   state.answerRemainingTimes.player = state.timerRemaining;
   playRound(lockRoundAnswer("player", rawInput));
+}
+
+elements.answerForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitCurrentAnswer(elements.answerInput.value);
+});
+
+elements.multipleChoiceOptions?.addEventListener("click", (event) => {
+  const button = event.target.closest(".multiple-choice-option");
+  if (!button || button.disabled) {
+    return;
+  }
+  elements.multipleChoiceOptions.querySelectorAll(".multiple-choice-option").forEach((option) => {
+    option.classList.toggle("selected", option === button);
+    option.setAttribute("aria-pressed", String(option === button));
+  });
+  submitCurrentAnswer(button.dataset.answerChoice || button.textContent || "");
 });
 
 elements.nextRoundButton.addEventListener("click", (event) => {
@@ -25792,7 +26122,7 @@ elements.retryButton.addEventListener("click", () => {
   setHidden(elements.inputPanel, false);
   setHidden(elements.answerProgressPanel, false);
   setHidden(elements.powerPanel, false);
-  elements.answerInput.focus();
+  focusAnswerControl();
 });
 
 elements.startBotsButton.addEventListener("click", startBotsGame);
