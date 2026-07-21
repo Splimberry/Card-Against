@@ -17551,6 +17551,7 @@ function renderRound() {
   elements.verdictPanel.classList.remove("revealed");
   document.querySelector(".table-surface").classList.remove("winner-moment");
   setHidden(elements.inputPanel, false);
+  renderMultipleChoiceOptions();
   renderTableEventControls();
   setHidden(elements.answerProgressPanel, false);
   setHidden(elements.powerPanel, false);
