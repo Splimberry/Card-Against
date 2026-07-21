@@ -16567,6 +16567,14 @@ function commitScheduledRoomBotAnswers(options = {}) {
     return false;
   }
   const force = Boolean(options.force);
+  if (force) {
+    getPendingRoomBotSubmitters().forEach((owner) => {
+      state.roomBotAnswerSchedule[owner] = state.roomBotAnswerSchedule[owner] || {
+        triggerAt: state.timerRemaining,
+        submitted: false
+      };
+    });
+  }
   let changed = false;
   Object.entries(state.roomBotAnswerSchedule).forEach(([owner, schedule]) => {
     if (!schedule || schedule.submitted || state.roomSubmissions[owner] || (!force && state.timerRemaining > schedule.triggerAt)) {
@@ -16903,7 +16911,6 @@ function resumeBotPowerDebugTimer() {
   if (
     canShowBotPowerDebugPanel()
     && state.timerRemaining > 0
-    && !state.roomSubmissions.player
     && !elements.inputPanel.classList.contains("hidden")
     && elements.verdictPanel.classList.contains("hidden")
   ) {
@@ -23541,6 +23548,7 @@ function submitBotModeAnswer(rawInput, options = {}) {
   elements.submitButton.disabled = true;
   document.querySelector("#inputTitle").textContent = "Waiting for bots...";
   playSound("lock");
+  commitScheduledRoomBotAnswers({ force: true });
   maybeResolveBotSubmissions();
 }
 
