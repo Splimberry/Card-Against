@@ -3819,7 +3819,7 @@ async function getSeedQuestionSetup(options = {}) {
   const multipleChoicePool = pool.filter(isMultipleChoiceQuestion);
   const standardPool = pool.filter((question) => !isMultipleChoiceQuestion(question));
   const wantsMultipleChoice = multipleChoicePool.length
-    && (Math.abs(hashString(`${seed}-question-style`)) % 100) < 15;
+    && (Math.abs(hashString(`${seed}-question-style`)) % 100) < 30;
   const pickPool = wantsMultipleChoice
     ? multipleChoicePool
     : standardPool.length ? standardPool : pool;
