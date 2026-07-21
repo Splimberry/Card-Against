@@ -2431,6 +2431,7 @@ const state = {
   extraPowerUses: {},
   powerDebugTimerPaused: false,
   powerDebugTimerManualPaused: false,
+  powerDebugUnlimitedPowers: false,
   botPowerSchedule: {},
   roomBotAnswerSchedule: {},
   nextPreferredTheme: "",
@@ -2838,6 +2839,7 @@ const elements = {
   botPowerSelect: document.querySelector("#botPowerSelect"),
   botPowerChaosToggle: document.querySelector("#botPowerChaosToggle"),
   botPowerPauseToggle: document.querySelector("#botPowerPauseToggle"),
+  botPowerUnlimitedToggle: document.querySelector("#botPowerUnlimitedToggle"),
   botPowerAddButton: document.querySelector("#botPowerAddButton"),
   botPowerFillButton: document.querySelector("#botPowerFillButton"),
   botPowerClearButton: document.querySelector("#botPowerClearButton"),
@@ -11641,9 +11643,20 @@ function hasPlayedPowerThisRound(owner) {
   return Boolean(state.playedPowerUps[owner] || (state.playedPowerStacks[owner] || []).length);
 }
 
+function hasPowerDebugUnlimitedUse(owner) {
+  return Boolean(
+    state.powerDebugUnlimitedPowers
+    && canShowBotPowerDebugPanel()
+    && (owner === "player" || isBotOwner(owner))
+  );
+}
+
 function canPlayPower(owner) {
   if (isClassicModeEnabled() || isTableEventActive("power_outage")) {
     return false;
+  }
+  if (hasPowerDebugUnlimitedUse(owner)) {
+    return true;
   }
   return !hasPlayedPowerThisRound(owner) || hasAllOut(owner) || (state.extraPowerUses[owner] || 0) > 0;
 }
@@ -11815,7 +11828,17 @@ function getPlayedPowerEntries(owners = getActiveOwners()) {
 }
 
 function getPowerHandLimit(owner) {
-  return getPlayer(owner)?.handLimit || 0;
+  const player = getPlayer(owner);
+  if (!player) {
+    return 0;
+  }
+  if (player.spectator) {
+    return 0;
+  }
+  if (Number.isFinite(player.handLimit) && player.handLimit > 0) {
+    return player.handLimit;
+  }
+  return isBotOwner(owner) ? 3 : 0;
 }
 
 function getVendingMachineRefillCost(owner) {
@@ -16070,7 +16093,7 @@ function setupPowerHands() {
       opponent: [],
       ...Object.fromEntries(getActiveBotOwners().map((owner) => [
         owner,
-        drawPowerHand(2, getPowerDrawOptions(owner))
+        drawPowerHand(getPowerHandLimit(owner), getPowerDrawOptions(owner))
       ]))
     };
   }
@@ -16924,6 +16947,12 @@ function syncBotPowerDebugPauseToggle() {
   }
 }
 
+function syncBotPowerDebugUnlimitedToggle() {
+  if (elements.botPowerUnlimitedToggle) {
+    elements.botPowerUnlimitedToggle.checked = Boolean(state.powerDebugUnlimitedPowers);
+  }
+}
+
 function handleBotPowerDebugPauseToggle() {
   state.powerDebugTimerManualPaused = Boolean(elements.botPowerPauseToggle?.checked);
   if (state.powerDebugTimerManualPaused) {
@@ -16933,6 +16962,12 @@ function handleBotPowerDebugPauseToggle() {
   }
   resumeBotPowerDebugTimer();
   updateBotPowerDebugPauseStatus();
+}
+
+function handleBotPowerDebugUnlimitedToggle() {
+  state.powerDebugUnlimitedPowers = Boolean(elements.botPowerUnlimitedToggle?.checked);
+  renderPowerUps();
+  renderPowerDebug("bot-match");
 }
 
 function renderBotPowerDebugPanel() {
@@ -16948,6 +16983,7 @@ function renderBotPowerDebugPanel() {
     return;
   }
   syncBotPowerDebugPauseToggle();
+  syncBotPowerDebugUnlimitedToggle();
   if (state.powerDebugTimerManualPaused) {
     pauseBotPowerDebugTimer();
   }
@@ -18671,6 +18707,7 @@ function getPowerDebugRefs(scope = "dev") {
       powerSelect: elements.botPowerSelect,
       chaosToggle: elements.botPowerChaosToggle,
       pauseToggle: elements.botPowerPauseToggle,
+      unlimitedToggle: elements.botPowerUnlimitedToggle,
       status: elements.botPowerStatus,
       hand: elements.botPowerHand
     };
@@ -25711,6 +25748,7 @@ elements.botPowerSearchInput?.addEventListener("input", () => renderPowerDebug("
 elements.botPowerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerChaosToggle?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerPauseToggle?.addEventListener("change", handleBotPowerDebugPauseToggle);
+elements.botPowerUnlimitedToggle?.addEventListener("change", handleBotPowerDebugUnlimitedToggle);
 elements.botPowerAddButton?.addEventListener("click", () => addDebugPowerToHand("bot-match"));
 elements.botPowerFillButton?.addEventListener("click", () => fillDebugPowerHand("bot-match"));
 elements.botPowerClearButton?.addEventListener("click", () => clearDebugPowerHand("bot-match"));
