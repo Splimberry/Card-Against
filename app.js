@@ -12130,16 +12130,31 @@ function renderQuestionProgress() {
   const progress = Array.from({ length: total }, (_, index) => state.roundProgress[index] || "unanswered");
   const answered = progress.filter((status) => status !== "unanswered").length;
   const correct = progress.filter((status) => status === "correct").length;
+  const existingMarkers = new Map(
+    [...elements.answerProgressGrid.querySelectorAll(".answer-progress-box[data-round-index]")]
+      .map((marker) => [marker.dataset.roundIndex, marker])
+  );
   elements.answerProgressGrid.style.setProperty("--progress-count", String(total));
   elements.answerProgressSummary.textContent = `${answered}/${total} answered - ${correct} correct`;
   elements.answerProgressGrid.replaceChildren(
     ...progress.map((status, index) => {
-      const marker = document.createElement("span");
+      const roundIndex = String(index);
+      const marker = existingMarkers.get(roundIndex) || document.createElement("span");
+      const isNew = !existingMarkers.has(roundIndex);
       marker.className = "answer-progress-box";
+      marker.dataset.roundIndex = roundIndex;
       marker.dataset.status = status;
       marker.dataset.active = String(index === state.round - 1 && status === "unanswered");
       marker.title = `Round ${index + 1}: ${status === "unanswered" ? "unanswered" : status}`;
       marker.textContent = String(index + 1);
+      marker.classList.toggle("answer-progress-box-new", isNew);
+      if (isNew) {
+        marker.style.setProperty("--progress-box-delay", `${Math.min(index, 8) * 42}ms`);
+        window.setTimeout(() => {
+          marker.classList.remove("answer-progress-box-new");
+          marker.style.removeProperty("--progress-box-delay");
+        }, 520 + Math.min(index, 8) * 42);
+      }
       return marker;
     })
   );

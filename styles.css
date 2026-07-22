@@ -347,9 +347,11 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 /* In-game side motion. Remove this block to revert right-side/panel entrance polish. */
 .game-stage:not(.hidden) :is(
   .scoreboard,
+  .power-panel:not(.hidden),
   .effect-panel:not(.hidden),
   .judge-panel:not(.hidden),
   .input-panel:not(.hidden),
+  .answer-progress:not(.hidden),
   .answer-progress-panel:not(.hidden),
   .cards-area:not(.hidden),
   .verdict-panel:not(.hidden),
@@ -370,16 +372,32 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   --game-side-motion-delay: 90ms;
 }
 
+.game-stage:not(.hidden) .power-panel:not(.hidden) {
+  --game-side-motion-x: 2.4rem;
+  --game-side-motion-y: -0.1rem;
+  --game-side-motion-blur: 8px;
+  --game-side-motion-duration: 780ms;
+  --game-side-motion-delay: 120ms;
+}
+
 .game-stage:not(.hidden) :is(.effect-panel:not(.hidden), .judge-panel:not(.hidden)) {
   --game-side-motion-x: 1.8rem;
   --game-side-motion-y: 0.25rem;
   --game-side-motion-delay: 120ms;
 }
 
-.game-stage:not(.hidden) :is(.input-panel:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden)) {
+.game-stage:not(.hidden) :is(.input-panel:not(.hidden), .answer-progress:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden)) {
   --game-side-motion-x: 2.2rem;
   --game-side-motion-y: 0.38rem;
   --game-side-motion-delay: 170ms;
+}
+
+.game-stage:not(.hidden) .answer-progress:not(.hidden) {
+  --game-side-motion-x: 2.2rem;
+  --game-side-motion-y: 0.5rem;
+  --game-side-motion-blur: 8px;
+  --game-side-motion-duration: 760ms;
+  --game-side-motion-delay: 260ms;
 }
 
 .game-stage.room-active:not(.hidden) .room-chat:not(.hidden) {
@@ -3881,8 +3899,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
   64% {
     opacity: 1;
-    transform: translateX(-0.12rem) scale(1.035);
-    filter: blur(0) brightness(1.1);
+    filter: blur(0) brightness(1.08);
     box-shadow: 0 0 1.5rem rgba(34, 211, 238, 0.3);
   }
 
@@ -3902,8 +3919,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
   62% {
     opacity: 1;
-    transform: translateX(-0.1rem) scale(1.025);
-    filter: blur(1.5px) saturate(1.1) brightness(1.12);
+    filter: blur(0) saturate(1.08) brightness(1.1);
   }
 
   100% {
@@ -4505,6 +4521,19 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   color: var(--muted);
   font-size: clamp(0.78rem, 1.15vw, 1.05rem);
   font-weight: 950;
+  transition:
+    border-color 260ms ease,
+    background 260ms ease,
+    color 260ms ease,
+    box-shadow 320ms ease,
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 260ms ease;
+}
+
+.answer-progress-box.answer-progress-box-new {
+  animation: progressBoxGlideIn 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--progress-box-delay, 0ms);
+  will-change: opacity, transform, filter;
 }
 
 .answer-progress-box[data-active="true"] {
@@ -10317,9 +10346,10 @@ input:focus {
   .profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
   .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
   .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
-  .game-stage:not(.hidden) :is(.scoreboard, .effect-panel:not(.hidden), .judge-panel:not(.hidden), .input-panel:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden), .room-chat:not(.hidden)),
+  .game-stage:not(.hidden) :is(.scoreboard, .power-panel:not(.hidden), .effect-panel:not(.hidden), .judge-panel:not(.hidden), .input-panel:not(.hidden), .answer-progress:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden), .room-chat:not(.hidden)),
   .room-player-card[data-bot="true"],
   .chat-message.chat-message-new,
+  .answer-progress-box.answer-progress-box-new,
   .black-card.incoming-question-card,
   .power-card.fresh-power,
   .power-card.power-selected-pop,
@@ -10428,6 +10458,25 @@ input:focus {
     opacity: 0;
     filter: blur(4px);
     transform: translate3d(0.55rem, 0.12rem, 0) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes progressBoxGlideIn {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translate3d(0.85rem, 0.18rem, 0) scale(0.985);
+  }
+
+  62% {
+    opacity: 1;
+    filter: blur(0);
   }
 
   100% {
