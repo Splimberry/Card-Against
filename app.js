@@ -8378,11 +8378,30 @@ const classicModifierDefinition = {
   icon: "assets/modifiers/no-stopping.svg"
 };
 
+const roomSettingIndicatorDefinitions = [
+  {
+    id: "private",
+    label: "Private Room",
+    icon: "assets/modifiers/padlock.svg",
+    enabled: (settings) => Boolean(settings.private)
+  },
+  {
+    id: "autoAdvance",
+    label: "Auto Advance",
+    icon: "assets/modifiers/fast-forward.svg",
+    enabled: (settings) => settings.autoAdvance !== false
+  }
+];
+
 function getModifierEntriesFromSettings(settings = {}) {
   if (settings.classicMode) {
     return [classicModifierDefinition];
   }
   return roomModifierDefinitions.filter((modifier) => Boolean(settings[modifier.id]));
+}
+
+function getRoomSettingIndicatorEntries(settings = {}) {
+  return roomSettingIndicatorDefinitions.filter((indicator) => indicator.enabled(settings));
 }
 
 function getModifierLabelsFromSettings(settings = {}) {
@@ -8395,7 +8414,10 @@ function renderModifierIconLabel(target, settings = state.roomSettings) {
   }
   target.replaceChildren();
   target.className = "modifier-icon-list";
-  const modifiers = getModifierEntriesFromSettings(settings);
+  const modifiers = [
+    ...getModifierEntriesFromSettings(settings),
+    ...getRoomSettingIndicatorEntries(settings)
+  ];
   if (!modifiers.length) {
     target.textContent = "No Modifiers";
     target.classList.add("modifier-icon-list-empty");
@@ -23772,6 +23794,7 @@ function updateRoomVariants() {
   scheduleRoomPanelHeightSync();
   syncClassicRoomToggleState();
   renderModifierIconLabel(elements.roomVariantLabel);
+  renderModifierIconLabel(elements.lobbyRoomVariantLabel);
   publishCurrentRoomSettingsSoon();
 }
 
