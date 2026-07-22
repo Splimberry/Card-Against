@@ -3720,6 +3720,22 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     cardChaosLines 1900ms steps(4, end) infinite;
 }
 
+.power-card.chaos-infuse-pending::after {
+  content: none;
+}
+
+.power-card.chaos-infused.chaos-infuse-upgrading {
+  animation:
+    powerChaosInfuse 720ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    cardChaosBgDrift 3600ms linear infinite;
+}
+
+.power-card.chaos-infused.chaos-infuse-upgrading::after {
+  animation:
+    powerChaosInfuseScan 720ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    cardChaosLines 1900ms steps(4, end) infinite;
+}
+
 .power-card.chaos-infused.fresh-refill {
   animation:
     powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
@@ -3802,6 +3818,56 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     opacity: 1;
     transform: translateX(0) scale(1);
     filter: blur(0) saturate(1) brightness(1);
+  }
+}
+
+@keyframes powerChaosInfuse {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: saturate(0.8) brightness(1);
+    box-shadow:
+      0 0 0 rgba(64, 222, 164, 0),
+      inset 0 0 0 rgb(255 255 255 / 0);
+  }
+
+  34% {
+    transform: translateY(-0.08rem) scale(1.045) skewX(-2deg);
+    filter: saturate(1.45) brightness(1.22) contrast(1.08);
+    box-shadow:
+      0 0 1.45rem rgba(64, 222, 164, 0.34),
+      -0.18rem 0 1rem rgba(255, 77, 125, 0.2),
+      0.18rem 0 1rem rgba(34, 211, 238, 0.18),
+      inset 0 0 1.1rem rgb(255 255 255 / 0.08);
+  }
+
+  48% {
+    transform: translateY(0.02rem) scale(1.015) skewX(2deg);
+    filter: saturate(1.85) brightness(1.08) contrast(1.18) hue-rotate(8deg);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    filter: saturate(1) brightness(1) contrast(1);
+  }
+}
+
+@keyframes powerChaosInfuseScan {
+  0% {
+    opacity: 0;
+    background-position:
+      0 -120%,
+      0 0;
+  }
+
+  28% {
+    opacity: 0.86;
+  }
+
+  100% {
+    opacity: 0.34;
+    background-position:
+      0 -14%,
+      0 0;
   }
 }
 

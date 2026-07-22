@@ -17608,6 +17608,7 @@ function renderPowerUps() {
     return;
   }
 
+  const getPowerCardMarkup = (displayPower) => `<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
   let animatedFreshCount = 0;
   hand.forEach((powerId) => {
     const power = getPowerById(powerId);
@@ -17616,11 +17617,18 @@ function renderPowerUps() {
     }
 
     const button = document.createElement("button");
+    const chaosInfused = isChaosInfusedPower(power);
+    const freshIndex = panelVisible ? freshIds.indexOf(power.id) : -1;
+    const animateChaosInfusion = chaosInfused
+      && freshIndex >= 0
+      && !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const visualPower = animateChaosInfusion ? getPowerById(getBasePowerId(power.id)) || power : power;
     button.type = "button";
     button.className = "power-card";
     button.dataset.power = power.id;
-    button.dataset.rarity = power.rarity;
-    button.classList.toggle("chaos-infused", isChaosInfusedPower(power));
+    button.dataset.rarity = visualPower.rarity;
+    button.classList.toggle("chaos-infused", chaosInfused && !animateChaosInfusion);
+    button.classList.toggle("chaos-infuse-pending", animateChaosInfusion);
     const description = getDisplayedPowerDescription(power, owner);
     const hasUseAvailable = canPlayPower(owner);
     const usable = hasUseAvailable && isPowerUsable(power, owner);
@@ -17633,22 +17641,38 @@ function renderPowerUps() {
     button.setAttribute("aria-label", `${power.name}. ${button.dataset.description}`);
     button.classList.toggle("selected", selected);
     button.classList.toggle("unusable", !usable);
-    const freshIndex = panelVisible ? freshIds.indexOf(power.id) : -1;
+    let enterDelayMs = 0;
+    let enterDurationMs = 0;
     if (freshIndex >= 0) {
       freshIds.splice(freshIndex, 1);
       button.classList.add("fresh-power");
       const animationType = takePowerHandAnimation(owner, power.id, "refill");
       button.classList.add(animationType === "refresh" ? "fresh-refresh" : "fresh-refill");
       const baseEnterDelay = animationType === "refresh" ? 360 : 0;
-      button.style.setProperty("--power-enter-delay", `${baseEnterDelay + Math.min(animatedFreshCount, 5) * 80}ms`);
+      enterDelayMs = baseEnterDelay + Math.min(animatedFreshCount, 5) * 80;
+      enterDurationMs = animationType === "refresh" ? 620 : 560;
+      button.style.setProperty("--power-enter-delay", `${enterDelayMs}ms`);
       animatedFreshCount += 1;
     }
     if (panelVisible && selected && takePowerSelectionAnimation(owner, power.id)) {
       button.classList.add("power-selected-pop");
     }
-    button.innerHTML = `<span>${power.name}</span><strong>${power.short}</strong><small>${isChaosInfusedPower(power) ? "Chaos Infused" : rarityInfo[power.rarity].label}</small>`;
+    button.innerHTML = getPowerCardMarkup(visualPower);
     attachFloatingDescriptionTooltip(button);
     elements.powerPanel.appendChild(button);
+    if (animateChaosInfusion) {
+      window.setTimeout(() => {
+        if (!button.isConnected || button.dataset.power !== power.id) {
+          return;
+        }
+        button.dataset.rarity = power.rarity;
+        button.classList.remove("chaos-infuse-pending", "fresh-power", "fresh-refill", "fresh-refresh");
+        button.style.removeProperty("--power-enter-delay");
+        button.classList.add("chaos-infused", "chaos-infuse-upgrading");
+        button.innerHTML = getPowerCardMarkup(power);
+        window.setTimeout(() => button.classList.remove("chaos-infuse-upgrading"), 760);
+      }, enterDelayMs + enterDurationMs + 70);
+    }
   });
   if (panelVisible) {
     state.freshPowerUps[owner] = freshIds;
