@@ -24182,12 +24182,54 @@ function getHostedRoomsRenderSignature(visibleRooms = []) {
   })));
 }
 
+function captureJoinScreenLayoutSnapshot() {
+  if (!elements.joinScreen || elements.joinScreen.classList.contains("hidden")) {
+    return [];
+  }
+  return [elements.joinScreen.querySelector(".room-header"), elements.joinCodeForm]
+    .filter(Boolean)
+    .map((element) => ({
+      element,
+      rect: element.getBoundingClientRect()
+    }));
+}
+
+function animateJoinScreenLayoutShift(snapshot = []) {
+  if (!snapshot.length || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    return;
+  }
+  window.requestAnimationFrame(() => {
+    snapshot.forEach(({ element, rect }) => {
+      if (!element.isConnected || typeof element.animate !== "function") {
+        return;
+      }
+      const nextRect = element.getBoundingClientRect();
+      const deltaX = rect.left - nextRect.left;
+      const deltaY = rect.top - nextRect.top;
+      if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
+        return;
+      }
+      element.animate(
+        [
+          { translate: `${deltaX}px ${deltaY}px` },
+          { translate: "0 0" }
+        ],
+        {
+          duration: 420,
+          easing: "cubic-bezier(0.16, 1, 0.3, 1)"
+        }
+      );
+    });
+  });
+}
+
 function renderHostedRooms(options = {}) {
   const visibleRooms = state.hostedRooms.filter((room) => room.status !== "complete");
   const renderSignature = getHostedRoomsRenderSignature(visibleRooms);
   if (!options.force && state.hostedRoomsRenderSignature === renderSignature && elements.joinRoomList.children.length) {
     return;
   }
+  const layoutSnapshot = elements.joinRoomList.children.length ? captureJoinScreenLayoutSnapshot() : [];
   state.hostedRoomsRenderSignature = renderSignature;
   elements.joinRoomList.replaceChildren();
   if (!visibleRooms.length) {
@@ -24204,6 +24246,7 @@ function renderHostedRooms(options = {}) {
     copy.append(title, meta);
     empty.appendChild(copy);
     elements.joinRoomList.appendChild(empty);
+    animateJoinScreenLayoutShift(layoutSnapshot);
     return;
   }
 
@@ -24262,6 +24305,7 @@ function renderHostedRooms(options = {}) {
     card.append(details, actions);
     elements.joinRoomList.appendChild(card);
   });
+  animateJoinScreenLayoutShift(layoutSnapshot);
 }
 
 function getHostedRoomActivePlayerCount(room) {
