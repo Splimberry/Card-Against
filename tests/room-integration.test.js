@@ -1239,6 +1239,59 @@ async function testRoomPowerStateIgnoresStaleHandEntries() {
   assert.equal(hand.updatedAt, 2000);
 }
 
+async function testStaleRoomPowerStateCannotOverwriteRematchHands() {
+  const code = makeCode(8130);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      }
+    ],
+    game: {
+      matchId: `${code}-new-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId: `${code}-new-match`,
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["shuffle"], fresh: ["shuffle"] }
+        ],
+        played: [],
+        players: [],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const stale = await request("POST", `/api/rooms/${code}/power-state`, {
+    matchId: `${code}-old-match`,
+    round: 1,
+    powerId: "dead_weight",
+    actorParticipantId: "host-client",
+    hands: [
+      { participantId: "host-client", owner: "player", updatedAt: 3000, hand: ["dead_weight"], fresh: ["dead_weight"] }
+    ]
+  });
+  assert.equal(stale.response.status, 409);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const hand = stored.payload.room.game.powerState.hands.find((entry) => entry.participantId === "host-client");
+  assert.equal(stored.payload.room.game.matchId, `${code}-new-match`);
+  assert.deepEqual(hand.hand, ["shuffle"]);
+}
+
 async function testRoomPowerStateCanClearPlayedHistory() {
   const code = makeCode(8116);
   await upsertRoom(makeRoom(code, {
@@ -1910,6 +1963,7 @@ async function main() {
   await testStaleParticipantSubmissionCannotOverwriteRematch();
   await testRoomPowerStateDeltaPreservesStoredFullState();
   await testRoomPowerStateIgnoresStaleHandEntries();
+  await testStaleRoomPowerStateCannotOverwriteRematchHands();
   await testRoomPowerStateCanClearPlayedHistory();
   await testRoomRoundSkipEndpointStampsEvent();
   await testRoomModerationEndpointMutesAndBans();

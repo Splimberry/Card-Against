@@ -4223,6 +4223,7 @@ function getRoomMatchIdFromPayload(payload = {}) {
       || payload.game?.matchId
       || payload.room?.game?.matchId
       || payload.roundResult?.matchId
+      || payload.powerState?.matchId
       || ""
   ).trim();
 }
@@ -9161,6 +9162,7 @@ function applyRoomAbilityEffectStatePayload(effects) {
 function getRoomPowerStatePayload(owners = getActiveOwners()) {
   const uniqueOwners = [...new Set(owners)].filter((owner) => getPlayer(owner));
   return {
+    matchId: getCurrentRoomMatchId(),
     updatedAt: Date.now(),
     hands: uniqueOwners.map(getRoomPowerHandSyncEntry).filter(Boolean),
     played: uniqueOwners.map(getRoomPlayedPowerSyncEntry).filter(Boolean),
@@ -9363,13 +9365,17 @@ function publishRoomPowerState(payload = {}) {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
   }
+  const syncedPayload = {
+    ...payload,
+    matchId: payload.matchId || getCurrentRoomMatchId()
+  };
   return fetchWithTimeout(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/power-state`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(syncedPayload)
   }, roomPresenceFetchTimeoutMs).then(async (response) => {
     if (!response.ok) {
-      broadcastRealtimeRoomChange("power-state", state.roomSettings.code, payload);
+      broadcastRealtimeRoomChange("power-state", state.roomSettings.code, syncedPayload);
       return null;
     }
     const data = await response.json();
@@ -9383,10 +9389,13 @@ function publishRoomPowerState(payload = {}) {
         effects: data.effects || null
       });
     }
-    broadcastRealtimeRoomChange("power-state", state.roomSettings.code, data);
+    broadcastRealtimeRoomChange("power-state", state.roomSettings.code, {
+      ...data,
+      matchId: data.matchId || syncedPayload.matchId
+    });
     return data;
   }).catch(() => {
-    broadcastRealtimeRoomChange("power-state", state.roomSettings.code, payload);
+    broadcastRealtimeRoomChange("power-state", state.roomSettings.code, syncedPayload);
     return null;
   });
 }
@@ -9429,6 +9438,9 @@ function applyRoomPowerState(payload = {}) {
   if (code !== state.roomSettings.code) {
     return false;
   }
+  if (!roomPayloadMatchesCurrentMatch(payload)) {
+    return false;
+  }
   const round = Number(payload.round) || 0;
   if (round && round !== Number(state.round)) {
     return false;
@@ -9438,9 +9450,7 @@ function applyRoomPowerState(payload = {}) {
     return false;
   }
   const updatedAt = Number(payload.updatedAt) || 0;
-  if (updatedAt && updatedAt < (state.roomPowerStateUpdatedAt || 0)) {
-    return false;
-  }
+  const payloadIsOlderThanKnownPowerState = Boolean(updatedAt && updatedAt < (state.roomPowerStateUpdatedAt || 0));
   const hands = Array.isArray(payload.hands) ? payload.hands : [];
   const played = Array.isArray(payload.played) ? payload.played : [];
   const players = Array.isArray(payload.players) ? payload.players : [];
@@ -9515,7 +9525,7 @@ function applyRoomPowerState(payload = {}) {
     getRoomPowerEntryUpdatedAt("players", owner, entryUpdatedAt || Date.now());
     changed = true;
   });
-  if (applyRoomAbilityEffectStatePayload(effects)) {
+  if (!payloadIsOlderThanKnownPowerState && applyRoomAbilityEffectStatePayload(effects)) {
     changed = true;
   }
   if (!changed) {
@@ -9589,6 +9599,7 @@ function applyRoomGamePowerState(game = state.roomGame) {
   }
   return applyRoomPowerState({
     code: state.roomSettings.code,
+    matchId: game.matchId,
     round: game.round,
     updatedAt: game.powerState.updatedAt,
     hands: game.powerState.hands,

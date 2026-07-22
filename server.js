@@ -2639,7 +2639,14 @@ async function handleRoomPowerState(req, res, code) {
         return;
       }
     }
+    const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    const payloadMatchId = String(body.matchId || body.powerState?.matchId || "").slice(0, 80);
+    if (payloadMatchId && currentMatchId && payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Power state belongs to a previous match." });
+      return;
+    }
     const powerState = normalizeRoomPowerState({
+      matchId: payloadMatchId || currentMatchId,
       updatedAt: Date.now(),
       hands: body.hands,
       played: body.played,
@@ -2653,7 +2660,7 @@ async function handleRoomPowerState(req, res, code) {
     const mergedPowerState = mergeRoomPowerState(room.game?.powerState, powerState);
     if (!room.game || typeof room.game !== "object") {
       room.game = {
-        matchId: `${normalizedCode}-${Date.now()}`,
+        matchId: payloadMatchId || `${normalizedCode}-${Date.now()}`,
         status: "playing",
         round: clampServerNumber(body.round, 1, 100, 1),
         setup: null,
@@ -2671,6 +2678,7 @@ async function handleRoomPowerState(req, res, code) {
       targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
       deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
       stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
+      matchId: room.game?.matchId || powerState.matchId || "",
       powerState
     });
     finalizeRoom(room);
@@ -2681,6 +2689,7 @@ async function handleRoomPowerState(req, res, code) {
       revision: getRoomRevision(storedRoom),
       updatedAt: storedRoom.updatedAt,
       round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
+      matchId: storedRoom.game?.matchId || powerState.matchId || "",
       powerId: String(body.powerId || "").slice(0, 80),
       actorParticipantId,
       targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
@@ -3266,6 +3275,7 @@ function normalizeRoomPowerState(powerState) {
   }
   const hands = Array.isArray(powerState.hands) ? powerState.hands : [];
   return {
+    matchId: String(powerState.matchId || "").slice(0, 80),
     updatedAt: clampServerNumber(powerState.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()),
     hands: hands
       .map((entry) => {
@@ -3358,6 +3368,7 @@ function mergeRoomPowerState(previousPowerState, nextPowerState) {
     return previous;
   }
   return {
+    matchId: next.matchId || previous.matchId || "",
     updatedAt: Math.max(previous.updatedAt || 0, next.updatedAt || Date.now()),
     hands: mergePowerStateEntries(previous.hands, next.hands),
     played: mergePowerStateEntries(previous.played, next.played),
