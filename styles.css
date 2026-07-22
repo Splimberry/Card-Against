@@ -400,24 +400,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   animation: motionPolishRowIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.power-panel:not(.hidden) .power-card {
-  animation: motionPolishPowerCardIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: var(--motion-polish-power-delay, 0ms);
-  will-change: opacity, transform, filter;
-}
-
-.power-panel:not(.hidden) .power-card:nth-of-type(2) {
-  --motion-polish-power-delay: 45ms;
-}
-
-.power-panel:not(.hidden) .power-card:nth-of-type(3) {
-  --motion-polish-power-delay: 90ms;
-}
-
-.power-panel:not(.hidden) .power-card:nth-of-type(4) {
-  --motion-polish-power-delay: 135ms;
-}
-
 .room-screen,
 .join-screen,
 .dev-tool-screen,
@@ -3599,8 +3581,35 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow: 0 0 0.85rem rgba(64, 222, 164, 0.5);
 }
 
+.power-card.power-selected-pop {
+  animation: powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.power-card.power-use-ghost {
+  position: fixed;
+  z-index: 9000;
+  pointer-events: none;
+  margin: 0;
+  transform-origin: center;
+  animation: powerUseGhost 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .power-card.fresh-power {
-  animation: freshPowerPop 560ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation-delay: var(--power-enter-delay, 0ms);
+  animation-fill-mode: both;
+  will-change: opacity, transform, filter;
+}
+
+.power-card.fresh-refill {
+  animation-name: powerRefillSlideIn;
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.power-card.fresh-refresh {
+  animation-name: powerRefreshFadeIn;
+  animation-duration: 500ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .power-card.unusable {
@@ -3664,30 +3673,104 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     cardChaosLines 1900ms steps(4, end) infinite;
 }
 
-.power-card.chaos-infused.fresh-power {
+.power-card.chaos-infused.fresh-refill {
   animation:
-    freshPowerPop 560ms cubic-bezier(0.16, 1, 0.3, 1),
-    chaosInfusedTransform 900ms steps(3, end),
-    cardChaosBgDrift 3600ms linear infinite,
-    cardChaosGlitch 2300ms steps(2, end) infinite;
+    powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    cardChaosBgDrift 3600ms linear infinite;
 }
 
-@keyframes freshPowerPop {
+.power-card.chaos-infused.fresh-refresh {
+  animation:
+    powerRefreshFadeIn 500ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    cardChaosBgDrift 3600ms linear infinite;
+}
+
+.power-card.chaos-infused.power-selected-pop {
+  animation:
+    powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    cardChaosBgDrift 3600ms linear infinite;
+}
+
+.power-card.chaos-infused.power-use-ghost {
+  animation: powerUseGhost 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes powerSelectedPop {
   0% {
-    opacity: 0.2;
-    transform: translateY(0.45rem) scale(0.88);
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+
+  52% {
+    transform: translateY(-0.18rem) scale(1.035);
+    filter: brightness(1.24);
+  }
+
+  100% {
+    transform: translateY(-0.08rem) scale(1.02);
+    filter: brightness(1);
+  }
+}
+
+@keyframes powerRefillSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(2.4rem) scale(0.92);
+    filter: blur(5px) brightness(1.18);
     box-shadow: 0 0 0 rgba(34, 211, 238, 0);
   }
 
-  58% {
+  64% {
     opacity: 1;
-    transform: translateY(-0.08rem) scale(1.055);
+    transform: translateX(-0.12rem) scale(1.035);
+    filter: blur(0) brightness(1.1);
     box-shadow: 0 0 1.5rem rgba(34, 211, 238, 0.3);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(0) scale(1);
+    filter: blur(0) brightness(1);
+  }
+}
+
+@keyframes powerRefreshFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) rotateX(10deg);
+    filter: blur(6px) saturate(0.7) brightness(1.28);
+  }
+
+  58% {
+    opacity: 1;
+    transform: scale(1.025) rotateX(0deg);
+    filter: blur(0) saturate(1.12) brightness(1.16);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateX(0deg);
+    filter: blur(0) saturate(1) brightness(1);
+  }
+}
+
+@keyframes powerUseGhost {
+  0% {
+    opacity: 0.95;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: brightness(1.18);
+  }
+
+  62% {
+    opacity: 0.7;
+    transform: translate3d(0, -0.65rem, 0) scale(1.04);
+    filter: brightness(1.32);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(1.2rem, -1rem, 0) scale(0.9);
+    filter: blur(6px) brightness(1.12);
   }
 }
 
@@ -9951,7 +10034,9 @@ input:focus {
   .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
   .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
   .room-player-card[data-bot="true"],
-  .power-panel:not(.hidden) .power-card {
+  .power-card.fresh-power,
+  .power-card.power-selected-pop,
+  .power-card.power-use-ghost {
     animation: none;
   }
 

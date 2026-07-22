@@ -2791,6 +2791,8 @@ const state = {
 	  tableEventSabotageUsed: {},
 	  blackMarketPurchases: {},
   freshPowerUps: {},
+  freshPowerUpAnimations: {},
+  pendingPowerUseAnimations: {},
   round: 1,
   maxRounds: savedMaxRounds,
   streaks: {
@@ -2885,6 +2887,7 @@ const state = {
     bot2: null
   },
   pendingPowerPillAnimations: new Set(),
+  pendingPowerSelectionAnimations: {},
   nextSetup: null,
   nextSetupPromise: null,
   nextSetupStatus: "idle",
@@ -9547,14 +9550,24 @@ function applyRoomPowerState(payload = {}) {
     if (entryUpdatedAt && entryUpdatedAt < Math.max(0, Number(state.roomPowerHandUpdatedAt?.[owner]) || 0)) {
       return;
     }
+    const previousHand = [...(state.powerHands[owner] || [])];
     const nextHand = Array.isArray(entry.hand)
       ? entry.hand.map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10)
       : [];
-    getRoomPowerEntryUpdatedAt("hands", owner, entryUpdatedAt || Date.now());
-    state.powerHands[owner] = nextHand;
-    state.freshPowerUps[owner] = Array.isArray(entry.fresh)
+    const handChanged = previousHand.length !== nextHand.length
+      || previousHand.some((powerId, index) => powerId !== nextHand[index]);
+    const incomingFresh = Array.isArray(entry.fresh)
       ? entry.fresh.map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10)
       : [];
+    getRoomPowerEntryUpdatedAt("hands", owner, entryUpdatedAt || Date.now());
+    state.powerHands[owner] = nextHand;
+    state.freshPowerUps[owner] = handChanged
+      ? incomingFresh
+      : (state.freshPowerUps[owner] || []).filter((powerId) => nextHand.includes(powerId));
+    state.freshPowerUpAnimations = state.freshPowerUpAnimations || {};
+    state.freshPowerUpAnimations[owner] = handChanged
+      ? incomingFresh.map((powerId) => ({ powerId, type: "refill" }))
+      : (state.freshPowerUpAnimations[owner] || []).filter((entry) => nextHand.includes(entry?.powerId));
     setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((powerId) => nextHand.includes(powerId)));
     changed = true;
   });
@@ -11400,6 +11413,8 @@ function clearRoomOwnerVolatileState(owner) {
   delete state.answerRemainingTimes[owner];
   delete state.powerHands[owner];
   delete state.freshPowerUps[owner];
+  delete state.freshPowerUpAnimations?.[owner];
+  delete state.pendingPowerUseAnimations?.[owner];
   delete state.playedPowerUps[owner];
   delete state.playedPowerMeta[owner];
   delete state.playedPowerStacks[owner];
@@ -12879,6 +12894,9 @@ function updateSelectedPowerUp(owner, powerId, meta = {}, options = {}) {
 
   setSelectedPowerIds(owner, nextSelected);
   if (nextSelected.includes(powerId)) {
+    if (!alreadySelected || options.forceSelect) {
+      markPowerSelectionAnimation(owner, powerId);
+    }
     state.selectedPowerMeta[owner][powerId] = {
       ...(state.selectedPowerMeta[owner][powerId] || {}),
       ...meta
@@ -12897,6 +12915,8 @@ function resetPlayedPowersForRound() {
   state.playedPowerStacks = Object.fromEntries(owners.map((owner) => [owner, []]));
   state.playedPowerMeta = Object.fromEntries(owners.map((owner) => [owner, null]));
   state.pendingPowerPillAnimations = new Set();
+  state.pendingPowerSelectionAnimations = {};
+  state.pendingPowerUseAnimations = {};
   state.extraPowerUses = {};
   state.botPowerSchedule = {};
   state.roomBotAnswerSchedule = {};
@@ -13003,12 +13023,117 @@ function getVendingMachineRefillCost(owner) {
   return slotsToRefill * 100;
 }
 
-function markFreshPowerUps(owner, powerIds = []) {
+function markFreshPowerUps(owner, powerIds = [], type = "refill") {
   const freshIds = powerIds.filter(Boolean);
   if (!freshIds.length) {
     return;
   }
   state.freshPowerUps[owner] = [...(state.freshPowerUps[owner] || []), ...freshIds];
+  state.freshPowerUpAnimations = state.freshPowerUpAnimations || {};
+  state.freshPowerUpAnimations[owner] = [
+    ...(state.freshPowerUpAnimations[owner] || []),
+    ...freshIds.map((powerId) => ({ powerId, type }))
+  ];
+}
+
+function markPowerHandAnimation(owner, powerIds = [], type = "refill") {
+  const ids = powerIds.filter(Boolean);
+  if (!ids.length) {
+    return;
+  }
+  markFreshPowerUps(owner, ids, type);
+}
+
+function markPowerSelectionAnimation(owner, powerId) {
+  if (!owner || !powerId) {
+    return;
+  }
+  state.pendingPowerSelectionAnimations = state.pendingPowerSelectionAnimations || {};
+  state.pendingPowerSelectionAnimations[owner] = [
+    ...(state.pendingPowerSelectionAnimations[owner] || []),
+    powerId
+  ];
+}
+
+function takePowerHandAnimation(owner, powerId, fallback = "refill") {
+  const queue = state.freshPowerUpAnimations?.[owner] || [];
+  const index = queue.findIndex((entry) => entry?.powerId === powerId);
+  if (index < 0) {
+    return fallback;
+  }
+  const [entry] = queue.splice(index, 1);
+  state.freshPowerUpAnimations[owner] = queue;
+  return entry?.type || fallback;
+}
+
+function takePowerSelectionAnimation(owner, powerId) {
+  const queue = state.pendingPowerSelectionAnimations?.[owner] || [];
+  const index = queue.indexOf(powerId);
+  if (index < 0) {
+    return false;
+  }
+  queue.splice(index, 1);
+  state.pendingPowerSelectionAnimations[owner] = queue;
+  return true;
+}
+
+function capturePowerUseAnimation(button) {
+  const powerId = button?.dataset?.power;
+  const owner = getCurrentPowerOwner();
+  if (!owner || !powerId || !button.isConnected) {
+    return;
+  }
+  const rect = button.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    return;
+  }
+  state.pendingPowerUseAnimations = state.pendingPowerUseAnimations || {};
+  state.pendingPowerUseAnimations[owner] = {
+    powerId,
+    rect: {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height
+    },
+    html: button.innerHTML,
+    className: button.className,
+    rarity: button.dataset.rarity || "",
+    chaosInfused: button.classList.contains("chaos-infused")
+  };
+}
+
+function playPendingPowerUseAnimation(owner, powerId) {
+  const pending = state.pendingPowerUseAnimations?.[owner];
+  if (!pending || pending.powerId !== powerId || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    if (pending?.powerId === powerId) {
+      delete state.pendingPowerUseAnimations[owner];
+    }
+    return;
+  }
+  delete state.pendingPowerUseAnimations[owner];
+  if (!elements.gameStage || elements.gameStage.classList.contains("hidden")) {
+    return;
+  }
+
+  const ghost = document.createElement("div");
+  ghost.className = `${pending.className || "power-card"} power-use-ghost`;
+  if (pending.rarity) {
+    ghost.dataset.rarity = pending.rarity;
+  }
+  if (pending.chaosInfused) {
+    ghost.classList.add("chaos-infused");
+  }
+  ghost.innerHTML = pending.html || "";
+  Object.assign(ghost.style, {
+    left: `${pending.rect.left}px`,
+    top: `${pending.rect.top}px`,
+    width: `${pending.rect.width}px`,
+    height: `${pending.rect.height}px`
+  });
+  document.body.appendChild(ghost);
+  ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
+  window.setTimeout(() => ghost.remove(), 500);
 }
 
 function passDeadWeight(owner) {
@@ -13112,7 +13237,7 @@ function rerollPowerHand(owner, count, options = {}) {
     }
   }
   state.powerHands[owner] = hand;
-  markFreshPowerUps(owner, hand);
+  markPowerHandAnimation(owner, hand, "refresh");
   if (forceChaosInfusion) {
     delete state.chaosRefreshOwners[owner];
   }
@@ -16175,7 +16300,7 @@ function upgradeRandomPowerRarity(owner) {
   }
 
   state.powerHands[owner] = hand.map((powerId, index) => index === chosen.index ? upgradedPowerId : powerId);
-  markFreshPowerUps(owner, [upgradedPowerId]);
+  markPowerHandAnimation(owner, [upgradedPowerId], "refresh");
   grantExtraPowerUseFromBuff(owner);
   return `upgrade ${chosen.power.name} into ${getPowerById(upgradedPowerId)?.name || "a rarer power-up"}`;
 }
@@ -16585,6 +16710,7 @@ function getDisplayedPowerDescription(power, owner = getCurrentPowerOwner()) {
 }
 
 function consumeImmediatePower(owner, power, meta = {}) {
+  playPendingPowerUseAnimation(owner, power.id);
   if (power.type === "speed_answer" && isChaosInfusedPower(power)) {
     state.timerRemaining = Math.max(state.timerRemaining, state.timerSeconds || state.timerRemaining || 0);
     renderTimer();
@@ -17084,7 +17210,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
       }
     }
     state.powerHands[owner] = hand;
-    markFreshPowerUps(owner, hand);
+    markPowerHandAnimation(owner, hand, "refresh");
   }
 
   if (power.type === "gamblers_dream") {
@@ -17131,7 +17257,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     if (target) {
       if (isChaosInfusedPower(power)) {
         state.powerHands[target] = (state.powerHands[target] || []).map(() => "dead_weight");
-        markFreshPowerUps(target, state.powerHands[target]);
+        markPowerHandAnimation(target, state.powerHands[target], "refresh");
         lockDeadWeightForCurrentRound(target);
       }
       meta.targetOwner = target;
@@ -17350,6 +17476,7 @@ function renderPowerUps() {
     return;
   }
 
+  let animatedFreshCount = 0;
   hand.forEach((powerId) => {
     const power = getPowerById(powerId);
     if (!power) {
@@ -17378,12 +17505,22 @@ function renderPowerUps() {
     if (freshIndex >= 0) {
       freshIds.splice(freshIndex, 1);
       button.classList.add("fresh-power");
+      const animationType = takePowerHandAnimation(owner, power.id, "refill");
+      button.classList.add(animationType === "refresh" ? "fresh-refresh" : "fresh-refill");
+      button.style.setProperty("--power-enter-delay", `${Math.min(animatedFreshCount, 5) * 80}ms`);
+      animatedFreshCount += 1;
+    }
+    if (selected && takePowerSelectionAnimation(owner, power.id)) {
+      button.classList.add("power-selected-pop");
     }
     button.innerHTML = `<span>${power.name}</span><strong>${power.short}</strong><small>${isChaosInfusedPower(power) ? "Chaos Infused" : rarityInfo[power.rarity].label}</small>`;
     attachFloatingDescriptionTooltip(button);
     elements.powerPanel.appendChild(button);
   });
   state.freshPowerUps[owner] = freshIds;
+  if (!freshIds.length && state.freshPowerUpAnimations?.[owner]) {
+    state.freshPowerUpAnimations[owner] = [];
+  }
 }
 
 function selectPowerUp(powerId) {
@@ -20493,7 +20630,7 @@ function fillDebugPowerHand(scope = "dev") {
     hand.push(drawnPowerId);
   }
   state.powerHands[owner] = hand;
-  markFreshPowerUps(owner, hand);
+  markPowerHandAnimation(owner, hand, "refresh");
   const botUsed = scope === "bot-match" && isBotOwner(owner)
     ? forceDebugBotPowerUse(owner, powerId)
     : null;
@@ -22256,6 +22393,8 @@ function resetMatch(mode) {
   clearRoundSubmissionState({ clearParticipants: mode === "room" });
   state.activePowerUp = null;
   state.freshPowerUps = {};
+  state.freshPowerUpAnimations = {};
+  state.pendingPowerUseAnimations = {};
   setupPowerHands();
   state.recentJudgeNames = [];
   state.recentBlackCards = [];
@@ -28301,6 +28440,11 @@ elements.powerPanel.addEventListener("click", (event) => {
     return;
   }
 
+  const owner = getCurrentPowerOwner();
+  const power = getPowerById(button.dataset.power);
+  if (power?.immediate && canPlayPower(owner) && state.powerHands[owner]?.includes(power.id) && isPowerUsable(power, owner)) {
+    capturePowerUseAnimation(button);
+  }
   selectPowerUp(button.dataset.power);
 });
 elements.answerStackButton.addEventListener("click", (event) => {
