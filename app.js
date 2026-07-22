@@ -6261,6 +6261,9 @@ function trimChaosRefreshedHandsFromLawnMower(owners, events) {
         .filter((participant) => participant !== owner && getScore(participant) > ownerScore && (state.powerHands[participant] || []).length > 1)
         .forEach((participant) => {
           const trimmed = (state.powerHands[participant] || []).length - 1;
+          playPowerHandExitAnimation(participant, {
+            indexes: (state.powerHands[participant] || []).map((_, index) => index).slice(1)
+          });
           state.powerHands[participant] = (state.powerHands[participant] || []).slice(0, 1);
           setSelectedPowerIds(participant, getSelectedPowerIds(participant).filter((powerId) => state.powerHands[participant].includes(powerId)));
           events.push(`Cut Down to Size removed ${trimmed} refreshed power-up${trimmed === 1 ? "" : "s"} from ${getOwnerLabel(participant)}.`);
@@ -9566,6 +9569,12 @@ function applyRoomPowerState(payload = {}) {
       syncedFreshIds = nextHand.filter((powerId, index) => powerId !== previousHand[index]);
       syncedFreshType = "refresh";
     }
+    if (shouldAnimateSyncedHand && handChanged && nextHand.length <= previousHand.length) {
+      const exitIndexes = getPowerHandExitIndexes(previousHand, nextHand);
+      if (exitIndexes.length) {
+        playPowerHandExitAnimation(owner, { indexes: exitIndexes });
+      }
+    }
     getRoomPowerEntryUpdatedAt("hands", owner, entryUpdatedAt || Date.now());
     state.powerHands[owner] = nextHand;
     state.freshPowerUps[owner] = syncedFreshIds.length
@@ -12462,8 +12471,19 @@ function applyPendingLegendaryPowerRewards() {
       }
     }
     if (added.length) {
+      const limit = getPowerHandLimit(owner);
+      const droppedCount = Math.max(0, hand.length + added.length - limit);
+      if (droppedCount > 0) {
+        playPowerHandExitAnimation(owner, {
+          indexes: hand.map((_, index) => index).slice(0, droppedCount)
+        });
+      }
       state.powerHands[owner] = [...hand, ...added].slice(-getPowerHandLimit(owner));
-      markFreshPowerUps(owner, added);
+      if (droppedCount > 0) {
+        markPowerHandAnimation(owner, added, "refresh", { playExit: false });
+      } else {
+        markFreshPowerUps(owner, added);
+      }
       queueStatFlash("positive", "Perfectionist", added.map((powerId) => getPowerById(powerId)?.name || "Legendary Power"), { owners: [owner], complex: true });
     }
     state.pendingLegendaryPowers[owner] = 0;
@@ -13074,13 +13094,13 @@ function markFreshPowerUps(owner, powerIds = [], type = "refill") {
   ];
 }
 
-function markPowerHandAnimation(owner, powerIds = [], type = "refill") {
+function markPowerHandAnimation(owner, powerIds = [], type = "refill", options = {}) {
   const ids = powerIds.filter(Boolean);
   if (!ids.length) {
     return;
   }
-  if (type === "refresh") {
-    playPowerHandRefreshExitAnimation(owner);
+  if (type === "refresh" && options.playExit !== false) {
+    playPowerHandExitAnimation(owner);
   }
   markFreshPowerUps(owner, ids, type);
 }
@@ -13177,24 +13197,44 @@ function playPendingPowerUseAnimation(owner, powerId) {
   window.setTimeout(() => ghost.remove(), 500);
 }
 
-function playPowerHandRefreshExitAnimation(owner) {
+function getVisiblePowerHandCards(owner) {
   if (owner !== getCurrentPowerOwner() || !elements.powerPanel || elements.powerPanel.classList.contains("hidden")) {
-    return;
+    return [];
   }
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
-    return;
+    return [];
   }
-  const cards = [...elements.powerPanel.querySelectorAll(".power-card")].filter((card) => card.isConnected);
+  return [...elements.powerPanel.querySelectorAll(".power-card")].filter((card) => card.isConnected);
+}
+
+function playPowerHandExitAnimation(owner, options = {}) {
+  const cards = getVisiblePowerHandCards(owner);
   if (!cards.length) {
     return;
   }
-  cards.forEach((card, index) => {
+  const indexes = Array.isArray(options.indexes) ? new Set(options.indexes) : null;
+  const requestedPowerIds = Array.isArray(options.powerIds) ? [...options.powerIds] : null;
+  const cardsToAnimate = cards.filter((card, index) => {
+    if (indexes) {
+      return indexes.has(index);
+    }
+    if (!requestedPowerIds) {
+      return true;
+    }
+    const matchIndex = requestedPowerIds.indexOf(card.dataset.power);
+    if (matchIndex < 0) {
+      return false;
+    }
+    requestedPowerIds.splice(matchIndex, 1);
+    return true;
+  });
+  cardsToAnimate.forEach((card, index) => {
     const rect = card.getBoundingClientRect();
     if (!rect.width || !rect.height) {
       return;
     }
     const ghost = card.cloneNode(true);
-    ghost.className = `${card.className || "power-card"} power-refresh-exit-ghost`;
+    ghost.className = `${card.className || "power-card"} power-remove-exit-ghost`;
     ghost.style.left = `${rect.left}px`;
     ghost.style.top = `${rect.top}px`;
     ghost.style.width = `${rect.width}px`;
@@ -13204,6 +13244,22 @@ function playPowerHandRefreshExitAnimation(owner) {
     ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
     window.setTimeout(() => ghost.remove(), 560);
   });
+}
+
+function getPowerHandExitIndexes(previousHand = [], nextHand = []) {
+  const matchedNextIndexes = new Set();
+  return previousHand
+    .map((powerId, previousIndex) => {
+      const nextIndex = nextHand.findIndex((nextPowerId, candidateIndex) => (
+        !matchedNextIndexes.has(candidateIndex) && nextPowerId === powerId
+      ));
+      if (nextIndex >= 0) {
+        matchedNextIndexes.add(nextIndex);
+        return null;
+      }
+      return previousIndex;
+    })
+    .filter((index) => index !== null);
 }
 
 function passDeadWeight(owner) {
@@ -13237,13 +13293,15 @@ function giveDeadWeightToOwner(owner) {
   const hand = state.powerHands[owner] || [];
   if (hand.length < limit) {
     state.powerHands[owner] = [...hand, "dead_weight"];
+    markFreshPowerUps(owner, ["dead_weight"]);
   } else if (hand.length) {
     const replaceAt = Math.floor(Math.random() * hand.length);
+    playPowerHandExitAnimation(owner, { indexes: [replaceAt] });
     state.powerHands[owner] = hand.map((powerId, index) => index === replaceAt ? "dead_weight" : powerId);
+    markPowerHandAnimation(owner, ["dead_weight"], "refresh", { playExit: false });
   } else {
     return false;
   }
-  markFreshPowerUps(owner, ["dead_weight"]);
   lockDeadWeightForCurrentRound(owner);
   if (owner === getCurrentPowerOwner()) {
     renderPowerUps();
@@ -15754,10 +15812,13 @@ function addPurchasedPowerToHand(owner, powerId) {
   const limit = getPowerHandLimit(owner);
   const hand = [...(state.powerHands[owner] || [])];
   if (hand.length >= limit) {
+    playPowerHandExitAnimation(owner, { indexes: [0] });
     hand.shift();
+    markPowerHandAnimation(owner, [powerId], "refresh", { playExit: false });
+  } else {
+    markFreshPowerUps(owner, [powerId]);
   }
   state.powerHands[owner] = [...hand, powerId].slice(-limit);
-  markFreshPowerUps(owner, [powerId]);
 }
 
 function buyBlackMarketPower(owner, rarity) {
@@ -16115,6 +16176,7 @@ function deleteHighestRarityPower(targetOwner) {
   const highestRank = Math.max(...entries.map((entry) => getRarityRank(entry.power.rarity)));
   const tied = entries.filter((entry) => getRarityRank(entry.power.rarity) === highestRank);
   const picked = tied[Math.floor(Math.random() * tied.length)];
+  playPowerHandExitAnimation(targetOwner, { indexes: [picked.index] });
   state.powerHands[targetOwner] = hand.filter((_, index) => index !== picked.index);
   setSelectedPowerIds(targetOwner, getSelectedPowerIds(targetOwner).filter((powerId) => powerId !== picked.powerId));
   if (state.playedPowerUps[targetOwner] === picked.powerId) {
@@ -16133,6 +16195,7 @@ function deleteRandomPowerFromHand(targetOwner) {
   const index = Math.floor(Math.random() * hand.length);
   const [deletedPowerId] = hand.splice(index, 1);
   const deletedPower = getPowerById(deletedPowerId);
+  playPowerHandExitAnimation(targetOwner, { indexes: [index] });
   state.powerHands[targetOwner] = hand;
   setSelectedPowerIds(targetOwner, getSelectedPowerIds(targetOwner).filter((powerId) => powerId !== deletedPowerId));
   if (state.playedPowerUps[targetOwner] === deletedPowerId) {
@@ -16369,8 +16432,9 @@ function upgradeRandomPowerRarity(owner) {
     return "upgrade missed the deck, gain 1 streak";
   }
 
+  playPowerHandExitAnimation(owner, { indexes: [chosen.index] });
   state.powerHands[owner] = hand.map((powerId, index) => index === chosen.index ? upgradedPowerId : powerId);
-  markPowerHandAnimation(owner, [upgradedPowerId], "refresh");
+  markPowerHandAnimation(owner, [upgradedPowerId], "refresh", { playExit: false });
   grantExtraPowerUseFromBuff(owner);
   return `upgrade ${chosen.power.name} into ${getPowerById(upgradedPowerId)?.name || "a rarer power-up"}`;
 }
@@ -17175,6 +17239,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
       const receivedPowerId = (state.luckRounds[owner] || 0) > 0 && stolenPower && getRarityRank(stolenPower.rarity) < getRarityRank("blue")
         ? drawPowerByRarity("blue", state.powerHands[owner] || [], getPowerDrawOptions(owner)) || stolenPowerId
         : stolenPowerId;
+      playPowerHandExitAnimation(target, { indexes: [stolenIndex] });
       state.powerHands[target] = targetHand;
       state.powerHands[owner] = [...(state.powerHands[owner] || []), receivedPowerId].slice(0, getPowerHandLimit(owner));
       markFreshPowerUps(owner, [receivedPowerId]);
@@ -17319,8 +17384,11 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const target = isChaosInfusedPower(power) ? meta.targetOwner : passDeadWeight(owner);
     if (target) {
       if (isChaosInfusedPower(power)) {
+        playPowerHandExitAnimation(target, {
+          indexes: (state.powerHands[target] || []).map((_, index) => index)
+        });
         state.powerHands[target] = (state.powerHands[target] || []).map(() => "dead_weight");
-        markPowerHandAnimation(target, state.powerHands[target], "refresh");
+        markPowerHandAnimation(target, state.powerHands[target], "refresh", { playExit: false });
         lockDeadWeightForCurrentRound(target);
       }
       meta.targetOwner = target;
@@ -17571,7 +17639,7 @@ function renderPowerUps() {
       button.classList.add("fresh-power");
       const animationType = takePowerHandAnimation(owner, power.id, "refill");
       button.classList.add(animationType === "refresh" ? "fresh-refresh" : "fresh-refill");
-      const baseEnterDelay = animationType === "refresh" ? 230 : 0;
+      const baseEnterDelay = animationType === "refresh" ? 360 : 0;
       button.style.setProperty("--power-enter-delay", `${baseEnterDelay + Math.min(animatedFreshCount, 5) * 80}ms`);
       animatedFreshCount += 1;
     }
@@ -20672,11 +20740,14 @@ function addDebugPowerSlot(owner, powerId) {
   const hand = [...(state.powerHands[owner] || [])].slice(0, limit);
   if (hand.length < limit) {
     hand.push(powerId);
+    state.powerHands[owner] = hand;
+    markFreshPowerUps(owner, [powerId]);
   } else {
+    playPowerHandExitAnimation(owner, { indexes: [limit - 1] });
     hand[limit - 1] = powerId;
+    state.powerHands[owner] = hand;
+    markPowerHandAnimation(owner, [powerId], "refresh", { playExit: false });
   }
-  state.powerHands[owner] = hand;
-  markFreshPowerUps(owner, [powerId]);
   return true;
 }
 
@@ -20716,6 +20787,7 @@ function removeDebugPowerFromHand(scope = "dev", owner, powerId) {
   if (removeIndex < 0) {
     return;
   }
+  playPowerHandExitAnimation(owner, { indexes: [removeIndex] });
   state.powerHands[owner] = state.powerHands[owner].filter((_, index) => index !== removeIndex);
   state.freshPowerUps[owner] = (state.freshPowerUps[owner] || []).filter((id) => id !== powerId);
   setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((id) => id !== powerId));
@@ -20771,6 +20843,7 @@ function clearDebugPowerHand(scope = "dev") {
   if (!owner) {
     return;
   }
+  playPowerHandExitAnimation(owner);
   state.powerHands[owner] = [];
   state.freshPowerUps[owner] = [];
   clearSelectedPowerUps(owner);
