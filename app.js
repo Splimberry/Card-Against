@@ -2528,6 +2528,7 @@ const state = {
   joinDirectoryPollId: null,
   roomDirectoryOnline: true,
   roomGame: null,
+  roomMatchId: "",
   roomRoundResult: null,
   roomPowerStateUpdatedAt: 0,
   roomPowerHandUpdatedAt: {},
@@ -3790,6 +3791,7 @@ function clearRoomParticipantSubmissionState() {
     ...participant,
     answer: "",
     submittedRound: 0,
+    submissionMatchId: "",
     remainingTime: 0,
     status: participant.host
       ? "host"
@@ -4208,6 +4210,41 @@ function createAbortError(message = "The active match work was cancelled.") {
 
 function isCurrentMatchWork(token) {
   return token === state.matchWorkToken && !state.matchEnded;
+}
+
+function createRoomMatchId(code = state.roomSettings.code) {
+  const normalizedCode = String(code || "CAI").trim().toUpperCase() || "CAI";
+  return `${normalizedCode}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getRoomMatchIdFromPayload(payload = {}) {
+  return String(
+    payload.matchId
+      || payload.game?.matchId
+      || payload.room?.game?.matchId
+      || payload.roundResult?.matchId
+      || ""
+  ).trim();
+}
+
+function getCurrentRoomMatchId() {
+  return String(
+    state.roomMatchId
+      || state.roomGame?.matchId
+      || state.joiningRoom?.game?.matchId
+      || ""
+  ).trim();
+}
+
+function setCurrentRoomMatchId(matchId = "") {
+  state.roomMatchId = String(matchId || "").trim();
+  return state.roomMatchId;
+}
+
+function roomPayloadMatchesCurrentMatch(payload = {}) {
+  const incomingMatchId = getRoomMatchIdFromPayload(payload);
+  const currentMatchId = getCurrentRoomMatchId();
+  return !incomingMatchId || !currentMatchId || incomingMatchId === currentMatchId;
 }
 
 function cancelActiveMatchWork(options = {}) {
@@ -8247,8 +8284,15 @@ function getCurrentParticipant(options = {}) {
     status: options.status || (options.spectator ? "spectating" : options.host ? "host" : "joined"),
     answer: cleanInput(options.answer || ""),
     submittedRound: Number(options.submittedRound) || 0,
+    submissionMatchId: String(options.submissionMatchId || "").trim(),
     remainingTime: Math.max(0, Number(options.remainingTime) || 0)
   };
+}
+
+function participantSubmissionMatchesCurrentMatch(participant = {}) {
+  const submissionMatchId = String(participant?.submissionMatchId || "").trim();
+  const currentMatchId = getCurrentRoomMatchId();
+  return !submissionMatchId || !currentMatchId || submissionMatchId === currentMatchId;
 }
 
 function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
@@ -8273,6 +8317,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
     .map((player) => {
       const id = player.participantId || player.owner;
       const existingParticipant = state.roomParticipants.find((participant) => participant.id === id);
+      const preserveParticipantSubmission = preserveSubmissions && participantSubmissionMatchesCurrentMatch(existingParticipant);
       return {
         id,
         name: player.label,
@@ -8286,9 +8331,10 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
         active: player.active !== false,
         muted: Boolean(player.muted),
         status: getLobbySafeStatus(player, existingParticipant),
-        answer: preserveSubmissions ? cleanInput(existingParticipant?.answer || "") : "",
-        submittedRound: preserveSubmissions ? Number(existingParticipant?.submittedRound) || 0 : 0,
-        remainingTime: preserveSubmissions ? Math.max(0, Number(existingParticipant?.remainingTime) || 0) : 0
+        answer: preserveParticipantSubmission ? cleanInput(existingParticipant?.answer || "") : "",
+        submittedRound: preserveParticipantSubmission ? Number(existingParticipant?.submittedRound) || 0 : 0,
+        submissionMatchId: preserveParticipantSubmission ? String(existingParticipant?.submissionMatchId || "") : "",
+        remainingTime: preserveParticipantSubmission ? Math.max(0, Number(existingParticipant?.remainingTime) || 0) : 0
       };
     });
 
@@ -8297,6 +8343,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
     if (participantIds.has(participant.id) || (!participant.active && !participant.spectator) || status === "complete") {
       return;
     }
+    const preserveParticipantSubmission = preserveSubmissions && participantSubmissionMatchesCurrentMatch(participant);
     participants.push({
       id: participant.id,
       name: participant.name,
@@ -8318,9 +8365,10 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
             : participant.bot
               ? "bot"
               : "joined",
-      answer: preserveSubmissions ? cleanInput(participant.answer || "") : "",
-      submittedRound: preserveSubmissions ? Number(participant.submittedRound) || 0 : 0,
-      remainingTime: preserveSubmissions ? Math.max(0, Number(participant.remainingTime) || 0) : 0
+      answer: preserveParticipantSubmission ? cleanInput(participant.answer || "") : "",
+      submittedRound: preserveParticipantSubmission ? Number(participant.submittedRound) || 0 : 0,
+      submissionMatchId: preserveParticipantSubmission ? String(participant.submissionMatchId || "") : "",
+      remainingTime: preserveParticipantSubmission ? Math.max(0, Number(participant.remainingTime) || 0) : 0
     });
     participantIds.add(participant.id);
   });
@@ -8606,6 +8654,7 @@ function rememberLocalRoomSubmission(owner, answer, remainingTime = state.answer
     owner,
     participantId: getRoomParticipantIdForOwner(owner) || state.clientId,
     round: Number(state.round) || 0,
+    matchId: getCurrentRoomMatchId(),
     answer: cleanInput(answer || ""),
     remainingTime: Math.max(0, Number(remainingTime) || 0)
   };
@@ -8633,7 +8682,7 @@ function applyLocalRoomSubmission() {
     }
   }
   const participantId = localSubmission.participantId || getRoomParticipantIdForOwner(owner) || state.clientId;
-  updateRoomParticipantSubmission(participantId, localSubmission.answer, localSubmission.round, localSubmission.remainingTime);
+  updateRoomParticipantSubmission(participantId, localSubmission.answer, localSubmission.round, localSubmission.remainingTime, localSubmission.matchId);
   const player = getPlayer(owner);
   if (player && player.active && !player.muted) {
     player.connectionStatus = "submitted";
@@ -8664,6 +8713,7 @@ function publishCurrentRoomSubmission(answer) {
     status: "submitted",
     answer,
     submittedRound: state.round,
+    submissionMatchId: getCurrentRoomMatchId(),
     remainingTime: state.answerRemainingTimes[state.currentOwner] || 0,
     skipRealtimeBroadcast: true
   });
@@ -8688,6 +8738,7 @@ function broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime = st
     participantId,
     owner,
     round: state.round,
+    matchId: getCurrentRoomMatchId(),
     answer: cleanInput(answer || ""),
     remainingTime: Math.max(0, Number(remainingTime) || 0)
   });
@@ -8724,7 +8775,7 @@ function getRoomParticipantIdForOwner(owner) {
   return participant?.id || "";
 }
 
-function updateRoomParticipantSubmission(participantId, answer, round, remainingTime) {
+function updateRoomParticipantSubmission(participantId, answer, round, remainingTime, matchId = getCurrentRoomMatchId()) {
   const id = String(participantId || "");
   if (!id) {
     return;
@@ -8736,6 +8787,7 @@ function updateRoomParticipantSubmission(participantId, answer, round, remaining
   participant.status = "submitted";
   participant.answer = cleanInput(answer || "");
   participant.submittedRound = Number(round) || state.round;
+  participant.submissionMatchId = String(matchId || "").trim();
   participant.remainingTime = Math.max(0, Number(remainingTime) || 0);
 }
 
@@ -8745,6 +8797,9 @@ function applyRoomAnswerSubmission(payload = {}) {
   }
   const code = String(payload.code || "").trim().toUpperCase();
   if (code !== state.roomSettings.code) {
+    return false;
+  }
+  if (!roomPayloadMatchesCurrentMatch(payload)) {
     return false;
   }
   const round = Number(payload.round) || 0;
@@ -8758,7 +8813,7 @@ function applyRoomAnswerSubmission(payload = {}) {
   }
   const answer = cleanInput(payload.answer || "");
   const remainingTime = Math.max(0, Number(payload.remainingTime) || 0);
-  updateRoomParticipantSubmission(participantId, answer, round, remainingTime);
+  updateRoomParticipantSubmission(participantId, answer, round, remainingTime, getRoomMatchIdFromPayload(payload));
   if (answer) {
     lockRoundAnswer(owner, answer);
     if (owner === "player") {
@@ -8794,6 +8849,7 @@ function normalizeRoomRoundResultPayload(payload = {}) {
     ? clampNumber(source.revealAnswerIndex, 0, Math.max(cards.length - 1, 0), winnerIndex)
     : getBestAnswerIndexForReveal(cards, correctIndexes, winnerIndex);
   return {
+    matchId: String(source.matchId || payload.matchId || payload.game?.matchId || "").trim(),
     round: Number(source.round || payload.round || state.round) || state.round,
     questionId: String(source.questionId || state.questionId || "").trim(),
     cards,
@@ -8821,6 +8877,9 @@ function getRoomRoundResultForCurrentRound(round = state.round) {
   if (!result || Number(result.round) !== Number(round)) {
     return null;
   }
+  if (result.matchId && getCurrentRoomMatchId() && result.matchId !== getCurrentRoomMatchId()) {
+    return null;
+  }
   if (result.questionId && state.questionId && result.questionId !== state.questionId) {
     return null;
   }
@@ -8846,6 +8905,9 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   if (!code || code !== state.roomSettings.code) {
     return false;
   }
+  if (!roomPayloadMatchesCurrentMatch(payload)) {
+    return false;
+  }
   const result = normalizeRoomRoundResultPayload(payload.roundResult || payload.game?.roundResult || payload);
   if (!result || Number(result.round) !== Number(state.round)) {
     return false;
@@ -8854,8 +8916,12 @@ function applyRealtimeRoomRoundResult(payload = {}) {
     return false;
   }
   state.roomRoundResult = result;
+  if (result.matchId) {
+    setCurrentRoomMatchId(result.matchId);
+  }
   state.roomGame = {
     ...(state.roomGame || payload.game || {}),
+    matchId: getCurrentRoomMatchId(),
     status: "grading",
     round: result.round,
     roundResult: result,
@@ -9126,6 +9192,7 @@ function publishRoomScoreState(reason = "score") {
 function buildRoomRoundResultPayload(roundResult, options = {}) {
   const result = normalizeRoomRoundResultPayload({
     ...roundResult,
+    matchId: getCurrentRoomMatchId(),
     winnerIndex: options.winnerIndex ?? roundResult.winnerIndex ?? roundResult.winner?.index,
     winner: { index: options.winnerIndex ?? roundResult.winnerIndex ?? roundResult.winner?.index },
     round: state.round,
@@ -9166,6 +9233,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
   state.roomRoundResult = result;
   state.roomGame = {
     ...(state.roomGame || {}),
+    matchId: getCurrentRoomMatchId(),
     status: "grading",
     round: state.round,
     roundResult: result,
@@ -9175,6 +9243,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
   broadcastRealtimeRoomChange("round-result", state.roomSettings.code, {
     status: "in-progress",
     round: state.round,
+    matchId: getCurrentRoomMatchId(),
     roundResult: result,
     game: state.roomGame,
     updatedAt: result.updatedAt
@@ -17098,6 +17167,15 @@ function applyRoomRoundStartModifiers() {
   }
 
   const owners = getActiveOwners();
+  if (Number(state.round) <= 1) {
+    queueStatFlash("chaos", "Chaos Mode", "Chaos Mode\nActive", {
+      owners,
+      complex: true,
+      priority: true,
+      durationMs: 2200
+    });
+    return;
+  }
   owners.forEach((owner) => {
     rerollPowerHand(owner, getPowerHandLimit(owner));
   });
@@ -22088,6 +22166,7 @@ function openRoomScreen() {
   state.roomMissingSince = 0;
   state.roomClosedNotice = "";
   state.roomGame = null;
+  state.roomMatchId = "";
   state.roomRoundResult = null;
   resetRoomPowerSyncClocks();
   state.roomPlayedResetSyncedRound = null;
@@ -22222,6 +22301,7 @@ function clearLocalRoomState(options = {}) {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomGame = null;
+  state.roomMatchId = "";
   state.roomRoundResult = null;
   resetRoomPowerSyncClocks();
   state.roomPlayedResetSyncedRound = null;
@@ -22503,6 +22583,17 @@ async function handleClassicModeToggle() {
 function buildRoomDirectoryPayload(status = "lobby") {
   const participants = getRoomParticipantsFromPlayers(status);
   const existing = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
+  const inProgressGame = status === "in-progress"
+    ? state.roomGame || (state.roomMatchId ? {
+      matchId: state.roomMatchId,
+      status: "starting",
+      round: Number(state.round) || 1,
+      setup: null,
+      matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
+      powerState: null,
+      updatedAt: Date.now()
+    } : null)
+    : null;
   const hostSource = (!state.joiningRoom && isCurrentHost())
     ? {
       id: state.clientId,
@@ -22529,7 +22620,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
     activePlayers: participants.filter((participant) => participant.active && !participant.spectator).length,
     spectators: participants.filter((participant) => participant.active && participant.spectator).length,
     banned: [...getRoomBanList()],
-    game: status === "in-progress" ? (state.roomGame || existing?.game || null) : null
+    game: inProgressGame
   };
 }
 
@@ -22753,6 +22844,7 @@ async function updateRoomPresence(room, options = {}) {
       status: options.status || (options.spectator ? "spectating" : "joined"),
       answer: options.answer || "",
       submittedRound: options.submittedRound || 0,
+      submissionMatchId: options.submissionMatchId || (Number(options.submittedRound) > 0 ? getCurrentRoomMatchId() : ""),
       remainingTime: options.remainingTime || 0
     });
     if (!Object.hasOwn(options, "answer")) {
@@ -22760,6 +22852,7 @@ async function updateRoomPresence(room, options = {}) {
     }
     if (!Object.hasOwn(options, "submittedRound")) {
       delete participant.submittedRound;
+      delete participant.submissionMatchId;
     }
     if (!Object.hasOwn(options, "remainingTime")) {
       delete participant.remainingTime;
@@ -22829,6 +22922,7 @@ function normalizeRoomParticipantDelta(participant = {}) {
     status: String(source.status || (source.host ? "host" : source.spectator ? "spectating" : "joined")).slice(0, 32),
     answer: cleanInput(source.answer || ""),
     submittedRound: Number(source.submittedRound) || 0,
+    submissionMatchId: String(source.submissionMatchId || "").trim(),
     remainingTime: Math.max(0, Number(source.remainingTime) || 0)
   };
 }
@@ -22948,7 +23042,18 @@ function applyRoomDirectoryRoom(room) {
   if (Array.isArray(room.chat)) {
     mergeRoomChatMessages(room.chat);
   }
-  state.roomGame = room.game && typeof room.game === "object" ? room.game : null;
+  if (room.status === "lobby") {
+    setCurrentRoomMatchId("");
+  }
+  const incomingGame = room.game && typeof room.game === "object" ? room.game : null;
+  const shouldAcceptIncomingGame = !incomingGame
+    || !getCurrentRoomMatchId()
+    || !incomingGame.matchId
+    || incomingGame.matchId === getCurrentRoomMatchId();
+  state.roomGame = shouldAcceptIncomingGame ? incomingGame : state.roomGame;
+  if (state.roomGame?.matchId) {
+    setCurrentRoomMatchId(state.roomGame.matchId);
+  }
   applyRoomGameMatchSettings(state.roomGame, room);
   if (state.roomGame?.roundResult) {
     applyRealtimeRoomRoundResult({
@@ -22971,7 +23076,12 @@ function syncRoomSubmissionsFromParticipants() {
     return;
   }
   state.roomParticipants.forEach((participant, index) => {
-    if (!participant.active || participant.spectator || Number(participant.submittedRound) !== Number(state.round)) {
+    if (
+      !participant.active
+      || participant.spectator
+      || Number(participant.submittedRound) !== Number(state.round)
+      || !participantSubmissionMatchesCurrentMatch(participant)
+    ) {
       return;
     }
     const player = state.players.find((entry) => entry.participantId === participant.id)
@@ -23002,6 +23112,9 @@ function getSyncedRoomSetupForRound(round = state.round) {
   if (!game || game.status === "ended" || Number(game.round) !== Number(round) || !game.setup) {
     return null;
   }
+  if (!roomPayloadMatchesCurrentMatch({ game })) {
+    return null;
+  }
   try {
     return normalizeSetupPayload(game.setup);
   } catch {
@@ -23014,8 +23127,9 @@ function publishRoomRoundSetup(setup) {
     return;
   }
   const syncedSetup = normalizeSetupPayload(setup);
+  const matchId = setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId());
   state.roomGame = {
-    matchId: state.roomGame?.matchId || `${state.roomSettings.code}-${Date.now()}`,
+    matchId,
     status: "playing",
     round: state.round,
     setup: syncedSetup,
@@ -23025,6 +23139,7 @@ function publishRoomRoundSetup(setup) {
   };
   broadcastRealtimeRoomChange("round-started", state.roomSettings.code, {
     status: "in-progress",
+    matchId,
     revision: state.roomEventRevision || 0,
     updatedAt: state.roomGame.updatedAt,
     game: state.roomGame
@@ -23057,6 +23172,7 @@ function publishRoomRoundAdvancing(round = state.round) {
   broadcastRealtimeRoomChange("round-advancing", state.roomSettings.code, {
     status: "in-progress",
     round: Number(round) || state.round,
+    matchId: getCurrentRoomMatchId(),
     matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
     updatedAt: Date.now()
   });
@@ -23068,7 +23184,7 @@ function publishRoomGameEnded() {
   }
   const game = {
     ...(state.roomGame || {}),
-    matchId: state.roomGame?.matchId || `${state.roomSettings.code}-${Date.now()}`,
+    matchId: setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId()),
     status: "ended",
     round: state.round,
     setup: state.roomGame?.setup || null,
@@ -23085,6 +23201,7 @@ function publishRoomGameEnded() {
       state.roomDirectoryOnline = false;
       broadcastRealtimeRoomChange("game-ended", state.roomSettings.code, {
         status: "complete",
+        matchId: game.matchId,
         game,
         updatedAt: game.updatedAt
       });
@@ -23096,6 +23213,7 @@ function publishRoomGameEnded() {
       mergeHostedRoom(data.room);
       broadcastRealtimeRoomChange("game-ended", data.room.code || state.roomSettings.code, {
         status: "complete",
+        matchId: game.matchId,
         revision: data.room.revision || 0,
         updatedAt: data.room.updatedAt || game.updatedAt,
         game: data.room.game || game
@@ -23106,6 +23224,7 @@ function publishRoomGameEnded() {
     state.roomDirectoryOnline = false;
     broadcastRealtimeRoomChange("game-ended", state.roomSettings.code, {
       status: "complete",
+      matchId: game.matchId,
       game,
       updatedAt: game.updatedAt
     });
@@ -23209,6 +23328,13 @@ function startJoinedRoomMatchFromRealtime(payload = {}, game = null) {
   }
   const sourceRoom = payload.room && typeof payload.room === "object" ? payload.room : state.joiningRoom;
   const nextGame = game || sourceRoom?.game || null;
+  const incomingMatchId = getRoomMatchIdFromPayload({ ...payload, game: nextGame });
+  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId()) {
+    return false;
+  }
+  if (incomingMatchId) {
+    setCurrentRoomMatchId(incomingMatchId);
+  }
   state.roomGame = nextGame?.status === "ended" ? null : nextGame;
   applyRoomGameMatchSettings(state.roomGame, payload, { render: false, resetTimer: true });
   state.joiningRoom = {
@@ -23243,12 +23369,15 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   if (!nextRound || nextRound < Number(state.round)) {
     return false;
   }
+  const incomingMatchId = getRoomMatchIdFromPayload(payload);
+  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId()) {
+    return false;
+  }
   if (payload.matchSettings || payload.settings) {
     applyRoomGameMatchSettings({ matchSettings: payload.matchSettings || payload.settings }, payload, { render: false, resetTimer: canStartFromLobby });
   }
-  if (nextRound === Number(state.round) && elements.verdictPanel.classList.contains("hidden")) {
-    updateRoomEventRevision(payload.revision);
-    return true;
+  if (incomingMatchId) {
+    setCurrentRoomMatchId(incomingMatchId);
   }
   if (canStartFromLobby) {
     if (state.joiningRoom) {
@@ -23265,6 +23394,10 @@ function applyRealtimeRoundAdvancing(payload = {}) {
     clearRoundSubmissionState();
     updateRoomEventRevision(payload.revision);
     return startJoinedRoomMatchFromRealtime(payload, null);
+  }
+  if (nextRound === Number(state.round) && elements.verdictPanel.classList.contains("hidden")) {
+    updateRoomEventRevision(payload.revision);
+    return true;
   }
   cancelActiveMatchWork();
   state.currentRoomStatus = "in-progress";
@@ -23305,9 +23438,15 @@ function applyRealtimeRoundStarted(payload = {}) {
   if (!game?.setup) {
     return false;
   }
+  if (!roomPayloadMatchesCurrentMatch({ ...payload, game })) {
+    return false;
+  }
   const nextRound = Number(game.round) || 0;
   if (!nextRound || nextRound < Number(state.round)) {
     return false;
+  }
+  if (game.matchId) {
+    setCurrentRoomMatchId(game.matchId);
   }
   applyRoomGameMatchSettings(game, payload, { render: false, resetTimer: true });
   let setup;
@@ -23368,6 +23507,9 @@ function applyRealtimeRoomGameEnded(payload = {}) {
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext()) {
     return false;
   }
+  if (!roomPayloadMatchesCurrentMatch(payload)) {
+    return false;
+  }
   state.roomGame = payload.game && typeof payload.game === "object"
     ? payload.game
     : {
@@ -23376,6 +23518,7 @@ function applyRealtimeRoomGameEnded(payload = {}) {
       round: state.round,
       updatedAt: Number(payload.updatedAt) || Date.now()
     };
+  setCurrentRoomMatchId(state.roomGame.matchId || getCurrentRoomMatchId());
   state.currentRoomStatus = "complete";
   if (state.joiningRoom) {
     state.joiningRoom = {
@@ -23415,6 +23558,7 @@ function applyRealtimeRoomReturnedToLobby(room = {}) {
     return false;
   }
   state.roomGame = null;
+  state.roomMatchId = "";
   state.roomRoundResult = null;
   if (state.joiningRoom) {
     state.joiningRoom = {
@@ -24193,6 +24337,7 @@ async function beginRoomMatch() {
     return;
   }
   state.currentRoomStatus = "in-progress";
+  setCurrentRoomMatchId(createRoomMatchId());
   state.roomGame = null;
   state.roomRoundResult = null;
   resetRoomPowerSyncClocks();

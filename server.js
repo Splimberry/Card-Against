@@ -2334,16 +2334,32 @@ async function handleRoomPresence(req, res, code) {
         return;
       }
     }
+    const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    const submissionMatchId = String(participant.submissionMatchId || "").slice(0, 80);
+    const hasSubmissionUpdate = Object.hasOwn(rawParticipant, "answer")
+      || Object.hasOwn(rawParticipant, "submittedRound")
+      || Object.hasOwn(rawParticipant, "remainingTime");
+    const acceptsSubmissionUpdate = !hasSubmissionUpdate
+      || !currentMatchId
+      || !submissionMatchId
+      || submissionMatchId === currentMatchId;
     if (existingIndex >= 0) {
       const existingParticipant = room.participants[existingIndex];
       room.participants[existingIndex] = {
         ...existingParticipant,
         ...participant,
-        answer: Object.hasOwn(rawParticipant, "answer") ? participant.answer : existingParticipant.answer,
-        submittedRound: Object.hasOwn(rawParticipant, "submittedRound") ? participant.submittedRound : existingParticipant.submittedRound,
-        remainingTime: Object.hasOwn(rawParticipant, "remainingTime") ? participant.remainingTime : existingParticipant.remainingTime
+        answer: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "answer") ? participant.answer : existingParticipant.answer,
+        submittedRound: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "submittedRound") ? participant.submittedRound : existingParticipant.submittedRound,
+        submissionMatchId: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "submittedRound") ? participant.submissionMatchId : existingParticipant.submissionMatchId || "",
+        remainingTime: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "remainingTime") ? participant.remainingTime : existingParticipant.remainingTime
       };
     } else {
+      if (hasSubmissionUpdate && !acceptsSubmissionUpdate) {
+        participant.answer = "";
+        participant.submittedRound = 0;
+        participant.submissionMatchId = "";
+        participant.remainingTime = 0;
+      }
       room.participants.push(participant);
     }
 
@@ -2567,6 +2583,17 @@ async function handleRoomGame(req, res, code) {
       sendJson(res, 400, { error: "Room game update needs a setup payload." });
       return;
     }
+    const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    if (
+      game.status === "ended"
+      && room.status === "in-progress"
+      && currentMatchId
+      && game.matchId
+      && game.matchId !== currentMatchId
+    ) {
+      sendJson(res, 409, { error: "Game end belongs to a previous match." });
+      return;
+    }
     room.status = game.status === "ended" ? "complete" : "in-progress";
     room.game = game;
     if (game.status === "ended") {
@@ -2687,6 +2714,14 @@ async function handleRoomRoundResult(req, res, code) {
       sendJson(res, 400, { error: "Round result payload is incomplete." });
       return;
     }
+    const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    if (roundResult.matchId && currentMatchId && roundResult.matchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Round result belongs to a previous match." });
+      return;
+    }
+    if (!roundResult.matchId && currentMatchId) {
+      roundResult.matchId = currentMatchId;
+    }
 
     room.status = "in-progress";
     room.game = normalizeRoomGame({
@@ -2756,6 +2791,7 @@ async function handleRoomRoundSkip(req, res, code) {
       }
       participant.answer = submission.answer;
       participant.submittedRound = round;
+      participant.submissionMatchId = String(room.game?.matchId || "").slice(0, 80);
       participant.remainingTime = submission.remainingTime;
       participant.status = "submitted";
     });
@@ -2983,6 +3019,7 @@ function normalizeParticipant(participant) {
     status: String(participant.status || (participant.bot ? "bot" : participant.spectator ? "spectating" : "ready")).slice(0, 32),
     answer: String(participant.answer || "").slice(0, 500),
     submittedRound: clampServerNumber(participant.submittedRound, 0, 100, 0),
+    submissionMatchId: String(participant.submissionMatchId || "").slice(0, 80),
     remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0)
   };
 }
@@ -3162,6 +3199,7 @@ function normalizeRoomRoundResult(result) {
     }).filter((entry) => entry.participantId).slice(0, 10)
     : [];
   return {
+    matchId: String(result.matchId || "").slice(0, 80),
     round: clampServerNumber(result.round, 1, 100, 1),
     questionId: String(result.questionId || "").slice(0, 120),
     cards,
@@ -3373,6 +3411,7 @@ function finalizeRoom(room) {
       status: "host",
       answer: "",
       submittedRound: 0,
+      submissionMatchId: "",
       remainingTime: 0
     };
     const existingHostIndex = room.participants.findIndex((participant) => participant.id === room.host.id);

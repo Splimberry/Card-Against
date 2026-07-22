@@ -29,6 +29,21 @@ function makeSetup(round = 1) {
   };
 }
 
+function makeRoundResult(round = 1, overrides = {}) {
+  return {
+    matchId: overrides.matchId || "",
+    round,
+    questionId: `test-question-${round}`,
+    cards: ["Answer", "Wrong"],
+    winner: { index: 0 },
+    winnerIndex: 0,
+    correctIndexes: [0],
+    revealAnswerIndex: 0,
+    updatedAt: Date.now(),
+    ...overrides
+  };
+}
+
 function makeRoom(code, overrides = {}) {
   const host = {
     id: "host-client",
@@ -984,6 +999,117 @@ async function testRoomPowerStateEndpointStampsEvents() {
   assert.equal(events.payload.events.some((event) => event.type === "power_state"), true);
 }
 
+async function testStaleRoomRoundResultCannotOverwriteRematch() {
+  const code = makeCode(8116);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId: `${code}-new-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const stale = await request("POST", `/api/rooms/${code}/round-result`, {
+    hostParticipantId: "host-client",
+    roundResult: makeRoundResult(1, { matchId: `${code}-old-match`, questionId: "old-question" })
+  });
+  assert.equal(stale.response.status, 409);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.status, "in-progress");
+  assert.equal(stored.payload.room.game.matchId, `${code}-new-match`);
+  assert.equal(stored.payload.room.game.roundResult, null);
+}
+
+async function testStaleRoomGameEndCannotCompleteRematch() {
+  const code = makeCode(8117);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId: `${code}-new-match`,
+      status: "starting",
+      round: 1,
+      setup: null,
+      updatedAt: Date.now()
+    }
+  }));
+
+  const stale = await request("PUT", `/api/rooms/${code}/game`, {
+    hostParticipantId: "host-client",
+    game: {
+      matchId: `${code}-old-match`,
+      status: "ended",
+      round: 10,
+      setup: makeSetup(10),
+      updatedAt: Date.now()
+    }
+  });
+  assert.equal(stale.response.status, 409);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.status, "in-progress");
+  assert.equal(stored.payload.room.game.matchId, `${code}-new-match`);
+  assert.equal(stored.payload.room.game.status, "starting");
+}
+
+async function testStaleParticipantSubmissionCannotOverwriteRematch() {
+  const code = makeCode(8118);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Current answer",
+        submittedRound: 1,
+        submissionMatchId: `${code}-new-match`,
+        remainingTime: 20
+      }
+    ],
+    game: {
+      matchId: `${code}-new-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const stale = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "host-client",
+      name: "Host",
+      host: true,
+      active: true,
+      status: "submitted",
+      answer: "Old MCQ option",
+      submittedRound: 1,
+      submissionMatchId: `${code}-old-match`,
+      remainingTime: 3
+    }
+  });
+  assert.equal(stale.response.status, 200, stale.payload.error);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const host = stored.payload.room.participants.find((participant) => participant.id === "host-client");
+  assert.equal(host.answer, "Current answer");
+  assert.equal(host.submittedRound, 1);
+  assert.equal(host.submissionMatchId, `${code}-new-match`);
+  assert.equal(host.remainingTime, 20);
+}
+
 async function testRoomPowerStateDeltaPreservesStoredFullState() {
   const code = makeCode(8115);
   await upsertRoom(makeRoom(code, {
@@ -1779,6 +1905,9 @@ async function main() {
   await testDuplicateHostPresenceRemovesStaleHostRow();
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
+  await testStaleRoomRoundResultCannotOverwriteRematch();
+  await testStaleRoomGameEndCannotCompleteRematch();
+  await testStaleParticipantSubmissionCannotOverwriteRematch();
   await testRoomPowerStateDeltaPreservesStoredFullState();
   await testRoomPowerStateIgnoresStaleHandEntries();
   await testRoomPowerStateCanClearPlayedHistory();
