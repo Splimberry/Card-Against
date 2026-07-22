@@ -13207,7 +13207,7 @@ function getVisiblePowerHandCards(owner) {
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
     return [];
   }
-  return [...elements.powerPanel.querySelectorAll(".power-card")].filter((card) => card.isConnected);
+  return [...elements.powerPanel.querySelectorAll(".power-card:not(.power-card-placeholder)")].filter((card) => card.isConnected);
 }
 
 function playPowerHandExitAnimation(owner, options = {}) {
@@ -13278,11 +13278,61 @@ function createPowerHandExitHold(owner, indexes = [], durationMs = 420) {
     if (state.powerHandExitHolds?.[owner]?.token !== token) {
       return;
     }
+    const layoutSnapshot = capturePowerHandLayoutSnapshot(owner);
     delete state.powerHandExitHolds[owner];
     if (owner === getCurrentPowerOwner()) {
       renderPowerUps();
+      playPowerHandLayoutShift(owner, layoutSnapshot);
     }
   }, durationMs);
+}
+
+function capturePowerHandLayoutSnapshot(owner) {
+  if (owner !== getCurrentPowerOwner() || !elements.powerPanel || elements.powerPanel.classList.contains("hidden")) {
+    return null;
+  }
+  const seen = {};
+  const snapshot = new Map();
+  [...elements.powerPanel.querySelectorAll(".power-card:not(.power-card-placeholder)")].forEach((card) => {
+    const powerId = card.dataset.power;
+    if (!powerId || !card.isConnected) {
+      return;
+    }
+    seen[powerId] = (seen[powerId] || 0) + 1;
+    snapshot.set(`${powerId}:${seen[powerId]}`, card.getBoundingClientRect());
+  });
+  return snapshot;
+}
+
+function playPowerHandLayoutShift(owner, snapshot) {
+  if (!snapshot?.size || owner !== getCurrentPowerOwner() || !elements.powerPanel || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    return;
+  }
+  const seen = {};
+  [...elements.powerPanel.querySelectorAll(".power-card:not(.power-card-placeholder)")].forEach((card) => {
+    const powerId = card.dataset.power;
+    if (!powerId || !card.isConnected || card.classList.contains("fresh-power")) {
+      return;
+    }
+    seen[powerId] = (seen[powerId] || 0) + 1;
+    const previousRect = snapshot.get(`${powerId}:${seen[powerId]}`);
+    if (!previousRect) {
+      return;
+    }
+    const nextRect = card.getBoundingClientRect();
+    const deltaX = previousRect.left - nextRect.left;
+    const deltaY = previousRect.top - nextRect.top;
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
+      return;
+    }
+    card.animate([
+      { transform: `translate(${deltaX}px, ${deltaY}px)`, filter: "brightness(1.08)" },
+      { transform: "translate(0, 0)", filter: "brightness(1)" }
+    ], {
+      duration: 360,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)"
+    });
+  });
 }
 
 function getPowerHandRenderEntries(owner, hand) {
@@ -13366,6 +13416,9 @@ function giveDeadWeightToOwner(owner) {
 function drawPowerCard(existing = [], options = {}) {
   const allowedDeck = powerDeck.filter((power) => {
     if (options.excludeAi && power.id === "ai_answer") {
+      return false;
+    }
+    if (options.forceChaosInfusion && !canPowerBecomeChaosInfused(power)) {
       return false;
     }
     if (options.excludeImmediate && power.immediate) {
@@ -17600,6 +17653,7 @@ function setupPowerHands() {
     };
   }
   state.activePowerUp = null;
+  state.powerHandExitHolds = {};
   resetPlayedPowersForRound();
 }
 
