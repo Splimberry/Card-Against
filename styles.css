@@ -9091,25 +9091,58 @@ input:focus {
 
 .chat-message {
   display: grid;
-  grid-template-columns: 2.25rem minmax(0, 1fr);
-  gap: 0.15rem 0.6rem;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.12rem 0.5rem;
   align-items: start;
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .chat-avatar {
   grid-row: span 2;
-  width: 2.25rem;
+  width: 2rem;
   aspect-ratio: 1;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
 .chat-message strong {
-  color: var(--accent);
+  color: var(--accent-2);
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.chat-message .name-with-title {
+  width: auto;
+  max-width: 100%;
+  gap: 0.22rem;
+  overflow: visible;
+}
+
+.chat-message .name-with-title-text {
+  min-width: 1.5rem;
+  max-width: 7.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.chat-message .equipped-title-pill {
+  max-width: 5.4rem;
+  min-height: 1.02rem;
+  padding: 0.1rem 0.34rem 0.08rem;
+  font-size: 0.48rem;
+  line-height: 0.95;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.chat-message :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
+  width: 0.95em;
+  height: 0.95em;
+  flex: 0 0 auto;
+  color: inherit;
 }
 
 .chat-message span {
@@ -9132,7 +9165,7 @@ input:focus {
 }
 
 .chat-message.host-message strong {
-  color: var(--accent-2);
+  color: var(--accent);
 }
 
 .chat-message.host-message span {
