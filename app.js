@@ -13479,7 +13479,9 @@ function playPowerHandExitAnimation(owner, options = {}) {
       requestedPowerIds.splice(matchIndex, 1);
       return true;
     });
-  createPowerHandExitHold(owner, cardsToAnimate.map((entry) => entry.index), 420);
+  const maxExitDelayMs = Math.min(Math.max(cardsToAnimate.length - 1, 0), 5) * 28;
+  const holdDurationMs = maxExitDelayMs + 300 + 120;
+  createPowerHandExitHold(owner, cardsToAnimate.map((entry) => entry.index), holdDurationMs);
   cardsToAnimate.forEach(({ card }, index) => {
     const rect = card.getBoundingClientRect();
     if (!rect.width || !rect.height) {
@@ -13494,8 +13496,62 @@ function playPowerHandExitAnimation(owner, options = {}) {
     ghost.style.setProperty("--power-exit-delay", `${Math.min(index, 5) * 28}ms`);
     document.body.appendChild(ghost);
     ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
-    window.setTimeout(() => ghost.remove(), 560);
+    window.setTimeout(() => ghost.remove(), holdDurationMs + 120);
   });
+}
+
+function getPowerPanelHeightForAnimation() {
+  if (!elements.powerPanel || elements.powerPanel.classList.contains("hidden") || !elements.powerPanel.isConnected) {
+    return 0;
+  }
+  return elements.powerPanel.getBoundingClientRect().height;
+}
+
+function animatePowerPanelHeightChange(beforeHeight) {
+  if (!elements.powerPanel || shouldReduceMotion() || !Element.prototype.animate) {
+    return;
+  }
+  const afterHeight = getPowerPanelHeightForAnimation();
+  if (!beforeHeight || !afterHeight || Math.abs(afterHeight - beforeHeight) < 2) {
+    return;
+  }
+  elements.powerPanel.getAnimations?.().forEach((animation) => {
+    if (!("animationName" in animation)) {
+      animation.cancel();
+    }
+  });
+  const token = String(Date.now() + Math.random());
+  elements.powerPanel.dataset.heightAnimationToken = token;
+  elements.powerPanel.style.height = `${beforeHeight}px`;
+  elements.powerPanel.style.overflow = "hidden";
+  const animation = elements.powerPanel.animate(
+    [
+      { height: `${beforeHeight}px` },
+      { height: `${afterHeight}px` }
+    ],
+    {
+      duration: 360,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)"
+    }
+  );
+  animation.finished.then(
+    () => {
+      if (elements.powerPanel.dataset.heightAnimationToken !== token) {
+        return;
+      }
+      delete elements.powerPanel.dataset.heightAnimationToken;
+      elements.powerPanel.style.removeProperty("height");
+      elements.powerPanel.style.removeProperty("overflow");
+    },
+    () => {
+      if (elements.powerPanel.dataset.heightAnimationToken !== token) {
+        return;
+      }
+      delete elements.powerPanel.dataset.heightAnimationToken;
+      elements.powerPanel.style.removeProperty("height");
+      elements.powerPanel.style.removeProperty("overflow");
+    }
+  );
 }
 
 function createPowerHandExitHold(owner, indexes = [], durationMs = 420) {
@@ -17951,6 +18007,7 @@ function renderPowerUps() {
   const hand = state.powerHands[owner] || [];
   const freshIds = [...(state.freshPowerUps[owner] || [])];
   const panelVisible = !elements.powerPanel.classList.contains("hidden");
+  const beforeHeight = getPowerPanelHeightForAnimation();
   const powersBlocked = isClassicModeEnabled() || isTableEventActive("power_outage");
   const label = isDuelMode() ? `${getOwnerLabel(owner)} power-ups` : "Your power-ups";
   const hint = powersBlocked
@@ -17968,6 +18025,7 @@ function renderPowerUps() {
     empty.className = "power-empty";
     empty.textContent = hint;
     elements.powerPanel.appendChild(empty);
+    animatePowerPanelHeightChange(beforeHeight);
     return;
   }
 
@@ -17979,6 +18037,7 @@ function renderPowerUps() {
     empty.className = "power-empty";
     empty.textContent = "No power-ups left.";
     elements.powerPanel.appendChild(empty);
+    animatePowerPanelHeightChange(beforeHeight);
     return;
   }
 
@@ -18071,6 +18130,7 @@ function renderPowerUps() {
       state.freshPowerUpAnimations[owner] = [];
     }
   }
+  animatePowerPanelHeightChange(beforeHeight);
 }
 
 function selectPowerUp(powerId) {
