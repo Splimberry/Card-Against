@@ -2218,7 +2218,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   inset: 0;
   z-index: 7;
   pointer-events: none;
-  contain: layout paint style;
+  overflow: visible;
+  contain: layout style;
 }
 
 .question-card-pile-card {
@@ -2229,20 +2230,21 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   left: 0;
   width: 100%;
   margin: 0;
-  opacity: 0.58;
+  opacity: 1;
   pointer-events: none;
   z-index: var(--question-stack-z, 1);
   transform:
     translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
     scale(var(--question-stack-scale, 0.98));
-  filter: saturate(0.72) brightness(0.58);
+  filter: saturate(0.68) brightness(0.52) contrast(0.88);
   box-shadow:
     0 0.75rem 1.2rem rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.025);
   transform-origin: center;
   animation: none !important;
-  contain: layout paint;
+  backface-visibility: hidden;
+  contain: layout style;
 }
 
 .question-card-pile-card > * {
@@ -2297,8 +2299,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   width: 100%;
   margin: 0;
   z-index: var(--question-stack-z, 1);
-  opacity: 0.58;
-  filter: saturate(0.72) brightness(0.58);
+  opacity: 1;
+  filter: saturate(0.68) brightness(0.52) contrast(0.88);
   transform:
     translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
