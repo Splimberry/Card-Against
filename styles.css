@@ -6606,25 +6606,30 @@ input:focus {
   min-width: 0;
 }
 
-.player-title-row {
+.final-leaderboard-row .player-title-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.18rem;
+  gap: 0.22rem;
 }
 
-.player-title-badge {
+.final-leaderboard-row .player-title-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 0.82rem;
-  max-width: 100%;
-  padding: 0.06rem 0.26rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  justify-content: center;
+  min-height: 1.18rem;
+  max-width: min(10rem, 100%);
+  padding: 0.13rem 0.44rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   color: var(--ink);
-  font-size: 0.44rem;
+  font-size: 0.6rem;
   font-weight: 950;
   line-height: 1;
+  text-align: center;
   text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: help;
 }
 
