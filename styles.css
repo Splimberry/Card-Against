@@ -344,6 +344,80 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   --menu-enter-delay: 580ms;
 }
 
+/* Motion polish groups. Remove one selector group here to revert a specific section. */
+.room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview),
+.join-screen:not(.hidden) :is(.room-header, .join-code-form, .join-room-card),
+.room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
+.dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
+.profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
+.profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
+.achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card) {
+  animation: motionPolishSlideIn var(--motion-polish-duration, 560ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--motion-polish-delay, 0ms);
+  will-change: opacity, transform, filter;
+}
+
+.room-screen:not(.hidden) .room-header,
+.join-screen:not(.hidden) .room-header,
+.room-lobby-screen:not(.hidden) .room-header,
+.dev-tool-screen:not(.hidden) .room-header {
+  --motion-polish-x: -1.6rem;
+  --motion-polish-y: 0.2rem;
+  --motion-polish-delay: 40ms;
+}
+
+.room-screen:not(.hidden) .room-settings-panel,
+.join-screen:not(.hidden) .join-code-form,
+.room-lobby-screen:not(.hidden) .lobby-panel,
+.dev-tool-screen:not(.hidden) .dev-tool-tabs {
+  --motion-polish-x: -2.2rem;
+  --motion-polish-y: 0.35rem;
+  --motion-polish-delay: 120ms;
+}
+
+.room-screen:not(.hidden) .room-preview,
+.join-screen:not(.hidden) .join-room-card,
+.room-lobby-screen:not(.hidden) .lobby-chat,
+.dev-tool-screen:not(.hidden) .dev-tool-panel {
+  --motion-polish-x: 2rem;
+  --motion-polish-y: 0.35rem;
+  --motion-polish-delay: 190ms;
+}
+
+.join-screen:not(.hidden) .join-room-card:nth-child(2),
+.profile-shop-modal:not(.hidden) .profile-shop-section:nth-child(2),
+.achievements-modal:not(.hidden) .achievement-section:nth-child(2) {
+  --motion-polish-delay: 245ms;
+}
+
+.join-screen:not(.hidden) .join-room-card:nth-child(3),
+.profile-shop-modal:not(.hidden) .profile-shop-section:nth-child(3),
+.achievements-modal:not(.hidden) .achievement-section:nth-child(3) {
+  --motion-polish-delay: 300ms;
+}
+
+.room-player-card[data-bot="true"] {
+  animation: motionPolishRowIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.power-panel:not(.hidden) .power-card {
+  animation: motionPolishPowerCardIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--motion-polish-power-delay, 0ms);
+  will-change: opacity, transform, filter;
+}
+
+.power-panel:not(.hidden) .power-card:nth-of-type(2) {
+  --motion-polish-power-delay: 45ms;
+}
+
+.power-panel:not(.hidden) .power-card:nth-of-type(3) {
+  --motion-polish-power-delay: 90ms;
+}
+
+.power-panel:not(.hidden) .power-card:nth-of-type(4) {
+  --motion-polish-power-delay: 135ms;
+}
+
 .room-screen,
 .join-screen,
 .dev-tool-screen,
@@ -1384,6 +1458,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   min-height: 3.25rem;
   padding: 0.42rem 0.5rem;
   text-align: left;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.leaderboard-player.motion-polish-leaderboard-moving {
+  z-index: 120;
+  box-shadow:
+    0 0.95rem 1.8rem rgba(0, 0, 0, 0.28),
+    0 0 1.15rem rgba(34, 211, 238, 0.18);
 }
 
 .leaderboard-player > :is(.leaderboard-rank, .leaderboard-avatar, .leaderboard-name, .leaderboard-power-list, strong, .leaderboard-streak) {
@@ -4165,7 +4248,7 @@ input:focus {
 }
 
 .cards-area.revealed .white-card {
-  animation: cardDeal 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: cardDeal 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .cards-area.revealed .white-card:nth-child(2) {
@@ -5415,7 +5498,13 @@ input:focus {
 }
 
 .white-card.launching {
-  opacity: 0.34;
+  opacity: 0.28;
+  filter: saturate(0.74) brightness(0.9);
+  transform: scale(0.985);
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease,
+    transform 180ms ease;
 }
 
 @keyframes cardChaosGlitch {
@@ -5733,10 +5822,13 @@ input:focus {
 
 .flying-card {
   position: fixed;
-  z-index: 50;
+  z-index: 180;
   pointer-events: none;
   margin: 0;
   transform-origin: center;
+  filter:
+    drop-shadow(0 1.25rem 1.8rem rgba(0, 0, 0, 0.36))
+    drop-shadow(0 0 1rem rgba(34, 211, 238, 0.2));
 }
 
 .answer-owner {
@@ -9801,7 +9893,16 @@ input:focus {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mode-screen:not(.hidden) :is(.mode-title-stack, .profile-card, .menu-actions, .mode-grid > *, .menu-help-button) {
+  .mode-screen:not(.hidden) :is(.mode-title-stack, .profile-card, .menu-actions, .mode-grid > *, .menu-help-button),
+  .room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview),
+  .join-screen:not(.hidden) :is(.room-header, .join-code-form, .join-room-card),
+  .room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
+  .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
+  .profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
+  .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
+  .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
+  .room-player-card[data-bot="true"],
+  .power-panel:not(.hidden) .power-card {
     animation: none;
   }
 
@@ -9856,6 +9957,59 @@ input:focus {
   100% {
     opacity: 1;
     filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motionPolishSlideIn {
+  0% {
+    opacity: 0;
+    filter: blur(var(--motion-polish-blur, 7px));
+    transform: translate3d(var(--motion-polish-x, 1.4rem), var(--motion-polish-y, 0.35rem), 0) scale(var(--motion-polish-scale, 0.985));
+  }
+
+  62% {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motionPolishRowIn {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translate3d(0.9rem, 0.2rem, 0) scale(0.975);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motionPolishPowerCardIn {
+  0% {
+    opacity: 0;
+    filter: blur(4px) brightness(1.18);
+    transform: translate3d(0, 0.55rem, 0) scale(0.965);
+  }
+
+  70% {
+    opacity: 1;
+    filter: blur(0) brightness(1.06);
+    transform: translate3d(0, -0.05rem, 0) scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0) brightness(1);
     transform: translate3d(0, 0, 0) scale(1);
   }
 }

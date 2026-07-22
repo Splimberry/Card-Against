@@ -4653,6 +4653,52 @@ function setHidden(element, isHidden) {
   element.classList.toggle("hidden", isHidden);
 }
 
+function shouldReduceMotion() {
+  return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+}
+
+function getVisibleElementRectMap(container, selector, keyGetter) {
+  if (!container || typeof keyGetter !== "function") {
+    return new Map();
+  }
+  return new Map(
+    [...container.querySelectorAll(selector)]
+      .filter((element) => element.isConnected && element.offsetParent !== null)
+      .map((element) => [keyGetter(element), element.getBoundingClientRect()])
+      .filter(([key]) => key)
+  );
+}
+
+function animateReorderedChildren(container, previousRects, selector, keyGetter, options = {}) {
+  if (!container || !previousRects?.size || !Element.prototype.animate || shouldReduceMotion()) {
+    return;
+  }
+  const duration = Number(options.duration) || 360;
+  const easing = options.easing || "cubic-bezier(0.16, 1, 0.3, 1)";
+  [...container.querySelectorAll(selector)].forEach((element) => {
+    const previousRect = previousRects.get(keyGetter(element));
+    if (!previousRect) {
+      return;
+    }
+    const nextRect = element.getBoundingClientRect();
+    const deltaX = previousRect.left - nextRect.left;
+    const deltaY = previousRect.top - nextRect.top;
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
+      return;
+    }
+    element.classList.add("motion-polish-leaderboard-moving");
+    element.animate(
+      [
+        { transform: `translate3d(${deltaX}px, ${deltaY}px, 0)`, zIndex: 30 },
+        { transform: "translate3d(0, 0, 0)", zIndex: 30 }
+      ],
+      { duration, easing }
+    ).finished.finally(() => {
+      element.classList.remove("motion-polish-leaderboard-moving");
+    });
+  });
+}
+
 function ensureStatFlashElement() {
   let flash = document.querySelector("#statFlash");
   if (flash) {
@@ -12458,6 +12504,11 @@ function compareScoreRowsForLeaderboard(a, b) {
 }
 
 function renderLeaderboard() {
+  const previousRects = getVisibleElementRectMap(
+    elements.leaderboard,
+    ".leaderboard-player[data-owner]",
+    (element) => element.dataset.owner
+  );
   const leaders = getActiveOwners()
     .map((owner) => {
       const player = getPlayer(owner);
@@ -12526,6 +12577,13 @@ function renderLeaderboard() {
     chip.append(rank, avatar, name, powers, score, streak);
     elements.leaderboard.appendChild(chip);
   });
+  animateReorderedChildren(
+    elements.leaderboard,
+    previousRects,
+    ".leaderboard-player[data-owner]",
+    (element) => element.dataset.owner,
+    { duration: 420 }
+  );
 }
 
 function getScore(owner) {
