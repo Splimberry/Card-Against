@@ -2277,8 +2277,22 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   margin: 0;
 }
 
-.question-card-pile .question-card-pile-card {
+.question-card-pile .question-card-pile-card.black-card {
+  position: absolute;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  left: 0;
+  grid-column: auto;
+  grid-row: auto;
+  align-self: auto;
+  width: 100%;
+  margin: 0;
   z-index: var(--question-stack-z, 1);
+  transform:
+    translate3d(var(--question-stack-offset-x, 0), var(--question-stack-offset-y, 0.5rem), 0)
+    rotate(var(--question-card-tilt, -1.2deg))
+    scale(var(--question-stack-scale, 0.98));
 }
 
 .overlay-debug-layout {

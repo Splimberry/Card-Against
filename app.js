@@ -9557,18 +9557,28 @@ function applyRoomPowerState(payload = {}) {
       : [];
     const handChanged = previousHand.length !== nextHand.length
       || previousHand.some((powerId, index) => powerId !== nextHand[index]);
-    const incomingFresh = Array.isArray(entry.fresh)
-      ? entry.fresh.map((powerId) => String(powerId || "")).filter((powerId) => getPowerById(powerId)).slice(0, 10)
-      : [];
+    const shouldAnimateSyncedHand = owner === getCurrentPowerOwner();
+    let syncedFreshIds = [];
+    let syncedFreshType = "refill";
+    if (shouldAnimateSyncedHand && handChanged && nextHand.length > previousHand.length) {
+      syncedFreshIds = nextHand.slice(previousHand.length);
+    } else if (shouldAnimateSyncedHand && handChanged && nextHand.length === previousHand.length) {
+      syncedFreshIds = nextHand.filter((powerId, index) => powerId !== previousHand[index]);
+      syncedFreshType = "refresh";
+    }
     getRoomPowerEntryUpdatedAt("hands", owner, entryUpdatedAt || Date.now());
     state.powerHands[owner] = nextHand;
-    state.freshPowerUps[owner] = handChanged
-      ? incomingFresh
-      : (state.freshPowerUps[owner] || []).filter((powerId) => nextHand.includes(powerId));
+    state.freshPowerUps[owner] = syncedFreshIds.length
+      ? syncedFreshIds
+      : handChanged && shouldAnimateSyncedHand
+        ? []
+        : (state.freshPowerUps[owner] || []).filter((powerId) => nextHand.includes(powerId));
     state.freshPowerUpAnimations = state.freshPowerUpAnimations || {};
-    state.freshPowerUpAnimations[owner] = handChanged
-      ? incomingFresh.map((powerId) => ({ powerId, type: "refill" }))
-      : (state.freshPowerUpAnimations[owner] || []).filter((entry) => nextHand.includes(entry?.powerId));
+    state.freshPowerUpAnimations[owner] = syncedFreshIds.length
+      ? syncedFreshIds.map((powerId) => ({ powerId, type: syncedFreshType }))
+      : handChanged && shouldAnimateSyncedHand
+        ? []
+        : (state.freshPowerUpAnimations[owner] || []).filter((entry) => nextHand.includes(entry?.powerId));
     setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((powerId) => nextHand.includes(powerId)));
     changed = true;
   });
