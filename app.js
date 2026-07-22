@@ -2408,7 +2408,8 @@ const audioAssets = {
   noMercy: "assets/no_mercy.wav",
   blackMarket: "assets/black_market.wav",
   dice: "assets/dice.wav",
-  roulette: "assets/roulette.wav"
+  roulette: "assets/roulette.wav",
+  switchCards: "assets/switch_cards.wav"
 };
 
 const tableEvents = [
@@ -3695,15 +3696,16 @@ function playSound(name) {
     genericLosePoint: () => playAudioFile(audioAssets.genericLosePoint, 0.9),
     burnLoss: () => playAudioFile(audioAssets.burningLosePoints, 0.9),
     glitch: () => playAudioFile(audioAssets.glitchOverlay, 0.9),
-	    bombLoss: () => playAudioFile(audioAssets.explodeLosePoints, 0.9),
-	    zapLoss: () => playAudioFile(audioAssets.zapLosePoints, 0.9),
-	    bountyRound: () => playAudioFile(audioAssets.bountyRound, 0.95),
-	    suddenDeath: () => playAudioFile(audioAssets.suddenDeath, 0.95),
-	    lightOff: () => playAudioFile(audioAssets.lightOff, 0.95),
-	    noMercy: () => playAudioFile(audioAssets.noMercy, 0.95),
-	    blackMarket: () => playAudioFile(audioAssets.blackMarket, 0.95),
-	    dice: () => playAudioFile(audioAssets.dice, 0.95),
-	    roulette: () => playAudioFile(audioAssets.roulette, 0.95),
+    bombLoss: () => playAudioFile(audioAssets.explodeLosePoints, 0.9),
+    zapLoss: () => playAudioFile(audioAssets.zapLosePoints, 0.9),
+    bountyRound: () => playAudioFile(audioAssets.bountyRound, 0.95),
+    suddenDeath: () => playAudioFile(audioAssets.suddenDeath, 0.95),
+    lightOff: () => playAudioFile(audioAssets.lightOff, 0.95),
+    noMercy: () => playAudioFile(audioAssets.noMercy, 0.95),
+    blackMarket: () => playAudioFile(audioAssets.blackMarket, 0.95),
+    dice: () => playAudioFile(audioAssets.dice, 0.95),
+    roulette: () => playAudioFile(audioAssets.roulette, 0.95),
+    switchCards: () => playAudioFile(audioAssets.switchCards, 0.9),
     reveal: () => {
       playTone(240, 0.08, "sine", 0.035);
       playTone(480, 0.12, "triangle", 0.04, 0.06);
@@ -5532,7 +5534,7 @@ function cycleAnswerStack() {
       setHidden(elements.answerStackButton, hiddenAnswerCount === 0);
     }
   }, 130);
-  playSound("coin");
+  playSound("switchCards");
 }
 
 function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1) {
