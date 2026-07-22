@@ -1769,7 +1769,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .leaderboard-power-pill.just-played {
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .leaderboard-power-pill.just-played {
     animation: none;
   }
 }
@@ -4775,8 +4775,8 @@ input:focus {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .white-card.answer-card-cycle-out,
-  .white-card.answer-card-cycle-in {
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .white-card.answer-card-cycle-out,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .white-card.answer-card-cycle-in {
     animation: none;
   }
 }
@@ -10517,30 +10517,30 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mode-screen:not(.hidden) :is(.mode-title-stack, .profile-card, .menu-actions, .mode-grid > *, .menu-help-button),
-  .room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview),
-  .join-screen:not(.hidden) :is(.room-header, .join-code-form, .join-room-card),
-  .room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
-  .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
-  .profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
-  .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
-  .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
-  .game-stage:not(.hidden) :is(.scoreboard, .power-panel:not(.hidden), .effect-panel:not(.hidden), .judge-panel:not(.hidden), .input-panel:not(.hidden), .answer-progress:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden), .room-chat:not(.hidden)),
-  .room-player-card[data-bot="true"],
-  .chat-message.chat-message-new,
-  .answer-progress-box.answer-progress-box-new,
-  .black-card.incoming-question-card,
-  .power-card.fresh-power,
-  .power-card.power-selected-pop,
-  .power-card.power-use-ghost,
-  .power-card.power-remove-exit-ghost,
-  .power-card.chaos-engulfing,
-  .power-card.chaos-infused.chaos-infuse-upgrading {
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .mode-screen:not(.hidden) :is(.mode-title-stack, .profile-card, .menu-actions, .mode-grid > *, .menu-help-button),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .join-screen:not(.hidden) :is(.room-header, .join-code-form, .join-room-card),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .game-stage:not(.hidden) :is(.scoreboard, .power-panel:not(.hidden), .effect-panel:not(.hidden), .judge-panel:not(.hidden), .input-panel:not(.hidden), .answer-progress:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden), .room-chat:not(.hidden)),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-player-card[data-bot="true"],
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .chat-message.chat-message-new,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .answer-progress-box.answer-progress-box-new,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .black-card.incoming-question-card,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.fresh-power,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.power-selected-pop,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.power-use-ghost,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.power-remove-exit-ghost,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.chaos-engulfing,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.chaos-infused.chaos-infuse-upgrading {
     animation: none;
   }
 
-  .room-submit-status,
-  .room-player-list-resizing {
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-submit-status,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-player-list-resizing {
     transition: none;
   }
 }

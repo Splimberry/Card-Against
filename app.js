@@ -4726,7 +4726,7 @@ function setHidden(element, isHidden) {
 }
 
 function shouldReduceMotion() {
-  return !allowsOneShotAnimations() || Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+  return !allowsOneShotAnimations();
 }
 
 function getVisibleElementRectMap(container, selector, keyGetter) {
@@ -26294,7 +26294,6 @@ function getAnswerGradingReason(answer, rating = {}, roundResult = {}) {
   if (isMultipleChoiceRound()) {
     return rating.correct ? "Correct option selected." : "Different option selected.";
   }
-  const source = roundResult.source === "local-fallback" ? "Local fallback" : "AI";
   const details = getGradingSimilarityDetails(answer, [state.canonicalAnswer, ...state.acceptedAnswers].filter(Boolean));
   if (details.kind === "blank") {
     return "Blank answer.";
@@ -26312,12 +26311,12 @@ function getAnswerGradingReason(answer, rating = {}, roundResult = {}) {
     if (details.kind === "partial") {
       return "Accepted: partial answer still identified it.";
     }
-    return `${source} accepted it as the same answer.`;
+    return "Accepted: grader recognized it as the same answer.";
   }
   if (details.score >= 0.72) {
-    return `${source} rejected it as too ambiguous.`;
+    return "Needs review: answer was close, but too ambiguous.";
   }
-  return `${source} marked it as a different answer.`;
+  return "Marked incorrect: grader read it as a different answer.";
 }
 
 function getRoundGradingReasons(cards = [], ratings = [], roundResult = {}) {
