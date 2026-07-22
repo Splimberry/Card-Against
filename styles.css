@@ -2218,6 +2218,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   inset: 0;
   z-index: 7;
   pointer-events: none;
+  contain: layout paint style;
 }
 
 .question-card-pile-card {
@@ -2228,18 +2229,20 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   left: 0;
   width: 100%;
   margin: 0;
-  opacity: 1;
+  opacity: 0.58;
   pointer-events: none;
   z-index: var(--question-stack-z, 1);
   transform:
     translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
     scale(var(--question-stack-scale, 0.98));
-  filter: saturate(0.94) brightness(0.92);
+  filter: saturate(0.72) brightness(0.58);
   box-shadow:
-    0 1rem 1.8rem rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.04);
+    0 0.75rem 1.2rem rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.025);
   transform-origin: center;
+  animation: none !important;
+  contain: layout paint;
 }
 
 .question-card-pile-card > * {
@@ -2294,10 +2297,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   width: 100%;
   margin: 0;
   z-index: var(--question-stack-z, 1);
+  opacity: 0.58;
+  filter: saturate(0.72) brightness(0.58);
   transform:
     translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
     scale(var(--question-stack-scale, 0.98));
+}
+
+.question-card-pile-card::before,
+.question-card-pile-card::after {
+  animation: none !important;
 }
 
 .overlay-debug-layout {
@@ -3620,6 +3630,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   animation: powerUseGhost 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.power-card.power-refresh-exit-ghost {
+  position: fixed;
+  z-index: 8999;
+  pointer-events: none;
+  margin: 0;
+  transform-origin: center;
+  animation: powerRefreshExit 260ms cubic-bezier(0.4, 0, 1, 1) var(--power-exit-delay, 0ms) both;
+}
+
 .power-card.fresh-power {
   animation-delay: var(--power-enter-delay, 0ms);
   animation-fill-mode: both;
@@ -3633,8 +3652,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .power-card.fresh-refresh {
-  animation-name: powerRefreshFadeIn;
-  animation-duration: 500ms;
+  animation-name: powerRefreshSlideIn;
+  animation-duration: 620ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -3707,7 +3726,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card.chaos-infused.fresh-refresh {
   animation:
-    powerRefreshFadeIn 500ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
@@ -3719,6 +3738,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card.chaos-infused.power-use-ghost {
   animation: powerUseGhost 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.power-card.chaos-infused.power-refresh-exit-ghost {
+  animation: powerRefreshExit 260ms cubic-bezier(0.4, 0, 1, 1) var(--power-exit-delay, 0ms) both;
 }
 
 @keyframes powerSelectedPop {
@@ -3760,23 +3783,37 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   }
 }
 
-@keyframes powerRefreshFadeIn {
+@keyframes powerRefreshSlideIn {
   0% {
     opacity: 0;
-    transform: scale(0.94) rotateX(10deg);
-    filter: blur(6px) saturate(0.7) brightness(1.28);
+    transform: translateX(2.8rem) scale(0.94);
+    filter: blur(7px) saturate(0.78) brightness(1.22);
   }
 
-  58% {
+  62% {
     opacity: 1;
-    transform: scale(1.025) rotateX(0deg);
-    filter: blur(0) saturate(1.12) brightness(1.16);
+    transform: translateX(-0.1rem) scale(1.025);
+    filter: blur(1.5px) saturate(1.1) brightness(1.12);
   }
 
   100% {
     opacity: 1;
-    transform: scale(1) rotateX(0deg);
+    transform: translateX(0) scale(1);
     filter: blur(0) saturate(1) brightness(1);
+  }
+}
+
+@keyframes powerRefreshExit {
+  0% {
+    opacity: 0.92;
+    transform: translateX(0) scale(1);
+    filter: blur(0) saturate(1) brightness(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-1.1rem) scale(0.96);
+    filter: blur(8px) saturate(0.7) brightness(0.85);
   }
 }
 

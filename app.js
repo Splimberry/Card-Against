@@ -13079,6 +13079,9 @@ function markPowerHandAnimation(owner, powerIds = [], type = "refill") {
   if (!ids.length) {
     return;
   }
+  if (type === "refresh") {
+    playPowerHandRefreshExitAnimation(owner);
+  }
   markFreshPowerUps(owner, ids, type);
 }
 
@@ -13172,6 +13175,35 @@ function playPendingPowerUseAnimation(owner, powerId) {
   document.body.appendChild(ghost);
   ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
   window.setTimeout(() => ghost.remove(), 500);
+}
+
+function playPowerHandRefreshExitAnimation(owner) {
+  if (owner !== getCurrentPowerOwner() || !elements.powerPanel || elements.powerPanel.classList.contains("hidden")) {
+    return;
+  }
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    return;
+  }
+  const cards = [...elements.powerPanel.querySelectorAll(".power-card")].filter((card) => card.isConnected);
+  if (!cards.length) {
+    return;
+  }
+  cards.forEach((card, index) => {
+    const rect = card.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+    const ghost = card.cloneNode(true);
+    ghost.className = `${card.className || "power-card"} power-refresh-exit-ghost`;
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.setProperty("--power-exit-delay", `${Math.min(index, 5) * 28}ms`);
+    document.body.appendChild(ghost);
+    ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
+    window.setTimeout(() => ghost.remove(), 560);
+  });
 }
 
 function passDeadWeight(owner) {
@@ -17539,7 +17571,8 @@ function renderPowerUps() {
       button.classList.add("fresh-power");
       const animationType = takePowerHandAnimation(owner, power.id, "refill");
       button.classList.add(animationType === "refresh" ? "fresh-refresh" : "fresh-refill");
-      button.style.setProperty("--power-enter-delay", `${Math.min(animatedFreshCount, 5) * 80}ms`);
+      const baseEnterDelay = animationType === "refresh" ? 230 : 0;
+      button.style.setProperty("--power-enter-delay", `${baseEnterDelay + Math.min(animatedFreshCount, 5) * 80}ms`);
       animatedFreshCount += 1;
     }
     if (panelVisible && selected && takePowerSelectionAnimation(owner, power.id)) {
