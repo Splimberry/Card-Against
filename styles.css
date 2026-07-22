@@ -1660,6 +1660,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow:
     0 0 0.8rem rgb(var(--chaos-rarity-rgb) / 0.22),
     inset 0 0 0.65rem rgb(255 255 255 / 0.08);
+  animation: chaosInfusedPillGlitch 980ms steps(2, end) infinite;
 }
 
 .leaderboard-power-pill.chaos-infused[data-rarity="blue"],
@@ -3489,6 +3490,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow:
     0 0 0.8rem rgb(var(--chaos-rarity-rgb) / 0.22),
     inset 0 0 0.65rem rgb(255 255 255 / 0.08);
+  animation: chaosInfusedPillGlitch 980ms steps(2, end) infinite;
 }
 
 .effect-badge.chaos-infused[data-rarity="blue"] {
@@ -3687,6 +3689,9 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     -0.22rem 0 1.2rem rgba(255, 77, 125, 0.16),
     0.22rem 0 1.2rem rgba(34, 211, 238, 0.14),
     inset 0 0 1.1rem rgb(255 255 255 / 0.08);
+  animation:
+    cardChaosBgDrift 3600ms linear infinite,
+    cardChaosGlitch 2300ms steps(2, end) infinite;
 }
 
 .power-card.chaos-infused[data-rarity="blue"] {
@@ -3719,6 +3724,9 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     0 0;
   mix-blend-mode: screen;
   opacity: 0.34;
+  animation:
+    cardChaosScanline 2600ms ease-in-out infinite,
+    cardChaosLines 1900ms steps(4, end) infinite;
 }
 
 .power-card.chaos-infuse-pending::after {
@@ -3751,7 +3759,9 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .power-card.chaos-infused.chaos-infuse-upgrading {
-  animation: powerChaosInfuse 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation:
+    powerChaosInfuse 800ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.chaos-infuse-upgrading::after {
@@ -3767,19 +3777,27 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     0 0;
   clip-path: none;
   filter: none;
-  animation: powerChaosInfuseScan 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation:
+    powerChaosInfuseScan 800ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    cardChaosLines 1900ms steps(4, end) infinite;
 }
 
 .power-card.chaos-infused.fresh-refill {
-  animation: powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both;
+  animation:
+    powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.fresh-refresh {
-  animation: powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both;
+  animation:
+    powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.power-selected-pop {
-  animation: powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation:
+    powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.power-use-ghost {
