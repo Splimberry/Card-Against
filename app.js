@@ -9668,6 +9668,24 @@ function applyRoomPowerState(payload = {}) {
       getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
     );
   }
+  if (power?.type === "airdrop" && targetOwner) {
+    const meta = actorOwner && state.playedPowerMeta[actorOwner] && typeof state.playedPowerMeta[actorOwner] === "object"
+      ? state.playedPowerMeta[actorOwner]
+      : {};
+    const appliedPoints = Math.max(0, Number(meta.appliedPoints) || 0);
+    const buffResult = String(meta.buffResult || "Buff Applied").trim();
+    queueStatFlash(
+      "positive",
+      power.name,
+      [
+        appliedPoints ? `+${appliedPoints.toLocaleString()} Points` : "Supply Drop",
+        buffResult || "Buff Applied"
+      ],
+      targetOwner === actorOwner
+        ? { owners: [targetOwner], complex: true }
+        : getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
+    );
+  }
   renderScore();
   renderTableEventControls();
   renderPowerUps();
@@ -17150,6 +17168,12 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const result = isChaosInfusedPower(power) && power.megaPill
       ? applyEveryCocktailBuff(target)
       : applyCocktailMix(target, { buffsOnly: true });
+    state.playedPowerMeta[owner] = {
+      ...(state.playedPowerMeta[owner] || {}),
+      targetOwner: target,
+      appliedPoints: amount,
+      buffResult: Array.isArray(result) ? result.join("\n") : String(result || "Buff Applied")
+    };
     queueStatFlash(
       "positive",
       power.name,
