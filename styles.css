@@ -1660,7 +1660,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow:
     0 0 0.8rem rgb(var(--chaos-rarity-rgb) / 0.22),
     inset 0 0 0.65rem rgb(255 255 255 / 0.08);
-  animation: chaosInfusedPillGlitch 980ms steps(2, end) infinite;
 }
 
 .leaderboard-power-pill.chaos-infused[data-rarity="blue"],
@@ -2074,6 +2073,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   display: block;
 }
 
+.game-stage.wild-fire-burning .wild-fire-glow-layer:not(.layer-a) {
+  display: none;
+}
+
 .wild-fire-glow-layer {
   position: absolute;
   left: 0;
@@ -2086,7 +2089,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     radial-gradient(ellipse at 64% 106%, rgba(255, 210, 88, 0.18), rgba(255, 94, 38, 0.1) 36%, transparent 68%),
     radial-gradient(ellipse at 88% 112%, rgba(255, 112, 41, 0.18), rgba(255, 205, 92, 0.09) 36%, transparent 70%),
     linear-gradient(0deg, rgba(255, 94, 38, 0.07), transparent 80%);
-  filter: blur(12px) saturate(1.5);
+  filter: blur(8px) saturate(1.28);
   mix-blend-mode: screen;
   opacity: 0.28;
   transform-origin: bottom center;
@@ -3486,7 +3489,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow:
     0 0 0.8rem rgb(var(--chaos-rarity-rgb) / 0.22),
     inset 0 0 0.65rem rgb(255 255 255 / 0.08);
-  animation: chaosInfusedPillGlitch 980ms steps(2, end) infinite;
 }
 
 .effect-badge.chaos-infused[data-rarity="blue"] {
@@ -3685,9 +3687,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     -0.22rem 0 1.2rem rgba(255, 77, 125, 0.16),
     0.22rem 0 1.2rem rgba(34, 211, 238, 0.14),
     inset 0 0 1.1rem rgb(255 255 255 / 0.08);
-  animation:
-    cardChaosBgDrift 3600ms linear infinite,
-    cardChaosGlitch 2300ms steps(2, end) infinite;
 }
 
 .power-card.chaos-infused[data-rarity="blue"] {
@@ -3720,9 +3719,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     0 0;
   mix-blend-mode: screen;
   opacity: 0.34;
-  animation:
-    cardChaosScanline 2600ms ease-in-out infinite,
-    cardChaosLines 1900ms steps(4, end) infinite;
 }
 
 .power-card.chaos-infuse-pending::after {
@@ -3755,9 +3751,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .power-card.chaos-infused.chaos-infuse-upgrading {
-  animation:
-    powerChaosInfuse 800ms cubic-bezier(0.16, 1, 0.3, 1) both,
-    cardChaosBgDrift 3600ms linear infinite;
+  animation: powerChaosInfuse 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .power-card.chaos-infused.chaos-infuse-upgrading::after {
@@ -3773,27 +3767,19 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     0 0;
   clip-path: none;
   filter: none;
-  animation:
-    powerChaosInfuseScan 800ms cubic-bezier(0.16, 1, 0.3, 1) both,
-    cardChaosLines 1900ms steps(4, end) infinite;
+  animation: powerChaosInfuseScan 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .power-card.chaos-infused.fresh-refill {
-  animation:
-    powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
-    cardChaosBgDrift 3600ms linear infinite;
+  animation: powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both;
 }
 
 .power-card.chaos-infused.fresh-refresh {
-  animation:
-    powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
-    cardChaosBgDrift 3600ms linear infinite;
+  animation: powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both;
 }
 
 .power-card.chaos-infused.power-selected-pop {
-  animation:
-    powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1),
-    cardChaosBgDrift 3600ms linear infinite;
+  animation: powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .power-card.chaos-infused.power-use-ghost {
@@ -5620,6 +5606,12 @@ input:focus {
   opacity: 0.54;
   transform-origin: 50% 100%;
   animation: cardBurningGlow 2300ms ease-in-out infinite;
+}
+
+.game-stage:not(.hidden) :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"],
+.game-stage:not(.hidden) :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]::before,
+.game-stage:not(.hidden) :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]::after {
+  animation-play-state: paused;
 }
 
 .profile-card[data-card-custom="true"] .profile-fields > span:first-child,
@@ -8038,9 +8030,6 @@ input:focus {
     -0.16rem 0 1rem rgba(255, 77, 125, 0.12),
     0.16rem 0 1rem rgba(34, 211, 238, 0.12),
     inset 0 0 0.9rem rgb(255 255 255 / 0.06);
-  animation:
-    cardChaosBgDrift 3600ms linear infinite,
-    cardChaosGlitch 2300ms steps(2, end) infinite;
 }
 
 .ability-card.chaos-infused::after {
@@ -8060,14 +8049,6 @@ input:focus {
     0 0;
   mix-blend-mode: screen;
   opacity: 0.34;
-  animation:
-    cardChaosScanline 2600ms ease-in-out infinite,
-    cardChaosLines 1900ms steps(4, end) infinite;
-}
-
-.abilities-modal .ability-card.chaos-infused,
-.abilities-modal .ability-card.chaos-infused::after {
-  animation-play-state: paused;
 }
 
 .ability-card.chaos-infused[data-rarity="blue"] {
