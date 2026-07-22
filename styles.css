@@ -9665,6 +9665,11 @@ input:focus {
 }
 
 .room-chat-header > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
   padding: 0.35rem 0.55rem;
   border: 1px solid rgba(34, 211, 238, 0.38);
   border-radius: 999px;
@@ -9672,6 +9677,46 @@ input:focus {
   font-size: 0.75rem;
   font-weight: 950;
   text-transform: uppercase;
+}
+
+.modifier-icon-list {
+  max-width: min(100%, 22rem);
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.modifier-icon-list-empty {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.modifier-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  color: inherit;
+  filter: drop-shadow(0 0 0.45rem rgba(34, 211, 238, 0.22));
+  transition:
+    transform 180ms ease,
+    filter 180ms ease;
+}
+
+.modifier-icon:hover,
+.modifier-icon:focus-visible {
+  outline: 0;
+  transform: translateY(-1px) scale(1.08);
+  filter:
+    drop-shadow(0 0 0.5rem rgba(34, 211, 238, 0.45))
+    drop-shadow(0 0 0.9rem rgba(255, 77, 125, 0.24));
+}
+
+.modifier-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: brightness(0) saturate(100%) invert(78%) sepia(89%) saturate(1179%) hue-rotate(144deg) brightness(103%) contrast(99%);
 }
 
 .chat-log {

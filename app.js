@@ -2,6 +2,8 @@ const BASE_WIN_POINTS = 1000;
 const STREAK_BONUS_POINTS = 500;
 const UNDERDOG_BONUS_POINTS = 500;
 const UNDERDOG_BONUS_THRESHOLD = 2000;
+const TIME_MONEY_SECONDS_MULTIPLIER = 50;
+const BRUTAL_WRONG_ANSWER_LOSS_PERCENT = 0.1;
 const DIFFICULTY_BONUSES = {
   easy: 250,
   medium: 500,
@@ -8356,17 +8358,75 @@ function applyRoundAmplifiedMultiplier(deltas, owners, events) {
   return amplifiedMultiplier;
 }
 
+function getBrutalWrongAnswerLoss(owner, startingScores = {}) {
+  return Math.floor(Math.max(0, Number(startingScores[owner]) || 0) * BRUTAL_WRONG_ANSWER_LOSS_PERCENT);
+}
+
+const roomModifierDefinitions = [
+  { id: "randomModifiers", label: "Random", icon: "assets/modifiers/shuffle-arrows.svg" },
+  { id: "amplified", label: "Amplified", icon: "assets/modifiers/equalizer.svg" },
+  { id: "harsh", label: "Brutal", icon: "assets/modifiers/skull.svg" },
+  { id: "chaos", label: "Chaos", icon: "assets/modifiers/dice.svg" },
+  { id: "timeMoney", label: "Time Is Money", icon: "assets/modifiers/stop-watch.svg" },
+  { id: "wildFire", label: "Wild Fire", icon: "assets/modifiers/flame.svg" },
+  { id: "partyMayhem", label: "Party Mayhem", icon: "assets/modifiers/sparkler.svg" }
+];
+
+const classicModifierDefinition = {
+  id: "classicMode",
+  label: "Classic",
+  icon: "assets/modifiers/no-stopping.svg"
+};
+
+function getModifierEntriesFromSettings(settings = {}) {
+  if (settings.classicMode) {
+    return [classicModifierDefinition];
+  }
+  return roomModifierDefinitions.filter((modifier) => Boolean(settings[modifier.id]));
+}
+
+function getModifierLabelsFromSettings(settings = {}) {
+  return getModifierEntriesFromSettings(settings).map((modifier) => modifier.label);
+}
+
+function renderModifierIconLabel(target, settings = state.roomSettings) {
+  if (!target) {
+    return;
+  }
+  target.replaceChildren();
+  target.className = "modifier-icon-list";
+  const modifiers = getModifierEntriesFromSettings(settings);
+  if (!modifiers.length) {
+    target.textContent = "No Modifiers";
+    target.classList.add("modifier-icon-list-empty");
+    target.setAttribute("aria-label", "No Modifiers");
+    return;
+  }
+  target.classList.remove("modifier-icon-list-empty");
+  target.setAttribute("aria-label", modifiers.map((modifier) => modifier.label).join(" + "));
+  modifiers.forEach((modifier) => {
+    const icon = document.createElement("span");
+    icon.className = "modifier-icon";
+    icon.dataset.description = modifier.label;
+    icon.tabIndex = 0;
+    icon.setAttribute("role", "img");
+    icon.setAttribute("aria-label", modifier.label);
+    const image = document.createElement("img");
+    image.src = modifier.icon;
+    image.alt = "";
+    image.loading = "lazy";
+    image.decoding = "async";
+    icon.appendChild(image);
+    attachFloatingDescriptionTooltip(icon);
+    target.appendChild(icon);
+  });
+}
+
 function getActiveMatchModifierNames() {
   if (isClassicModeEnabled()) {
     return ["Classic"];
   }
-  const names = [];
-  if (isMatchModifierEnabled("amplified")) names.push("Amplified");
-  if (isMatchModifierEnabled("harsh")) names.push("Brutal");
-  if (isMatchModifierEnabled("chaos")) names.push("Chaos");
-  if (isMatchModifierEnabled("timeMoney")) names.push("Time Is Money");
-  if (isMatchModifierEnabled("wildFire")) names.push("Wild Fire");
-  if (isMatchModifierEnabled("partyMayhem")) names.push("Party Mayhem");
+  const names = getModifierLabelsFromSettings(state.matchModifiers || {});
   return names.length ? names : ["No Modifiers"];
 }
 
@@ -10273,31 +10333,7 @@ function skipRoomRoundToGrading() {
 }
 
 function getRoomVariantNames() {
-  if (state.roomSettings.classicMode) {
-    return ["Classic"];
-  }
-  const variants = [];
-  if (state.roomSettings.randomModifiers) {
-    variants.push("Random");
-  }
-  if (state.roomSettings.amplified) {
-    variants.push("Amplified");
-  }
-  if (state.roomSettings.harsh) {
-    variants.push("Brutal");
-  }
-  if (state.roomSettings.chaos) {
-    variants.push("Chaos");
-  }
-  if (state.roomSettings.timeMoney) {
-    variants.push("Time Is Money");
-  }
-  if (state.roomSettings.wildFire) {
-    variants.push("Wild Fire");
-  }
-  if (state.roomSettings.partyMayhem) {
-    variants.push("Party Mayhem");
-  }
+  const variants = getModifierLabelsFromSettings(state.roomSettings);
   return variants.length ? variants : ["No Modifiers"];
 }
 
@@ -23337,6 +23373,8 @@ function syncRoomControls() {
   elements.roomPasswordInput.value = state.roomSettings.password || "";
   setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
   renderThemeSummary();
+  renderModifierIconLabel(elements.roomVariantLabel);
+  renderModifierIconLabel(elements.lobbyRoomVariantLabel);
   elements.roomCodePreview.textContent = state.roomSettings.code;
   elements.startRoomButton.textContent = state.currentRoomStatus === "lobby" ? "Continue" : "Create Room";
   setHidden(elements.roomHostProfile, Boolean(state.joiningRoom));
@@ -23733,7 +23771,7 @@ function updateRoomVariants() {
   setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
   scheduleRoomPanelHeightSync();
   syncClassicRoomToggleState();
-  elements.roomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  renderModifierIconLabel(elements.roomVariantLabel);
   publishCurrentRoomSettingsSoon();
 }
 
@@ -25296,17 +25334,7 @@ function getHostedRoomActivePlayerCount(room) {
 }
 
 function getRoomModeLabel(settings = state.roomSettings) {
-  if (settings.classicMode) {
-    return "Classic";
-  }
-  const modes = [];
-  if (settings.randomModifiers) modes.push("Random");
-  if (settings.amplified) modes.push("Amplified");
-  if (settings.harsh) modes.push("Brutal");
-  if (settings.chaos) modes.push("Chaos");
-  if (settings.timeMoney) modes.push("Time Is Money");
-  if (settings.wildFire) modes.push("Wild Fire");
-  if (settings.partyMayhem) modes.push("Party Mayhem");
+  const modes = getModifierLabelsFromSettings(settings);
   return modes.length ? modes.join(" + ") : "No Modifiers";
 }
 
@@ -25537,7 +25565,7 @@ function renderRoomLobby() {
   clearRoomAutoResolve();
   elements.lobbyRoomCode.textContent = state.roomSettings.code;
   elements.lobbyRoomCodeLabel.textContent = state.roomSettings.code;
-  elements.lobbyRoomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  renderModifierIconLabel(elements.lobbyRoomVariantLabel);
   elements.lobbyRoomSummary.textContent = `${state.roomSettings.private ? "Private" : "Public"} ${getRoomModeLabel()} room. ${state.roomSettings.rounds} rounds, ${state.roomSettings.timerSeconds}s timer, ${getRoomMaxPlayers()} player limit.`;
   const hostParticipant = state.roomParticipants.find((participant) => participant.host)
     || getRoomParticipantsFromPlayers("lobby").find((participant) => participant.host)
@@ -26070,9 +26098,9 @@ function renderRoomChat() {
   }
 
   elements.roomCodeLabel.textContent = state.roomSettings.code;
-  elements.roomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  renderModifierIconLabel(elements.roomVariantLabel);
   elements.lobbyRoomCodeLabel.textContent = state.roomSettings.code;
-  elements.lobbyRoomVariantLabel.textContent = getRoomVariantNames().join(" + ");
+  renderModifierIconLabel(elements.lobbyRoomVariantLabel);
   renderChatLog(elements.chatLog);
   renderChatLog(elements.lobbyChatLog);
 }
@@ -27433,9 +27461,9 @@ function createNoCorrectAward() {
 
   if (isMatchModifierEnabled("harsh")) {
     owners.forEach((participant) => {
-      deltas[participant] -= 500;
+      deltas[participant] -= getBrutalWrongAnswerLoss(participant, startingScores);
     });
-    events.push("Brutal mode made every wrong answer lose 500 points.");
+    events.push("Brutal mode made every wrong answer lose 10% of that player's points.");
   }
 
   playedEntries
@@ -27960,7 +27988,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     const ownerDifficultyBonus = getDifficultyBonus();
     const ownerUnderdogBonus = highScore - startingScores[winner] >= UNDERDOG_BONUS_THRESHOLD ? UNDERDOG_BONUS_POINTS : 0;
     const timeMoneyBase = isMatchModifierEnabled("timeMoney")
-      ? Math.max(0, (state.answerRemainingTimes[winner] ?? ownerTimingMeta.remainingTime ?? 0) * 20)
+      ? Math.max(0, (state.answerRemainingTimes[winner] ?? ownerTimingMeta.remainingTime ?? 0) * TIME_MONEY_SECONDS_MULTIPLIER)
       : null;
     const baseWinPoints = timeMoneyBase ?? BASE_WIN_POINTS;
     let directPowerBonus = 0;
@@ -28058,9 +28086,9 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     owners
       .filter((participant) => !winnerSet.has(participant))
       .forEach((participant) => {
-        deltas[participant] -= 500;
+        deltas[participant] -= getBrutalWrongAnswerLoss(participant, startingScores);
       });
-    events.push("Brutal mode made every non-winner lose 500 points.");
+    events.push("Brutal mode made every non-winner lose 10% of that player's points.");
   }
 
   playedEntries
