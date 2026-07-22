@@ -5119,7 +5119,15 @@ function attachFloatingDescriptionTooltip(element) {
   if (!element?.dataset?.description) {
     return;
   }
+  if (element.dataset.floatingTooltipAttached === "true") {
+    return;
+  }
+  element.dataset.floatingTooltipAttached = "true";
   const show = () => {
+    if (!element.dataset.description) {
+      setHidden(ensureFloatingDescriptionTooltip(), true);
+      return;
+    }
     const tooltip = ensureFloatingDescriptionTooltip();
     tooltip.textContent = element.dataset.description;
     setHidden(tooltip, false);
@@ -5386,6 +5394,7 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   answerOwner.append(avatar, label);
   const badge = document.createElement("strong");
   badge.className = "rating-badge hidden";
+  badge.tabIndex = -1;
   const text = document.createElement("p");
   const gradingReason = document.createElement("small");
   gradingReason.className = "grading-reason hidden";
@@ -5398,6 +5407,27 @@ function createAnswerCardNode(owner, cardIndex = 0) {
     applyProfileCustomizationSurface(card, defaultProfileCustomization);
   }
   return card;
+}
+
+function updateRatingBadge(badge, rating, reason = "") {
+  if (!badge) {
+    return;
+  }
+  const visible = Boolean(rating);
+  badge.textContent = visible ? `${rating.label}${rating.bonus ? ` +${rating.bonus}` : ""}` : "";
+  badge.classList.toggle("rating-correct", Boolean(rating?.correct));
+  badge.classList.toggle("rating-incorrect", Boolean(rating && !rating.correct));
+  setHidden(badge, !visible);
+  if (visible && reason) {
+    badge.dataset.description = reason;
+    badge.title = reason;
+    badge.tabIndex = 0;
+    attachFloatingDescriptionTooltip(badge);
+  } else {
+    delete badge.dataset.description;
+    badge.removeAttribute("title");
+    badge.tabIndex = -1;
+  }
 }
 
 function renderAnswerCardsForOwners(owners = getRoundCardOwners(), indexes = owners.map((_, index) => index)) {
@@ -5421,16 +5451,12 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
     const badge = card.querySelector(".rating-badge");
     const cardIndex = Number(card.dataset.cardIndex);
     const rating = ratings[cardIndex];
-    if (!badge) {
-      return;
-    }
-    badge.textContent = rating ? `${rating.label}${rating.bonus ? ` +${rating.bonus}` : ""}` : "";
-    setHidden(badge, !rating);
+    const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
+    updateRatingBadge(badge, rating, reason);
     const gradingReason = card.querySelector(".grading-reason");
     if (gradingReason) {
-      const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
-      gradingReason.textContent = reason;
-      setHidden(gradingReason, !reason);
+      gradingReason.textContent = "";
+      setHidden(gradingReason, true);
     }
     card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
   });
@@ -5444,15 +5470,12 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   }
   const badge = card.querySelector(".rating-badge");
   const rating = ratings?.[cardIndex];
-  if (badge) {
-    badge.textContent = rating ? `${rating.label}${rating.bonus ? ` +${rating.bonus}` : ""}` : "";
-    setHidden(badge, !rating);
-  }
+  const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
+  updateRatingBadge(badge, rating, reason);
   const gradingReason = card.querySelector(".grading-reason");
   if (gradingReason) {
-    const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
-    gradingReason.textContent = reason;
-    setHidden(gradingReason, !reason);
+    gradingReason.textContent = "";
+    setHidden(gradingReason, true);
   }
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
   card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
@@ -5592,12 +5615,16 @@ function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1)
 
 function clearCardBadges() {
   document.querySelectorAll(".white-card .rating-badge").forEach((badge) => {
-    badge.textContent = "";
-    setHidden(badge, true);
+    updateRatingBadge(badge, null, "");
   });
   getAnswerCardNodes().forEach((card) => {
     card.style.order = "";
     card.classList.remove("answer-priority", "answer-incorrect", "winner");
+    const gradingReason = card.querySelector(".grading-reason");
+    if (gradingReason) {
+      gradingReason.textContent = "";
+      setHidden(gradingReason, true);
+    }
   });
   if (elements.answerStackButton) {
     setHidden(elements.answerStackButton, true);
