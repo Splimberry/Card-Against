@@ -355,7 +355,7 @@ const powerDeck = [
   { id: "robin_hood", name: "Score Heist", rarity: "blue", short: "steal/share", description: "Only usable outside first place. Steal 2.5% of first place's score per other active player and share it with everyone else.", type: "robin_hood" },
   { id: "tax_collector", name: "Tax Collector", rarity: "purple", short: "15%", description: "Only usable outside first place. Take 15% from first place.", type: "tax_collector" },
   { id: "reverse", name: "Reverse Verdict", rarity: "gold", short: "transfer", description: "Pick a player. All points they obtain this round are transferred to you, and they get nothing from those gains.", type: "reverse", targeted: true },
-  { id: "time_bender", name: "Time Bender", rarity: "grey", short: "+time/-time", description: "Instantly gain 10 seconds for each other active player. In local mode, the other player starts with 10 fewer seconds this round.", type: "time_bender", immediate: true },
+  { id: "time_bender", name: "Time Bender", rarity: "grey", short: "+5/2x drain", description: "Instantly gain 5 seconds. Other players' timers drain twice as fast for the rest of this round.", type: "time_bender", immediate: true },
   { id: "bribe_judge", name: "Backroom Bribe", rarity: "gold", short: "-1000 win", description: "Pay 1000 points and force yourself to win this round.", type: "bribe_judge" },
   { id: "shuffle", name: "Panic Shuffle", rarity: "grey", short: "reroll hand", description: "Instantly refresh your remaining power-ups without refilling empty slots. The new cards cannot be used this round.", type: "shuffle", immediate: true },
   { id: "world_burn", name: "Let the World Burn", rarity: "purple", short: "leader -5%", description: "Lasts the entire game. At the start of every round, first place loses 5% of their total score.", type: "world_burn" },
@@ -9845,12 +9845,13 @@ function maybeResolveBotSubmissions() {
 
 async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   const matchToken = state.matchWorkToken;
-  const timeoutMs = isRoomMode()
-    ? getRoomSubmissionWaitTimeoutMs()
-    : Math.max(3200, (state.timerRemaining + 1) * 1000);
-  const startedAt = Date.now();
   let lastEventRefreshAt = 0;
-  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeoutMs) {
+  while (isCurrentMatchWork(matchToken)) {
+    const syncedResult = getRoomRoundResultForCurrentRound();
+    if (syncedResult && (!isCurrentHost() || state.joiningRoom)) {
+      playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: syncedResult });
+      return;
+    }
     if (getPendingSubmitters().length === 0) {
       break;
     }
@@ -9883,23 +9884,6 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
     return;
   }
 
-  getRemoteActiveOwners().forEach((remoteOwner) => {
-    if (state.roomSubmissions[remoteOwner]) {
-      return;
-    }
-    state.answerRemainingTimes[remoteOwner] = Math.max(0, state.timerRemaining - getRandomInt(2, 8));
-    if (!getLockedRoundAnswer(remoteOwner) && shouldAutoGenerateRoomAnswer(remoteOwner)) {
-      const answer = lockRoundAnswer(remoteOwner, generateAutoAnswer(remoteOwner));
-      if (remoteOwner === "player") {
-        state.localAnswers.playerOne = answer;
-      }
-      if (remoteOwner === "opponent") {
-        state.localAnswers.playerTwo = answer;
-      }
-    }
-    setRoomSubmission(remoteOwner, true);
-  });
-
   state.roomAutoResolveId = null;
   if (state.roomSubmissionResolveId) {
     window.clearTimeout(state.roomSubmissionResolveId);
@@ -9921,9 +9905,20 @@ function getCurrentRoundTimeBenderBonus(owner) {
   if (!owner) {
     return 0;
   }
-  const bonusPerUse = 10 * Math.max(1, getActiveOwners().length - 1);
   const uses = getPlayedPowerEntries([owner]).filter((entry) => entry.power?.type === "time_bender").length;
-  return uses * bonusPerUse;
+  return uses * 5;
+}
+
+function isOwnerTimerSpedUpByTimeBender(owner) {
+  if (!owner) {
+    return false;
+  }
+  return getPlayedPowerEntries(getActiveOwners().filter((activeOwner) => activeOwner !== owner))
+    .some((entry) => entry.power?.type === "time_bender");
+}
+
+function getOwnerTimerDrainStep(owner) {
+  return isOwnerTimerSpedUpByTimeBender(owner) ? 2 : 1;
 }
 
 function getOwnerAnswerTimerDuration(owner) {
@@ -17156,15 +17151,8 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "time_bender") {
-    const otherPlayerCount = Math.max(1, getActiveOwners().length - 1);
-    state.timerRemaining = Math.min(99, state.timerRemaining + (10 * otherPlayerCount));
-    if (isDuelMode() && !isRoomMode()) {
-      getActiveOwners()
-        .filter((participant) => participant !== owner)
-        .forEach((participant) => {
-          state.timerPenalties[participant] = (state.timerPenalties[participant] || 0) + 10;
-        });
-    }
+    state.timerRemaining = Math.min(99, state.timerRemaining + 5);
+    queueStatFlash("mixed", power.name, ["+5 Seconds", "Others Drain 2x"], { owners: [owner], complex: true });
     renderTimer();
   }
 
@@ -18267,14 +18255,15 @@ function startTimer(options = {}) {
       return;
     }
 
-    state.timerRemaining = Math.max(0, state.timerRemaining - 1);
+    const previousRemaining = state.timerRemaining;
+    state.timerRemaining = Math.max(0, state.timerRemaining - getOwnerTimerDrainStep(getCurrentPowerOwner()));
     renderTimer();
     commitScheduledBotPowerUps();
     commitScheduledRoomBotAnswers();
     commitScheduledError404Effects();
 
     const submittedCurrentPlayer = isRoomMode() && state.roomSubmissions[state.currentOwner];
-    if (state.timerRemaining === 10 && !state.timerWarned && !submittedCurrentPlayer) {
+    if (previousRemaining > 10 && state.timerRemaining <= 10 && !state.timerWarned && !submittedCurrentPlayer) {
       state.timerWarned = true;
       playSound("timerWarning");
     }
