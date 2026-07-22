@@ -9753,10 +9753,11 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   return true;
 }
 
-async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = state.matchWorkToken, timeoutMs = 30000) {
+async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = state.matchWorkToken, timeoutMs = null) {
+  const effectiveTimeoutMs = Number.isFinite(Number(timeoutMs)) ? Number(timeoutMs) : getRoomRoundResultWaitTimeoutMs();
   const startedAt = Date.now();
   let lastEventRefreshAt = 0;
-  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeoutMs) {
+  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < effectiveTimeoutMs) {
     const result = getRoomRoundResultForCurrentRound();
     if (result) {
       playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: result });
@@ -9844,7 +9845,9 @@ function maybeResolveBotSubmissions() {
 
 async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   const matchToken = state.matchWorkToken;
-  const timeoutMs = Math.max(3200, (state.timerRemaining + 1) * 1000);
+  const timeoutMs = isRoomMode()
+    ? getRoomSubmissionWaitTimeoutMs()
+    : Math.max(3200, (state.timerRemaining + 1) * 1000);
   const startedAt = Date.now();
   let lastEventRefreshAt = 0;
   while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeoutMs) {
@@ -9912,6 +9915,35 @@ function getPendingSubmitters() {
 
 function hasPendingTimeBenderSubmitter(pendingOwners = getPendingSubmitters()) {
   return getPlayedPowerEntries(pendingOwners).some((entry) => entry.power?.type === "time_bender");
+}
+
+function getCurrentRoundTimeBenderBonus(owner) {
+  if (!owner) {
+    return 0;
+  }
+  const bonusPerUse = 10 * Math.max(1, getActiveOwners().length - 1);
+  const uses = getPlayedPowerEntries([owner]).filter((entry) => entry.power?.type === "time_bender").length;
+  return uses * bonusPerUse;
+}
+
+function getOwnerAnswerTimerDuration(owner) {
+  const baseSeconds = Math.max(5, Number(state.timerSeconds) || 30);
+  const penalty = isRoomMode() ? 0 : Math.max(0, Number(state.timerPenalties?.[owner]) || 0);
+  const dilationBonus = (state.timeDilationRounds?.[owner] || 0) > 0 ? 10 : 0;
+  const roomBenderBonus = isRoomMode() ? getCurrentRoundTimeBenderBonus(owner) : 0;
+  return Math.max(5, baseSeconds - penalty + dilationBonus + roomBenderBonus);
+}
+
+function getRoomSubmissionWaitTimeoutMs() {
+  const maxSeconds = Math.max(
+    Number(state.timerSeconds) || 30,
+    ...getActiveOwners().map((owner) => getOwnerAnswerTimerDuration(owner))
+  );
+  return Math.max(3200, (maxSeconds + 2) * 1000);
+}
+
+function getRoomRoundResultWaitTimeoutMs() {
+  return getRoomSubmissionWaitTimeoutMs() + 15000;
 }
 
 function getRemoteActiveOwners() {
@@ -17126,7 +17158,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
   if (power.type === "time_bender") {
     const otherPlayerCount = Math.max(1, getActiveOwners().length - 1);
     state.timerRemaining = Math.min(99, state.timerRemaining + (10 * otherPlayerCount));
-    if (isDuelMode()) {
+    if (isDuelMode() && !isRoomMode()) {
       getActiveOwners()
         .filter((participant) => participant !== owner)
         .forEach((participant) => {
@@ -18219,9 +18251,7 @@ function startTimer(options = {}) {
   const owner = getCurrentPowerOwner();
   if (!options.resume) {
     state.powerDebugTimerPaused = false;
-    const penalty = state.timerPenalties[owner] || 0;
-    const bonus = (state.timeDilationRounds[owner] || 0) > 0 ? 10 : 0;
-    state.timerRemaining = Math.max(5, state.timerSeconds - penalty + bonus);
+    state.timerRemaining = getOwnerAnswerTimerDuration(owner);
     state.timerWarned = false;
   }
   renderTimer();
