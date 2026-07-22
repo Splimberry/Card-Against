@@ -17665,12 +17665,18 @@ function renderPowerUps() {
         if (!button.isConnected || button.dataset.power !== power.id) {
           return;
         }
-        button.dataset.rarity = power.rarity;
         button.classList.remove("chaos-infuse-pending", "fresh-power", "fresh-refill", "fresh-refresh");
         button.style.removeProperty("--power-enter-delay");
-        button.classList.add("chaos-infused", "chaos-infuse-upgrading");
-        button.innerHTML = getPowerCardMarkup(power);
-        window.setTimeout(() => button.classList.remove("chaos-infuse-upgrading"), 760);
+        button.classList.add("chaos-engulfing");
+        window.setTimeout(() => {
+          if (!button.isConnected || button.dataset.power !== power.id) {
+            return;
+          }
+          button.dataset.rarity = power.rarity;
+          button.classList.add("chaos-infused", "chaos-infuse-upgrading");
+          button.innerHTML = getPowerCardMarkup(power);
+          window.setTimeout(() => button.classList.remove("chaos-engulfing", "chaos-infuse-upgrading"), 820);
+        }, 520);
       }, enterDelayMs + enterDurationMs + 70);
     }
   });
