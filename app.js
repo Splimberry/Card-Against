@@ -25606,10 +25606,19 @@ function renderChatLog(target) {
     return;
   }
 
-  target.replaceChildren();
+  const existingNodes = new Map(
+    [...target.querySelectorAll(".chat-message[data-chat-key]")]
+      .map((node) => [node.dataset.chatKey, node])
+  );
+  const wasNearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 12;
+  const fragment = document.createDocumentFragment();
   state.roomChat.forEach((message) => {
-    const item = document.createElement("div");
+    const chatKey = getRoomChatMessageKey(message);
+    const existing = existingNodes.get(chatKey);
+    const item = existing || document.createElement("div");
+    const isNew = !existing;
     item.className = "chat-message";
+    item.dataset.chatKey = chatKey;
     item.classList.toggle("own-message", Boolean(message.own));
     item.classList.toggle("system-message", message.sender === "System");
     item.classList.toggle("private-message", Boolean(message.private));
@@ -25617,32 +25626,44 @@ function renderChatLog(target) {
     if (message.owner && message.sender !== "System") {
       item.dataset.chatOwner = message.owner;
       item.classList.add("clickable-profile");
-    }
-    const avatar = document.createElement("span");
-    avatar.className = "chat-avatar";
-    renderAvatar(avatar, {
-      label: message.sender,
-      avatar: message.avatar || ""
-    });
-    const sender = document.createElement("strong");
-    if (message.sender === "System") {
-      sender.textContent = message.sender;
     } else {
-      renderPlayerNameWithTitle(sender, {
-        owner: message.owner || "",
-        label: message.sender,
-        host: Boolean(message.host),
-        equippedTitleId: message.equippedTitleId || "",
-        specialBadges: message.specialBadges || [],
-        cardCustomization: message.cardCustomization || null
-      }, message.sender);
+      delete item.dataset.chatOwner;
+      item.classList.remove("clickable-profile");
     }
-    const text = document.createElement("span");
-    text.textContent = message.text;
-    item.append(avatar, sender, text);
-    target.appendChild(item);
+    if (isNew) {
+      item.classList.add("chat-message-new");
+      const avatar = document.createElement("span");
+      avatar.className = "chat-avatar";
+      renderAvatar(avatar, {
+        label: message.sender,
+        avatar: message.avatar || ""
+      });
+      const sender = document.createElement("strong");
+      if (message.sender === "System") {
+        sender.textContent = message.sender;
+      } else {
+        renderPlayerNameWithTitle(sender, {
+          owner: message.owner || "",
+          label: message.sender,
+          host: Boolean(message.host),
+          equippedTitleId: message.equippedTitleId || "",
+          specialBadges: message.specialBadges || [],
+          cardCustomization: message.cardCustomization || null
+        }, message.sender);
+      }
+      const text = document.createElement("span");
+      text.textContent = message.text;
+      item.append(avatar, sender, text);
+    }
+    fragment.appendChild(item);
   });
-  target.scrollTop = target.scrollHeight;
+  target.replaceChildren(fragment);
+  target.querySelectorAll(".chat-message-new").forEach((item) => {
+    window.setTimeout(() => item.classList.remove("chat-message-new"), 420);
+  });
+  if (wasNearBottom) {
+    target.scrollTop = target.scrollHeight;
+  }
 }
 
 function toggleChatOptions(messageNode, owner) {
