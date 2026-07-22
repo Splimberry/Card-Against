@@ -13684,5 +13684,1505 @@
     "question": "A woodcut is created by carving an image into wood and using it for what?",
     "canonicalAnswer": "Printing",
     "multipleChoiceOptions": ["Printing", "Casting bronze", "Weaving fabric", "Tuning strings"]
+  },
+  {
+    "id": "popculture-hardmcq2-midnight-cowboy-line",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which film is best known for the improvised street outburst 'I'm walking here!'?",
+    "canonicalAnswer": "Midnight Cowboy",
+    "multipleChoiceOptions": [
+      "Midnight Cowboy",
+      "Taxi Driver",
+      "Dog Day Afternoon",
+      "The French Connection"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-matrix-agents",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In The Matrix, the suited programs that police the simulation are mainly known by what name?",
+    "canonicalAnswer": "Agents",
+    "multipleChoiceOptions": [
+      "Agents",
+      "Architects",
+      "Operators",
+      "Sentinels"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-parks-jjs-diner",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Parks and Recreation, what is the name of Leslie Knope's favorite waffle-serving diner?",
+    "canonicalAnswer": "JJ's Diner",
+    "multipleChoiceOptions": [
+      "JJ's Diner",
+      "Lou's Cafe",
+      "Paunch Burger",
+      "The Snakehole Lounge"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-kiki-witch",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which Studio Ghibli film follows a young witch starting a delivery service in a seaside city?",
+    "canonicalAnswer": "Kiki's Delivery Service",
+    "multipleChoiceOptions": [
+      "Kiki's Delivery Service",
+      "Whisper of the Heart",
+      "My Neighbor Totoro",
+      "Only Yesterday"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-godfather-woltz",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In The Godfather, the horse-head scene is meant to pressure Jack Woltz into doing what?",
+    "canonicalAnswer": "Casting Johnny Fontane in a film",
+    "multipleChoiceOptions": [
+      "Casting Johnny Fontane in a film",
+      "Selling his movie studio",
+      "Dropping a lawsuit against the Corleones",
+      "Paying protection money to Clemenza"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-michael-scott-book",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In The Office, Michael Scott's unfinished business book shares its title with which phrase?",
+    "canonicalAnswer": "Somehow I Manage",
+    "multipleChoiceOptions": [
+      "Somehow I Manage",
+      "That's What She Said",
+      "World's Best Boss",
+      "Threat Level Midnight"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-stranger-things-lab",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Stranger Things, Eleven's early backstory is tied most directly to which facility?",
+    "canonicalAnswer": "Hawkins National Laboratory",
+    "multipleChoiceOptions": [
+      "Hawkins National Laboratory",
+      "Starcourt Research Annex",
+      "Brenner Memorial Hospital",
+      "Lenora Hills Institute"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-citizen-kane-rosebud",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which film turns the word 'Rosebud' into a central mystery?",
+    "canonicalAnswer": "Citizen Kane",
+    "multipleChoiceOptions": [
+      "Citizen Kane",
+      "Casablanca",
+      "Sunset Boulevard",
+      "The Third Man"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-princess-bride-poison",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In The Princess Bride, the battle of wits revolves around which supposedly odorless, tasteless poison?",
+    "canonicalAnswer": "Iocane powder",
+    "multipleChoiceOptions": [
+      "Iocane powder",
+      "Nightshade extract",
+      "Sicilian hemlock",
+      "Westley root"
+    ]
+  },
+  {
+    "id": "popculture-hardmcq2-festivus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "The fictional holiday Festivus is most closely associated with which sitcom?",
+    "canonicalAnswer": "Seinfeld",
+    "multipleChoiceOptions": [
+      "Seinfeld",
+      "Frasier",
+      "Friends",
+      "Curb Your Enthusiasm"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-dnd-natural-20",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Dungeons & Dragons, rolling a natural 20 on an attack roll most commonly produces what result?",
+    "canonicalAnswer": "A critical hit",
+    "multipleChoiceOptions": [
+      "A critical hit",
+      "Automatic initiative",
+      "A free spell slot",
+      "Double armor class"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-skyrim-greybeards",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Skyrim, the Greybeards are based at which mountain monastery?",
+    "canonicalAnswer": "High Hrothgar",
+    "multipleChoiceOptions": [
+      "High Hrothgar",
+      "Dragonsreach",
+      "Sky Haven Temple",
+      "Castle Volkihar"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-halo-cortana",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Halo, what is the name of Master Chief's AI companion?",
+    "canonicalAnswer": "Cortana",
+    "multipleChoiceOptions": [
+      "Cortana",
+      "EVA",
+      "Miranda",
+      "Serina"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-chess-en-passant",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In chess, en passant lets a pawn capture another pawn immediately after it has done what?",
+    "canonicalAnswer": "Moved two squares forward from its starting square",
+    "multipleChoiceOptions": [
+      "Moved two squares forward from its starting square",
+      "Promoted on the eighth rank",
+      "Captured diagonally into check",
+      "Blocked a castling path"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-40k-astartes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Warhammer 40,000, Space Marines are formally known by which Imperial name?",
+    "canonicalAnswer": "Adeptus Astartes",
+    "multipleChoiceOptions": [
+      "Adeptus Astartes",
+      "Adeptus Mechanicus",
+      "Astra Militarum",
+      "Legio Custodes"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-minecraft-ender-pearl",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Minecraft, throwing an Ender Pearl is mainly used to do what?",
+    "canonicalAnswer": "Teleport the player to where it lands",
+    "multipleChoiceOptions": [
+      "Teleport the player to where it lands",
+      "Open an End portal frame",
+      "Summon an Enderman ally",
+      "Repair Elytra durability"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-hades-zagreus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In the game Hades, Zagreus is trying to escape from the realm ruled by which god?",
+    "canonicalAnswer": "Hades",
+    "multipleChoiceOptions": [
+      "Hades",
+      "Ares",
+      "Zeus",
+      "Thanatos"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-lol-last-hit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In League of Legends, last-hitting minions primarily rewards a player with what?",
+    "canonicalAnswer": "Gold",
+    "multipleChoiceOptions": [
+      "Gold",
+      "Vision score",
+      "Ability haste",
+      "Summoner spell charges"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-pokemon-stab",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Pokemon battling, STAB refers to a damage bonus from which situation?",
+    "canonicalAnswer": "The move's type matches one of the user's types",
+    "multipleChoiceOptions": [
+      "The move's type matches one of the user's types",
+      "The move lands after the target switches",
+      "The user attacks before taking damage",
+      "The target is weak to both user types"
+    ]
+  },
+  {
+    "id": "gaming-hardmcq2-session-zero",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In tabletop roleplaying, a session zero is mainly used for what?",
+    "canonicalAnswer": "Setting expectations and building the campaign before play",
+    "multipleChoiceOptions": [
+      "Setting expectations and building the campaign before play",
+      "Resolving the final boss encounter",
+      "Rolling damage before initiative",
+      "Replacing a missed regular session"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-persian-royal-road",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The ancient Persian Royal Road is best known for connecting Susa with which western city?",
+    "canonicalAnswer": "Sardis",
+    "multipleChoiceOptions": [
+      "Sardis",
+      "Athens",
+      "Babylon",
+      "Memphis"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-congress-vienna",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Congress of Vienna was mainly organized to redraw Europe after which conflict period?",
+    "canonicalAnswer": "The Napoleonic Wars",
+    "multipleChoiceOptions": [
+      "The Napoleonic Wars",
+      "The Thirty Years War",
+      "The Crimean War",
+      "The Franco-Prussian War"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-strait-hormuz",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The Strait of Hormuz links the Persian Gulf with which body of water?",
+    "canonicalAnswer": "The Gulf of Oman",
+    "multipleChoiceOptions": [
+      "The Gulf of Oman",
+      "The Red Sea",
+      "The Caspian Sea",
+      "The Arabian Gulf"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-edict-milan",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Edict of Milan is most closely linked with religious tolerance under which Roman emperor?",
+    "canonicalAnswer": "Constantine",
+    "multipleChoiceOptions": [
+      "Constantine",
+      "Diocletian",
+      "Theodosius",
+      "Justinian"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-louisiana-purchase",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The United States bought the Louisiana Territory from which country?",
+    "canonicalAnswer": "France",
+    "multipleChoiceOptions": [
+      "France",
+      "Spain",
+      "Britain",
+      "Mexico"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-indus-cities",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Harappa and Mohenjo-daro are major archaeological sites of which ancient civilization?",
+    "canonicalAnswer": "The Indus Valley Civilization",
+    "multipleChoiceOptions": [
+      "The Indus Valley Civilization",
+      "The Maurya Empire",
+      "The Gupta Empire",
+      "The Achaemenid Empire"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-berlin-airlift",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Berlin Airlift was a Western response to what Soviet action?",
+    "canonicalAnswer": "Blocking land access to West Berlin",
+    "multipleChoiceOptions": [
+      "Blocking land access to West Berlin",
+      "Building the Berlin Wall",
+      "Invading Czechoslovakia",
+      "Closing the Suez Canal"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-pax-romana",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "The Pax Romana is usually dated as beginning under which Roman ruler?",
+    "canonicalAnswer": "Augustus",
+    "multipleChoiceOptions": [
+      "Augustus",
+      "Julius Caesar",
+      "Nero",
+      "Trajan"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-cape-good-hope",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The Cape of Good Hope is located on the coast of which modern country?",
+    "canonicalAnswer": "South Africa",
+    "multipleChoiceOptions": [
+      "South Africa",
+      "Namibia",
+      "Mozambique",
+      "Madagascar"
+    ]
+  },
+  {
+    "id": "geohistory-hardmcq2-versailles-germany",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "The Treaty of Versailles imposed its most famous post-World War I terms on which country?",
+    "canonicalAnswer": "Germany",
+    "multipleChoiceOptions": [
+      "Germany",
+      "Austria-Hungary",
+      "Ottoman Turkey",
+      "Bulgaria"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-ruminants-cud",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Ruminant animals such as cattle and deer are best known for doing what during digestion?",
+    "canonicalAnswer": "Chewing cud from a multi-chambered stomach",
+    "multipleChoiceOptions": [
+      "Chewing cud from a multi-chambered stomach",
+      "Filtering plankton through baleen",
+      "Producing venom in rear fangs",
+      "Digesting food only in a crop"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-octopus-blood",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Octopus blood appears bluish because it uses which oxygen-carrying molecule?",
+    "canonicalAnswer": "Hemocyanin",
+    "multipleChoiceOptions": [
+      "Hemocyanin",
+      "Hemoglobin",
+      "Chlorophyll",
+      "Keratin"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-penguin-hemisphere",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Wild penguins are found naturally almost entirely in which half of the world?",
+    "canonicalAnswer": "The Southern Hemisphere",
+    "multipleChoiceOptions": [
+      "The Southern Hemisphere",
+      "The Northern Hemisphere",
+      "Only the Arctic Circle",
+      "Only tropical islands"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-tasmanian-devil-island",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Tasmanian devils are marsupials native to which island?",
+    "canonicalAnswer": "Tasmania",
+    "multipleChoiceOptions": [
+      "Tasmania",
+      "Madagascar",
+      "Borneo",
+      "New Guinea"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-shark-electric-fields",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Sharks detect weak electric fields using sensory organs known as what?",
+    "canonicalAnswer": "Ampullae of Lorenzini",
+    "multipleChoiceOptions": [
+      "Ampullae of Lorenzini",
+      "Jacobson organs",
+      "Lateral spiracles",
+      "Weberian ossicles"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-birds-dinosaurs",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Modern birds are most directly descended from which group?",
+    "canonicalAnswer": "Theropod dinosaurs",
+    "multipleChoiceOptions": [
+      "Theropod dinosaurs",
+      "Pterosaurs",
+      "Marine reptiles",
+      "Early mammals"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-honeybee-waggle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "A honeybee's waggle dance mainly communicates what to other bees?",
+    "canonicalAnswer": "The direction and distance of food",
+    "multipleChoiceOptions": [
+      "The direction and distance of food",
+      "The age of the queen",
+      "The danger level of predators",
+      "The shape of the hive"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-sea-otter-tools",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Sea otters are famous for using rocks mainly to do what?",
+    "canonicalAnswer": "Crack open hard-shelled prey",
+    "multipleChoiceOptions": [
+      "Crack open hard-shelled prey",
+      "Build underwater nests",
+      "Signal mates across beaches",
+      "Scrape algae from coral"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-komodo-monitor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "The Komodo dragon belongs to which broad lizard group?",
+    "canonicalAnswer": "Monitor lizards",
+    "multipleChoiceOptions": [
+      "Monitor lizards",
+      "Iguanas",
+      "Geckos",
+      "Skinks"
+    ]
+  },
+  {
+    "id": "animals-hardmcq2-bat-echolocation",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Many bats navigate and hunt by using which ability?",
+    "canonicalAnswer": "Echolocation",
+    "multipleChoiceOptions": [
+      "Echolocation",
+      "Magnetic photosynthesis",
+      "Infrared vision only",
+      "Chemical mimicry"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-mayonnaise-emulsion",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Mayonnaise is best described as an emulsion mainly of oil with what ingredient acting as a stabilizer?",
+    "canonicalAnswer": "Egg yolk",
+    "multipleChoiceOptions": [
+      "Egg yolk",
+      "Gelatin",
+      "Baking powder",
+      "Cornstarch"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-risotto-rice",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which short-grain rice variety is commonly associated with making risotto creamy?",
+    "canonicalAnswer": "Arborio",
+    "multipleChoiceOptions": [
+      "Arborio",
+      "Basmati",
+      "Jasmine",
+      "Calrose"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-miso-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Miso is most commonly a fermented paste based on which ingredient?",
+    "canonicalAnswer": "Soybeans",
+    "multipleChoiceOptions": [
+      "Soybeans",
+      "Chickpeas",
+      "Sesame seeds",
+      "Rice noodles"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-bechamel",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Classic bechamel sauce is made by thickening milk with what?",
+    "canonicalAnswer": "A white roux",
+    "multipleChoiceOptions": [
+      "A white roux",
+      "Egg yolk custard",
+      "Tomato reduction",
+      "Whipped cream"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-sushi-rice-vinegar",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Sushi rice is traditionally seasoned after cooking with a mixture centered on what?",
+    "canonicalAnswer": "Rice vinegar",
+    "multipleChoiceOptions": [
+      "Rice vinegar",
+      "Soy sauce",
+      "Sesame oil",
+      "Miso broth"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-marmalade",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Marmalade is usually distinguished from many jams by including what?",
+    "canonicalAnswer": "Citrus peel",
+    "multipleChoiceOptions": [
+      "Citrus peel",
+      "Roasted nuts",
+      "Fermented cream",
+      "Whole coffee beans"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-sourdough-leaven",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Sourdough bread is leavened mainly by a starter containing wild yeast and what else?",
+    "canonicalAnswer": "Lactic acid bacteria",
+    "multipleChoiceOptions": [
+      "Lactic acid bacteria",
+      "Baking soda only",
+      "Mold spores",
+      "Gelatin cultures"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-ghee",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Ghee is best described as which dairy product?",
+    "canonicalAnswer": "Clarified butter",
+    "multipleChoiceOptions": [
+      "Clarified butter",
+      "Cultured cream",
+      "Fresh cheese curds",
+      "Whipped buttermilk"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-bulgur",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Bulgur is usually made from wheat that has been parboiled and then prepared in what form?",
+    "canonicalAnswer": "Cracked grain",
+    "multipleChoiceOptions": [
+      "Cracked grain",
+      "Pressed oil",
+      "Fermented paste",
+      "Sprouted flour"
+    ]
+  },
+  {
+    "id": "fooddrinks-hardmcq2-negroni-spirit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "A classic Negroni is built from Campari, sweet vermouth, and which spirit?",
+    "canonicalAnswer": "Gin",
+    "multipleChoiceOptions": [
+      "Gin",
+      "Rye whiskey",
+      "White rum",
+      "Tequila"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-soccer-offside-trap",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In soccer, an offside trap usually involves defenders doing what together?",
+    "canonicalAnswer": "Stepping up to leave attackers offside",
+    "multipleChoiceOptions": [
+      "Stepping up to leave attackers offside",
+      "Crowding the goalkeeper on corners",
+      "Swapping positions with midfielders",
+      "Dropping behind the penalty spot"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-triple-double",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In basketball, a triple-double means a player reaches double digits in how many statistical categories?",
+    "canonicalAnswer": "Three",
+    "multipleChoiceOptions": [
+      "Three",
+      "Two",
+      "Four",
+      "Five"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-baseball-balk",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In baseball, a balk is mainly an illegal action by which player?",
+    "canonicalAnswer": "The pitcher",
+    "multipleChoiceOptions": [
+      "The pitcher",
+      "The catcher",
+      "The batter",
+      "The shortstop"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-tennis-tiebreak",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In a standard tennis tiebreak, the usual target is first to 7 points with what condition?",
+    "canonicalAnswer": "Winning by at least two points",
+    "multipleChoiceOptions": [
+      "Winning by at least two points",
+      "Serving every point",
+      "Winning exactly four rallies",
+      "Taking the next game by love"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-cricket-lbw",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In cricket, LBW is short for which dismissal?",
+    "canonicalAnswer": "Leg before wicket",
+    "multipleChoiceOptions": [
+      "Leg before wicket",
+      "Long ball wide",
+      "Late bat warning",
+      "Line behind wicket"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-rugby-knock-on",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In rugby, a knock-on is usually called when a player does what?",
+    "canonicalAnswer": "Accidentally knocks the ball forward with hand or arm",
+    "multipleChoiceOptions": [
+      "Accidentally knocks the ball forward with hand or arm",
+      "Kicks the ball directly into touch",
+      "Tackles above the shoulders",
+      "Blocks a conversion kick"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-golf-match-play",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In golf match play, competitors primarily score by counting what?",
+    "canonicalAnswer": "Holes won",
+    "multipleChoiceOptions": [
+      "Holes won",
+      "Total strokes only",
+      "Fairways hit",
+      "Putts saved"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-fencing-epee",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In fencing, epee differs from foil partly because the valid target area is what?",
+    "canonicalAnswer": "The entire body",
+    "multipleChoiceOptions": [
+      "The entire body",
+      "Torso only",
+      "Head and arms only",
+      "Below the waist only"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-hockey-power-play",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In ice hockey, a power play usually occurs because what has happened?",
+    "canonicalAnswer": "The opposing team has a player serving a penalty",
+    "multipleChoiceOptions": [
+      "The opposing team has a player serving a penalty",
+      "The goalie has been pulled voluntarily",
+      "Both teams changed lines at once",
+      "A faceoff was won cleanly"
+    ]
+  },
+  {
+    "id": "sports-hardmcq2-football-safety",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In American football, a safety is worth how many points?",
+    "canonicalAnswer": "2",
+    "multipleChoiceOptions": [
+      "2",
+      "1",
+      "3",
+      "6"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-oauth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "OAuth is mainly designed to let apps do what without sharing a user password directly?",
+    "canonicalAnswer": "Delegate limited authorization",
+    "multipleChoiceOptions": [
+      "Delegate limited authorization",
+      "Compress video files",
+      "Hide an IP address",
+      "Register a domain name"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-phishing",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Phishing attacks usually try to trick users by doing what?",
+    "canonicalAnswer": "Impersonating a trusted source",
+    "multipleChoiceOptions": [
+      "Impersonating a trusted source",
+      "Speeding up page loads",
+      "Encrypting local backups",
+      "Blocking browser cookies"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-tls-padlock",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "A browser padlock for HTTPS mainly indicates that the connection uses what protection?",
+    "canonicalAnswer": "TLS encryption",
+    "multipleChoiceOptions": [
+      "TLS encryption",
+      "Ad blocking",
+      "Two-factor login",
+      "Local antivirus scanning"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-mx-record",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "In DNS, an MX record is used primarily to direct what kind of traffic?",
+    "canonicalAnswer": "Email",
+    "multipleChoiceOptions": [
+      "Email",
+      "Video streams",
+      "Browser bookmarks",
+      "Password resets"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-pull-request",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "On platforms like GitHub, a pull request is mainly a way to propose what?",
+    "canonicalAnswer": "Merging code changes into a project",
+    "multipleChoiceOptions": [
+      "Merging code changes into a project",
+      "Resetting all user passwords",
+      "Buying a domain name",
+      "Scheduling a server reboot"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-cdn",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "A CDN improves web delivery mainly by serving files from what kind of network?",
+    "canonicalAnswer": "Geographically distributed servers",
+    "multipleChoiceOptions": [
+      "Geographically distributed servers",
+      "One private laptop",
+      "Offline USB mirrors",
+      "Encrypted browser history"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-http-429",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "HTTP status code 429 most commonly means what?",
+    "canonicalAnswer": "Too Many Requests",
+    "multipleChoiceOptions": [
+      "Too Many Requests",
+      "Payment Required",
+      "Gateway Timeout",
+      "Unsupported Media Type"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-git-rebase",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "In Git, rebasing a branch most directly means doing what to its commits?",
+    "canonicalAnswer": "Replaying them onto a new base commit",
+    "multipleChoiceOptions": [
+      "Replaying them onto a new base commit",
+      "Deleting them from remote history only",
+      "Encrypting them before upload",
+      "Turning them into issue comments"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-cookies",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Browser cookies are mainly small pieces of data stored for what purpose?",
+    "canonicalAnswer": "Remembering site-specific state",
+    "multipleChoiceOptions": [
+      "Remembering site-specific state",
+      "Rendering vector graphics",
+      "Cooling a processor",
+      "Increasing monitor brightness"
+    ]
+  },
+  {
+    "id": "internet-hardmcq2-url-fragment",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "In a URL, the fragment after a # symbol is normally handled mainly where?",
+    "canonicalAnswer": "In the browser",
+    "multipleChoiceOptions": [
+      "In the browser",
+      "By DNS root servers",
+      "Inside the TLS certificate",
+      "By the email server"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-control-group",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "In an experiment, a control group is mainly used to provide what?",
+    "canonicalAnswer": "A baseline for comparison",
+    "multipleChoiceOptions": [
+      "A baseline for comparison",
+      "A guaranteed correct result",
+      "A larger sample error",
+      "A replacement for measurement"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-isotopes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Isotopes of the same element have the same number of protons but different numbers of what?",
+    "canonicalAnswer": "Neutrons",
+    "multipleChoiceOptions": [
+      "Neutrons",
+      "Electrons in neutral atoms only",
+      "Atomic symbols",
+      "Chemical bonds"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-semiconductor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "A semiconductor is named for having electrical conductivity generally between what two categories?",
+    "canonicalAnswer": "Conductors and insulators",
+    "multipleChoiceOptions": [
+      "Conductors and insulators",
+      "Liquids and gases",
+      "Magnets and batteries",
+      "Acids and bases"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-greenhouse-infrared",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Greenhouse gases warm Earth mainly by absorbing and re-emitting which kind of radiation?",
+    "canonicalAnswer": "Infrared radiation",
+    "multipleChoiceOptions": [
+      "Infrared radiation",
+      "Gamma rays",
+      "Ultraviolet light only",
+      "Radio broadcasts"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-dna-polymerase",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "DNA polymerase is the enzyme most directly responsible for doing what?",
+    "canonicalAnswer": "Building new DNA strands",
+    "multipleChoiceOptions": [
+      "Building new DNA strands",
+      "Digesting fats",
+      "Pumping blood",
+      "Splitting water in leaves"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-newton-third",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Newton's third law says interacting objects exert forces that are equal in size and what else?",
+    "canonicalAnswer": "Opposite in direction",
+    "multipleChoiceOptions": [
+      "Opposite in direction",
+      "Always downward",
+      "Delayed by one second",
+      "Unaffected by mass"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-sound-vacuum",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Sound cannot travel through a perfect vacuum because it needs what?",
+    "canonicalAnswer": "A material medium",
+    "multipleChoiceOptions": [
+      "A material medium",
+      "Visible light",
+      "A magnetic pole",
+      "A nuclear reaction"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-antibiotics",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Antibiotics are designed to treat infections caused by which organisms?",
+    "canonicalAnswer": "Bacteria",
+    "multipleChoiceOptions": [
+      "Bacteria",
+      "Viruses",
+      "Allergens",
+      "Prions only"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-half-life",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "In radioactive decay, half-life means the time needed for what to happen?",
+    "canonicalAnswer": "Half of the radioactive nuclei in a sample to decay",
+    "multipleChoiceOptions": [
+      "Half of the radioactive nuclei in a sample to decay",
+      "An atom to lose half its protons",
+      "Radiation to travel half a meter",
+      "A molecule to split into equal halves"
+    ]
+  },
+  {
+    "id": "science-hardmcq2-osmosis",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Osmosis is the movement of water across what kind of barrier?",
+    "canonicalAnswer": "A selectively permeable membrane",
+    "multipleChoiceOptions": [
+      "A selectively permeable membrane",
+      "A copper wire",
+      "A sound wave",
+      "A vacuum gap"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-demeter-persephone",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Greek myth, Persephone is the daughter of which goddess?",
+    "canonicalAnswer": "Demeter",
+    "multipleChoiceOptions": [
+      "Demeter",
+      "Hera",
+      "Aphrodite",
+      "Hestia"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-loki-trickster",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Norse mythology, which figure is most strongly associated with trickery and shape-shifting?",
+    "canonicalAnswer": "Loki",
+    "multipleChoiceOptions": [
+      "Loki",
+      "Baldr",
+      "Tyr",
+      "Heimdall"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-prometheus-fire",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Prometheus is punished in Greek myth for giving humanity what?",
+    "canonicalAnswer": "Fire",
+    "multipleChoiceOptions": [
+      "Fire",
+      "Wine",
+      "The alphabet",
+      "The lyre"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-hera-domain",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Hera is most closely associated with marriage and which role among the Olympian gods?",
+    "canonicalAnswer": "Queen of the gods",
+    "multipleChoiceOptions": [
+      "Queen of the gods",
+      "Messenger of the gods",
+      "Smith of the gods",
+      "Ferryman of the dead"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-anubis-mummification",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "In ancient Egyptian religion, Anubis is especially linked with which funerary practice?",
+    "canonicalAnswer": "Mummification",
+    "multipleChoiceOptions": [
+      "Mummification",
+      "Harvest festivals",
+      "Solar eclipses",
+      "River flooding"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-medusa-perseus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Greek hero is famous for killing Medusa?",
+    "canonicalAnswer": "Perseus",
+    "multipleChoiceOptions": [
+      "Perseus",
+      "Theseus",
+      "Heracles",
+      "Jason"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-icarus-sun",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Icarus falls from the sky after flying too close to what?",
+    "canonicalAnswer": "The sun",
+    "multipleChoiceOptions": [
+      "The sun",
+      "Mount Olympus",
+      "A storm cloud",
+      "The moon"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-pandora-jar",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Greek myth, Pandora's forbidden container releases what into the world?",
+    "canonicalAnswer": "Evils and troubles",
+    "multipleChoiceOptions": [
+      "Evils and troubles",
+      "The seasons",
+      "The ocean tides",
+      "The first harvest"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-odin-eye",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Norse myth, which god sacrifices an eye in exchange for wisdom?",
+    "canonicalAnswer": "Odin",
+    "multipleChoiceOptions": [
+      "Odin",
+      "Tyr",
+      "Baldr",
+      "Freyr"
+    ]
+  },
+  {
+    "id": "mythology-hardmcq2-river-styx",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Greek underworld myth, which river is famously associated with oaths and passage to the dead?",
+    "canonicalAnswer": "Styx",
+    "multipleChoiceOptions": [
+      "Styx",
+      "Lethe",
+      "Nile",
+      "Tiber"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-sonata-form",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "In classical sonata form, the main sections are usually exposition, development, and what?",
+    "canonicalAnswer": "Recapitulation",
+    "multipleChoiceOptions": [
+      "Recapitulation",
+      "Cadence",
+      "Intermezzo",
+      "Improvisation"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-pointillism",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Pointillism builds images primarily from many small marks of what?",
+    "canonicalAnswer": "Dots of color",
+    "multipleChoiceOptions": [
+      "Dots of color",
+      "Carved stone cuts",
+      "Folded paper strips",
+      "Projected shadows"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-cubism-forms",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Cubism is especially known for breaking subjects into what kind of forms?",
+    "canonicalAnswer": "Fragmented geometric forms",
+    "multipleChoiceOptions": [
+      "Fragmented geometric forms",
+      "Smooth photographic gradients",
+      "Single-point religious icons",
+      "Unpainted marble surfaces"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-well-tempered-clavier",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "The Well-Tempered Clavier is a major keyboard work by which composer?",
+    "canonicalAnswer": "Johann Sebastian Bach",
+    "multipleChoiceOptions": [
+      "Johann Sebastian Bach",
+      "Ludwig van Beethoven",
+      "Franz Schubert",
+      "George Frideric Handel"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-adagio",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "In music, the tempo marking adagio generally means to play how?",
+    "canonicalAnswer": "Slowly",
+    "multipleChoiceOptions": [
+      "Slowly",
+      "Very fast",
+      "With sudden silence",
+      "Only with percussion"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-fresco-plaster",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "A true fresco is painted onto what kind of surface?",
+    "canonicalAnswer": "Wet plaster",
+    "multipleChoiceOptions": [
+      "Wet plaster",
+      "Polished bronze",
+      "Dry canvas",
+      "Carved glass"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-blue-note",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "In blues and jazz, a blue note is typically a pitch treated in what way?",
+    "canonicalAnswer": "Bent or lowered for expressive effect",
+    "multipleChoiceOptions": [
+      "Bent or lowered for expressive effect",
+      "Played only by brass instruments",
+      "Removed from the scale entirely",
+      "Held silently between phrases"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-libretto",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "In opera, the libretto is best described as what?",
+    "canonicalAnswer": "The text or words of the work",
+    "multipleChoiceOptions": [
+      "The text or words of the work",
+      "The conductor's platform",
+      "The tuning system",
+      "The painted backdrop only"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-camera-obscura",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "A camera obscura is an optical device that artists used to do what?",
+    "canonicalAnswer": "Project an image onto a surface",
+    "multipleChoiceOptions": [
+      "Project an image onto a surface",
+      "Mix oil paint faster",
+      "Tune string instruments",
+      "Carve woodblocks evenly"
+    ]
+  },
+  {
+    "id": "artmusic-hardmcq2-coda",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "In music, a coda usually functions as what part of a piece?",
+    "canonicalAnswer": "A concluding passage",
+    "multipleChoiceOptions": [
+      "A concluding passage",
+      "The first rehearsal mark",
+      "A repeated tuning note",
+      "The quietest instrument"
+    ]
   }
 ]
