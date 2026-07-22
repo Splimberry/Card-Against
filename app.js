@@ -2522,6 +2522,7 @@ const state = {
   chatCooldownUntil: 0,
   chatCooldownTimerId: null,
   hostedRooms: [],
+  hostedRoomsRenderSignature: "",
   devRooms: [],
   roomParticipants: [],
   roomDirectoryPollId: null,
@@ -24044,9 +24045,37 @@ function handleKickableBotClick(event) {
   return true;
 }
 
-function renderHostedRooms() {
-  elements.joinRoomList.replaceChildren();
+function getHostedRoomsRenderSignature(visibleRooms = []) {
+  if (!visibleRooms.length) {
+    return `empty:${state.roomDirectoryOnline ? "online" : "offline"}`;
+  }
+  return JSON.stringify(visibleRooms.map((room) => ({
+    code: room.code,
+    status: room.status,
+    activePlayers: getHostedRoomActivePlayerCount(room),
+    maxPlayers: getRoomMaxPlayers(room.settings),
+    spectators: Number(room.spectators) || 0,
+    private: Boolean(room.settings?.private),
+    mode: getRoomModeLabel(room.settings),
+    host: {
+      id: room.host?.id || "",
+      name: room.host?.name || "",
+      avatar: room.host?.avatar || "",
+      equippedTitleId: room.host?.equippedTitleId || "",
+      specialBadges: room.host?.specialBadges || [],
+      cardCustomization: room.host?.cardCustomization || null
+    }
+  })));
+}
+
+function renderHostedRooms(options = {}) {
   const visibleRooms = state.hostedRooms.filter((room) => room.status !== "complete");
+  const renderSignature = getHostedRoomsRenderSignature(visibleRooms);
+  if (!options.force && state.hostedRoomsRenderSignature === renderSignature && elements.joinRoomList.children.length) {
+    return;
+  }
+  state.hostedRoomsRenderSignature = renderSignature;
+  elements.joinRoomList.replaceChildren();
   if (!visibleRooms.length) {
     const empty = document.createElement("section");
     empty.className = "join-room-card";
@@ -24150,7 +24179,7 @@ function setJoinRoomBusy(isBusy, code = "") {
   });
   if (!isBusy) {
     if (!elements.joinScreen.classList.contains("hidden")) {
-      renderHostedRooms();
+      renderHostedRooms({ force: true });
     }
     return;
   }
