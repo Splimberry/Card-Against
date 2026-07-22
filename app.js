@@ -18540,7 +18540,7 @@ function updateQuestionCardPileDepth() {
     const reverseIndex = cards.length - index;
     const visibleIndex = Math.min(reverseIndex, 7);
     card.style.setProperty("--question-stack-offset-y", `${visibleIndex * 0.48}rem`);
-    card.style.setProperty("--question-stack-offset-x", `${(visibleIndex % 2 === 0 ? -1 : 1) * Math.min(visibleIndex * 0.14, 0.7)}rem`);
+    card.style.setProperty("--question-stack-offset-x", "0rem");
     card.style.setProperty("--question-stack-z", String(index + 1));
     card.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
   });
@@ -18797,7 +18797,6 @@ function renderRound() {
   setHidden(elements.errorPanel, true);
   setHidden(elements.endPanel, true);
   restartAnimation(blackCard, "incoming-question-card");
-  restartAnimation(blackCard, "dealt");
   restartAnimation(judgePanel, "entering");
   renderPowerUps();
   renderScore();

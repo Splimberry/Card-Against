@@ -2204,6 +2204,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   grid-column: 1;
   grid-row: 1 / -1;
   align-self: center;
+  justify-self: center;
   width: min(100%, 27rem);
   min-height: clamp(10rem, 20vh, 13rem);
   margin: 0 auto;
@@ -2232,6 +2233,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow:
     0 1rem 1.8rem rgba(0, 0, 0, 0.28),
     0 0 0 1px rgba(255, 255, 255, 0.04);
+  transform-origin: center;
 }
 
 .question-card-pile-card > * {
@@ -2256,6 +2258,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow: 0 1.2rem 2rem rgba(0, 0, 0, 0.34);
   overflow: hidden;
   transform: rotate(var(--question-card-tilt, -1.2deg));
+  transform-origin: center;
   transition:
     height 520ms cubic-bezier(0.16, 1, 0.3, 1),
     min-height 520ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -3964,6 +3967,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .black-card.dealt {
   animation: blackCardDeal 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.black-card.incoming-question-card {
+  animation: blackCardSlideFromTop 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .question-meta {
@@ -10561,6 +10568,26 @@ input:focus {
     opacity: 1;
     filter: blur(0);
     transform: translateY(0) rotate(var(--question-card-tilt, -1.2deg)) scale(1);
+  }
+}
+
+@keyframes blackCardSlideFromTop {
+  0% {
+    opacity: 0;
+    filter: blur(10px) brightness(1.12);
+    transform: translate3d(0, -7rem, 0) rotate(calc(var(--question-card-tilt, -1.2deg) - 2deg)) scale(0.96);
+  }
+
+  68% {
+    opacity: 1;
+    filter: blur(0) brightness(1.04);
+    transform: translate3d(0, 0.35rem, 0) rotate(var(--question-card-tilt, -1.2deg)) scale(1.012);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0) brightness(1);
+    transform: translate3d(0, 0, 0) rotate(var(--question-card-tilt, -1.2deg)) scale(1);
   }
 }
 
