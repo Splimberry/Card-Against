@@ -16058,6 +16058,17 @@ function closeTargetSelector() {
   hideModalWithMotion(elements.targetModal);
 }
 
+function cancelTargetSelector() {
+  const owner = elements.targetModal.dataset.owner;
+  const powerId = elements.targetModal.dataset.power;
+  const mode = elements.targetModal.dataset.mode;
+  if (mode === "player" && owner && powerId) {
+    setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((selectedPowerId) => selectedPowerId !== powerId));
+    renderPowerUps();
+  }
+  closeTargetSelector();
+}
+
 function completeThemeSelection(theme) {
   const owner = elements.targetModal.dataset.owner;
   const powerId = elements.targetModal.dataset.power;
@@ -25760,7 +25771,7 @@ function isModalOpen(element) {
 
 function closeTopModal() {
   if (isModalOpen(elements.targetModal)) {
-    closeTargetSelector();
+    cancelTargetSelector();
     return true;
   }
 
@@ -28772,7 +28783,7 @@ elements.confirmEndModal.addEventListener("click", (event) => {
 });
 elements.targetModal.addEventListener("click", (event) => {
   if (event.target === elements.targetModal) {
-    closeTargetSelector();
+    cancelTargetSelector();
     return;
   }
 
@@ -28803,7 +28814,7 @@ elements.targetModal.addEventListener("click", (event) => {
     completeTargetSelection(option.dataset.targetOwner);
   }
 });
-elements.cancelTargetButton.addEventListener("click", closeTargetSelector);
+elements.cancelTargetButton.addEventListener("click", cancelTargetSelector);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && closeTopModal()) {
     event.preventDefault();
