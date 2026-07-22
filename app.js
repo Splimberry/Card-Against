@@ -2793,6 +2793,7 @@ const state = {
   freshPowerUps: {},
   freshPowerUpAnimations: {},
   pendingPowerUseAnimations: {},
+  powerHandExitHolds: {},
   round: 1,
   maxRounds: savedMaxRounds,
   streaks: {
@@ -13160,7 +13161,8 @@ function capturePowerUseAnimation(button) {
     html: button.innerHTML,
     className: button.className,
     rarity: button.dataset.rarity || "",
-    chaosInfused: button.classList.contains("chaos-infused")
+    chaosInfused: button.classList.contains("chaos-infused"),
+    exitIndex: getVisiblePowerHandCards(owner).indexOf(button)
   };
 }
 
@@ -13176,6 +13178,7 @@ function playPendingPowerUseAnimation(owner, powerId) {
   if (!elements.gameStage || elements.gameStage.classList.contains("hidden")) {
     return;
   }
+  createPowerHandExitHold(owner, [pending.exitIndex], 430);
 
   const ghost = document.createElement("div");
   ghost.className = `${pending.className || "power-card"} power-use-ghost`;
@@ -13214,21 +13217,24 @@ function playPowerHandExitAnimation(owner, options = {}) {
   }
   const indexes = Array.isArray(options.indexes) ? new Set(options.indexes) : null;
   const requestedPowerIds = Array.isArray(options.powerIds) ? [...options.powerIds] : null;
-  const cardsToAnimate = cards.filter((card, index) => {
-    if (indexes) {
-      return indexes.has(index);
-    }
-    if (!requestedPowerIds) {
+  const cardsToAnimate = cards
+    .map((card, index) => ({ card, index }))
+    .filter(({ card, index }) => {
+      if (indexes) {
+        return indexes.has(index);
+      }
+      if (!requestedPowerIds) {
+        return true;
+      }
+      const matchIndex = requestedPowerIds.indexOf(card.dataset.power);
+      if (matchIndex < 0) {
+        return false;
+      }
+      requestedPowerIds.splice(matchIndex, 1);
       return true;
-    }
-    const matchIndex = requestedPowerIds.indexOf(card.dataset.power);
-    if (matchIndex < 0) {
-      return false;
-    }
-    requestedPowerIds.splice(matchIndex, 1);
-    return true;
-  });
-  cardsToAnimate.forEach((card, index) => {
+    });
+  createPowerHandExitHold(owner, cardsToAnimate.map((entry) => entry.index), 420);
+  cardsToAnimate.forEach(({ card }, index) => {
     const rect = card.getBoundingClientRect();
     if (!rect.width || !rect.height) {
       return;
@@ -13244,6 +13250,54 @@ function playPowerHandExitAnimation(owner, options = {}) {
     ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
     window.setTimeout(() => ghost.remove(), 560);
   });
+}
+
+function createPowerHandExitHold(owner, indexes = [], durationMs = 420) {
+  if (owner !== getCurrentPowerOwner() || !indexes.length || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    return;
+  }
+  const previousHand = [...(state.powerHands[owner] || [])];
+  if (!previousHand.length) {
+    return;
+  }
+  const exitIndexes = [...new Set(indexes)]
+    .map((index) => Number(index))
+    .filter((index) => Number.isInteger(index) && index >= 0 && index < previousHand.length);
+  if (!exitIndexes.length) {
+    return;
+  }
+  state.powerHandExitHolds = state.powerHandExitHolds || {};
+  const token = Date.now() + Math.random();
+  state.powerHandExitHolds[owner] = {
+    hand: previousHand,
+    indexes: exitIndexes,
+    expiresAt: Date.now() + durationMs,
+    token
+  };
+  window.setTimeout(() => {
+    if (state.powerHandExitHolds?.[owner]?.token !== token) {
+      return;
+    }
+    delete state.powerHandExitHolds[owner];
+    if (owner === getCurrentPowerOwner()) {
+      renderPowerUps();
+    }
+  }, durationMs);
+}
+
+function getPowerHandRenderEntries(owner, hand) {
+  const hold = state.powerHandExitHolds?.[owner];
+  if (!hold || Date.now() >= hold.expiresAt) {
+    if (hold) {
+      delete state.powerHandExitHolds[owner];
+    }
+    return hand.map((powerId) => ({ powerId, exiting: false }));
+  }
+  const exitIndexes = new Set(hold.indexes || []);
+  return (hold.hand || []).map((powerId, index) => ({
+    powerId,
+    exiting: exitIndexes.has(index)
+  }));
 }
 
 function getPowerHandExitIndexes(previousHand = [], nextHand = []) {
@@ -17600,7 +17654,10 @@ function renderPowerUps() {
     return;
   }
 
-  if (!hand.length) {
+  const renderEntries = getPowerHandRenderEntries(owner, hand);
+  const holdingExitLayout = renderEntries.some((entry) => entry.exiting);
+
+  if (!hand.length && !renderEntries.length) {
     const empty = document.createElement("p");
     empty.className = "power-empty";
     empty.textContent = "No power-ups left.";
@@ -17610,7 +17667,14 @@ function renderPowerUps() {
 
   const getPowerCardMarkup = (displayPower) => `<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
   let animatedFreshCount = 0;
-  hand.forEach((powerId) => {
+  renderEntries.forEach(({ powerId, exiting }) => {
+    if (exiting) {
+      const placeholder = document.createElement("span");
+      placeholder.className = "power-card power-card-placeholder";
+      placeholder.setAttribute("aria-hidden", "true");
+      elements.powerPanel.appendChild(placeholder);
+      return;
+    }
     const power = getPowerById(powerId);
     if (!power) {
       return;
@@ -17618,7 +17682,7 @@ function renderPowerUps() {
 
     const button = document.createElement("button");
     const chaosInfused = isChaosInfusedPower(power);
-    const freshIndex = panelVisible ? freshIds.indexOf(power.id) : -1;
+    const freshIndex = panelVisible && !holdingExitLayout ? freshIds.indexOf(power.id) : -1;
     const animateChaosInfusion = chaosInfused
       && freshIndex >= 0
       && !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -17680,7 +17744,7 @@ function renderPowerUps() {
       }, enterDelayMs + enterDurationMs + 70);
     }
   });
-  if (panelVisible) {
+  if (panelVisible && !holdingExitLayout) {
     state.freshPowerUps[owner] = freshIds;
     if (!freshIds.length && state.freshPowerUpAnimations?.[owner]) {
       state.freshPowerUpAnimations[owner] = [];

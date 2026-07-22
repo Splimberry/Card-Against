@@ -3641,6 +3641,11 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   animation: powerRemoveExit 300ms cubic-bezier(0.4, 0, 1, 1) var(--power-exit-delay, 0ms) both;
 }
 
+.power-card.power-card-placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .power-card.fresh-power {
   animation-delay: var(--power-enter-delay, 0ms);
   animation-fill-mode: both;
