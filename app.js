@@ -35,6 +35,7 @@ const currencyStorageKey = "cardsAgainstAiCurrency";
 const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
 const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
 const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
+const performanceModeStorageKey = "cardsAgainstAiPerformanceMode";
 const userStorageVersion = 1;
 const userCacheStorageKey = "cardsAgainstAiUserCache:v1";
 const userInventoryQueueStorageKey = "cardsAgainstAiUserInventoryQueue:v1";
@@ -62,6 +63,12 @@ const roomAppliedEventLimit = 300;
 const supabaseAvatarBucket = "profile-avatars";
 const supabaseSdkUrl = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const specialPlayerBadgeOrder = ["admin", "verified", "creator"];
+const performanceModes = {
+  full: { label: "Full effects", shortLabel: "Full" },
+  balanced: { label: "Balanced", shortLabel: "Balanced" },
+  "low-power": { label: "Low power", shortLabel: "Low" },
+  minimal: { label: "Minimal", shortLabel: "Minimal" }
+};
 const specialPlayerBadges = [
   {
     id: "admin",
@@ -933,10 +940,20 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, number));
 }
 
+function normalizePerformanceMode(value) {
+  const mode = String(value || "").trim();
+  return performanceModes[mode] ? mode : "full";
+}
+
+function getStoredPerformanceMode() {
+  return normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey));
+}
+
 const savedUserCache = loadUserStorageCache();
 const savedEnabledThemes = normalizeCachedThemes(savedUserCache?.settings?.lastSelectedThemes);
 const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds") || savedUserCache?.settings?.maxRounds, 1, 10, 5);
 const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds") || savedUserCache?.settings?.timerSeconds, 10, 60, 30);
+const savedPerformanceMode = normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey) || savedUserCache?.settings?.performanceMode);
 const savedBotRounds = clampNumber(localStorage.getItem("cardsAgainstAiBotRounds"), 5, 10, 5);
 const BOT_OWNER_IDS = Array.from({ length: 9 }, (_, index) => `bot${index + 1}`);
 const DEFAULT_OWNER_IDS = ["player", "opponent", ...BOT_OWNER_IDS];
@@ -1144,6 +1161,7 @@ function getUserStorageSnapshot() {
       music: Math.round((soundState.musicVolume || 0) * 100),
       timerSeconds: state.timerSeconds,
       maxRounds: state.maxRounds,
+      performanceMode: state.performanceMode,
       lastSelectedThemes: getEnabledTriviaThemes()
     },
     currencyDisplayCache: {
@@ -1235,6 +1253,7 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
     const music = clampNumber(settings.music, 0, 100, 50);
     const maxRounds = clampNumber(settings.maxRounds, 1, 10, 5);
     const timerSeconds = clampNumber(settings.timerSeconds, 10, 60, 30);
+    const performanceMode = normalizePerformanceMode(settings.performanceMode || getStoredPerformanceMode());
 
     localStorage.setItem("cardsAgainstAiProfileName", username);
     if (avatar) {
@@ -1268,6 +1287,7 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
     localStorage.setItem("cardsAgainstAiMusicVolume", String(music));
     localStorage.setItem("cardsAgainstAiMaxRounds", String(maxRounds));
     localStorage.setItem("cardsAgainstAiTimerSeconds", String(timerSeconds));
+    localStorage.setItem(performanceModeStorageKey, performanceMode);
     writeJsonStorage(helpSeenFlagsStorageKey, source.tutorialHelpSeenFlags || {});
 
     state.profile.name = username;
@@ -1279,12 +1299,14 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
     state.roomSettings.enabledThemes = [...state.enabledThemes];
     state.maxRounds = maxRounds;
     state.timerSeconds = timerSeconds;
+    state.performanceMode = performanceMode;
     if (!state.timerId) {
       state.timerRemaining = timerSeconds;
     }
     soundState.sfxVolume = sfx / 100;
     soundState.musicVolume = music / 100;
     updateMusicVolume();
+    applyPerformanceMode(performanceMode);
     syncProfileToPlayer();
     renderProfile();
     renderRoomPlayers();
@@ -2167,6 +2189,7 @@ function resetSignedOutAccountState() {
       music: 50,
       timerSeconds: 30,
       maxRounds: 5,
+      performanceMode: "full",
       lastSelectedThemes: [...triviaThemes]
     },
     currencyDisplayCache: { coins: 0 },
@@ -2844,6 +2867,7 @@ const state = {
   profileCustomizationHistory: [],
   profileCustomizationHistoryIndex: 0,
   roundProgress: [],
+  performanceMode: savedPerformanceMode,
   matchEnded: false,
   timerId: null,
   timerSessionId: 0,
@@ -3317,10 +3341,12 @@ const elements = {
   musicVolumeSlider: document.querySelector("#musicVolumeSlider"),
   timerSecondsSlider: document.querySelector("#timerSecondsSlider"),
   roundsSlider: document.querySelector("#roundsSlider"),
+  performanceModeSelect: document.querySelector("#performanceModeSelect"),
   sfxVolumeValue: document.querySelector("#sfxVolumeValue"),
   musicVolumeValue: document.querySelector("#musicVolumeValue"),
   timerSecondsValue: document.querySelector("#timerSecondsValue"),
   roundsValue: document.querySelector("#roundsValue"),
+  performanceModeValue: document.querySelector("#performanceModeValue"),
   modeLabel: document.querySelector("#modeLabel"),
   leaderboard: document.querySelector("#leaderboard"),
   roundCount: document.querySelector("#roundCount"),
@@ -4694,10 +4720,13 @@ function setHidden(element, isHidden) {
     element.classList.remove("closing");
   }
   element.classList.toggle("hidden", isHidden);
+  if (element === elements?.gameStage) {
+    document.body?.toggleAttribute("data-game-active", !isHidden);
+  }
 }
 
 function shouldReduceMotion() {
-  return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+  return !allowsOneShotAnimations() || Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
 }
 
 function getVisibleElementRectMap(container, selector, keyGetter) {
@@ -4813,12 +4842,12 @@ function queueStatFlash(kind, title, detail, options = {}) {
     : "";
 
   const flashEntry = {
-    kind: normalizeStatFlashKind(kind),
+    kind: getPerformanceOverlayKind(kind),
     title: sourceAttribution || cleanTitle,
     detail: cleanDetail,
     durationMs: getStatFlashDuration(cleanDetail, { ...options, sourceAttribution: Boolean(sourceAttribution) }),
     soundName: options.soundName || getStatFlashSoundName(kind, cleanDetail, options),
-    flickerText: Boolean(options.flickerText || shouldFlickerStatFlashText(kind, cleanDetail)),
+    flickerText: state.performanceMode !== "low-power" && state.performanceMode !== "minimal" && Boolean(options.flickerText || shouldFlickerStatFlashText(kind, cleanDetail)),
     onTextChange: typeof options.onTextChange === "function" ? options.onTextChange : null
   };
   if (isPointLossSoundName(flashEntry.soundName)) {
@@ -5111,6 +5140,74 @@ function setCollapsed(element, isCollapsed) {
   element.setAttribute("aria-hidden", String(isCollapsed));
 }
 
+function isGameScreenActive() {
+  return Boolean(elements?.gameStage && !elements.gameStage.classList.contains("hidden"));
+}
+
+function allowsOneShotAnimations() {
+  return state.performanceMode === "full" || state.performanceMode === "balanced";
+}
+
+function allowsCardStack() {
+  return state.performanceMode === "full" || state.performanceMode === "balanced";
+}
+
+function allowsProfileCustomizationDisplay(options = {}) {
+  return state.performanceMode !== "minimal" || options.preview;
+}
+
+function getPerformanceOverlayKind(kind) {
+  if (state.performanceMode !== "minimal") {
+    return normalizeStatFlashKind(kind);
+  }
+  const normalized = normalizeStatFlashKind(kind);
+  if (["negative", "burning", "lightning", "bomb", "sudden-death", "no-mercy", "sabotage"].includes(normalized)) {
+    return "negative";
+  }
+  if (["mixed", "chaos", "outage", "black-market", "casino"].includes(normalized)) {
+    return "mixed";
+  }
+  return "positive";
+}
+
+function applyPerformanceMode(mode = state.performanceMode) {
+  const normalized = normalizePerformanceMode(mode);
+  state.performanceMode = normalized;
+  document.body?.setAttribute("data-performance-mode", normalized);
+  document.body?.toggleAttribute("data-game-active", isGameScreenActive());
+  if (!allowsCardStack()) {
+    clearQuestionCardPile();
+    if (elements.answerStackButton) {
+      setHidden(elements.answerStackButton, true);
+    }
+    elements.cardsArea?.classList.remove("answer-stack-mode");
+  }
+  refreshPerformanceModeSurfaces();
+}
+
+function refreshPerformanceModeSurfaces() {
+  renderProfile();
+  renderLeaderboard();
+  renderRoomPlayers();
+  renderRoomChat();
+  renderHostedRooms({ force: true });
+  refreshAnswerCardCustomizationSurfaces();
+  if (state.performanceMode === "minimal") {
+    applyProfileCustomizationSurface(getBlackCardElement(), defaultProfileCustomization);
+  }
+}
+
+function updatePerformanceMode(value) {
+  const mode = normalizePerformanceMode(value);
+  localStorage.setItem(performanceModeStorageKey, mode);
+  applyPerformanceMode(mode);
+  cacheUserStorageSnapshotNow();
+  scheduleUserStorageSnapshot();
+  syncSettingsControls();
+  renderScore();
+  playSound("click");
+}
+
 function hideModalWithMotion(element) {
   if (!element || element.classList.contains("hidden")) {
     return;
@@ -5393,6 +5490,9 @@ function fillVisibleAnswerCards(cards, ratings) {
 }
 
 function cycleAnswerStack() {
+  if (!allowsCardStack()) {
+    return;
+  }
   const cards = state.currentRoundCards || [];
   const owners = getRoundCardOwners();
   const ratings = state.currentRoundCardRatings || [];
@@ -5434,7 +5534,12 @@ function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1)
   const owners = getRoundCardOwners().slice(0, cards.length);
   const ownIndex = getOwnAnswerCardIndex(cards);
   const bestOtherIndex = getBestOtherAnswerIndex(cards, correctIndexes, preferredIndex, ownIndex);
-  if (cards.length <= 3) {
+  if (!allowsCardStack()) {
+    state.visibleAnswerCardIndexes = [ownIndex];
+    if (bestOtherIndex >= 0 && bestOtherIndex !== ownIndex) {
+      state.visibleAnswerCardIndexes.push(bestOtherIndex);
+    }
+  } else if (cards.length <= 3) {
     const directIndexes = [ownIndex];
     if (bestOtherIndex >= 0 && !directIndexes.includes(bestOtherIndex)) {
       directIndexes.push(bestOtherIndex);
@@ -5468,10 +5573,11 @@ function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1)
   if (elements.answerStackButton && elements.answerStackCount) {
     elements.answerStackButton.style.order = "3";
     elements.answerStackCount.textContent = `+${hiddenAnswerCount}`;
-    setHidden(elements.answerStackButton, hiddenAnswerCount === 0);
-    elements.cardsArea.classList.toggle("answer-stack-mode", hiddenAnswerCount > 0);
-    elements.cardsArea.classList.toggle("two-card-mode", hiddenAnswerCount === 0 && state.visibleAnswerCardIndexes.length === 2);
-    elements.cardsArea.style.setProperty("--answer-card-count", String(hiddenAnswerCount > 0 ? 3 : Math.max(1, state.visibleAnswerCardIndexes.length)));
+    const showStackButton = allowsCardStack() && hiddenAnswerCount > 0;
+    setHidden(elements.answerStackButton, !showStackButton);
+    elements.cardsArea.classList.toggle("answer-stack-mode", showStackButton);
+    elements.cardsArea.classList.toggle("two-card-mode", !showStackButton && state.visibleAnswerCardIndexes.length === 2);
+    elements.cardsArea.style.setProperty("--answer-card-count", String(showStackButton ? 3 : Math.max(1, state.visibleAnswerCardIndexes.length)));
   }
 }
 
@@ -7380,6 +7486,9 @@ function closeEndConfirm(confirmed = false, options = {}) {
 }
 
 function restartAnimation(element, className) {
+  if (!element || shouldReduceMotion()) {
+    return;
+  }
   element.classList.remove(className);
   void element.offsetWidth;
   element.classList.add(className);
@@ -7387,8 +7496,7 @@ function restartAnimation(element, className) {
 
 function animateTableLayoutChange(mutator) {
   const table = document.querySelector(".table-surface");
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!table || !Element.prototype.animate || reduceMotion) {
+  if (!table || !Element.prototype.animate || shouldReduceMotion()) {
     mutator();
     return;
   }
@@ -10343,14 +10451,18 @@ function getProfileCardCustomizationForOwner(owner) {
 
 function shouldUseAnswerCardCustomization(owner) {
   const player = getPlayer(owner);
-  return !player?.bot && player?.type !== "bot";
+  return state.performanceMode !== "minimal" && !player?.bot && player?.type !== "bot";
 }
 
 function applyProfileCustomizationSurface(element, customization, options = {}) {
   if (!element) {
     return;
   }
-  applyCardCustomizationToElement(element, customization || defaultProfileCustomization, options);
+  applyCardCustomizationToElement(
+    element,
+    allowsProfileCustomizationDisplay(options) ? customization || defaultProfileCustomization : defaultProfileCustomization,
+    allowsProfileCustomizationDisplay(options) ? options : { ...options, forceCustom: false }
+  );
 }
 
 function applyPlayerCustomizationSurface(element, player) {
@@ -10485,10 +10597,16 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
 }
 
 function applyAnswerCardCustomizations() {
+  refreshAnswerCardCustomizationSurfaces();
+}
+
+function refreshAnswerCardCustomizationSurfaces() {
   getAnswerCardNodes().forEach((card) => {
     const owner = card.dataset.owner || "player";
     if (shouldUseAnswerCardCustomization(owner)) {
       applyCardCustomizationToElement(card, getProfileCardCustomizationForOwner(owner));
+    } else {
+      applyProfileCustomizationSurface(card, defaultProfileCustomization);
     }
   });
 }
@@ -13294,7 +13412,7 @@ function capturePowerUseAnimation(button) {
 
 function playPendingPowerUseAnimation(owner, powerId) {
   const pending = state.pendingPowerUseAnimations?.[owner];
-  if (!pending || pending.powerId !== powerId || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+  if (!pending || pending.powerId !== powerId || shouldReduceMotion()) {
     if (pending?.powerId === powerId) {
       delete state.pendingPowerUseAnimations[owner];
     }
@@ -13330,7 +13448,7 @@ function getVisiblePowerHandCards(owner) {
   if (owner !== getCurrentPowerOwner() || !elements.powerPanel || elements.powerPanel.classList.contains("hidden")) {
     return [];
   }
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+  if (shouldReduceMotion()) {
     return [];
   }
   return [...elements.powerPanel.querySelectorAll(".power-card:not(.power-card-placeholder)")].filter((card) => card.isConnected);
@@ -13379,7 +13497,7 @@ function playPowerHandExitAnimation(owner, options = {}) {
 }
 
 function createPowerHandExitHold(owner, indexes = [], durationMs = 420) {
-  if (owner !== getCurrentPowerOwner() || !indexes.length || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+  if (owner !== getCurrentPowerOwner() || !indexes.length || shouldReduceMotion()) {
     return;
   }
   const previousHand = [...(state.powerHands[owner] || [])];
@@ -13431,7 +13549,7 @@ function capturePowerHandLayoutSnapshot(owner) {
 }
 
 function playPowerHandLayoutShift(owner, snapshot) {
-  if (!snapshot?.size || owner !== getCurrentPowerOwner() || !elements.powerPanel || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+  if (!snapshot?.size || owner !== getCurrentPowerOwner() || !elements.powerPanel || shouldReduceMotion()) {
     return;
   }
   const seen = {};
@@ -14676,6 +14794,9 @@ function getEquippedAchievementTitle(id = state.profile.equippedTitleId) {
 }
 
 function getTitlePillCustomization(player) {
+  if (!allowsProfileCustomizationDisplay({ preview: player?.owner === "preview" })) {
+    return normalizeProfileCustomization(defaultProfileCustomization);
+  }
   if (player?.cardCustomization) {
     return normalizeProfileCustomization(player.cardCustomization);
   }
@@ -14693,6 +14814,9 @@ function getProfileFont(fontId) {
 }
 
 function getProfileFontForPlayer(player) {
+  if (!allowsProfileCustomizationDisplay({ preview: player?.owner === "preview" })) {
+    return getProfileFont("default");
+  }
   const customization = player?.cardCustomization
     ? normalizeProfileCustomization(player.cardCustomization)
     : player?.owner === "preview"
@@ -17876,7 +18000,7 @@ function renderPowerUps() {
     const freshIndex = panelVisible && !holdingExitLayout ? freshIds.indexOf(power.id) : -1;
     const animateChaosInfusion = chaosInfused
       && freshIndex >= 0
-      && !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      && !shouldReduceMotion();
     const visualPower = animateChaosInfusion ? getPowerById(getBasePowerId(power.id)) || power : power;
     button.type = "button";
     button.className = "power-card";
@@ -18921,6 +19045,11 @@ function sanitizeQuestionCardSnapshot(card) {
 
 function addQuestionCardToPile() {
   const blackCard = getBlackCardElement();
+  if (!allowsCardStack()) {
+    clearQuestionCardPile();
+    blackCard?.removeAttribute("data-question-stacked");
+    return;
+  }
   if (!blackCard || !elements.questionCardPile || !blackCard.classList.contains("completed")) {
     return;
   }
@@ -19013,6 +19142,10 @@ function prepareIncomingQuestionCard() {
   state.questionCardTilt = getNextQuestionCardTilt();
   applyQuestionCardTilt(state.questionCardTilt);
   const blackCard = getBlackCardElement();
+  if (shouldReduceMotion()) {
+    blackCard?.classList.remove("preparing-question-card", "incoming-question-card");
+    return;
+  }
   blackCard?.classList.remove("incoming-question-card");
   blackCard?.classList.add("preparing-question-card");
 }
@@ -19030,6 +19163,10 @@ function startIncomingQuestionCardAnimation(blackCard, token) {
 }
 
 function scheduleIncomingQuestionCardAnimation(blackCard) {
+  if (shouldReduceMotion()) {
+    blackCard?.classList.remove("preparing-question-card", "incoming-question-card");
+    return;
+  }
   const token = (state.questionCardEntranceToken || 0) + 1;
   state.questionCardEntranceToken = token;
   const image = elements.questionImage;
@@ -19080,7 +19217,7 @@ function measureBlackCardNaturalHeight(blackCard) {
 }
 
 function animateBlackCardToNaturalHeight(blackCard, beforeHeight, options = {}) {
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduceMotion = shouldReduceMotion();
   const canAnimateHeight = Boolean(Element.prototype.animate) && !reduceMotion;
   const afterHeight = measureBlackCardNaturalHeight(blackCard);
   const targetHeight = options.allowShrink === false ? Math.max(beforeHeight, afterHeight) : afterHeight;
@@ -19290,6 +19427,7 @@ function renderRound() {
 }
 
 function updateModeUi() {
+  document.body?.toggleAttribute("data-game-active", isGameScreenActive());
   const isDuel = isDuelMode();
   const multipleChoice = isMultipleChoiceRound();
   const modeName = state.mode === "room" ? "multiplayer room" : isDuel ? "local 1v1" : "solo vs bots";
@@ -24840,7 +24978,7 @@ function captureJoinScreenLayoutSnapshot() {
 }
 
 function animateJoinScreenLayoutShift(snapshot = []) {
-  if (!snapshot.length || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+  if (!snapshot.length || shouldReduceMotion()) {
     return;
   }
   window.requestAnimationFrame(() => {
@@ -25329,7 +25467,7 @@ function animateRoomPlayerListChange(target, renderList) {
     renderList();
     return;
   }
-  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  const reduceMotion = shouldReduceMotion();
   const panelIsVisible = target.isConnected && !target.closest(".hidden");
   const previousHeight = target.getBoundingClientRect().height;
   if (reduceMotion || !panelIsVisible || previousHeight <= 0) {
@@ -25957,10 +26095,16 @@ function syncSettingsControls() {
   elements.musicVolumeSlider.value = Math.round(soundState.musicVolume * 100);
   elements.timerSecondsSlider.value = state.timerSeconds;
   elements.roundsSlider.value = state.maxRounds;
+  if (elements.performanceModeSelect) {
+    elements.performanceModeSelect.value = state.performanceMode;
+  }
   elements.sfxVolumeValue.textContent = `${elements.sfxVolumeSlider.value}`;
   elements.musicVolumeValue.textContent = `${elements.musicVolumeSlider.value}`;
   elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
   elements.roundsValue.textContent = `${state.maxRounds}`;
+  if (elements.performanceModeValue) {
+    elements.performanceModeValue.textContent = performanceModes[state.performanceMode]?.shortLabel || "Full";
+  }
 }
 
 function updateSfxVolume(value) {
@@ -26215,7 +26359,7 @@ async function animateWinnerToBlackCard(winnerIndex, answer, options = {}) {
   const winnerOwner = options.owner || getOwnerFromCardIndex(winnerIndex);
   const customization = options.cardCustomization || null;
 
-  if (!winnerCard || !blackCard || !Element.prototype.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (!winnerCard || !blackCard || !Element.prototype.animate || shouldReduceMotion()) {
     applyBlackCardCustomizationForOwner(winnerOwner, customization);
     void blackCard.offsetWidth;
     await revealBlackCardAnswer(completedText);
@@ -26270,7 +26414,7 @@ async function revealBlackCardAnswer(completedText) {
     return;
   }
 
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduceMotion = shouldReduceMotion();
   const canAnimateHeight = Boolean(Element.prototype.animate) && !reduceMotion;
 
   if (!canAnimateHeight) {
@@ -29008,6 +29152,7 @@ document.addEventListener("keydown", (event) => {
 });
 elements.sfxVolumeSlider.addEventListener("input", (event) => updateSfxVolume(event.target.value));
 elements.musicVolumeSlider.addEventListener("input", (event) => updateMusicSetting(event.target.value));
+elements.performanceModeSelect?.addEventListener("change", (event) => updatePerformanceMode(event.target.value));
 elements.timerSecondsSlider.addEventListener("input", (event) => updateTimerSetting(event.target.value));
 elements.roundsSlider.addEventListener("input", (event) => updateRoundsSetting(event.target.value));
 elements.powerPanel.addEventListener("click", (event) => {
@@ -29055,6 +29200,7 @@ updateSoundButton();
 syncSettingsControls();
 syncRoomControls();
 syncBotAdvancedControls();
+applyPerformanceMode(state.performanceMode);
 renderProfile();
 syncSpecialBadgesToProfile();
 scheduleInitialSupabaseAuth();

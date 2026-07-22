@@ -9590,6 +9590,23 @@ input:focus {
   accent-color: var(--accent);
 }
 
+.settings-select-row select {
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(8, 10, 16, 0.72);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 850;
+}
+
+.settings-select-row select:focus {
+  outline: 2px solid rgba(34, 211, 238, 0.42);
+  outline-offset: 2px;
+}
+
 .loading-panel {
   display: flex;
   align-items: center;
@@ -10338,6 +10355,82 @@ input:focus {
   animation:
     statFlashPanel var(--stat-flash-duration, 1150ms) cubic-bezier(0.16, 1, 0.3, 1) both,
     chaosPanelGlitch var(--stat-flash-duration, 1150ms) steps(2, end) both;
+}
+
+/* Performance modes: keep this block easy to revert or tune per mode. */
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-effects~="rgb"],
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-pattern]:not([data-card-pattern="none"])::before,
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chaos"][data-card-custom="true"],
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chaos"][data-card-custom="true"]::before,
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chaos"][data-card-custom="true"]::after,
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="black-market"][data-card-custom="true"],
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="black-market"][data-card-custom="true"]::before,
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="black-market"][data-card-custom="true"]::after,
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="burning"][data-card-custom="true"],
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="burning"][data-card-custom="true"]::before,
+body[data-performance-mode="balanced"][data-game-active] .power-card.chaos-infused:not(.fresh-power):not(.power-selected-pop):not(.power-use-ghost):not(.power-remove-exit-ghost):not(.chaos-engulfing):not(.chaos-infuse-upgrading),
+body[data-performance-mode="balanced"][data-game-active] :is(.leaderboard-power-pill, .power-play, .result-power-pill, .effect-badge).chaos-infused,
+body[data-performance-mode="balanced"][data-game-active] .wild-fire-glow-layer,
+body[data-performance-mode="balanced"][data-game-active] .danger-flash,
+body[data-performance-mode="balanced"][data-game-active] .danger-flash::after {
+  animation-play-state: paused !important;
+}
+
+body[data-performance-mode="balanced"][data-game-active] .black-card.answer-reveal[data-card-custom="true"][data-card-effects~="rgb"],
+body[data-performance-mode="balanced"][data-game-active] .white-card[data-card-custom="true"][data-card-effects~="rgb"].winner {
+  animation-play-state: running, paused !important;
+}
+
+body[data-performance-mode="balanced"][data-game-active] .white-card.winner {
+  animation-play-state: running, paused !important;
+}
+
+body[data-performance-mode="balanced"][data-game-active] .white-card.winner::after {
+  animation-play-state: paused !important;
+}
+
+body[data-performance-mode="low-power"] *,
+body[data-performance-mode="low-power"] *::before,
+body[data-performance-mode="low-power"] *::after,
+body[data-performance-mode="minimal"] *,
+body[data-performance-mode="minimal"] *::before,
+body[data-performance-mode="minimal"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+body[data-performance-mode="low-power"] .question-card-pile,
+body[data-performance-mode="minimal"] .question-card-pile {
+  display: none !important;
+}
+
+body[data-performance-mode="minimal"] .stat-flash {
+  background: radial-gradient(circle at center, rgba(34, 211, 238, 0.18), rgba(8, 12, 22, 0.78) 72%);
+}
+
+body[data-performance-mode="minimal"] .stat-flash.negative {
+  background: radial-gradient(circle at center, rgba(255, 77, 125, 0.18), rgba(20, 8, 14, 0.78) 72%);
+}
+
+body[data-performance-mode="minimal"] .stat-flash.mixed {
+  background: radial-gradient(circle at center, rgba(250, 204, 21, 0.18), rgba(22, 16, 8, 0.78) 72%);
+}
+
+body[data-performance-mode="minimal"] .stat-flash::before,
+body[data-performance-mode="minimal"] .stat-flash::after,
+body[data-performance-mode="minimal"] .stat-flash-panel::before {
+  content: none !important;
 }
 
 .hidden {
