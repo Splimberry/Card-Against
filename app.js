@@ -11696,6 +11696,8 @@ function clearRoomOwnerVolatileState(owner) {
   delete state.freshPowerUps[owner];
   delete state.freshPowerUpAnimations?.[owner];
   delete state.pendingPowerUseAnimations?.[owner];
+  clearPowerHandExitHold(owner);
+  removePowerAnimationGhosts(owner);
   delete state.playedPowerUps[owner];
   delete state.playedPowerMeta[owner];
   delete state.playedPowerStacks[owner];
@@ -13335,6 +13337,7 @@ function markFreshPowerUps(owner, powerIds = [], type = "refill") {
   if (!freshIds.length) {
     return;
   }
+  state.freshPowerUps = state.freshPowerUps || {};
   state.freshPowerUps[owner] = [...(state.freshPowerUps[owner] || []), ...freshIds];
   state.freshPowerUpAnimations = state.freshPowerUpAnimations || {};
   state.freshPowerUpAnimations[owner] = [
@@ -13343,10 +13346,23 @@ function markFreshPowerUps(owner, powerIds = [], type = "refill") {
   ];
 }
 
+function clearFreshPowerAnimations(owner) {
+  if (!owner) {
+    return;
+  }
+  state.freshPowerUps = state.freshPowerUps || {};
+  state.freshPowerUpAnimations = state.freshPowerUpAnimations || {};
+  state.freshPowerUps[owner] = [];
+  state.freshPowerUpAnimations[owner] = [];
+}
+
 function markPowerHandAnimation(owner, powerIds = [], type = "refill", options = {}) {
   const ids = powerIds.filter(Boolean);
   if (!ids.length) {
     return;
+  }
+  if (type === "refresh") {
+    clearFreshPowerAnimations(owner);
   }
   if (type === "refresh" && options.playExit !== false) {
     playPowerHandExitAnimation(owner);
@@ -13387,6 +13403,85 @@ function takePowerSelectionAnimation(owner, powerId) {
   return true;
 }
 
+const powerGhostTransientClasses = [
+  "selected",
+  "unusable",
+  "fresh-power",
+  "fresh-refill",
+  "fresh-refresh",
+  "power-selected-pop",
+  "chaos-infuse-pending",
+  "chaos-engulfing",
+  "chaos-infuse-upgrading"
+];
+
+const powerUseExitHoldMs = 640;
+const powerRemoveExitDurationMs = 340;
+const powerRemoveExitBufferMs = 180;
+
+function removePowerAnimationGhosts(owner, options = {}) {
+  const removeUseGhosts = options.use !== false;
+  const removeExitGhosts = options.exit !== false;
+  document.querySelectorAll(".power-card.power-use-ghost, .power-card.power-remove-exit-ghost").forEach((ghost) => {
+    if (owner && ghost.dataset.powerOwner !== owner) {
+      return;
+    }
+    if (ghost.classList.contains("power-use-ghost") && !removeUseGhosts) {
+      return;
+    }
+    if (ghost.classList.contains("power-remove-exit-ghost") && !removeExitGhosts) {
+      return;
+    }
+    ghost.remove();
+  });
+}
+
+function clearPowerHandExitHold(owner) {
+  if (!owner || !state.powerHandExitHolds?.[owner]) {
+    return;
+  }
+  delete state.powerHandExitHolds[owner];
+}
+
+function preparePowerGhostElement(ghost, rect, source, options = {}) {
+  const computed = source ? window.getComputedStyle(source) : null;
+  powerGhostTransientClasses.forEach((className) => ghost.classList.remove(className));
+  ghost.classList.add("power-card", options.ghostClass);
+  if (options.owner) {
+    ghost.dataset.powerOwner = options.owner;
+  }
+  if (options.powerId) {
+    ghost.dataset.power = options.powerId;
+  }
+  Object.assign(ghost.style, {
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    minHeight: "0",
+    boxSizing: "border-box",
+    borderRadius: computed?.borderRadius || "8px",
+    display: "grid",
+    alignContent: computed?.alignContent || "center",
+    gap: computed?.gap || "0.3rem",
+    overflow: "hidden",
+    transformOrigin: "center"
+  });
+}
+
+function removePowerFromHand(owner, powerId, preferredIndex = -1) {
+  const hand = [...(state.powerHands[owner] || [])];
+  const index = Number.isInteger(preferredIndex) && hand[preferredIndex] === powerId
+    ? preferredIndex
+    : hand.indexOf(powerId);
+  if (index < 0) {
+    return -1;
+  }
+  hand.splice(index, 1);
+  state.powerHands[owner] = hand;
+  return index;
+}
+
 function capturePowerUseAnimation(button) {
   const powerId = button?.dataset?.power;
   const owner = getCurrentPowerOwner();
@@ -13416,20 +13511,22 @@ function capturePowerUseAnimation(button) {
 
 function playPendingPowerUseAnimation(owner, powerId) {
   const pending = state.pendingPowerUseAnimations?.[owner];
+  const exitIndex = Number.isInteger(pending?.exitIndex) ? pending.exitIndex : -1;
   if (!pending || pending.powerId !== powerId || shouldReduceMotion()) {
     if (pending?.powerId === powerId) {
       delete state.pendingPowerUseAnimations[owner];
     }
-    return;
+    return exitIndex;
   }
   delete state.pendingPowerUseAnimations[owner];
   if (!elements.gameStage || elements.gameStage.classList.contains("hidden")) {
-    return;
+    return exitIndex;
   }
-  createPowerHandExitHold(owner, [pending.exitIndex], 430);
+  removePowerAnimationGhosts(owner, { exit: false });
+  createPowerHandExitHold(owner, [exitIndex], powerUseExitHoldMs);
 
   const ghost = document.createElement("div");
-  ghost.className = `${pending.className || "power-card"} power-use-ghost`;
+  ghost.className = pending.className || "power-card";
   if (pending.rarity) {
     ghost.dataset.rarity = pending.rarity;
   }
@@ -13437,15 +13534,11 @@ function playPendingPowerUseAnimation(owner, powerId) {
     ghost.classList.add("chaos-infused");
   }
   ghost.innerHTML = pending.html || "";
-  Object.assign(ghost.style, {
-    left: `${pending.rect.left}px`,
-    top: `${pending.rect.top}px`,
-    width: `${pending.rect.width}px`,
-    height: `${pending.rect.height}px`
-  });
+  preparePowerGhostElement(ghost, pending.rect, null, { owner, powerId, ghostClass: "power-use-ghost" });
   document.body.appendChild(ghost);
   ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
-  window.setTimeout(() => ghost.remove(), 500);
+  window.setTimeout(() => ghost.remove(), powerUseExitHoldMs + 120);
+  return exitIndex;
 }
 
 function getVisiblePowerHandCards(owner) {
@@ -13463,6 +13556,7 @@ function playPowerHandExitAnimation(owner, options = {}) {
   if (!cards.length) {
     return;
   }
+  removePowerAnimationGhosts(owner, { use: false });
   const indexes = Array.isArray(options.indexes) ? new Set(options.indexes) : null;
   const requestedPowerIds = Array.isArray(options.powerIds) ? [...options.powerIds] : null;
   const cardsToAnimate = cards
@@ -13482,7 +13576,7 @@ function playPowerHandExitAnimation(owner, options = {}) {
       return true;
     });
   const maxExitDelayMs = Math.min(Math.max(cardsToAnimate.length - 1, 0), 5) * 28;
-  const holdDurationMs = maxExitDelayMs + 300 + 120;
+  const holdDurationMs = maxExitDelayMs + powerRemoveExitDurationMs + powerRemoveExitBufferMs;
   createPowerHandExitHold(owner, cardsToAnimate.map((entry) => entry.index), holdDurationMs);
   cardsToAnimate.forEach(({ card }, index) => {
     const rect = card.getBoundingClientRect();
@@ -13490,11 +13584,12 @@ function playPowerHandExitAnimation(owner, options = {}) {
       return;
     }
     const ghost = card.cloneNode(true);
-    ghost.className = `${card.className || "power-card"} power-remove-exit-ghost`;
-    ghost.style.left = `${rect.left}px`;
-    ghost.style.top = `${rect.top}px`;
-    ghost.style.width = `${rect.width}px`;
-    ghost.style.height = `${rect.height}px`;
+    ghost.className = card.className || "power-card";
+    preparePowerGhostElement(ghost, rect, card, {
+      owner,
+      powerId: card.dataset.power,
+      ghostClass: "power-remove-exit-ghost"
+    });
     ghost.style.setProperty("--power-exit-delay", `${Math.min(index, 5) * 28}ms`);
     document.body.appendChild(ghost);
     ghost.addEventListener("animationend", () => ghost.remove(), { once: true });
@@ -13769,6 +13864,7 @@ function getPowerDrawOptions(owner) {
 function rerollPowerHand(owner, count, options = {}) {
   const hand = [];
   const forceChaosInfusion = Boolean(state.chaosRefreshOwners?.[owner]);
+  clearFreshPowerAnimations(owner);
   for (let index = 0; index < count; index += 1) {
     const powerId = drawPowerCard(hand, { ...getPowerDrawOptions(owner), ...options, forceChaosInfusion });
     if (powerId) {
@@ -17272,7 +17368,7 @@ function getDisplayedPowerDescription(power, owner = getCurrentPowerOwner()) {
 }
 
 function consumeImmediatePower(owner, power, meta = {}) {
-  playPendingPowerUseAnimation(owner, power.id);
+  const consumedIndex = playPendingPowerUseAnimation(owner, power.id);
   if (power.type === "speed_answer" && isChaosInfusedPower(power)) {
     state.timerRemaining = Math.max(state.timerRemaining, state.timerSeconds || state.timerRemaining || 0);
     renderTimer();
@@ -17304,7 +17400,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
       state.extraPowerUses[owner] = (state.extraPowerUses[owner] || 0) + 1;
     }
   }
-  state.powerHands[owner] = state.powerHands[owner].filter((id) => id !== power.id);
+  removePowerFromHand(owner, power.id, consumedIndex);
   if (!allowsFollowUp && !hasAllOut(owner)) {
     clearSelectedPowerUps(owner);
   } else {
@@ -21236,6 +21332,7 @@ function addDebugPowerSlot(owner, powerId) {
   } else {
     playPowerHandExitAnimation(owner, { indexes: [limit - 1] });
     hand[limit - 1] = powerId;
+    clearFreshPowerAnimations(owner);
     state.powerHands[owner] = hand;
     markPowerHandAnimation(owner, [powerId], "refresh", { playExit: false });
   }
@@ -21312,6 +21409,7 @@ function fillDebugPowerHand(scope = "dev") {
     }
     hand.push(drawnPowerId);
   }
+  clearFreshPowerAnimations(owner);
   state.powerHands[owner] = hand;
   markPowerHandAnimation(owner, hand, "refresh");
   const botUsed = scope === "bot-match" && isBotOwner(owner)

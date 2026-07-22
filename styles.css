@@ -3594,6 +3594,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   min-height: clamp(4.25rem, 10vh, 5.4rem);
   padding: 0.62rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.07);
   color: var(--ink);
   display: grid;
@@ -3696,8 +3697,12 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   z-index: 9000;
   pointer-events: none;
   margin: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: none;
   transform-origin: center;
-  animation: powerUseGhost 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: powerUseGhost 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .power-card.power-remove-exit-ghost {
@@ -3705,8 +3710,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   z-index: 8999;
   pointer-events: none;
   margin: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: none;
   transform-origin: center;
-  animation: powerRemoveExit 300ms cubic-bezier(0.4, 0, 1, 1) var(--power-exit-delay, 0ms) both;
+  animation: powerRemoveExit 340ms cubic-bezier(0.4, 0, 1, 1) var(--power-exit-delay, 0ms) both;
+}
+
+.power-card.power-use-ghost.selected::before,
+.power-card.power-remove-exit-ghost.selected::before {
+  content: none;
 }
 
 .power-card.power-card-placeholder {
@@ -3865,11 +3879,11 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .power-card.chaos-infused.power-use-ghost {
-  animation: powerUseGhost 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: powerUseGhost 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .power-card.chaos-infused.power-remove-exit-ghost {
-  animation: powerRemoveExit 300ms cubic-bezier(0.4, 0, 1, 1) var(--power-exit-delay, 0ms) both;
+  animation: powerRemoveExit 340ms cubic-bezier(0.4, 0, 1, 1) var(--power-exit-delay, 0ms) both;
 }
 
 @keyframes powerSelectedPop {
@@ -4030,35 +4044,41 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 @keyframes powerRemoveExit {
   0% {
-    opacity: 0.92;
+    opacity: 0.96;
     transform: translateX(0) scale(1);
-    filter: blur(0) saturate(1) brightness(1);
+    filter: blur(0) saturate(1) brightness(1.06);
+  }
+
+  42% {
+    opacity: 0.74;
+    transform: translateX(0) scale(0.94);
+    filter: blur(1px) saturate(0.92) brightness(0.98);
   }
 
   100% {
     opacity: 0;
-    transform: translateX(0) scale(0.72);
-    filter: blur(7px) saturate(0.62) brightness(0.74);
+    transform: translateX(0) scale(0.76);
+    filter: blur(6px) saturate(0.64) brightness(0.76);
   }
 }
 
 @keyframes powerUseGhost {
   0% {
-    opacity: 0.95;
+    opacity: 0.98;
     transform: translate3d(0, 0, 0) scale(1);
-    filter: brightness(1.18);
+    filter: blur(0) brightness(1.12) saturate(1);
   }
 
-  62% {
-    opacity: 0.7;
-    transform: translate3d(0, -0.65rem, 0) scale(1.04);
-    filter: brightness(1.32);
+  46% {
+    opacity: 0.82;
+    transform: translate3d(0, -0.28rem, 0) scale(1.035);
+    filter: blur(0) brightness(1.3) saturate(1.08);
   }
 
   100% {
     opacity: 0;
-    transform: translate3d(1.2rem, -1rem, 0) scale(0.9);
-    filter: blur(6px) brightness(1.12);
+    transform: translate3d(0.35rem, -0.55rem, 0) scale(0.82);
+    filter: blur(6px) brightness(1.08) saturate(0.82);
   }
 }
 
