@@ -5427,6 +5427,7 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
       gradingReason.textContent = reason;
       setHidden(gradingReason, !reason);
     }
+    card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
   });
 }
 
@@ -5449,6 +5450,7 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
     setHidden(gradingReason, !reason);
   }
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
+  card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
 }
 
 function getOwnAnswerCardIndex(cards) {
@@ -5590,7 +5592,7 @@ function clearCardBadges() {
   });
   getAnswerCardNodes().forEach((card) => {
     card.style.order = "";
-    card.classList.remove("answer-priority", "winner");
+    card.classList.remove("answer-priority", "answer-incorrect", "winner");
   });
   if (elements.answerStackButton) {
     setHidden(elements.answerStackButton, true);

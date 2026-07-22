@@ -4786,6 +4786,11 @@ input:focus {
   filter: saturate(0.72) brightness(0.9);
 }
 
+.white-card.answer-incorrect {
+  opacity: 0.68;
+  filter: saturate(0.72) brightness(0.9);
+}
+
 .white-card[data-owner="player"] {
   border-color: rgba(139, 144, 154, 0.72);
 }
