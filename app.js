@@ -2913,6 +2913,7 @@ const state = {
   questionImage: null,
   questionImageLoadId: 0,
   blackCardAnimationToken: 0,
+  questionCardEntranceToken: 0,
   questionCardStackSerial: 0,
   questionCardTilt: -1.2,
   previousQuestionCardTilt: -1.2,
@@ -18478,7 +18479,7 @@ function scheduleBlackCardFit() {
   window.requestAnimationFrame(() => fitBlackCardToContent());
 }
 
-const questionCardTiltOptions = [-4.4, -2.6, -0.4, 2.2, 4.1];
+const questionCardTiltOptions = [-4, -2.4, -0.4, 2, 3.8];
 
 function getBlackCardElement() {
   return elements.blackCard || elements.blackCardText?.closest(".black-card");
@@ -18516,6 +18517,11 @@ function addQuestionCardToPile() {
   state.questionCardStackSerial += 1;
   snapshot.dataset.stackSerial = String(state.questionCardStackSerial);
   snapshot.style.setProperty("--question-card-tilt", blackCard.style.getPropertyValue("--question-card-tilt") || `${state.questionCardTilt}deg`);
+  const pileDepth = elements.questionCardPile.querySelectorAll(".question-card-pile-card").length;
+  const visibleIndex = Math.min(pileDepth + 1, 7);
+  snapshot.style.setProperty("--question-stack-offset-y", `${visibleIndex * 0.48}rem`);
+  snapshot.style.setProperty("--question-stack-offset-x", "0rem");
+  snapshot.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
   elements.questionCardPile.appendChild(snapshot);
   trimQuestionCardPile();
 }
@@ -18539,10 +18545,16 @@ function updateQuestionCardPileDepth() {
   cards.forEach((card, index) => {
     const reverseIndex = cards.length - index;
     const visibleIndex = Math.min(reverseIndex, 7);
-    card.style.setProperty("--question-stack-offset-y", `${visibleIndex * 0.48}rem`);
-    card.style.setProperty("--question-stack-offset-x", "0rem");
+    if (!card.style.getPropertyValue("--question-stack-offset-y")) {
+      card.style.setProperty("--question-stack-offset-y", `${visibleIndex * 0.48}rem`);
+    }
+    if (!card.style.getPropertyValue("--question-stack-offset-x")) {
+      card.style.setProperty("--question-stack-offset-x", "0rem");
+    }
+    if (!card.style.getPropertyValue("--question-stack-scale")) {
+      card.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
+    }
     card.style.setProperty("--question-stack-z", String(index + 1));
-    card.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
   });
 }
 
@@ -18559,7 +18571,7 @@ function clearQuestionCardPile() {
 
 function getNextQuestionCardTilt() {
   const previous = Number(state.questionCardTilt);
-  const candidates = questionCardTiltOptions.filter((tilt) => Math.abs(tilt - previous) >= 2.2);
+  const candidates = questionCardTiltOptions.filter((tilt) => Math.abs(tilt - previous) >= 2);
   const pool = candidates.length ? candidates : questionCardTiltOptions.filter((tilt) => tilt !== previous);
   return pool[Math.floor(Math.random() * pool.length)] ?? -1.2;
 }
@@ -18578,6 +18590,47 @@ function prepareIncomingQuestionCard() {
   applyQuestionCardTilt(state.questionCardTilt);
   const blackCard = getBlackCardElement();
   blackCard?.classList.remove("incoming-question-card");
+  blackCard?.classList.add("preparing-question-card");
+}
+
+function startIncomingQuestionCardAnimation(blackCard, token) {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      if (state.questionCardEntranceToken !== token || !blackCard?.isConnected) {
+        return;
+      }
+      blackCard.classList.remove("preparing-question-card");
+      restartAnimation(blackCard, "incoming-question-card");
+    });
+  });
+}
+
+function scheduleIncomingQuestionCardAnimation(blackCard) {
+  const token = (state.questionCardEntranceToken || 0) + 1;
+  state.questionCardEntranceToken = token;
+  const image = elements.questionImage;
+  const waitForImage = image
+    && !elements.questionImageWrap?.classList.contains("hidden")
+    && image.getAttribute("src")
+    && !image.complete;
+  if (!waitForImage) {
+    startIncomingQuestionCardAnimation(blackCard, token);
+    return;
+  }
+
+  let settled = false;
+  const finish = () => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    image.removeEventListener("load", finish);
+    image.removeEventListener("error", finish);
+    startIncomingQuestionCardAnimation(blackCard, token);
+  };
+  image.addEventListener("load", finish, { once: true });
+  image.addEventListener("error", finish, { once: true });
+  window.setTimeout(finish, 2500);
 }
 
 function measureBlackCardNaturalHeight(blackCard) {
@@ -18730,6 +18783,7 @@ function renderRound() {
   blackCard.style.height = `${beforeBlackCardHeight}px`;
   blackCard.style.overflow = "hidden";
   blackCard.classList.remove("completed", "answer-reveal", "dealt", "incoming-question-card");
+  blackCard.classList.add("preparing-question-card");
   delete blackCard.dataset.questionStacked;
   const difficulty = normalizeDifficulty(state.questionDifficulty);
   judgePanel.classList.remove("entering");
@@ -18796,7 +18850,7 @@ function renderRound() {
   resetReactionPanel();
   setHidden(elements.errorPanel, true);
   setHidden(elements.endPanel, true);
-  restartAnimation(blackCard, "incoming-question-card");
+  scheduleIncomingQuestionCardAnimation(blackCard);
   restartAnimation(judgePanel, "entering");
   renderPowerUps();
   renderScore();
