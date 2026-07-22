@@ -2526,6 +2526,7 @@ const state = {
   roomParticipants: [],
   roomDirectoryPollId: null,
   joinDirectoryPollId: null,
+  roomPanelHeightSyncFrame: 0,
   roomDirectoryOnline: true,
   roomGame: null,
   roomMatchId: "",
@@ -22583,6 +22584,7 @@ function updateRoomVariants() {
   state.roomSettings.private = elements.privateRoomToggle.checked;
   state.roomSettings.password = cleanChatInput(elements.roomPasswordInput.value);
   setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
+  scheduleRoomPanelHeightSync();
   syncClassicRoomToggleState();
   elements.roomVariantLabel.textContent = getRoomVariantNames().join(" + ");
   publishCurrentRoomSettingsSoon();
@@ -24486,9 +24488,58 @@ function animateRoomPlayerListChange(target, renderList) {
   window.setTimeout(() => cleanup({ propertyName: "height" }), 420);
 }
 
+function syncRoomPanelHeights() {
+  const roomScreenVisible = elements.roomScreen && !elements.roomScreen.classList.contains("hidden");
+  const settingsPanel = elements.roomScreen?.querySelector(".room-settings-panel");
+  const previewPanel = elements.roomScreen?.querySelector(".room-preview");
+  const playerList = elements.roomPlayerList;
+  if (!roomScreenVisible || !settingsPanel || !previewPanel || !playerList) {
+    if (previewPanel) {
+      previewPanel.style.height = "";
+    }
+    if (playerList) {
+      playerList.style.maxHeight = "";
+    }
+    return;
+  }
+
+  previewPanel.style.height = "";
+  playerList.style.maxHeight = "";
+  const settingsRect = settingsPanel.getBoundingClientRect();
+  const previewRect = previewPanel.getBoundingClientRect();
+  const listRect = playerList.getBoundingClientRect();
+  const columnsAreSideBySide = Math.abs(settingsRect.top - previewRect.top) < 12
+    && previewRect.left > settingsRect.left
+    && previewRect.width > 0
+    && settingsRect.width > 0;
+  if (!columnsAreSideBySide) {
+    return;
+  }
+
+  const previewStyle = window.getComputedStyle(previewPanel);
+  const previewPaddingBottom = Number.parseFloat(previewStyle.paddingBottom) || 0;
+  const listMaxHeight = Math.floor(settingsRect.bottom - listRect.top - previewPaddingBottom - 2);
+  if (listMaxHeight < 140) {
+    return;
+  }
+  previewPanel.style.height = `${Math.round(settingsRect.height)}px`;
+  playerList.style.maxHeight = `${listMaxHeight}px`;
+}
+
+function scheduleRoomPanelHeightSync() {
+  if (state.roomPanelHeightSyncFrame) {
+    window.cancelAnimationFrame(state.roomPanelHeightSyncFrame);
+  }
+  state.roomPanelHeightSyncFrame = window.requestAnimationFrame(() => {
+    state.roomPanelHeightSyncFrame = 0;
+    syncRoomPanelHeights();
+  });
+}
+
 function renderRoomPlayers() {
   animateRoomPlayerListChange(elements.roomPlayerList, () => renderRoomPlayerList(elements.roomPlayerList));
   animateRoomPlayerListChange(elements.roomLobbyPlayerList, () => renderRoomPlayerList(elements.roomLobbyPlayerList));
+  scheduleRoomPanelHeightSync();
 }
 
 function createRoomModerationControls(owner, context = "list") {
@@ -28007,6 +28058,7 @@ document.addEventListener("click", playFallbackClickIfSilent);
 document.addEventListener("visibilitychange", handleRoomVisibilityChange);
 window.addEventListener("pagehide", handleWindowPageHide);
 window.addEventListener("beforeunload", handleWindowBeforeUnload);
+window.addEventListener("resize", scheduleRoomPanelHeightSync);
 
 cleanupReloadedHostedRoomSession();
 writePublicCatalogCache();

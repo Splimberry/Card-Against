@@ -791,11 +791,24 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   grid-template-rows: auto auto auto minmax(0, 1fr);
   align-content: stretch;
   min-height: min(72vh, 54rem);
+  overflow: hidden;
+  transition: height 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .room-lobby-screen .room-setup-grid {
   grid-template-columns: minmax(26rem, 1fr) minmax(20rem, 0.58fr);
   align-items: stretch;
+}
+
+.room-lobby-screen .lobby-panel,
+.room-lobby-screen .lobby-chat {
+  min-height: min(34rem, calc(100vh - 10rem));
+  transition: min-height 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.room-lobby-screen .lobby-chat {
+  align-self: stretch;
+  height: auto;
 }
 
 .lobby-panel {
@@ -1096,6 +1109,12 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 #roomLobbyPlayerList {
   max-height: 24rem;
+}
+
+.room-lobby-screen #roomLobbyPlayerList {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 #roomPlayerList .room-player-card,
