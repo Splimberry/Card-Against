@@ -15184,5 +15184,2148 @@
       "A repeated tuning note",
       "The quietest instrument"
     ]
+  },
+  {
+    "id": "popculture-imgtxt2-marvel-mcu",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "In Marvel movie discussions, what does MCU stand for?",
+    "canonicalAnswer": "Marvel Cinematic Universe",
+    "acceptedAnswers": [
+      "marvel cinematic universe",
+      "the marvel cinematic universe",
+      "mcu"
+    ],
+    "botCards": [
+      "Marvel Comic Universe",
+      "Marvel Connected Universe"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Marvel_Studios_2016_logo.svg",
+      "alt": "Marvel Studios logo used as pop culture context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-netflix-stranger-things",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which streaming service first released Stranger Things?",
+    "canonicalAnswer": "Netflix",
+    "acceptedAnswers": [
+      "netflix"
+    ],
+    "botCards": [
+      "Hulu",
+      "Amazon Prime Video"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Netflix_2015_logo.svg",
+      "alt": "Netflix logo used as television context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-batman-city",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which fictional city is Batman most famously sworn to protect?",
+    "canonicalAnswer": "Gotham City",
+    "acceptedAnswers": [
+      "gotham",
+      "gotham city"
+    ],
+    "botCards": [
+      "Metropolis",
+      "Star City"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hollywood_Sign_(Zuschnitt).jpg",
+      "alt": "Hollywood sign used as movie context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-matrix-pill",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In The Matrix, which color pill does Neo take to learn the truth?",
+    "canonicalAnswer": "Red pill",
+    "acceptedAnswers": [
+      "red pill",
+      "the red pill",
+      "red"
+    ],
+    "botCards": [
+      "Blue pill",
+      "Green pill"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Red_and_blue_pill.jpg",
+      "alt": "Red and blue pills as movie context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-simpsons-family",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What is the surname of Homer, Marge, Bart, Lisa, and Maggie?",
+    "canonicalAnswer": "Simpson",
+    "acceptedAnswers": [
+      "simpson",
+      "the simpsons",
+      "simpsons"
+    ],
+    "botCards": [
+      "Griffin",
+      "Flanders"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Simpsons_yellow_logo.svg",
+      "alt": "The Simpsons logo as animation context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-harry-potter-position",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What Quidditch position does Harry Potter play for Gryffindor?",
+    "canonicalAnswer": "Seeker",
+    "acceptedAnswers": [
+      "seeker",
+      "the seeker"
+    ],
+    "botCards": [
+      "Keeper",
+      "Chaser"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Quidditch_world_cup.jpg",
+      "alt": "Quidditch scene as fantasy context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-barbie-maker",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which toy company is best known for creating Barbie?",
+    "canonicalAnswer": "Mattel",
+    "acceptedAnswers": [
+      "mattel"
+    ],
+    "botCards": [
+      "Hasbro",
+      "Fisher-Price"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Barbie_Logo.svg",
+      "alt": "Barbie logo used as toy context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-superman-planet",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "What is Superman's birth planet?",
+    "canonicalAnswer": "Krypton",
+    "acceptedAnswers": [
+      "krypton"
+    ],
+    "botCards": [
+      "Daxam",
+      "Apokolips"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Superman_shield.svg",
+      "alt": "Superman shield used as superhero context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-winter-coming",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "Which TV fantasy series made the phrase Winter is coming famous?",
+    "canonicalAnswer": "Game of Thrones",
+    "acceptedAnswers": [
+      "game of thrones",
+      "got",
+      "a game of thrones"
+    ],
+    "botCards": [
+      "The Witcher",
+      "House of the Dragon"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Game_of_Thrones_2011_logo.svg",
+      "alt": "Game of Thrones logo used as television context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "popculture-imgtxt2-jurassic-park-author",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "Who wrote the original Jurassic Park novel?",
+    "canonicalAnswer": "Michael Crichton",
+    "acceptedAnswers": [
+      "michael crichton",
+      "crichton"
+    ],
+    "botCards": [
+      "Steven Spielberg",
+      "John Grisham"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tyrannosaurus_Rex_Holotype.jpg",
+      "alt": "Tyrannosaurus fossil used as Jurassic context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-mario-princess",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "Which princess does Mario most often rescue?",
+    "canonicalAnswer": "Princess Peach",
+    "acceptedAnswers": [
+      "princess peach",
+      "peach"
+    ],
+    "botCards": [
+      "Princess Daisy",
+      "Rosalina"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Nintendo_Mario.svg",
+      "alt": "Mario artwork used as gaming context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-sonic-rings",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "What golden objects does Sonic collect in many of his games?",
+    "canonicalAnswer": "Rings",
+    "acceptedAnswers": [
+      "rings",
+      "gold rings",
+      "golden rings"
+    ],
+    "botCards": [
+      "Coins",
+      "Chaos Emeralds"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Sonic_the_Hedgehog_logo.svg",
+      "alt": "Sonic logo used as platform game context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-pokemon-trainer",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "In Pokemon, what item is usually thrown to catch a wild Pokemon?",
+    "canonicalAnswer": "Poke Ball",
+    "acceptedAnswers": [
+      "poke ball",
+      "pokeball",
+      "poke balls",
+      "pokeballs"
+    ],
+    "botCards": [
+      "Great Rune",
+      "Master Sword"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pokeball.png",
+      "alt": "Poke Ball image used as Pokemon context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-portal-ai",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What is the name of the sarcastic AI antagonist in Portal?",
+    "canonicalAnswer": "GLaDOS",
+    "acceptedAnswers": [
+      "glados",
+      "g la dos",
+      "genetic lifeform and disk operating system"
+    ],
+    "botCards": [
+      "Cortana",
+      "SHODAN"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Portal_logo.svg",
+      "alt": "Portal logo used as puzzle game context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-zelda-kingdom",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What kingdom is the main setting of most Legend of Zelda games?",
+    "canonicalAnswer": "Hyrule",
+    "acceptedAnswers": [
+      "hyrule",
+      "kingdom of hyrule"
+    ],
+    "botCards": [
+      "Termina",
+      "Mushroom Kingdom"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Triforce.svg",
+      "alt": "Triforce symbol used as Zelda context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-skyrim-dragonborn",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Skyrim, what title is given to the player character who can absorb dragon souls?",
+    "canonicalAnswer": "Dragonborn",
+    "acceptedAnswers": [
+      "dragonborn",
+      "the dragonborn",
+      "dovahkiin"
+    ],
+    "botCards": [
+      "Greybeard",
+      "Dragon Priest"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Skyrim_logo.svg",
+      "alt": "Skyrim logo used as fantasy game context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-animal-crossing-bells",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Animal Crossing, what is the main currency players use to buy furniture and upgrades?",
+    "canonicalAnswer": "Bells",
+    "acceptedAnswers": [
+      "bells",
+      "bell"
+    ],
+    "botCards": [
+      "Gils",
+      "Rupees"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Video_game_controller_icon_designed_by_Maico_Amorim.svg",
+      "alt": "Game controller icon used as cozy game context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-final-fantasy-mascot",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "What bird-like riding creatures are a recurring mascot species in Final Fantasy?",
+    "canonicalAnswer": "Chocobo",
+    "acceptedAnswers": [
+      "chocobo",
+      "chocobos"
+    ],
+    "botCards": [
+      "Moogle",
+      "Cactuar"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Chocobo.png",
+      "alt": "Chocobo artwork used as RPG context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-dark-souls-currency",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Dark Souls, what resource acts as both currency and experience?",
+    "canonicalAnswer": "Souls",
+    "acceptedAnswers": [
+      "souls"
+    ],
+    "botCards": [
+      "Runes",
+      "Echoes"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dark_Souls_logo_black.svg",
+      "alt": "Dark Souls logo used as action RPG context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "gaming-imgtxt2-stardew-grandfather",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Stardew Valley, who leaves the player the old farm?",
+    "canonicalAnswer": "Grandfather",
+    "acceptedAnswers": [
+      "grandfather",
+      "your grandfather",
+      "the grandfather",
+      "grandpa"
+    ],
+    "botCards": [
+      "Mayor Lewis",
+      "Marnie"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Stardew_Valley_logo.png",
+      "alt": "Stardew Valley logo used as cozy game context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-egypt-river",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "Which river was central to the growth of ancient Egyptian civilization?",
+    "canonicalAnswer": "Nile River",
+    "acceptedAnswers": [
+      "nile",
+      "the nile",
+      "nile river",
+      "river nile"
+    ],
+    "botCards": [
+      "Tigris River",
+      "Jordan River"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Nile_River_and_delta_from_orbit.jpg",
+      "alt": "Nile River seen from space",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-rome-language",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "What language was the main language of ancient Rome?",
+    "canonicalAnswer": "Latin",
+    "acceptedAnswers": [
+      "latin"
+    ],
+    "botCards": [
+      "Greek",
+      "Italian"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Roman_Forum%2C_Rome%2C_Italy.jpg",
+      "alt": "Roman Forum as ancient Rome context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-japan-capital",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "What is the capital city of Japan?",
+    "canonicalAnswer": "Tokyo",
+    "acceptedAnswers": [
+      "tokyo"
+    ],
+    "botCards": [
+      "Kyoto",
+      "Osaka"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_Tower_and_around_Skyscrapers.jpg",
+      "alt": "Tokyo skyline as geography context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-magellan-expedition",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which explorer led the expedition that became the first to circumnavigate the globe?",
+    "canonicalAnswer": "Ferdinand Magellan",
+    "acceptedAnswers": [
+      "ferdinand magellan",
+      "magellan"
+    ],
+    "botCards": [
+      "Vasco da Gama",
+      "James Cook"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ferdinand_Magellan.jpg",
+      "alt": "Portrait of Ferdinand Magellan",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-cold-war-wall",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which divided European city was home to the famous wall that fell in 1989?",
+    "canonicalAnswer": "Berlin",
+    "acceptedAnswers": [
+      "berlin"
+    ],
+    "botCards": [
+      "Vienna",
+      "Prague"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Berlin_Wall_Brandenburg_Gate_1989.jpg",
+      "alt": "Berlin Wall near Brandenburg Gate",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-incan-empire",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which South American empire built Machu Picchu?",
+    "canonicalAnswer": "Inca Empire",
+    "acceptedAnswers": [
+      "inca",
+      "incas",
+      "inca empire",
+      "the inca empire"
+    ],
+    "botCards": [
+      "Aztec Empire",
+      "Maya civilization"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Intihuatana_at_Machu_Picchu.jpg",
+      "alt": "Intihuatana stone at Machu Picchu",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-africa-largest-country",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "What is the largest country in Africa by area?",
+    "canonicalAnswer": "Algeria",
+    "acceptedAnswers": [
+      "algeria"
+    ],
+    "botCards": [
+      "Sudan",
+      "Democratic Republic of the Congo"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Algeria_relief_location_map.jpg",
+      "alt": "Map of Algeria used as geography context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-persian-royal-road",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which ancient empire built the Royal Road linking Sardis and Susa?",
+    "canonicalAnswer": "Persian Empire",
+    "acceptedAnswers": [
+      "persian empire",
+      "achaemenid empire",
+      "the persian empire",
+      "achaemenids"
+    ],
+    "botCards": [
+      "Roman Empire",
+      "Assyrian Empire"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Map_of_the_Achaemenid_Empire.jpg",
+      "alt": "Map of the Achaemenid Empire",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-meiji-restoration",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which Japanese emperor gives his name to the 1868 restoration that ended Tokugawa rule?",
+    "canonicalAnswer": "Emperor Meiji",
+    "acceptedAnswers": [
+      "emperor meiji",
+      "meiji",
+      "mutsuhito"
+    ],
+    "botCards": [
+      "Emperor Taisho",
+      "Emperor Hirohito"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Meiji_emperor.jpg",
+      "alt": "Portrait of Emperor Meiji",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "geohistory-imgtxt2-hanseatic-league",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "What medieval trade alliance linked many port cities around the Baltic and North Sea?",
+    "canonicalAnswer": "Hanseatic League",
+    "acceptedAnswers": [
+      "hanseatic league",
+      "the hanseatic league",
+      "hanse"
+    ],
+    "botCards": [
+      "Holy League",
+      "Rhine Confederation"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hanseatic_League.png",
+      "alt": "Map of the Hanseatic League",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-ostrich-egg",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which living bird lays the largest eggs?",
+    "canonicalAnswer": "Ostrich",
+    "acceptedAnswers": [
+      "ostrich",
+      "ostriches"
+    ],
+    "botCards": [
+      "Emu",
+      "Cassowary"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ostrich_egg.jpg",
+      "alt": "Ostrich egg as animal context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-bat-mammal",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "What kind of animal is the only mammal capable of true sustained flight?",
+    "canonicalAnswer": "Bat",
+    "acceptedAnswers": [
+      "bat",
+      "bats"
+    ],
+    "botCards": [
+      "Flying squirrel",
+      "Sugar glider"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Big-eared-townsend-fledermaus.jpg",
+      "alt": "Bat hanging upside down",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-penguin-bird",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Penguins are birds, but what ability have they lost?",
+    "canonicalAnswer": "Flying",
+    "acceptedAnswers": [
+      "flying",
+      "flight",
+      "ability to fly",
+      "fly"
+    ],
+    "botCards": [
+      "Swimming",
+      "Laying eggs"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Emperor_Penguin_Manchot_empereur.jpg",
+      "alt": "Emperor penguins on ice",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-shark-skeleton",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "A shark skeleton is made mostly of what flexible material?",
+    "canonicalAnswer": "Cartilage",
+    "acceptedAnswers": [
+      "cartilage"
+    ],
+    "botCards": [
+      "Bone",
+      "Keratin"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Carcharodon_carcharias.jpg",
+      "alt": "Great white shark as marine animal context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-bee-dance",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What is the name of the movement honeybees use to point others toward food?",
+    "canonicalAnswer": "Waggle dance",
+    "acceptedAnswers": [
+      "waggle dance",
+      "the waggle dance"
+    ],
+    "botCards": [
+      "Round dance",
+      "Hive shuffle"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Apis_mellifera_Western_honey_bee.jpg",
+      "alt": "Honeybee on a flower",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-camel-hump",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What do camels mainly store in their humps?",
+    "canonicalAnswer": "Fat",
+    "acceptedAnswers": [
+      "fat",
+      "body fat"
+    ],
+    "botCards": [
+      "Water",
+      "Milk"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Camel_in_the_desert.jpg",
+      "alt": "Camel in desert as animal context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-orca-family",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Orcas are the largest members of which animal family?",
+    "canonicalAnswer": "Dolphin family",
+    "acceptedAnswers": [
+      "dolphin family",
+      "oceanic dolphin family",
+      "dolphins",
+      "delphinidae"
+    ],
+    "botCards": [
+      "Whale shark family",
+      "Seal family"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Orcinus_orca_NOAA.jpg",
+      "alt": "Orca surfacing in water",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-kiwi-country",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "The kiwi bird is strongly associated with which country?",
+    "canonicalAnswer": "New Zealand",
+    "acceptedAnswers": [
+      "new zealand",
+      "aotearoa"
+    ],
+    "botCards": [
+      "Australia",
+      "Papua New Guinea"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Little_spotted_kiwi%2C_Apteryx_owenii%2C_0.5.jpg",
+      "alt": "Little spotted kiwi bird",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-axolotl-regeneration",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Axolotls are famous for regenerating lost limbs and parts of which organ?",
+    "canonicalAnswer": "Heart",
+    "acceptedAnswers": [
+      "heart",
+      "the heart"
+    ],
+    "botCards": [
+      "Liver",
+      "Stomach"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Axolotl_ganz.jpg",
+      "alt": "Axolotl in water",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "animals-imgtxt2-platypus-egg",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "The platypus belongs to the rare group of egg-laying mammals called what?",
+    "canonicalAnswer": "Monotremes",
+    "acceptedAnswers": [
+      "monotreme",
+      "monotremes"
+    ],
+    "botCards": [
+      "Marsupials",
+      "Placental mammals"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Platypus.jpg",
+      "alt": "Platypus swimming",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-sushi-rice",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "The word sushi most directly refers to rice seasoned with what?",
+    "canonicalAnswer": "Vinegar",
+    "acceptedAnswers": [
+      "vinegar",
+      "rice vinegar",
+      "vinegared rice"
+    ],
+    "botCards": [
+      "Soy sauce",
+      "Sesame oil"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Sushi_platter.jpg",
+      "alt": "Sushi platter as food context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-cocoa-chocolate",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Chocolate is made from beans of which plant?",
+    "canonicalAnswer": "Cacao",
+    "acceptedAnswers": [
+      "cacao",
+      "cocoa",
+      "cacao tree",
+      "cocoa tree"
+    ],
+    "botCards": [
+      "Coffee",
+      "Vanilla"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cacao-pod-k4636-14.jpg",
+      "alt": "Cacao pod on tree",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-espresso-country",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Espresso is most strongly associated with which country?",
+    "canonicalAnswer": "Italy",
+    "acceptedAnswers": [
+      "italy",
+      "italian"
+    ],
+    "botCards": [
+      "France",
+      "Spain"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Espresso_roasted_coffee_beans.jpg",
+      "alt": "Roasted coffee beans as espresso context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-kimchi-country",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Kimchi is a traditional fermented dish from which country?",
+    "canonicalAnswer": "Korea",
+    "acceptedAnswers": [
+      "korea",
+      "south korea",
+      "korean"
+    ],
+    "botCards": [
+      "Japan",
+      "China"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kimchi.jpg",
+      "alt": "Kimchi dish as food context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-paella-rice",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Paella is a rice dish that originated in which country?",
+    "canonicalAnswer": "Spain",
+    "acceptedAnswers": [
+      "spain",
+      "spanish"
+    ],
+    "botCards": [
+      "Portugal",
+      "Italy"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Paella_de_marisco_01.jpg",
+      "alt": "Seafood paella in a pan",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-greek-yogurt",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Greek yogurt is thicker mainly because it has been what?",
+    "canonicalAnswer": "Strained",
+    "acceptedAnswers": [
+      "strained",
+      "it is strained",
+      "strained yogurt"
+    ],
+    "botCards": [
+      "Fermented twice",
+      "Whipped"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Greek_yogurt.jpg",
+      "alt": "Bowl of Greek yogurt",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-worcestershire",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which fermented sauce from England is often used in Caesar dressing and Bloody Marys?",
+    "canonicalAnswer": "Worcestershire sauce",
+    "acceptedAnswers": [
+      "worcestershire sauce",
+      "worcester sauce",
+      "worcestershire"
+    ],
+    "botCards": [
+      "HP Sauce",
+      "Malt vinegar"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Worcestershire_Sauce_001.jpg",
+      "alt": "Bottle of Worcestershire sauce",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-feta-country",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Feta cheese is most strongly associated with which country?",
+    "canonicalAnswer": "Greece",
+    "acceptedAnswers": [
+      "greece",
+      "greek"
+    ],
+    "botCards": [
+      "Turkey",
+      "Bulgaria"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Feta_Cheese.jpg",
+      "alt": "Feta cheese as food context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-sourdough-levain",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "What living culture is used to leaven sourdough bread?",
+    "canonicalAnswer": "Starter",
+    "acceptedAnswers": [
+      "starter",
+      "sourdough starter",
+      "levain"
+    ],
+    "botCards": [
+      "Baking powder",
+      "Gelatin"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Sourdough_bread.jpg",
+      "alt": "Loaf of sourdough bread",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "food-imgtxt2-tea-plant",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "What drink is made by steeping leaves from the Camellia sinensis plant?",
+    "canonicalAnswer": "Tea",
+    "acceptedAnswers": [
+      "tea"
+    ],
+    "botCards": [
+      "Coffee",
+      "Mate"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Camellia_sinensis_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-025.jpg",
+      "alt": "Tea plant botanical illustration",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-football-touchdown",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In American football, how many points is a touchdown worth before the extra point attempt?",
+    "canonicalAnswer": "Six",
+    "acceptedAnswers": [
+      "six",
+      "6",
+      "six points"
+    ],
+    "botCards": [
+      "Seven",
+      "Three"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/American_football.svg",
+      "alt": "American football as sports context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-tennis-scoring",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In tennis scoring, what comes after 30?",
+    "canonicalAnswer": "40",
+    "acceptedAnswers": [
+      "40",
+      "forty"
+    ],
+    "botCards": [
+      "45",
+      "Game"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tennis_Racket_and_Balls.jpg",
+      "alt": "Tennis racket and balls",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-soccer-goalie",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In soccer, which player is normally allowed to use their hands inside their own penalty area?",
+    "canonicalAnswer": "Goalkeeper",
+    "acceptedAnswers": [
+      "goalkeeper",
+      "goalie",
+      "keeper"
+    ],
+    "botCards": [
+      "Center back",
+      "Striker"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Goalkeeper.jpg",
+      "alt": "Soccer goalkeeper as sports context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-basketball-shotclock",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In the NBA, how many seconds are on a standard shot clock?",
+    "canonicalAnswer": "24 seconds",
+    "acceptedAnswers": [
+      "24",
+      "24 seconds",
+      "twenty four seconds"
+    ],
+    "botCards": [
+      "30 seconds",
+      "35 seconds"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Basketball.png",
+      "alt": "Basketball as sports context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-volleyball-touches",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In volleyball, how many touches can a team usually take before sending the ball over the net?",
+    "canonicalAnswer": "Three",
+    "acceptedAnswers": [
+      "three",
+      "3",
+      "three touches"
+    ],
+    "botCards": [
+      "Two",
+      "Four"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Beach_Volleyball_Classic_2007.jpg",
+      "alt": "Beach volleyball game as sports context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-golf-par",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In golf, what word describes the expected number of strokes for a hole?",
+    "canonicalAnswer": "Par",
+    "acceptedAnswers": [
+      "par"
+    ],
+    "botCards": [
+      "Bogey",
+      "Handicap"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Golf_ball.jpg",
+      "alt": "Golf ball on grass",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-rugby-try",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In rugby union, what is the main scoring act of grounding the ball in the in-goal area called?",
+    "canonicalAnswer": "Try",
+    "acceptedAnswers": [
+      "try",
+      "a try"
+    ],
+    "botCards": [
+      "Touchdown",
+      "Conversion"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rugby_union_pictogram.svg",
+      "alt": "Rugby pictogram as sports context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-cricket-wicket",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In cricket, what are the three vertical sticks behind the batter called collectively?",
+    "canonicalAnswer": "Stumps",
+    "acceptedAnswers": [
+      "stumps",
+      "the stumps"
+    ],
+    "botCards": [
+      "Bails",
+      "Crease"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cricket_stumps_en.svg",
+      "alt": "Cricket stumps diagram",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-fencing-sabre",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "Which fencing weapon allows scoring with both the edge and the tip?",
+    "canonicalAnswer": "Sabre",
+    "acceptedAnswers": [
+      "sabre",
+      "saber"
+    ],
+    "botCards": [
+      "Foil",
+      "Epee"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fencing_sabre_valid_surfaces.svg",
+      "alt": "Fencing sabre target diagram",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "sports-imgtxt2-curling-stone",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In curling, what is the polished granite object slid across the ice called?",
+    "canonicalAnswer": "Stone",
+    "acceptedAnswers": [
+      "stone",
+      "curling stone",
+      "rock"
+    ],
+    "botCards": [
+      "Puck",
+      "Bowl"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Curling_stone_on_ice.jpg",
+      "alt": "Curling stone on ice",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-browser-cookie",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "What is the common name for a small data file a website stores in your browser?",
+    "canonicalAnswer": "Cookie",
+    "acceptedAnswers": [
+      "cookie",
+      "browser cookie",
+      "web cookie",
+      "http cookie"
+    ],
+    "botCards": [
+      "Cache file",
+      "Session key"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/HTTP_cookie.svg",
+      "alt": "Cookie icon used as browser context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-wiki-edit",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "What is the name for a website that lets users collaboratively edit pages?",
+    "canonicalAnswer": "Wiki",
+    "acceptedAnswers": [
+      "wiki",
+      "a wiki"
+    ],
+    "botCards": [
+      "Forum",
+      "Blog"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Wikipedia-logo-v2.svg",
+      "alt": "Wikipedia logo as wiki context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-hashtag-symbol",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "What symbol usually marks a hashtag?",
+    "canonicalAnswer": "Hash sign",
+    "acceptedAnswers": [
+      "hash sign",
+      "hashtag",
+      "#",
+      "pound sign",
+      "number sign"
+    ],
+    "botCards": [
+      "At sign",
+      "Ampersand"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hashtag.png",
+      "alt": "Hashtag symbol as social media context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-phishing",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What is the term for a fake message that tries to trick people into giving passwords or bank details?",
+    "canonicalAnswer": "Phishing",
+    "acceptedAnswers": [
+      "phishing"
+    ],
+    "botCards": [
+      "Spoofing",
+      "Doxxing"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/PhishingTrustedBank.png",
+      "alt": "Example phishing email screenshot",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-captcha",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What test is commonly used online to check whether a visitor is human?",
+    "canonicalAnswer": "CAPTCHA",
+    "acceptedAnswers": [
+      "captcha",
+      "a captcha"
+    ],
+    "botCards": [
+      "Cookie banner",
+      "Firewall"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/CAPTCHA_example.svg",
+      "alt": "CAPTCHA example as web context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-http-secure",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "In a web address, which protocol usually indicates encrypted HTTP traffic?",
+    "canonicalAnswer": "HTTPS",
+    "acceptedAnswers": [
+      "https",
+      "hypertext transfer protocol secure"
+    ],
+    "botCards": [
+      "HTTP",
+      "FTP"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/HTTPS_icon.svg",
+      "alt": "HTTPS lock icon as web security context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-meme-font",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Classic impact-caption image memes are usually called what kind of macros?",
+    "canonicalAnswer": "Image macros",
+    "acceptedAnswers": [
+      "image macro",
+      "image macros"
+    ],
+    "botCards": [
+      "Reaction GIFs",
+      "Copypastas"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Lolcat_in_folder.jpg",
+      "alt": "Lolcat image as meme context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-open-source-host",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "Which Microsoft-owned platform is widely used to host Git repositories?",
+    "canonicalAnswer": "GitHub",
+    "acceptedAnswers": [
+      "github",
+      "git hub"
+    ],
+    "botCards": [
+      "GitLab",
+      "Bitbucket"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Octicons-mark-github.svg",
+      "alt": "GitHub mark as coding culture context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-rss",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "What three-letter feed format is often associated with the orange broadcast-like web icon?",
+    "canonicalAnswer": "RSS",
+    "acceptedAnswers": [
+      "rss",
+      "really simple syndication"
+    ],
+    "botCards": [
+      "XML",
+      "API"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Feed-icon.svg",
+      "alt": "RSS feed icon",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "internet-imgtxt2-two-factor",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "What security feature asks for a second proof, like a code, after your password?",
+    "canonicalAnswer": "Two-factor authentication",
+    "acceptedAnswers": [
+      "two factor authentication",
+      "2fa",
+      "two-factor authentication",
+      "two step verification",
+      "two-step verification"
+    ],
+    "botCards": [
+      "Password manager",
+      "Single sign-on"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/2FA_icon.svg",
+      "alt": "Two-factor authentication icon",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-uranium-number",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "What is the atomic number of uranium?",
+    "canonicalAnswer": "92",
+    "acceptedAnswers": [
+      "92",
+      "ninety two",
+      "ninety-two"
+    ],
+    "botCards": [
+      "238",
+      "235"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Uranium_ore.jpg",
+      "alt": "Uranium ore as chemistry context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-water-formula",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "What is the chemical formula for water?",
+    "canonicalAnswer": "H2O",
+    "acceptedAnswers": [
+      "h2o",
+      "h20",
+      "water"
+    ],
+    "botCards": [
+      "CO2",
+      "O2"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Water_drop_001.jpg",
+      "alt": "Water droplet as science context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-earth-gas",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "Which gas makes up most of Earth's atmosphere?",
+    "canonicalAnswer": "Nitrogen",
+    "acceptedAnswers": [
+      "nitrogen",
+      "n2"
+    ],
+    "botCards": [
+      "Oxygen",
+      "Carbon dioxide"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Atmosphere_gas_proportions.svg",
+      "alt": "Atmospheric gas chart",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-speed-light",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "In a vacuum, what travels at about 300,000 kilometers per second?",
+    "canonicalAnswer": "Light",
+    "acceptedAnswers": [
+      "light",
+      "the speed of light"
+    ],
+    "botCards": [
+      "Sound",
+      "Electric current"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Prism-rainbow.svg",
+      "alt": "Prism splitting light as physics context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-dna-shape",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What is the famous twisted-ladder shape of DNA called?",
+    "canonicalAnswer": "Double helix",
+    "acceptedAnswers": [
+      "double helix",
+      "double-helix"
+    ],
+    "botCards": [
+      "Spiral galaxy",
+      "Alpha helix"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/DNA_Overview.png",
+      "alt": "DNA diagram as biology context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-sun-object",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What type of celestial object is the Sun?",
+    "canonicalAnswer": "Star",
+    "acceptedAnswers": [
+      "star",
+      "a star"
+    ],
+    "botCards": [
+      "Planet",
+      "Nebula"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA_s_Solar_Dynamics_Observatory_-_20100819.jpg",
+      "alt": "The Sun as astronomy context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-plant-photosynthesis",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What process lets plants use sunlight to make sugars?",
+    "canonicalAnswer": "Photosynthesis",
+    "acceptedAnswers": [
+      "photosynthesis"
+    ],
+    "botCards": [
+      "Respiration",
+      "Fermentation"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Photosynthesis_en.svg",
+      "alt": "Photosynthesis diagram",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-avogadro",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "What constant is approximately 6.022 x 10^23 particles per mole?",
+    "canonicalAnswer": "Avogadro constant",
+    "acceptedAnswers": [
+      "avogadro constant",
+      "avogadros constant",
+      "avogadro's constant",
+      "avogadro number"
+    ],
+    "botCards": [
+      "Boltzmann constant",
+      "Planck constant"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Amedeo_Avogadro_2.jpg",
+      "alt": "Portrait of Amedeo Avogadro",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-mitochondria",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Which organelle is often described as the powerhouse of the cell?",
+    "canonicalAnswer": "Mitochondria",
+    "acceptedAnswers": [
+      "mitochondria",
+      "mitochondrion"
+    ],
+    "botCards": [
+      "Ribosome",
+      "Golgi apparatus"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mitochondrion_structure.svg",
+      "alt": "Mitochondrion structure diagram",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "science-imgtxt2-particle-charge",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Which subatomic particle has a negative electric charge?",
+    "canonicalAnswer": "Electron",
+    "acceptedAnswers": [
+      "electron",
+      "electrons"
+    ],
+    "botCards": [
+      "Proton",
+      "Neutron"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Electron_shell_001_Hydrogen.svg",
+      "alt": "Electron shell diagram",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-zeus-weapon",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "In Greek mythology, what weapon is Zeus most famous for wielding?",
+    "canonicalAnswer": "Thunderbolt",
+    "acceptedAnswers": [
+      "thunderbolt",
+      "lightning bolt",
+      "bolt of lightning"
+    ],
+    "botCards": [
+      "Trident",
+      "Spear"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Zeus_Otricoli_Pio-Clementino_Inv257.jpg",
+      "alt": "Statue of Zeus as mythology context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-poseidon-domain",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Poseidon is the Greek god most associated with which realm?",
+    "canonicalAnswer": "Sea",
+    "acceptedAnswers": [
+      "sea",
+      "the sea",
+      "ocean",
+      "oceans"
+    ],
+    "botCards": [
+      "Underworld",
+      "Sky"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Poseidon_sculpture_Copenhagen_2005.jpg",
+      "alt": "Poseidon sculpture",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-griffin-form",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Which mythical creature has the body of a lion and the head and wings of an eagle?",
+    "canonicalAnswer": "Griffin",
+    "acceptedAnswers": [
+      "griffin",
+      "griffon",
+      "gryphon"
+    ],
+    "botCards": [
+      "Sphinx",
+      "Manticore"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Griffin.svg",
+      "alt": "Griffin illustration as mythology context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-hades-realm",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Greek god rules the underworld?",
+    "canonicalAnswer": "Hades",
+    "acceptedAnswers": [
+      "hades"
+    ],
+    "botCards": [
+      "Ares",
+      "Hermes"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hades-et-Cerberus-III.jpg",
+      "alt": "Hades and Cerberus artwork",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-isis-culture",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "The goddess Isis belongs mainly to which ancient mythology?",
+    "canonicalAnswer": "Egyptian mythology",
+    "acceptedAnswers": [
+      "egyptian mythology",
+      "egyptian",
+      "ancient egyptian mythology"
+    ],
+    "botCards": [
+      "Greek mythology",
+      "Norse mythology"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Isis.svg",
+      "alt": "Isis symbol or artwork as Egyptian mythology context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-odin-eye",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Norse god sacrificed an eye for wisdom?",
+    "canonicalAnswer": "Odin",
+    "acceptedAnswers": [
+      "odin",
+      "wotan",
+      "woden"
+    ],
+    "botCards": [
+      "Loki",
+      "Tyr"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Odin_by_Georg_von_Rosen.jpg",
+      "alt": "Odin artwork as Norse mythology context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-anansi-animal",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Anansi from West African and Caribbean stories is usually associated with which animal form?",
+    "canonicalAnswer": "Spider",
+    "acceptedAnswers": [
+      "spider",
+      "a spider"
+    ],
+    "botCards": [
+      "Raven",
+      "Tortoise"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Spider_web_with_dew_drops04.jpg",
+      "alt": "Spider web as Anansi context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-phoenix-rebirth",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "What mythical bird is said to be reborn from its own ashes?",
+    "canonicalAnswer": "Phoenix",
+    "acceptedAnswers": [
+      "phoenix",
+      "the phoenix"
+    ],
+    "botCards": [
+      "Roc",
+      "Griffin"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Phoenix_detail_from_Aberdeen_Bestiary.jpg",
+      "alt": "Phoenix illustration as mythology context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-amaterasu",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Amaterasu is the Shinto goddess of what?",
+    "canonicalAnswer": "Sun",
+    "acceptedAnswers": [
+      "sun",
+      "the sun"
+    ],
+    "botCards": [
+      "Moon",
+      "Storms"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Torii_gate_at_Fushimi_Inari_Taisha.jpg",
+      "alt": "Torii gates as Shinto context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "mythology-imgtxt2-cerberus-heads",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "How many heads does Cerberus usually have?",
+    "canonicalAnswer": "Three",
+    "acceptedAnswers": [
+      "three",
+      "3",
+      "three heads"
+    ],
+    "botCards": [
+      "Two",
+      "Five"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cerberus-Blake.jpeg",
+      "alt": "Cerberus artwork as Greek mythology context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-starry-night-artist",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Who painted The Starry Night?",
+    "canonicalAnswer": "Vincent van Gogh",
+    "acceptedAnswers": [
+      "vincent van gogh",
+      "van gogh",
+      "vincent van-gogh"
+    ],
+    "botCards": [
+      "Claude Monet",
+      "Pablo Picasso"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
+      "alt": "The Starry Night painting",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-mosaic-materials",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "What art form is made by arranging small pieces of stone, glass, or tile?",
+    "canonicalAnswer": "Mosaic",
+    "acceptedAnswers": [
+      "mosaic",
+      "a mosaic"
+    ],
+    "botCards": [
+      "Fresco",
+      "Collage"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mosaic_of_Justinianus_-_Basilica_San_Vitale_(Ravenna).jpg",
+      "alt": "Mosaic artwork as art context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-mona-lisa-artist",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Who painted the Mona Lisa?",
+    "canonicalAnswer": "Leonardo da Vinci",
+    "acceptedAnswers": [
+      "leonardo da vinci",
+      "da vinci",
+      "leonardo"
+    ],
+    "botCards": [
+      "Michelangelo",
+      "Raphael"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
+      "alt": "Mona Lisa painting",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-jazz-city",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which US city is especially famous as an early birthplace of jazz?",
+    "canonicalAnswer": "New Orleans",
+    "acceptedAnswers": [
+      "new orleans",
+      "new orleans louisiana"
+    ],
+    "botCards": [
+      "Chicago",
+      "Memphis"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/New_Orleans_French_Quarter.jpg",
+      "alt": "New Orleans French Quarter as jazz context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-orchestra-leader",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "What is the person who directs an orchestra during a performance called?",
+    "canonicalAnswer": "Conductor",
+    "acceptedAnswers": [
+      "conductor",
+      "the conductor"
+    ],
+    "botCards": [
+      "Composer",
+      "Concertmaster"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Conductor_Leonard_Bernstein.jpg",
+      "alt": "Conductor leading an orchestra",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-ballet-language",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Many traditional ballet terms come from which language?",
+    "canonicalAnswer": "French",
+    "acceptedAnswers": [
+      "french"
+    ],
+    "botCards": [
+      "Italian",
+      "Russian"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ballerina_in_white_tutu.jpg",
+      "alt": "Ballerina in a white tutu as dance context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-bpm-meaning",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "In music tempo markings, what does BPM measure?",
+    "canonicalAnswer": "Beats per minute",
+    "acceptedAnswers": [
+      "beats per minute",
+      "beat per minute",
+      "bpm"
+    ],
+    "botCards": [
+      "Bars per movement",
+      "Bass pitch mode"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Metronome_Nikko.jpg",
+      "alt": "Metronome as tempo context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-picasso-movement",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Pablo Picasso is strongly associated with which early 20th-century art movement?",
+    "canonicalAnswer": "Cubism",
+    "acceptedAnswers": [
+      "cubism",
+      "cubist movement"
+    ],
+    "botCards": [
+      "Surrealism",
+      "Impressionism"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pablo_picasso_1.jpg",
+      "alt": "Pablo Picasso portrait",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-violin-family",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "The viola belongs to which instrument family?",
+    "canonicalAnswer": "String family",
+    "acceptedAnswers": [
+      "string family",
+      "strings",
+      "string instruments"
+    ],
+    "botCards": [
+      "Woodwind family",
+      "Brass family"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Viola.jpg",
+      "alt": "Viola instrument as music context",
+      "credit": "Wikimedia Commons"
+    }
+  },
+  {
+    "id": "artmusic-imgtxt2-great-wave-artist",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Which Japanese artist created The Great Wave off Kanagawa?",
+    "canonicalAnswer": "Hokusai",
+    "acceptedAnswers": [
+      "hokusai",
+      "katsushika hokusai"
+    ],
+    "botCards": [
+      "Hiroshige",
+      "Utamaro"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Great_Wave_off_Kanagawa2.jpg",
+      "alt": "The Great Wave off Kanagawa print",
+      "credit": "Wikimedia Commons"
+    }
   }
 ]
