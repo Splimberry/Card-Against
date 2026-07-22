@@ -18539,7 +18539,6 @@ function addQuestionCardToPile() {
     return;
   }
 
-  const blackCardRect = blackCard.getBoundingClientRect();
   const snapshot = blackCard.cloneNode(true);
   blackCard.dataset.questionStacked = "true";
   sanitizeQuestionCardSnapshot(snapshot);
@@ -18553,12 +18552,8 @@ function addQuestionCardToPile() {
   snapshot.style.setProperty("--question-stack-offset-y", `${visibleIndex * 0.48}rem`);
   snapshot.style.setProperty("--question-stack-offset-x", "0rem");
   snapshot.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
-  snapshot.style.setProperty("--question-snapshot-left", `${blackCardRect.left}px`);
-  snapshot.style.setProperty("--question-snapshot-top", `${blackCardRect.top}px`);
-  snapshot.style.setProperty("--question-snapshot-width", `${blackCardRect.width}px`);
-  snapshot.style.setProperty("--question-snapshot-height", `${blackCardRect.height}px`);
-  snapshot.style.width = `${blackCardRect.width}px`;
-  snapshot.style.height = `${blackCardRect.height}px`;
+  snapshot.style.width = "100%";
+  snapshot.style.height = `${blackCard.getBoundingClientRect().height}px`;
   elements.questionCardPile.appendChild(snapshot);
   trimQuestionCardPile();
 }
