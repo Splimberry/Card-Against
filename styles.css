@@ -4799,6 +4799,10 @@ input:focus {
   animation: cardMetallicShine 5200ms ease-in-out infinite;
 }
 
+.black-card[data-card-custom="true"][data-card-special="false"][data-card-effects~="metallic"] {
+  overflow: hidden;
+}
+
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
   :is(.answer-avatar, .profile-avatar, .room-player-avatar, .equipped-title-pill, .special-player-badge, .bot-player-badge, .host-player-badge, .rating-badge, .name-with-title-text, .profile-name-display, h2, p, strong) {
   text-shadow:

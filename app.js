@@ -4922,6 +4922,12 @@ function queueDeltaStatFlash(title, deltas, unit = "Point", options = {}) {
 
 function getCocktailFlashKind(result) {
   const normalized = String(result || "").toLowerCase();
+  if (normalized.includes("shield")
+    || normalized.includes("guard")
+    || normalized.includes("encrypted")
+    || normalized.includes("antivirus")) {
+    return "shield";
+  }
   if (normalized.includes("blocked")) {
     return "positive";
   }
@@ -4935,6 +4941,29 @@ function getCocktailFlashKind(result) {
     return "negative";
   }
   return "positive";
+}
+
+function shouldQueueCocktailResultFlash(result) {
+  const normalized = String(Array.isArray(result) ? result.join("\n") : result || "").toLowerCase();
+  if (!normalized.trim()) {
+    return false;
+  }
+  return !normalized.includes("chaos:")
+    && !normalized.includes("answer scrambled")
+    && !normalized.includes("blocked")
+    && !normalized.includes("antivirus blocked")
+    && !normalized.includes("blocked error 404")
+    && !normalized.includes("blocked curse")
+    && !normalized.includes("blocked sabotage")
+    && !normalized.includes("blocked cocktail mix");
+}
+
+function queueCocktailResultFlash(title, result, options = {}) {
+  if (!shouldQueueCocktailResultFlash(result)) {
+    return false;
+  }
+  queueStatFlash(getCocktailFlashKind(result), title, result, { complex: true, ...options });
+  return true;
 }
 
 function ensureFloatingDescriptionTooltip() {
@@ -6124,7 +6153,7 @@ function applyReignChaosEndRound(playedEntries, deltas, owners, events) {
       }
       const isBuff = Math.random() < 0.5;
       const cocktailResult = applyCocktailMix(participant, isBuff ? { buffsOnly: true } : { debuffsOnly: true });
-      queueStatFlash(isBuff ? "positive" : "negative", entry.power.name, cocktailResult, { owners: [participant], complex: true });
+      queueCocktailResultFlash(entry.power.name, cocktailResult, { owners: [participant] });
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} swung ${getOwnerLabel(participant)} by ${percent >= 0 ? "+" : ""}${(percent * 100).toFixed(1)}% (${amount >= 0 ? "+" : ""}${amount.toLocaleString()}), rerolled their remaining hand, and served a ${isBuff ? "buff" : "debuff"}: ${cocktailResult}.`));
     });
     trimChaosRefreshedHandsFromLawnMower(owners, events);
@@ -12082,7 +12111,7 @@ function applyRoundStartEffects() {
     for (let index = 0; index < pendingBuffs; index += 1) {
       const result = applyCocktailMix(owner, { buffsOnly: true });
       if (result) {
-        queueStatFlash("positive", "Overachiever", result, { owners: [owner], complex: true });
+        queueCocktailResultFlash("Overachiever", result, { owners: [owner] });
         events.push(`Overachiever served ${getOwnerLabel(owner)} a buff: ${result}.`);
       }
     }
@@ -12185,7 +12214,7 @@ function applyRoundStartEffects() {
       : applyCocktailMix(owner, { buffsOnly: false });
     if (result) {
       const source = state.bartenders[owner] === "chaos" ? "Pharmacy" : "Bartender";
-      queueStatFlash(state.bartenders[owner] === "chaos" ? "positive" : getCocktailFlashKind(result), source, result, { owners: [owner], complex: true });
+      queueCocktailResultFlash(source, result, { owners: [owner] });
       events.push(`${source} served ${getOwnerLabel(owner)}: ${Array.isArray(result) ? result.join(", ") : result}.`);
     }
   });
@@ -12196,7 +12225,7 @@ function applyRoundStartEffects() {
         return;
       }
       const result = applyCocktailMix(owner, { debuffsOnly: true });
-      queueStatFlash(getCocktailFlashKind(result), "Virus Factory", result, { owners: [owner], complex: true });
+      queueCocktailResultFlash("Virus Factory", result, { owners: [owner] });
       events.push(`Virus Factory hit ${getOwnerLabel(owner)} with a debuff: ${result}.`);
     });
   }
@@ -15614,12 +15643,16 @@ function completeTableSabotageSelection(targetOwner) {
   const amount = Math.floor(Math.max(0, getScore(targetOwner)) * 0.05);
   const appliedLoss = applyProtectedScoreLoss(targetOwner, amount, "Sabotage");
   const debuffResult = applyRandomDebuff(targetOwner, "Sabotage", { sourceOwner: owner });
-  queueStatFlash(
-    appliedLoss > 0 ? "sabotage" : "positive",
-    "Sabotage",
-    [appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", debuffResult || "Debuff Applied"],
-    getTargetedFlashOptions(owner, targetOwner, { complex: true, priority: true, soundName: "noMercy" })
-  );
+  const debuffDetail = shouldQueueCocktailResultFlash(debuffResult) ? debuffResult : "";
+  const targetDetails = [appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "", debuffDetail].filter(Boolean);
+  if (targetDetails.length) {
+    queueStatFlash(
+      appliedLoss > 0 ? "sabotage" : getCocktailFlashKind(debuffDetail),
+      "Sabotage",
+      targetDetails,
+      getTargetedFlashOptions(owner, targetOwner, { complex: true, priority: true, soundName: "noMercy" })
+    );
+  }
   queueStatFlash("sabotage", "Sabotage", `${getOwnerLabel(targetOwner)} Hit`, { owners: [owner], complex: true, soundName: "noMercy" });
   renderScore();
   renderTableEventControls();
@@ -15901,8 +15934,8 @@ function commitScheduledError404Effects() {
     }
     schedule.used = true;
     const result = applyRandomDebuff(schedule.target, "Error 404", { debuffType: "chaos", sourceOwner: schedule.owner });
-    if (result.toLowerCase().includes("blocked")) {
-      queueStatFlash("positive", "Error 404", result, getTargetedFlashOptions(schedule.owner, schedule.target, { complex: true, priority: true }));
+    if (result.toLowerCase().includes("blocked") && shouldQueueCocktailResultFlash(result)) {
+      queueCocktailResultFlash("Error 404", result, getTargetedFlashOptions(schedule.owner, schedule.target, { priority: true }));
     }
   });
 }
@@ -16091,13 +16124,11 @@ function applyCocktailBuff(owner) {
   }
   if (roll === 1) {
     state.freezeProtection[owner] = Math.max(state.freezeProtection[owner] || 0, 2);
-    queueStatFlash("shield", "Cocktail Mix", "Point Shield Armed", { owners: [owner], complex: true });
-    return "point loss shield for 2 rounds";
+    return "Point Shield Armed\n2 Rounds";
   }
   if (roll === 2) {
     state.streakLossProtectionRounds[owner] = Math.max(state.streakLossProtectionRounds[owner] || 0, 2);
-    queueStatFlash("shield", "Cocktail Mix", "Streak Guard Armed", { owners: [owner], complex: true });
-    return "streak loss protection for 2 rounds";
+    return "Streak Guard Armed\n2 Rounds";
   }
   if (roll === 3) {
     return upgradeRandomPowerRarity(owner);
@@ -16587,8 +16618,8 @@ function consumeImmediatePower(owner, power, meta = {}) {
       : [meta.targetOwner].filter(Boolean);
     targets.forEach((target) => {
       const result = applyRandomDebuff(target, power.name, { debuffType: "chaos", sourceOwner: owner });
-      if (result && result.toLowerCase().includes("blocked")) {
-        queueStatFlash("positive", power.name, result, getTargetedFlashOptions(owner, target, { complex: true }));
+      if (result && result.toLowerCase().includes("blocked") && shouldQueueCocktailResultFlash(result)) {
+        queueCocktailResultFlash(power.name, result, getTargetedFlashOptions(owner, target));
       }
     });
     renderScore();
@@ -16600,7 +16631,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
       : [meta.targetOwner].filter(Boolean);
     targets.forEach((target) => {
       const result = applyRandomDebuff(target, power.name, { sourceOwner: owner });
-      queueStatFlash(getCocktailFlashKind(result), power.name, result, getTargetedFlashOptions(owner, target, { complex: true }));
+      queueCocktailResultFlash(power.name, result, getTargetedFlashOptions(owner, target));
     });
     renderScore();
   }
@@ -16770,7 +16801,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "cocktail_mix") {
     const result = applyCocktailMix(owner);
-    queueStatFlash(getCocktailFlashKind(result), power.name, result, { owners: [owner], complex: true });
+    queueCocktailResultFlash(power.name, result, { owners: [owner] });
     renderScore();
   }
 
@@ -16841,7 +16872,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const results = isChaosInfusedPower(power)
       ? applyEveryCocktailBuff(owner)
       : Array.from({ length: 3 }, () => applyCocktailMix(owner, { buffsOnly: true }));
-    queueStatFlash("positive", power.name, results, { owners: [owner], complex: true });
+    queueCocktailResultFlash(power.name, results, { owners: [owner] });
     renderScore();
   }
 
