@@ -6521,6 +6521,24 @@ input:focus {
   overflow-wrap: anywhere;
 }
 
+.white-card .grading-reason {
+  display: block;
+  margin-top: 0.55rem;
+  max-width: 100%;
+  color: rgba(9, 10, 16, 0.68);
+  font-size: clamp(0.62rem, 1vw, 0.74rem);
+  font-weight: 850;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.white-card[data-card-custom="true"] .grading-reason,
+.white-card.bot-answer-card .grading-reason,
+.white-card[data-owner="player"][data-card-custom="false"] .grading-reason {
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 0 0.6rem rgba(255, 255, 255, 0.12);
+}
+
 .verdict-panel,
 .error-panel,
 .loading-panel,

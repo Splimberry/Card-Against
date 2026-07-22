@@ -3575,7 +3575,7 @@ function getStaticCacheControl(filePath, contentType = "") {
     return "no-store";
   }
   if (extension === ".js" || extension === ".css") {
-    return "public, max-age=3600, stale-while-revalidate=86400";
+    return "public, max-age=21600, stale-while-revalidate=604800";
   }
   if (
     contentType.startsWith("audio/")

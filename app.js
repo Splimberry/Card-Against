@@ -58,6 +58,7 @@ const roomDirectoryFetchTimeoutMs = 4500;
 const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
+const roomAppliedEventLimit = 300;
 const supabaseAvatarBucket = "profile-avatars";
 const supabaseSdkUrl = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const specialPlayerBadgeOrder = ["admin", "verified", "creator"];
@@ -837,6 +838,33 @@ const chaosInfusedPowerOverrides = {
     bluePill: true
   }
 };
+
+function getPowerRule(powerOrId) {
+  const power = typeof powerOrId === "string" ? powerMap[powerOrId] : powerOrId;
+  if (!power) {
+    return {
+      id: "",
+      timing: "unknown",
+      target: "none",
+      sync: "none",
+      overlay: "none",
+      botUsable: false
+    };
+  }
+  const isImmediate = Boolean(power.immediate);
+  const isTargeted = Boolean(power.targeted);
+  const isPersistent = /lasts the entire game|for \d+ rounds|next round|rest of (?:this )?round/i.test(power.description || "");
+  const hiddenOverlayTypes = new Set(["xray_hacks"]);
+  return {
+    id: power.id,
+    timing: isImmediate ? "instant" : isPersistent ? "persistent" : "round-end",
+    target: isTargeted ? "player" : "self-or-table",
+    sync: isImmediate || isPersistent || isTargeted ? "realtime-delta" : "round-result",
+    overlay: hiddenOverlayTypes.has(power.type) ? "none" : isImmediate ? "instant" : "round-result",
+    botUsable: !["xray_hacks", "next_question", "ability_merchant", "black_market"].includes(power.type)
+  };
+}
+
 const triviaThemes = [
   "Pop Culture",
   "Gaming and Geek Culture",
@@ -2839,6 +2867,7 @@ const state = {
   currentRoundCards: [],
   currentRoundCardRatings: [],
   currentRoundCorrectIndexes: [],
+  currentRoundGradingReasons: [],
   answerRemainingTimes: {
     player: savedTimerSeconds,
     opponent: savedTimerSeconds,
@@ -2967,6 +2996,8 @@ const state = {
   hostedRoomsRefreshPromise: null,
   currentRoomRefreshPromise: null,
   roomEventRefreshPromise: null,
+  appliedRoomEventIds: new Set(),
+  appliedRoomEventOrder: [],
   locallyClosedRooms: {},
   roomEventRevision: 0,
   roomSettingsRevisionByCode: {},
@@ -3796,6 +3827,7 @@ function resetRoundAnswers() {
   state.currentRoundCards = [];
   state.currentRoundCardRatings = [];
   state.currentRoundCorrectIndexes = [];
+  state.currentRoundGradingReasons = [];
 }
 
 function clearRoomParticipantSubmissionState() {
@@ -5253,7 +5285,9 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   const badge = document.createElement("strong");
   badge.className = "rating-badge hidden";
   const text = document.createElement("p");
-  card.append(answerOwner, badge, text);
+  const gradingReason = document.createElement("small");
+  gradingReason.className = "grading-reason hidden";
+  card.append(answerOwner, badge, text, gradingReason);
   if (shouldUseAnswerCardCustomization(owner)) {
     applyProfileCustomizationSurface(card, getProfileCardCustomizationForOwner(owner) || defaultProfileCustomization, {
       forceCustom: isRoomMode()
@@ -5288,6 +5322,12 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
     }
     badge.textContent = rating ? `${rating.label}${rating.bonus ? ` +${rating.bonus}` : ""}` : "";
     setHidden(badge, !rating);
+    const gradingReason = card.querySelector(".grading-reason");
+    if (gradingReason) {
+      const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
+      gradingReason.textContent = reason;
+      setHidden(gradingReason, !reason);
+    }
   });
 }
 
@@ -5302,6 +5342,12 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   if (badge) {
     badge.textContent = rating ? `${rating.label}${rating.bonus ? ` +${rating.bonus}` : ""}` : "";
     setHidden(badge, !rating);
+  }
+  const gradingReason = card.querySelector(".grading-reason");
+  if (gradingReason) {
+    const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
+    gradingReason.textContent = reason;
+    setHidden(gradingReason, !reason);
   }
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
 }
@@ -7874,10 +7920,20 @@ function loadCurrencyBalance() {
   return Math.max(0, Math.floor(Number(localStorage.getItem(currencyStorageKey)) || 0));
 }
 
-function saveCurrencyBalance(value) {
+function saveCurrencyBalance(value, options = {}) {
   const cleanValue = Math.max(0, Math.floor(Number(value) || 0));
   localStorage.setItem(currencyStorageKey, String(cleanValue));
   cacheCurrentUserInventoryState();
+  if (options.syncReconcile !== false && state.supabaseUser?.id && !state.userInventoryApplying) {
+    enqueueUserInventoryOps({
+      id: createUserInventoryOpId("coin-reconcile", String(cleanValue)),
+      type: "coin",
+      mode: "reconcile",
+      value: cleanValue,
+      reason: options.reason || "balance-save",
+      coveredCoinOps: getCoveredCoinOpsForInventoryQueue()
+    });
+  }
   scheduleUserStorageSnapshot();
   return cleanValue;
 }
@@ -7900,7 +7956,7 @@ function addCurrency(amount, reason = "earn", options = {}) {
   if (!cleanAmount) {
     return loadCurrencyBalance();
   }
-  const balance = saveCurrencyBalance(loadCurrencyBalance() + cleanAmount);
+  const balance = saveCurrencyBalance(loadCurrencyBalance() + cleanAmount, { syncReconcile: false });
   if (options.sync !== false) {
     queueCoinTransaction(cleanAmount, reason, options.key || "");
   }
@@ -7913,7 +7969,7 @@ function spendCurrency(amount, reason = "spend", options = {}) {
   if (!cleanAmount || balance < cleanAmount) {
     return false;
   }
-  saveCurrencyBalance(balance - cleanAmount);
+  saveCurrencyBalance(balance - cleanAmount, { syncReconcile: false });
   if (options.sync !== false) {
     queueCoinTransaction(-cleanAmount, reason, options.key || "");
   }
@@ -10719,6 +10775,21 @@ async function initSupabaseAuth() {
   }
 }
 
+function scheduleInitialSupabaseAuth() {
+  if (hasSupabaseAuthCallback()) {
+    void initSupabaseAuth();
+    return;
+  }
+  const run = () => {
+    void initSupabaseAuth();
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 2500 });
+  } else {
+    window.setTimeout(run, 900);
+  }
+}
+
 function startSupabaseRealtime() {
   if (!state.supabaseClient || state.realtimeLobbyChannel) {
     return;
@@ -10999,6 +11070,36 @@ function updateRoomEventRevision(value) {
   }
 }
 
+function getRoomServerEventId(event = {}) {
+  return String(event.id || `${state.roomSettings.code || "room"}-${event.revision || ""}-${event.type || ""}`).trim();
+}
+
+function hasAppliedRoomServerEvent(event = {}) {
+  const eventId = getRoomServerEventId(event);
+  return Boolean(eventId && state.appliedRoomEventIds instanceof Set && state.appliedRoomEventIds.has(eventId));
+}
+
+function rememberAppliedRoomServerEvent(event = {}) {
+  const eventId = getRoomServerEventId(event);
+  if (!eventId) {
+    return;
+  }
+  if (!(state.appliedRoomEventIds instanceof Set)) {
+    state.appliedRoomEventIds = new Set();
+  }
+  if (!Array.isArray(state.appliedRoomEventOrder)) {
+    state.appliedRoomEventOrder = [];
+  }
+  if (!state.appliedRoomEventIds.has(eventId)) {
+    state.appliedRoomEventIds.add(eventId);
+    state.appliedRoomEventOrder.push(eventId);
+  }
+  while (state.appliedRoomEventOrder.length > roomAppliedEventLimit) {
+    const expiredId = state.appliedRoomEventOrder.shift();
+    state.appliedRoomEventIds.delete(expiredId);
+  }
+}
+
 function getRoomPayloadRevision(payload = {}) {
   return Number(payload.revision || payload.room?.revision || 0) || 0;
 }
@@ -11164,6 +11265,10 @@ function applyRoomGameMatchSettings(game = null, payload = {}, options = {}) {
 }
 
 function applyRoomServerEvent(event = {}) {
+  if (hasAppliedRoomServerEvent(event)) {
+    updateRoomEventRevision(event.revision);
+    return true;
+  }
   const type = String(event.type || "");
   const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
   const eventPayload = {
@@ -11172,6 +11277,11 @@ function applyRoomServerEvent(event = {}) {
     revision: Number(event.revision) || 0,
     updatedAt: Number(event.createdAt) || Date.now()
   };
+  if (!roomPayloadMatchesCurrentMatch(eventPayload)) {
+    rememberAppliedRoomServerEvent(event);
+    updateRoomEventRevision(event.revision);
+    return true;
+  }
   let applied = false;
   if ((type === "participant_updated" || type === "participant_joined") && payload.participant) {
     applied = applyRoomParticipantDelta(payload.participant, eventPayload);
@@ -11224,6 +11334,7 @@ function applyRoomServerEvent(event = {}) {
   } else if (type === "room_updated" || type === "room_created") {
     applied = false;
   }
+  rememberAppliedRoomServerEvent(event);
   updateRoomEventRevision(event.revision);
   return applied;
 }
@@ -17771,6 +17882,10 @@ function renderPowerUps() {
     button.className = "power-card";
     button.dataset.power = power.id;
     button.dataset.rarity = visualPower.rarity;
+    const rule = getPowerRule(power);
+    button.dataset.powerTiming = rule.timing;
+    button.dataset.powerTarget = rule.target;
+    button.dataset.powerSync = rule.sync;
     button.classList.toggle("chaos-infused", chaosInfused && !animateChaosInfusion);
     button.classList.toggle("chaos-infuse-pending", animateChaosInfusion);
     const description = getDisplayedPowerDescription(power, owner);
@@ -25993,6 +26108,76 @@ function scoreAnswerAgainstAcceptedAnswers(answer, acceptedAnswers) {
   return 1 - (bestDistance / longest);
 }
 
+function getTriviaAnswerAcronym(value) {
+  return normalizeTriviaAnswer(value)
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("");
+}
+
+function getGradingSimilarityDetails(answer, acceptedAnswers = []) {
+  const normalized = normalizeTriviaAnswer(answer);
+  const accepted = acceptedAnswers.map(normalizeTriviaAnswer).filter(Boolean);
+  if (!normalized) {
+    return { kind: "blank", score: 0 };
+  }
+  if (!accepted.length) {
+    return { kind: "ai", score: 0 };
+  }
+  if (accepted.includes(normalized)) {
+    return { kind: "exact", score: 1 };
+  }
+  if (accepted.some((target) => normalized === getTriviaAnswerAcronym(target) || getTriviaAnswerAcronym(normalized) === target)) {
+    return { kind: "abbreviation", score: 0.95 };
+  }
+  if (accepted.some((target) => isMessyTriviaTypo(normalized, target))) {
+    return { kind: "typo", score: 0.84 };
+  }
+  const contained = accepted.some((target) => target.length >= 5 && (normalized.includes(target) || target.includes(normalized)));
+  if (contained) {
+    return { kind: "partial", score: 0.86 };
+  }
+  const bestDistance = Math.min(...accepted.map((target) => levenshteinDistance(normalized, target)));
+  const longest = Math.max(normalized.length, ...accepted.map((target) => target.length), 1);
+  const score = 1 - (bestDistance / longest);
+  return { kind: "similarity", score };
+}
+
+function getAnswerGradingReason(answer, rating = {}, roundResult = {}) {
+  if (isMultipleChoiceRound()) {
+    return rating.correct ? "Correct option selected." : "Different option selected.";
+  }
+  const source = roundResult.source === "local-fallback" ? "Local fallback" : "AI";
+  const details = getGradingSimilarityDetails(answer, [state.canonicalAnswer, ...state.acceptedAnswers].filter(Boolean));
+  if (details.kind === "blank") {
+    return "Blank answer.";
+  }
+  if (rating.correct) {
+    if (details.kind === "exact") {
+      return "Accepted: exact preset match.";
+    }
+    if (details.kind === "abbreviation") {
+      return "Accepted: abbreviation or acronym match.";
+    }
+    if (details.kind === "typo") {
+      return "Accepted: obvious typo or spelling variant.";
+    }
+    if (details.kind === "partial") {
+      return "Accepted: partial answer still identified it.";
+    }
+    return `${source} accepted it as the same answer.`;
+  }
+  if (details.score >= 0.72) {
+    return `${source} rejected it as too ambiguous.`;
+  }
+  return `${source} marked it as a different answer.`;
+}
+
+function getRoundGradingReasons(cards = [], ratings = [], roundResult = {}) {
+  return cards.map((card, index) => getAnswerGradingReason(card, ratings[index] || {}, roundResult));
+}
+
 function buildBlackCardAnswerReveal(bestAnswer, options = {}) {
   const showBestAnswer = options.showBestAnswer !== false;
   const lines = [state.blackCard];
@@ -26298,6 +26483,7 @@ async function playRound(rawInput, options = {}) {
   state.currentRoundCards = roundResult.cards;
   state.currentRoundCardRatings = cardRatings;
   state.currentRoundCorrectIndexes = roundResult.correctIndexes;
+  state.currentRoundGradingReasons = getRoundGradingReasons(roundResult.cards, cardRatings, roundResult);
   clearCardBadges();
   renderAnswerCardLayout(roundResult.cards, roundResult.correctIndexes, roundResult.winner.index);
   fillVisibleAnswerCards(roundResult.cards, cardRatings);
@@ -28871,9 +29057,7 @@ syncRoomControls();
 syncBotAdvancedControls();
 renderProfile();
 syncSpecialBadgesToProfile();
-initSupabaseAuth();
+scheduleInitialSupabaseAuth();
 updateAchievementNotificationDot();
-loadUserQuestionSubmissions();
-syncUserQuestionSubmissionPolling();
 state.timerRemaining = state.timerSeconds;
 renderTimer();
