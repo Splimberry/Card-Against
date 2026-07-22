@@ -2203,6 +2203,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   position: relative;
   grid-column: 1;
   grid-row: 1 / -1;
+  display: grid;
+  place-items: center;
   align-self: center;
   justify-self: center;
   width: min(100%, 27rem);
@@ -2220,7 +2222,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .question-card-pile-card {
   position: absolute;
-  top: 0;
+  top: 50%;
   right: auto;
   bottom: auto;
   left: 0;
@@ -2230,7 +2232,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   pointer-events: none;
   z-index: var(--question-stack-z, 1);
   transform:
-    translate3d(var(--question-stack-offset-x, 0), var(--question-stack-offset-y, 0.5rem), 0)
+    translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
     scale(var(--question-stack-scale, 0.98));
   filter: saturate(0.94) brightness(0.92);
@@ -2273,13 +2275,16 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .question-card-stack .black-card {
+  grid-area: 1 / 1;
+  align-self: center;
+  justify-self: center;
   width: 100%;
   margin: 0;
 }
 
 .question-card-pile .question-card-pile-card.black-card {
   position: absolute;
-  top: 0;
+  top: 50%;
   right: auto;
   bottom: auto;
   left: 0;
@@ -2290,7 +2295,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   margin: 0;
   z-index: var(--question-stack-z, 1);
   transform:
-    translate3d(var(--question-stack-offset-x, 0), var(--question-stack-offset-y, 0.5rem), 0)
+    translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
     scale(var(--question-stack-scale, 0.98));
 }

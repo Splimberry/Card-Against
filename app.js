@@ -17479,6 +17479,7 @@ function renderPowerUps() {
   const owner = getCurrentPowerOwner();
   const hand = state.powerHands[owner] || [];
   const freshIds = [...(state.freshPowerUps[owner] || [])];
+  const panelVisible = !elements.powerPanel.classList.contains("hidden");
   const powersBlocked = isClassicModeEnabled() || isTableEventActive("power_outage");
   const label = isDuelMode() ? `${getOwnerLabel(owner)} power-ups` : "Your power-ups";
   const hint = powersBlocked
@@ -17532,7 +17533,7 @@ function renderPowerUps() {
     button.setAttribute("aria-label", `${power.name}. ${button.dataset.description}`);
     button.classList.toggle("selected", selected);
     button.classList.toggle("unusable", !usable);
-    const freshIndex = freshIds.indexOf(power.id);
+    const freshIndex = panelVisible ? freshIds.indexOf(power.id) : -1;
     if (freshIndex >= 0) {
       freshIds.splice(freshIndex, 1);
       button.classList.add("fresh-power");
@@ -17541,16 +17542,18 @@ function renderPowerUps() {
       button.style.setProperty("--power-enter-delay", `${Math.min(animatedFreshCount, 5) * 80}ms`);
       animatedFreshCount += 1;
     }
-    if (selected && takePowerSelectionAnimation(owner, power.id)) {
+    if (panelVisible && selected && takePowerSelectionAnimation(owner, power.id)) {
       button.classList.add("power-selected-pop");
     }
     button.innerHTML = `<span>${power.name}</span><strong>${power.short}</strong><small>${isChaosInfusedPower(power) ? "Chaos Infused" : rarityInfo[power.rarity].label}</small>`;
     attachFloatingDescriptionTooltip(button);
     elements.powerPanel.appendChild(button);
   });
-  state.freshPowerUps[owner] = freshIds;
-  if (!freshIds.length && state.freshPowerUpAnimations?.[owner]) {
-    state.freshPowerUpAnimations[owner] = [];
+  if (panelVisible) {
+    state.freshPowerUps[owner] = freshIds;
+    if (!freshIds.length && state.freshPowerUpAnimations?.[owner]) {
+      state.freshPowerUpAnimations[owner] = [];
+    }
   }
 }
 
@@ -28211,10 +28214,12 @@ elements.rematchButton.addEventListener("click", () => {
       addSystemChat("Only the host can start a rematch.", { private: true, sync: false });
       return;
     }
+    clearQuestionCardPile();
     addSystemChat("Rematch started in the same room.");
     void beginRoomMatch();
     return;
   }
+  clearQuestionCardPile();
   startGame(state.mode);
 });
 async function startNextRoomMatchWithSpectatorMode(spectating) {
