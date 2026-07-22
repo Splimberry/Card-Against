@@ -5389,6 +5389,8 @@ function createAnswerCardNode(owner, cardIndex = 0) {
     applyProfileCustomizationSurface(card, getProfileCardCustomizationForOwner(owner) || defaultProfileCustomization, {
       forceCustom: isRoomMode()
     });
+  } else {
+    applyProfileCustomizationSurface(card, defaultProfileCustomization);
   }
   return card;
 }
