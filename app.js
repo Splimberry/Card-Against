@@ -3027,6 +3027,7 @@ const state = {
   roomSettingsRevisionByCode: {},
   roomSettingsUpdatedAtByCode: {},
   roomSettingsLocalUpdatedAtByCode: {},
+  roomSettingsEditSeqByCode: {},
   roomJoinInProgress: false,
   roomHeartbeatTimerId: null,
   roomEventPollId: null,
@@ -11233,9 +11234,31 @@ function getRoomPayloadUpdatedAt(payload = {}) {
 function markRoomSettingsLocallyChanged(code = state.roomSettings.code) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!normalizedCode || normalizedCode === "CAI-0000") {
-    return;
+    return 0;
   }
   state.roomSettingsLocalUpdatedAtByCode[normalizedCode] = Date.now();
+  state.roomSettingsEditSeqByCode[normalizedCode] = (Number(state.roomSettingsEditSeqByCode[normalizedCode]) || 0) + 1;
+  return state.roomSettingsEditSeqByCode[normalizedCode];
+}
+
+function getRoomSettingsEditSeq(code = state.roomSettings.code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  return normalizedCode ? Number(state.roomSettingsEditSeqByCode[normalizedCode]) || 0 : 0;
+}
+
+function shouldProtectLocalRoomSettings(code, payload = {}) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode || normalizedCode !== state.roomSettings.code || payload.localSettingsEcho) {
+    return false;
+  }
+  if (!hasActiveRoomContext() || state.joiningRoom || !isCurrentHost()) {
+    return false;
+  }
+  const localUpdatedAt = Number(state.roomSettingsLocalUpdatedAtByCode[normalizedCode]) || 0;
+  if (!localUpdatedAt || Date.now() - localUpdatedAt > 4000) {
+    return false;
+  }
+  return true;
 }
 
 function getRoomSettingsMeta(payload = {}) {
@@ -11252,6 +11275,9 @@ function isStaleRoomSettingsPayload(payload = {}) {
   const meta = getRoomSettingsMeta(payload);
   if (!meta.code) {
     return false;
+  }
+  if (shouldProtectLocalRoomSettings(meta.code, payload)) {
+    return true;
   }
   const knownRevision = Number(state.roomSettingsRevisionByCode[meta.code]) || 0;
   const knownUpdatedAt = Number(state.roomSettingsUpdatedAtByCode[meta.code]) || 0;
@@ -23616,7 +23642,7 @@ function scheduleRoomSettingsPublish(kind = state.currentRoomStatus, delay = 300
 }
 
 function publishCurrentRoomSettingsSoon() {
-  markRoomSettingsLocallyChanged();
+  const editSeq = markRoomSettingsLocallyChanged();
   const code = state.roomSettings.code;
   const updatedAt = state.roomSettingsLocalUpdatedAtByCode[code] || Date.now();
   const serverStatus = state.currentRoomStatus === "draft" ? "lobby" : state.currentRoomStatus;
@@ -23630,6 +23656,7 @@ function publishCurrentRoomSettingsSoon() {
     status: serverStatus,
     revision: Number(state.roomSettingsRevisionByCode[code]) || state.roomEventRevision || 0,
     updatedAt,
+    settingsEditSeq: editSeq,
     settings: { ...state.roomSettings, code }
   });
   if (state.currentRoomStatus === "lobby") {
@@ -23819,6 +23846,8 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
   if (!code || code === "CAI-0000") {
     return null;
   }
+  const publishSeq = getRoomSettingsEditSeq(code);
+  const settingsSnapshot = { ...state.roomSettings };
   const serverStatus = status === "draft" ? "lobby" : status;
   const host = (!state.joiningRoom && isCurrentHost())
     ? {
@@ -23832,7 +23861,7 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
     : null;
   const hostedRoom = state.hostedRooms.find((room) => room.code === code);
   if (hostedRoom) {
-    hostedRoom.settings = { ...state.roomSettings };
+    hostedRoom.settings = { ...settingsSnapshot };
     hostedRoom.status = serverStatus;
     if (host) {
       hostedRoom.host = { ...(hostedRoom.host || {}), ...host };
@@ -23845,7 +23874,8 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         status: serverStatus,
-        settings: { ...state.roomSettings },
+        settings: settingsSnapshot,
+        settingsEditSeq: publishSeq,
         hostParticipantId: state.clientId,
         host
       })
@@ -23860,8 +23890,11 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
     const data = await response.json();
     state.roomDirectoryOnline = true;
     updateRoomEventRevision(data.revision);
-    applyRealtimeRoomSettings({ ...data, code });
-    broadcastRealtimeRoomChange("room-settings", code, data);
+    const latestSeq = getRoomSettingsEditSeq(code);
+    if (state.roomSettings.code === code && latestSeq === publishSeq) {
+      applyRealtimeRoomSettings({ ...data, code, localSettingsEcho: true, settingsEditSeq: publishSeq });
+      broadcastRealtimeRoomChange("room-settings", code, { ...data, settingsEditSeq: publishSeq });
+    }
     return data;
   } catch {
     state.roomDirectoryOnline = false;
