@@ -2218,17 +2218,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .question-card-pile-card {
-  position: absolute;
-  top: 0;
+  position: fixed;
+  top: var(--question-snapshot-top, 0);
   right: auto;
   bottom: auto;
-  left: 0;
-  width: 100%;
-  height: fit-content;
+  left: var(--question-snapshot-left, 0);
+  width: var(--question-snapshot-width, 100%);
+  height: var(--question-snapshot-height, auto);
   margin: 0;
   opacity: 1;
   pointer-events: none;
-  z-index: var(--question-stack-z, 1);
+  z-index: calc(8 + var(--question-stack-z, 1));
   transform:
     translate3d(var(--question-stack-offset-x, 0), var(--question-stack-offset-y, 0.5rem), 0)
     rotate(var(--question-card-tilt, -1.2deg))
@@ -3976,7 +3976,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .black-card.preparing-question-card {
   opacity: 0;
   pointer-events: none;
-  filter: blur(10px) brightness(1.12);
+  filter: blur(12px) brightness(1.12);
   transform: translate3d(0, -115vh, 0) rotate(calc(var(--question-card-tilt, -1.2deg) - 1.6deg)) scale(0.96);
   transition: none;
 }
@@ -10586,13 +10586,18 @@ input:focus {
 @keyframes blackCardSlideFromTop {
   0% {
     opacity: 0;
-    filter: blur(10px) brightness(1.12);
+    filter: blur(12px) brightness(1.12);
     transform: translate3d(0, -115vh, 0) rotate(calc(var(--question-card-tilt, -1.2deg) - 1.6deg)) scale(0.96);
+  }
+
+  42% {
+    opacity: 0.78;
+    filter: blur(5px) brightness(1.08);
   }
 
   68% {
     opacity: 1;
-    filter: blur(0) brightness(1.04);
+    filter: blur(2px) brightness(1.04);
     transform: translate3d(0, 0.35rem, 0) rotate(var(--question-card-tilt, -1.2deg)) scale(1.012);
   }
 
