@@ -355,21 +355,24 @@
             </div>
           </section>
 
-          <section class="black-card" aria-labelledby="blackCardLabel">
-            <div class="question-meta">
-              <p id="blackCardLabel">Trivia Question</p>
-              <div class="question-badges">
-                <span id="questionThemeBadge">Mixed Trivia</span>
-                <span class="difficulty-badge difficulty-medium" id="questionDifficultyBadge">Medium +500</span>
+          <div class="question-card-stack">
+            <div class="question-card-pile" id="questionCardPile" aria-hidden="true"></div>
+            <section class="black-card" id="blackCard" aria-labelledby="blackCardLabel">
+              <div class="question-meta">
+                <p id="blackCardLabel">Trivia Question</p>
+                <div class="question-badges">
+                  <span id="questionThemeBadge">Mixed Trivia</span>
+                  <span class="difficulty-badge difficulty-medium" id="questionDifficultyBadge">Medium +500</span>
+                </div>
               </div>
-            </div>
-            <figure class="question-image hidden" id="questionImageWrap">
-              <img id="questionImage" alt="">
-              <div class="question-image-placeholder hidden" id="questionImagePlaceholder">Waiting for image...</div>
-              <figcaption id="questionImageCredit"></figcaption>
-            </figure>
-            <h2 id="blackCardText"></h2>
-          </section>
+              <figure class="question-image hidden" id="questionImageWrap">
+                <img id="questionImage" alt="">
+                <div class="question-image-placeholder hidden" id="questionImagePlaceholder">Waiting for image...</div>
+                <figcaption id="questionImageCredit"></figcaption>
+              </figure>
+              <h2 id="blackCardText"></h2>
+            </section>
+          </div>
 
           <section class="power-panel" id="powerPanel" aria-label="Power ups"></section>
           <button type="button" class="secondary-button bot-power-debug-open hidden" id="botPowerDebugOpenButton">Power Debug</button>

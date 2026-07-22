@@ -2217,8 +2217,48 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   font-weight: 750;
 }
 
+.question-card-stack {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: center;
+  width: min(100%, 27rem);
+  min-height: clamp(10rem, 20vh, 13rem);
+  margin: 0 auto;
+}
+
+.question-card-pile {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.question-card-pile-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  opacity: 1;
+  pointer-events: none;
+  z-index: var(--question-stack-z, 1);
+  transform:
+    translate3d(var(--question-stack-offset-x, 0), var(--question-stack-offset-y, 0.5rem), 0)
+    rotate(var(--question-card-tilt, -1.2deg))
+    scale(var(--question-stack-scale, 0.98));
+  filter: saturate(0.94) brightness(0.92);
+  box-shadow:
+    0 1rem 1.8rem rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.question-card-pile-card > * {
+  pointer-events: none;
+}
+
 .black-card {
   position: relative;
+  z-index: 20;
   grid-column: 1;
   grid-row: 1 / -1;
   align-self: center;
@@ -2233,7 +2273,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   background: #111;
   box-shadow: 0 1.2rem 2rem rgba(0, 0, 0, 0.34);
   overflow: hidden;
-  transform: rotate(-1.2deg);
+  transform: rotate(var(--question-card-tilt, -1.2deg));
   transition:
     height 520ms cubic-bezier(0.16, 1, 0.3, 1),
     min-height 520ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -2241,6 +2281,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     padding 320ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 320ms ease,
     border-color 240ms ease;
+}
+
+.question-card-stack .black-card {
+  width: 100%;
+  margin: 0;
+}
+
+.question-card-pile .question-card-pile-card {
+  z-index: var(--question-stack-z, 1);
 }
 
 .overlay-debug-layout {
@@ -10413,32 +10462,40 @@ input:focus {
 @keyframes blackCardDeal {
   0% {
     opacity: 0;
-    transform: translateY(-1.4rem) rotate(-1.2deg) scale(0.96);
+    filter: blur(8px);
+    transform: translateY(-3.4rem) rotate(calc(var(--question-card-tilt, -1.2deg) - 1.8deg)) scale(0.94);
+  }
+
+  64% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0.2rem) rotate(var(--question-card-tilt, -1.2deg)) scale(1.012);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) rotate(-1.2deg) scale(1);
+    filter: blur(0);
+    transform: translateY(0) rotate(var(--question-card-tilt, -1.2deg)) scale(1);
   }
 }
 
 @keyframes blackCardAnswerReveal {
   0% {
-    transform: rotate(-1.2deg) scale(0.982);
+    transform: rotate(var(--question-card-tilt, -1.2deg)) scale(0.982);
     box-shadow:
       0 0 0 1px rgba(255, 77, 125, 0.28),
       0 0.85rem 1.5rem rgba(0, 0, 0, 0.28);
   }
 
   58% {
-    transform: rotate(-1.2deg) scale(1.018);
+    transform: rotate(var(--question-card-tilt, -1.2deg)) scale(1.018);
     box-shadow:
       0 0 0 6px rgba(255, 77, 125, 0.18),
       0 1.35rem 2.3rem rgba(255, 77, 125, 0.14);
   }
 
   100% {
-    transform: rotate(-1.2deg) scale(1);
+    transform: rotate(var(--question-card-tilt, -1.2deg)) scale(1);
     box-shadow:
       0 0 0 5px rgba(255, 77, 125, 0.16),
       0 1.2rem 2rem rgba(0, 0, 0, 0.34);
@@ -10663,6 +10720,7 @@ input:focus {
     overflow: visible;
   }
 
+  .question-card-stack,
   .black-card,
   .power-panel,
   .effect-panel,
@@ -10821,7 +10879,7 @@ input:focus {
 
   .black-card {
     min-height: 15rem;
-    transform: none;
+    transform: rotate(var(--question-card-tilt, -1.2deg));
   }
 
   form,

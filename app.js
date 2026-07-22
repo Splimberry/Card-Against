@@ -2910,6 +2910,9 @@ const state = {
   questionImage: null,
   questionImageLoadId: 0,
   blackCardAnimationToken: 0,
+  questionCardStackSerial: 0,
+  questionCardTilt: -1.2,
+  previousQuestionCardTilt: -1.2,
   canonicalAnswer: "",
   acceptedAnswers: [],
   enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
@@ -3293,6 +3296,8 @@ const elements = {
   judgeBio: document.querySelector("#judgeBio"),
   judgeTags: document.querySelector("#judgeTags"),
   blackCardText: document.querySelector("#blackCardText"),
+  blackCard: document.querySelector("#blackCard"),
+  questionCardPile: document.querySelector("#questionCardPile"),
   questionThemeBadge: document.querySelector("#questionThemeBadge"),
   questionDifficultyBadge: document.querySelector("#questionDifficultyBadge"),
   questionImageWrap: document.querySelector("#questionImageWrap"),
@@ -10229,7 +10234,7 @@ function applyOwnerCustomizationSurface(element, owner) {
 }
 
 function applyBlackCardCustomizationForOwner(owner, customizationOverride = null) {
-  const blackCard = elements.blackCardText?.closest(".black-card");
+  const blackCard = elements.blackCard || elements.blackCardText?.closest(".black-card");
   if (!blackCard) {
     return;
   }
@@ -18281,7 +18286,7 @@ function handleTimerExpired() {
 
 function resetBlackCardSizing() {
   state.blackCardAnimationToken += 1;
-  const blackCard = elements.blackCardText.closest(".black-card");
+  const blackCard = getBlackCardElement();
   if (!blackCard) {
     return;
   }
@@ -18297,7 +18302,7 @@ function resetBlackCardSizing() {
 }
 
 function fitBlackCardToContent() {
-  const blackCard = elements.blackCardText.closest(".black-card");
+  const blackCard = getBlackCardElement();
   if (!blackCard || blackCard.classList.contains("answer-reveal")) {
     return;
   }
@@ -18310,6 +18315,108 @@ function fitBlackCardToContent() {
 
 function scheduleBlackCardFit() {
   window.requestAnimationFrame(() => fitBlackCardToContent());
+}
+
+const questionCardTiltOptions = [-4.4, -2.6, -0.4, 2.2, 4.1];
+
+function getBlackCardElement() {
+  return elements.blackCard || elements.blackCardText?.closest(".black-card");
+}
+
+function sanitizeQuestionCardSnapshot(card) {
+  card.removeAttribute("id");
+  card.removeAttribute("aria-labelledby");
+  delete card.dataset.questionStacked;
+  card.setAttribute("aria-hidden", "true");
+  card.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
+  card.querySelectorAll("[aria-live], [role]").forEach((element) => {
+    element.removeAttribute("aria-live");
+    element.removeAttribute("role");
+  });
+}
+
+function addQuestionCardToPile() {
+  const blackCard = getBlackCardElement();
+  if (!blackCard || !elements.questionCardPile || !blackCard.classList.contains("completed")) {
+    return;
+  }
+  if (blackCard.dataset.questionStacked === "true") {
+    return;
+  }
+  if (!state.blackCard && !elements.blackCardText?.textContent.trim()) {
+    return;
+  }
+
+  const snapshot = blackCard.cloneNode(true);
+  blackCard.dataset.questionStacked = "true";
+  sanitizeQuestionCardSnapshot(snapshot);
+  snapshot.classList.add("question-card-pile-card");
+  snapshot.classList.remove("answer-reveal", "dealt", "incoming-question-card");
+  state.questionCardStackSerial += 1;
+  snapshot.dataset.stackSerial = String(state.questionCardStackSerial);
+  snapshot.style.setProperty("--question-card-tilt", blackCard.style.getPropertyValue("--question-card-tilt") || `${state.questionCardTilt}deg`);
+  elements.questionCardPile.appendChild(snapshot);
+  trimQuestionCardPile();
+}
+
+function trimQuestionCardPile() {
+  if (!elements.questionCardPile) {
+    return;
+  }
+  const limit = Math.max(0, Number(state.maxRounds) || 10);
+  const cards = [...elements.questionCardPile.querySelectorAll(".question-card-pile-card")];
+  cards.slice(0, Math.max(0, cards.length - limit)).forEach((card) => card.remove());
+  updateQuestionCardPileDepth();
+}
+
+function updateQuestionCardPileDepth() {
+  if (!elements.questionCardPile) {
+    return;
+  }
+  const cards = [...elements.questionCardPile.querySelectorAll(".question-card-pile-card")];
+  elements.questionCardPile.dataset.stackDepth = String(cards.length);
+  cards.forEach((card, index) => {
+    const reverseIndex = cards.length - index;
+    const visibleIndex = Math.min(reverseIndex, 7);
+    card.style.setProperty("--question-stack-offset-y", `${visibleIndex * 0.48}rem`);
+    card.style.setProperty("--question-stack-offset-x", `${(visibleIndex % 2 === 0 ? -1 : 1) * Math.min(visibleIndex * 0.14, 0.7)}rem`);
+    card.style.setProperty("--question-stack-z", String(index + 1));
+    card.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
+  });
+}
+
+function clearQuestionCardPile() {
+  elements.questionCardPile?.replaceChildren();
+  if (elements.questionCardPile) {
+    elements.questionCardPile.dataset.stackDepth = "0";
+  }
+  state.questionCardStackSerial = 0;
+  state.questionCardTilt = -1.2;
+  state.previousQuestionCardTilt = -1.2;
+  applyQuestionCardTilt(state.questionCardTilt);
+}
+
+function getNextQuestionCardTilt() {
+  const previous = Number(state.questionCardTilt);
+  const candidates = questionCardTiltOptions.filter((tilt) => Math.abs(tilt - previous) >= 2.2);
+  const pool = candidates.length ? candidates : questionCardTiltOptions.filter((tilt) => tilt !== previous);
+  return pool[Math.floor(Math.random() * pool.length)] ?? -1.2;
+}
+
+function applyQuestionCardTilt(tilt) {
+  const blackCard = getBlackCardElement();
+  if (!blackCard) {
+    return;
+  }
+  blackCard.style.setProperty("--question-card-tilt", `${tilt}deg`);
+}
+
+function prepareIncomingQuestionCard() {
+  state.previousQuestionCardTilt = state.questionCardTilt;
+  state.questionCardTilt = getNextQuestionCardTilt();
+  applyQuestionCardTilt(state.questionCardTilt);
+  const blackCard = getBlackCardElement();
+  blackCard?.classList.remove("incoming-question-card");
 }
 
 function measureBlackCardNaturalHeight(blackCard) {
@@ -18382,11 +18489,14 @@ function resetRoundUiForLoading(options = {}) {
   stopNextRoundCountdown();
   stopTimer();
   clearCardBadges();
+  addQuestionCardToPile();
+  prepareIncomingQuestionCard();
   resetBlackCardSizing();
-  elements.blackCardText.closest(".black-card").classList.remove("completed", "answer-reveal");
-  elements.blackCardText.closest(".black-card").classList.remove("dealt");
+  const blackCard = getBlackCardElement();
+  blackCard?.classList.remove("completed", "answer-reveal");
+  blackCard?.classList.remove("dealt");
   if (options.resetBlackCardTheme) {
-    applyProfileCustomizationSurface(elements.blackCardText.closest(".black-card"), defaultProfileCustomization);
+    applyProfileCustomizationSurface(blackCard, defaultProfileCustomization);
   }
   elements.judgeAvatar.closest(".judge-panel").classList.remove("entering");
   elements.judgeAvatar.textContent = "?";
@@ -18448,7 +18558,7 @@ function renderRound() {
   stopNextRoundCountdown();
   stopLoadingMessages();
   clearCardBadges();
-  const blackCard = elements.blackCardText.closest(".black-card");
+  const blackCard = getBlackCardElement();
   const judgePanel = elements.judgeAvatar.closest(".judge-panel");
   const beforeBlackCardHeight = blackCard.getBoundingClientRect().height;
   blackCard.getAnimations?.().forEach((animation) => {
@@ -18458,7 +18568,8 @@ function renderRound() {
   });
   blackCard.style.height = `${beforeBlackCardHeight}px`;
   blackCard.style.overflow = "hidden";
-  blackCard.classList.remove("completed", "answer-reveal", "dealt");
+  blackCard.classList.remove("completed", "answer-reveal", "dealt", "incoming-question-card");
+  delete blackCard.dataset.questionStacked;
   const difficulty = normalizeDifficulty(state.questionDifficulty);
   judgePanel.classList.remove("entering");
   elements.judgeAvatar.textContent = state.judge.avatar;
@@ -18524,6 +18635,7 @@ function renderRound() {
   resetReactionPanel();
   setHidden(elements.errorPanel, true);
   setHidden(elements.endPanel, true);
+  restartAnimation(blackCard, "incoming-question-card");
   restartAnimation(blackCard, "dealt");
   restartAnimation(judgePanel, "entering");
   renderPowerUps();
@@ -21919,7 +22031,7 @@ async function newRound() {
     state.nextSetup = null;
     state.nextSetupPromise = null;
     state.nextSetupStatus = "idle";
-    resetRoundUiForLoading();
+    resetRoundUiForLoading({ resetBlackCardTheme: true });
     try {
       const setup = await requestRoundSetup(getThemeSetupOptions(preferredTheme));
       if (isCurrentMatchWork(matchToken)) {
@@ -21950,6 +22062,7 @@ async function newRound() {
     && !isRepeatedBlackCard(cachedSetup, previousBlackCard)
     && setupMatchesRoundMultipleChoiceChance(cachedSetup, { round: state.round, totalRounds: state.maxRounds })
   ) {
+    resetRoundUiForLoading({ resetBlackCardTheme: true });
     applyRoundSetup(cachedSetup);
     return;
   }
@@ -22114,6 +22227,7 @@ function resetMatch(mode) {
   resetAchievementStats();
   state.roundProgress = Array.from({ length: state.maxRounds }, () => "unanswered");
   state.matchEnded = false;
+  clearQuestionCardPile();
   state.localEntryStep = 1;
   clearRoundSubmissionState({ clearParticipants: mode === "room" });
   state.activePowerUp = null;
