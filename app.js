@@ -8118,7 +8118,7 @@ function getRoomOwnerForParticipant(participant, fallbackIndex = 0) {
     return "opponent";
   }
   const rawId = String(participant?.id || participant?.name || fallbackIndex);
-  const safeId = rawId.replace(/[^a-z0-9]+/gi, "").slice(-12) || String(fallbackIndex + 1);
+  const safeId = (hashString(rawId) >>> 0).toString(36).slice(0, 8) || String(fallbackIndex + 1);
   return participant?.bot ? `roomBot${safeId}` : `roomUser${safeId}`;
 }
 
@@ -11975,18 +11975,19 @@ function mergeRoomSettingsFresh(currentSettings = {}, incomingSettings = {}, pay
 function getRoomMatchSettingsPayload(settings = state.roomSettings) {
   const source = settings && typeof settings === "object" ? settings : {};
   const enabledThemes = normalizeCachedThemes(source.enabledThemes);
+  const classicMode = Boolean(source.classicMode);
   return {
     rounds: clampNumber(source.rounds, 1, 10, 10),
     timerSeconds: clampNumber(source.timerSeconds, 10, 60, 30),
     maxPlayers: clampNumber(source.maxPlayers, 2, 10, 5),
-    harsh: Boolean(source.harsh),
-    chaos: Boolean(source.chaos),
-    timeMoney: Boolean(source.timeMoney),
-    amplified: Boolean(source.amplified),
-    wildFire: Boolean(source.wildFire),
-    partyMayhem: Boolean(source.partyMayhem),
-    classicMode: Boolean(source.classicMode),
-    randomModifiers: Boolean(source.randomModifiers),
+    harsh: classicMode ? false : Boolean(source.harsh),
+    chaos: classicMode ? false : Boolean(source.chaos),
+    timeMoney: classicMode ? false : Boolean(source.timeMoney),
+    amplified: classicMode ? false : Boolean(source.amplified),
+    wildFire: classicMode ? false : Boolean(source.wildFire),
+    partyMayhem: classicMode ? false : Boolean(source.partyMayhem),
+    classicMode,
+    randomModifiers: classicMode ? false : Boolean(source.randomModifiers),
     autoAdvance: source.autoAdvance !== false,
     enabledThemes: enabledThemes.length ? enabledThemes : [...triviaThemes],
     private: Boolean(source.private),
@@ -24475,7 +24476,6 @@ function updateRoomPlayerLimit(value) {
 }
 
 function syncClassicRoomToggleState() {
-  const classic = Boolean(elements.classicModeToggle?.checked);
   [
     elements.harshModeToggle,
     elements.chaosModeToggle,
@@ -24485,23 +24485,53 @@ function syncClassicRoomToggleState() {
     elements.partyMayhemModeToggle
   ].forEach((toggle) => {
     if (toggle) {
-      toggle.disabled = classic;
+      toggle.disabled = false;
     }
   });
   if (elements.randomModeToggle) {
-    elements.randomModeToggle.disabled = classic;
+    elements.randomModeToggle.disabled = false;
   }
 }
 
-function applyRoomVariantControlsToSettings() {
+function getRoomModifierToggleElements() {
+  return [
+    elements.randomModeToggle,
+    elements.harshModeToggle,
+    elements.chaosModeToggle,
+    elements.timeMoneyModeToggle,
+    elements.amplifiedModeToggle,
+    elements.wildFireModeToggle,
+    elements.partyMayhemModeToggle
+  ].filter(Boolean);
+}
+
+function clearRoomModifierToggles() {
+  getRoomModifierToggleElements().forEach((toggle) => {
+    toggle.checked = false;
+  });
+}
+
+function getRoomVariantSourceElement(options = {}) {
+  if (options && options.target && typeof options.target === "object") {
+    return options.target;
+  }
+  return options?.sourceElement || null;
+}
+
+function applyRoomVariantControlsToSettings(options = {}) {
+  const sourceElement = getRoomVariantSourceElement(options);
+  const modifierToggles = getRoomModifierToggleElements();
+  if (
+    sourceElement
+    && sourceElement !== elements.classicModeToggle
+    && modifierToggles.includes(sourceElement)
+    && sourceElement.checked
+    && elements.classicModeToggle.checked
+  ) {
+    elements.classicModeToggle.checked = false;
+  }
   if (elements.classicModeToggle.checked) {
-    elements.randomModeToggle.checked = false;
-    elements.harshModeToggle.checked = false;
-    elements.chaosModeToggle.checked = false;
-    elements.timeMoneyModeToggle.checked = false;
-    elements.amplifiedModeToggle.checked = false;
-    elements.wildFireModeToggle.checked = false;
-    elements.partyMayhemModeToggle.checked = false;
+    clearRoomModifierToggles();
   }
   state.roomSettings.harsh = elements.harshModeToggle.checked;
   state.roomSettings.chaos = elements.chaosModeToggle.checked;
@@ -24522,7 +24552,7 @@ function applyRoomVariantControlsToSettings() {
 }
 
 function updateRoomVariants(options = {}) {
-  applyRoomVariantControlsToSettings();
+  applyRoomVariantControlsToSettings(options);
   if (options.publish === false) {
     return;
   }
@@ -24549,6 +24579,20 @@ async function handleClassicModeToggle() {
     updateRoomVariants();
     return;
   }
+  markRoomSettingsLocallyChanged();
+  clearRoomModifierToggles();
+  state.roomSettings = {
+    ...state.roomSettings,
+    harsh: false,
+    chaos: false,
+    timeMoney: false,
+    amplified: false,
+    wildFire: false,
+    partyMayhem: false,
+    randomModifiers: false,
+    classicMode: true
+  };
+  syncRoomControls();
   const confirmed = await showAppConfirm({
     eyebrow: "Classic mode",
     title: "Disable modifiers and power-ups?",
@@ -24559,8 +24603,10 @@ async function handleClassicModeToggle() {
   });
   if (!confirmed) {
     elements.classicModeToggle.checked = false;
+  } else {
+    elements.classicModeToggle.checked = true;
   }
-  updateRoomVariants({ immediate: true });
+  updateRoomVariants({ immediate: true, sourceElement: elements.classicModeToggle });
 }
 
 function buildRoomDirectoryPayload(status = "lobby") {
@@ -24886,6 +24932,53 @@ async function updateRoomPresence(room, options = {}) {
       participants: state.roomParticipants
     };
   } catch {
+    return null;
+  }
+}
+
+async function publishRoomParticipantDelta(participant, options = {}) {
+  const code = String(options.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code === "CAI-0000" || !participant?.id) {
+    return null;
+  }
+  try {
+    const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/presence`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        participant,
+        compact: true,
+        hostParticipantId: state.clientId,
+        ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
+      })
+    }, roomPresenceFetchTimeoutMs);
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return null;
+    }
+    const data = await response.json().catch(() => ({}));
+    state.roomDirectoryOnline = true;
+    if (data.participant) {
+      applyRoomParticipantDelta(data.participant, {
+        code,
+        status: data.status || "",
+        revision: data.revision || 0,
+        updatedAt: data.updatedAt || Date.now()
+      });
+      if (!options.skipRealtimeBroadcast) {
+        broadcastRealtimeRoomChange("participant-updated", code, {
+          status: data.status || "",
+          revision: data.revision || 0,
+          updatedAt: data.updatedAt || Date.now(),
+          participant: data.participant
+        });
+      }
+    }
+    return data;
+  } catch {
+    state.roomDirectoryOnline = false;
     return null;
   }
 }
@@ -26321,7 +26414,24 @@ async function addBotToRoom() {
   state.roomParticipants = normalizeRoomParticipantsList([...participants, bot]);
   syncRoomPlayersFromParticipants();
   addSystemChat(`${botName} joined as a bot.`);
-  upsertHostedRoom("lobby");
+  const hostedRoom = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
+  if (hostedRoom) {
+    hostedRoom.participants = [...state.roomParticipants];
+    hostedRoom.activePlayers = state.roomParticipants.filter((participant) => participant.active && !participant.spectator).length;
+    hostedRoom.spectators = state.roomParticipants.filter((participant) => participant.active && participant.spectator).length;
+    hostedRoom.updatedAt = Date.now();
+  }
+  broadcastRealtimeRoomChange("participant-updated", state.roomSettings.code, {
+    status: state.currentRoomStatus,
+    revision: state.roomEventRevision,
+    updatedAt: Date.now(),
+    participant: bot
+  });
+  publishRoomParticipantDelta(bot).then((data) => {
+    if (!data) {
+      upsertHostedRoom("lobby");
+    }
+  });
   renderRoomLobby();
   playSound("click");
 }

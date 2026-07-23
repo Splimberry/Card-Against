@@ -2327,9 +2327,9 @@ async function handleRoomPresence(req, res, code) {
         return;
       }
     }
-    if (existingIndex < 0 && !participant.spectator && !participant.bot && !participant.host) {
-      const activeRealPlayers = room.participants.filter((entry) => entry.active !== false && !entry.spectator && !entry.bot).length;
-      if (activeRealPlayers >= room.settings.maxPlayers) {
+    if (existingIndex < 0 && !participant.spectator && !participant.host) {
+      const activePlayers = room.participants.filter((entry) => entry.active !== false && !entry.spectator).length;
+      if (activePlayers >= room.settings.maxPlayers) {
         sendJson(res, 409, { error: "Room is full." });
         return;
       }
@@ -3001,6 +3001,7 @@ function normalizeRoomSettings(settings = {}, code = "") {
     wildFire: classicMode ? false : Boolean(source.wildFire),
     partyMayhem: classicMode ? false : Boolean(source.partyMayhem),
     classicMode,
+    randomModifiers: classicMode ? false : Boolean(source.randomModifiers),
     autoAdvance: source.autoAdvance !== false,
     private: Boolean(source.private),
     password: String(source.password || "").slice(0, 32),
