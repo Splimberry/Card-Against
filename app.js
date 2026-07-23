@@ -3050,6 +3050,7 @@ const state = {
   currentRoundCardRatings: [],
   currentRoundCorrectIndexes: [],
   currentRoundGradingReasons: [],
+  roundAnswerDamageByOwner: {},
   answerRemainingTimes: {
     player: savedTimerSeconds,
     opponent: savedTimerSeconds,
@@ -4193,6 +4194,7 @@ function resetRoundAnswers() {
   state.currentRoundCardRatings = [];
   state.currentRoundCorrectIndexes = [];
   state.currentRoundGradingReasons = [];
+  state.roundAnswerDamageByOwner = {};
 }
 
 function clearRoomParticipantSubmissionState() {
@@ -5764,6 +5766,122 @@ function getAnswerCardNodes() {
   return [...elements.cardsArea.querySelectorAll(".white-card")];
 }
 
+function normalizeAnswerDamageMap(value = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.fromEntries(
+    Object.entries(source)
+      .filter(([owner, damaged]) => owner && damaged)
+      .map(([owner, damaged]) => [String(owner), Boolean(damaged)])
+  );
+}
+
+function markAnswerCardDamaged(owner, amount = 0) {
+  if (!owner || !getActiveOwners().includes(owner) || Math.max(0, Number(amount) || 0) <= 0) {
+    return false;
+  }
+  state.roundAnswerDamageByOwner = normalizeAnswerDamageMap(state.roundAnswerDamageByOwner);
+  state.roundAnswerDamageByOwner[owner] = true;
+  getAnswerCardNodes()
+    .filter((card) => card.dataset.owner === owner)
+    .forEach((card) => applyAnswerCardDamageState(card, owner));
+  return true;
+}
+
+function isAnswerCardDamaged(owner) {
+  return Boolean(normalizeAnswerDamageMap(state.roundAnswerDamageByOwner)[owner]);
+}
+
+function getDamagedAnswerParticipantIds() {
+  return Object.keys(normalizeAnswerDamageMap(state.roundAnswerDamageByOwner))
+    .map(getRoomParticipantIdForOwner)
+    .filter(Boolean);
+}
+
+function applyDamagedAnswerParticipantIds(participantIds = []) {
+  if (!Array.isArray(participantIds)) {
+    return false;
+  }
+  const nextDamage = {};
+  participantIds
+    .map((participantId) => getRoomOwnerForParticipantId(participantId))
+    .filter((owner) => owner && getActiveOwners().includes(owner))
+    .forEach((owner) => {
+      nextDamage[owner] = true;
+    });
+  state.roundAnswerDamageByOwner = normalizeAnswerDamageMap({
+    ...state.roundAnswerDamageByOwner,
+    ...nextDamage
+  });
+  return Object.keys(nextDamage).length > 0;
+}
+
+function applyAnswerCardDamageState(card, owner = card?.dataset?.owner || "") {
+  if (!card) {
+    return;
+  }
+  card.classList.toggle("answer-damaged", isAnswerCardDamaged(owner));
+}
+
+const answerDamagePowerTypes = new Set([
+  "sabotage",
+  "lightning_strike",
+  "zap_strike",
+  "get_good",
+  "shameless",
+  "loose_cannon",
+  "hitman",
+  "execution",
+  "haha_you_lose",
+  "lawsuit"
+]);
+
+function getTargetedPowerDamageAmount(entry, deltas = {}) {
+  const meta = getEntryMeta(entry);
+  const target = getEntryTarget(entry);
+  if (
+    !entry?.power?.targeted
+    || !answerDamagePowerTypes.has(entry.power.type)
+    || !target
+    || target === entry.owner
+    || !getActiveOwners().includes(target)
+  ) {
+    return 0;
+  }
+  const immediateLoss = Math.max(0, Number(meta.appliedLoss) || 0, Number(meta.stolenAmount) || 0);
+  if (immediateLoss > 0) {
+    return immediateLoss;
+  }
+  return Math.abs(Math.min(0, Number(deltas?.[target]) || 0));
+}
+
+function markTargetedPowerAnswerDamage(entry, deltas = {}) {
+  const amount = getTargetedPowerDamageAmount(entry, deltas);
+  return markAnswerCardDamaged(getEntryTarget(entry), amount);
+}
+
+function collectTargetedPowerAnswerDamage(playedEntries = [], deltas = {}) {
+  const damagedOwners = new Set(Object.keys(normalizeAnswerDamageMap(state.roundAnswerDamageByOwner)));
+  playedEntries.forEach((entry) => {
+    if (markTargetedPowerAnswerDamage(entry, deltas)) {
+      damagedOwners.add(getEntryTarget(entry));
+    }
+  });
+  state.roundAnswerDamageByOwner = normalizeAnswerDamageMap(
+    Object.fromEntries([...damagedOwners].map((owner) => [owner, true]))
+  );
+  return [...damagedOwners].filter((owner) => getActiveOwners().includes(owner));
+}
+
+function decorateAwardWithAnswerDamage(awarded, playedEntries = getPlayedPowerEntries(), deltas = awarded?.deltas || {}) {
+  if (!awarded || typeof awarded !== "object") {
+    return awarded;
+  }
+  const damagedOwners = collectTargetedPowerAnswerDamage(playedEntries, deltas);
+  awarded.damagedOwners = damagedOwners;
+  awarded.damagedParticipantIds = isRoomMode() ? damagedOwners.map(getRoomParticipantIdForOwner).filter(Boolean) : [];
+  return awarded;
+}
+
 function createAnswerCardNode(owner, cardIndex = 0) {
   const card = document.createElement("article");
   card.className = "white-card";
@@ -5787,7 +5905,10 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   const text = document.createElement("p");
   const gradingReason = document.createElement("small");
   gradingReason.className = "grading-reason hidden";
-  card.append(answerOwner, badge, text, gradingReason);
+  const damage = document.createElement("span");
+  damage.className = "answer-card-damage";
+  damage.setAttribute("aria-hidden", "true");
+  card.append(answerOwner, badge, text, gradingReason, damage);
   if (shouldUseAnswerCardCustomization(owner)) {
     applyProfileCustomizationSurface(card, getProfileCardCustomizationForOwner(owner) || defaultProfileCustomization, {
       forceCustom: isRoomMode()
@@ -5795,6 +5916,7 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   } else {
     applyProfileCustomizationSurface(card, defaultProfileCustomization);
   }
+  applyAnswerCardDamageState(card, owner);
   return card;
 }
 
@@ -5857,11 +5979,13 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
     const gradingReason = card.querySelector(".grading-reason");
     updateInlineGradingReason(gradingReason, reason);
     card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
+    applyAnswerCardDamageState(card);
   });
 }
 
 function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   const cardIndex = Number(card.dataset.cardIndex);
+  const owner = card.dataset.owner || getRoundCardOwners()[cardIndex] || "";
   const text = card.querySelector("p");
   if (text) {
     text.textContent = cards[cardIndex] || "";
@@ -5874,6 +5998,7 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   updateInlineGradingReason(gradingReason, reason);
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
   card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
+  applyAnswerCardDamageState(card, owner);
 }
 
 function getOwnAnswerCardIndex(cards) {
@@ -9955,6 +10080,11 @@ function normalizeRoomRoundResultPayload(payload = {}) {
     winningParticipantIds: Array.isArray(source.winningParticipantIds)
       ? [...new Set(source.winningParticipantIds.map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 10)
       : [],
+    damagedParticipantIds: Array.isArray(source.damagedParticipantIds)
+      ? [...new Set(source.damagedParticipantIds.map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 10)
+      : Array.isArray(source.awarded?.damagedParticipantIds)
+        ? [...new Set(source.awarded.damagedParticipantIds.map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 10)
+        : [],
     cardCustomization: source.cardCustomization ? getRoomSyncCardCustomization(source.cardCustomization) : null,
     awarded: source.awarded && typeof source.awarded === "object" ? cloneRoomAbilitySyncValue(source.awarded, null) : null,
     powerState: source.powerState && typeof source.powerState === "object" ? cloneRoomAbilitySyncValue(source.powerState, null) : null,
@@ -10286,6 +10416,7 @@ const roomAbilityEffectMapKeys = [
   "permanentDeathMarks",
   "allOutRounds",
   "extraPowerUses",
+  "roundAnswerDamageByOwner",
   "arsonists",
   "bartenders",
   "hotInHereOwners",
@@ -10418,6 +10549,9 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
   result.winningParticipantIds = Array.isArray(options.winningParticipantIds)
     ? [...new Set(options.winningParticipantIds.map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 10)
     : [];
+  result.damagedParticipantIds = Array.isArray(options.damagedParticipantIds)
+    ? [...new Set(options.damagedParticipantIds.map((id) => String(id || "").trim()).filter(Boolean))].slice(0, 10)
+    : getDamagedAnswerParticipantIds().slice(0, 10);
   result.cardCustomization = shouldUseAnswerCardCustomization(revealOwner)
     ? getRoomSyncCardCustomization(getProfileCardCustomizationForOwner(revealOwner) || defaultProfileCustomization)
     : null;
@@ -10755,7 +10889,8 @@ function applyRoomPowerState(payload = {}) {
     getRoomPowerEntryUpdatedAt("players", owner, entryUpdatedAt || Date.now());
     changed = true;
   });
-  if (!payloadIsOlderThanKnownPowerState && applyRoomAbilityEffectStatePayload(effects)) {
+  const effectsApplied = !payloadIsOlderThanKnownPowerState && applyRoomAbilityEffectStatePayload(effects);
+  if (effectsApplied) {
     changed = true;
   }
   if (!changed) {
@@ -10835,6 +10970,9 @@ function applyRoomPowerState(payload = {}) {
     );
   }
   renderScore();
+  if (effectsApplied) {
+    getAnswerCardNodes().forEach((card) => applyAnswerCardDamageState(card));
+  }
   renderTableEventControls();
   renderPowerUps();
   renderRoomPlayers();
@@ -17626,6 +17764,7 @@ function completeTableSabotageSelection(targetOwner) {
   markAchievementTarget(owner, targetOwner);
   const amount = Math.floor(Math.max(0, getScore(targetOwner)) * 0.05);
   const appliedLoss = applyProtectedScoreLoss(targetOwner, amount, "Sabotage");
+  markAnswerCardDamaged(targetOwner, appliedLoss);
   const debuffResult = applyRandomDebuff(targetOwner, "Sabotage", { sourceOwner: owner });
   const debuffDetail = shouldQueueCocktailResultFlash(debuffResult) ? debuffResult : "";
   const targetDetails = [appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "", debuffDetail].filter(Boolean);
@@ -19125,6 +19264,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     }
   }
 
+  markTargetedPowerAnswerDamage({ owner, power, meta: state.playedPowerMeta[owner] || recordMeta });
   broadcastRoomPowerState(owner, power, state.playedPowerMeta[owner] || recordMeta);
   renderPowerUps();
   if (!meta.suppressSound) {
@@ -20392,6 +20532,7 @@ function addQuestionCardToPile() {
   snapshot.style.setProperty("--question-stack-offset-y", `${visibleIndex * 0.48}rem`);
   snapshot.style.setProperty("--question-stack-offset-x", "0rem");
   snapshot.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
+  snapshot.style.setProperty("--question-stack-depth-index", String(visibleIndex));
   snapshot.style.width = "100%";
   snapshot.style.height = `${blackCard.getBoundingClientRect().height}px`;
   elements.questionCardPile.appendChild(snapshot);
@@ -20427,6 +20568,7 @@ function updateQuestionCardPileDepth() {
       card.style.setProperty("--question-stack-scale", String(Math.max(0.93, 1 - visibleIndex * 0.012)));
     }
     card.style.setProperty("--question-stack-z", String(index + 1));
+    card.style.setProperty("--question-stack-depth-index", String(visibleIndex));
   });
 }
 
@@ -28492,6 +28634,9 @@ async function playRound(rawInput, options = {}) {
   state.currentRoundCardRatings = cardRatings;
   state.currentRoundCorrectIndexes = roundResult.correctIndexes;
   state.currentRoundGradingReasons = getRoundGradingReasons(roundResult.cards, cardRatings, roundResult);
+  if (syncedRoundResult?.damagedParticipantIds?.length) {
+    applyDamagedAnswerParticipantIds(syncedRoundResult.damagedParticipantIds);
+  }
   clearCardBadges();
   renderAnswerCardLayout(roundResult.cards, roundResult.correctIndexes, roundResult.winner.index);
   fillVisibleAnswerCards(roundResult.cards, cardRatings);
@@ -28579,6 +28724,7 @@ async function playRound(rawInput, options = {}) {
       ? awardPoints(winnerOwner, winningRating, winningOwners, ratingsByOwner)
       : createNoCorrectAward();
   }
+  decorateAwardWithAnswerDamage(awarded);
   awardRoundCoins(winningOwners, awarded);
   recordRoundResult(winnerOwner, awarded, roundResult.cards[winner.index], winningOwners);
   renderScore();
@@ -28588,6 +28734,7 @@ async function playRound(rawInput, options = {}) {
       winnerIndex: winner.index,
       revealAnswerIndex,
       winningParticipantIds: winningOwners.map(getRoomParticipantIdForOwner).filter(Boolean),
+      damagedParticipantIds: awarded.damagedParticipantIds || getDamagedAnswerParticipantIds(),
       awarded
     });
     void publishRoomScoreState("round-score");

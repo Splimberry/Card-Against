@@ -2641,6 +2641,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .question-card-pile-card {
+  --question-stack-depth-index: 1;
   position: absolute;
   top: 50%;
   right: auto;
@@ -2655,10 +2656,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
     scale(var(--question-stack-scale, 0.98));
-  filter: saturate(0.68) brightness(0.52) contrast(0.88);
+  filter:
+    saturate(calc(0.78 - (min(var(--question-stack-depth-index), 7) * 0.025)))
+    brightness(calc(0.62 - (min(var(--question-stack-depth-index), 7) * 0.022)))
+    contrast(0.9);
   box-shadow:
-    0 0.75rem 1.2rem rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.025);
+    0 calc(0.42rem + (min(var(--question-stack-depth-index), 7) * 0.16rem)) calc(0.9rem + (min(var(--question-stack-depth-index), 7) * 0.22rem)) rgba(0, 0, 0, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+    inset 0 -0.55rem 0.85rem rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.035);
+  outline: 1px solid rgba(255, 255, 255, 0.045);
+  outline-offset: -2px;
   transform-origin: center;
   animation: none !important;
   backface-visibility: hidden;
@@ -2718,7 +2726,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   margin: 0;
   z-index: var(--question-stack-z, 1);
   opacity: 1;
-  filter: saturate(0.68) brightness(0.52) contrast(0.88);
+  filter:
+    saturate(calc(0.78 - (min(var(--question-stack-depth-index), 7) * 0.025)))
+    brightness(calc(0.62 - (min(var(--question-stack-depth-index), 7) * 0.022)))
+    contrast(0.9);
   transform:
     translate3d(var(--question-stack-offset-x, 0), calc(-50% + var(--question-stack-offset-y, 0.5rem)), 0)
     rotate(var(--question-card-tilt, -1.2deg))
@@ -3992,6 +4003,13 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   --power-card-rest-filter: brightness(1);
   --power-card-refill-mid-filter: brightness(1.08);
   --power-card-refresh-mid-filter: saturate(1.08) brightness(1.1);
+  --power-enter-x: 2.35rem;
+  --power-enter-y: 0rem;
+  --power-enter-scale: 0.92;
+  --power-enter-rotate: -1deg;
+  --power-enter-glow: rgba(34, 211, 238, 0.24);
+  --power-enter-duration: 560ms;
+  --power-refresh-duration: 620ms;
   min-height: clamp(4.25rem, 10vh, 5.4rem);
   padding: 0.62rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -4027,6 +4045,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card[data-rarity="grey"] {
   border-color: rgba(180, 187, 198, 0.38);
+  --power-enter-x: 2.1rem;
+  --power-enter-scale: 0.94;
+  --power-enter-rotate: -0.6deg;
+  --power-enter-glow: rgba(180, 187, 198, 0.2);
 }
 
 .power-card[data-rarity="grey"] strong {
@@ -4036,6 +4058,12 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .power-card[data-rarity="blue"] {
   border-color: rgba(34, 211, 238, 0.5);
   background: rgba(34, 211, 238, 0.08);
+  --power-enter-x: 2.65rem;
+  --power-enter-y: -0.06rem;
+  --power-enter-scale: 0.91;
+  --power-enter-rotate: -2.2deg;
+  --power-enter-glow: rgba(34, 211, 238, 0.36);
+  --power-card-refill-mid-filter: saturate(1.15) brightness(1.15);
 }
 
 .power-card[data-rarity="blue"] strong {
@@ -4045,6 +4073,13 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .power-card[data-rarity="purple"] {
   border-color: rgba(168, 85, 247, 0.58);
   background: rgba(168, 85, 247, 0.1);
+  --power-enter-x: 2.9rem;
+  --power-enter-y: 0.08rem;
+  --power-enter-scale: 0.88;
+  --power-enter-rotate: 2.6deg;
+  --power-enter-glow: rgba(168, 85, 247, 0.42);
+  --power-enter-duration: 640ms;
+  --power-card-refill-mid-filter: saturate(1.22) brightness(1.18);
 }
 
 .power-card[data-rarity="purple"] strong {
@@ -4054,6 +4089,14 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .power-card[data-rarity="gold"] {
   border-color: rgba(251, 191, 36, 0.72);
   background: rgba(251, 191, 36, 0.12);
+  --power-enter-x: 3.1rem;
+  --power-enter-y: -0.12rem;
+  --power-enter-scale: 0.86;
+  --power-enter-rotate: -3deg;
+  --power-enter-glow: rgba(251, 191, 36, 0.52);
+  --power-enter-duration: 700ms;
+  --power-refresh-duration: 720ms;
+  --power-card-refill-mid-filter: saturate(1.3) brightness(1.24);
 }
 
 .power-card[data-rarity="gold"] strong {
@@ -4137,13 +4180,13 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card.fresh-refill {
   animation-name: powerRefillSlideIn;
-  animation-duration: 560ms;
+  animation-duration: var(--power-enter-duration, 560ms);
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .power-card.fresh-refresh {
   animation-name: powerRefreshSlideIn;
-  animation-duration: 620ms;
+  animation-duration: var(--power-refresh-duration, 620ms);
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -4267,13 +4310,13 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card.chaos-infused.fresh-refill {
   animation:
-    powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    powerRefillSlideIn var(--power-enter-duration, 560ms) cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.fresh-refresh {
   animation:
-    powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    powerRefreshSlideIn var(--power-refresh-duration, 620ms) cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
@@ -4311,15 +4354,20 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 @keyframes powerRefillSlideIn {
   0% {
     opacity: 0;
-    transform: translateX(2.4rem) scale(0.92);
+    transform: translate3d(var(--power-enter-x, 2.4rem), var(--power-enter-y, 0), 0) scale(var(--power-enter-scale, 0.92)) rotate(var(--power-enter-rotate, -1deg));
     filter: blur(5px) brightness(1.18);
     box-shadow: 0 0 0 rgba(34, 211, 238, 0);
+  }
+
+  38% {
+    transform: translate3d(calc(var(--power-enter-x, 2.4rem) * -0.08), calc(var(--power-enter-y, 0) * -0.4), 0) scale(1.025) rotate(calc(var(--power-enter-rotate, -1deg) * -0.35));
+    box-shadow: 0 0 1.15rem var(--power-enter-glow, rgba(34, 211, 238, 0.24));
   }
 
   64% {
     opacity: var(--power-card-visible-opacity);
     filter: blur(0) var(--power-card-refill-mid-filter);
-    box-shadow: 0 0 1.5rem rgba(34, 211, 238, 0.3);
+    box-shadow: 0 0 1.7rem var(--power-enter-glow, rgba(34, 211, 238, 0.3));
   }
 
   100% {
@@ -4332,8 +4380,13 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 @keyframes powerRefreshSlideIn {
   0% {
     opacity: 0;
-    transform: translateX(2.8rem) scale(0.94);
+    transform: translate3d(calc(var(--power-enter-x, 2.8rem) * 1.08), var(--power-enter-y, 0), 0) scale(calc(var(--power-enter-scale, 0.94) + 0.02)) rotate(calc(var(--power-enter-rotate, -1deg) * 1.25));
     filter: blur(7px) saturate(0.78) brightness(1.22);
+  }
+
+  34% {
+    transform: translate3d(calc(var(--power-enter-x, 2.8rem) * 0.18), calc(var(--power-enter-y, 0) * -0.5), 0) scale(1.035) rotate(calc(var(--power-enter-rotate, -1deg) * -0.55));
+    box-shadow: 0 0 1.85rem var(--power-enter-glow, rgba(34, 211, 238, 0.28));
   }
 
   62% {
@@ -5237,6 +5290,68 @@ input:focus {
   animation: answerCardCycleIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.answer-card-damage {
+  position: absolute;
+  inset: 0.42rem;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: calc(8px - 2px);
+  opacity: 0;
+  background:
+    linear-gradient(116deg, transparent 0 21%, rgba(255, 255, 255, 0.72) 21.4% 22.1%, rgba(21, 25, 34, 0.76) 22.2% 22.8%, transparent 23.2% 100%),
+    linear-gradient(32deg, transparent 0 48%, rgba(21, 25, 34, 0.52) 48.3% 49%, transparent 49.4% 100%),
+    linear-gradient(150deg, transparent 0 57%, rgba(255, 77, 125, 0.34) 57.3% 57.9%, transparent 58.4% 100%),
+    linear-gradient(74deg, transparent 0 68%, rgba(21, 25, 34, 0.44) 68.2% 68.85%, transparent 69.1% 100%);
+  mix-blend-mode: multiply;
+  transform: scale(0.985);
+  filter: drop-shadow(0 0 0.38rem rgba(255, 77, 125, 0.22));
+  transition:
+    opacity 260ms ease,
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.white-card.answer-damaged .answer-card-damage {
+  opacity: 0.82;
+  transform: scale(1);
+  animation: answerCardDamageIn 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.white-card.answer-damaged[data-card-custom="true"] .answer-card-damage,
+.white-card.answer-damaged.bot-answer-card .answer-card-damage {
+  background:
+    linear-gradient(116deg, transparent 0 21%, rgba(255, 255, 255, 0.92) 21.4% 22.1%, rgba(255, 77, 125, 0.82) 22.2% 22.8%, transparent 23.2% 100%),
+    linear-gradient(32deg, transparent 0 48%, rgba(255, 255, 255, 0.48) 48.3% 49%, transparent 49.4% 100%),
+    linear-gradient(150deg, transparent 0 57%, rgba(255, 77, 125, 0.52) 57.3% 57.9%, transparent 58.4% 100%),
+    linear-gradient(74deg, transparent 0 68%, rgba(255, 255, 255, 0.38) 68.2% 68.85%, transparent 69.1% 100%);
+  mix-blend-mode: screen;
+  opacity: 0.76;
+}
+
+@keyframes answerCardDamageIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.025);
+    filter: blur(3px) drop-shadow(0 0 0 rgba(255, 77, 125, 0));
+  }
+
+  42% {
+    opacity: 0.95;
+    transform: scale(0.992);
+    filter: blur(0) drop-shadow(0 0 0.55rem rgba(255, 77, 125, 0.34));
+  }
+
+  100% {
+    opacity: 0.82;
+    transform: scale(1);
+    filter: blur(0) drop-shadow(0 0 0.38rem rgba(255, 77, 125, 0.22));
+  }
+}
+
+body[data-performance-mode="low"] .white-card.answer-damaged .answer-card-damage,
+body[data-performance-mode="minimal"] .white-card.answer-damaged .answer-card-damage {
+  animation: none;
+}
+
 @keyframes answerCardCycleOut {
   0% {
     opacity: 1;
@@ -5361,6 +5476,11 @@ input:focus {
 .white-card[data-card-custom="true"] > * {
   position: relative;
   z-index: 1;
+}
+
+.white-card[data-card-custom="true"] > .answer-card-damage {
+  position: absolute;
+  z-index: 4;
 }
 
 .white-card[data-card-style="gradient"][data-card-custom="true"] {

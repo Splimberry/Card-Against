@@ -3278,6 +3278,11 @@ function normalizeRoomRoundResult(result) {
     winningParticipantIds: Array.isArray(result.winningParticipantIds)
       ? [...new Set(result.winningParticipantIds.map((id) => String(id || "").slice(0, 120)).filter(Boolean))].slice(0, 10)
       : [],
+    damagedParticipantIds: Array.isArray(result.damagedParticipantIds)
+      ? [...new Set(result.damagedParticipantIds.map((id) => String(id || "").slice(0, 120)).filter(Boolean))].slice(0, 10)
+      : Array.isArray(result.awarded?.damagedParticipantIds)
+        ? [...new Set(result.awarded.damagedParticipantIds.map((id) => String(id || "").slice(0, 120)).filter(Boolean))].slice(0, 10)
+        : [],
     cardCustomization: normalizeCardCustomization(result.cardCustomization),
     awarded: normalizeRoomRoundAward(result.awarded),
     powerState,
