@@ -1,0 +1,98 @@
+Doodle Tower Defence - Rough Gameplay Concept
+
+Working idea:
+Doodle Tower Defence is a real-time drawing strategy mode where drawing simple shapes acts as the control system. Players do not just draw pictures for others to guess. They draw symbols and shape combos to earn resources, build defences, spawn troops, and cast effects.
+
+Core fantasy:
+Two players or teams fight across a shared lane. Each side has a base, a small build zone, and a drawing panel. Players draw fast symbols under pressure to manage economy, defend their side, and send attacks toward the enemy base.
+
+Basic match flow:
+1. Each player starts with a base, a small amount of money, and an empty build zone.
+2. Players draw resource symbols to earn money or energy.
+3. Players draw recipe combos to buy towers, troops, traps, or spells.
+4. Towers are placed on the player side of the map.
+5. Troops walk down the lane toward the enemy base.
+6. Combat resolves in real time while players keep drawing.
+7. The winner is the player who destroys the enemy base, or the player with more base health when time runs out.
+
+Example resource symbols:
+- Circle: money
+- Triangle: energy
+- Spiral: chaos resource
+- Star: bonus resource or rare currency
+
+Example defence recipes:
+- Circle + rectangle: cannon tower
+- Triangle + line: arrow tower
+- Square + cross: wall
+- Spiral + circle: slow field
+- Zigzag + circle: zap trap
+
+Example attack recipes:
+- Stick figure: basic troop
+- Stick figure + shield: armored troop
+- Wings shape: flying troop
+- Skull: bomber troop
+- Zigzag + stick figure: speed runner
+
+Example spell recipes:
+- Lightning: zap enemy troops
+- Spiral + lightning: temporary tower disable
+- Cross + circle: repair base or tower
+- Star + skull: summon a stronger cursed unit
+
+Important design goal:
+The drawing recognition should be fast and forgiving. The game should recognise broad shapes such as circle, line, rectangle, triangle, zigzag, spiral, cross, star, stick figure, wings, shield, and skull. Players should not need to draw neatly.
+
+Recognition feedback:
+- After a drawing, show "Recognised as: Circle" or similar.
+- Allow quick undo/redraw.
+- Let players tap confirm when the recognition is correct.
+- If the drawing is unclear, suggest the closest match instead of failing silently.
+
+New-player version:
+The first version should be very small:
+- 1 lane
+- 1 resource: money
+- 3 tower types
+- 3 troop types
+- 2 spells
+- 3-5 minute matches
+- no advanced upgrades at first
+
+Possible first playable recipe set:
+- Circle: gain money
+- Circle + rectangle: cannon tower
+- Triangle + line: arrow tower
+- Square + cross: wall
+- Stick figure: basic troop
+- Stick figure + shield: armored troop
+- Lightning: damage enemy troops
+- Cross + circle: repair
+
+What makes it unique:
+The main gameplay is not drawing art or guessing drawings. Drawing is the input language for a strategy game. Players learn quick doodle recipes like spells, then use them under pressure while towers and troops fight on the map.
+
+Future expansion ideas:
+- Team mode, where one player focuses on defence and another focuses on attacks.
+- Chaos modifiers that change recipe effects or map rules.
+- Cosmetic brush trails, base skins, tower skins, and troop skins.
+- Ranked recipe tiers with rare symbols.
+- Spectator voting that triggers map events.
+- Boss waves in co-op mode.
+- Draft mode where players choose which recipes are available before the match.
+- Practice mode for learning symbols and recipes.
+
+Risks to watch:
+- Too many recipes could overwhelm new players.
+- Drawing recognition must feel fair and quick.
+- Real-time multiplayer sync could be heavier than trivia, so the first version should keep unit counts and map complexity low.
+- The mode needs strong visual feedback so players know whether they drew a resource, tower, troop, or spell.
+
+Best rough name ideas:
+- Doodle Siege
+- Ink Siege
+- Sketchfront
+- Drawfront
+- Siege Scribbles
+
