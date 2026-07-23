@@ -1963,7 +1963,7 @@ async function testRoundUsesLocalGraderWithoutApiKey() {
   }
 }
 
-async function testRoundAiSecondOpinionOnlyReviewsNearMisses() {
+async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
   const previousFetch = global.fetch;
   const previousAiKey = process.env.AI_API_KEY;
   const previousAiBaseUrl = process.env.AI_BASE_URL;
@@ -1977,7 +1977,7 @@ async function testRoundAiSecondOpinionOnlyReviewsNearMisses() {
     assert.equal(url, "https://ai.test/v1/chat/completions");
     const body = JSON.parse(options.body || "{}");
     const prompt = JSON.parse(body.messages[1].content);
-    assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0]);
+    assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0, 1]);
     return {
       ok: true,
       async json() {
@@ -1985,7 +1985,7 @@ async function testRoundAiSecondOpinionOnlyReviewsNearMisses() {
           choices: [
             {
               message: {
-                content: JSON.stringify({ correctIndexes: [0] })
+                content: JSON.stringify({ correctIndexes: [0, 1] })
               }
             }
           ]
@@ -2001,14 +2001,16 @@ async function testRoundAiSecondOpinionOnlyReviewsNearMisses() {
       triviaTheme: "Art",
       canonicalAnswer: "Vincent van Gogh",
       acceptedAnswers: ["van Gogh"],
-      botCards: ["Claude Monet"],
-      botLabels: ["Bot"],
+      botCards: ["vinsnt van gohg", "zzzzzz"],
+      botLabels: ["Near Miss Bot", "Gibberish Bot"],
       mode: "bots",
       roundSeed: "ai-second-opinion-near-miss"
     });
     assert.equal(rescued.response.status, 200, rescued.payload.error);
     assert.equal(fetchCalls, 1);
-    assert.deepEqual(rescued.payload.correctIndexes, [0]);
+    assert.deepEqual(rescued.payload.correctIndexes, [0, 1]);
+    assert.deepEqual(rescued.payload.aiReviewedIndexes, [0, 1]);
+    assert.deepEqual(rescued.payload.aiSecondOpinionIndexes, [0, 1]);
     assert.equal(rescued.payload.source, "local-with-ai-second-opinion");
 
     const gibberish = await request("POST", "/api/round", {
@@ -2025,6 +2027,8 @@ async function testRoundAiSecondOpinionOnlyReviewsNearMisses() {
     assert.equal(gibberish.response.status, 200, gibberish.payload.error);
     assert.equal(fetchCalls, 1);
     assert.deepEqual(gibberish.payload.correctIndexes, []);
+    assert.deepEqual(gibberish.payload.aiReviewedIndexes, []);
+    assert.deepEqual(gibberish.payload.aiSecondOpinionIndexes, []);
   } finally {
     global.fetch = previousFetch;
     if (previousAiKey === undefined) delete process.env.AI_API_KEY;
@@ -2088,7 +2092,7 @@ async function main() {
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();
   await testRoundUsesLocalGraderWithoutApiKey();
-  await testRoundAiSecondOpinionOnlyReviewsNearMisses();
+  await testRoundAiSecondOpinionReviewsNearMissesTogether();
   console.log("Room integration tests passed.");
 }
 

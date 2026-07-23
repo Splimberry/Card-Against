@@ -3210,6 +3210,12 @@ function normalizeRoomRoundResult(result) {
       };
     }).filter((entry) => entry.participantId).slice(0, 10)
     : [];
+  const aiReviewedIndexes = Array.isArray(result.aiReviewedIndexes)
+    ? [...new Set(result.aiReviewedIndexes.map((index) => clampServerNumber(index, 0, cards.length - 1, -1)).filter((index) => index >= 0))]
+    : [];
+  const aiSecondOpinionIndexes = Array.isArray(result.aiSecondOpinionIndexes)
+    ? [...new Set(result.aiSecondOpinionIndexes.map((index) => clampServerNumber(index, 0, cards.length - 1, -1)).filter((index) => index >= 0))]
+    : [];
   return {
     matchId: String(result.matchId || "").slice(0, 80),
     round: clampServerNumber(result.round, 1, 100, 1),
@@ -3218,6 +3224,8 @@ function normalizeRoomRoundResult(result) {
     winner: { index: winnerIndex },
     winnerIndex,
     correctIndexes,
+    aiReviewedIndexes,
+    aiSecondOpinionIndexes,
     revealAnswerIndex,
     winnerParticipantId: String(result.winnerParticipantId || "").slice(0, 120),
     revealParticipantId: String(result.revealParticipantId || result.winnerParticipantId || "").slice(0, 120),
@@ -3980,8 +3988,12 @@ async function handleRound(req, res) {
     const localResult = createLocalRoundResult(payload);
     const secondOpinionCandidates = getAiSecondOpinionCandidates(payload, localResult);
     const apiKey = getApiKey();
-    if (!secondOpinionCandidates.length || !apiKey) {
+    if (!secondOpinionCandidates.length) {
       setAiRoundCache(cacheKey, localResult);
+      sendJson(res, 200, localResult);
+      return;
+    }
+    if (!apiKey) {
       sendJson(res, 200, localResult);
       return;
     }
@@ -4605,6 +4617,7 @@ function mergeSecondOpinionRoundResult(localResult, secondOpinion, candidates = 
   const rescuedIndexes = Array.isArray(secondOpinion?.correctIndexes)
     ? secondOpinion.correctIndexes.filter((index) => candidateIndexes.has(index))
     : [];
+  const reviewedIndexes = [...candidateIndexes];
   const correctIndexes = [...new Set([...(localResult.correctIndexes || []), ...rescuedIndexes])]
     .filter((index) => Number.isInteger(index) && index >= 0 && index < localResult.cards.length);
   const winnerIndex = correctIndexes.includes(rescuedIndexes[0])
@@ -4617,6 +4630,8 @@ function mergeSecondOpinionRoundResult(localResult, secondOpinion, candidates = 
     ...localResult,
     winnerIndex,
     correctIndexes,
+    aiReviewedIndexes: reviewedIndexes,
+    aiSecondOpinionIndexes: [...new Set(rescuedIndexes)],
     source: rescuedIndexes.length ? "local-with-ai-second-opinion" : "local-with-ai-review"
   };
 }
@@ -4649,6 +4664,8 @@ function createLocalRoundResult(payload) {
     cards: cards.slice(0, expectedCards),
     winnerIndex,
     correctIndexes: [...new Set(correctIndexes)],
+    aiReviewedIndexes: [],
+    aiSecondOpinionIndexes: [],
     source: "local-fallback"
   };
 }
@@ -4698,7 +4715,7 @@ function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore) {
   if (localScore >= 0.82) {
     return false;
   }
-  if (localScore >= 0.48) {
+  if (localScore >= 0.42) {
     return true;
   }
   const answerWords = normalized.split(" ").filter(Boolean);
@@ -4712,7 +4729,7 @@ function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore) {
     acceptedWords.map((acceptedWord) => scoreTriviaToken(answerWord, acceptedWord))
   )));
   const hasSharedDistinctiveWord = answerWords.some((word) => word.length >= 4 && acceptedWords.includes(word));
-  return hasSharedDistinctiveWord || bestTokenScore >= 0.68;
+  return hasSharedDistinctiveWord || bestTokenScore >= 0.55;
 }
 
 function hasUsefulAnswerSignal(normalizedAnswer) {

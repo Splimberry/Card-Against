@@ -5133,6 +5133,18 @@ input:focus {
   filter: saturate(0.72) brightness(0.9);
 }
 
+.cards-area.revealed .white-card.answer-incorrect,
+.cards-area .white-card.answer-incorrect[data-card-custom="true"] {
+  opacity: 0.5;
+  filter: saturate(0.58) brightness(0.72) contrast(0.92);
+}
+
+.cards-area.revealed .white-card.answer-incorrect:hover,
+.cards-area .white-card.answer-incorrect[data-card-custom="true"]:hover {
+  opacity: 0.64;
+  filter: saturate(0.68) brightness(0.82) contrast(0.96);
+}
+
 .white-card[data-owner="player"] {
   border-color: rgba(139, 144, 154, 0.72);
 }

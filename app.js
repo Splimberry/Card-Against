@@ -2634,6 +2634,7 @@ const state = {
   answerDraftBroadcastTimerId: null,
   lastBroadcastAnswerDraft: "",
   spectatorRoundResultPlaybackKey: "",
+  roomRoundResultPlaybackKey: "",
   roomBotSequence: 0,
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
@@ -4071,6 +4072,7 @@ function clearRoundSubmissionState(options = {}) {
   resetRoundAnswers();
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
+  state.roomRoundResultPlaybackKey = "";
   state.roomSubmissions = {};
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   state.localAnswers = { playerOne: "", playerTwo: "" };
@@ -4857,6 +4859,12 @@ async function requestAiRound(rawInput, options = {}) {
     },
     correctIndexes: Array.isArray(result.correctIndexes)
       ? result.correctIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < expectedCards)
+      : [],
+    aiReviewedIndexes: Array.isArray(result.aiReviewedIndexes)
+      ? result.aiReviewedIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < expectedCards)
+      : [],
+    aiSecondOpinionIndexes: Array.isArray(result.aiSecondOpinionIndexes)
+      ? result.aiSecondOpinionIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < expectedCards)
       : [],
     source: result.source || "api"
   };
@@ -9637,6 +9645,12 @@ function normalizeRoomRoundResultPayload(payload = {}) {
   const correctIndexes = Array.isArray(source.correctIndexes)
     ? [...new Set(source.correctIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < cards.length))]
     : [];
+  const aiReviewedIndexes = Array.isArray(source.aiReviewedIndexes)
+    ? [...new Set(source.aiReviewedIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < cards.length))]
+    : [];
+  const aiSecondOpinionIndexes = Array.isArray(source.aiSecondOpinionIndexes)
+    ? [...new Set(source.aiSecondOpinionIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < cards.length))]
+    : [];
   const revealAnswerIndex = Number.isInteger(Number(source.revealAnswerIndex))
     ? clampNumber(source.revealAnswerIndex, 0, Math.max(cards.length - 1, 0), winnerIndex)
     : getBestAnswerIndexForReveal(cards, correctIndexes, winnerIndex);
@@ -9648,6 +9662,8 @@ function normalizeRoomRoundResultPayload(payload = {}) {
     winner: { index: winnerIndex },
     winnerIndex,
     correctIndexes,
+    aiReviewedIndexes,
+    aiSecondOpinionIndexes,
     revealAnswerIndex,
     winnerParticipantId: String(source.winnerParticipantId || "").trim(),
     revealParticipantId: String(source.revealParticipantId || source.winnerParticipantId || "").trim(),
@@ -9729,6 +9745,7 @@ function applyRealtimeRoomRoundResult(payload = {}) {
     };
   }
   updateRoomEventRevision(payload.revision);
+  playSyncedRoomRoundResult(result);
   maybePlaySpectatorRoomRoundResult(result);
   return true;
 }
@@ -9740,6 +9757,78 @@ function getSpectatorRoundResultPlaybackKey(result = {}) {
     result.questionId || state.questionId || "",
     Number(result.updatedAt) || 0
   ].join("|");
+}
+
+function getRoomRoundResultPlaybackKey(result = {}) {
+  return [
+    result.matchId || getCurrentRoomMatchId(),
+    Number(result.round) || Number(state.round) || 0,
+    result.questionId || state.questionId || ""
+  ].join("|");
+}
+
+function showWaitingForRoomRoundResult() {
+  if (!isRoomMode() || state.isSpectator || elements.gameStage.classList.contains("hidden")) {
+    return;
+  }
+  stopTimer();
+  stopLoadingMessages();
+  elements.loadingText.textContent = "Waiting for the host to sync the answer review...";
+  animateTableLayoutChange(() => {
+    setHidden(elements.inputPanel, true);
+    setHidden(elements.answerProgressPanel, true);
+    setHidden(elements.powerPanel, true);
+    setHidden(elements.effectPanel, true);
+    setHidden(elements.cardsArea, true);
+    setHidden(elements.errorPanel, true);
+    setHidden(elements.roomSubmitStatus, true);
+    setHidden(elements.loadingPanel, false);
+  });
+}
+
+function showRoomRoundResultSyncError(message) {
+  stopLoadingMessages();
+  playSound("error");
+  elements.errorText.textContent = message;
+  animateTableLayoutChange(() => {
+    setHidden(elements.inputPanel, true);
+    setHidden(elements.answerProgressPanel, true);
+    setHidden(elements.powerPanel, true);
+    setHidden(elements.effectPanel, true);
+    setHidden(elements.cardsArea, true);
+    setHidden(elements.loadingPanel, true);
+    setHidden(elements.roomSubmitStatus, true);
+    setHidden(elements.errorPanel, false);
+  });
+}
+
+function playSyncedRoomRoundResult(result = null, localFallback = "") {
+  if (!isRoomMode() || state.isSpectator || state.matchEnded || elements.gameStage.classList.contains("hidden")) {
+    return false;
+  }
+  if (isCurrentHost() && !state.joiningRoom) {
+    return false;
+  }
+  const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
+  if (!syncedResult || Number(syncedResult.round) !== Number(state.round)) {
+    return false;
+  }
+  if (syncedResult.questionId && state.questionId && syncedResult.questionId !== state.questionId) {
+    return false;
+  }
+  const playbackKey = getRoomRoundResultPlaybackKey(syncedResult);
+  if (state.roomRoundResultPlaybackKey === playbackKey) {
+    return true;
+  }
+  state.roomRoundResultPlaybackKey = playbackKey;
+  commitWaitingPhasePowerUpForOwner(state.currentOwner);
+  clearSpectatorAnswerDraftState();
+  showWaitingForRoomRoundResult();
+  state.roomRoundResolving = true;
+  elements.answerInput.disabled = true;
+  elements.submitButton.disabled = true;
+  playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: syncedResult });
+  return true;
 }
 
 function maybePlaySpectatorRoomRoundResult(result = null) {
@@ -10504,8 +10593,10 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   if (state.roomRoundResolving) {
     return false;
   }
+  commitWaitingPhasePowerUpForOwner(state.currentOwner);
   state.roomRoundResolving = true;
   if (!isCurrentHost() || state.joiningRoom) {
+    showWaitingForRoomRoundResult();
     waitForRoomRoundResultThenPlay(localFallback, matchToken);
     return true;
   }
@@ -10520,7 +10611,7 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
   while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < effectiveTimeoutMs) {
     const result = getRoomRoundResultForCurrentRound();
     if (result) {
-      playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: result });
+      playSyncedRoomRoundResult(result, localFallback);
       return;
     }
     const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
@@ -10533,7 +10624,7 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
       }
       const eventResult = getRoomRoundResultForCurrentRound();
       if (eventResult) {
-        playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: eventResult });
+        playSyncedRoomRoundResult(eventResult, localFallback);
         return;
       }
     }
@@ -10559,11 +10650,7 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     return;
   }
   state.roomRoundResolving = false;
-  stopLoadingMessages();
-  playSound("error");
-  elements.errorText.textContent = "Timed out waiting for the host to sync the round result.";
-  setHidden(elements.loadingPanel, true);
-  setHidden(elements.errorPanel, false);
+  showRoomRoundResultSyncError("Timed out waiting for the host to sync the round result.");
 }
 
 function maybeResolveRoomSubmissions() {
@@ -10609,7 +10696,7 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   while (isCurrentMatchWork(matchToken)) {
     const syncedResult = getRoomRoundResultForCurrentRound();
     if (syncedResult && (!isCurrentHost() || state.joiningRoom)) {
-      playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: syncedResult });
+      playSyncedRoomRoundResult(syncedResult, localFallback);
       return;
     }
     if (getPendingSubmitters().length === 0) {
@@ -18914,6 +19001,10 @@ function selectPowerUp(powerId) {
       return;
     }
     updateSelectedPowerUp(owner, powerId, { targetOwner }, { forceSelect: true });
+    if (commitWaitingPhasePowerUpForOwner(owner)) {
+      playSound("click");
+      return;
+    }
     renderPowerUps();
     playSound("click");
     return;
@@ -18925,6 +19016,10 @@ function selectPowerUp(powerId) {
   }
 
   updateSelectedPowerUp(owner, powerId);
+  if (commitWaitingPhasePowerUpForOwner(owner)) {
+    playSound("click");
+    return;
+  }
   renderPowerUps();
   playSound("click");
 }
@@ -19023,6 +19118,13 @@ function getPowerUnavailableReason(power, hasUseAvailable) {
   return "Not usable right now";
 }
 
+function getPowerCommitRemainingTime(owner) {
+  if (isRoomMode() && state.roomSubmissions[owner]) {
+    return Math.max(0, Number(state.answerRemainingTimes[owner]) || 0);
+  }
+  return Math.max(0, Number(state.timerRemaining) || 0);
+}
+
 function commitActivePowerUp(owner = getCurrentPowerOwner()) {
   if (!canPlayPower(owner)) {
     clearSelectedPowerUps(owner);
@@ -19044,7 +19146,7 @@ function commitActivePowerUp(owner = getCurrentPowerOwner()) {
 
     recordPlayedPower(owner, powerId, {
       ...(state.selectedPowerMeta[owner]?.[powerId] || {}),
-      remainingTime: state.timerRemaining,
+      remainingTime: getPowerCommitRemainingTime(owner),
       originalPowerId: powerId
     });
     state.powerHands[owner] = state.powerHands[owner].filter((handPowerId) => handPowerId !== powerId);
@@ -19053,6 +19155,26 @@ function commitActivePowerUp(owner = getCurrentPowerOwner()) {
   clearSelectedPowerUps(owner);
   committedPowers.forEach((entry) => broadcastRoomPowerState(owner, entry.power, entry.meta));
   renderPowerUps();
+}
+
+function commitWaitingPhasePowerUpForOwner(owner = getCurrentPowerOwner()) {
+  if (!isRoomMode()
+    || state.isSpectator
+    || !owner
+    || owner !== state.currentOwner
+    || !state.roomSubmissions[owner]
+    || state.roomRoundResolving
+    || state.matchEnded
+    || elements.gameStage.classList.contains("hidden")
+    || elements.inputPanel.classList.contains("hidden")
+    || !elements.verdictPanel.classList.contains("hidden")
+    || !getSelectedPowerIds(owner).length) {
+    return false;
+  }
+  commitActivePowerUp(owner);
+  renderSubmissionStatus();
+  maybeResolveRoomSubmissions();
+  return true;
 }
 
 function getBotPowerChoiceScore(owner, power) {
@@ -19718,6 +19840,9 @@ function handleTimerExpired() {
   if (elements.inputPanel.classList.contains("hidden") || state.matchEnded || !state.judge) {
     return;
   }
+  if (isRoomMode() && state.roomSubmissions[state.currentOwner]) {
+    return;
+  }
 
   const fallback = "";
   if (isRoomMode()) {
@@ -20067,6 +20192,7 @@ function resetRoundUiForLoading(options = {}) {
   resetRoundAnswers();
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
+  state.roomRoundResultPlaybackKey = "";
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   clearLocalRoomSubmission();
   state.roomSubmissions = {};
@@ -24141,6 +24267,7 @@ function clearLocalRoomState(options = {}) {
   state.roomSubmissions = {};
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
+  state.roomRoundResultPlaybackKey = "";
   state.roomMissingSince = 0;
   state.roomExitLeaveSent = false;
   state.publishedDraftRoomCode = "";
@@ -27158,37 +27285,45 @@ function getGradingSimilarityDetails(answer, acceptedAnswers = []) {
   return { kind: "similarity", score };
 }
 
-function getAnswerGradingReason(answer, rating = {}, roundResult = {}) {
+function getAnswerGradingReason(answer, rating = {}, roundResult = {}, index = -1) {
   if (isMultipleChoiceRound()) {
-    return rating.correct ? "Correct option selected." : "Different option selected.";
+    return rating.correct ? "Nice, that was the right option." : "Not this time, that option was not the right one.";
   }
+  const aiRescued = Array.isArray(roundResult.aiSecondOpinionIndexes) && roundResult.aiSecondOpinionIndexes.includes(index);
+  const aiReviewed = Array.isArray(roundResult.aiReviewedIndexes) && roundResult.aiReviewedIndexes.includes(index);
   const details = getGradingSimilarityDetails(answer, [state.canonicalAnswer, ...state.acceptedAnswers].filter(Boolean));
   if (details.kind === "blank") {
-    return "Blank answer.";
+    return "No answer was submitted.";
   }
   if (rating.correct) {
+    if (aiRescued) {
+      return "AI took a second look and counted this as the answer you meant.";
+    }
     if (details.kind === "exact") {
-      return "Accepted: exact preset match.";
+      return "That matches the answer.";
     }
     if (details.kind === "abbreviation") {
-      return "Accepted: abbreviation or acronym match.";
+      return "That is a recognizable short version of the answer.";
     }
     if (details.kind === "typo") {
-      return "Accepted: obvious typo or spelling variant.";
+      return "That looks like the right answer with a small spelling slip.";
     }
     if (details.kind === "partial") {
-      return "Accepted: partial answer still identified it.";
+      return "That gave enough of the answer to count.";
     }
-    return "Accepted: grader recognized it as the same answer.";
+    return "Close enough: it points to the right answer.";
+  }
+  if (aiReviewed) {
+    return "AI took a second look, but it was still too unclear to count.";
   }
   if (details.score >= 0.72) {
-    return "Needs review: answer was close, but too ambiguous.";
+    return "That was close, but still too unclear to count.";
   }
-  return "Marked incorrect: grader read it as a different answer.";
+  return "That looks like a different answer.";
 }
 
 function getRoundGradingReasons(cards = [], ratings = [], roundResult = {}) {
-  return cards.map((card, index) => getAnswerGradingReason(card, ratings[index] || {}, roundResult));
+  return cards.map((card, index) => getAnswerGradingReason(card, ratings[index] || {}, roundResult, index));
 }
 
 function buildBlackCardAnswerReveal(bestAnswer, options = {}) {
@@ -27327,6 +27462,7 @@ function submitRoomAnswer(rawInput, options = {}) {
   if (!options.timedOut) {
     markAchievementLateSubmission(owner, state.timerRemaining);
   }
+  stopTimer();
   if (owner === "opponent") {
     state.localAnswers.playerTwo = lockedInput;
     state.localAnswers.playerOne = shouldAutoGenerateRoomAnswer("player")
@@ -27481,8 +27617,16 @@ async function playRound(rawInput, options = {}) {
       elements.answerInput.disabled = false;
       elements.submitButton.disabled = false;
       renderMultipleChoiceOptions();
-      setHidden(elements.loadingPanel, true);
-      setHidden(elements.errorPanel, false);
+      animateTableLayoutChange(() => {
+        setHidden(elements.inputPanel, true);
+        setHidden(elements.answerProgressPanel, true);
+        setHidden(elements.powerPanel, true);
+        setHidden(elements.effectPanel, true);
+        setHidden(elements.cardsArea, true);
+        setHidden(elements.roomSubmitStatus, true);
+        setHidden(elements.loadingPanel, true);
+        setHidden(elements.errorPanel, false);
+      });
       state.roomRoundResolving = false;
       return;
     }
