@@ -1966,7 +1966,7 @@ function applyServerUserInventory(inventory = {}, options = {}) {
       state.profile.cardCustomization = profileCustomization;
       localStorage.setItem(profileCustomizationStorageKey, JSON.stringify(profileCustomization));
     }
-    if (equippedAchievementId && isAchievementUnlocked(equippedAchievementId, achievements)) {
+    if (equippedAchievementId) {
       state.profile.equippedTitleId = equippedAchievementId;
       localStorage.setItem(equippedAchievementStorageKey, equippedAchievementId);
     } else if (profile.equippedAchievementId === "") {
@@ -2178,7 +2178,7 @@ function getInventoryProfileWeight(inventory = {}) {
   const profile = inventory?.profile && typeof inventory.profile === "object" ? inventory.profile : {};
   let weight = 0;
   if (achievementTitleMap[profile.equippedAchievementId]) {
-    weight += 100;
+    weight += 300;
   }
   if (profile.cardCustomization) {
     const customization = normalizeProfileCustomization(profile.cardCustomization);
@@ -2187,6 +2187,40 @@ function getInventoryProfileWeight(inventory = {}) {
     }
   }
   return weight;
+}
+
+function mergeInventoryProfileFields(profileSources = []) {
+  const sortedSources = [...profileSources]
+    .filter((source) => source && typeof source.profile === "object")
+    .sort((a, b) => {
+      const profileDelta = getInventoryProfileWeight(b) - getInventoryProfileWeight(a);
+      if (profileDelta) {
+        return profileDelta;
+      }
+      const timeDelta = (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0);
+      return timeDelta || getInventoryMergeWeight(b) - getInventoryMergeWeight(a);
+    });
+  const fallbackProfile = sortedSources[0]?.profile || {};
+  const titleSource = sortedSources.find((source) => achievementTitleMap[source.profile?.equippedAchievementId]);
+  const styleSource = sortedSources.find((source) => {
+    const customization = source.profile?.cardCustomization;
+    if (!customization) {
+      return false;
+    }
+    const normalized = normalizeProfileCustomization(customization);
+    return JSON.stringify(normalized) !== JSON.stringify(normalizeProfileCustomization(defaultProfileCustomization));
+  });
+  const equippedAchievementId = achievementTitleMap[titleSource?.profile?.equippedAchievementId]
+    ? titleSource.profile.equippedAchievementId
+    : achievementTitleMap[fallbackProfile.equippedAchievementId]
+      ? fallbackProfile.equippedAchievementId
+      : "";
+  const rawCustomization = styleSource?.profile?.cardCustomization || fallbackProfile.cardCustomization || defaultProfileCustomization;
+  const cardCustomization = normalizeProfileCustomization(rawCustomization);
+  return {
+    equippedAchievementId,
+    cardCustomization
+  };
 }
 
 function mergeUserInventoriesForHydration(user, inventories = []) {
@@ -2201,18 +2235,7 @@ function mergeUserInventoriesForHydration(user, inventories = []) {
   if (!sources.length) {
     return null;
   }
-  const profileSource = [...sources]
-    .sort((a, b) => {
-      const profileDelta = getInventoryProfileWeight(b) - getInventoryProfileWeight(a);
-      if (profileDelta) {
-        return profileDelta;
-      }
-      const timeDelta = (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0);
-      return timeDelta || getInventoryMergeWeight(b) - getInventoryMergeWeight(a);
-    })
-    .find((source) => source.profile && typeof source.profile === "object") || sources[0];
-  const mergedProfile = profileSource.profile && typeof profileSource.profile === "object" ? profileSource.profile : {};
-  return {
+  const mergedInventory = {
     userId,
     coins: Math.max(...sources.map((source) => Math.max(0, Math.floor(Number(source.coins) || 0)))),
     coinTransactions: [],
@@ -2227,12 +2250,11 @@ function mergeUserInventoriesForHydration(user, inventories = []) {
     claimedMilestones: [...new Set(sources.flatMap((source) => Array.isArray(source.claimedMilestones) ? source.claimedMilestones : [])
       .map(normalizeInventoryKey)
       .filter(Boolean))],
-    profile: {
-      equippedAchievementId: achievementTitleMap[mergedProfile.equippedAchievementId] ? mergedProfile.equippedAchievementId : "",
-      cardCustomization: normalizeProfileCustomization(mergedProfile.cardCustomization || defaultProfileCustomization)
-    },
+    profile: {},
     updatedAt: Math.max(...sources.map((source) => Number(source.updatedAt) || 0), Date.now())
   };
+  mergedInventory.profile = mergeInventoryProfileFields(sources);
+  return mergedInventory;
 }
 
 function enqueueCurrentUserInventoryStateForUser(user = state.supabaseUser, options = {}) {
