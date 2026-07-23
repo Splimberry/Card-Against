@@ -1094,6 +1094,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   gap: 0.85rem;
 }
 
+.room-code-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.room-code-share h2 {
+  margin: 0;
+}
+
 .join-code-form {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 1fr) 9rem;
@@ -1102,6 +1113,42 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(15, 13, 24, 0.78);
+}
+
+.join-screen[data-invite="true"] .join-code-form {
+  grid-template-columns: minmax(8rem, 0.75fr) minmax(12rem, 1fr) 9rem;
+}
+
+.join-screen[data-invite="true"] .join-room-list,
+.join-screen[data-invite="true"] #refreshJoinRoomsButton,
+.join-screen[data-invite="true"] #createFromJoinButton {
+  display: none;
+}
+
+.join-screen[data-invite="true"] #joinRoomCodeInput {
+  opacity: 0.78;
+}
+
+.join-invite-status {
+  margin: -0.25rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(34, 211, 238, 0.24);
+  border-radius: 8px;
+  background: rgba(34, 211, 238, 0.08);
+  color: rgba(246, 242, 238, 0.86);
+  font-size: 0.86rem;
+}
+
+.join-invite-status[data-tone="error"] {
+  border-color: rgba(255, 77, 125, 0.34);
+  background: rgba(255, 77, 125, 0.1);
+  color: #ffd8e3;
+}
+
+.join-invite-status[data-tone="success"] {
+  border-color: rgba(64, 222, 164, 0.34);
+  background: rgba(64, 222, 164, 0.1);
+  color: #d9fff1;
 }
 
 .join-room-card {

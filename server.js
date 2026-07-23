@@ -3516,6 +3516,10 @@ async function serveStatic(pathname, res, isHead, req) {
   try {
     const fileStats = await stat(filePath);
     if (!fileStats.isFile()) {
+      if (isRoomInvitePath(pathname)) {
+        await serveStatic("/", res, isHead, req);
+        return;
+      }
       sendText(res, 404, "Not found");
       return;
     }
@@ -3582,8 +3586,16 @@ async function serveStatic(pathname, res, isHead, req) {
       res.end();
     }
   } catch {
+    if (isRoomInvitePath(pathname)) {
+      await serveStatic("/", res, isHead, req);
+      return;
+    }
     sendText(res, 404, "Not found");
   }
+}
+
+function isRoomInvitePath(pathname = "") {
+  return /^\/(?:CAI-?)?\d{4}\/?$/i.test(String(pathname || ""));
 }
 
 function isForbiddenStaticPath(filePath) {

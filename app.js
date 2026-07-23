@@ -3191,6 +3191,11 @@ const state = {
   roomSettingsLocalUpdatedAtByCode: {},
   roomSettingsEditSeqByCode: {},
   roomJoinInProgress: false,
+  roomInvite: {
+    active: false,
+    code: "",
+    checked: false
+  },
   roomHeartbeatTimerId: null,
   roomEventPollId: null,
   userStorageWriteTimerId: null,
@@ -3342,6 +3347,7 @@ const elements = {
   roomPasswordRow: document.querySelector("#roomPasswordRow"),
   roomPasswordInput: document.querySelector("#roomPasswordInput"),
   roomCodePreview: document.querySelector("#roomCodePreview"),
+  copyRoomInviteButton: document.querySelector("#copyRoomInviteButton"),
   roomHostProfile: document.querySelector("#roomHostProfile"),
   roomPlayerList: document.querySelector("#roomPlayerList"),
   roomLobbyPlayerList: document.querySelector("#roomLobbyPlayerList"),
@@ -3350,6 +3356,7 @@ const elements = {
   lobbyHostNamePreview: document.querySelector("#lobbyHostNamePreview"),
   lobbyRoomCode: document.querySelector("#lobbyRoomCode"),
   lobbyRoomSummary: document.querySelector("#lobbyRoomSummary"),
+  copyLobbyInviteButton: document.querySelector("#copyLobbyInviteButton"),
   beginRoomButton: document.querySelector("#beginRoomButton"),
   lobbyAddBotButton: document.querySelector("#lobbyAddBotButton"),
   lobbySettingsButton: document.querySelector("#lobbySettingsButton"),
@@ -3357,6 +3364,9 @@ const elements = {
   leaveLobbyButton: document.querySelector("#leaveLobbyButton"),
   joinRoomList: document.querySelector("#joinRoomList"),
   joinCodeForm: document.querySelector("#joinCodeForm"),
+  joinEyebrow: document.querySelector("#joinEyebrow"),
+  joinTitle: document.querySelector("#joinTitle"),
+  joinInviteStatus: document.querySelector("#joinInviteStatus"),
   joinRoomCodeInput: document.querySelector("#joinRoomCodeInput"),
   joinRoomPasswordInput: document.querySelector("#joinRoomPasswordInput"),
   menuSettingsButton: document.querySelector("#menuSettingsButton"),
@@ -24491,6 +24501,100 @@ function generateRoomCode() {
   return `CAI-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+function normalizeJoinRoomCode(value = "") {
+  const raw = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+  const shortMatch = raw.match(/^(\d{4})$/);
+  if (shortMatch) {
+    return `CAI-${shortMatch[1]}`;
+  }
+  const caiMatch = raw.match(/^CAI-?(\d{4})$/);
+  if (caiMatch) {
+    return `CAI-${caiMatch[1]}`;
+  }
+  return raw.slice(0, 12);
+}
+
+function getRoomShortCode(code = state.roomSettings.code) {
+  const match = String(code || "").trim().toUpperCase().match(/^CAI-(\d{4})$/);
+  return match ? match[1] : "";
+}
+
+function getRoomInviteUrl(code = state.roomSettings.code) {
+  const shortCode = getRoomShortCode(code);
+  if (!shortCode) {
+    return "";
+  }
+  return `${window.location.origin}/${shortCode}`;
+}
+
+function getInitialRoomInviteCodeFromPath() {
+  const path = decodeURIComponent(String(window.location.pathname || "/")).replace(/\/+$/, "");
+  const match = path.match(/^\/(?:CAI-?)?(\d{4})$/i);
+  return match ? `CAI-${match[1]}` : "";
+}
+
+function clearRoomInviteUrlPath() {
+  if (!getInitialRoomInviteCodeFromPath() || !window.history?.replaceState) {
+    return;
+  }
+  window.history.replaceState({}, document.title, `${window.location.origin}/`);
+}
+
+async function copyTextToClipboard(text = "") {
+  if (!text) {
+    return false;
+  }
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.appendChild(input);
+  input.select();
+  const ok = document.execCommand("copy");
+  input.remove();
+  return ok;
+}
+
+async function copyCurrentRoomInviteLink(button = null) {
+  const inviteUrl = getRoomInviteUrl();
+  if (!inviteUrl) {
+    return;
+  }
+  try {
+    await copyTextToClipboard(inviteUrl);
+    const target = button || elements.copyRoomInviteButton || elements.copyLobbyInviteButton;
+    if (target) {
+      const previous = target.textContent;
+      target.textContent = "Copied";
+      window.setTimeout(() => {
+        if (target.isConnected) {
+          target.textContent = previous || "Copy Invite Link";
+        }
+      }, 1200);
+    }
+    addSystemChat(`Invite link copied: ${inviteUrl}`, { private: true, sync: false });
+  } catch (error) {
+    console.warn("Could not copy invite link:", error.message || error);
+    addSystemChat("Could not copy the invite link. Copy the room code instead.", { private: true, sync: false });
+  }
+}
+
+function syncRoomInviteButtons() {
+  const inviteUrl = getRoomInviteUrl();
+  [elements.copyRoomInviteButton, elements.copyLobbyInviteButton].forEach((button) => {
+    if (!button) {
+      return;
+    }
+    button.disabled = !inviteUrl;
+    button.dataset.description = inviteUrl ? `Copy ${inviteUrl}` : "Create a room first.";
+  });
+}
+
 function getDefaultRoomSettings(code = "CAI-0000") {
   const cachedThemes = normalizeCachedThemes(state.enabledThemes);
   return {
@@ -24541,6 +24645,7 @@ function syncRoomControls() {
   elements.roomCodePreview.textContent = state.roomSettings.code;
   elements.startRoomButton.textContent = state.currentRoomStatus === "lobby" ? "Continue" : "Create Room";
   setHidden(elements.roomHostProfile, Boolean(state.joiningRoom));
+  syncRoomInviteButtons();
   renderRoomPlayers();
 }
 
@@ -24769,17 +24874,84 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   });
 }
 
-function openJoinScreen() {
+function setJoinInviteStatus(message = "", tone = "") {
+  if (!elements.joinInviteStatus) {
+    return;
+  }
+  elements.joinInviteStatus.textContent = message;
+  elements.joinInviteStatus.dataset.tone = tone || "";
+  setHidden(elements.joinInviteStatus, !message);
+}
+
+function setJoinInviteMode(active, options = {}) {
+  const code = normalizeJoinRoomCode(options.code || state.roomInvite.code || "");
+  state.roomInvite = {
+    active: Boolean(active),
+    code: active ? code : "",
+    checked: Boolean(options.checked)
+  };
+  if (elements.joinScreen) {
+    if (active) {
+      elements.joinScreen.dataset.invite = "true";
+    } else {
+      delete elements.joinScreen.dataset.invite;
+    }
+  }
+  if (elements.joinEyebrow) {
+    elements.joinEyebrow.textContent = active ? "Room invite" : "Hosted rooms";
+  }
+  if (elements.joinTitle) {
+    elements.joinTitle.textContent = active ? "JOIN ROOM" : "JOIN GAME";
+  }
+  if (elements.joinRoomCodeInput) {
+    elements.joinRoomCodeInput.value = active && code ? getRoomShortCode(code) || code : elements.joinRoomCodeInput.value;
+    elements.joinRoomCodeInput.readOnly = Boolean(active && code);
+  }
+  if (elements.joinCodeForm) {
+    const submitButton = elements.joinCodeForm.querySelector("button[type='submit']");
+    if (submitButton) {
+      submitButton.textContent = active ? "Join Room" : "Join Code";
+    }
+  }
+  if (!active) {
+    setJoinInviteStatus("");
+    if (elements.joinRoomCodeInput) {
+      elements.joinRoomCodeInput.readOnly = false;
+    }
+  }
+}
+
+function focusInvitePasswordField() {
+  window.setTimeout(() => {
+    elements.joinRoomPasswordInput?.focus();
+    elements.joinRoomPasswordInput?.select?.();
+  }, 0);
+}
+
+function openJoinScreen(options = {}) {
   void ensureSupabaseAuthReady({ realtime: true });
-  renderHostedRooms();
-  startJoinDirectoryPolling();
+  if (options.inviteCode) {
+    setJoinInviteMode(true, { code: options.inviteCode, checked: options.checked });
+  } else {
+    setJoinInviteMode(false);
+  }
+  if (!state.roomInvite.active) {
+    renderHostedRooms();
+    startJoinDirectoryPolling();
+  } else {
+    stopJoinDirectoryPolling();
+  }
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, true);
   setHidden(elements.joinScreen, false);
-  refreshHostedRoomsAndRender({ force: true });
-  playSound("click");
+  if (!state.roomInvite.active) {
+    refreshHostedRoomsAndRender({ force: true });
+  }
+  if (options.playSound !== false) {
+    playSound("click");
+  }
 }
 
 async function refreshJoinRooms() {
@@ -24800,6 +24972,10 @@ async function refreshJoinRooms() {
 
 function closeJoinScreen() {
   stopJoinDirectoryPolling();
+  if (state.roomInvite.active) {
+    clearRoomInviteUrlPath();
+  }
+  setJoinInviteMode(false);
   setHidden(elements.joinScreen, true);
   setHidden(elements.modeScreen, false);
   playSound("click");
@@ -26627,7 +26803,7 @@ function setJoinRoomBusy(isBusy, code = "") {
     control.disabled = Boolean(isBusy);
   });
   if (!isBusy) {
-    if (!elements.joinScreen.classList.contains("hidden")) {
+    if (!state.roomInvite.active && !elements.joinScreen.classList.contains("hidden")) {
       renderHostedRooms({ force: true });
     }
     return;
@@ -26654,6 +26830,7 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
   if (!serverRoom) {
     if (room.settings?.private) {
       elements.joinRoomPasswordInput.focus();
+      setJoinInviteStatus("That password did not work. Try again or return to the main menu.", "error");
       addSystemChat("Room password did not match.", { private: true, sync: false });
       return null;
     }
@@ -26684,7 +26861,7 @@ async function joinHostedRoom(code, options = {}) {
   if (state.roomJoinInProgress) {
     return;
   }
-  const normalizedCode = String(code || "").trim().toUpperCase();
+  const normalizedCode = normalizeJoinRoomCode(code);
   if (!normalizedCode) {
     elements.joinRoomCodeInput.focus();
     return;
@@ -26712,11 +26889,14 @@ async function joinHostedRoom(code, options = {}) {
       addSystemChat(`You cannot rejoin ${normalizedCode}.`, { private: true });
       return;
     }
-    if (room.status !== "lobby" && !options.spectate) {
+    const activePlayerCount = getHostedRoomActivePlayerCount(room);
+    const roomIsFull = activePlayerCount >= getRoomMaxPlayers(room.settings);
+    const shouldSpectate = Boolean(options.spectate || (options.fromInvite && (room.status !== "lobby" || roomIsFull)));
+    if (room.status !== "lobby" && !shouldSpectate) {
       addSystemChat("That match already started. Join as a spectator instead.", { private: true });
       return;
     }
-    if (!options.spectate && getHostedRoomActivePlayerCount(room) >= getRoomMaxPlayers(room.settings)) {
+    if (!shouldSpectate && roomIsFull) {
       addSystemChat(`${normalizedCode} is full. Join as a spectator instead.`, { private: true });
       return;
     }
@@ -26724,7 +26904,10 @@ async function joinHostedRoom(code, options = {}) {
     if (room.settings.private) {
       typedPassword = cleanChatInput(options.password || elements.joinRoomPasswordInput.value);
       if (!typedPassword) {
-        typedPassword = cleanChatInput(window.prompt(`Password for ${normalizedCode}`) || "");
+        openJoinScreen({ inviteCode: normalizedCode, checked: true });
+        setJoinInviteStatus(`Room ${getRoomShortCode(normalizedCode) || normalizedCode} is private. Enter the password to join.`, "");
+        focusInvitePasswordField();
+        return;
       }
     }
 
@@ -26732,7 +26915,7 @@ async function joinHostedRoom(code, options = {}) {
     syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
     startRoomRealtime(state.roomSettings.code);
     state.joiningRoom = room;
-    state.isSpectator = options.spectate || room.status !== "lobby";
+    state.isSpectator = shouldSpectate || room.status !== "lobby";
     state.roomSessionId += 1;
     state.roomExitLeaveSent = false;
     state.roomMissingSince = 0;
@@ -26757,7 +26940,7 @@ async function joinHostedRoom(code, options = {}) {
       renderHostedRooms();
       return;
     }
-    state.isSpectator = options.spectate || room.status !== "lobby";
+    state.isSpectator = shouldSpectate || room.status !== "lobby";
     state.currentOwner = state.isSpectator ? "spectator" : "opponent";
     state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
     state.roomChat = [];
@@ -26767,6 +26950,7 @@ async function joinHostedRoom(code, options = {}) {
     }
     addSystemChat(`${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
     stopJoinDirectoryPolling();
+    setJoinInviteMode(false);
     setHidden(elements.modeScreen, true);
     setHidden(elements.roomScreen, true);
     setHidden(elements.joinScreen, true);
@@ -26787,6 +26971,38 @@ async function joinHostedRoom(code, options = {}) {
   } finally {
     setJoinRoomBusy(false);
   }
+}
+
+async function processInitialRoomInvite() {
+  const inviteCode = getInitialRoomInviteCodeFromPath();
+  if (!inviteCode || state.roomInvite.checked) {
+    return;
+  }
+  openJoinScreen({ inviteCode, checked: true, playSound: false });
+  setJoinInviteStatus(`Finding room ${getRoomShortCode(inviteCode) || inviteCode}...`);
+  await ensureSupabaseAuthReady({ realtime: true });
+  const lookup = await fetchRoomByCode(inviteCode);
+  if (lookup.status === "closed") {
+    setJoinInviteStatus("This room was closed by the host.", "error");
+    return;
+  }
+  if (lookup.status === "missing") {
+    setJoinInviteStatus("No active room exists for this invite code. Check the code with the host.", "error");
+    return;
+  }
+  if (lookup.status !== "found" || !lookup.room) {
+    setJoinInviteStatus("Room lookup is taking too long. Check your connection, then try again.", "error");
+    return;
+  }
+  mergeHostedRoom(lookup.room);
+  elements.joinRoomCodeInput.value = getRoomShortCode(inviteCode) || inviteCode;
+  if (lookup.room.settings?.private) {
+    setJoinInviteStatus(`Room ${getRoomShortCode(inviteCode)} is private. Enter the password to join.`);
+    focusInvitePasswordField();
+    return;
+  }
+  setJoinInviteStatus("Room found. Joining...", "success");
+  await joinHostedRoom(inviteCode, { fromInvite: true });
 }
 
 function getRoomOpenSlotCount() {
@@ -26865,6 +27081,7 @@ function renderRoomLobby() {
   clearRoomAutoResolve();
   elements.lobbyRoomCode.textContent = state.roomSettings.code;
   elements.lobbyRoomCodeLabel.textContent = state.roomSettings.code;
+  syncRoomInviteButtons();
   renderModifierIconLabel(elements.lobbyRoomVariantLabel);
   elements.lobbyRoomSummary.textContent = `${state.roomSettings.private ? "Private" : "Public"} ${getRoomModeLabel()} room. ${state.roomSettings.rounds} rounds, ${state.roomSettings.timerSeconds}s timer, ${getRoomMaxPlayers()} player limit.`;
   const hostParticipant = state.roomParticipants.find((participant) => participant.host)
@@ -30345,6 +30562,8 @@ elements.profileSignOutButton?.addEventListener("click", signOutSupabase);
 document.addEventListener("click", handleProfileSignOutClick);
 elements.backToMenuButton.addEventListener("click", closeRoomScreen);
 elements.backFromJoinButton.addEventListener("click", closeJoinScreen);
+elements.copyRoomInviteButton?.addEventListener("click", (event) => copyCurrentRoomInviteLink(event.currentTarget));
+elements.copyLobbyInviteButton?.addEventListener("click", (event) => copyCurrentRoomInviteLink(event.currentTarget));
 elements.startRoomButton.addEventListener("click", startRoomGame);
 elements.beginRoomButton.addEventListener("click", beginRoomMatch);
 elements.lobbyAddBotButton.addEventListener("click", addBotToRoom);
@@ -30409,7 +30628,10 @@ elements.joinRoomList.addEventListener("click", (event) => {
 });
 elements.joinCodeForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  joinHostedRoom(elements.joinRoomCodeInput.value);
+  joinHostedRoom(elements.joinRoomCodeInput.value, {
+    fromInvite: state.roomInvite.active,
+    password: elements.joinRoomPasswordInput.value
+  });
 });
 elements.createFromJoinButton.addEventListener("click", openRoomScreen);
 elements.rematchButton.addEventListener("click", () => {
@@ -30792,3 +31014,4 @@ scheduleInitialSupabaseAuth();
 updateAchievementNotificationDot();
 state.timerRemaining = state.timerSeconds;
 renderTimer();
+void processInitialRoomInvite();
