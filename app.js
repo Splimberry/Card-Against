@@ -960,20 +960,30 @@ const savedBotRounds = clampNumber(localStorage.getItem("cardsAgainstAiBotRounds
 const BOT_OWNER_IDS = Array.from({ length: 9 }, (_, index) => `bot${index + 1}`);
 const DEFAULT_OWNER_IDS = ["player", "opponent", ...BOT_OWNER_IDS];
 
+function normalizeGuestNameCasing(value = "") {
+  const name = String(value || "").trim();
+  if (/^guest\d{6}$/i.test(name)) {
+    return `Guest${name.slice(5)}`;
+  }
+  return name;
+}
+
 function createGuestName() {
   const fallback = Math.floor(Math.random() * 1000000);
   if (globalThis.crypto?.getRandomValues) {
     const values = new Uint32Array(1);
     globalThis.crypto.getRandomValues(values);
-    return `guest${String(values[0] % 1000000).padStart(6, "0")}`;
+    return `Guest${String(values[0] % 1000000).padStart(6, "0")}`;
   }
-  return `guest${String(fallback).padStart(6, "0")}`;
+  return `Guest${String(fallback).padStart(6, "0")}`;
 }
 
 function loadGuestName() {
   const saved = String(localStorage.getItem("cardsAgainstAiGuestName") || "").trim();
-  if (/^guest\d{6}$/.test(saved)) {
-    return saved;
+  if (/^guest\d{6}$/i.test(saved)) {
+    const migrated = normalizeGuestNameCasing(saved);
+    localStorage.setItem("cardsAgainstAiGuestName", migrated);
+    return migrated;
   }
   const guestName = createGuestName();
   localStorage.setItem("cardsAgainstAiGuestName", guestName);
@@ -1248,7 +1258,9 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
         : [];
     const customization = normalizeProfileCustomization(profile.cardCustomization || source.unlockedCosmeticsCache?.equipped || defaultProfileCustomization);
     const themes = normalizeCachedThemes(settings.lastSelectedThemes);
-    const username = String(profile.username || options.fallbackName || savedGuestName).replace(/[\r\n\t]/g, " ").slice(0, 16).trim() || savedGuestName;
+    const username = normalizeGuestNameCasing(
+      String(profile.username || options.fallbackName || savedGuestName).replace(/[\r\n\t]/g, " ").slice(0, 16)
+    ) || savedGuestName;
     const avatar = getCacheableAvatar(profile.compressedAvatar || profile.avatarPreview || "");
     const equippedAchievementId = achievementTitleMap[profile.equippedAchievementId] ? profile.equippedAchievementId : "";
     const sfx = clampNumber(settings.sfx, 0, 100, 50);

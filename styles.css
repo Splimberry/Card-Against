@@ -914,6 +914,19 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   gap: 0.72rem;
 }
 
+.room-settings-section-title {
+  margin: 0.25rem 0 0;
+  color: var(--paper);
+  font-size: clamp(1.45rem, 2.8vw, 2.25rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.room-settings-section-title + .slider-row,
+.room-settings-section-title + .room-mode-options {
+  margin-top: -0.15rem;
+}
+
 #roomScreen .room-preview {
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
@@ -976,6 +989,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .room-password-row {
+  grid-template-columns: 8rem minmax(0, 1fr);
   border-top: 0;
   max-height: 7.75rem;
   overflow: hidden;
