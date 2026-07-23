@@ -2529,6 +2529,10 @@ const soundState = {
   muted: false,
   lastSfxAt: 0,
   activeAudioNodes: new Set(),
+  sfxBuffers: new Map(),
+  sfxBufferPromises: new Map(),
+  sfxPreloadStarted: false,
+  sfxPreloadIdleId: null,
   sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume") || savedUserCache?.settings?.sfx, 0, 100, 50) / 100,
   musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume") || savedUserCache?.settings?.music, 0, 100, 50) / 100
 };
@@ -3458,10 +3462,15 @@ function setMuted(isMuted) {
   updateSoundButton();
   if (!isMuted) {
     initAudio();
+    preloadSfxAudioAssets();
     startMusic();
     playSound("click");
   } else {
     soundState.musicUnlocked = false;
+    if (soundState.sfxPreloadIdleId && "cancelIdleCallback" in window) {
+      window.cancelIdleCallback(soundState.sfxPreloadIdleId);
+    }
+    soundState.sfxPreloadIdleId = null;
     disarmMusicUnlockListeners();
     stopMusic();
     stopTimerTick();
@@ -3493,6 +3502,7 @@ function primeAudioPlayback() {
   if (soundState.ctx?.state === "suspended") {
     soundState.ctx.resume().catch(() => {});
   }
+  preloadSfxAudioAssets();
   startMusic();
 }
 
@@ -3544,13 +3554,138 @@ function getScaledSfxVolume() {
   return Math.min(2.2, Math.pow(raw, 0.72) * 1.65);
 }
 
+function getPreloadableSfxSources() {
+  const prioritySources = [
+    audioAssets.zapLosePoints,
+    audioAssets.explodeLosePoints,
+    audioAssets.burningLosePoints,
+    audioAssets.genericLosePoint,
+    audioAssets.glitchOverlay,
+    audioAssets.bountyRound,
+    audioAssets.suddenDeath,
+    audioAssets.lightOff,
+    audioAssets.noMercy,
+    audioAssets.blackMarket,
+    audioAssets.dice,
+    audioAssets.roulette
+  ].filter(Boolean);
+  const remainingSources = Object.entries(audioAssets)
+    .filter(([key]) => !["music", "warning", "ticking"].includes(key))
+    .map(([, src]) => src);
+  return [...new Set([...prioritySources, ...remainingSources])];
+}
+
+function decodeAudioData(ctx, arrayBuffer) {
+  try {
+    const decodeResult = ctx.decodeAudioData(arrayBuffer.slice(0));
+    if (decodeResult?.then) {
+      return decodeResult;
+    }
+  } catch (error) {
+    // Older Web Audio implementations use the callback form below.
+  }
+  return new Promise((resolve, reject) => {
+    ctx.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
+  });
+}
+
+function preloadSfxBuffer(src) {
+  if (!src || soundState.sfxBuffers.has(src)) {
+    return Promise.resolve(soundState.sfxBuffers.get(src) || null);
+  }
+  if (soundState.sfxBufferPromises.has(src)) {
+    return soundState.sfxBufferPromises.get(src);
+  }
+
+  initAudio();
+  if (!soundState.ctx || typeof fetch !== "function") {
+    return Promise.resolve(null);
+  }
+
+  const promise = fetch(src)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Audio preload failed: ${response.status}`);
+      }
+      return response.arrayBuffer();
+    })
+    .then((arrayBuffer) => decodeAudioData(soundState.ctx, arrayBuffer))
+    .then((buffer) => {
+      soundState.sfxBuffers.set(src, buffer);
+      soundState.sfxBufferPromises.delete(src);
+      return buffer;
+    })
+    .catch(() => {
+      soundState.sfxBufferPromises.delete(src);
+      return null;
+    });
+
+  soundState.sfxBufferPromises.set(src, promise);
+  return promise;
+}
+
+function preloadSfxAudioAssets() {
+  if (soundState.muted || soundState.sfxPreloadStarted) {
+    return;
+  }
+  initAudio();
+  if (!soundState.ctx) {
+    return;
+  }
+  soundState.sfxPreloadStarted = true;
+  const sources = getPreloadableSfxSources();
+  const preloadNext = (index = 0) => {
+    if (index >= sources.length || soundState.muted) {
+      return;
+    }
+    preloadSfxBuffer(sources[index]).finally(() => preloadNext(index + 1));
+  };
+  preloadNext();
+}
+
+function playBufferedAudioFile(src, volume = 1, options = {}) {
+  if (soundState.muted || options.loop || options.ignoreSettings) {
+    return null;
+  }
+  const ctx = soundState.ctx;
+  const buffer = ctx && soundState.sfxBuffers.get(src);
+  if (!ctx || !buffer) {
+    preloadSfxBuffer(src);
+    return null;
+  }
+
+  const effectiveVolume = volume * getScaledSfxVolume();
+  if (effectiveVolume <= 0) {
+    return null;
+  }
+  const source = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  source.buffer = buffer;
+  gain.gain.value = Math.min(2.2, effectiveVolume);
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  const node = { source, gain };
+  soundState.activeAudioNodes.add(node);
+  source.addEventListener("ended", () => {
+    soundState.activeAudioNodes.delete(node);
+  }, { once: true });
+  source.start();
+  return source;
+}
+
 function playAudioFile(src, volume = 1, options = {}) {
   if (soundState.muted) {
     return null;
   }
 
+  initAudio();
+  const buffered = playBufferedAudioFile(src, volume, options);
+  if (buffered) {
+    return buffered;
+  }
+
   const audio = new Audio(src);
-  audio.preload = "none";
+  audio.preload = options.loop || options.ignoreSettings ? "auto" : "metadata";
   audio.loop = Boolean(options.loop);
   const effectiveVolume = options.ignoreSettings ? volume : volume * getScaledSfxVolume();
   if (!options.ignoreSettings && effectiveVolume > 1) {
@@ -8557,20 +8692,29 @@ function getModifierLabelsFromSettings(settings = {}) {
   return getModifierEntriesFromSettings(settings).map((modifier) => modifier.label);
 }
 
-function renderModifierIconLabel(target, settings = state.roomSettings) {
+function getActiveMatchModifierEntries() {
+  if (isClassicModeEnabled()) {
+    return [classicModifierDefinition];
+  }
+  const settings = state.mode === "room" ? state.roomSettings : state.matchModifiers || {};
+  return roomModifierDefinitions.filter((modifier) => Boolean(settings[modifier.id]));
+}
+
+function renderModifierIconLabel(target, settings = state.roomSettings, options = {}) {
   if (!target) {
     return;
   }
   target.replaceChildren();
-  target.className = "modifier-icon-list";
-  const modifiers = [
-    ...getModifierEntriesFromSettings(settings),
-    ...getRoomSettingIndicatorEntries(settings)
-  ];
+  target.className = options.className || "modifier-icon-list";
+  const modifiers = options.entries
+    || [
+      ...getModifierEntriesFromSettings(settings),
+      ...(options.includeSettings === false ? [] : getRoomSettingIndicatorEntries(settings))
+    ];
   if (!modifiers.length) {
-    target.textContent = "No Modifiers";
+    target.textContent = options.emptyText || "No Modifiers";
     target.classList.add("modifier-icon-list-empty");
-    target.setAttribute("aria-label", "No Modifiers");
+    target.setAttribute("aria-label", options.emptyText || "No Modifiers");
     return;
   }
   target.classList.remove("modifier-icon-list-empty");
@@ -8578,6 +8722,7 @@ function renderModifierIconLabel(target, settings = state.roomSettings) {
   modifiers.forEach((modifier) => {
     const icon = document.createElement("span");
     icon.className = "modifier-icon";
+    icon.dataset.modifierId = modifier.id;
     icon.dataset.description = modifier.label;
     icon.tabIndex = 0;
     icon.setAttribute("role", "img");
@@ -8591,6 +8736,22 @@ function renderModifierIconLabel(target, settings = state.roomSettings) {
     attachFloatingDescriptionTooltip(icon);
     target.appendChild(icon);
   });
+}
+
+function renderTopModeLabel() {
+  const isDuel = isDuelMode();
+  const modeName = state.mode === "room" ? "multiplayer room" : isDuel ? "local 1v1" : "solo vs bots";
+  const base = document.createElement("span");
+  base.className = "mode-label-copy";
+  base.textContent = `${state.maxRounds}-round ${modeName}`;
+  const icons = document.createElement("span");
+  renderModifierIconLabel(icons, state.roomSettings, {
+    className: "modifier-icon-list mode-label-modifiers",
+    entries: getActiveMatchModifierEntries(),
+    emptyText: "",
+    includeSettings: false
+  });
+  elements.modeLabel.replaceChildren(base, icons);
 }
 
 function getActiveMatchModifierNames() {
@@ -16509,8 +16670,44 @@ function getPowerHandThreatScore(owner) {
     .reduce((total, power) => total + getRarityRank(power.rarity) + (power.immediate ? 0.35 : 0), 0);
 }
 
+function getTargetRelevanceScore(owner, power = null, casterOwner = "") {
+  if (!owner) {
+    return 0;
+  }
+  const type = power?.type || "";
+  if (type === "streak_bonus" || type === "zap_strike" || type === "lightning_strike" || type === "freeze_ray") {
+    return getOwnerStreak(owner) * 100000 + getScore(owner);
+  }
+  if (type === "power_heist" || type === "software_downgrade" || type === "xray_hacks") {
+    return getPowerHandThreatScore(owner) * 100000 + getScore(owner);
+  }
+  if (type === "lawsuit") {
+    return getRemovableActiveEffects(owner).length * 100000 + getScore(owner);
+  }
+  if (type === "get_good") {
+    return getWrongAnswerCount(owner) * 100000 + getScore(owner);
+  }
+  if (type === "haha_you_lose") {
+    return getScore(owner) * 100000 + getWrongAnswerCount(owner);
+  }
+  if (type === "airdrop") {
+    return owner === casterOwner ? Number.MAX_SAFE_INTEGER : -getScore(owner);
+  }
+  return getScore(owner) * 100 + getOwnerStreak(owner);
+}
+
+function sortTargetCandidatesForPower(candidates = [], owner = "", power = null) {
+  return [...candidates].sort((a, b) => {
+    const relevance = getTargetRelevanceScore(b, power, owner) - getTargetRelevanceScore(a, power, owner);
+    if (relevance) {
+      return relevance;
+    }
+    return getOwnerLabel(a).localeCompare(getOwnerLabel(b));
+  });
+}
+
 function chooseTargetOwner(owner, power) {
-  const candidates = getTargetCandidates(owner, power);
+  const candidates = sortTargetCandidatesForPower(getTargetCandidates(owner, power), owner, power);
   if (getPlayer(owner)?.type === "bot") {
     if (!candidates.length) {
       return null;
@@ -16518,31 +16715,7 @@ function chooseTargetOwner(owner, power) {
     if (power.type === "airdrop") {
       return owner;
     }
-    if (power.type === "streak_bonus") {
-      return candidates.sort((a, b) => getOwnerStreak(b) - getOwnerStreak(a) || getScore(b) - getScore(a))[0];
-    }
-    if (power.type === "zap_strike" || power.type === "lightning_strike") {
-      return candidates.sort((a, b) => getOwnerStreak(b) - getOwnerStreak(a) || getScore(b) - getScore(a))[0];
-    }
-    if (power.type === "haha_you_lose") {
-      return candidates.sort((a, b) => getScore(a) - getScore(b) || getOwnerStreak(a) - getOwnerStreak(b))[0];
-    }
-    if (power.type === "reverse") {
-      return candidates.sort((a, b) => getScore(b) - getScore(a) || getOwnerStreak(b) - getOwnerStreak(a))[0];
-    }
-    if (power.type === "power_heist" || power.type === "software_downgrade" || power.type === "xray_hacks") {
-      return candidates.sort((a, b) => getPowerHandThreatScore(b) - getPowerHandThreatScore(a) || getScore(b) - getScore(a))[0];
-    }
-    if (power.type === "lawsuit") {
-      return candidates.sort((a, b) => getRemovableActiveEffects(b).length - getRemovableActiveEffects(a).length || getScore(b) - getScore(a))[0];
-    }
-    if (power.type === "get_good") {
-      return candidates.sort((a, b) => getWrongAnswerCount(b) - getWrongAnswerCount(a) || getScore(b) - getScore(a))[0];
-    }
-    if (["shameless", "execution", "void_bomb", "curse", "virus_deployment", "freeze_ray", "soul_link"].includes(power.type)) {
-      return candidates.sort((a, b) => getScore(b) - getScore(a) || getOwnerStreak(b) - getOwnerStreak(a))[0];
-    }
-    return candidates.sort((a, b) => getScore(b) - getScore(a))[0];
+    return candidates[0];
   }
 
   return null;
@@ -16565,7 +16738,7 @@ function createTargetPlayerCopy(player, owner, metaText) {
 }
 
 function openTargetSelector(owner, power, powerId) {
-  const candidates = getTargetCandidates(owner, power);
+  const candidates = sortTargetCandidatesForPower(getTargetCandidates(owner, power), owner, power);
   if (!candidates.length) {
     return;
   }
@@ -19983,15 +20156,11 @@ function updateModeUi() {
   document.body?.toggleAttribute("data-game-active", isGameScreenActive());
   const isDuel = isDuelMode();
   const multipleChoice = isMultipleChoiceRound();
-  const modeName = state.mode === "room" ? "multiplayer room" : isDuel ? "local 1v1" : "solo vs bots";
-  const activeModifierNames = state.mode === "room" ? getRoomVariantNames() : getActiveMatchModifierNames();
-  const variants = ` - ${activeModifierNames.join(" + ")}`;
-  const matchSuffix = activeModifierNames.length === 1 && activeModifierNames[0] === "Classic Match" ? "" : " match";
   elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
   elements.gameStage.classList.toggle("spectator-mode", Boolean(state.isSpectator && isRoomMode()));
   applyTableEventStageClasses();
   updateWildFireBurningState();
-  elements.modeLabel.textContent = `${state.maxRounds}-round ${modeName}${variants}${matchSuffix}`;
+  renderTopModeLabel();
   renderAnswerCardsForOwners(getRoundCardOwners());
   renderBotPowerDebugPanel();
   elements.answerInput.placeholder = isRoomMode()
@@ -24014,11 +24183,17 @@ function scheduleRoomSettingsPublish(kind = state.currentRoomStatus, delay = 300
   }, delay);
 }
 
-function publishCurrentRoomSettingsSoon() {
+function publishCurrentRoomSettingsSoon(options = {}) {
   const editSeq = markRoomSettingsLocallyChanged();
   const code = state.roomSettings.code;
   const updatedAt = state.roomSettingsLocalUpdatedAtByCode[code] || Date.now();
   const serverStatus = state.currentRoomStatus === "draft" ? "lobby" : state.currentRoomStatus;
+  const immediate = options.immediate === true;
+  if (immediate && state.roomSettingsPublishTimerId) {
+    window.clearTimeout(state.roomSettingsPublishTimerId);
+    state.roomSettingsPublishTimerId = null;
+    state.roomSettingsPublishKind = "";
+  }
   const hostedRoom = state.hostedRooms.find((room) => room.code === code);
   if (hostedRoom) {
     hostedRoom.settings = { ...(hostedRoom.settings || {}), ...state.roomSettings, code };
@@ -24033,10 +24208,18 @@ function publishCurrentRoomSettingsSoon() {
     settings: { ...state.roomSettings, code }
   });
   if (state.currentRoomStatus === "lobby") {
-    scheduleRoomSettingsPublish("lobby");
+    if (immediate) {
+      publishRoomSettings("lobby");
+    } else {
+      scheduleRoomSettingsPublish("lobby");
+    }
     renderRoomLobby();
   } else if (state.currentRoomStatus === "draft") {
-    scheduleRoomSettingsPublish("draft");
+    if (immediate) {
+      publishRoomSettings("draft");
+    } else {
+      scheduleRoomSettingsPublish("draft");
+    }
   }
   scheduleUserStorageSnapshot();
 }
@@ -24080,7 +24263,7 @@ function syncClassicRoomToggleState() {
   }
 }
 
-function updateRoomVariants() {
+function applyRoomVariantControlsToSettings() {
   if (elements.classicModeToggle.checked) {
     elements.randomModeToggle.checked = false;
     elements.harshModeToggle.checked = false;
@@ -24106,7 +24289,14 @@ function updateRoomVariants() {
   syncClassicRoomToggleState();
   renderModifierIconLabel(elements.roomVariantLabel);
   renderModifierIconLabel(elements.lobbyRoomVariantLabel);
-  publishCurrentRoomSettingsSoon();
+}
+
+function updateRoomVariants(options = {}) {
+  applyRoomVariantControlsToSettings();
+  if (options.publish === false) {
+    return;
+  }
+  publishCurrentRoomSettingsSoon({ immediate: options.immediate === true });
 }
 
 function applyRandomRoomModifiersForMatch() {
@@ -24140,7 +24330,7 @@ async function handleClassicModeToggle() {
   if (!confirmed) {
     elements.classicModeToggle.checked = false;
   }
-  updateRoomVariants();
+  updateRoomVariants({ immediate: true });
 }
 
 function buildRoomDirectoryPayload(status = "lobby") {
@@ -25630,11 +25820,19 @@ function renderHostedRooms(options = {}) {
     const meta = document.createElement("div");
     meta.className = "join-room-meta";
     const activePlayers = getHostedRoomActivePlayerCount(room);
-    [room.settings.private ? "Private" : "Public", getRoomModeLabel(room.settings), `${activePlayers}/${getRoomMaxPlayers(room.settings)} players`, `${room.spectators} spectators`, room.status].forEach((label) => {
+    [room.settings.private ? "Private" : "Public", `${activePlayers}/${getRoomMaxPlayers(room.settings)} players`, `${room.spectators} spectators`, room.status].forEach((label) => {
       const chip = document.createElement("span");
       chip.textContent = label;
       meta.appendChild(chip);
     });
+    const modifierChip = document.createElement("span");
+    modifierChip.className = "join-room-modifier-chip";
+    renderModifierIconLabel(modifierChip, room.settings, {
+      className: "modifier-icon-list join-room-modifiers",
+      includeSettings: false,
+      emptyText: "No Modifiers"
+    });
+    meta.appendChild(modifierChip);
     details.append(host, meta);
     const actions = document.createElement("div");
     actions.className = "join-room-actions";
@@ -26389,7 +26587,7 @@ function handleRoomPlayerAction(action, owner) {
 }
 
 function startRoomGame() {
-  updateRoomVariants();
+  updateRoomVariants({ publish: false });
   if (state.roomSettings.private && !state.roomSettings.password) {
     elements.roomPasswordInput.focus();
     return;
@@ -29770,6 +29968,15 @@ cleanupReloadedHostedRoomSession();
 writePublicCatalogCache();
 updateSoundButton();
 syncSettingsControls();
+if (!soundState.muted) {
+  armMusicUnlockListeners();
+  const warmSfx = () => preloadSfxAudioAssets();
+  if ("requestIdleCallback" in window) {
+    soundState.sfxPreloadIdleId = window.requestIdleCallback(warmSfx, { timeout: 1800 });
+  } else {
+    window.setTimeout(warmSfx, 900);
+  }
+}
 syncRoomControls();
 syncBotAdvancedControls();
 applyPerformanceMode(state.performanceMode);
