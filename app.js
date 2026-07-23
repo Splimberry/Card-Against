@@ -985,6 +985,7 @@ const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds
 const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds") || savedUserCache?.settings?.timerSeconds, 10, 60, 30);
 const savedPerformanceMode = normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey) || savedUserCache?.settings?.performanceMode);
 const savedBotRounds = clampNumber(localStorage.getItem("cardsAgainstAiBotRounds"), 5, 10, 5);
+const savedLocalRounds = clampNumber(localStorage.getItem("cardsAgainstAiLocalRounds"), 5, 10, 5);
 const BOT_OWNER_IDS = Array.from({ length: 9 }, (_, index) => `bot${index + 1}`);
 const DEFAULT_OWNER_IDS = ["player", "opponent", ...BOT_OWNER_IDS];
 
@@ -2689,6 +2690,18 @@ const state = {
     wildFire: false,
     partyMayhem: false
   },
+  localSettings: {
+    rounds: savedLocalRounds,
+    classicMode: false,
+    randomModifiers: false,
+    harsh: false,
+    chaos: false,
+    timeMoney: false,
+    amplified: false,
+    wildFire: false,
+    partyMayhem: false
+  },
+  advancedSettingsMode: "bots",
   roomSettings: {
     rounds: 10,
     timerSeconds: 30,
@@ -3241,9 +3254,14 @@ const elements = {
   roomProfileNamePreview: document.querySelector("#roomProfileNamePreview"),
   startBotsButton: document.querySelector("#startBotsButton"),
   botAdvancedToggle: document.querySelector("#botAdvancedToggle"),
+  localAdvancedToggle: document.querySelector("#localAdvancedToggle"),
   botAdvancedModal: document.querySelector("#botAdvancedModal"),
   botAdvancedPanel: document.querySelector("#botAdvancedPanel"),
+  botAdvancedEyebrow: document.querySelector("#botAdvancedEyebrow"),
+  botAdvancedTitle: document.querySelector("#botAdvancedTitle"),
   closeBotAdvancedButton: document.querySelector("#closeBotAdvancedButton"),
+  resetBotAdvancedButton: document.querySelector("#resetBotAdvancedButton"),
+  botCountRow: document.querySelector("#botCountRow"),
   botCountSlider: document.querySelector("#botCountSlider"),
   botCountValue: document.querySelector("#botCountValue"),
   botRoundsSlider: document.querySelector("#botRoundsSlider"),
@@ -8162,6 +8180,52 @@ function getBotRoundCount() {
   return clampNumber(state.botSettings?.rounds, 5, 10, 5);
 }
 
+function getLocalRoundCount() {
+  return clampNumber(state.localSettings?.rounds, 5, 10, 5);
+}
+
+function getDefaultBotSettings() {
+  return {
+    botCount: 2,
+    rounds: 5,
+    classicMode: false,
+    randomModifiers: false,
+    harsh: false,
+    chaos: false,
+    timeMoney: false,
+    amplified: false,
+    wildFire: false,
+    partyMayhem: false
+  };
+}
+
+function getDefaultLocalSettings() {
+  return {
+    rounds: 5,
+    classicMode: false,
+    randomModifiers: false,
+    harsh: false,
+    chaos: false,
+    timeMoney: false,
+    amplified: false,
+    wildFire: false,
+    partyMayhem: false
+  };
+}
+
+function getAdvancedSettingsMode() {
+  return state.advancedSettingsMode === "local" ? "local" : "bots";
+}
+
+function getAdvancedSettingsSource() {
+  return getAdvancedSettingsMode() === "local" ? state.localSettings : state.botSettings;
+}
+
+function setAdvancedToggleExpanded(mode, expanded) {
+  const toggle = mode === "local" ? elements.localAdvancedToggle : elements.botAdvancedToggle;
+  toggle?.setAttribute("aria-expanded", String(Boolean(expanded)));
+}
+
 function getActiveBotOwnerIds() {
   return BOT_OWNER_IDS.slice(0, getBotCount());
 }
@@ -8177,16 +8241,19 @@ function createOwnerValueMap(valueFactory) {
   ]));
 }
 
-function setBotAdvancedOpen(open) {
+function setBotAdvancedOpen(open, mode = state.advancedSettingsMode) {
   if (!elements.botAdvancedModal || !elements.botAdvancedToggle) {
     return;
   }
   const expanded = Boolean(open);
-  elements.botAdvancedToggle.setAttribute("aria-expanded", String(expanded));
+  const normalizedMode = mode === "local" ? "local" : "bots";
+  state.advancedSettingsMode = normalizedMode;
+  setAdvancedToggleExpanded("bots", expanded && normalizedMode === "bots");
+  setAdvancedToggleExpanded("local", expanded && normalizedMode === "local");
   if (expanded) {
     syncBotAdvancedControls();
     setHidden(elements.botAdvancedModal, false);
-    elements.botCountSlider?.focus();
+    (normalizedMode === "local" ? elements.botRoundsSlider : elements.botCountSlider)?.focus();
     return;
   }
   hideModalWithMotion(elements.botAdvancedModal);
@@ -8201,12 +8268,30 @@ function syncBotAdvancedControls() {
   if (!elements.botCountSlider) {
     return;
   }
-  const settings = state.botSettings;
+  const mode = getAdvancedSettingsMode();
+  const settings = getAdvancedSettingsSource();
+  const isLocal = mode === "local";
+  if (elements.botAdvancedEyebrow) {
+    elements.botAdvancedEyebrow.textContent = isLocal ? "Local 1v1" : "Solo vs Bots";
+  }
+  if (elements.botAdvancedTitle) {
+    elements.botAdvancedTitle.textContent = isLocal ? "Local Settings" : "Bot Settings";
+  }
+  if (elements.botAdvancedModal) {
+    elements.botAdvancedModal.setAttribute("aria-label", isLocal ? "Local 1v1 settings" : "Solo vs Bots settings");
+  }
+  if (elements.resetBotAdvancedButton) {
+    elements.resetBotAdvancedButton.dataset.tooltip = isLocal
+      ? "Restore Local 1v1 quick-start settings."
+      : "Restore Solo vs Bots quick-start settings.";
+  }
+  setHidden(elements.botCountRow, isLocal);
   elements.botCountSlider.value = getBotCount();
   elements.botCountValue.textContent = String(getBotCount());
   if (elements.botRoundsSlider) {
-    elements.botRoundsSlider.value = getBotRoundCount();
-    elements.botRoundsValue.textContent = String(getBotRoundCount());
+    const rounds = isLocal ? getLocalRoundCount() : getBotRoundCount();
+    elements.botRoundsSlider.value = rounds;
+    elements.botRoundsValue.textContent = String(rounds);
   }
   elements.botRandomModeToggle.checked = Boolean(settings.randomModifiers);
   elements.botClassicModeToggle.checked = Boolean(settings.classicMode);
@@ -8242,14 +8327,20 @@ function updateBotSettingsFromControls() {
   if (!elements.botCountSlider) {
     return;
   }
-  state.botSettings.botCount = clampNumber(elements.botCountSlider.value, 1, 9, 2);
-  if (elements.botRoundsSlider) {
-    state.botSettings.rounds = clampNumber(elements.botRoundsSlider.value, 5, 10, 5);
-    localStorage.setItem("cardsAgainstAiBotRounds", String(state.botSettings.rounds));
-    elements.botRoundsValue.textContent = String(state.botSettings.rounds);
+  const mode = getAdvancedSettingsMode();
+  const settings = getAdvancedSettingsSource();
+  const isLocal = mode === "local";
+  if (!isLocal) {
+    settings.botCount = clampNumber(elements.botCountSlider.value, 1, 9, 2);
+    elements.botCountValue.textContent = String(settings.botCount);
   }
-  state.botSettings.classicMode = Boolean(elements.botClassicModeToggle.checked);
-  if (state.botSettings.classicMode) {
+  if (elements.botRoundsSlider) {
+    settings.rounds = clampNumber(elements.botRoundsSlider.value, 5, 10, 5);
+    localStorage.setItem(isLocal ? "cardsAgainstAiLocalRounds" : "cardsAgainstAiBotRounds", String(settings.rounds));
+    elements.botRoundsValue.textContent = String(settings.rounds);
+  }
+  settings.classicMode = Boolean(elements.botClassicModeToggle.checked);
+  if (settings.classicMode) {
     elements.botRandomModeToggle.checked = false;
     elements.botHarshModeToggle.checked = false;
     elements.botChaosModeToggle.checked = false;
@@ -8258,15 +8349,27 @@ function updateBotSettingsFromControls() {
     elements.botWildFireModeToggle.checked = false;
     elements.botPartyMayhemModeToggle.checked = false;
   }
-  state.botSettings.randomModifiers = Boolean(elements.botRandomModeToggle.checked);
-  state.botSettings.harsh = Boolean(elements.botHarshModeToggle.checked);
-  state.botSettings.chaos = Boolean(elements.botChaosModeToggle.checked);
-  state.botSettings.timeMoney = Boolean(elements.botTimeMoneyModeToggle.checked);
-  state.botSettings.amplified = Boolean(elements.botAmplifiedModeToggle.checked);
-  state.botSettings.wildFire = Boolean(elements.botWildFireModeToggle.checked);
-  state.botSettings.partyMayhem = Boolean(elements.botPartyMayhemModeToggle.checked);
-  elements.botCountValue.textContent = String(state.botSettings.botCount);
+  settings.randomModifiers = Boolean(elements.botRandomModeToggle.checked);
+  settings.harsh = Boolean(elements.botHarshModeToggle.checked);
+  settings.chaos = Boolean(elements.botChaosModeToggle.checked);
+  settings.timeMoney = Boolean(elements.botTimeMoneyModeToggle.checked);
+  settings.amplified = Boolean(elements.botAmplifiedModeToggle.checked);
+  settings.wildFire = Boolean(elements.botWildFireModeToggle.checked);
+  settings.partyMayhem = Boolean(elements.botPartyMayhemModeToggle.checked);
   syncBotRandomToggleState();
+}
+
+function resetAdvancedSettings() {
+  const mode = getAdvancedSettingsMode();
+  if (mode === "local") {
+    state.localSettings = getDefaultLocalSettings();
+    localStorage.setItem("cardsAgainstAiLocalRounds", String(state.localSettings.rounds));
+  } else {
+    state.botSettings = getDefaultBotSettings();
+    localStorage.setItem("cardsAgainstAiBotRounds", String(state.botSettings.rounds));
+  }
+  syncBotAdvancedControls();
+  playSound("click");
 }
 
 function getPlayersForMode(mode) {
@@ -8467,7 +8570,8 @@ function isMatchModifierEnabled(modifier) {
 
 function isClassicModeEnabled() {
   return (isRoomMode() && Boolean(state.roomSettings.classicMode))
-    || (state.mode === "bots" && Boolean(state.botSettings.classicMode));
+    || (state.mode === "bots" && Boolean(state.botSettings.classicMode))
+    || (state.mode === "local" && Boolean(state.localSettings.classicMode));
 }
 
 function rollMatchModifiers(mode) {
@@ -8475,28 +8579,18 @@ function rollMatchModifiers(mode) {
     return { harsh: false, chaos: false, amplified: false, timeMoney: false, wildFire: false, partyMayhem: false };
   }
 
-  if (mode === "bots" && state.botSettings.classicMode) {
+  const settings = mode === "local" ? state.localSettings : state.botSettings;
+  if (settings.classicMode) {
     return { harsh: false, chaos: false, amplified: false, timeMoney: false, wildFire: false, partyMayhem: false };
   }
 
-  if (mode === "bots") {
-    return {
-      harsh: Boolean(state.botSettings.harsh) || (state.botSettings.randomModifiers && Math.random() < 0.5),
-      chaos: Boolean(state.botSettings.chaos) || (state.botSettings.randomModifiers && Math.random() < 0.5),
-      amplified: Boolean(state.botSettings.amplified) || (state.botSettings.randomModifiers && Math.random() < 0.5),
-      timeMoney: Boolean(state.botSettings.timeMoney) || (state.botSettings.randomModifiers && Math.random() < 0.5),
-      wildFire: Boolean(state.botSettings.wildFire) || (state.botSettings.randomModifiers && Math.random() < 0.5),
-      partyMayhem: Boolean(state.botSettings.partyMayhem) || (state.botSettings.randomModifiers && Math.random() < 0.5)
-    };
-  }
-
   return {
-    harsh: Math.random() < 0.5,
-    chaos: Math.random() < 0.5,
-    amplified: Math.random() < 0.5,
-    timeMoney: Math.random() < 0.5,
-    wildFire: Math.random() < 0.5,
-    partyMayhem: Math.random() < 0.5
+    harsh: Boolean(settings.harsh) || (settings.randomModifiers && Math.random() < 0.5),
+    chaos: Boolean(settings.chaos) || (settings.randomModifiers && Math.random() < 0.5),
+    amplified: Boolean(settings.amplified) || (settings.randomModifiers && Math.random() < 0.5),
+    timeMoney: Boolean(settings.timeMoney) || (settings.randomModifiers && Math.random() < 0.5),
+    wildFire: Boolean(settings.wildFire) || (settings.randomModifiers && Math.random() < 0.5),
+    partyMayhem: Boolean(settings.partyMayhem) || (settings.randomModifiers && Math.random() < 0.5)
   };
 }
 
@@ -24191,7 +24285,7 @@ function resetMatch(mode) {
   state.roomRoundResult = null;
   state.matchModifiers = rollMatchModifiers(mode);
   setPlayersForMode(mode);
-  if (mode === "bots") {
+  if (mode === "bots" || mode === "local") {
     state.enabledThemes = [...triviaThemes];
   }
   resetAchievementStats();
@@ -24278,7 +24372,7 @@ function resetMatch(mode) {
     : mode === "bots"
       ? getBotRoundCount()
     : mode === "local"
-      ? 10
+      ? getLocalRoundCount()
       : clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, state.maxRounds || 5);
   state.timerSeconds = mode === "room"
     ? clampNumber(state.roomSettings.timerSeconds, 10, 60, 30)
@@ -30189,7 +30283,12 @@ elements.retryButton.addEventListener("click", () => {
 elements.startBotsButton.addEventListener("click", startBotsGame);
 elements.botAdvancedToggle?.addEventListener("click", () => {
   const expanded = elements.botAdvancedToggle.getAttribute("aria-expanded") === "true";
-  setBotAdvancedOpen(!expanded);
+  setBotAdvancedOpen(!expanded, "bots");
+  playSound("click");
+});
+elements.localAdvancedToggle?.addEventListener("click", () => {
+  const expanded = elements.localAdvancedToggle.getAttribute("aria-expanded") === "true";
+  setBotAdvancedOpen(!expanded, "local");
   playSound("click");
 });
 elements.botCountSlider?.addEventListener("input", updateBotSettingsFromControls);
@@ -30205,6 +30304,7 @@ elements.botRoundsSlider?.addEventListener("input", updateBotSettingsFromControl
   elements.botPartyMayhemModeToggle
 ].forEach((toggle) => toggle?.addEventListener("change", updateBotSettingsFromControls));
 elements.startLocalButton.addEventListener("click", () => startGame("local"));
+elements.resetBotAdvancedButton?.addEventListener("click", resetAdvancedSettings);
 elements.createRoomButton.addEventListener("click", openRoomScreen);
 elements.joinRoomButton.addEventListener("click", openJoinScreen);
 buildDevToolScreen();

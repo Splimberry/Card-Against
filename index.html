@@ -83,15 +83,22 @@
             <button type="button" class="mode-card" id="startBotsButton">
               <span>Solo vs Bots</span>
               <strong>Quick Start</strong>
-              <small>5-10 rounds, 30s timer, 1-9 bots, all themes, power-ups on.</small>
+              <small>5 rounds, 30s timer, 2 bots, all themes, power-ups on.</small>
             </button>
-            <button type="button" class="secondary-button bot-advanced-toggle" id="botAdvancedToggle" aria-expanded="false" aria-controls="botAdvancedModal">Advanced</button>
+            <button type="button" class="quick-settings-button" id="botAdvancedToggle" aria-label="Solo vs Bots settings" aria-expanded="false" aria-controls="botAdvancedModal" data-tooltip="Solo vs Bots settings">
+              <img src="assets/settings.svg" alt="" aria-hidden="true">
+            </button>
           </div>
-          <button type="button" class="mode-card" id="startLocalButton">
-            <span>Local 1v1</span>
-            <strong>2 players</strong>
-            <small>Share the keyboard. Let the score swing ruin a friendship.</small>
-          </button>
+          <div class="mode-card-shell local-mode-shell">
+            <button type="button" class="mode-card" id="startLocalButton">
+              <span>Local 1v1</span>
+              <strong>Quick Start</strong>
+              <small>5 rounds, 30s timer, all themes, power-ups on.</small>
+            </button>
+            <button type="button" class="quick-settings-button" id="localAdvancedToggle" aria-label="Local 1v1 settings" aria-expanded="false" aria-controls="botAdvancedModal" data-tooltip="Local 1v1 settings">
+              <img src="assets/settings.svg" alt="" aria-hidden="true">
+            </button>
+          </div>
           <button type="button" class="mode-card" id="createRoomButton">
             <span>Online Room</span>
             <strong>Create</strong>
@@ -227,7 +234,10 @@
 
           <section class="room-preview">
             <p class="eyebrow">Room code</p>
-            <h2 id="roomCodePreview">CAI-0000</h2>
+            <div class="room-code-share">
+              <h2 id="roomCodePreview">CAI-0000</h2>
+              <button type="button" class="secondary-button" id="copyRoomInviteButton">Copy Invite Link</button>
+            </div>
             <div class="room-host-profile" id="roomHostProfile" aria-label="Room host profile">
               <div class="profile-avatar" id="roomProfileAvatarPreview">Y</div>
               <div>
@@ -243,7 +253,7 @@
       <section class="join-screen hidden" id="joinScreen" aria-labelledby="joinTitle">
         <div class="room-header">
           <div>
-            <p class="eyebrow">Hosted rooms</p>
+            <p class="eyebrow" id="joinEyebrow">Hosted rooms</p>
             <h1 id="joinTitle">JOIN GAME</h1>
           </div>
           <div class="lobby-actions">
@@ -260,6 +270,7 @@
           <input id="joinRoomPasswordInput" maxlength="32" autocomplete="off" placeholder="Password if private">
           <button type="submit">Join Code</button>
         </form>
+        <p class="join-invite-status hidden" id="joinInviteStatus" aria-live="polite"></p>
         <div class="join-room-list" id="joinRoomList" aria-label="Hosted game rooms"></div>
       </section>
 
@@ -279,7 +290,10 @@
         <div class="room-setup-grid">
           <section class="room-preview lobby-panel">
             <p class="eyebrow">Room code</p>
-            <h2 id="lobbyRoomCode">CAI-0000</h2>
+            <div class="room-code-share">
+              <h2 id="lobbyRoomCode">CAI-0000</h2>
+              <button type="button" class="secondary-button" id="copyLobbyInviteButton">Copy Invite Link</button>
+            </div>
             <p id="lobbyRoomSummary">Classic Match room. Waiting for players.</p>
             <div class="room-host-profile" id="lobbyHostProfile" aria-label="Lobby host profile">
               <div class="profile-avatar" id="lobbyHostAvatarPreview">Y</div>
@@ -789,12 +803,15 @@
         <div class="bot-advanced-panel" id="botAdvancedPanel">
           <div class="settings-header">
             <div>
-              <p class="eyebrow">Solo vs Bots</p>
+              <p class="eyebrow" id="botAdvancedEyebrow">Solo vs Bots</p>
               <h2 id="botAdvancedTitle">Advanced Settings</h2>
             </div>
-            <button type="button" class="icon-button" id="closeBotAdvancedButton">Close</button>
+            <div class="advanced-panel-actions">
+              <button type="button" class="icon-button" id="resetBotAdvancedButton" data-tooltip="Restore these quick-start settings.">Reset</button>
+              <button type="button" class="icon-button" id="closeBotAdvancedButton">Close</button>
+            </div>
           </div>
-          <label class="slider-row" for="botCountSlider">
+          <label class="slider-row" for="botCountSlider" id="botCountRow">
             <span>Bots</span>
             <input id="botCountSlider" type="range" min="1" max="9" step="1" value="2">
             <strong id="botCountValue">2</strong>
