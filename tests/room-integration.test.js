@@ -1931,6 +1931,111 @@ async function testDebugQuestionDeleteUsesBackendStorage() {
   assert.equal(questions.some((entry) => entry.id === question.id), false);
 }
 
+async function testRoundUsesLocalGraderWithoutApiKey() {
+  const previousAiKey = process.env.AI_API_KEY;
+  const previousComputingerKey = process.env.COMPUTINGER_API_KEY;
+  const previousOpenAiKey = process.env.OPENAI_API_KEY;
+  delete process.env.AI_API_KEY;
+  delete process.env.COMPUTINGER_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+  try {
+    const { response, payload } = await request("POST", "/api/round", {
+      answer: "Answer",
+      blackCard: "What is the test answer?",
+      triviaTheme: "Science",
+      canonicalAnswer: "Answer",
+      acceptedAnswers: ["answer"],
+      botCards: ["Wrong"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      roundSeed: "local-grader-no-key"
+    });
+    assert.equal(response.status, 200, payload.error);
+    assert.deepEqual(payload.cards, ["Answer", "Wrong"]);
+    assert.deepEqual(payload.correctIndexes, [0]);
+  } finally {
+    if (previousAiKey === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = previousAiKey;
+    if (previousComputingerKey === undefined) delete process.env.COMPUTINGER_API_KEY;
+    else process.env.COMPUTINGER_API_KEY = previousComputingerKey;
+    if (previousOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousOpenAiKey;
+  }
+}
+
+async function testRoundAiSecondOpinionOnlyReviewsNearMisses() {
+  const previousFetch = global.fetch;
+  const previousAiKey = process.env.AI_API_KEY;
+  const previousAiBaseUrl = process.env.AI_BASE_URL;
+  const previousAiStyle = process.env.AI_API_STYLE;
+  process.env.AI_API_KEY = "test-ai-key";
+  process.env.AI_BASE_URL = "https://ai.test/v1";
+  process.env.AI_API_STYLE = "chat";
+  let fetchCalls = 0;
+  global.fetch = async (url, options = {}) => {
+    fetchCalls += 1;
+    assert.equal(url, "https://ai.test/v1/chat/completions");
+    const body = JSON.parse(options.body || "{}");
+    const prompt = JSON.parse(body.messages[1].content);
+    assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0]);
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ correctIndexes: [0] })
+              }
+            }
+          ]
+        };
+      }
+    };
+  };
+
+  try {
+    const rescued = await request("POST", "/api/round", {
+      answer: "vinsnt",
+      blackCard: "Which artist painted The Starry Night?",
+      triviaTheme: "Art",
+      canonicalAnswer: "Vincent van Gogh",
+      acceptedAnswers: ["van Gogh"],
+      botCards: ["Claude Monet"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      roundSeed: "ai-second-opinion-near-miss"
+    });
+    assert.equal(rescued.response.status, 200, rescued.payload.error);
+    assert.equal(fetchCalls, 1);
+    assert.deepEqual(rescued.payload.correctIndexes, [0]);
+    assert.equal(rescued.payload.source, "local-with-ai-second-opinion");
+
+    const gibberish = await request("POST", "/api/round", {
+      answer: "zzzzzz",
+      blackCard: "Which artist painted The Starry Night?",
+      triviaTheme: "Art",
+      canonicalAnswer: "Vincent van Gogh",
+      acceptedAnswers: ["van Gogh"],
+      botCards: ["Claude Monet"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      roundSeed: "ai-second-opinion-gibberish"
+    });
+    assert.equal(gibberish.response.status, 200, gibberish.payload.error);
+    assert.equal(fetchCalls, 1);
+    assert.deepEqual(gibberish.payload.correctIndexes, []);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousAiKey === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = previousAiKey;
+    if (previousAiBaseUrl === undefined) delete process.env.AI_BASE_URL;
+    else process.env.AI_BASE_URL = previousAiBaseUrl;
+    if (previousAiStyle === undefined) delete process.env.AI_API_STYLE;
+    else process.env.AI_API_STYLE = previousAiStyle;
+  }
+}
+
 async function main() {
   await testSupabaseConfigEndpoint();
   await testDirectRoomLookupIncludesCompleteRooms();
@@ -1982,6 +2087,8 @@ async function main() {
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();
+  await testRoundUsesLocalGraderWithoutApiKey();
+  await testRoundAiSecondOpinionOnlyReviewsNearMisses();
   console.log("Room integration tests passed.");
 }
 

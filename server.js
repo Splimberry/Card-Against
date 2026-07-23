@@ -3962,12 +3962,6 @@ function isRepeatedQuestion(question, recentQuestions) {
 }
 
 async function handleRound(req, res) {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    sendJson(res, 503, { error: "AI_API_KEY, COMPUTINGER_API_KEY, or OPENAI_API_KEY is not configured." });
-    return;
-  }
-
   try {
     const body = await readRequestJson(req);
     const payload = normalizeRoundPayload(body);
@@ -3982,12 +3976,24 @@ async function handleRound(req, res) {
       sendJson(res, 200, cached);
       return;
     }
-    let result;
+
+    const localResult = createLocalRoundResult(payload);
+    const secondOpinionCandidates = getAiSecondOpinionCandidates(payload, localResult);
+    const apiKey = getApiKey();
+    if (!secondOpinionCandidates.length || !apiKey) {
+      setAiRoundCache(cacheKey, localResult);
+      sendJson(res, 200, localResult);
+      return;
+    }
+
+    let result = localResult;
     try {
-      result = await rememberAiRoundResult(cacheKey, () => generateRoundWithModel(payload, apiKey));
+      result = await rememberAiRoundResult(cacheKey, async () => {
+        const secondOpinion = await generateRoundSecondOpinionWithModel(payload, apiKey, secondOpinionCandidates);
+        return mergeSecondOpinionRoundResult(localResult, secondOpinion, secondOpinionCandidates);
+      });
     } catch (error) {
-      console.warn("AI round grading failed, using local trivia grader:", error.message || error);
-      result = createLocalRoundResult(payload);
+      console.warn("AI grading second opinion failed, using local trivia grader:", error.message || error);
       setAiRoundCache(cacheKey, result);
     }
     sendJson(res, 200, result);
@@ -4448,6 +4454,173 @@ async function generateRoundWithChatCompletions(payload, apiKey) {
   return validateRoundResult(parsed, payload);
 }
 
+async function generateRoundSecondOpinionWithModel(payload, apiKey, candidates = []) {
+  if (getApiStyle() === "responses") {
+    return generateRoundSecondOpinionWithResponses(payload, apiKey, candidates);
+  }
+
+  return generateRoundSecondOpinionWithChatCompletions(payload, apiKey, candidates);
+}
+
+function buildRoundSecondOpinionPrompt(payload, candidates = []) {
+  return JSON.stringify({
+    task: "Give a second opinion only for short trivia answers that the preset grader marked incorrect but close enough to review.",
+    outputShape: {
+      correctIndexes: "array of candidate indexes that should be accepted as correct"
+    },
+    rules: [
+      "Return only valid JSON. Do not wrap the JSON in markdown.",
+      "Only evaluate candidateAnswers. Do not include any index that is not listed in candidateAnswers.",
+      "Accept an answer only when it clearly identifies the canonical answer despite misspelling, missing accents, phonetic spelling, abbreviation, alias, swapped word order, translation, or a distinctive partial answer.",
+      "A distinctive first name, surname, nickname, team name, title fragment, or object/place/company name can be correct when the question context makes the intended answer clear.",
+      "Reject broad categories, random related words, guesses that point to a different answer, generic adjectives, jokes, filler, and ambiguous fragments.",
+      "Blank, empty, nonsense, and gibberish answers are already filtered out and must not be accepted if present.",
+      "If unsure, leave the index out.",
+      "Do not include explanations, commentary, or rewritten answers."
+    ],
+    trivia: {
+      theme: payload.triviaTheme,
+      question: payload.blackCard,
+      canonicalAnswer: payload.canonicalAnswer,
+      acceptedAnswers: [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean),
+      image: payload.image
+    },
+    candidateAnswers: candidates.map((candidate) => ({
+      index: candidate.index,
+      label: candidate.label,
+      answer: candidate.answer,
+      localScore: Math.round(candidate.score * 100) / 100
+    }))
+  });
+}
+
+async function generateRoundSecondOpinionWithResponses(payload, apiKey, candidates = []) {
+  const response = await fetch(`${getBaseUrl()}/responses`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: getModel(),
+      temperature: 0.1,
+      input: [
+        {
+          role: "system",
+          content:
+            "You are a strict but forgiving second-opinion trivia grader. Accept only candidate answers that clearly mean the canonical answer despite spelling mistakes, aliases, abbreviations, or distinctive partial answers. Return only compact valid JSON."
+        },
+        {
+          role: "user",
+          content: buildRoundSecondOpinionPrompt(payload, candidates)
+        }
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "trivia_second_opinion",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              correctIndexes: {
+                type: "array",
+                minItems: 0,
+                maxItems: candidates.length,
+                items: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: Math.max(0, getExpectedRoundCardCount(payload) - 1)
+                }
+              }
+            },
+            required: ["correctIndexes"]
+          }
+        }
+      }
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data.error && data.error.message ? data.error.message : "OpenAI second-opinion request failed.";
+    throw new Error(message);
+  }
+
+  return validateSecondOpinionResult(JSON.parse(extractOutputText(data)), candidates);
+}
+
+async function generateRoundSecondOpinionWithChatCompletions(payload, apiKey, candidates = []) {
+  const response = await fetch(`${getBaseUrl()}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: getModel(),
+      temperature: 0.1,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a strict but forgiving second-opinion trivia grader. Accept only candidate answers that clearly mean the canonical answer despite spelling mistakes, aliases, abbreviations, or distinctive partial answers. Return only valid JSON with key correctIndexes."
+        },
+        {
+          role: "user",
+          content: buildRoundSecondOpinionPrompt(payload, candidates)
+        }
+      ],
+      response_format: {
+        type: "json_object"
+      }
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    const message = data.error && data.error.message ? data.error.message : "Model second-opinion request failed.";
+    throw new Error(message);
+  }
+
+  const outputText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!outputText) {
+    throw new Error("Chat completion did not include second-opinion content.");
+  }
+
+  return validateSecondOpinionResult(JSON.parse(stripJsonMarkdown(outputText)), candidates);
+}
+
+function validateSecondOpinionResult(result, candidates = []) {
+  const candidateIndexes = new Set(candidates.map((candidate) => candidate.index));
+  const correctIndexes = Array.isArray(result?.correctIndexes)
+    ? [...new Set(result.correctIndexes.map(Number).filter((index) => Number.isInteger(index) && candidateIndexes.has(index)))]
+    : [];
+  return { correctIndexes };
+}
+
+function mergeSecondOpinionRoundResult(localResult, secondOpinion, candidates = []) {
+  const candidateIndexes = new Set(candidates.map((candidate) => candidate.index));
+  const rescuedIndexes = Array.isArray(secondOpinion?.correctIndexes)
+    ? secondOpinion.correctIndexes.filter((index) => candidateIndexes.has(index))
+    : [];
+  const correctIndexes = [...new Set([...(localResult.correctIndexes || []), ...rescuedIndexes])]
+    .filter((index) => Number.isInteger(index) && index >= 0 && index < localResult.cards.length);
+  const winnerIndex = correctIndexes.includes(rescuedIndexes[0])
+    ? rescuedIndexes[0]
+    : correctIndexes.includes(localResult.winnerIndex)
+      ? localResult.winnerIndex
+      : correctIndexes[0] ?? 0;
+
+  return {
+    ...localResult,
+    winnerIndex,
+    correctIndexes,
+    source: rescuedIndexes.length ? "local-with-ai-second-opinion" : "local-with-ai-review"
+  };
+}
+
 function stripJsonMarkdown(text) {
   return text
     .trim()
@@ -4478,6 +4651,102 @@ function createLocalRoundResult(payload) {
     correctIndexes: [...new Set(correctIndexes)],
     source: "local-fallback"
   };
+}
+
+function getRoundAnswerEntries(payload, cards = []) {
+  if (payload.mode === "room") {
+    return payload.answerCards.map((card, index) => ({
+      index,
+      label: card.label || `Player ${index + 1}`,
+      answer: cards[index] || card.answer || ""
+    }));
+  }
+  if (payload.mode === "local") {
+    return [
+      { index: 0, label: "Player 1", answer: cards[0] || payload.answer || "" },
+      { index: 1, label: "Player 2", answer: cards[1] || payload.opponentAnswer || "" }
+    ];
+  }
+  const botLabels = Array.isArray(payload.botLabels) ? payload.botLabels : [];
+  return cards.map((answer, index) => ({
+    index,
+    label: index === 0 ? "Player" : botLabels[index - 1] || `Bot ${index}`,
+    answer
+  }));
+}
+
+function getAiSecondOpinionCandidates(payload, localResult) {
+  const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
+  if (!answerBank.length || !Array.isArray(localResult.cards)) {
+    return [];
+  }
+  const alreadyCorrect = new Set(localResult.correctIndexes || []);
+  return getRoundAnswerEntries(payload, localResult.cards)
+    .map((entry) => ({
+      ...entry,
+      score: scoreAnswerAgainstBank(entry.answer, answerBank)
+    }))
+    .filter((entry) => !alreadyCorrect.has(entry.index) && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score))
+    .slice(0, 4);
+}
+
+function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore) {
+  const normalized = normalizeTriviaAnswer(answer);
+  if (!hasUsefulAnswerSignal(normalized)) {
+    return false;
+  }
+  if (localScore >= 0.82) {
+    return false;
+  }
+  if (localScore >= 0.48) {
+    return true;
+  }
+  const answerWords = normalized.split(" ").filter(Boolean);
+  const acceptedWords = acceptedAnswers
+    .map(normalizeTriviaAnswer)
+    .flatMap((entry) => entry.split(" ").filter((word) => word.length >= 4));
+  if (!answerWords.length || !acceptedWords.length) {
+    return false;
+  }
+  const bestTokenScore = Math.max(0, ...answerWords.flatMap((answerWord) => (
+    acceptedWords.map((acceptedWord) => scoreTriviaToken(answerWord, acceptedWord))
+  )));
+  const hasSharedDistinctiveWord = answerWords.some((word) => word.length >= 4 && acceptedWords.includes(word));
+  return hasSharedDistinctiveWord || bestTokenScore >= 0.68;
+}
+
+function hasUsefulAnswerSignal(normalizedAnswer) {
+  if (!normalizedAnswer || normalizedAnswer.length < 3 || normalizedAnswer.length > 80) {
+    return false;
+  }
+  const compact = normalizedAnswer.replace(/\s+/g, "");
+  if (compact.length < 3 || /(.)\1{3,}/.test(compact)) {
+    return false;
+  }
+  const fillerAnswers = new Set([
+    "idk",
+    "i dont know",
+    "dont know",
+    "no idea",
+    "unknown",
+    "none",
+    "nothing",
+    "n a",
+    "na",
+    "test",
+    "asdf",
+    "blah",
+    "random",
+    "guess"
+  ]);
+  if (fillerAnswers.has(normalizedAnswer)) {
+    return false;
+  }
+  const letters = compact.replace(/[^a-z]/g, "");
+  if (letters.length >= 4 && !/[aeiouy]/.test(letters)) {
+    return false;
+  }
+  return /[a-z0-9]/.test(compact);
 }
 
 function scoreAnswerAgainstBank(answer, acceptedAnswers) {
