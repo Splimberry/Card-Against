@@ -420,6 +420,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .join-screen:not(.hidden) :is(.room-header, .join-code-form, .join-room-card),
 .room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
 .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
+.user-question-screen:not(.hidden) :is(.room-header, .dev-create-form, .dev-create-preview-shell, .user-question-submissions),
 .profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
 .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
 .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card) {
@@ -1438,6 +1439,60 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   width: 100vw;
 }
 
+.spectator-count-pill {
+  position: absolute;
+  top: 6.1rem;
+  left: 0.35rem;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.85rem;
+  padding: 0.28rem 0.58rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(8, 9, 13, 0.72);
+  color: #ffffff;
+  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.spectator-count-pill:not(.hidden) {
+  animation: tooltipPopoverIn 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.spectator-count-pill[data-tooltip] {
+  --tooltip-hidden-transform: translate(0, 0.42rem) scale(0.94);
+  --tooltip-visible-transform: translate(0, 0) scale(1);
+}
+
+.spectator-count-pill[data-tooltip]::after {
+  left: 0;
+  bottom: auto;
+  top: calc(100% + 0.45rem);
+  transform-origin: 0 0;
+}
+
+.spectator-count-icon,
+.spectator-player-badge {
+  display: inline-block;
+  background: currentColor;
+  -webkit-mask: url("assets/eye.svg") center / contain no-repeat;
+  mask: url("assets/eye.svg") center / contain no-repeat;
+}
+
+.spectator-count-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.spectator-count-pill strong {
+  color: currentColor;
+  font-size: 0.84rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
 .game-stage.room-active .table-surface {
   grid-column: 1;
   min-height: calc(100vh - 9rem);
@@ -2052,6 +2107,22 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .host-player-badge::before {
   -webkit-mask-image: url("assets/badge-crown.svg");
   mask-image: url("assets/badge-crown.svg");
+}
+
+.spectator-player-badge {
+  position: relative;
+  z-index: 10;
+  flex: 0 0 auto;
+  width: 1.18em;
+  height: 1.18em;
+  color: inherit;
+  cursor: help;
+  transform: translateY(0.08em);
+  padding: 0.05em;
+  box-sizing: content-box;
+  overflow: visible;
+  filter: drop-shadow(0 0 0 transparent);
+  vertical-align: middle;
 }
 
 .special-player-badge[data-icon="wrench"]::before {
@@ -3024,10 +3095,51 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .dev-create-answer-grid {
   grid-template-columns: minmax(11rem, 0.42fr) minmax(18rem, 1fr);
+  align-items: start;
+  transition:
+    grid-template-columns 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    gap 260ms ease;
 }
 
 .dev-create-question-field textarea {
   min-height: 9rem;
+}
+
+.dev-create-answer-expandable {
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 260ms ease;
+}
+
+.dev-create-answer-field-collapsible {
+  min-height: 0;
+  max-height: 12rem;
+  overflow: hidden;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    max-height 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease,
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 0s;
+}
+
+.dev-create-answer-field-collapsible.answer-field-collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.35rem);
+  visibility: hidden;
+  transition:
+    max-height 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms ease,
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 260ms;
+}
+
+.dev-create-form.question-form-multiple-choice .dev-create-answer-grid {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
 }
 
 .dev-create-form textarea {
@@ -10120,7 +10232,7 @@ input:focus {
   text-overflow: clip;
 }
 
-.chat-message :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
+.chat-message :is(.special-player-badge, .bot-player-badge, .host-player-badge, .spectator-player-badge) {
   width: 0.95em;
   height: 0.95em;
   flex: 0 0 auto;
@@ -10163,6 +10275,10 @@ input:focus {
 
 .chat-message.spectator-message span {
   color: #a1a4ae;
+}
+
+.chat-message.spectator-message .spectator-player-badge {
+  color: #b5b8c4;
 }
 
 .chat-message.clickable-profile {

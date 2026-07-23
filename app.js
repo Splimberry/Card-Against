@@ -1678,6 +1678,27 @@ async function getInventoryAuthHeaders(options = {}) {
   }
 }
 
+function isLikelyFreshJwt(token) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3 || parts.some((part) => !part)) {
+    return false;
+  }
+  try {
+    const payloadPart = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const paddedPayload = payloadPart.padEnd(Math.ceil(payloadPart.length / 4) * 4, "=");
+    const payload = JSON.parse(window.atob(paddedPayload));
+    return !payload.exp || Number(payload.exp) > Math.floor(Date.now() / 1000) + 30;
+  } catch {
+    return true;
+  }
+}
+
+async function getQuestionSubmissionAuthHeaders(options = {}) {
+  const headers = await getInventoryAuthHeaders(options);
+  const token = String(headers.Authorization || "").replace(/^Bearer\s+/i, "").trim();
+  return token && isLikelyFreshJwt(token) ? headers : {};
+}
+
 function getInventoryAuthHeadersSync(options = {}) {
   const session = options.session || state.supabaseSession;
   const token = String(session?.access_token || "").trim();
@@ -3076,6 +3097,8 @@ const elements = {
   joinScreen: document.querySelector("#joinScreen"),
   roomLobbyScreen: document.querySelector("#roomLobbyScreen"),
   gameStage: document.querySelector("#gameStage"),
+  spectatorCountPill: document.querySelector("#spectatorCountPill"),
+  spectatorCountValue: document.querySelector("#spectatorCountValue"),
   profileCard: document.querySelector(".profile-card"),
   profileAvatarPreview: document.querySelector("#profileAvatarPreview"),
   profileNameDisplay: document.querySelector("#profileNameDisplay"),
@@ -8774,6 +8797,20 @@ function getActiveRoomSpectatorCount() {
     return 0;
   }
   return state.roomParticipants.filter((participant) => participant.active !== false && participant.spectator).length;
+}
+
+function renderSpectatorCountIndicator() {
+  if (!elements.spectatorCountPill || !elements.spectatorCountValue) {
+    return;
+  }
+  const count = getActiveRoomSpectatorCount();
+  const show = count > 0 && isRoomMode() && elements.gameStage && !elements.gameStage.classList.contains("hidden");
+  elements.spectatorCountValue.textContent = String(count);
+  elements.spectatorCountPill.dataset.tooltip = count === 1
+    ? "1 spectator is watching this match."
+    : `${count} spectators are watching this match.`;
+  elements.spectatorCountPill.setAttribute("aria-label", elements.spectatorCountPill.dataset.tooltip);
+  setHidden(elements.spectatorCountPill, !show);
 }
 
 function getRoomSyncAvatar(avatar = "") {
@@ -15641,6 +15678,20 @@ function createHostPlayerBadge(player) {
   return icon;
 }
 
+function createSpectatorPlayerBadge(player) {
+  if (!player?.spectator) {
+    return null;
+  }
+  const icon = document.createElement("span");
+  icon.className = "spectator-player-badge";
+  icon.dataset.description = "Spectator";
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", "Spectator");
+  icon.tabIndex = 0;
+  attachFloatingDescriptionTooltip(icon);
+  return icon;
+}
+
 function getDisplayTitleIdForPlayer(player) {
   if (!player) {
     return "";
@@ -15668,6 +15719,10 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
   name.textContent = label;
   applyProfileFontToElement(name, getProfileFontForPlayer(player));
   element.appendChild(name);
+  const spectatorBadge = createSpectatorPlayerBadge(player);
+  if (spectatorBadge) {
+    element.appendChild(spectatorBadge);
+  }
   const hostBadge = createHostPlayerBadge(player);
   if (hostBadge) {
     element.appendChild(hostBadge);
@@ -20160,6 +20215,7 @@ function updateModeUi() {
   elements.gameStage.classList.toggle("spectator-mode", Boolean(state.isSpectator && isRoomMode()));
   applyTableEventStageClasses();
   updateWildFireBurningState();
+  renderSpectatorCountIndicator();
   renderTopModeLabel();
   renderAnswerCardsForOwners(getRoundCardOwners());
   renderBotPowerDebugPanel();
@@ -20514,12 +20570,12 @@ function buildDevToolScreen() {
           </div>
           <label class="dev-create-question-field"><span>Question</span><textarea id="devCreateQuestion" required rows="5" placeholder="Question text"></textarea></label>
           <div class="dev-create-answer-grid">
-            <label class="dev-create-canonical"><span>Answer</span><textarea id="devCreateCanonical" required rows="3" placeholder="Main answer"></textarea></label>
-            <label id="devCreateAcceptedWrap"><span>Accepted answers</span><textarea id="devCreateAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
+            <label class="dev-create-canonical dev-create-answer-expandable"><span>Answer</span><textarea id="devCreateCanonical" required rows="3" placeholder="Main answer"></textarea></label>
+            <label class="dev-create-answer-field-collapsible" id="devCreateAcceptedWrap"><span>Accepted answers</span><textarea id="devCreateAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
           </div>
           <div class="dev-create-answer-grid">
-            <label id="devCreateBotsWrap"><span>Incorrect answers</span><textarea id="devCreateBots" required rows="3" placeholder="wrong one, wrong two, wrong three"></textarea></label>
-            <label id="devCreateRejectedWrap"><span>Rejected answers</span><textarea id="devCreateRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
+            <label class="dev-create-bots dev-create-answer-expandable" id="devCreateBotsWrap"><span>Incorrect answers</span><textarea id="devCreateBots" required rows="3" placeholder="wrong one, wrong two, wrong three"></textarea></label>
+            <label class="dev-create-answer-field-collapsible" id="devCreateRejectedWrap"><span>Rejected answers</span><textarea id="devCreateRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
           </div>
           <fieldset class="dev-create-image-fields hidden" id="devCreateImageFields">
             <legend>Image</legend>
@@ -20780,12 +20836,12 @@ function buildUserQuestionScreen() {
         </div>
         <label class="dev-create-question-field"><span>Question</span><textarea id="userQuestionText" required rows="5" placeholder="Question text"></textarea></label>
         <div class="dev-create-answer-grid">
-          <label class="dev-create-canonical"><span>Main answer</span><textarea id="userQuestionCanonical" required rows="3" placeholder="Main answer"></textarea></label>
-          <label id="userQuestionAcceptedWrap"><span>Accepted answers</span><textarea id="userQuestionAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
+          <label class="dev-create-canonical dev-create-answer-expandable"><span>Main answer</span><textarea id="userQuestionCanonical" required rows="3" placeholder="Main answer"></textarea></label>
+          <label class="dev-create-answer-field-collapsible" id="userQuestionAcceptedWrap"><span>Accepted answers</span><textarea id="userQuestionAccepted" rows="3" placeholder="first, second, third" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea></label>
         </div>
         <div class="dev-create-answer-grid">
-          <label id="userQuestionBotsWrap"><span>Incorrect answers</span><textarea id="userQuestionBots" required rows="3" placeholder="wrong one, wrong two, wrong three"></textarea></label>
-          <label id="userQuestionRejectedWrap"><span>Rejected answers</span><textarea id="userQuestionRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
+          <label class="dev-create-bots dev-create-answer-expandable" id="userQuestionBotsWrap"><span>Incorrect answers</span><textarea id="userQuestionBots" required rows="3" placeholder="wrong one, wrong two, wrong three"></textarea></label>
+          <label class="dev-create-answer-field-collapsible" id="userQuestionRejectedWrap"><span>Rejected answers</span><textarea id="userQuestionRejected" rows="3" placeholder="bad answer, too vague"></textarea></label>
         </div>
         <fieldset class="dev-create-image-fields hidden" id="userQuestionImageFields">
           <legend>Image</legend>
@@ -20897,19 +20953,57 @@ function syncUserQuestionIdPrefix() {
   }
 }
 
+function syncQuestionCreateAnswerFields({
+  form,
+  acceptedWrap,
+  rejectedWrap,
+  acceptedInput,
+  rejectedInput,
+  canonicalInput,
+  botsWrap,
+  isMultipleChoice,
+  standardCanonicalLabel,
+  standardBotsLabel
+}) {
+  form?.classList.toggle("question-form-multiple-choice", isMultipleChoice);
+  [acceptedWrap, rejectedWrap].forEach((wrap) => {
+    if (!wrap) return;
+    wrap.classList.add("dev-create-answer-field-collapsible");
+    wrap.classList.toggle("answer-field-collapsed", isMultipleChoice);
+    wrap.setAttribute("aria-hidden", String(isMultipleChoice));
+  });
+  [acceptedInput, rejectedInput].forEach((input) => {
+    if (!input) return;
+    input.disabled = isMultipleChoice;
+    input.required = false;
+  });
+  const canonicalLabel = canonicalInput?.closest("label")?.querySelector("span");
+  if (canonicalLabel) {
+    canonicalLabel.textContent = isMultipleChoice ? "Correct answer" : standardCanonicalLabel;
+  }
+  const botsLabel = botsWrap?.querySelector("span");
+  if (botsLabel) {
+    botsLabel.textContent = isMultipleChoice ? "Incorrect answers" : standardBotsLabel;
+  }
+}
+
 function updateUserQuestionImageFields() {
   const isImage = elements.userQuestionType.value === "image";
   const isMultipleChoice = elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE;
   setHidden(elements.userQuestionImageFields, !isImage);
   elements.userQuestionImageUrl.required = isImage;
-  setHidden(elements.userQuestionAcceptedWrap, isMultipleChoice);
-  setHidden(elements.userQuestionRejectedWrap, isMultipleChoice);
-  elements.userQuestionAccepted.disabled = isMultipleChoice;
-  elements.userQuestionRejected.disabled = isMultipleChoice;
-  elements.userQuestionAccepted.required = false;
-  elements.userQuestionRejected.required = false;
-  elements.userQuestionCanonical.closest("label").querySelector("span").textContent = isMultipleChoice ? "Correct answer" : "Main answer";
-  elements.userQuestionBotsWrap.querySelector("span").textContent = isMultipleChoice ? "Incorrect answers" : "Wrong bot answers";
+  syncQuestionCreateAnswerFields({
+    form: elements.userQuestionForm,
+    acceptedWrap: elements.userQuestionAcceptedWrap,
+    rejectedWrap: elements.userQuestionRejectedWrap,
+    acceptedInput: elements.userQuestionAccepted,
+    rejectedInput: elements.userQuestionRejected,
+    canonicalInput: elements.userQuestionCanonical,
+    botsWrap: elements.userQuestionBotsWrap,
+    isMultipleChoice,
+    standardCanonicalLabel: "Main answer",
+    standardBotsLabel: "Wrong bot answers"
+  });
   elements.userQuestionBots.placeholder = isMultipleChoice ? "wrong one, wrong two, wrong three" : "wrong one, wrong two";
   updateUserQuestionPreview();
 }
@@ -21030,7 +21124,7 @@ async function submitUserQuestion(event) {
   try {
     const response = await fetch("/api/question-submissions", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(await getInventoryAuthHeaders()) },
+      headers: { "Content-Type": "application/json", ...(await getQuestionSubmissionAuthHeaders()) },
       body: JSON.stringify({
         question: payload,
         creator: { id: state.supabaseUser?.id || state.clientId, name: state.profile.name || "Player" }
@@ -21050,7 +21144,10 @@ async function submitUserQuestion(event) {
   } catch (error) {
     addCurrency(userQuestionSubmissionCost);
     renderProfile();
-    elements.userQuestionStatus.textContent = `${error.message || "Submission failed."} Your ${formatCoins(userQuestionSubmissionCost)} were refunded.`;
+    const message = /invalid authentication token/i.test(error.message || "")
+      ? "Your sign-in session needs refreshing before submitting questions."
+      : error.message || "Submission failed.";
+    elements.userQuestionStatus.textContent = `${message} Your ${formatCoins(userQuestionSubmissionCost)} were refunded.`;
     playSound("error");
   } finally {
     elements.userQuestionSubmitButton.disabled = false;
@@ -21095,7 +21192,7 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
     const creatorId = state.supabaseUser?.id || state.clientId;
     const response = await fetch(`/api/question-submissions?creatorId=${encodeURIComponent(creatorId)}`, {
       cache: "no-store",
-      headers: await getInventoryAuthHeaders()
+      headers: await getQuestionSubmissionAuthHeaders()
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Could not load your submissions.");
@@ -21110,7 +21207,9 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
     syncUserQuestionSubmissionPolling();
   } catch (error) {
     if (elements.userQuestionStatus) {
-      elements.userQuestionStatus.textContent = error.message || "Could not load your submissions.";
+      elements.userQuestionStatus.textContent = /invalid authentication token/i.test(error.message || "")
+        ? "Sign in again to load your submitted questions."
+        : error.message || "Could not load your submissions.";
     }
   }
 }
@@ -23175,14 +23274,18 @@ function updateDevCreateImageFields() {
   const isMultipleChoice = elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE;
   setHidden(elements.devCreateImageFields, !isImage);
   elements.devCreateImageUrl.required = isImage;
-  setHidden(elements.devCreateAcceptedWrap, isMultipleChoice);
-  setHidden(elements.devCreateRejectedWrap, isMultipleChoice);
-  elements.devCreateAccepted.disabled = isMultipleChoice;
-  elements.devCreateRejected.disabled = isMultipleChoice;
-  elements.devCreateAccepted.required = false;
-  elements.devCreateRejected.required = false;
-  elements.devCreateCanonical.closest("label").querySelector("span").textContent = isMultipleChoice ? "Correct answer" : "Answer";
-  elements.devCreateBotsWrap.querySelector("span").textContent = isMultipleChoice ? "Incorrect answers" : "Bot answers";
+  syncQuestionCreateAnswerFields({
+    form: elements.devQuestionCreateForm,
+    acceptedWrap: elements.devCreateAcceptedWrap,
+    rejectedWrap: elements.devCreateRejectedWrap,
+    acceptedInput: elements.devCreateAccepted,
+    rejectedInput: elements.devCreateRejected,
+    canonicalInput: elements.devCreateCanonical,
+    botsWrap: elements.devCreateBotsWrap,
+    isMultipleChoice,
+    standardCanonicalLabel: "Answer",
+    standardBotsLabel: "Bot answers"
+  });
   elements.devCreateBots.placeholder = isMultipleChoice ? "wrong one, wrong two, wrong three" : "wrong one, wrong two";
   if (elements.devCreateSubmitButton) {
     elements.devCreateSubmitButton.textContent = state.questionEditOriginalId ? "Save Question" : "Create Question";
@@ -26631,6 +26734,7 @@ function renderRoomChat() {
   elements.gameStage.classList.toggle("spectator-mode", Boolean(active && state.isSpectator));
   elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
   updateWildFireBurningState();
+  renderSpectatorCountIndicator();
   if (!active) {
     return;
   }
@@ -26689,6 +26793,7 @@ function renderChatLog(target) {
           owner: message.owner || "",
           label: message.sender,
           host: Boolean(message.host),
+          spectator: Boolean(message.spectator),
           equippedTitleId: message.equippedTitleId || "",
           specialBadges: message.specialBadges || [],
           cardCustomization: message.cardCustomization || null
