@@ -1930,8 +1930,10 @@ function applyServerUserInventory(inventory = {}, options = {}) {
     userId: inventoryUserId
   };
   const shouldMergeLocal = options.authoritative !== true && options.mergeLocal !== false;
+  const canTrustCurrentBrowserInventory = options.includeLocalSnapshot === true
+    || (options.includeLocalSnapshot !== false && doesActiveUserStorageCacheBelongToUser({ id: userId }));
   const includeLocalSnapshot = options.includeLocalSnapshot === true
-    || (options.includeLocalSnapshot !== false && hasPendingUserInventoryWork(userId));
+    || (options.includeLocalSnapshot !== false && hasPendingUserInventoryWork(userId) && canTrustCurrentBrowserInventory);
   const inventoryToApply = shouldMergeLocal
     ? mergeUserInventoriesForHydration({ id: userId }, [
       serverInventory,
@@ -2172,6 +2174,21 @@ function getInventoryMergeWeight(inventory = {}) {
   return coins + cosmetics * 1000 + achievements * 1000 + progress + milestones * 250;
 }
 
+function getInventoryProfileWeight(inventory = {}) {
+  const profile = inventory?.profile && typeof inventory.profile === "object" ? inventory.profile : {};
+  let weight = 0;
+  if (achievementTitleMap[profile.equippedAchievementId]) {
+    weight += 100;
+  }
+  if (profile.cardCustomization) {
+    const customization = normalizeProfileCustomization(profile.cardCustomization);
+    if (JSON.stringify(customization) !== JSON.stringify(normalizeProfileCustomization(defaultProfileCustomization))) {
+      weight += 50;
+    }
+  }
+  return weight;
+}
+
 function mergeUserInventoriesForHydration(user, inventories = []) {
   const userId = getUserInventoryStorageId(user);
   const sources = (Array.isArray(inventories) ? inventories : [])
@@ -2186,6 +2203,10 @@ function mergeUserInventoriesForHydration(user, inventories = []) {
   }
   const profileSource = [...sources]
     .sort((a, b) => {
+      const profileDelta = getInventoryProfileWeight(b) - getInventoryProfileWeight(a);
+      if (profileDelta) {
+        return profileDelta;
+      }
       const timeDelta = (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0);
       return timeDelta || getInventoryMergeWeight(b) - getInventoryMergeWeight(a);
     })
@@ -12937,6 +12958,7 @@ function applySupabaseSession(session) {
     applySupabaseProfile(state.supabaseUser);
     if (state.supabaseUser.id !== previousUserId) {
       void hydrateSignedInUserStorage(state.supabaseUser);
+      void refreshAdminSession();
     }
   } else if (state.supabaseSignOutInProgress) {
     renderSupabaseAuthControls();
@@ -13046,6 +13068,20 @@ async function signInWithSupabaseGoogle() {
 async function signOutSupabase(event) {
   event?.preventDefault?.();
   event?.stopPropagation?.();
+  if (state.supabaseSignOutInProgress) {
+    return;
+  }
+  const confirmed = await showAppConfirm({
+    eyebrow: "Sign out",
+    title: "Sign out to guest?",
+    copy: "You will switch to a fresh guest profile. Your signed-in account data will load back when you sign in again.",
+    confirmLabel: "Sign out",
+    cancelLabel: "Stay signed in",
+    danger: true
+  });
+  if (!confirmed) {
+    return;
+  }
   const signingOutUser = state.supabaseUser;
   const signingOutClient = state.supabaseClient;
   const signingOutSession = state.supabaseSession;
@@ -13076,6 +13112,7 @@ async function signOutSupabase(event) {
   state.supabaseUser = null;
   state.adminAuthenticated = false;
   state.adminUser = null;
+  syncSpecialBadgesToProfile();
   state.supabaseSignOutInProgress = false;
   try {
     applyGuestProfile();
@@ -13113,7 +13150,6 @@ async function completeSupabaseSignOut({ client, user, session, snapshot } = {})
     if (user && snapshot) {
       await saveRemoteUserStorageSnapshotForUser(snapshot, user, client || state.supabaseClient);
     }
-    await logoutAdmin({ silent: true });
     const signOutClient = client || state.supabaseClient || await ensureSupabaseClient().catch((error) => {
       console.warn("Supabase client unavailable during sign-out cleanup:", error.message || error);
       return null;
@@ -22840,6 +22876,13 @@ function updateAdminControls() {
 }
 
 async function refreshAdminSession() {
+  if (!state.supabaseUser) {
+    state.adminAuthenticated = false;
+    state.adminUser = null;
+    syncSpecialBadgesToProfile();
+    updateAdminControls();
+    return;
+  }
   try {
     const response = await fetch("/api/auth/session", { credentials: "same-origin" });
     const payload = await response.json().catch(() => ({}));
