@@ -2385,13 +2385,13 @@ async function handleRoomPresence(req, res, code) {
       || Object.hasOwn(rawParticipant, "remainingTime");
     const acceptsSubmissionUpdate = !hasSubmissionUpdate
       || !currentMatchId
-      || !submissionMatchId
-      || submissionMatchId === currentMatchId;
+      || (submissionMatchId && submissionMatchId === currentMatchId);
     if (existingIndex >= 0) {
       const existingParticipant = room.participants[existingIndex];
       room.participants[existingIndex] = {
         ...existingParticipant,
         ...participant,
+        status: hasSubmissionUpdate && !acceptsSubmissionUpdate ? existingParticipant.status : participant.status,
         answer: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "answer") ? participant.answer : existingParticipant.answer,
         submittedRound: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "submittedRound") ? participant.submittedRound : existingParticipant.submittedRound,
         submissionMatchId: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "submittedRound") ? participant.submissionMatchId : existingParticipant.submissionMatchId || "",
@@ -2403,6 +2403,7 @@ async function handleRoomPresence(req, res, code) {
         participant.submittedRound = 0;
         participant.submissionMatchId = "";
         participant.remainingTime = 0;
+        participant.status = participant.host ? "host" : participant.spectator ? "spectating" : participant.bot ? "bot" : "joined";
       }
       room.participants.push(participant);
     }

@@ -9891,7 +9891,7 @@ function applyRoomAnswerSubmission(payload = {}) {
   }
   const participantId = String(payload.participantId || "");
   const owner = getRoomOwnerForParticipantId(participantId);
-  if (!owner || owner === state.currentOwner || !getActiveOwners().includes(owner)) {
+  if (!owner || !getActiveOwners().includes(owner)) {
     return false;
   }
   const answer = cleanInput(payload.answer || "");
@@ -12254,6 +12254,18 @@ function getRoomPayloadUpdatedAt(payload = {}) {
   return Number(payload.updatedAt || payload.room?.updatedAt || 0) || 0;
 }
 
+function isStaleActiveRoomRealtimePayload(payload = {}, previousRevision = state.roomEventRevision) {
+  const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code || !hasActiveRoomContext()) {
+    return false;
+  }
+  if (["room-closed", "room-deleted"].includes(payload.eventType)) {
+    return false;
+  }
+  const revision = getRoomPayloadRevision(payload);
+  return Boolean(revision && previousRevision && revision < previousRevision);
+}
+
 function markRoomSettingsLocallyChanged(code = state.roomSettings.code) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!normalizedCode || normalizedCode === "CAI-0000") {
@@ -12942,6 +12954,9 @@ function handleRealtimeRoomChange(payload = {}) {
   }
   const payloadRevision = getRoomPayloadRevision(payload);
   const previousRevision = Number(state.roomEventRevision) || 0;
+  if (isStaleActiveRoomRealtimePayload(payload, previousRevision)) {
+    return;
+  }
   payload.revisionGap = Boolean(payloadRevision && previousRevision && payloadRevision > previousRevision + 1);
   updateRoomEventRevision(payloadRevision);
   if (payload.eventType === "question-submission-updated") {
@@ -24500,6 +24515,12 @@ async function startGame(mode) {
 }
 
 function generateRoomCode() {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const code = `CAI-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!state.hostedRooms.some((room) => room.code === code) && !isRoomLocallyClosed(code)) {
+      return code;
+    }
+  }
   return `CAI-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
@@ -24727,18 +24748,46 @@ function closeRoomScreen() {
   playSound("click");
 }
 
-function publishDraftRoom() {
+async function rotateDraftRoomCodeAfterPublishConflict(previousCode = state.roomSettings.code, attempt = 0) {
+  if (state.currentRoomStatus !== "draft" || state.joiningRoom || !isCurrentHost() || attempt >= 3) {
+    return false;
+  }
+  const oldCode = String(previousCode || state.roomSettings.code || "").trim().toUpperCase();
+  const nextCode = generateRoomCode();
+  if (!nextCode || nextCode === oldCode) {
+    return false;
+  }
+  clearHostedRoomSession(oldCode);
+  stopRoomRealtime();
+  state.roomSettings = {
+    ...state.roomSettings,
+    code: nextCode
+  };
+  state.publishedDraftRoomCode = nextCode;
+  rememberHostedRoomSession(nextCode);
+  setRoomInviteUrlPath(nextCode);
+  startRoomRealtime(nextCode);
+  syncRoomControls();
+  return publishDraftRoom(attempt + 1);
+}
+
+function publishDraftRoom(attempt = 0) {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return;
   }
   const room = buildRoomDirectoryPayload("lobby");
-  publishRoomDirectory(room).then((serverRoom) => {
+  publishRoomDirectory(room).then(async (serverRoom) => {
     if (serverRoom) {
       mergeHostedRoom(serverRoom);
       if (state.currentRoomStatus === "draft" && state.roomSettings.code === serverRoom.code) {
         state.roomParticipants = normalizeRoomParticipantsList(Array.isArray(serverRoom.participants) ? serverRoom.participants : state.roomParticipants);
         renderRoomPlayers();
       }
+      return;
+    }
+    const lookup = await fetchRoomByCode(room.code);
+    if (lookup.status === "found" || lookup.status === "closed") {
+      await rotateDraftRoomCodeAfterPublishConflict(room.code, attempt);
     }
   });
 }

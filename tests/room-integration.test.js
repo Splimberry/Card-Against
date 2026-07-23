@@ -1108,6 +1108,28 @@ async function testStaleParticipantSubmissionCannotOverwriteRematch() {
   assert.equal(host.submittedRound, 1);
   assert.equal(host.submissionMatchId, `${code}-new-match`);
   assert.equal(host.remainingTime, 20);
+
+  const missingMatchId = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "host-client",
+      name: "Host",
+      host: true,
+      active: true,
+      status: "submitted",
+      answer: "No match id answer",
+      submittedRound: 1,
+      remainingTime: 2
+    }
+  });
+  assert.equal(missingMatchId.response.status, 200, missingMatchId.payload.error);
+
+  const afterMissingMatchId = await getRoom(code);
+  assert.equal(afterMissingMatchId.response.status, 200, afterMissingMatchId.payload.error);
+  const guardedHost = afterMissingMatchId.payload.room.participants.find((participant) => participant.id === "host-client");
+  assert.equal(guardedHost.answer, "Current answer");
+  assert.equal(guardedHost.submittedRound, 1);
+  assert.equal(guardedHost.submissionMatchId, `${code}-new-match`);
+  assert.equal(guardedHost.remainingTime, 20);
 }
 
 async function testRoomPowerStateDeltaPreservesStoredFullState() {
