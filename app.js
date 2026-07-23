@@ -24532,7 +24532,26 @@ function getRoomInviteUrl(code = state.roomSettings.code) {
 function getInitialRoomInviteCodeFromPath() {
   const path = decodeURIComponent(String(window.location.pathname || "/")).replace(/\/+$/, "");
   const match = path.match(/^\/(?:CAI-?)?(\d{4})$/i);
-  return match ? `CAI-${match[1]}` : "";
+  if (match) {
+    return `CAI-${match[1]}`;
+  }
+  const hash = decodeURIComponent(String(window.location.hash || "")).replace(/^#+/, "").replace(/\/+$/, "");
+  const hashMatch = hash.match(/^\/?(?:CAI-?)?(\d{4})$/i);
+  return hashMatch ? `CAI-${hashMatch[1]}` : "";
+}
+
+function setRoomInviteUrlPath(code = state.roomSettings.code, options = {}) {
+  const shortCode = getRoomShortCode(code);
+  if (!shortCode || !window.history?.replaceState) {
+    return;
+  }
+  const nextPath = `/${shortCode}`;
+  const currentPath = decodeURIComponent(String(window.location.pathname || "/")).replace(/\/+$/, "") || "/";
+  if (currentPath === nextPath && !window.location.hash) {
+    return;
+  }
+  const method = options.push ? "pushState" : "replaceState";
+  window.history[method]({}, document.title, `${window.location.origin}${nextPath}`);
 }
 
 function clearRoomInviteUrlPath() {
@@ -24678,6 +24697,7 @@ function openRoomScreen() {
   state.roomChat = [];
   resetChatCooldown();
   rememberHostedRoomSession(state.roomSettings.code);
+  setRoomInviteUrlPath(state.roomSettings.code);
   startRoomRealtime(state.roomSettings.code);
   syncRoomControls();
   publishDraftRoom();
@@ -24696,6 +24716,7 @@ function closeRoomScreen() {
     leavePublishedRoom({ keepalive: true });
     clearLocalRoomState();
     stopRoomDirectoryPolling();
+    clearRoomInviteUrlPath();
   }
   setHidden(elements.roomScreen, true);
   setHidden(elements.roomLobbyScreen, !returnToLobby);
@@ -24858,6 +24879,7 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   cancelActiveMatchWork({ stopRoomSync: true });
   state.roomClosedNotice = reason;
   clearLocalRoomState({ clearHostedSession: true });
+  clearRoomInviteUrlPath();
   addSystemChat(reason, { private: true, sync: false });
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -26935,7 +26957,7 @@ async function joinHostedRoom(code, options = {}) {
       return;
     }
     room = joinedRoom;
-    if (room.status !== "lobby" && !options.spectate) {
+    if (room.status !== "lobby" && !shouldSpectate) {
       await leavePublishedRoom({ reason: "join-race" });
       clearLocalRoomState();
       addSystemChat("That match just started. Join as a spectator instead.", { private: true, sync: false });
@@ -26953,6 +26975,7 @@ async function joinHostedRoom(code, options = {}) {
     addSystemChat(`${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
     stopJoinDirectoryPolling();
     setJoinInviteMode(false);
+    setRoomInviteUrlPath(normalizedCode);
     setHidden(elements.modeScreen, true);
     setHidden(elements.roomScreen, true);
     setHidden(elements.joinScreen, true);
@@ -26982,8 +27005,15 @@ async function processInitialRoomInvite() {
   }
   openJoinScreen({ inviteCode, checked: true, playSound: false });
   setJoinInviteStatus(`Finding room ${getRoomShortCode(inviteCode) || inviteCode}...`);
-  await ensureSupabaseAuthReady({ realtime: true });
-  const lookup = await fetchRoomByCode(inviteCode);
+  let lookup;
+  try {
+    await ensureSupabaseAuthReady({ realtime: true });
+    lookup = await fetchRoomByCode(inviteCode);
+  } catch (error) {
+    console.warn("Could not open room invite:", error.message || error);
+    setJoinInviteStatus("Could not open this invite. Check your connection, then try again.", "error");
+    return;
+  }
   if (lookup.status === "closed") {
     setJoinInviteStatus("This room was closed by the host.", "error");
     return;
@@ -27124,6 +27154,7 @@ function openRoomLobby() {
   state.mode = "room";
   setPlayersForMode("room");
   state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
+  setRoomInviteUrlPath(state.roomSettings.code);
   renderRoomLobby();
   startRoomDirectoryPolling();
   setHidden(elements.modeScreen, true);
@@ -27192,6 +27223,7 @@ async function leaveCurrentRoom() {
     leavePromise.catch(() => null);
   }
   clearLocalRoomState({ clearHostedSession: true });
+  clearRoomInviteUrlPath();
 
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -27576,6 +27608,7 @@ function startRoomGame() {
   }
   if (state.currentRoomStatus === "lobby") {
     upsertHostedRoom("lobby");
+    setRoomInviteUrlPath(state.roomSettings.code);
     renderRoomLobby();
     setHidden(elements.roomScreen, true);
     setHidden(elements.roomLobbyScreen, false);
@@ -30730,6 +30763,7 @@ function returnToRoomLobbyAfterMatch(options = {}) {
     }
   }
   renderRoomLobby();
+  setRoomInviteUrlPath(state.roomSettings.code);
   startRoomRealtime(state.roomSettings.code);
   startRoomDirectoryPolling();
   setHidden(elements.roomLobbyScreen, false);
