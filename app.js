@@ -2544,6 +2544,7 @@ const audioAssets = {
   blackMarket: "assets/black_market.wav",
   dice: "assets/dice.wav",
   roulette: "assets/roulette.wav",
+  gearSpin: "assets/gearspin.wav",
   switchCards: "assets/switch_cards.wav"
 };
 
@@ -4024,6 +4025,7 @@ function playSound(name) {
     blackMarket: () => playAudioFile(audioAssets.blackMarket, 0.95),
     dice: () => playAudioFile(audioAssets.dice, 0.95),
     roulette: () => playAudioFile(audioAssets.roulette, 0.95),
+    gearSpin: () => playAudioFile(audioAssets.gearSpin, 0.9),
     switchCards: () => playAudioFile(audioAssets.switchCards, 0.9),
     reveal: () => {
       playTone(240, 0.08, "sine", 0.035);
@@ -30501,12 +30503,12 @@ elements.startBotsButton.addEventListener("click", startBotsGame);
 elements.botAdvancedToggle?.addEventListener("click", () => {
   const expanded = elements.botAdvancedToggle.getAttribute("aria-expanded") === "true";
   setBotAdvancedOpen(!expanded, "bots");
-  playSound("click");
+  playSound("gearSpin");
 });
 elements.localAdvancedToggle?.addEventListener("click", () => {
   const expanded = elements.localAdvancedToggle.getAttribute("aria-expanded") === "true";
   setBotAdvancedOpen(!expanded, "local");
-  playSound("click");
+  playSound("gearSpin");
 });
 elements.botCountSlider?.addEventListener("input", updateBotSettingsFromControls);
 elements.botRoundsSlider?.addEventListener("input", updateBotSettingsFromControls);
