@@ -5585,12 +5585,56 @@ function isMessyTriviaTypo(answer, acceptedAnswer) {
     && getCharacterOverlapRatio(answerWord, acceptedWord) >= 0.8;
 }
 
+function createLooseTriviaPhoneticKey(value) {
+  const cleaned = normalizeTriviaAnswer(value)
+    .replace(/ph/g, "f")
+    .replace(/ght/g, "t")
+    .replace(/[cq]/g, "k")
+    .replace(/x/g, "ks")
+    .replace(/z/g, "s")
+    .replace(/(.)\1+/g, "$1")
+    .replace(/[sxz]+$/g, "");
+  if (!cleaned) {
+    return "";
+  }
+  return `${cleaned[0]}${cleaned.slice(1).replace(/[aeiouy\s]/g, "")}`;
+}
+
+function isLooseTriviaPhoneticMatch(answer, acceptedAnswer) {
+  const answerWord = normalizeTriviaAnswer(answer);
+  const acceptedWord = normalizeTriviaAnswer(acceptedAnswer);
+  const shortest = Math.min(answerWord.length, acceptedWord.length);
+  if (shortest < 7) {
+    return false;
+  }
+  const answerPhonetic = createLooseTriviaPhoneticKey(answerWord);
+  const acceptedPhonetic = createLooseTriviaPhoneticKey(acceptedWord);
+  if (!answerPhonetic || !acceptedPhonetic || answerPhonetic[0] !== acceptedPhonetic[0]) {
+    return false;
+  }
+  if (answerPhonetic === acceptedPhonetic && Math.max(answerPhonetic.length, acceptedPhonetic.length) >= 2) {
+    return true;
+  }
+  const phoneticDistance = levenshteinDistance(answerPhonetic, acceptedPhonetic);
+  const phoneticLongest = Math.max(answerPhonetic.length, acceptedPhonetic.length, 1);
+  const phoneticSimilarity = 1 - (phoneticDistance / phoneticLongest);
+  const wordDistance = levenshteinDistance(answerWord, acceptedWord);
+  const wordLongest = Math.max(answerWord.length, acceptedWord.length, 1);
+  const wordSimilarity = 1 - (wordDistance / wordLongest);
+  return Math.min(answerPhonetic.length, acceptedPhonetic.length) >= 4
+    && phoneticDistance <= 2
+    && phoneticSimilarity >= 0.58
+    && wordSimilarity >= 0.5
+    && getCharacterOverlapRatio(answerWord, acceptedWord) >= 0.64;
+}
+
 function isNearTriviaMatch(answer, acceptedAnswer) {
   const normalized = normalizeTriviaAnswer(answer);
   const accepted = normalizeTriviaAnswer(acceptedAnswer);
   if (!normalized || !accepted) return false;
   if (normalized === accepted) return true;
   if (accepted.length >= 5 && (normalized.includes(accepted) || accepted.includes(normalized))) return true;
+  if (isLooseTriviaPhoneticMatch(normalized, accepted)) return true;
   if (isMessyTriviaTypo(normalized, accepted)) return true;
   const distance = levenshteinDistance(normalized, accepted);
   const allowedDistance = accepted.length >= 10 ? 2 : 1;
@@ -27653,6 +27697,9 @@ function getGradingSimilarityDetails(answer, acceptedAnswers = []) {
   if (accepted.some((target) => normalized === getTriviaAnswerAcronym(target) || getTriviaAnswerAcronym(normalized) === target)) {
     return { kind: "abbreviation", score: 0.95 };
   }
+  if (accepted.some((target) => isLooseTriviaPhoneticMatch(normalized, target))) {
+    return { kind: "phonetic", score: 0.84 };
+  }
   if (accepted.some((target) => isMessyTriviaTypo(normalized, target))) {
     return { kind: "typo", score: 0.84 };
   }
@@ -27688,6 +27735,9 @@ function getAnswerGradingReason(answer, rating = {}, roundResult = {}, index = -
     }
     if (details.kind === "formatting") {
       return "That matches the answer with different spacing or punctuation.";
+    }
+    if (details.kind === "phonetic") {
+      return "That sounds close enough to the right answer.";
     }
     if (details.kind === "typo") {
       return "That looks like the right answer with a spelling slip.";

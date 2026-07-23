@@ -4970,6 +4970,10 @@ function scoreTriviaToken(answerWord, acceptedWord) {
   if (messyTypoScore > 0) {
     bestScore = Math.max(bestScore, messyTypoScore);
   }
+  const loosePhoneticScore = scoreLoosePhoneticMatch(answerWord, acceptedWord);
+  if (loosePhoneticScore > 0) {
+    bestScore = Math.max(bestScore, loosePhoneticScore);
+  }
   if (shortest <= 4 && distance <= 1) {
     bestScore = Math.max(bestScore, 0.78, similarity);
   }
@@ -4987,6 +4991,39 @@ function scoreTriviaToken(answerWord, acceptedWord) {
   }
 
   return bestScore;
+}
+
+function scoreLoosePhoneticMatch(answerWord, acceptedWord) {
+  const shortest = Math.min(answerWord.length, acceptedWord.length);
+  if (shortest < 7) {
+    return 0;
+  }
+  const answerPhonetic = createLoosePhoneticKey(answerWord);
+  const acceptedPhonetic = createLoosePhoneticKey(acceptedWord);
+  if (!answerPhonetic || !acceptedPhonetic || answerPhonetic[0] !== acceptedPhonetic[0]) {
+    return 0;
+  }
+  if (answerPhonetic === acceptedPhonetic && Math.max(answerPhonetic.length, acceptedPhonetic.length) >= 2) {
+    return 0.9;
+  }
+
+  const phoneticDistance = levenshteinDistance(answerPhonetic, acceptedPhonetic);
+  const phoneticLongest = Math.max(answerPhonetic.length, acceptedPhonetic.length, 1);
+  const phoneticSimilarity = 1 - (phoneticDistance / phoneticLongest);
+  const wordDistance = levenshteinDistance(answerWord, acceptedWord);
+  const wordLongest = Math.max(answerWord.length, acceptedWord.length, 1);
+  const wordSimilarity = 1 - (wordDistance / wordLongest);
+  const overlap = getCharacterOverlapRatio(answerWord, acceptedWord);
+  if (
+    Math.min(answerPhonetic.length, acceptedPhonetic.length) >= 4
+    && phoneticDistance <= 2
+    && phoneticSimilarity >= 0.58
+    && wordSimilarity >= 0.5
+    && overlap >= 0.64
+  ) {
+    return 0.84;
+  }
+  return 0;
 }
 
 function scoreMessyTriviaTypo(answerWord, acceptedWord) {

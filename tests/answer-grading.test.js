@@ -57,9 +57,12 @@ assertAccepted("margarita", ["Margherita"], "common Margherita spelling mix-up")
 assertAccepted("newyork", ["New York"], "joined place name");
 assertAccepted("oppenhiemer", ["Oppenheimer"], "swapped-letter person/title answer");
 assertAccepted("einsten", ["Albert Einstein"], "misspelled distinctive surname");
+assertAccepted("phillandefia", ["Philadelphia"], "phonetic Philadelphia misspelling with inserted sound");
+assertAccepted("filadelfia", ["Philadelphia"], "phonetic Philadelphia spelling");
 realNearMissCases.forEach(([answer, acceptedAnswers, label]) => assertAiReviewCandidate(answer, acceptedAnswers, label));
 
 assertRejected("cat", ["Jackal"], "unrelated animal");
+assertRejected("pennsylvania", ["Philadelphia"], "related place but not the city");
 assertRejected("14th", ["Louis XIV"], "number alone is too ambiguous");
 assertRejected("marinara", ["Margherita"], "different pizza variety");
 assertNoAiReview("", ["Vincent van Gogh"], "blank answer");
