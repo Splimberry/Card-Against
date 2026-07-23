@@ -29811,6 +29811,7 @@ function animateScorePop(owner, awarded) {
     pop.textContent = `${amount > 0 ? "+" : ""}${amount.toLocaleString()}`;
     target.appendChild(pop);
     pop.addEventListener("animationend", () => pop.remove(), { once: true });
+    window.setTimeout(() => pop.remove(), 1250);
   });
 }
 

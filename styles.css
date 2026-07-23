@@ -11012,6 +11012,11 @@ body[data-performance-mode="minimal"] .profile-loading-spinner {
   animation-duration: 760ms !important;
 }
 
+body[data-performance-mode="low-power"] .score-pop,
+body[data-performance-mode="minimal"] .score-pop {
+  animation: scorePop 1150ms ease-out forwards !important;
+}
+
 body[data-performance-mode="low-power"] .stat-flash.stat-flash-playing,
 body[data-performance-mode="minimal"] .stat-flash.stat-flash-playing {
   animation: statFlashWash var(--stat-flash-duration, 1150ms) ease-out both !important;
