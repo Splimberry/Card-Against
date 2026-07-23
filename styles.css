@@ -3104,7 +3104,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .dev-create-meta-grid {
-  grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(6, minmax(7.5rem, 1fr));
 }
 
 .dev-create-answer-grid {
@@ -3158,6 +3158,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .dev-create-form textarea {
   line-height: 1.35;
+}
+
+.dev-create-form label.field-muted {
+  opacity: 0.62;
 }
 
 .dev-create-image-fields {

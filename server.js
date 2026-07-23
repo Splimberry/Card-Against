@@ -83,6 +83,8 @@ const triviaThemes = [
   "Mythology",
   "Art and Music"
 ];
+const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
+const gradingStrictnessSet = new Set(gradingStrictnessOptions);
 const questionBank = loadQuestionBank();
 
 const mimeTypes = {
@@ -367,6 +369,9 @@ if (require.main === module) {
 handleRequest._test = {
   normalizeTriviaAnswer,
   scoreAnswerAgainstBank,
+  normalizeGradingStrictness,
+  getLocalGradingThreshold,
+  isAnswerCorrectByStrictness,
   shouldAskAiForSecondOpinion
 };
 
@@ -1614,6 +1619,7 @@ async function handleDebugQuestions(res) {
       id: question.id,
       type: question.type,
       questionStyle: question.questionStyle || "standard",
+      gradingStrictness: normalizeGradingStrictness(question.gradingStrictness),
       theme: question.theme,
       difficulty: question.difficulty,
       question: question.blackCard,
@@ -1869,6 +1875,7 @@ function normalizeCreatedQuestion(body) {
   const questionStyle = source.questionStyle === "multiple-choice" || source.style === "multiple-choice" || source.type === "multiple-choice"
     ? "multiple-choice"
     : "standard";
+  const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
   const question = String(source.question || "").trim().replace(/\s+/g, " ").slice(0, 260);
   const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
   if (!question || !canonicalAnswer) {
@@ -1903,6 +1910,7 @@ function normalizeCreatedQuestion(body) {
     id,
     type,
     questionStyle,
+    gradingStrictness,
     theme,
     difficulty,
     question,
@@ -1943,6 +1951,41 @@ function normalizeAnswerList(value, limit) {
     .map((entry) => String(entry || "").trim().slice(0, 120))
     .filter(Boolean))]
     .slice(0, limit);
+}
+
+function normalizeGradingStrictness(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return gradingStrictnessSet.has(normalized) ? normalized : "normal";
+}
+
+function getLocalGradingThreshold(strictness) {
+  switch (normalizeGradingStrictness(strictness)) {
+    case "forgiving":
+      return 0.78;
+    case "strict":
+      return 0.9;
+    case "exact":
+      return 1;
+    case "normal":
+    default:
+      return 0.82;
+  }
+}
+
+function isExactAnswerMatch(answer, acceptedAnswers = []) {
+  const normalizedAnswer = normalizeTriviaAnswer(answer);
+  return Boolean(normalizedAnswer) && acceptedAnswers
+    .map(normalizeTriviaAnswer)
+    .filter(Boolean)
+    .includes(normalizedAnswer);
+}
+
+function isAnswerCorrectByStrictness(answer, acceptedAnswers = [], strictness = "normal") {
+  const normalizedStrictness = normalizeGradingStrictness(strictness);
+  if (normalizedStrictness === "exact") {
+    return isExactAnswerMatch(answer, acceptedAnswers);
+  }
+  return scoreAnswerAgainstBank(answer, acceptedAnswers) >= getLocalGradingThreshold(normalizedStrictness);
 }
 
 async function handleUpsertRoom(req, res) {
@@ -3714,6 +3757,7 @@ function normalizeSeedQuestion(question) {
   const questionStyle = source.questionStyle === "multiple-choice" || source.style === "multiple-choice" || source.type === "multiple-choice"
     ? "multiple-choice"
     : "standard";
+  const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
   const theme = triviaThemes.includes(source.theme) ? source.theme : "Pop Culture";
   const blackCard = String(source.question || source.blackCard || "").trim().replace(/\s+/g, " ").slice(0, 220);
   const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
@@ -3748,7 +3792,7 @@ function normalizeSeedQuestion(question) {
   const botCorrectPool = uniqueAnswers([canonicalAnswer, ...acceptedAnswers]);
   const botWrongPool = uniqueAnswers(botCards).filter((answer) => {
     const accepted = [canonicalAnswer, ...acceptedAnswers].filter(Boolean);
-    return scoreAnswerAgainstBank(answer, accepted) < 0.82;
+    return !isAnswerCorrectByStrictness(answer, accepted, gradingStrictness);
   });
   const botAnswerPool = uniqueAnswers([
     ...botCorrectPool,
@@ -3760,6 +3804,7 @@ function normalizeSeedQuestion(question) {
     id: String(source.id || `${theme}-${canonicalAnswer}`).trim().slice(0, 120),
     type,
     questionStyle,
+    gradingStrictness,
     theme,
     difficulty: String(source.difficulty || "medium").trim().slice(0, 30),
     blackCard,
@@ -3838,7 +3883,7 @@ function pickBotAnswersForSetup(question, seed) {
     Array.isArray(question.botWrongPool) && question.botWrongPool.length
       ? question.botWrongPool
       : question.botCards || []
-  ).filter((answer) => scoreAnswerAgainstBank(answer, correctPool) < 0.82);
+  ).filter((answer) => !isAnswerCorrectByStrictness(answer, correctPool, question.gradingStrictness));
   const anyPool = uniqueAnswers([
     ...correctPool,
     ...wrongPool,
@@ -3916,6 +3961,7 @@ async function getSeedQuestionSetup(options = {}) {
   const setup = {
     type: picked.type,
     questionStyle: picked.questionStyle || "standard",
+    gradingStrictness: normalizeGradingStrictness(picked.gradingStrictness),
     theme: picked.theme,
     difficulty: picked.difficulty,
     blackCard: picked.blackCard,
@@ -4068,6 +4114,7 @@ function normalizeRoundPayload(body) {
   const mode = body.mode === "local" ? "local" : body.mode === "room" ? "room" : "bots";
   const roomCode = String(body.roomCode || body.code || "").trim().toUpperCase().slice(0, 12);
   const participantId = String(body.participantId || "").trim().slice(0, 80);
+  const gradingStrictness = normalizeGradingStrictness(body.gradingStrictness);
 
   if (!blackCard) {
     throw new Error("Missing trivia question.");
@@ -4083,6 +4130,7 @@ function normalizeRoundPayload(body) {
     triviaTheme,
     canonicalAnswer,
     acceptedAnswers: acceptedAnswers.length ? acceptedAnswers : canonicalAnswer ? [canonicalAnswer] : [],
+    gradingStrictness,
     image,
     mode,
     roomCode,
@@ -4140,6 +4188,7 @@ function createAiRoundCacheKey(payload) {
     triviaTheme: payload.triviaTheme,
     canonicalAnswer: payload.canonicalAnswer,
     acceptedAnswers: payload.acceptedAnswers,
+    gradingStrictness: payload.gradingStrictness,
     imageUrl: payload.image?.url || "",
     answer: payload.answer,
     opponentAnswer: payload.opponentAnswer,
@@ -4226,6 +4275,20 @@ function getApiStyle() {
   return getBaseUrl().includes("api.openai.com") ? "responses" : "chat";
 }
 
+function getGradingStrictnessInstruction(strictness) {
+  switch (normalizeGradingStrictness(strictness)) {
+    case "forgiving":
+      return "Strictness is forgiving: count clear intent, common shorthand, phonetic spelling, and distinctive partial answers when the answer clearly points to the canonical answer.";
+    case "strict":
+      return "Strictness is strict: accept only specific, unambiguous answers. Minor spelling slips are fine, but vague partials and guesses that could mean something else should stay incorrect.";
+    case "exact":
+      return "Strictness is exact: accept only an exact normalized match to canonicalAnswer or one of acceptedAnswers. Do not rescue typos, partials, aliases, acronyms, or semantic equivalents unless they are explicitly listed.";
+    case "normal":
+    default:
+      return "Strictness is normal: accept clear aliases, abbreviations, distinctive partial answers, and small spelling mistakes when the intended answer is obvious.";
+  }
+}
+
 function buildRoundPrompt(payload) {
   const isLocal = payload.mode === "local";
   const isRoom = payload.mode === "room";
@@ -4269,6 +4332,7 @@ function buildRoundPrompt(payload) {
       "Return only valid JSON. Do not wrap the JSON in markdown.",
       "Use submittedAnswers as the source of truth for every player/bot response. These answers are present and must be graded.",
       "Grade answers against the question and the intended meaning of canonicalAnswer. Treat acceptedAnswers as optional examples, not as the complete list of all valid answers.",
+      getGradingStrictnessInstruction(payload.gradingStrictness),
       "Blank or empty answers are always incorrect and must never appear in correctIndexes.",
       "Use general trivia knowledge to accept semantically equivalent answers even when they are not listed in acceptedAnswers.",
       "Accept common aliases, nicknames, abbreviations, acronyms, translations, alternate spellings, swapped word order, missing accents, and minor spelling mistakes when the intended answer is clearly correct.",
@@ -4320,6 +4384,7 @@ function buildRoundPrompt(payload) {
       question: payload.blackCard,
       canonicalAnswer: payload.canonicalAnswer,
       acceptedAnswers: providedAnswers,
+      gradingStrictness: normalizeGradingStrictness(payload.gradingStrictness),
       image: payload.image
     },
     matchContext: payload.matchContext
@@ -4485,6 +4550,7 @@ function buildRoundSecondOpinionPrompt(payload, candidates = []) {
     rules: [
       "Return only valid JSON. Do not wrap the JSON in markdown.",
       "Only evaluate candidateAnswers. Do not include any index that is not listed in candidateAnswers.",
+      getGradingStrictnessInstruction(payload.gradingStrictness),
       "Accept an answer only when it clearly identifies the canonical answer despite misspelling, missing accents, phonetic spelling, abbreviation, alias, swapped word order, translation, or a distinctive partial answer.",
       "A distinctive first name, surname, nickname, team name, title fragment, or object/place/company name can be correct when the question context makes the intended answer clear.",
       "Reject broad categories, random related words, guesses that point to a different answer, generic adjectives, jokes, filler, and ambiguous fragments.",
@@ -4497,6 +4563,7 @@ function buildRoundSecondOpinionPrompt(payload, candidates = []) {
       question: payload.blackCard,
       canonicalAnswer: payload.canonicalAnswer,
       acceptedAnswers: [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean),
+      gradingStrictness: normalizeGradingStrictness(payload.gradingStrictness),
       image: payload.image
     },
     candidateAnswers: candidates.map((candidate) => ({
@@ -4656,7 +4723,7 @@ function createLocalRoundResult(payload) {
   const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
   const correctIndexes = cards
     .map((card, index) => ({ index, score: scoreAnswerAgainstBank(card, answerBank) }))
-    .filter((entry) => entry.score >= 0.82)
+    .filter((entry) => isAnswerCorrectByStrictness(cards[entry.index], answerBank, payload.gradingStrictness))
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.index)
     .filter((index) => index >= 0 && index < expectedCards);
@@ -4705,19 +4772,25 @@ function getAiSecondOpinionCandidates(payload, localResult) {
       ...entry,
       score: scoreAnswerAgainstBank(entry.answer, answerBank)
     }))
-    .filter((entry) => !alreadyCorrect.has(entry.index) && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score))
+    .filter((entry) => !alreadyCorrect.has(entry.index) && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score, payload.gradingStrictness))
     .slice(0, 4);
 }
 
-function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore) {
+function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore, strictness = "normal") {
+  const normalizedStrictness = normalizeGradingStrictness(strictness);
+  if (normalizedStrictness === "exact") {
+    return false;
+  }
   const normalized = normalizeTriviaAnswer(answer);
   if (!hasUsefulAnswerSignal(normalized)) {
     return false;
   }
-  if (localScore >= 0.82) {
+  const localThreshold = getLocalGradingThreshold(normalizedStrictness);
+  if (localScore >= localThreshold) {
     return false;
   }
-  if (localScore >= 0.42) {
+  const scoreGate = normalizedStrictness === "forgiving" ? 0.34 : normalizedStrictness === "strict" ? 0.62 : 0.42;
+  if (localScore >= scoreGate) {
     return true;
   }
   const answerWords = normalized.split(" ").filter(Boolean);
@@ -4733,14 +4806,16 @@ function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore) {
   const bestCompactScore = Math.max(0, ...normalizedAccepted.map((entry) => (
     scoreTriviaToken(compactAnswer, entry.replace(/\s+/g, ""))
   )));
-  if (bestCompactScore >= 0.62) {
+  const compactGate = normalizedStrictness === "forgiving" ? 0.55 : normalizedStrictness === "strict" ? 0.78 : 0.62;
+  if (bestCompactScore >= compactGate) {
     return true;
   }
   const bestTokenScore = Math.max(0, ...answerWords.flatMap((answerWord) => (
     acceptedWords.map((acceptedWord) => scoreTriviaToken(answerWord, acceptedWord))
   )));
   const hasSharedDistinctiveWord = answerWords.some((word) => word.length >= 4 && acceptedWords.includes(word));
-  return hasSharedDistinctiveWord || bestTokenScore >= 0.55;
+  const tokenGate = normalizedStrictness === "forgiving" ? 0.48 : normalizedStrictness === "strict" ? 0.72 : 0.55;
+  return hasSharedDistinctiveWord || bestTokenScore >= tokenGate;
 }
 
 function hasUsefulAnswerSignal(normalizedAnswer) {
@@ -5130,9 +5205,12 @@ function validateRoundResult(result, payload) {
   const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
   const localCorrectIndexes = cards
     .map((card, index) => ({ index, score: scoreAnswerAgainstBank(card, answerBank) }))
-    .filter((entry) => entry.score >= 0.82)
+    .filter((entry) => isAnswerCorrectByStrictness(cards[entry.index], answerBank, payload.gradingStrictness))
     .map((entry) => entry.index);
-  const correctIndexes = [...new Set([...modelCorrectIndexes, ...localCorrectIndexes])];
+  const safeModelCorrectIndexes = normalizeGradingStrictness(payload.gradingStrictness) === "exact"
+    ? modelCorrectIndexes.filter((index) => localCorrectIndexes.includes(index))
+    : modelCorrectIndexes;
+  const correctIndexes = [...new Set([...safeModelCorrectIndexes, ...localCorrectIndexes])];
   const fallbackWinnerIndex = correctIndexes[0] ?? 0;
   const safeWinnerIndex = correctIndexes.length
     ? (correctIndexes.includes(winnerIndex) ? winnerIndex : fallbackWinnerIndex)

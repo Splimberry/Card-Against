@@ -1882,10 +1882,13 @@ async function testQuestionSubmissionEnforceModeUsesAuthenticatedCreator() {
 }
 
 async function testDebugQuestionCreateUsesBackendStorage() {
-  const question = makeQuestion("science-backend-create-test");
+  const question = makeQuestion("science-backend-create-test", {
+    gradingStrictness: "strict"
+  });
   const { response, payload } = await request("POST", "/api/debug/questions", question, adminHeaders());
   assert.equal(response.status, 201, payload.error);
   assert.equal(payload.question.id, question.id);
+  assert.equal(payload.question.gradingStrictness, "strict");
   assert.equal(payload.storage, "backend");
   assert.equal(payload.fileSaved, false);
 
@@ -1893,6 +1896,7 @@ async function testDebugQuestionCreateUsesBackendStorage() {
   const saved = questions.find((entry) => entry.id === question.id);
   assert.ok(saved);
   assert.equal(saved.question, question.question);
+  assert.equal(saved.gradingStrictness, "strict");
 }
 
 async function testDebugQuestionUpdateUsesBackendStorage() {

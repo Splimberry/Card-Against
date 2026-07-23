@@ -927,6 +927,19 @@ const loserBadgeTiers = [
   { minScore: 0, label: "Incorrect", bonus: 0 }
 ];
 const MULTIPLE_CHOICE_STYLE = "multiple-choice";
+const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
+const gradingStrictnessLabels = {
+  forgiving: "Forgiving",
+  normal: "Normal",
+  strict: "Strict",
+  exact: "Exact"
+};
+const gradingStrictnessDescriptions = {
+  forgiving: "Best for name/title answers where typos and short-but-clear answers should usually count.",
+  normal: "Balanced default: accepts clear aliases and small spelling mistakes.",
+  strict: "Best for precise facts where vague partial answers should not count.",
+  exact: "Only accepts the saved answer text or aliases after basic cleanup."
+};
 const multipleChoiceTimingBadges = [
   { maxElapsed: 5, label: "Speed demon", bonus: 250 },
   { maxElapsed: 7, label: "Quick reaction", bonus: 200 },
@@ -945,6 +958,21 @@ function clampNumber(value, min, max, fallback) {
 function normalizePerformanceMode(value) {
   const mode = String(value || "").trim();
   return performanceModes[mode] ? mode : "full";
+}
+
+function normalizeGradingStrictness(value) {
+  const strictness = String(value || "").trim().toLowerCase();
+  return gradingStrictnessOptions.includes(strictness) ? strictness : "normal";
+}
+
+function getGradingStrictnessLabel(value) {
+  const strictness = normalizeGradingStrictness(value);
+  return gradingStrictnessLabels[strictness] || gradingStrictnessLabels.normal;
+}
+
+function getGradingStrictnessDescription(value) {
+  const strictness = normalizeGradingStrictness(value);
+  return gradingStrictnessDescriptions[strictness] || gradingStrictnessDescriptions.normal;
 }
 
 function getStoredPerformanceMode() {
@@ -3007,6 +3035,7 @@ const state = {
   questionId: "",
   questionType: "image",
   questionStyle: "standard",
+  gradingStrictness: "normal",
   questionDifficulty: "medium",
   triviaTheme: "",
   questionImage: null,
@@ -3303,6 +3332,7 @@ const elements = {
   devCreateDifficulty: null,
   devCreateType: null,
   devCreateQuestionStyle: null,
+  devCreateStrictness: null,
   devCreateId: null,
   devCreateQuestion: null,
   devCreateCanonical: null,
@@ -3327,6 +3357,7 @@ const elements = {
   devCreatePreviewPlaceholder: null,
   devCreatePreviewCredit: null,
   devCreatePreviewQuestion: null,
+  userQuestionStrictness: null,
   soundToggleButton: document.querySelector("#soundToggleButton"),
   gameSettingsButton: document.querySelector("#gameSettingsButton"),
   leaveGameButton: document.querySelector("#leaveGameButton"),
@@ -4570,6 +4601,7 @@ function normalizeSetupPayload(setup) {
     blackCard: String(setup.blackCard || "").trim(),
     type: setup.type === "text" ? "text" : "image",
     questionStyle: setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
+    gradingStrictness: normalizeGradingStrictness(setup.gradingStrictness),
     difficulty: ["easy", "medium", "hard"].includes(String(setup.difficulty || "").toLowerCase())
       ? String(setup.difficulty).toLowerCase()
       : "medium",
@@ -4832,6 +4864,7 @@ async function requestAiRound(rawInput, options = {}) {
       triviaTheme: state.triviaTheme,
       canonicalAnswer: state.canonicalAnswer,
       acceptedAnswers: state.acceptedAnswers,
+      gradingStrictness: state.gradingStrictness,
       image: state.questionImage,
       mode: apiMode,
       roomCode: roomMode ? state.roomSettings.code : "",
@@ -20454,6 +20487,7 @@ function applyRoundSetup(setup) {
   removeCachedRoundSetup(setup);
   state.questionType = setup.type === "text" ? "text" : "image";
   state.questionStyle = setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
+  state.gradingStrictness = normalizeGradingStrictness(setup.gradingStrictness);
   state.questionDifficulty = normalizeDifficulty(setup.difficulty);
   state.triviaTheme = setup.triviaTheme || "Mixed Trivia";
   state.questionImage = setup.image && setup.image.url ? setup.image : null;
@@ -20712,6 +20746,7 @@ function buildDevToolScreen() {
             <label><span>Difficulty</span><select id="devCreateDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
             <label><span>Question type</span><select id="devCreateType"><option value="text">Text</option><option value="image">Image</option></select></label>
             <label><span>Question style</span><select id="devCreateQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
+            <label><span>Strictness</span><select id="devCreateStrictness"><option value="normal">Normal</option><option value="forgiving">Forgiving</option><option value="strict">Strict</option><option value="exact">Exact</option></select></label>
             <label><span>ID</span><input id="devCreateId" required placeholder="popculture-short-unique-id"></label>
           </div>
           <label class="dev-create-question-field"><span>Question</span><textarea id="devCreateQuestion" required rows="5" placeholder="Question text"></textarea></label>
@@ -20824,6 +20859,7 @@ function buildDevToolScreen() {
   elements.devCreateDifficulty = screen.querySelector("#devCreateDifficulty");
   elements.devCreateType = screen.querySelector("#devCreateType");
   elements.devCreateQuestionStyle = screen.querySelector("#devCreateQuestionStyle");
+  elements.devCreateStrictness = screen.querySelector("#devCreateStrictness");
   elements.devCreateId = screen.querySelector("#devCreateId");
   elements.devCreateQuestion = screen.querySelector("#devCreateQuestion");
   elements.devCreateCanonical = screen.querySelector("#devCreateCanonical");
@@ -20931,6 +20967,7 @@ function bindDevToolEvents() {
   elements.devProfileResetButton.addEventListener("click", () => setAllProfileDebugStates("reset"));
   elements.devCreateType.addEventListener("change", updateDevCreateImageFields);
   elements.devCreateQuestionStyle.addEventListener("change", updateDevCreateImageFields);
+  elements.devCreateStrictness.addEventListener("change", updateDevCreatePreview);
   elements.devCreateTheme.addEventListener("change", () => {
     syncDevCreateIdPrefix();
     updateDevCreatePreview();
@@ -20978,6 +21015,7 @@ function buildUserQuestionScreen() {
           <label><span>Difficulty</span><select id="userQuestionDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
           <label><span>Question type</span><select id="userQuestionType"><option value="text">Text</option><option value="image">Image</option></select></label>
           <label><span>Question style</span><select id="userQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
+          <label><span>Strictness</span><select id="userQuestionStrictness"><option value="normal">Normal</option><option value="forgiving">Forgiving</option><option value="strict">Strict</option><option value="exact">Exact</option></select></label>
           <label><span>ID</span><input id="userQuestionId" required placeholder="popculture-short-unique-id"></label>
         </div>
         <label class="dev-create-question-field"><span>Question</span><textarea id="userQuestionText" required rows="5" placeholder="Question text"></textarea></label>
@@ -21037,6 +21075,7 @@ function buildUserQuestionScreen() {
   elements.userQuestionDifficulty = screen.querySelector("#userQuestionDifficulty");
   elements.userQuestionType = screen.querySelector("#userQuestionType");
   elements.userQuestionStyle = screen.querySelector("#userQuestionStyle");
+  elements.userQuestionStrictness = screen.querySelector("#userQuestionStrictness");
   elements.userQuestionId = screen.querySelector("#userQuestionId");
   elements.userQuestionText = screen.querySelector("#userQuestionText");
   elements.userQuestionCanonical = screen.querySelector("#userQuestionCanonical");
@@ -21067,6 +21106,7 @@ function buildUserQuestionScreen() {
   });
   elements.userQuestionType.addEventListener("change", updateUserQuestionImageFields);
   elements.userQuestionStyle.addEventListener("change", updateUserQuestionImageFields);
+  elements.userQuestionStrictness.addEventListener("change", updateUserQuestionPreview);
   elements.userQuestionId.addEventListener("input", () => {
     elements.userQuestionId.setCustomValidity("");
     normalizeUserQuestionIdInput();
@@ -21107,6 +21147,7 @@ function syncQuestionCreateAnswerFields({
   rejectedInput,
   canonicalInput,
   botsWrap,
+  strictnessInput,
   isMultipleChoice,
   standardCanonicalLabel,
   standardBotsLabel
@@ -21131,6 +21172,14 @@ function syncQuestionCreateAnswerFields({
   if (botsLabel) {
     botsLabel.textContent = isMultipleChoice ? "Incorrect answers" : standardBotsLabel;
   }
+  if (strictnessInput) {
+    const strictnessLabel = strictnessInput.closest("label");
+    strictnessInput.disabled = isMultipleChoice;
+    strictnessInput.title = isMultipleChoice
+      ? "Multiple-choice questions use exact option matching."
+      : getGradingStrictnessDescription(strictnessInput.value);
+    strictnessLabel?.classList.toggle("field-muted", isMultipleChoice);
+  }
 }
 
 function updateUserQuestionImageFields() {
@@ -21146,6 +21195,7 @@ function updateUserQuestionImageFields() {
     rejectedInput: elements.userQuestionRejected,
     canonicalInput: elements.userQuestionCanonical,
     botsWrap: elements.userQuestionBotsWrap,
+    strictnessInput: elements.userQuestionStrictness,
     isMultipleChoice,
     standardCanonicalLabel: "Main answer",
     standardBotsLabel: "Wrong bot answers"
@@ -21166,7 +21216,7 @@ function updateUserQuestionPreview() {
   const imageCredit = elements.userQuestionImageCredit.value.trim();
   elements.userQuestionPreview.classList.toggle("text-only", type !== "image");
   elements.userQuestionPreviewMeta.replaceChildren();
-  [theme, type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "", difficulty].filter(Boolean).forEach((text) => {
+  [theme, type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : getGradingStrictnessLabel(elements.userQuestionStrictness?.value), difficulty].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     elements.userQuestionPreviewMeta.appendChild(badge);
@@ -21208,6 +21258,9 @@ function getUserQuestionPayload() {
     id: formatDevQuestionId(elements.userQuestionId.value),
     type: elements.userQuestionType.value,
     questionStyle: elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
+    gradingStrictness: elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE
+      ? "exact"
+      : normalizeGradingStrictness(elements.userQuestionStrictness?.value),
     theme: elements.userQuestionTheme.value,
     difficulty: elements.userQuestionDifficulty.value,
     question: elements.userQuestionText.value.trim(),
@@ -21548,6 +21601,7 @@ function createDevSubmissionCard(submission) {
     createReviewSelect("difficulty", "Difficulty", ["easy", "medium", "hard"], normalizeDifficulty(question.difficulty)),
     createReviewSelect("type", "Type", ["text", "image"], question.type === "image" ? "image" : "text"),
     createReviewSelect("questionStyle", "Style", ["standard", "multiple-choice"], question.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard"),
+    createReviewSelect("gradingStrictness", "Strictness", gradingStrictnessOptions, normalizeGradingStrictness(question.gradingStrictness)),
     createReviewField("id", "ID", question.id || "", "input")
   );
   const body = document.createElement("div");
@@ -21630,7 +21684,7 @@ function createReviewSelect(name, labelText, options, value) {
   options.forEach((option) => {
     const item = document.createElement("option");
     item.value = option;
-    item.textContent = option;
+    item.textContent = name === "gradingStrictness" ? getGradingStrictnessLabel(option) : option;
     item.selected = option === value;
     select.appendChild(item);
   });
@@ -21644,6 +21698,9 @@ function getReviewCardPayload(card) {
     id: formatDevQuestionId(field("id")),
     type: field("type") === "image" ? "image" : "text",
     questionStyle: field("questionStyle") === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
+    gradingStrictness: field("questionStyle") === MULTIPLE_CHOICE_STYLE
+      ? "exact"
+      : normalizeGradingStrictness(field("gradingStrictness")),
     theme: field("theme"),
     difficulty: normalizeDifficulty(field("difficulty")),
     question: field("question").trim(),
@@ -21695,9 +21752,14 @@ function updateDevSubmissionReviewPreview() {
   if (!preview || !meta || !question || !image || !placeholder || !credit) return;
 
   const isImage = payload.type === "image";
+  const strictnessSelect = card.querySelector('[data-review-field="gradingStrictness"]');
+  if (strictnessSelect) {
+    strictnessSelect.disabled = payload.questionStyle === MULTIPLE_CHOICE_STYLE;
+    strictnessSelect.closest("label")?.classList.toggle("field-muted", payload.questionStyle === MULTIPLE_CHOICE_STYLE);
+  }
   preview.classList.toggle("text-only", !isImage);
   meta.replaceChildren();
-  [payload.theme || "Theme", isImage ? "Image" : "Text", payload.questionStyle === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "", payload.difficulty].filter(Boolean).forEach((text) => {
+  [payload.theme || "Theme", isImage ? "Image" : "Text", payload.questionStyle === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : getGradingStrictnessLabel(payload.gradingStrictness), payload.difficulty].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     meta.appendChild(badge);
@@ -22824,6 +22886,7 @@ function filterQuestionDebugBank() {
       question.difficulty,
       question.type,
       question.questionStyle,
+      question.gradingStrictness,
       question.question,
       question.canonicalAnswer,
       ...(question.acceptedAnswers || []),
@@ -22857,7 +22920,7 @@ function renderQuestionDebugResults() {
     button.dataset.questionDebugIndex = String(index);
     const answer = document.createElement("span");
     answer.textContent = question.canonicalAnswer || "-";
-    button.dataset.tooltip = `${question.id} - ${question.theme} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ""}`;
+    button.dataset.tooltip = `${question.id} - ${question.theme} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ` - ${getGradingStrictnessLabel(question.gradingStrictness)}`}`;
     button.append(answer);
     elements.devQuestionResults.appendChild(button);
   });
@@ -22903,6 +22966,7 @@ function renderQuestionDebugPreview() {
     question.theme,
     question.type === "image" ? "Image" : "Text",
     question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "",
+    question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Exact option" : getGradingStrictnessLabel(question.gradingStrictness),
     normalizeDifficulty(question.difficulty)
   ].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
@@ -23252,7 +23316,7 @@ function updateDevCreatePreview() {
 
   elements.devCreatePreview.classList.toggle("text-only", type !== "image");
   elements.devCreatePreviewMeta.replaceChildren();
-  [theme, type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "", difficulty].filter(Boolean).forEach((text) => {
+  [theme, type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : getGradingStrictnessLabel(elements.devCreateStrictness?.value), difficulty].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     elements.devCreatePreviewMeta.appendChild(badge);
@@ -23357,6 +23421,7 @@ function startEditingDebugQuestion() {
   elements.devCreateDifficulty.value = normalizeDifficulty(question.difficulty);
   elements.devCreateType.value = question.type === "image" ? "image" : "text";
   elements.devCreateQuestionStyle.value = question.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
+  elements.devCreateStrictness.value = normalizeGradingStrictness(question.gradingStrictness);
   elements.devCreateId.value = question.id || "";
   elements.devCreateQuestion.value = question.question || "";
   elements.devCreateCanonical.value = question.canonicalAnswer || "";
@@ -23428,6 +23493,7 @@ function updateDevCreateImageFields() {
     rejectedInput: elements.devCreateRejected,
     canonicalInput: elements.devCreateCanonical,
     botsWrap: elements.devCreateBotsWrap,
+    strictnessInput: elements.devCreateStrictness,
     isMultipleChoice,
     standardCanonicalLabel: "Answer",
     standardBotsLabel: "Bot answers"
@@ -23532,6 +23598,9 @@ function getDevQuestionCreatePayload() {
     id: formatDevQuestionId(elements.devCreateId.value),
     type: elements.devCreateType.value,
     questionStyle: elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
+    gradingStrictness: elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE
+      ? "exact"
+      : normalizeGradingStrictness(elements.devCreateStrictness?.value),
     theme: elements.devCreateTheme.value,
     difficulty: elements.devCreateDifficulty.value,
     question: elements.devCreateQuestion.value.trim(),
@@ -23749,6 +23818,7 @@ async function newRound() {
   state.blackCard = "";
   state.questionType = "image";
   state.questionStyle = "standard";
+  state.gradingStrictness = "normal";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
   state.questionImage = null;
@@ -24006,6 +24076,7 @@ function resetMatch(mode) {
   state.blackCard = "";
   state.questionType = "image";
   state.questionStyle = "standard";
+  state.gradingStrictness = "normal";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
   state.questionImage = null;
@@ -25501,6 +25572,7 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   state.blackCard = "";
   state.questionType = "image";
   state.questionStyle = "standard";
+  state.gradingStrictness = "normal";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
   state.questionImage = null;
@@ -27415,27 +27487,27 @@ function getAnswerGradingReason(answer, rating = {}, roundResult = {}, index = -
   }
   if (rating.correct) {
     if (aiRescued) {
-      return "AI took a second look and counted this as the answer you meant.";
+      return "A second look counted this as what you meant.";
     }
     if (details.kind === "exact") {
       return "That matches the answer.";
     }
     if (details.kind === "abbreviation") {
-      return "That is a recognizable short version of the answer.";
+      return "That short version is clear enough.";
     }
     if (details.kind === "typo") {
-      return "That looks like the right answer with a small spelling slip.";
+      return "That looks like the right answer with a spelling slip.";
     }
     if (details.kind === "partial") {
-      return "That gave enough of the answer to count.";
+      return "That gives enough of the answer to count.";
     }
     return "Close enough: it points to the right answer.";
   }
   if (aiReviewed) {
-    return "AI took a second look, but it was still too unclear to count.";
+    return "A second look still could not tie it clearly to the answer.";
   }
   if (details.score >= 0.72) {
-    return "That was close, but still too unclear to count.";
+    return "Close, but not clear enough to count.";
   }
   return "That looks like a different answer.";
 }
