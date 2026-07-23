@@ -2293,6 +2293,55 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   padding: clamp(0.8rem, 1.8vw, 1.45rem);
 }
 
+.game-stage.spectator-mode.room-active .table-surface {
+  grid-template-columns: minmax(18rem, 0.72fr) minmax(28rem, 1.28fr);
+  grid-template-rows: minmax(0, auto) minmax(8rem, auto);
+  align-items: start;
+  align-content: center;
+  row-gap: clamp(0.7rem, 1.4vw, 1rem);
+}
+
+.game-stage.spectator-mode.room-active .question-card-stack {
+  grid-column: 1;
+  grid-row: 1;
+  width: min(100%, 23.5rem);
+  height: clamp(20rem, 50vh, 32rem);
+  min-height: 0;
+  align-self: center;
+  z-index: 8;
+}
+
+.game-stage.spectator-mode.room-active .question-card-stack .black-card {
+  width: 100%;
+}
+
+.game-stage.spectator-mode.room-active .verdict-panel,
+.game-stage.spectator-mode.room-active .loading-panel,
+.game-stage.spectator-mode.room-active .error-panel {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  max-height: min(56vh, 31rem);
+  overflow: auto;
+  z-index: 14;
+}
+
+.game-stage.spectator-mode.room-active .verdict-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
+  align-items: stretch;
+}
+
+.game-stage.spectator-mode.room-active .verdict-panel button {
+  width: 100%;
+  min-height: 2.55rem;
+  padding-inline: 0.7rem;
+}
+
+.game-stage.spectator-mode.room-active .round-help-button {
+  z-index: 45;
+}
+
 .judge-panel {
   display: none;
   grid-template-columns: 5rem 1fr;
@@ -4828,35 +4877,57 @@ input:focus {
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode {
   grid-column: 1 / -1;
-  grid-row: 4;
+  grid-row: 2;
   align-self: stretch;
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  align-items: stretch;
   max-width: none;
-  margin-top: 0.35rem;
+  max-height: min(32vh, 18.5rem);
+  margin-top: 0;
+  padding: 0.12rem 0.2rem 0.3rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 18;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode.answer-stack-mode {
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card {
-  min-height: clamp(7.25rem, 14vh, 9.4rem);
-  padding: 0.58rem;
-  border-width: 4px;
+  min-height: clamp(7rem, 14vh, 8.75rem);
+  padding: 0.58rem 0.64rem;
+  border-width: 3px;
+  overflow: hidden;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-owner {
   gap: 0.42rem;
+  align-items: center;
+  min-width: 0;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-avatar {
-  width: 2.45rem;
+  width: 2.1rem;
+  flex: 0 0 auto;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-owner > span:last-child,
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-owner .name-with-title {
+  min-width: 0;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-owner .name-with-title-text {
+  overflow-wrap: anywhere;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card p {
   margin-top: 0.55rem;
-  font-size: clamp(0.88rem, 1.25vw, 1.06rem);
-  line-height: 1.12;
+  font-size: clamp(0.82rem, 1.05vw, 0.98rem);
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card.spectator-draft-empty p {
@@ -4866,7 +4937,8 @@ input:focus {
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-stack {
   align-self: stretch;
-  min-height: clamp(7.25rem, 14vh, 9.4rem);
+  min-height: clamp(7rem, 14vh, 8.75rem);
+  border-width: 3px;
 }
 
 .white-card {
@@ -6993,6 +7065,31 @@ input:focus {
   gap: 0.32rem;
   min-height: 3rem;
   padding: 0.34rem 0.42rem;
+}
+
+.game-stage.spectator-mode .room-results-list .trivia-result-row {
+  grid-template-columns: 1.55rem 1.75rem minmax(8rem, 1fr) minmax(4.8rem, auto) minmax(3.35rem, auto) minmax(4rem, auto);
+  gap: 0.28rem 0.38rem;
+  min-height: 3.15rem;
+  align-items: center;
+}
+
+.game-stage.spectator-mode .room-results-list .trivia-result-row .result-power-list {
+  grid-column: 3 / span 3;
+  grid-row: 2;
+  justify-self: start;
+  max-width: 100%;
+}
+
+.game-stage.spectator-mode .room-results-list .trivia-result-row .result-streak-pill {
+  grid-column: 6;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.game-stage.spectator-mode .room-results-list .trivia-result-row .result-power-pill {
+  max-width: min(12rem, 100%);
 }
 
 .room-results-list .trivia-result-row strong,
