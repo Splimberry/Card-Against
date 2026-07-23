@@ -1227,12 +1227,25 @@ function getUserStorageSnapshot() {
   };
 }
 
+function shouldBlockUserStorageSnapshotWrites() {
+  if (state.userStorageHydrating || state.userStorageApplying) {
+    return true;
+  }
+  if (state.supabaseAuthResolving) {
+    return true;
+  }
+  if (!state.supabaseAuthResolved && hasAnyStoredSupabaseSession()) {
+    return true;
+  }
+  return false;
+}
+
 function flushUserStorageSnapshot() {
   if (state.userStorageWriteTimerId) {
     window.clearTimeout(state.userStorageWriteTimerId);
     state.userStorageWriteTimerId = null;
   }
-  if (state.userStorageHydrating || state.userStorageApplying) {
+  if (shouldBlockUserStorageSnapshotWrites()) {
     return;
   }
   const snapshot = getDisplayUserStorageSnapshot(getUserStorageSnapshot());
@@ -1243,7 +1256,7 @@ function flushUserStorageSnapshot() {
 }
 
 function cacheUserStorageSnapshotNow() {
-  if (state.userStorageHydrating || state.userStorageApplying) {
+  if (shouldBlockUserStorageSnapshotWrites()) {
     return null;
   }
   const snapshot = getDisplayUserStorageSnapshot(getUserStorageSnapshot());
@@ -1252,7 +1265,7 @@ function cacheUserStorageSnapshotNow() {
 }
 
 function scheduleUserStorageSnapshot() {
-  if (state.userStorageHydrating || state.userStorageApplying) {
+  if (shouldBlockUserStorageSnapshotWrites()) {
     return;
   }
   if (state.userStorageWriteTimerId) {
@@ -2339,10 +2352,15 @@ async function saveRemoteUserStorageSnapshotForUser(snapshot = getUserStorageSna
   if (!client || !user?.id) {
     return null;
   }
+  const snapshotUserId = String(snapshot?.userId || "");
+  if (snapshotUserId && snapshotUserId !== user.id) {
+    console.warn("Skipped user storage save for mismatched account snapshot.");
+    return null;
+  }
   const displaySnapshot = getDisplayUserStorageSnapshot(snapshot);
   const payload = {
     user_id: user.id,
-    data: displaySnapshot,
+    data: { ...displaySnapshot, userId: user.id },
     updated_at: new Date(displaySnapshot.updatedAt || Date.now()).toISOString()
   };
   const { error } = await client
@@ -2366,6 +2384,8 @@ async function hydrateSignedInUserStorage(user) {
   let cachedInventory = null;
   try {
     state.userStorageHydrating = true;
+    syncProfileLoadingState();
+    renderSupabaseAuthControls();
     try {
       localSnapshot = loadUserStorageCacheForUser(user.id);
       const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
@@ -3072,6 +3092,10 @@ const state = {
   supabaseSdkPromise: null,
   supabaseAuthPromise: null,
   supabaseAuthListenerAttached: false,
+  supabaseAuthResolving: false,
+  supabaseAuthResolved: false,
+  supabaseAuthLoadSlow: false,
+  supabaseAuthError: "",
   supabaseEnabled: false,
   supabaseSession: null,
   supabaseUser: null,
@@ -3121,9 +3145,15 @@ const state = {
 
 window.addEventListener("online", () => {
   void flushUserInventoryQueue();
+  if (state.supabaseAuthError || (hasAnyStoredSupabaseSession() && !state.supabaseAuthResolved)) {
+    void initSupabaseAuth();
+  }
 });
 window.addEventListener("focus", () => {
   void flushUserInventoryQueue();
+  if (state.supabaseAuthError || (hasAnyStoredSupabaseSession() && !state.supabaseAuthResolved)) {
+    void initSupabaseAuth();
+  }
 });
 
 const elements = {
@@ -3148,6 +3178,8 @@ const elements = {
   profileAvatarInput: document.querySelector("#profileAvatarInput"),
   profileCurrencyValue: document.querySelector("#profileCurrencyValue"),
   profileLoadingOverlay: document.querySelector("#profileLoadingOverlay"),
+  profileLoadingTitle: document.querySelector("#profileLoadingTitle"),
+  profileLoadingText: document.querySelector("#profileLoadingText"),
   profileCustomizeControl: document.querySelector("#profileCustomizeControl"),
   profileCustomizeButton: document.querySelector("#profileCustomizeButton"),
   profileShopButton: document.querySelector("#profileShopButton"),
@@ -11332,8 +11364,42 @@ function renderProfile() {
   renderSupabaseAuthControls();
 }
 
-function setProfileLoading(loading) {
+function getProfileLoadingCopy() {
+  if (state.supabaseAuthError) {
+    return {
+      title: "Connection issue",
+      text: "Could not reach account storage. Your saved profile will not be overwritten."
+    };
+  }
+  if (state.supabaseAuthLoadSlow) {
+    return {
+      title: "Still checking account",
+      text: "Slow connection detected. Keeping your profile locked until account data loads."
+    };
+  }
+  if (state.userStorageHydrating) {
+    return {
+      title: "Loading profile",
+      text: "Retrieving your coins, cosmetics, achievements, and settings..."
+    };
+  }
+  if (state.supabaseAuthResolving || (!state.supabaseAuthResolved && hasAnyStoredSupabaseSession())) {
+    return {
+      title: "Checking account",
+      text: "Confirming your signed-in state before profile data can be saved."
+    };
+  }
+  return {
+    title: "Loading profile",
+    text: "Checking your account..."
+  };
+}
+
+function setProfileLoading(loading, options = {}) {
   state.profileLoading = Boolean(loading);
+  if (options.slow === false) {
+    state.supabaseAuthLoadSlow = false;
+  }
   if (state.profileLoadingTimerId) {
     window.clearTimeout(state.profileLoadingTimerId);
     state.profileLoadingTimerId = null;
@@ -11342,11 +11408,13 @@ function setProfileLoading(loading) {
     state.profileLoadingTimerId = window.setTimeout(() => {
       state.profileLoadingTimerId = null;
       if (state.profileLoading) {
-        state.profileLoading = false;
+        state.supabaseAuthLoadSlow = true;
         syncProfileLoadingState();
         renderSupabaseAuthControls();
       }
     }, 9000);
+  } else {
+    state.supabaseAuthLoadSlow = false;
   }
   syncProfileLoadingState();
   renderSupabaseAuthControls();
@@ -11359,6 +11427,15 @@ function syncProfileLoadingState() {
   if (elements.profileLoadingOverlay) {
     setHidden(elements.profileLoadingOverlay, !loading);
   }
+  if (loading) {
+    const copy = getProfileLoadingCopy();
+    if (elements.profileLoadingTitle) {
+      elements.profileLoadingTitle.textContent = copy.title;
+    }
+    if (elements.profileLoadingText) {
+      elements.profileLoadingText.textContent = copy.text;
+    }
+  }
 }
 
 function isPlayerSignedIn() {
@@ -11367,7 +11444,7 @@ function isPlayerSignedIn() {
 
 function syncProfileEditControls() {
   const signedIn = isPlayerSignedIn();
-  const loading = Boolean(state.profileLoading);
+  const loading = Boolean(state.profileLoading || state.supabaseAuthResolving);
   const signInMessage = "Sign in with Google to customize your card.";
   if (elements.profileCustomizeControl) {
     elements.profileCustomizeControl.dataset.disabled = String(!signedIn);
@@ -11421,12 +11498,18 @@ function renderSupabaseAuthControls() {
   const configured = Boolean(state.supabaseEnabled);
   const signInInProgress = Boolean(state.supabaseSignInInProgress);
   const profileLoading = Boolean(state.profileLoading);
-  setHidden(elements.profileAuthButton, signedIn || !configured);
+  const authResolving = Boolean(state.supabaseAuthResolving);
+  const authUnavailable = Boolean(state.supabaseAuthError);
+  setHidden(elements.profileAuthButton, signedIn || !configured || authResolving || profileLoading);
   setHidden(elements.profileSignOutButton, !signedIn);
-  elements.profileAuthButton.disabled = !configured || signInInProgress;
-  setHidden(elements.profileAuthStatus, !configured);
+  elements.profileAuthButton.disabled = !configured || signInInProgress || authResolving || profileLoading;
+  setHidden(elements.profileAuthStatus, !configured && !authResolving && !profileLoading && !authUnavailable);
   elements.profileAuthStatus.textContent = signInInProgress
     ? "Opening Google sign-in..."
+    : authUnavailable
+    ? "Connection issue while loading your account. Your saved profile is protected until it reconnects."
+    : authResolving
+    ? "Checking your signed-in state..."
     : profileLoading
     ? "Loading your saved profile..."
     : signedIn
@@ -11485,6 +11568,15 @@ function hasStoredSupabaseSession(config = state.supabaseConfig) {
   }
 }
 
+function hasAnyStoredSupabaseSession() {
+  try {
+    const storages = [localStorage, sessionStorage].filter(Boolean);
+    return storages.some((storage) => Object.keys(storage).some((key) => /^sb-.+-auth-token$/.test(key)));
+  } catch {
+    return false;
+  }
+}
+
 function clearStoredSupabaseSession(config = state.supabaseConfig) {
   const projectRef = getSupabaseProjectRef(config?.url || "");
   if (!projectRef) {
@@ -11537,9 +11629,15 @@ async function ensureSupabaseAuthReady(options = {}) {
   if (state.supabaseAuthPromise && !options.force) {
     return state.supabaseAuthPromise;
   }
+  state.supabaseAuthResolving = true;
+  state.supabaseAuthError = "";
+  setProfileLoading(true, { slow: false });
   state.supabaseAuthPromise = (async () => {
     const client = await ensureSupabaseClient();
     if (!client) {
+      state.supabaseAuthResolving = false;
+      state.supabaseAuthResolved = true;
+      setProfileLoading(false);
       syncUserQuestionSubmissionPolling();
       return null;
     }
@@ -11550,8 +11648,12 @@ async function ensureSupabaseAuthReady(options = {}) {
       }
     }
     const { data } = await client.auth.getSession();
+    state.supabaseAuthResolving = false;
+    state.supabaseAuthResolved = true;
     if (data?.session || !options.preserveGuest) {
       applySupabaseSession(data?.session || null);
+    } else {
+      setProfileLoading(false);
     }
     if (!state.supabaseAuthListenerAttached) {
       state.supabaseAuthListenerAttached = true;
@@ -11563,9 +11665,17 @@ async function ensureSupabaseAuthReady(options = {}) {
     return client;
   })().catch((error) => {
     console.warn("Supabase auth init failed:", error.message || error);
+    state.supabaseAuthResolving = false;
+    state.supabaseAuthResolved = false;
+    state.supabaseAuthError = error.message || "Could not reach account storage.";
     state.supabaseEnabled = false;
     stopSupabaseRealtime();
     syncUserQuestionSubmissionPolling();
+    if (hasAnyStoredSupabaseSession()) {
+      setProfileLoading(true);
+    } else {
+      setProfileLoading(false);
+    }
     renderSupabaseAuthControls();
     return null;
   }).finally(() => {
@@ -11579,23 +11689,39 @@ async function initSupabaseAuth() {
     const config = await loadSupabaseConfig();
     renderSupabaseAuthControls();
     if (!config) {
+      state.supabaseAuthResolving = false;
+      state.supabaseAuthResolved = true;
+      setProfileLoading(false);
       syncUserQuestionSubmissionPolling();
       return;
     }
     if (hasSupabaseAuthCallback() || hasStoredSupabaseSession(config)) {
       await ensureSupabaseAuthReady({ realtime: true });
     } else {
+      state.supabaseAuthResolving = false;
+      state.supabaseAuthResolved = true;
+      setProfileLoading(false);
       syncUserQuestionSubmissionPolling();
     }
   } catch (error) {
     console.warn("Supabase config init failed:", error.message || error);
+    state.supabaseAuthResolving = false;
+    state.supabaseAuthResolved = false;
+    state.supabaseAuthError = error.message || "Could not reach account storage.";
     state.supabaseEnabled = false;
+    if (hasAnyStoredSupabaseSession()) {
+      setProfileLoading(true);
+    } else {
+      setProfileLoading(false);
+    }
     renderSupabaseAuthControls();
   }
 }
 
 function scheduleInitialSupabaseAuth() {
-  if (hasSupabaseAuthCallback()) {
+  if (hasSupabaseAuthCallback() || hasAnyStoredSupabaseSession()) {
+    state.supabaseAuthResolving = true;
+    setProfileLoading(true, { slow: false });
     void initSupabaseAuth();
     return;
   }
@@ -12790,6 +12916,9 @@ async function refreshCurrentRoomFromRealtime(payload = {}, expectedSessionId = 
 
 function applySupabaseSession(session) {
   const previousUserId = state.supabaseUser?.id || "";
+  state.supabaseAuthResolving = false;
+  state.supabaseAuthResolved = true;
+  state.supabaseAuthError = "";
   state.supabaseSession = session;
   state.supabaseUser = session?.user || null;
   if (state.supabaseUser) {
@@ -12804,13 +12933,16 @@ function applySupabaseSession(session) {
   } else if (state.supabaseSignOutInProgress) {
     renderSupabaseAuthControls();
   } else {
-    applyGuestProfile();
+    applyGuestProfile({ resetAccount: Boolean(previousUserId) });
   }
   renderSupabaseAuthControls();
 }
 
-function applyGuestProfile() {
-  resetSignedOutAccountState();
+function applyGuestProfile(options = {}) {
+  setProfileLoading(false);
+  if (options.resetAccount !== false) {
+    resetSignedOutAccountState();
+  }
   syncProfileToPlayer();
   renderProfile();
   renderRoomPlayers();
