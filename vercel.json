@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/:room(\\d{4})",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/CAI-:room(\\d{4})",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/CAI:room(\\d{4})",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/api"
     }
