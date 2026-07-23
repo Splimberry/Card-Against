@@ -885,11 +885,21 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   place-items: center;
   width: 2.65rem;
   height: 2.65rem;
+  min-width: 2.65rem;
+  min-height: 2.65rem;
+  max-width: 2.65rem;
+  max-height: 2.65rem;
+  aspect-ratio: 1;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  background: rgba(6, 8, 14, 0.72);
-  box-shadow: 0 0.75rem 1.6rem rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(255, 77, 125, 0.1)),
+    rgba(8, 8, 13, 0.9);
+  color: var(--ink);
+  box-shadow:
+    0 0.8rem 1.8rem rgba(0, 0, 0, 0.32),
+    0 0 1rem rgba(34, 211, 238, 0.13);
   cursor: pointer;
   transition:
     border-color 180ms ease,
@@ -905,13 +915,18 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .quick-settings-button:hover,
 .quick-settings-button:focus-visible {
-  border-color: rgba(34, 211, 238, 0.7);
-  background: rgba(18, 24, 36, 0.92);
-  box-shadow: 0 0.95rem 2rem rgba(34, 211, 238, 0.18);
+  border-color: rgba(34, 211, 238, 0.45);
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.24), rgba(255, 77, 125, 0.14)),
+    rgba(12, 13, 20, 0.95);
+  box-shadow:
+    0 0.95rem 2rem rgba(0, 0, 0, 0.34),
+    0 0 1.25rem rgba(34, 211, 238, 0.22);
   transform: translateY(-1px);
 }
 
 .quick-settings-button img {
+  display: block;
   width: 1.25rem;
   height: 1.25rem;
   filter: invert(1);
