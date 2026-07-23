@@ -24579,20 +24579,7 @@ async function handleClassicModeToggle() {
     updateRoomVariants();
     return;
   }
-  markRoomSettingsLocallyChanged();
-  clearRoomModifierToggles();
-  state.roomSettings = {
-    ...state.roomSettings,
-    harsh: false,
-    chaos: false,
-    timeMoney: false,
-    amplified: false,
-    wildFire: false,
-    partyMayhem: false,
-    randomModifiers: false,
-    classicMode: true
-  };
-  syncRoomControls();
+  const previousSettings = { ...state.roomSettings };
   const confirmed = await showAppConfirm({
     eyebrow: "Classic mode",
     title: "Disable modifiers and power-ups?",
@@ -24602,10 +24589,12 @@ async function handleClassicModeToggle() {
     danger: false
   });
   if (!confirmed) {
-    elements.classicModeToggle.checked = false;
-  } else {
-    elements.classicModeToggle.checked = true;
+    state.roomSettings = previousSettings;
+    syncRoomControls();
+    return;
   }
+  elements.classicModeToggle.checked = true;
+  clearRoomModifierToggles();
   updateRoomVariants({ immediate: true, sourceElement: elements.classicModeToggle });
 }
 
