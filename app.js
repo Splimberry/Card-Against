@@ -8263,7 +8263,7 @@ function setBotAdvancedOpen(open, mode = state.advancedSettingsMode) {
   if (expanded) {
     syncBotAdvancedControls();
     setHidden(elements.botAdvancedModal, false);
-    (normalizedMode === "local" ? elements.botRoundsSlider : elements.botCountSlider)?.focus();
+    elements.botAdvancedPanel?.focus({ preventScroll: true });
     return;
   }
   hideModalWithMotion(elements.botAdvancedModal);

@@ -10140,6 +10140,10 @@ input:focus {
   letter-spacing: 0;
 }
 
+.bot-advanced-panel:focus {
+  outline: none;
+}
+
 .slider-row {
   display: grid;
   grid-template-columns: 8rem minmax(0, 1fr) 3rem;
