@@ -27579,6 +27579,10 @@ function getTriviaAnswerAcronym(value) {
     .join("");
 }
 
+function compactNormalizedTriviaAnswer(value) {
+  return normalizeTriviaAnswer(value).replace(/\s+/g, "");
+}
+
 function getGradingSimilarityDetails(answer, acceptedAnswers = []) {
   const normalized = normalizeTriviaAnswer(answer);
   const accepted = acceptedAnswers.map(normalizeTriviaAnswer).filter(Boolean);
@@ -27590,6 +27594,10 @@ function getGradingSimilarityDetails(answer, acceptedAnswers = []) {
   }
   if (accepted.includes(normalized)) {
     return { kind: "exact", score: 1 };
+  }
+  const compactNormalized = compactNormalizedTriviaAnswer(answer);
+  if (compactNormalized && accepted.some((target) => compactNormalized === target.replace(/\s+/g, ""))) {
+    return { kind: "formatting", score: 0.98 };
   }
   if (accepted.some((target) => normalized === getTriviaAnswerAcronym(target) || getTriviaAnswerAcronym(normalized) === target)) {
     return { kind: "abbreviation", score: 0.95 };
@@ -27626,6 +27634,9 @@ function getAnswerGradingReason(answer, rating = {}, roundResult = {}, index = -
     }
     if (details.kind === "abbreviation") {
       return "That short version is clear enough.";
+    }
+    if (details.kind === "formatting") {
+      return "That matches the answer with different spacing or punctuation.";
     }
     if (details.kind === "typo") {
       return "That looks like the right answer with a spelling slip.";
