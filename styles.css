@@ -190,6 +190,8 @@ button[aria-disabled="true"]:hover {
 
 [data-tooltip] {
   position: relative;
+  --tooltip-hidden-transform: translate(-50%, 0.42rem) scale(0.94);
+  --tooltip-visible-transform: translate(-50%, 0) scale(1);
 }
 
 [data-tooltip]::after {
@@ -213,17 +215,22 @@ button[aria-disabled="true"]:hover {
   pointer-events: none;
   text-align: center;
   text-transform: none;
-  transform: translate(-50%, 0.25rem);
+  transform: var(--tooltip-hidden-transform);
+  transform-origin: 50% 100%;
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity 210ms ease,
+    transform 210ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 210ms ease;
+  filter: blur(0.2px);
   white-space: normal;
+  will-change: opacity, transform;
 }
 
 [data-tooltip]:hover::after,
 [data-tooltip]:focus-visible::after {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: var(--tooltip-visible-transform);
+  filter: blur(0);
 }
 
 .app-shell {
@@ -1303,21 +1310,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   top: calc(100% + 0.45rem);
   bottom: auto;
   z-index: 420;
-  transform: translate(-50%, -0.2rem);
+  --tooltip-hidden-transform: translate(-50%, -0.34rem) scale(0.94);
+  --tooltip-visible-transform: translate(-50%, 0) scale(1);
+  transform-origin: 50% 0%;
 }
 
 .leaderboard-player.kickable-bot[data-tooltip]::after {
   top: auto;
   bottom: calc(100% + 0.45rem);
   z-index: 520;
-  transform: translate(-50%, 0.2rem);
-}
-
-.room-player-card.kickable-bot[data-tooltip]:hover::after,
-.room-player-card.kickable-bot[data-tooltip]:focus-visible::after,
-.leaderboard-player.kickable-bot[data-tooltip]:hover::after,
-.leaderboard-player.kickable-bot[data-tooltip]:focus-visible::after {
-  transform: translate(-50%, 0);
+  --tooltip-hidden-transform: translate(-50%, 0.34rem) scale(0.94);
+  --tooltip-visible-transform: translate(-50%, 0) scale(1);
 }
 
 .room-waiting-copy {
@@ -1785,7 +1788,32 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   }
 }
 
+@keyframes tooltipPopoverIn {
+  0% {
+    opacity: 0;
+    transform: translateY(0.42rem) scale(0.94);
+    filter: blur(0.2px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  [data-tooltip]::after {
+    transition: none;
+  }
+
+  .effect-badge:hover::after,
+  .power-play[data-description]:hover::after,
+  .result-power-pill[data-description]:hover::after,
+  .floating-description-tooltip {
+    animation: none;
+  }
+
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .leaderboard-power-pill.just-played {
     animation: none;
   }
@@ -3605,6 +3633,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   font-size: 0.78rem;
   line-height: 1.35;
   box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.32);
+  transform-origin: 0 100%;
+  animation: tooltipPopoverIn 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .power-card {
@@ -4285,6 +4315,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   font-size: 0.78rem;
   line-height: 1.35;
   box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.32);
+  transform-origin: 0 100%;
+  animation: tooltipPopoverIn 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .black-card.dealt {
@@ -4746,6 +4778,49 @@ input:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   max-width: 34rem;
   margin-inline: auto;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  align-self: stretch;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  max-width: none;
+  margin-top: 0.35rem;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode.answer-stack-mode {
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card {
+  min-height: clamp(7.25rem, 14vh, 9.4rem);
+  padding: 0.58rem;
+  border-width: 4px;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-owner {
+  gap: 0.42rem;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-avatar {
+  width: 2.45rem;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card p {
+  margin-top: 0.55rem;
+  font-size: clamp(0.88rem, 1.25vw, 1.06rem);
+  line-height: 1.12;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card.spectator-draft-empty p {
+  color: rgba(246, 242, 238, 0.54);
+  font-style: italic;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-stack {
+  align-self: stretch;
+  min-height: clamp(7.25rem, 14vh, 9.4rem);
 }
 
 .white-card {
@@ -7133,6 +7208,8 @@ input:focus {
   line-height: 1.35;
   text-transform: none;
   box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.35);
+  transform-origin: 0 100%;
+  animation: tooltipPopoverIn 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .power-play[data-description]:hover::after,
@@ -7158,6 +7235,9 @@ input:focus {
   overflow-wrap: anywhere;
   pointer-events: none;
   box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.38);
+  transform-origin: 50% 100%;
+  animation: tooltipPopoverIn 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
 }
 
 .verdict-panel.revealed {
@@ -9868,6 +9948,17 @@ input:focus {
 
 .chat-message.host-message span {
   color: #d6fbff;
+}
+
+.chat-message.spectator-message strong,
+.chat-message.spectator-message .name-with-title,
+.chat-message.spectator-message .name-with-title-text {
+  color: #b5b8c4;
+  text-shadow: 0 0 0.55rem rgba(181, 184, 196, 0.18);
+}
+
+.chat-message.spectator-message span {
+  color: #a1a4ae;
 }
 
 .chat-message.clickable-profile {

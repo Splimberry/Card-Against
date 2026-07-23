@@ -2539,6 +2539,8 @@ async function handleRoomChat(req, res, code) {
       return;
     }
     message.participantId = participantId;
+    message.spectator = Boolean(participant.spectator);
+    message.host = Boolean(participant.host || participant.id === room.host?.id);
     room.chat = normalizeRoomChat([...(Array.isArray(room.chat) ? room.chat : []), message]);
     stampRoomEvent(room, "chat_message", {
       owner: message.owner,
@@ -3095,6 +3097,7 @@ function normalizeRoomChat(chat) {
         owner: String(source.owner || "").slice(0, 80),
         participantId: String(source.participantId || "").slice(0, 80),
         host: Boolean(source.host),
+        spectator: Boolean(source.spectator),
         private: Boolean(source.private),
         audience: String(source.audience || "").slice(0, 80),
         createdAt: clampServerNumber(source.createdAt, 0, Number.MAX_SAFE_INTEGER, Date.now())

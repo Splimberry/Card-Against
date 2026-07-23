@@ -2605,6 +2605,10 @@ const state = {
   currentOwner: "player",
   roomSubmissions: {},
   localRoomSubmission: null,
+  spectatorAnswerDrafts: {},
+  answerDraftBroadcastTimerId: null,
+  lastBroadcastAnswerDraft: "",
+  spectatorRoundResultPlaybackKey: "",
   roomBotSequence: 0,
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
@@ -3821,6 +3825,21 @@ function cleanInput(input) {
     .slice(0, 80);
 }
 
+function cleanAnswerDraft(input) {
+  return String(input || "")
+    .replace(/\s+/g, " ")
+    .slice(0, 80);
+}
+
+function clearSpectatorAnswerDraftState() {
+  state.spectatorAnswerDrafts = {};
+  state.lastBroadcastAnswerDraft = "";
+  if (state.answerDraftBroadcastTimerId) {
+    window.clearTimeout(state.answerDraftBroadcastTimerId);
+    state.answerDraftBroadcastTimerId = null;
+  }
+}
+
 function isMultipleChoiceRound() {
   return state.questionStyle === MULTIPLE_CHOICE_STYLE;
 }
@@ -3892,6 +3911,8 @@ function clearRoomParticipantSubmissionState() {
 function clearRoundSubmissionState(options = {}) {
   clearLocalRoomSubmission();
   resetRoundAnswers();
+  clearSpectatorAnswerDraftState();
+  state.spectatorRoundResultPlaybackKey = "";
   state.roomSubmissions = {};
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   state.localAnswers = { playerOne: "", playerTwo: "" };
@@ -5420,7 +5441,6 @@ function updateRatingBadge(badge, rating, reason = "") {
   setHidden(badge, !visible);
   if (visible && reason) {
     badge.dataset.description = reason;
-    badge.title = reason;
     badge.tabIndex = 0;
     attachFloatingDescriptionTooltip(badge);
   } else {
@@ -5502,8 +5522,27 @@ function getBestOtherAnswerIndex(cards, correctIndexes = [], preferredIndex = -1
 }
 
 function getAnswerStackCycleIndexes(cards) {
+  if (state.isSpectator && isRoomMode()) {
+    const pinnedCount = getSpectatorPinnedAnswerCardCount(cards);
+    return cards.map((_, index) => index).filter((index) => index >= pinnedCount);
+  }
   const ownIndex = getOwnAnswerCardIndex(cards);
   return cards.map((_, index) => index).filter((index) => index !== ownIndex);
+}
+
+function getSpectatorAnswerCardSlotLimit(cards = []) {
+  return (cards || []).length > 9 && allowsCardStack() ? 8 : 9;
+}
+
+function getSpectatorPinnedAnswerCardCount(cards = []) {
+  return Math.max(0, getSpectatorAnswerCardSlotLimit(cards) - 1);
+}
+
+function getAnswerStackCycleSlotPosition() {
+  if (state.isSpectator && isRoomMode()) {
+    return Math.max(0, state.visibleAnswerCardIndexes.length - 1);
+  }
+  return 1;
 }
 
 function getAnswerStackHiddenCount(cards) {
@@ -5511,8 +5550,8 @@ function getAnswerStackHiddenCount(cards) {
     return 0;
   }
   const cycleIndexes = getAnswerStackCycleIndexes(cards);
-  const currentSecondIndex = state.visibleAnswerCardIndexes?.[1];
-  return cycleIndexes.filter((index) => index !== currentSecondIndex).length;
+  const currentCycleIndex = state.visibleAnswerCardIndexes?.[getAnswerStackCycleSlotPosition()];
+  return cycleIndexes.filter((index) => index !== currentCycleIndex).length;
 }
 
 function fillVisibleAnswerCards(cards, ratings) {
@@ -5529,27 +5568,31 @@ function cycleAnswerStack() {
   const owners = getRoundCardOwners();
   const ratings = state.currentRoundCardRatings || [];
   const cycleIndexes = getAnswerStackCycleIndexes(cards);
-  const currentSecondIndex = state.visibleAnswerCardIndexes?.[1];
-  const nextIndexes = cycleIndexes.filter((index) => index !== currentSecondIndex);
+  const cycleSlotPosition = getAnswerStackCycleSlotPosition();
+  const currentCycleIndex = state.visibleAnswerCardIndexes?.[cycleSlotPosition];
+  const nextIndexes = cycleIndexes.filter((index) => index !== currentCycleIndex);
   if (!nextIndexes.length) {
     return;
   }
 
-  const card = getAnswerCardNodes()[1];
+  const card = getAnswerCardNodes()[cycleSlotPosition];
   if (!card) {
     return;
   }
   const nextIndex = nextIndexes[state.answerCardCycleCursor % nextIndexes.length];
   state.answerCardCycleCursor += 1;
-  state.visibleAnswerCardIndexes[1] = nextIndex;
+  state.visibleAnswerCardIndexes[cycleSlotPosition] = nextIndex;
 
   card.classList.remove("answer-card-cycle-in");
   card.classList.add("answer-card-cycle-out");
   window.setTimeout(() => {
     const owner = owners[nextIndex] || "player";
     const nextCard = createAnswerCardNode(owner, nextIndex);
-    nextCard.style.order = "2";
+    nextCard.style.order = String(cycleSlotPosition + 1);
     applyAnswerCardContent(nextCard, cards, ratings, state.currentRoundCorrectIndexes || []);
+    if (state.isSpectator && isRoomMode()) {
+      decorateSpectatorAnswerCard(nextCard, nextIndex);
+    }
     nextCard.classList.add("answer-card-cycle-in");
     card.replaceWith(nextCard);
     window.setTimeout(() => nextCard.classList.remove("answer-card-cycle-in"), 360);
@@ -5566,7 +5609,11 @@ function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1)
   const owners = getRoundCardOwners().slice(0, cards.length);
   const ownIndex = getOwnAnswerCardIndex(cards);
   const bestOtherIndex = getBestOtherAnswerIndex(cards, correctIndexes, preferredIndex, ownIndex);
-  if (!allowsCardStack()) {
+  if (state.isSpectator && isRoomMode()) {
+    const maxVisibleCards = getSpectatorAnswerCardSlotLimit(cards);
+    const directIndexes = cards.map((_, index) => index).slice(0, maxVisibleCards);
+    state.visibleAnswerCardIndexes = directIndexes;
+  } else if (!allowsCardStack()) {
     state.visibleAnswerCardIndexes = [ownIndex];
     if (bestOtherIndex >= 0 && bestOtherIndex !== ownIndex) {
       state.visibleAnswerCardIndexes.push(bestOtherIndex);
@@ -5599,18 +5646,94 @@ function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1)
     const cardIndex = Number(node.dataset.cardIndex);
     node.style.order = String((state.visibleAnswerCardIndexes.indexOf(cardIndex) + 1) || 1);
     node.classList.toggle("answer-priority", correctSet.has(cardIndex));
+    if (state.isSpectator && isRoomMode()) {
+      decorateSpectatorAnswerCard(node, cardIndex);
+    }
   });
 
   const hiddenAnswerCount = getAnswerStackHiddenCount(cards);
   if (elements.answerStackButton && elements.answerStackCount) {
-    elements.answerStackButton.style.order = "3";
+    const stackOrder = state.isSpectator && isRoomMode() ? "9" : "3";
+    elements.answerStackButton.style.order = stackOrder;
     elements.answerStackCount.textContent = `+${hiddenAnswerCount}`;
     const showStackButton = allowsCardStack() && hiddenAnswerCount > 0;
     setHidden(elements.answerStackButton, !showStackButton);
     elements.cardsArea.classList.toggle("answer-stack-mode", showStackButton);
+    elements.cardsArea.classList.toggle("spectator-answer-mode", Boolean(state.isSpectator && isRoomMode()));
     elements.cardsArea.classList.toggle("two-card-mode", !showStackButton && state.visibleAnswerCardIndexes.length === 2);
-    elements.cardsArea.style.setProperty("--answer-card-count", String(showStackButton ? 3 : Math.max(1, state.visibleAnswerCardIndexes.length)));
+    elements.cardsArea.style.setProperty("--answer-card-count", String(state.isSpectator && isRoomMode()
+      ? Math.min(9, Math.max(1, state.visibleAnswerCardIndexes.length + (showStackButton ? 1 : 0)))
+      : showStackButton ? 3 : Math.max(1, state.visibleAnswerCardIndexes.length)));
   }
+}
+
+function getSpectatorAnswerDraftForOwner(owner) {
+  const participantId = getRoomParticipantIdForOwner(owner);
+  const draft = participantId ? state.spectatorAnswerDrafts[participantId] : null;
+  if (!draft) {
+    return null;
+  }
+  if (Number(draft.round) !== Number(state.round) || !roomPayloadMatchesCurrentMatch(draft)) {
+    return null;
+  }
+  return draft;
+}
+
+function getSpectatorAnswerTextForOwner(owner) {
+  const draft = getSpectatorAnswerDraftForOwner(owner);
+  if (draft && !state.roomSubmissions[owner]) {
+    return cleanAnswerDraft(draft.answer || "");
+  }
+  const participantId = getRoomParticipantIdForOwner(owner);
+  const participant = participantId ? state.roomParticipants.find((entry) => entry.id === participantId) : null;
+  if (
+    participant
+    && Number(participant.submittedRound) === Number(state.round)
+    && participantSubmissionMatchesCurrentMatch(participant)
+  ) {
+    return cleanAnswerDraft(participant.answer || getLockedRoundAnswer(owner));
+  }
+  return cleanAnswerDraft(getLockedRoundAnswer(owner));
+}
+
+function decorateSpectatorAnswerCard(card, cardIndex) {
+  if (!card || !state.isSpectator || !isRoomMode()) {
+    return;
+  }
+  const owner = getRoundCardOwners()[cardIndex] || "";
+  const text = card.querySelector("p");
+  const answer = getSpectatorAnswerTextForOwner(owner);
+  const displayAnswer = answer.trim() ? answer : "";
+  const submitted = Boolean(state.roomSubmissions[owner]);
+  card.classList.add("spectator-answer-card");
+  card.classList.toggle("spectator-draft-empty", !displayAnswer);
+  if (text) {
+    text.textContent = displayAnswer || (submitted ? "Submitted blank" : "Typing...");
+  }
+  updateRatingBadge(card.querySelector(".rating-badge"), null, "");
+}
+
+function renderSpectatorAnswerCards() {
+  if (!state.isSpectator || !isRoomMode() || elements.gameStage.classList.contains("hidden")) {
+    return false;
+  }
+  if (!elements.verdictPanel.classList.contains("hidden") || state.gradingActive || state.matchEnded) {
+    return false;
+  }
+  const owners = getActiveOwners();
+  if (!owners.length) {
+    setHidden(elements.cardsArea, true);
+    return false;
+  }
+  const cards = owners.map((owner) => getSpectatorAnswerTextForOwner(owner));
+  state.roundCardOwners = owners;
+  state.currentRoundCards = cards;
+  state.currentRoundCardRatings = [];
+  state.currentRoundCorrectIndexes = [];
+  renderAnswerCardLayout(cards, [], -1);
+  elements.cardsArea.classList.add("spectator-answer-mode");
+  setHidden(elements.cardsArea, false);
+  return true;
 }
 
 function clearCardBadges() {
@@ -5630,6 +5753,7 @@ function clearCardBadges() {
     setHidden(elements.answerStackButton, true);
   }
   elements.cardsArea.classList.remove("answer-stack-mode");
+  elements.cardsArea.classList.remove("spectator-answer-mode");
 }
 
 function renderQuestionImagePlaceholder(message = "Waiting for image...", options = {}) {
@@ -5750,7 +5874,6 @@ function renderPowerLog(awarded) {
       item.dataset.rarity = power.rarity;
       item.classList.toggle("chaos-infused", isChaosInfusedPower(power));
       item.dataset.description = power.description;
-      item.title = `${rarityInfo[power.rarity].label}: ${power.description}`;
       attachFloatingDescriptionTooltip(item);
     }
     elements.powerLog.appendChild(item);
@@ -5994,7 +6117,6 @@ function renderEffectPanel() {
     badge.dataset.rarity = entry.rarity;
     badge.dataset.description = entry.description;
     badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
-    badge.title = entry.description;
     badge.innerHTML = `<strong>${entry.label}</strong> ${entry.name}`;
     elements.effectPanel.appendChild(badge);
   });
@@ -6065,7 +6187,6 @@ function renderRoundRecap(awarded, winnerOwner, rating) {
           power.dataset.rarity = rowPower.rarity;
           power.classList.toggle("chaos-infused", isChaosInfusedPower(rowPower));
           power.dataset.description = rowPower.description;
-          power.title = `${rarityInfo[rowPower.rarity].label}: ${rowPower.description}`;
           attachFloatingDescriptionTooltip(power);
           powerList.appendChild(power);
         });
@@ -6074,7 +6195,7 @@ function renderRoundRecap(awarded, winnerOwner, rating) {
         power.className = "result-power-pill";
         power.textContent = "No power";
         power.dataset.rarity = "none";
-        power.title = "No power-up used this round.";
+        power.dataset.tooltip = "No power-up used this round.";
         powerList.appendChild(power);
       }
       const streak = document.createElement("small");
@@ -6970,7 +7091,8 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
     card.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
     card.classList.toggle("chaos-unavailable", Boolean(entry.chaosUnavailable));
     if (entry.chaosUnavailable) {
-      card.title = entry.description;
+      card.dataset.tooltip = entry.description;
+      card.tabIndex = 0;
     }
     card.innerHTML = `<span>${entry.name}</span><strong>${entry.short}</strong><small>${entry.description}</small>`;
     grid.appendChild(card);
@@ -8486,6 +8608,13 @@ function getActiveRoomPlayerCount(players = state.players) {
   return players.filter((player) => player.active && !player.spectator).length;
 }
 
+function getActiveRoomSpectatorCount() {
+  if (!(isRoomMode() || state.currentRoomStatus === "lobby") || !state.roomParticipants.length) {
+    return 0;
+  }
+  return state.roomParticipants.filter((participant) => participant.active !== false && participant.spectator).length;
+}
+
 function getRoomSyncAvatar(avatar = "") {
   const value = String(avatar || "");
   if (value.startsWith("data:")) {
@@ -8616,7 +8745,8 @@ function getRoomSyncChatMessage(message = {}) {
     participantId: String(message.participantId || state.clientId || "").slice(0, 80),
     avatar: getRoomSyncAvatar(message.avatar),
     specialBadges: getRoomSyncSpecialBadges(message.specialBadges || []),
-    cardCustomization: getRoomSyncCardCustomization(message.cardCustomization)
+    cardCustomization: getRoomSyncCardCustomization(message.cardCustomization),
+    spectator: Boolean(message.spectator)
   };
 }
 
@@ -8745,7 +8875,11 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
   });
 
   if (!participants.some((participant) => participant.id === state.clientId) && status !== "complete") {
-    participants.push(getCurrentParticipant({ host: isCurrentHost(), spectator: state.isSpectator, status: isCurrentHost() ? "host" : "joined" }));
+    participants.push(getCurrentParticipant({
+      host: isCurrentHost(),
+      spectator: state.isSpectator,
+      status: state.isSpectator ? "spectating" : isCurrentHost() ? "host" : "joined"
+    }));
   }
 
   return normalizeRoomParticipantsList(participants);
@@ -8765,6 +8899,7 @@ function pushRoomChatMessage(message) {
     owner: source.owner || "",
     own: Boolean(source.own),
     host: Boolean(source.host),
+    spectator: Boolean(source.spectator),
     private: Boolean(source.private),
     audience: source.audience || "",
     createdAt
@@ -8827,6 +8962,7 @@ function mergeRoomChatMessages(remoteMessages = []) {
       participantId: source.participantId || "",
       own: Boolean(source.owner && source.owner === state.currentOwner),
       host: Boolean(source.host),
+      spectator: Boolean(source.spectator),
       private: Boolean(source.private),
       audience: source.audience || "",
       createdAt: Number(source.createdAt) || Date.now()
@@ -8947,11 +9083,11 @@ function setButtonHint(button, hint = "") {
   if (!button) {
     return;
   }
-  button.title = hint;
   if (hint) {
     button.dataset.tooltip = hint;
   } else {
     delete button.dataset.tooltip;
+    button.removeAttribute("title");
   }
 }
 
@@ -8959,13 +9095,13 @@ function setFloatingButtonHint(button, hint = "") {
   if (!button) {
     return;
   }
-  button.title = hint;
   delete button.dataset.tooltip;
   if (hint) {
     button.dataset.description = hint;
     attachFloatingDescriptionTooltip(button);
   } else {
     delete button.dataset.description;
+    button.removeAttribute("title");
   }
 }
 
@@ -9115,6 +9251,91 @@ function broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime = st
   });
 }
 
+function shouldBroadcastSpectatorAnswerDraft() {
+  return Boolean(
+    isRoomMode()
+      && !state.isSpectator
+      && state.currentRoomStatus === "in-progress"
+      && !state.matchEnded
+      && !state.roomSubmissions[state.currentOwner]
+      && getActiveRoomSpectatorCount() > 0
+      && state.roomSettings.code
+      && state.roomSettings.code !== "CAI-0000"
+      && getRoomParticipantIdForOwner(state.currentOwner)
+  );
+}
+
+function broadcastSpectatorAnswerDraft(answer = elements.answerInput?.value || "") {
+  if (!shouldBroadcastSpectatorAnswerDraft()) {
+    return false;
+  }
+  const draft = cleanAnswerDraft(answer);
+  const participantId = getRoomParticipantIdForOwner(state.currentOwner);
+  const signature = [
+    state.roomSettings.code,
+    getCurrentRoomMatchId(),
+    state.round,
+    participantId,
+    draft
+  ].join("|");
+  if (signature === state.lastBroadcastAnswerDraft) {
+    return false;
+  }
+  state.lastBroadcastAnswerDraft = signature;
+  broadcastRealtimeRoomChange("answer-draft", state.roomSettings.code, {
+    participantId,
+    owner: state.currentOwner,
+    round: state.round,
+    matchId: getCurrentRoomMatchId(),
+    answer: draft,
+    updatedAt: Date.now()
+  });
+  return true;
+}
+
+function scheduleSpectatorAnswerDraftBroadcast() {
+  if (state.answerDraftBroadcastTimerId) {
+    window.clearTimeout(state.answerDraftBroadcastTimerId);
+    state.answerDraftBroadcastTimerId = null;
+  }
+  if (!shouldBroadcastSpectatorAnswerDraft()) {
+    return;
+  }
+  state.answerDraftBroadcastTimerId = window.setTimeout(() => {
+    state.answerDraftBroadcastTimerId = null;
+    broadcastSpectatorAnswerDraft(elements.answerInput.value);
+  }, 120);
+}
+
+function applySpectatorAnswerDraft(payload = {}) {
+  if (!state.isSpectator || !isRoomMode() || !hasActiveRoomContext()) {
+    return true;
+  }
+  const code = String(payload.code || "").trim().toUpperCase();
+  if (code !== state.roomSettings.code || !roomPayloadMatchesCurrentMatch(payload)) {
+    return false;
+  }
+  const round = Number(payload.round) || 0;
+  if (!round || round !== Number(state.round)) {
+    return false;
+  }
+  const participantId = String(payload.participantId || "").slice(0, 80);
+  const owner = getRoomOwnerForParticipantId(participantId);
+  if (!participantId || !owner || !getActiveOwners().includes(owner)) {
+    return false;
+  }
+  state.spectatorAnswerDrafts[participantId] = {
+    participantId,
+    owner,
+    round,
+    matchId: getRoomMatchIdFromPayload(payload),
+    answer: cleanAnswerDraft(payload.answer || ""),
+    updatedAt: Number(payload.updatedAt) || Date.now()
+  };
+  renderSpectatorAnswerCards();
+  return true;
+}
+
 function getRoomOwnerForParticipantId(participantId) {
   const id = String(participantId || "");
   if (!id) {
@@ -9184,6 +9405,7 @@ function applyRoomAnswerSubmission(payload = {}) {
   }
   const answer = cleanInput(payload.answer || "");
   const remainingTime = Math.max(0, Number(payload.remainingTime) || 0);
+  delete state.spectatorAnswerDrafts[participantId];
   updateRoomParticipantSubmission(participantId, answer, round, remainingTime, getRoomMatchIdFromPayload(payload));
   if (answer) {
     lockRoundAnswer(owner, answer);
@@ -9196,6 +9418,7 @@ function applyRoomAnswerSubmission(payload = {}) {
   }
   state.answerRemainingTimes[owner] = remainingTime;
   setRoomSubmission(owner, true);
+  renderSpectatorAnswerCards();
   maybeSubmitRoomBotsAfterRealPlayers();
   maybeResolveRoomSubmissions();
   return true;
@@ -9308,6 +9531,45 @@ function applyRealtimeRoomRoundResult(payload = {}) {
     };
   }
   updateRoomEventRevision(payload.revision);
+  maybePlaySpectatorRoomRoundResult(result);
+  return true;
+}
+
+function getSpectatorRoundResultPlaybackKey(result = {}) {
+  return [
+    result.matchId || getCurrentRoomMatchId(),
+    Number(result.round) || Number(state.round) || 0,
+    result.questionId || state.questionId || "",
+    Number(result.updatedAt) || 0
+  ].join("|");
+}
+
+function maybePlaySpectatorRoomRoundResult(result = null) {
+  if (
+    !state.isSpectator
+    || !isRoomMode()
+    || state.matchEnded
+    || state.roomRoundResolving
+    || elements.gameStage.classList.contains("hidden")
+    || !elements.verdictPanel.classList.contains("hidden")
+  ) {
+    return false;
+  }
+  const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
+  if (!syncedResult || Number(syncedResult.round) !== Number(state.round)) {
+    return false;
+  }
+  const playbackKey = getSpectatorRoundResultPlaybackKey(syncedResult);
+  if (state.spectatorRoundResultPlaybackKey === playbackKey) {
+    return true;
+  }
+  state.spectatorRoundResultPlaybackKey = playbackKey;
+  clearSpectatorAnswerDraftState();
+  stopTimer();
+  state.roomRoundResolving = true;
+  elements.answerInput.disabled = true;
+  elements.submitButton.disabled = true;
+  playRound("", { roundResult: syncedResult });
   return true;
 }
 
@@ -10782,12 +11044,22 @@ function syncProfileEditControls() {
   }
   if (elements.profileCustomizeButton) {
     elements.profileCustomizeButton.disabled = !signedIn || loading;
-    elements.profileCustomizeButton.title = signedIn ? "" : signInMessage;
+    elements.profileCustomizeButton.removeAttribute("title");
     elements.profileCustomizeButton.setAttribute("aria-disabled", String(!signedIn));
   }
   if (elements.profileNameInput) {
+    const profileNameTooltipTarget = elements.profileNameInput.closest(".profile-name-editor");
     elements.profileNameInput.disabled = !signedIn || loading;
-    elements.profileNameInput.title = signedIn ? "" : "Sign in with Google to edit your username.";
+    elements.profileNameInput.removeAttribute("title");
+    if (profileNameTooltipTarget) {
+      if (signedIn) {
+        delete profileNameTooltipTarget.dataset.tooltip;
+        profileNameTooltipTarget.removeAttribute("tabindex");
+      } else {
+        profileNameTooltipTarget.dataset.tooltip = "Sign in with Google to edit your username.";
+        profileNameTooltipTarget.tabIndex = 0;
+      }
+    }
   }
   if (elements.profileAvatarInput) {
     elements.profileAvatarInput.disabled = !signedIn || loading;
@@ -11833,6 +12105,7 @@ function removeRoomParticipantLocally(participantId, options = {}) {
 
   const beforeParticipantCount = state.roomParticipants.length;
   state.roomParticipants = state.roomParticipants.filter((entry) => entry.id !== id);
+  delete state.spectatorAnswerDrafts[id];
   state.players.forEach((player) => {
     if (player.participantId === id || owners.has(player.owner)) {
       player.active = false;
@@ -12038,6 +12311,9 @@ function handleRealtimeRoomChange(payload = {}) {
     if (payload.eventType === "answer-submitted") {
       appliedDelta = applyRoomAnswerSubmission(payload);
     }
+    if (payload.eventType === "answer-draft") {
+      appliedDelta = applySpectatorAnswerDraft(payload);
+    }
     if (payload.eventType === "power-state") {
       appliedDelta = applyRoomPowerState(payload);
     }
@@ -12071,7 +12347,7 @@ function handleRealtimeRoomChange(payload = {}) {
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "power-state", "participant-updated", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
+    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
     if (shouldRefreshRoomAfterRealtimeMiss(payload)) {
@@ -12103,6 +12379,7 @@ function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
   return ![
     "chat-message",
     "answer-submitted",
+    "answer-draft",
     "power-state",
     "participant-updated",
     "participant-left",
@@ -12493,7 +12770,7 @@ function renderQuestionProgress() {
       marker.dataset.roundIndex = roundIndex;
       marker.dataset.status = status;
       marker.dataset.active = String(index === state.round - 1 && status === "unanswered");
-      marker.title = `Round ${index + 1}: ${status === "unanswered" ? "unanswered" : status}`;
+      marker.dataset.tooltip = `Round ${index + 1}: ${status === "unanswered" ? "unanswered" : status}`;
       marker.textContent = String(index + 1);
       marker.classList.toggle("answer-progress-box-new", isNew);
       if (isNew) {
@@ -19560,6 +19837,8 @@ function resetRoundUiForLoading(options = {}) {
   state.localEntryStep = 1;
   state.localAnswers = { playerOne: "", playerTwo: "" };
   resetRoundAnswers();
+  clearSpectatorAnswerDraftState();
+  state.spectatorRoundResultPlaybackKey = "";
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   clearLocalRoomSubmission();
   state.roomSubmissions = {};
@@ -19695,6 +19974,7 @@ function renderRound() {
     setHidden(elements.answerProgressPanel, true);
     setHidden(elements.powerPanel, true);
     setHidden(elements.roomSubmitStatus, true);
+    renderSpectatorAnswerCards();
     addSystemChat("Spectator mode: you can chat and watch the table, but you will join play next match.", { private: true, audience: "spectator" });
   }
 }
@@ -19708,6 +19988,7 @@ function updateModeUi() {
   const variants = ` - ${activeModifierNames.join(" + ")}`;
   const matchSuffix = activeModifierNames.length === 1 && activeModifierNames[0] === "Classic Match" ? "" : " match";
   elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
+  elements.gameStage.classList.toggle("spectator-mode", Boolean(state.isSpectator && isRoomMode()));
   applyTableEventStageClasses();
   updateWildFireBurningState();
   elements.modeLabel.textContent = `${state.maxRounds}-round ${modeName}${variants}${matchSuffix}`;
@@ -19739,6 +20020,7 @@ function updateModeUi() {
   setHidden(elements.leaveGameButton, false);
   renderRoomChat();
   renderPowerUps();
+  renderSpectatorAnswerCards();
 }
 
 function renderMultipleChoiceOptions() {
@@ -22161,7 +22443,7 @@ function renderQuestionDebugResults() {
     button.dataset.questionDebugIndex = String(index);
     const answer = document.createElement("span");
     answer.textContent = question.canonicalAnswer || "-";
-    button.title = `${question.id}\n${question.theme} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ""}`;
+    button.dataset.tooltip = `${question.id} - ${question.theme} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ""}`;
     button.append(answer);
     elements.devQuestionResults.appendChild(button);
   });
@@ -23585,6 +23867,8 @@ function clearLocalRoomState(options = {}) {
   state.roomParticipants = [];
   clearLocalRoomSubmission();
   state.roomSubmissions = {};
+  clearSpectatorAnswerDraftState();
+  state.spectatorRoundResultPlaybackKey = "";
   state.roomMissingSince = 0;
   state.roomExitLeaveSent = false;
   state.publishedDraftRoomCode = "";
@@ -24226,7 +24510,7 @@ function normalizeRoomParticipantsList(participants = []) {
       host: Boolean(previous.host || normalized.host),
       bot: Boolean(previous.bot || normalized.bot),
       active: normalized.active !== false,
-      spectator: Boolean(previous.spectator && normalized.spectator),
+      spectator: Boolean(normalized.spectator),
       status: previous.host || normalized.host
         ? "host"
         : normalized.status || previous.status || (normalized.bot ? "bot" : normalized.spectator ? "spectating" : "joined")
@@ -24304,6 +24588,10 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   renderRoomPlayers();
   renderRoomChat();
   renderSubmissionStatus();
+  renderSpectatorAnswerCards();
+  if (normalized.spectator && normalized.active !== false) {
+    broadcastSpectatorAnswerDraft(elements.answerInput?.value || "");
+  }
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
   }
@@ -24353,6 +24641,7 @@ function applyRoomDirectoryRoom(room) {
   applyRoomGamePowerState(state.roomGame);
   state.joiningRoom = state.joiningRoom ? room : state.joiningRoom;
   syncRoomSubmissionsFromParticipants();
+  renderSpectatorAnswerCards();
 }
 
 function syncRoomSubmissionsFromParticipants() {
@@ -26141,6 +26430,7 @@ function renderRoomChat() {
   const inGameRoom = active && !elements.gameStage.classList.contains("hidden");
   setHidden(elements.roomChat, !inGameRoom);
   elements.gameStage.classList.toggle("room-active", inGameRoom);
+  elements.gameStage.classList.toggle("spectator-mode", Boolean(active && state.isSpectator));
   elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
   updateWildFireBurningState();
   if (!active) {
@@ -26177,6 +26467,7 @@ function renderChatLog(target) {
     item.classList.toggle("system-message", message.sender === "System");
     item.classList.toggle("private-message", Boolean(message.private));
     item.classList.toggle("host-message", Boolean(message.host));
+    item.classList.toggle("spectator-message", Boolean(message.spectator));
     if (message.owner && message.sender !== "System") {
       item.dataset.chatOwner = message.owner;
       item.classList.add("clickable-profile");
@@ -26270,6 +26561,7 @@ function sendChatMessage(text, input = elements.chatInput) {
     owner: state.currentOwner,
     own: true,
     host: isCurrentHost(),
+    spectator: Boolean(state.isSpectator),
     createdAt: Date.now()
   });
   const chatStat = getAchievementStat(state.currentOwner);
@@ -26958,9 +27250,12 @@ async function playRound(rawInput, options = {}) {
       .filter((owner) => owner && getActiveOwners().includes(owner));
   }
   const hasCorrectAnswer = winningOwners.length > 0;
-  const progressOwner = isRoomMode() && state.currentOwner !== "spectator" ? state.currentOwner : "player";
-  const focusedAnswerCorrect = correctIndexes.includes(getCardIndexFromOwner(progressOwner));
-  setCurrentQuestionProgress(focusedAnswerCorrect);
+  const progressOwner = isRoomMode() ? state.currentOwner : "player";
+  const shouldTrackCurrentProgress = progressOwner !== "spectator";
+  const focusedAnswerCorrect = shouldTrackCurrentProgress && correctIndexes.includes(getCardIndexFromOwner(progressOwner));
+  if (shouldTrackCurrentProgress) {
+    setCurrentQuestionProgress(focusedAnswerCorrect);
+  }
   const ratingsByOwner = getCardRatingsByOwner(cardRatings);
   const winningRating = cardRatings[winner.index] || { label: "Correct", bonus: 50 };
   let awarded;
@@ -29270,7 +29565,10 @@ elements.confirmEndButton.addEventListener("click", () => {
   }
   endMatch(true);
 });
-elements.answerInput.addEventListener("input", () => playSound("type"));
+elements.answerInput.addEventListener("input", () => {
+  playSound("type");
+  scheduleSpectatorAnswerDraftBroadcast();
+});
 elements.menuSettingsButton.addEventListener("click", openSettings);
 elements.menuAbilitiesButton.addEventListener("click", openAbilities);
 elements.menuAchievementsButton.addEventListener("click", openAchievements);
