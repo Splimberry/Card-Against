@@ -366,7 +366,8 @@ if (require.main === module) {
 
 handleRequest._test = {
   normalizeTriviaAnswer,
-  scoreAnswerAgainstBank
+  scoreAnswerAgainstBank,
+  shouldAskAiForSecondOpinion
 };
 
 module.exports = handleRequest;
@@ -4720,11 +4721,20 @@ function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore) {
     return true;
   }
   const answerWords = normalized.split(" ").filter(Boolean);
-  const acceptedWords = acceptedAnswers
+  const normalizedAccepted = acceptedAnswers
     .map(normalizeTriviaAnswer)
+    .filter(Boolean);
+  const acceptedWords = normalizedAccepted
     .flatMap((entry) => entry.split(" ").filter((word) => word.length >= 4));
   if (!answerWords.length || !acceptedWords.length) {
     return false;
+  }
+  const compactAnswer = normalized.replace(/\s+/g, "");
+  const bestCompactScore = Math.max(0, ...normalizedAccepted.map((entry) => (
+    scoreTriviaToken(compactAnswer, entry.replace(/\s+/g, ""))
+  )));
+  if (bestCompactScore >= 0.62) {
+    return true;
   }
   const bestTokenScore = Math.max(0, ...answerWords.flatMap((answerWord) => (
     acceptedWords.map((acceptedWord) => scoreTriviaToken(answerWord, acceptedWord))

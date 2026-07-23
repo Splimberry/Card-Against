@@ -5616,6 +5616,19 @@ function updateRatingBadge(badge, rating, reason = "") {
   }
 }
 
+function shouldShowInlineGradingReason(reason = "") {
+  return /^AI took a second look/i.test(String(reason || ""));
+}
+
+function updateInlineGradingReason(element, reason = "") {
+  if (!element) {
+    return;
+  }
+  const visibleReason = shouldShowInlineGradingReason(reason) ? reason : "";
+  element.textContent = visibleReason;
+  setHidden(element, !visibleReason);
+}
+
 function renderAnswerCardsForOwners(owners = getRoundCardOwners(), indexes = owners.map((_, index) => index)) {
   const cardOwners = owners.length ? owners : getRoundCardOwners();
   getAnswerCardNodes().forEach((card) => card.remove());
@@ -5640,10 +5653,7 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
     const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
     updateRatingBadge(badge, rating, reason);
     const gradingReason = card.querySelector(".grading-reason");
-    if (gradingReason) {
-      gradingReason.textContent = "";
-      setHidden(gradingReason, true);
-    }
+    updateInlineGradingReason(gradingReason, reason);
     card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
   });
 }
@@ -5659,10 +5669,7 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
   updateRatingBadge(badge, rating, reason);
   const gradingReason = card.querySelector(".grading-reason");
-  if (gradingReason) {
-    gradingReason.textContent = "";
-    setHidden(gradingReason, true);
-  }
+  updateInlineGradingReason(gradingReason, reason);
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
   card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
 }

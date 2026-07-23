@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "check": "node --check app.js && node --check server.js",
+    "test:grading": "node tests/answer-grading.test.js",
     "test:rooms": "node tests/room-integration.test.js"
   }
 }
