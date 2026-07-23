@@ -1527,6 +1527,15 @@ function hasPendingUserInventoryWork(userId = getUserInventoryStorageId()) {
   return Boolean(userId && (loadUserInventoryQueue(userId).length || loadUserInventoryMutationQueue(userId).length));
 }
 
+function doesActiveUserStorageCacheBelongToUser(user = state.supabaseUser) {
+  const userId = getUserInventoryStorageId(user);
+  if (!userId) {
+    return false;
+  }
+  const activeCache = readJsonStorage(userCacheStorageKey, {});
+  return activeCache?.version === userStorageVersion && String(activeCache.userId || "") === userId;
+}
+
 function cacheCurrentUserInventoryState(user = state.supabaseUser) {
   if (state.userInventoryApplying || !user?.id) {
     return null;
@@ -2401,19 +2410,18 @@ async function hydrateSignedInUserStorage(user) {
       state.userStorageHydrating = false;
     }
     try {
-      const userId = getUserInventoryStorageId(user);
       cachedInventory = loadUserInventoryCache(user.id);
-      const hasUserScopedLocalState = localSnapshot?.userId === user.id
-        || cachedInventory?.userId === user.id
-        || loadUserInventoryQueue(userId).length > 0
-        || loadUserInventoryMutationQueue(userId).length > 0;
+      const canTrustCurrentBrowserInventory = doesActiveUserStorageCacheBelongToUser(user);
+      const currentBrowserInventory = canTrustCurrentBrowserInventory
+        ? getLocalUserInventorySnapshot(user)
+        : null;
       const recoverySources = [
         cachedInventory,
         getInventoryFromUserStorageSnapshot(localSnapshot, user.id),
         getInventoryFromUserStorageSnapshot(chosenSnapshot, user.id)
       ];
-      if (hasUserScopedLocalState) {
-        recoverySources.unshift(getLocalUserInventorySnapshot(user));
+      if (currentBrowserInventory) {
+        recoverySources.unshift(currentBrowserInventory);
       }
       enqueueInventoryRecoveryOpsForUser(user, recoverySources);
       await flushPendingUserInventoryWrites({ user });
@@ -2434,14 +2442,14 @@ async function hydrateSignedInUserStorage(user) {
           cachedInventory,
           getInventoryFromUserStorageSnapshot(localSnapshot, user.id),
           getInventoryFromUserStorageSnapshot(chosenSnapshot, user.id),
-          hasUserScopedLocalState ? getLocalUserInventorySnapshot(user) : null
+          currentBrowserInventory
         ]);
         const inventoryToApply = mergedInventory || (
           isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)
             ? cachedInventory
             : inventory
         );
-        applyServerUserInventory(inventoryToApply, { includeLocalSnapshot: hasUserScopedLocalState });
+        applyServerUserInventory(inventoryToApply, { includeLocalSnapshot: canTrustCurrentBrowserInventory });
         const recoveryOps = getInventoryStateOpsFromInventory(inventoryToApply, {
           userId: user.id,
           prefix: "hydration",
@@ -2453,7 +2461,7 @@ async function hydrateSignedInUserStorage(user) {
         }
       } else {
         if (cachedInventory) {
-          applyServerUserInventory(cachedInventory, { includeLocalSnapshot: hasUserScopedLocalState });
+          applyServerUserInventory(cachedInventory, { includeLocalSnapshot: canTrustCurrentBrowserInventory });
         }
       }
     } catch (error) {

@@ -537,13 +537,16 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   border-radius: inherit;
   background: rgba(4, 5, 9, 0.68);
   color: #ffffff;
-  pointer-events: none;
+  pointer-events: auto;
   backdrop-filter: blur(2px);
   text-align: center;
   gap: 0.38rem;
 }
 
 .profile-loading-spinner {
+  order: 3;
+  justify-self: center;
+  margin-top: 0.2rem;
   width: 2.15rem;
   aspect-ratio: 1;
   border: 3px solid rgba(255, 255, 255, 0.28);
@@ -554,12 +557,16 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .profile-loading-overlay strong {
+  order: 1;
+  justify-self: center;
   margin-top: 0.15rem;
   font-size: 0.82rem;
   line-height: 1.1;
 }
 
 .profile-loading-overlay span:not(.profile-loading-spinner) {
+  order: 2;
+  justify-self: center;
   max-width: 16rem;
   font-size: 0.68rem;
   line-height: 1.25;
