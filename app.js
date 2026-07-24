@@ -62,9 +62,9 @@ const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
 const profileLoadingSlowWarningMs = 20000;
-const profileHydrationVisibleBudgetMs = 4800;
-const profileHydrationRemoteTimeoutMs = 3200;
-const profileHydrationQueueTimeoutMs = 1400;
+const profileHydrationVisibleBudgetMs = 1600;
+const profileHydrationRemoteTimeoutMs = 1800;
+const profileHydrationQueueTimeoutMs = 800;
 const roomAppliedEventLimit = 300;
 const supabaseAvatarBucket = "profile-avatars";
 const supabaseSdkUrl = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
@@ -2578,7 +2578,7 @@ async function hydrateSignedInUserStorage(user) {
         recoverySources.unshift(currentBrowserInventory);
       }
       enqueueInventoryRecoveryOpsForUser(user, recoverySources);
-      await queueFlushPromise;
+      void queueFlushPromise;
       let inventory = await (inventoryPromise || withTimeout(
         fetchServerUserInventory(user),
         profileHydrationRemoteTimeoutMs,
@@ -12429,6 +12429,19 @@ async function ensureSupabaseAuthReady(options = {}) {
   if (state.supabaseAuthPromise && !options.force) {
     return state.supabaseAuthPromise;
   }
+  if (state.supabaseAuthResolved && !options.force) {
+    if (options.realtime && state.supabaseClient) {
+      startSupabaseRealtime();
+      if (hasActiveRoomContext()) {
+        startRoomRealtime(state.roomSettings.code);
+      }
+    }
+    if (state.profileLoading && !state.userStorageHydrating && !state.supabaseAuthResolving) {
+      setProfileLoading(false, { slow: false });
+    }
+    renderSupabaseAuthControls();
+    return state.supabaseClient || null;
+  }
   state.supabaseAuthResolving = true;
   state.supabaseAuthError = "";
   setProfileLoading(true, { slow: false });
@@ -13766,6 +13779,8 @@ function applySupabaseSession(session) {
       applyCachedSignedInProfilePreview(state.supabaseUser);
       void hydrateSignedInUserStorage(state.supabaseUser);
       void refreshAdminSession();
+    } else {
+      setProfileLoading(false, { slow: false });
     }
   } else if (state.supabaseSignOutInProgress) {
     renderSupabaseAuthControls();
