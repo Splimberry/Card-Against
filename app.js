@@ -3399,6 +3399,7 @@ const elements = {
   profileEmailAuthForm: document.querySelector("#profileEmailAuthForm"),
   profileEmailInput: document.querySelector("#profileEmailInput"),
   profilePasswordInput: document.querySelector("#profilePasswordInput"),
+  profilePasswordToggleButton: document.querySelector("#profilePasswordToggleButton"),
   profileEmailSignInButton: document.querySelector("#profileEmailSignInButton"),
   profileEmailSignUpButton: document.querySelector("#profileEmailSignUpButton"),
   profileAuthPanelStatus: document.querySelector("#profileAuthPanelStatus"),
@@ -12480,6 +12481,7 @@ function syncProfileAuthPanelControls() {
     elements.profileAuthGoogleButton,
     elements.profileEmailInput,
     elements.profilePasswordInput,
+    elements.profilePasswordToggleButton,
     elements.profileEmailSignInButton,
     elements.profileEmailSignUpButton
   ].forEach((control) => {
@@ -12510,6 +12512,18 @@ function openProfileAuthPanel() {
 
 function closeProfileAuthPanel() {
   hideModalWithMotion(elements.profileAuthModal);
+  playSound("click");
+}
+
+function toggleProfilePasswordVisibility() {
+  if (!elements.profilePasswordInput || !elements.profilePasswordToggleButton) {
+    return;
+  }
+  const shouldShow = elements.profilePasswordInput.type === "password";
+  elements.profilePasswordInput.type = shouldShow ? "text" : "password";
+  elements.profilePasswordToggleButton.setAttribute("aria-pressed", String(shouldShow));
+  elements.profilePasswordToggleButton.setAttribute("aria-label", shouldShow ? "Hide password" : "Show password");
+  elements.profilePasswordInput.focus();
   playSound("click");
 }
 
@@ -32377,6 +32391,7 @@ elements.profileAuthModal?.addEventListener("click", (event) => {
 });
 elements.profileAuthGoogleButton?.addEventListener("click", signInWithSupabaseGoogle);
 elements.profileEmailAuthForm?.addEventListener("submit", signInWithSupabaseEmail);
+elements.profilePasswordToggleButton?.addEventListener("click", toggleProfilePasswordVisibility);
 elements.profileEmailSignUpButton?.addEventListener("click", signUpWithSupabaseEmail);
 elements.profileSignOutButton?.addEventListener("click", signOutSupabase);
 document.addEventListener("click", handleProfileSignOutClick);

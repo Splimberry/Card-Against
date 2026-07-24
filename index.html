@@ -746,7 +746,12 @@
             </label>
             <label>
               <span>Password</span>
-              <input id="profilePasswordInput" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" required>
+              <span class="profile-auth-password-field">
+                <input id="profilePasswordInput" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" required>
+                <button type="button" class="profile-auth-password-toggle" id="profilePasswordToggleButton" aria-label="Show password" aria-pressed="false">
+                  <span aria-hidden="true"></span>
+                </button>
+              </span>
             </label>
             <div class="profile-auth-form-actions">
               <button type="submit" class="icon-button" id="profileEmailSignInButton">Sign in</button>

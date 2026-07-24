@@ -8509,38 +8509,46 @@ input:focus {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 1.2rem;
-  color: rgba(238, 244, 255, 0.58);
-  font-size: 0.66rem;
+  justify-self: center;
+  min-height: 1.75rem;
+  padding: 0.16rem;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 999px;
+  color: rgba(238, 244, 255, 0.78);
+  font-size: 0.68rem;
   font-weight: 950;
   text-transform: uppercase;
+  background:
+    linear-gradient(135deg, rgba(255, 77, 125, 0.16), rgba(34, 211, 238, 0.12)),
+    rgba(0, 0, 0, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 18px rgba(34, 211, 238, 0.08);
 }
 
 .profile-auth-divider::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.12);
+  content: none;
 }
 
 .profile-auth-divider span {
   position: relative;
   z-index: 1;
-  padding: 0 0.65rem;
-  background: #101019;
+  min-width: max-content;
+  padding: 0.28rem 0.8rem;
+  border-radius: inherit;
+  background: rgba(3, 5, 14, 0.5);
 }
 
 .profile-auth-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.8rem;
 }
 
 .profile-auth-form label {
   display: grid;
   gap: 0.42rem;
+  min-width: 0;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 950;
@@ -8558,6 +8566,67 @@ input:focus {
   color: var(--ink);
   font: inherit;
   letter-spacing: 0;
+}
+
+.profile-auth-password-field {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.profile-auth-password-field input {
+  padding-right: 3.3rem;
+}
+
+.profile-auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.44rem;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(34, 211, 238, 0.08)),
+    rgba(0, 0, 0, 0.18);
+  color: var(--ink);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.profile-auth-password-toggle span {
+  width: 1.1rem;
+  height: 1.1rem;
+  background: currentColor;
+  -webkit-mask: url("assets/eye.svg") center / contain no-repeat;
+  mask: url("assets/eye.svg") center / contain no-repeat;
+}
+
+.profile-auth-password-toggle:hover,
+.profile-auth-password-toggle:focus-visible,
+.profile-auth-password-toggle[aria-pressed="true"] {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow:
+    0 0 0 3px rgba(34, 211, 238, 0.12),
+    0 0 18px rgba(34, 211, 238, 0.16);
+  outline: none;
+}
+
+.profile-auth-password-toggle:hover,
+.profile-auth-password-toggle:focus-visible {
+  transform: translateY(-50%) scale(1.04);
+}
+
+.profile-auth-password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .profile-auth-form input:focus {
