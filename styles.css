@@ -2558,6 +2558,34 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   z-index: 14;
 }
 
+.game-stage.spectator-mode.room-active .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden)) {
+  grid-template-rows: minmax(0, auto) auto;
+  align-content: start;
+}
+
+.game-stage.spectator-mode.room-active
+  .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden))
+  .question-card-stack {
+  grid-row: 1 / span 2;
+}
+
+.game-stage.spectator-mode.room-active
+  .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden))
+  .cards-area.spectator-answer-mode {
+  grid-row: 1;
+  max-height: min(48vh, 28rem);
+  z-index: 12;
+}
+
+.game-stage.spectator-mode.room-active
+  .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden))
+  .verdict-panel:not(.hidden) {
+  grid-row: 2;
+  align-self: start;
+  max-height: none;
+  z-index: 16;
+}
+
 .game-stage.spectator-mode.room-active .verdict-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
@@ -5213,6 +5241,21 @@ input:focus {
   overflow-wrap: anywhere;
 }
 
+.spectator-submitted-pill {
+  flex: 0 0 auto;
+  min-height: 1.2rem;
+  padding: 0.14rem 0.42rem;
+  border: 1px solid rgba(64, 222, 164, 0.58);
+  border-radius: 999px;
+  background: rgba(64, 222, 164, 0.18);
+  color: #066b4a;
+  font-size: 0.58rem;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: 0 0 0.75rem rgba(64, 222, 164, 0.18);
+}
+
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card p {
   margin-top: 0.55rem;
   font-size: clamp(0.82rem, 1.05vw, 0.98rem);
@@ -7352,7 +7395,7 @@ input:focus {
 
 .trivia-result-row {
   display: grid;
-  grid-template-columns: 2rem 2.15rem minmax(12rem, 1.7fr) minmax(5.2rem, auto) minmax(4rem, auto) minmax(5.5rem, 0.8fr) minmax(4.2rem, auto);
+  grid-template-columns: 2rem 2.15rem minmax(12rem, 1.7fr) minmax(5.2rem, auto) minmax(4rem, auto) minmax(4.2rem, auto);
   gap: 0.42rem;
   align-items: center;
   min-height: 3rem;
@@ -7363,7 +7406,7 @@ input:focus {
 }
 
 .room-results-list .trivia-result-row {
-  grid-template-columns: 1.55rem 1.7rem minmax(11rem, 2.1fr) minmax(4.6rem, auto) minmax(3.2rem, auto) minmax(4.6rem, 0.55fr) minmax(4rem, auto);
+  grid-template-columns: 1.55rem 1.7rem minmax(11rem, 2.1fr) minmax(4.6rem, auto) minmax(3.2rem, auto) minmax(4rem, auto);
   gap: 0.32rem;
   min-height: 3rem;
   padding: 0.34rem 0.42rem;
@@ -7376,16 +7419,8 @@ input:focus {
   align-items: center;
 }
 
-.game-stage.spectator-mode .room-results-list .trivia-result-row .result-power-list {
-  grid-column: 3 / span 3;
-  grid-row: 2;
-  justify-self: start;
-  max-width: 100%;
-}
-
 .game-stage.spectator-mode .room-results-list .trivia-result-row .result-streak-pill {
   grid-column: 6;
-  grid-row: 1 / span 2;
   justify-self: end;
   white-space: nowrap;
 }
@@ -7397,6 +7432,26 @@ input:focus {
 .room-results-list .trivia-result-row strong,
 .room-results-list .trivia-result-row em {
   font-size: clamp(0.72rem, 0.92vw, 0.84rem);
+}
+
+.result-name-power {
+  display: flex;
+  align-items: center;
+  gap: 0.34rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.result-name-power > strong {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.result-name-power > .result-power-list {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 2.9rem;
+  overflow: hidden;
 }
 
 .trivia-results-list .trivia-result-row .name-with-title {

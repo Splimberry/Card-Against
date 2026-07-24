@@ -6368,14 +6368,31 @@ function decorateSpectatorAnswerCard(card, cardIndex) {
     return;
   }
   const owner = getRoundCardOwners()[cardIndex] || "";
+  const participantId = getRoomParticipantIdForOwner(owner);
+  const participant = participantId ? state.roomParticipants.find((entry) => entry.id === participantId) : null;
   const text = card.querySelector("p");
   const answer = getSpectatorAnswerTextForOwner(owner);
   const displayAnswer = answer.trim() ? answer : "";
-  const submitted = Boolean(state.roomSubmissions[owner]);
+  const submitted = Boolean(state.roomSubmissions[owner])
+    || Boolean(
+      participant
+      && Number(participant.submittedRound) === Number(state.round)
+      && participantSubmissionMatchesCurrentMatch(participant)
+    );
   card.classList.add("spectator-answer-card");
   card.classList.toggle("spectator-draft-empty", !displayAnswer);
   if (text) {
     text.textContent = displayAnswer || (submitted ? "Submitted blank" : "Typing...");
+  }
+  const ownerRow = card.querySelector(".answer-owner");
+  const existingPill = ownerRow?.querySelector(".spectator-submitted-pill");
+  if (submitted && ownerRow && !existingPill) {
+    const pill = document.createElement("span");
+    pill.className = "spectator-submitted-pill";
+    pill.textContent = "Submitted";
+    ownerRow.appendChild(pill);
+  } else if (!submitted && existingPill) {
+    existingPill.remove();
   }
   updateRatingBadge(card.querySelector(".rating-badge"), null, "");
 }
@@ -6838,6 +6855,8 @@ function renderRoundRecap(awarded, winnerOwner, rating) {
       renderAvatar(avatar, getPlayer(row.owner) || { label: row.label });
       const name = document.createElement("strong");
       renderPlayerNameWithTitle(name, row.owner, row.label);
+      const namePower = document.createElement("div");
+      namePower.className = "result-name-power";
       const score = document.createElement("em");
       score.textContent = row.hiddenScore ? "??? pts" : `${row.score.toLocaleString()} pts`;
       score.className = row.hiddenScore ? "score-hidden" : "";
@@ -6865,10 +6884,11 @@ function renderRoundRecap(awarded, winnerOwner, rating) {
         power.dataset.tooltip = "No power-up used this round.";
         powerList.appendChild(power);
       }
+      namePower.append(name, powerList);
       const streak = document.createElement("small");
       streak.className = "result-streak-pill";
       streak.textContent = `${row.streak}x streak`;
-      item.append(rank, avatar, name, score, delta, powerList, streak);
+      item.append(rank, avatar, namePower, score, delta, streak);
       results.appendChild(item);
     });
   elements.roundRecap.appendChild(results);
