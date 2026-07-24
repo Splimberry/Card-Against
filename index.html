@@ -49,7 +49,7 @@
               <span id="profileTitle">Player profile</span>
               <div class="profile-name-display" id="profileNameDisplay">You</div>
               <div class="profile-actions">
-                <button type="button" class="secondary-button profile-auth-button" id="profileAuthButton">Sign in with Google</button>
+                <button type="button" class="secondary-button profile-auth-button" id="profileAuthButton">Sign in</button>
                 <button type="button" class="secondary-button profile-auth-button hidden" id="profileSignOutButton">Sign out</button>
                 <span class="profile-customize-control" id="profileCustomizeControl">
                   <button type="button" class="secondary-button profile-customize-button" id="profileCustomizeButton">Customize Card</button>
@@ -710,7 +710,7 @@
               </label>
               <label class="profile-upload profile-custom-upload" for="profileAvatarInput">Upload profile picture</label>
               <input class="sr-only" id="profileAvatarInput" type="file" accept="image/*">
-              <p class="profile-login-note" id="profileLoginNote">Sign in with Google to edit your username, upload a profile picture, and save card customizations.</p>
+              <p class="profile-login-note" id="profileLoginNote">Sign in to edit your username, upload a profile picture, and save card customizations.</p>
               <div class="profile-custom-status" id="profileCustomStatus">Choose a card look, then save.</div>
               <div class="profile-custom-actions">
                 <button type="button" class="secondary-button" id="profileCustomUndoButton">Undo</button>
@@ -721,6 +721,39 @@
               </div>
             </aside>
           </div>
+        </div>
+      </section>
+
+      <section class="profile-auth-modal hidden" id="profileAuthModal" aria-labelledby="profileAuthTitle" aria-modal="true" role="dialog">
+        <div class="profile-auth-panel">
+          <div class="settings-header">
+            <div>
+              <p class="eyebrow">Player account</p>
+              <h2 id="profileAuthTitle">Sign in</h2>
+            </div>
+            <button type="button" class="icon-button" id="closeProfileAuthButton">Close</button>
+          </div>
+          <div class="profile-auth-hero">
+            <strong>Keep your profile synced</strong>
+            <span>Save coins, achievements, cosmetics, submitted questions, and card styles across devices.</span>
+          </div>
+          <button type="button" class="icon-button profile-auth-google-button" id="profileAuthGoogleButton">Continue with Google</button>
+          <div class="profile-auth-divider"><span>or use email</span></div>
+          <form class="profile-auth-form" id="profileEmailAuthForm">
+            <label>
+              <span>Email</span>
+              <input id="profileEmailInput" type="email" autocomplete="email" placeholder="you@example.com" required>
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="profilePasswordInput" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" required>
+            </label>
+            <div class="profile-auth-form-actions">
+              <button type="submit" class="icon-button" id="profileEmailSignInButton">Sign in</button>
+              <button type="button" class="secondary-button" id="profileEmailSignUpButton">Create account</button>
+            </div>
+          </form>
+          <p class="profile-auth-panel-status" id="profileAuthPanelStatus">Choose a sign-in method to load your saved profile.</p>
         </div>
       </section>
 

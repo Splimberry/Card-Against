@@ -3393,6 +3393,15 @@ const elements = {
   profileAuthButton: document.querySelector("#profileAuthButton"),
   profileSignOutButton: document.querySelector("#profileSignOutButton"),
   profileAuthStatus: document.querySelector("#profileAuthStatus"),
+  profileAuthModal: document.querySelector("#profileAuthModal"),
+  closeProfileAuthButton: document.querySelector("#closeProfileAuthButton"),
+  profileAuthGoogleButton: document.querySelector("#profileAuthGoogleButton"),
+  profileEmailAuthForm: document.querySelector("#profileEmailAuthForm"),
+  profileEmailInput: document.querySelector("#profileEmailInput"),
+  profilePasswordInput: document.querySelector("#profilePasswordInput"),
+  profileEmailSignInButton: document.querySelector("#profileEmailSignInButton"),
+  profileEmailSignUpButton: document.querySelector("#profileEmailSignUpButton"),
+  profileAuthPanelStatus: document.querySelector("#profileAuthPanelStatus"),
   roomProfileAvatarPreview: document.querySelector("#roomProfileAvatarPreview"),
   roomProfileNamePreview: document.querySelector("#roomProfileNamePreview"),
   startBotsButton: document.querySelector("#startBotsButton"),
@@ -12383,7 +12392,7 @@ function isPlayerSignedIn() {
 function syncProfileEditControls() {
   const signedIn = isPlayerSignedIn();
   const loading = Boolean(state.profileLoading || state.supabaseAuthResolving);
-  const signInMessage = "Sign in with Google to customize your card.";
+  const signInMessage = "Sign in to customize your card.";
   if (elements.profileCustomizeControl) {
     elements.profileCustomizeControl.dataset.disabled = String(!signedIn);
     if (signedIn) {
@@ -12408,7 +12417,7 @@ function syncProfileEditControls() {
         delete profileNameTooltipTarget.dataset.tooltip;
         profileNameTooltipTarget.removeAttribute("tabindex");
       } else {
-        profileNameTooltipTarget.dataset.tooltip = "Sign in with Google to edit your username.";
+        profileNameTooltipTarget.dataset.tooltip = "Sign in to edit your username.";
         profileNameTooltipTarget.tabIndex = 0;
       }
     }
@@ -12443,7 +12452,7 @@ function renderSupabaseAuthControls() {
   elements.profileAuthButton.disabled = !configured || signInInProgress || authResolving || profileLoading;
   setHidden(elements.profileAuthStatus, !configured && !authResolving && !profileLoading && !authUnavailable);
   elements.profileAuthStatus.textContent = signInInProgress
-    ? "Opening Google sign-in..."
+    ? "Opening sign-in..."
     : authUnavailable
     ? "Connection issue while loading your account. Your saved profile is protected until it reconnects."
     : authResolving
@@ -12453,7 +12462,55 @@ function renderSupabaseAuthControls() {
     : signedIn
     ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
     : "Sign in to customize your card, username, and profile picture.";
+  syncProfileAuthPanelControls();
   syncProfileEditControls();
+}
+
+function setProfileAuthPanelStatus(message = "", tone = "") {
+  if (!elements.profileAuthPanelStatus) {
+    return;
+  }
+  elements.profileAuthPanelStatus.textContent = message || "Choose a sign-in method to load your saved profile.";
+  elements.profileAuthPanelStatus.dataset.tone = tone || "";
+}
+
+function syncProfileAuthPanelControls() {
+  const busy = Boolean(state.supabaseSignInInProgress || state.supabaseEmailAuthInProgress || state.supabaseAuthResolving || state.profileLoading);
+  [
+    elements.profileAuthGoogleButton,
+    elements.profileEmailInput,
+    elements.profilePasswordInput,
+    elements.profileEmailSignInButton,
+    elements.profileEmailSignUpButton
+  ].forEach((control) => {
+    if (control) {
+      control.disabled = busy;
+    }
+  });
+}
+
+function openProfileAuthPanel() {
+  if (state.supabaseUser) {
+    return;
+  }
+  setProfileAuthPanelStatus(state.supabaseAuthError
+    ? "Connection issue while loading account services. Try again in a moment."
+    : "Choose a sign-in method to load your saved profile.", state.supabaseAuthError ? "error" : "");
+  syncProfileAuthPanelControls();
+  markModalOpening(elements.profileAuthModal);
+  setHidden(elements.profileAuthModal, false);
+  void ensureSupabaseAuthReady({ realtime: true, preserveGuest: true }).then(() => {
+    syncProfileAuthPanelControls();
+    if (!state.supabaseEnabled) {
+      setProfileAuthPanelStatus("Account sign-in is not configured for this deployment.", "error");
+    }
+  });
+  playSound("click");
+}
+
+function closeProfileAuthPanel() {
+  hideModalWithMotion(elements.profileAuthModal);
+  playSound("click");
 }
 
 function loadScriptOnce(src, stateKey) {
@@ -14030,6 +14087,11 @@ function applySupabaseSession(session) {
   state.supabaseUser = session?.user || null;
   if (state.supabaseUser) {
     state.supabaseSignOutInProgress = false;
+    state.supabaseEmailAuthInProgress = false;
+    state.supabaseSignInInProgress = false;
+    if (isModalOpen(elements.profileAuthModal)) {
+      closeProfileAuthPanel();
+    }
     if (state.supabaseUser.id !== previousUserId) {
       setProfileLoading(true);
     }
@@ -14121,11 +14183,15 @@ async function signInWithSupabaseGoogle() {
   }
   state.supabaseSignInInProgress = true;
   renderSupabaseAuthControls();
+  syncProfileAuthPanelControls();
+  setProfileAuthPanelStatus("Opening Google sign-in...", "");
   try {
     const client = await ensureSupabaseAuthReady({ realtime: true, force: true, preserveGuest: true });
     if (!client) {
       state.supabaseSignInInProgress = false;
       renderSupabaseAuthControls();
+      syncProfileAuthPanelControls();
+      setProfileAuthPanelStatus("Account sign-in is not available right now.", "error");
       return;
     }
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
@@ -14140,10 +14206,106 @@ async function signInWithSupabaseGoogle() {
     console.warn("Google sign-in failed:", error.message || error);
     state.supabaseSignInInProgress = false;
     renderSupabaseAuthControls();
+    syncProfileAuthPanelControls();
+    setProfileAuthPanelStatus(error.message || "Google sign-in failed. Check your connection, VPN, or browser privacy settings, then try again.", "error");
     if (elements.profileAuthStatus) {
       setHidden(elements.profileAuthStatus, false);
       elements.profileAuthStatus.textContent = error.message || "Google sign-in failed. Check your connection, VPN, or browser privacy settings, then try again.";
     }
+  }
+}
+
+function getProfileEmailAuthInput() {
+  const email = String(elements.profileEmailInput?.value || "").trim();
+  const password = String(elements.profilePasswordInput?.value || "");
+  return { email, password };
+}
+
+function validateProfileEmailAuthInput(email, password) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return "Enter a valid email address.";
+  }
+  if (!password || password.length < 6) {
+    return "Password must be at least 6 characters.";
+  }
+  return "";
+}
+
+async function signInWithSupabaseEmail(event) {
+  event?.preventDefault?.();
+  if (state.supabaseEmailAuthInProgress || state.supabaseSignInInProgress) {
+    return;
+  }
+  const { email, password } = getProfileEmailAuthInput();
+  const validation = validateProfileEmailAuthInput(email, password);
+  if (validation) {
+    setProfileAuthPanelStatus(validation, "error");
+    playSound("error");
+    return;
+  }
+  state.supabaseEmailAuthInProgress = true;
+  syncProfileAuthPanelControls();
+  setProfileAuthPanelStatus("Signing in...", "");
+  try {
+    const client = await ensureSupabaseAuthReady({ realtime: true, force: true, preserveGuest: true });
+    if (!client) {
+      throw new Error("Account sign-in is not available right now.");
+    }
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (error) {
+      throw error;
+    }
+    setProfileAuthPanelStatus("Signed in. Loading your saved profile...", "success");
+  } catch (error) {
+    console.warn("Email sign-in failed:", error.message || error);
+    state.supabaseEmailAuthInProgress = false;
+    syncProfileAuthPanelControls();
+    setProfileAuthPanelStatus(error.message || "Email sign-in failed.", "error");
+    playSound("error");
+  }
+}
+
+async function signUpWithSupabaseEmail() {
+  if (state.supabaseEmailAuthInProgress || state.supabaseSignInInProgress) {
+    return;
+  }
+  const { email, password } = getProfileEmailAuthInput();
+  const validation = validateProfileEmailAuthInput(email, password);
+  if (validation) {
+    setProfileAuthPanelStatus(validation, "error");
+    playSound("error");
+    return;
+  }
+  state.supabaseEmailAuthInProgress = true;
+  syncProfileAuthPanelControls();
+  setProfileAuthPanelStatus("Creating account...", "");
+  try {
+    const client = await ensureSupabaseAuthReady({ realtime: true, force: true, preserveGuest: true });
+    if (!client) {
+      throw new Error("Account sign-up is not available right now.");
+    }
+    const emailRedirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo }
+    });
+    if (error) {
+      throw error;
+    }
+    if (data?.session) {
+      setProfileAuthPanelStatus("Account created. Loading your saved profile...", "success");
+    } else {
+      state.supabaseEmailAuthInProgress = false;
+      syncProfileAuthPanelControls();
+      setProfileAuthPanelStatus("Account created. Check your email to confirm it, then sign in.", "success");
+    }
+  } catch (error) {
+    console.warn("Email sign-up failed:", error.message || error);
+    state.supabaseEmailAuthInProgress = false;
+    syncProfileAuthPanelControls();
+    setProfileAuthPanelStatus(error.message || "Could not create account.", "error");
+    playSound("error");
   }
 }
 
@@ -17829,8 +17991,9 @@ function openProfileCustomization() {
   if (!isPlayerSignedIn()) {
     if (elements.profileAuthStatus) {
       setHidden(elements.profileAuthStatus, false);
-      elements.profileAuthStatus.textContent = "Sign in with Google to customize your card.";
+      elements.profileAuthStatus.textContent = "Sign in to customize your card.";
     }
+    openProfileAuthPanel();
     return;
   }
   const draft = {
@@ -32205,7 +32368,16 @@ elements.profileNameInput?.addEventListener("input", (event) => updateProfileNam
 elements.profileNameInput?.addEventListener("change", (event) => updateProfileName(event.target.value));
 elements.profileNameInput?.addEventListener("blur", (event) => updateProfileName(event.target.value));
 elements.profileAvatarInput.addEventListener("change", (event) => updateProfileAvatar(event.target.files?.[0]));
-elements.profileAuthButton?.addEventListener("click", signInWithSupabaseGoogle);
+elements.profileAuthButton?.addEventListener("click", openProfileAuthPanel);
+elements.closeProfileAuthButton?.addEventListener("click", closeProfileAuthPanel);
+elements.profileAuthModal?.addEventListener("click", (event) => {
+  if (event.target === elements.profileAuthModal) {
+    closeProfileAuthPanel();
+  }
+});
+elements.profileAuthGoogleButton?.addEventListener("click", signInWithSupabaseGoogle);
+elements.profileEmailAuthForm?.addEventListener("submit", signInWithSupabaseEmail);
+elements.profileEmailSignUpButton?.addEventListener("click", signUpWithSupabaseEmail);
 elements.profileSignOutButton?.addEventListener("click", signOutSupabase);
 document.addEventListener("click", handleProfileSignOutClick);
 elements.backToMenuButton.addEventListener("click", closeRoomScreen);
