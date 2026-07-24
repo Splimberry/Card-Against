@@ -11180,6 +11180,13 @@ body[data-performance-mode="balanced"][data-game-active] .white-card.winner::aft
   animation-play-state: paused !important;
 }
 
+body[data-performance-mode="low-power"]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="metallic"],
+body[data-performance-mode="minimal"]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="metallic"] {
+  overflow: hidden !important;
+}
+
 body[data-performance-mode="low-power"] *,
 body[data-performance-mode="low-power"] *::before,
 body[data-performance-mode="low-power"] *::after,
