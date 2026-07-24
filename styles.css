@@ -2340,9 +2340,66 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   text-align: center;
 }
 
+.score-metric-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.32rem;
+}
+
+.score-metric-icon {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  background: currentColor;
+}
+
+.round-metric-icon {
+  -webkit-mask: url("assets/topbar-finish.svg") center / contain no-repeat;
+  mask: url("assets/topbar-finish.svg") center / contain no-repeat;
+}
+
+.timer-metric-icon {
+  -webkit-mask: url("assets/topbar-stop-watch.svg") center / contain no-repeat;
+  mask: url("assets/topbar-stop-watch.svg") center / contain no-repeat;
+}
+
+.score-metric.metric-value-pop .score-metric-icon,
+.score-metric.metric-value-pop strong {
+  animation: metricValuePulse 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .score-metric.timer-dead {
   border-color: rgba(255, 77, 125, 0.95);
   background: rgba(255, 77, 125, 0.24);
+}
+
+.score-metric.timer-warning {
+  border-color: rgba(255, 77, 125, 0.95);
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.12), transparent 36%),
+    linear-gradient(135deg, rgba(255, 77, 125, 0.32), rgba(255, 77, 125, 0.14)),
+    rgba(255, 77, 125, 0.16);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 214, 225, 0.14),
+    0 0 1.15rem rgba(255, 77, 125, 0.32);
+}
+
+.scoreboard .score-metric.timer-warning span,
+.scoreboard .score-metric.timer-warning strong {
+  color: #ffd7e2;
+  text-shadow:
+    0 0 0.65rem rgba(255, 77, 125, 0.68),
+    0 0 1.15rem rgba(255, 77, 125, 0.42);
+}
+
+.score-metric.timer-warning .timer-metric-icon {
+  animation: timerIconShake 560ms ease-in-out infinite;
+}
+
+.score-metric.timer-warning.metric-value-pop .timer-metric-icon {
+  animation: timerIconWarningPulse 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .score-metric.time-money {
@@ -2360,10 +2417,69 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   color: #ffd36b;
 }
 
+.scoreboard .score-metric.timer-warning span,
+.scoreboard .score-metric.timer-warning strong {
+  color: #ffd7e2;
+}
+
 .scoreboard > .match-metrics strong {
   color: var(--ink);
   font-size: 1.22rem;
   line-height: 1;
+}
+
+@keyframes metricValuePulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  48% {
+    transform: scale(1.16);
+    filter: brightness(1.35);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes timerIconShake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  24% {
+    transform: translateX(-0.035rem) rotate(-6deg);
+  }
+
+  52% {
+    transform: translateX(0.035rem) rotate(6deg);
+  }
+
+  76% {
+    transform: translateX(-0.02rem) rotate(-3deg);
+  }
+}
+
+@keyframes timerIconWarningPulse {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg) scale(1);
+    filter: brightness(1);
+  }
+
+  28% {
+    transform: translateX(-0.04rem) rotate(-7deg) scale(1.16);
+    filter: brightness(1.42);
+  }
+
+  58% {
+    transform: translateX(0.04rem) rotate(7deg) scale(1.08);
+    filter: brightness(1.24);
+  }
 }
 
 .score-pop {

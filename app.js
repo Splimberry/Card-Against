@@ -3672,6 +3672,7 @@ const elements = {
   performanceModeValue: document.querySelector("#performanceModeValue"),
   modeLabel: document.querySelector("#modeLabel"),
   leaderboard: document.querySelector("#leaderboard"),
+  roundScoreBox: document.querySelector("#roundScoreBox"),
   roundCount: document.querySelector("#roundCount"),
   timerScoreBox: document.querySelector("#timerScoreBox"),
   timerCount: document.querySelector("#timerCount"),
@@ -13979,13 +13980,43 @@ function setCurrentQuestionProgress(isCorrect) {
   renderQuestionProgress();
 }
 
+function restartMetricChangeAnimation(metricElement) {
+  if (!metricElement || shouldReduceMotion()) {
+    return;
+  }
+  if (metricElement.metricAnimationTimerId) {
+    window.clearTimeout(metricElement.metricAnimationTimerId);
+    metricElement.metricAnimationTimerId = null;
+  }
+  metricElement.classList.remove("metric-value-pop");
+  metricElement.offsetHeight;
+  metricElement.classList.add("metric-value-pop");
+  metricElement.metricAnimationTimerId = window.setTimeout(() => {
+    metricElement.classList.remove("metric-value-pop");
+    metricElement.metricAnimationTimerId = null;
+  }, 420);
+}
+
+function setMetricValue(metricElement, valueElement, value) {
+  if (!valueElement) {
+    return;
+  }
+  const nextValue = String(value);
+  const previousValue = valueElement.dataset.metricValue || "";
+  valueElement.textContent = nextValue;
+  if (previousValue && previousValue !== nextValue) {
+    restartMetricChangeAnimation(metricElement);
+  }
+  valueElement.dataset.metricValue = nextValue;
+}
+
 function renderScore() {
   getActiveOwners().forEach(updateAchievementActiveEffectPeak);
   renderLeaderboard();
   renderEffectPanel();
   renderQuestionProgress();
   updateWildFireBurningState();
-  elements.roundCount.textContent = `${state.round}/${state.maxRounds}`;
+  setMetricValue(elements.roundScoreBox, elements.roundCount, `${state.round}/${state.maxRounds}`);
   renderTimer();
 }
 
@@ -20589,7 +20620,7 @@ function updateDangerFlash(activeAnswerTimer, submittedCurrentPlayer) {
 }
 
 function renderTimer() {
-  elements.timerCount.textContent = `${state.timerRemaining}s`;
+  setMetricValue(elements.timerScoreBox, elements.timerCount, `${state.timerRemaining}s`);
   const submittedCurrentPlayer = (isRoomMode() && state.roomSubmissions[state.currentOwner])
     || (state.mode === "bots" && state.roomSubmissions.player);
   const activeAnswerTimer = Boolean(state.timerId)
@@ -20601,6 +20632,7 @@ function renderTimer() {
   updateDangerFlash(activeAnswerTimer, submittedCurrentPlayer);
   updateTimerWarningVolume(state.timerRemaining);
   elements.timerScoreBox.classList.toggle("timer-dead", activeAnswerTimer && state.timerRemaining === 0);
+  elements.timerScoreBox.classList.toggle("timer-warning", activeAnswerTimer && state.timerRemaining <= 10 && state.timerRemaining > 0 && !submittedCurrentPlayer);
   elements.timerScoreBox.classList.toggle("time-money", isMatchModifierEnabled("timeMoney"));
 }
 
@@ -20612,6 +20644,7 @@ function stopTimer() {
   }
   stopTimerTick();
   elements.timerScoreBox.classList.remove("timer-dead");
+  elements.timerScoreBox.classList.remove("timer-warning");
   elements.timerScoreBox.classList.toggle("time-money", isMatchModifierEnabled("timeMoney"));
   updateDangerFlash(false, false);
 }

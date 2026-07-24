@@ -348,12 +348,18 @@
           <div class="scoreboard" aria-label="Scoreboard">
             <div class="leaderboard" id="leaderboard" aria-label="Player leaderboard"></div>
             <div class="match-metrics" aria-label="Match status">
-              <div class="score-metric">
-                <span>Round</span>
+              <div class="score-metric" id="roundScoreBox">
+                <span class="score-metric-label">
+                  <span class="score-metric-icon round-metric-icon" aria-hidden="true"></span>
+                  <span>Round</span>
+                </span>
                 <strong id="roundCount">1</strong>
               </div>
               <div class="score-metric" id="timerScoreBox">
-                <span>Timer</span>
+                <span class="score-metric-label">
+                  <span class="score-metric-icon timer-metric-icon" aria-hidden="true"></span>
+                  <span>Timer</span>
+                </span>
                 <strong id="timerCount">30</strong>
               </div>
             </div>
