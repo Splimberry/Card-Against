@@ -26246,7 +26246,12 @@ async function updateRoomPresence(room, options = {}) {
       mergeHostedRoom(data.room);
       applyRoomDirectoryRoom(data.room);
       if (!options.skipRealtimeBroadcast) {
-        broadcastRealtimeRoomChange("participant-updated", data.room);
+        const currentParticipant = Array.isArray(data.room.participants)
+          ? data.room.participants.find((entry) => entry.id === state.clientId)
+          : null;
+        broadcastRealtimeRoomChange("participant-updated", data.room, {
+          participant: currentParticipant ? normalizeRoomParticipantDelta(currentParticipant) : undefined
+        });
       }
     }
     return data.room || {
@@ -27704,10 +27709,11 @@ function setJoinRoomBusy(isBusy, code = "") {
 }
 
 async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessionId, options = {}) {
+  const needsFullRoomState = Boolean(state.isSpectator || room.status !== "lobby" || options.fullRoomState);
   let serverRoom = await updateRoomPresence(room, {
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined",
-    compactResponse: true,
+    compactResponse: !needsFullRoomState,
     ...(Object.hasOwn(options, "roomPassword") ? { roomPassword: options.roomPassword } : {})
   });
   if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
@@ -27754,11 +27760,28 @@ async function joinHostedRoom(code, options = {}) {
   }
   setJoinRoomBusy(true, normalizedCode);
   let room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
+  let fetchedRoomDirectly = false;
   try {
     if (!room) {
       const lookup = await fetchRoomByCode(normalizedCode);
+      fetchedRoomDirectly = true;
       if (lookup.status === "closed") {
         addSystemChat(`Room ${normalizedCode || "code"} was closed.`, { private: true });
+        return;
+      }
+      if (lookup.status === "found" && lookup.room) {
+        room = lookup.room;
+        mergeHostedRoom(room);
+      }
+    }
+    if (room && !fetchedRoomDirectly) {
+      const lookup = await fetchRoomByCode(normalizedCode);
+      if (lookup.status === "closed") {
+        addSystemChat(`Room ${normalizedCode || "code"} was closed.`, { private: true });
+        return;
+      }
+      if (lookup.status === "missing") {
+        addSystemChat(`Room ${normalizedCode || "code"} was not found.`, { private: true });
         return;
       }
       if (lookup.status === "found" && lookup.room) {
@@ -27822,7 +27845,10 @@ async function joinHostedRoom(code, options = {}) {
     state.currentOwner = state.isSpectator ? "spectator" : "opponent";
     state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
     state.roomParticipants = normalizeRoomParticipantsList(room.participants);
-    const joinedRoom = await syncJoinedRoomPresence(room, state.roomSessionId, { roomPassword: typedPassword });
+    const joinedRoom = await syncJoinedRoomPresence(room, state.roomSessionId, {
+      roomPassword: typedPassword,
+      fullRoomState: state.isSpectator || room.status !== "lobby"
+    });
     if (!joinedRoom) {
       clearLocalRoomState();
       startSupabaseRealtime();

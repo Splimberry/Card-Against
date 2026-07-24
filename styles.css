@@ -5358,29 +5358,31 @@ input:focus {
   grid-row: 1;
   align-self: stretch;
   justify-self: stretch;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 16rem));
+  justify-content: center;
   align-content: start;
   align-items: stretch;
   max-width: none;
   max-height: min(72vh, calc(100vh - 12rem));
   margin-top: 0;
-  padding: 0.12rem 0.2rem 0.3rem;
-  overflow-x: hidden;
+  padding: 0.65rem 0.8rem 0.8rem;
+  overflow-x: visible;
   overflow-y: auto;
   z-index: 18;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+  scroll-padding: 0.8rem;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode.answer-stack-mode {
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 16rem));
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card {
   min-height: clamp(7rem, 14vh, 8.75rem);
   padding: 0.58rem 0.64rem;
   border-width: 3px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-owner {
@@ -5405,17 +5407,18 @@ input:focus {
 
 .spectator-submitted-pill {
   flex: 0 0 auto;
-  min-height: 1.2rem;
-  padding: 0.14rem 0.42rem;
+  min-height: 1rem;
+  padding: 0.1rem 0.34rem;
   border: 1px solid rgba(64, 222, 164, 0.58);
   border-radius: 999px;
   background: rgba(64, 222, 164, 0.18);
   color: #066b4a;
-  font-size: 0.58rem;
+  font-size: clamp(0.48rem, 0.62vw, 0.55rem);
   font-weight: 950;
   line-height: 1;
   text-transform: uppercase;
   box-shadow: 0 0 0.75rem rgba(64, 222, 164, 0.18);
+  white-space: nowrap;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card p {
