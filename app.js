@@ -25370,13 +25370,18 @@ async function copyCurrentRoomInviteLink(button = null) {
     await copyTextToClipboard(inviteUrl);
     const target = button || elements.copyRoomInviteButton || elements.copyLobbyInviteButton;
     if (target) {
-      const previous = target.textContent;
+      const defaultLabel = target.dataset.defaultLabel || "Copy Invite Link";
+      target.dataset.defaultLabel = defaultLabel;
+      if (target.dataset.copyResetTimerId) {
+        window.clearTimeout(Number(target.dataset.copyResetTimerId));
+      }
       target.textContent = "Copied";
-      window.setTimeout(() => {
+      target.dataset.copyResetTimerId = String(window.setTimeout(() => {
         if (target.isConnected) {
-          target.textContent = previous || "Copy Invite Link";
+          target.textContent = defaultLabel;
+          delete target.dataset.copyResetTimerId;
         }
-      }, 1200);
+      }, 1200));
     }
     addSystemChat(`Invite link copied: ${inviteUrl}`, { private: true, sync: false });
   } catch (error) {
@@ -25392,6 +25397,10 @@ function syncRoomInviteButtons() {
       return;
     }
     button.disabled = !inviteUrl;
+    button.dataset.defaultLabel = button.dataset.defaultLabel || button.textContent || "Copy Invite Link";
+    if (!button.dataset.copyResetTimerId) {
+      button.textContent = button.dataset.defaultLabel;
+    }
     button.dataset.description = inviteUrl ? `Copy ${inviteUrl}` : "Create a room first.";
   });
 }

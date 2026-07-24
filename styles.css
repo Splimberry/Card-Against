@@ -1135,6 +1135,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   flex-wrap: wrap;
   gap: 0.65rem;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .room-code-share h2 {
@@ -1145,10 +1146,12 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .invite-copy-button {
   display: inline-flex;
   flex: 0 0 auto;
+  align-self: center;
   align-items: center;
   justify-content: center;
   gap: 0.48rem;
   min-height: 2.42rem;
+  min-width: 13.6rem;
   padding: 0 0.9rem;
   border-color: rgba(255, 255, 255, 0.24);
   background:
