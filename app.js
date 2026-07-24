@@ -6544,12 +6544,14 @@ function renderPowerLog(awarded) {
   const events = (awarded.events || []).filter((event) => typeof event === "string" || !event.secret);
   setHidden(elements.powerLogToggle, events.length === 0);
   if (!events.length) {
+    elements.powerLog.classList.add("power-log-collapsed");
     setHidden(elements.powerLog, true);
     return;
   }
 
   elements.powerLogToggle.textContent = `Power Effects (${events.length})`;
   elements.powerLogToggle.setAttribute("aria-expanded", "false");
+  elements.powerLog.classList.add("power-log-collapsed");
   setHidden(elements.powerLog, true);
 
   events.forEach((event) => {
@@ -6566,6 +6568,24 @@ function renderPowerLog(awarded) {
     }
     elements.powerLog.appendChild(item);
   });
+}
+
+function setPowerLogExpanded(isExpanded) {
+  elements.powerLogToggle.setAttribute("aria-expanded", String(isExpanded));
+  if (isExpanded) {
+    setHidden(elements.powerLog, false);
+    window.requestAnimationFrame(() => {
+      elements.powerLog.classList.remove("power-log-collapsed");
+    });
+    return;
+  }
+
+  elements.powerLog.classList.add("power-log-collapsed");
+  window.setTimeout(() => {
+    if (elements.powerLog.classList.contains("power-log-collapsed")) {
+      setHidden(elements.powerLog, true);
+    }
+  }, 280);
 }
 
 function createActiveEffect(owner, powerId, name, description, options = {}) {
@@ -6916,6 +6936,74 @@ function isSecretPower(power) {
   return power?.type === "red_herring" || power?.type === "insurance_fraud";
 }
 
+function formatPowerEventDetail(value) {
+  const values = Array.isArray(value) ? value.flat(Infinity) : [value];
+  return values
+    .map((entry) => String(entry || "").replace(/\s*\n+\s*/g, "; ").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("; ");
+}
+
+function formatPowerEventTargets(owners = [], fallback = "everyone else") {
+  const labels = [...new Set(owners)]
+    .filter((owner) => owner && getPlayer(owner))
+    .map(getOwnerLabel);
+  return labels.length ? labels.join(", ") : fallback;
+}
+
+function describeImmediatePowerEvent(entry) {
+  const target = getEntryTarget(entry);
+  const meta = getEntryMeta(entry);
+  const ownerLabel = getOwnerLabel(entry.owner);
+  switch (entry.power.type) {
+    case "ability_merchant":
+      return `${entry.power.name} let ${ownerLabel} buy a ${rarityInfo[meta.selectedRarity || "grey"]?.label || "power-up"} power-up.`;
+    case "sin_sloth": {
+      const cappedOwners = (meta.cappedOwners || []).filter((owner) => owner && getPlayer(owner));
+      if (!cappedOwners.length) {
+        return `${entry.power.name} found no higher streaks to cap.`;
+      }
+      return `${entry.power.name} capped streaks for ${formatPowerEventTargets(cappedOwners)}.`;
+    }
+    case "crawler_virus":
+      return `${entry.power.name} armed Error 404 chaos triggers for ${ownerLabel}.`;
+    case "multiple_choice":
+      return `${entry.power.name} locked ${ownerLabel} into ${meta.chosenAnswer ? `"${meta.chosenAnswer}"` : "a multiple-choice answer"}.`;
+    case "lucky_side": {
+      const rounds = isChaosInfusedPower(entry.power) ? entry.power.rounds || 5 : 3;
+      return `${entry.power.name} gave ${ownerLabel} buff-favored Cocktail Mix rolls for ${rounds} rounds${isChaosInfusedPower(entry.power) ? " and boosted chaos infusion odds" : ""}.`;
+    }
+    case "blue_pill": {
+      const detail = formatPowerEventDetail(meta.cocktailResults || meta.cocktailResult);
+      return `${entry.power.name} gave ${ownerLabel} ${isChaosInfusedPower(entry.power) ? "every Cocktail buff" : "three Cocktail buffs"}${detail ? `: ${detail}` : ""}.`;
+    }
+    case "antivirus":
+      return isChaosInfusedPower(entry.power)
+        ? `${entry.power.name} encrypted ${ownerLabel} against debuffs for ${entry.power.rounds || 5} rounds.`
+        : `${entry.power.name} armed one debuff shield for ${ownerLabel}.`;
+    case "virus_deployment": {
+      const targets = isChaosInfusedPower(entry.power)
+        ? getActiveOwners().filter((owner) => owner !== entry.owner)
+        : [target].filter(Boolean);
+      return `${entry.power.name} scrambled answer input for ${formatPowerEventTargets(targets, "a target")}.`;
+    }
+    case "curse": {
+      const targets = isChaosInfusedPower(entry.power)
+        ? getActiveOwners().filter((owner) => owner !== entry.owner)
+        : [target].filter(Boolean);
+      return `${entry.power.name} gave a random debuff to ${formatPowerEventTargets(targets, "a target")}.`;
+    }
+    case "hitman":
+      return `${entry.power.name} marked ${target ? getOwnerLabel(target) : "a target"} for a grading hit.`;
+    case "execution":
+      return `${entry.power.name} marked ${target ? getOwnerLabel(target) : "a target"} for execution.`;
+    default:
+      return target
+        ? `${entry.power.name} targeted ${getOwnerLabel(target)}.`
+        : `${entry.power.name} took effect for ${ownerLabel}.`;
+  }
+}
+
 function applyPlayedPowerDisables(playedEntries, events) {
   const voidBombEntries = playedEntries.filter((entry) => entry.power.type === "void_bomb");
   const voidTargets = new Set();
@@ -7105,7 +7193,8 @@ function applyNewPointPowerEntries(playedEntries, deltas, owners, events, winner
   playedEntries
     .filter((entry) => entry.power.type === "cocktail_mix")
     .forEach((entry) => {
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} resolved instantly.`));
+      const detail = formatPowerEventDetail(getEntryMeta(entry).cocktailResult);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} served ${getOwnerLabel(entry.owner)}${detail ? `: ${detail}` : ""}.`));
     });
 
   playedEntries
@@ -7169,11 +7258,7 @@ function applyNewPointPowerEntries(playedEntries, deltas, owners, events, winner
         events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} armed death bombs on ${(meta.bombTargets || []).map(getOwnerLabel).join(", ") || "everyone else"}.`));
         return;
       }
-      if (target) {
-        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} targeted ${getOwnerLabel(target)} instantly.`));
-        return;
-      }
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} resolved instantly.`));
+      events.push(createPowerEvent(entry.owner, entry.power, describeImmediatePowerEvent(entry)));
     });
 
   owners.forEach((owner) => {
@@ -14964,6 +15049,25 @@ function recordPlayedPower(owner, powerId, meta = {}) {
   }
 }
 
+function updateLatestPlayedPowerMeta(owner, patch = {}) {
+  if (!owner || !patch || typeof patch !== "object") {
+    return;
+  }
+  const nextMeta = {
+    ...(state.playedPowerMeta[owner] || {}),
+    ...patch
+  };
+  state.playedPowerMeta[owner] = nextMeta;
+  const stack = state.playedPowerStacks[owner] || [];
+  const latest = stack[stack.length - 1];
+  if (latest) {
+    latest.meta = {
+      ...(latest.meta || {}),
+      ...patch
+    };
+  }
+}
+
 function getEntryMeta(entry) {
   return {
     ...(state.playedPowerMeta[entry.owner] || {}),
@@ -19415,6 +19519,10 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "cocktail_mix") {
     const result = applyCocktailMix(owner);
+    updateLatestPlayedPowerMeta(owner, {
+      cocktailResult: Array.isArray(result) ? result.join("\n") : String(result || ""),
+      immediateResolved: true
+    });
     queueCocktailResultFlash(power.name, result, { owners: [owner] });
     renderScore();
   }
@@ -19486,6 +19594,10 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const results = isChaosInfusedPower(power)
       ? applyEveryCocktailBuff(owner)
       : Array.from({ length: 3 }, () => applyCocktailMix(owner, { buffsOnly: true }));
+    updateLatestPlayedPowerMeta(owner, {
+      cocktailResults: results,
+      immediateResolved: true
+    });
     queueCocktailResultFlash(power.name, results, { owners: [owner] });
     renderScore();
   }
@@ -31986,9 +32098,8 @@ elements.roundHelpButton?.addEventListener("click", openRoundHelp);
 elements.closeSettingsButton.addEventListener("click", closeSettings);
 elements.verdictAbilitiesButton.addEventListener("click", openAbilities);
 elements.powerLogToggle.addEventListener("click", () => {
-  const isHidden = elements.powerLog.classList.contains("hidden");
-  setHidden(elements.powerLog, !isHidden);
-  elements.powerLogToggle.setAttribute("aria-expanded", String(isHidden));
+  const isOpening = elements.powerLog.classList.contains("hidden") || elements.powerLog.classList.contains("power-log-collapsed");
+  setPowerLogExpanded(isOpening);
   playSound("click");
 });
 elements.closeAbilitiesButton.addEventListener("click", closeAbilities);

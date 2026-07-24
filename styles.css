@@ -1139,6 +1139,47 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .room-code-share h2 {
   margin: 0;
+  line-height: 1;
+}
+
+.invite-copy-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.48rem;
+  min-height: 2.42rem;
+  padding: 0 0.9rem;
+  border-color: rgba(255, 255, 255, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 77, 125, 0.16), rgba(34, 211, 238, 0.1)),
+    rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0.65rem 1.35rem rgba(0, 0, 0, 0.2);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.invite-copy-button::before {
+  content: "";
+  display: block;
+  flex: 0 0 auto;
+  width: 0.72rem;
+  height: 0.86rem;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  box-shadow: 0.22rem -0.2rem 0 -0.05rem rgba(255, 255, 255, 0.48);
+  opacity: 0.88;
+}
+
+.invite-copy-button:hover,
+.invite-copy-button:focus-visible {
+  border-color: rgba(34, 211, 238, 0.48);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0.7rem 1.5rem rgba(0, 0, 0, 0.24),
+    0 0 1rem rgba(34, 211, 238, 0.14);
 }
 
 .join-code-form {
@@ -4843,6 +4884,25 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   margin: 0.45rem 0;
   overflow: auto;
   padding-right: 0.2rem;
+  transform-origin: top;
+  transition:
+    max-height 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    margin 220ms ease,
+    opacity 220ms ease,
+    padding 220ms ease,
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.power-log.power-log-collapsed {
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.45rem);
 }
 
 .power-play {
@@ -4855,6 +4915,28 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   font-weight: 850;
   animation: powerPlayPop 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
   position: relative;
+}
+
+.power-play.chaos-infused {
+  isolation: isolate;
+  text-shadow: 0 0 0.35rem rgb(var(--chaos-rarity-rgb) / 0.5);
+}
+
+.power-play.chaos-infused::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0 18%, rgb(255 77 125 / 0.42) 21%, transparent 25% 52%, rgb(34 211 238 / 0.36) 56%, transparent 60%),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.18) 0 1px, transparent 1px 4px);
+  background-size: 220% 100%, 100% 0.5rem;
+  opacity: 0.62;
+  animation:
+    chaosPowerEventScan 980ms linear infinite,
+    chaosPowerEventJitter 760ms steps(2, end) infinite;
 }
 
 .power-play[data-rarity="grey"] {
@@ -4895,6 +4977,33 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.32);
   transform-origin: 0 100%;
   animation: tooltipPopoverIn 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes chaosPowerEventScan {
+  0% {
+    background-position: 120% 0, 0 0;
+  }
+
+  100% {
+    background-position: -120% 0, 0 0.5rem;
+  }
+}
+
+@keyframes chaosPowerEventJitter {
+  0%, 100% {
+    transform: translate(0, 0);
+    filter: saturate(1.2);
+  }
+
+  48% {
+    transform: translate(0.035rem, -0.015rem);
+    filter: saturate(1.55) brightness(1.08);
+  }
+
+  52% {
+    transform: translate(-0.035rem, 0.015rem);
+    filter: saturate(1.35) hue-rotate(8deg);
+  }
 }
 
 .black-card.dealt {
