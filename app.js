@@ -11074,6 +11074,43 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   return true;
 }
 
+async function refreshRoomRoundResultSnapshot(localFallback = "", matchToken = state.matchWorkToken) {
+  const existingResult = getRoomRoundResultForCurrentRound();
+  if (existingResult) {
+    playSyncedRoomRoundResult(existingResult, localFallback);
+    return true;
+  }
+  await refreshRoomEventsSinceLastRevision({ refreshRoom: true });
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return true;
+  }
+  const eventResult = getRoomRoundResultForCurrentRound();
+  if (eventResult) {
+    playSyncedRoomRoundResult(eventResult, localFallback);
+    return true;
+  }
+  const lookup = await fetchRoomByCode(state.roomSettings.code);
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return true;
+  }
+  if (lookup.status === "found" && lookup.room) {
+    mergeHostedRoom(lookup.room);
+    applyRoomDirectoryRoom(lookup.room);
+    const roomResult = getRoomRoundResultForCurrentRound();
+    if (roomResult) {
+      playSyncedRoomRoundResult(roomResult, localFallback);
+      return true;
+    }
+  } else if (lookup.status === "closed") {
+    handleCurrentRoomClosed("The room was closed by the host or an admin.");
+    state.roomRoundResolving = false;
+    return true;
+  }
+  return false;
+}
+
 async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = state.matchWorkToken, timeoutMs = null) {
   const effectiveTimeoutMs = Number.isFinite(Number(timeoutMs)) ? Number(timeoutMs) : getRoomRoundResultWaitTimeoutMs();
   const startedAt = Date.now();
@@ -11087,7 +11124,7 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
     if (Date.now() - lastEventRefreshAt > eventRefreshIntervalMs) {
       lastEventRefreshAt = Date.now();
-      await refreshRoomEventsSinceLastRevision({ refreshRoom: false });
+      await refreshRoomEventsSinceLastRevision({ refreshRoom: Date.now() - startedAt > 5000 });
       if (!isCurrentMatchWork(matchToken)) {
         state.roomRoundResolving = false;
         return;
@@ -11119,8 +11156,21 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     state.roomRoundResolving = false;
     return;
   }
-  state.roomRoundResolving = false;
-  showRoomRoundResultSyncError("Timed out waiting for the host to sync the round result.");
+  if (await refreshRoomRoundResultSnapshot(localFallback, matchToken)) {
+    return;
+  }
+  if (!isCurrentMatchWork(matchToken)) {
+    state.roomRoundResolving = false;
+    return;
+  }
+  showWaitingForRoomRoundResult();
+  window.setTimeout(() => {
+    if (!isCurrentMatchWork(matchToken) || !isRoomMode() || state.matchEnded) {
+      state.roomRoundResolving = false;
+      return;
+    }
+    waitForRoomRoundResultThenPlay(localFallback, matchToken, 15000);
+  }, 900);
 }
 
 function maybeResolveRoomSubmissions() {
