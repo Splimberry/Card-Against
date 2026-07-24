@@ -1285,7 +1285,9 @@ function setJsonLocalStorage(key, value) {
 
 function applyUserStorageSnapshot(snapshot = {}, options = {}) {
   const source = snapshot && typeof snapshot === "object" ? snapshot : {};
-  const shouldApplyInventory = options.applyInventory === true || !state.supabaseUser;
+  const shouldApplyInventory = options.displayOnly === true
+    ? false
+    : options.applyInventory === true || !state.supabaseUser;
   state.userStorageApplying = true;
   try {
     const profile = source.profile && typeof source.profile === "object" ? source.profile : {};
@@ -2426,6 +2428,31 @@ async function saveRemoteUserStorageSnapshotForUser(snapshot = getUserStorageSna
   return payload;
 }
 
+function applyCachedSignedInProfilePreview(user) {
+  return applyCachedSignedInProfilePreviewForUserId(user?.id, {
+    fallbackName: state.profile.name
+  });
+}
+
+function applyCachedSignedInProfilePreviewForUserId(userId, options = {}) {
+  const safeUserId = String(userId || "").trim();
+  if (!safeUserId) {
+    return false;
+  }
+  const localSnapshot = loadUserStorageCacheForUser(safeUserId);
+  if (localSnapshot?.version !== userStorageVersion) {
+    return false;
+  }
+  state.profileLoadedFromCache = true;
+  applyUserStorageSnapshot(localSnapshot, {
+    fallbackName: options.fallbackName || state.profile.name,
+    displayOnly: true
+  });
+  syncProfileLoadingState();
+  renderSupabaseAuthControls();
+  return true;
+}
+
 async function hydrateSignedInUserStorage(user) {
   if (!user?.id) {
     return;
@@ -2444,6 +2471,7 @@ async function hydrateSignedInUserStorage(user) {
       const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
       chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
       if (chosenSnapshot) {
+        state.profileLoadedFromCache = false;
         applyUserStorageSnapshot(chosenSnapshot, { fallbackName: state.profile.name, applyInventory: false });
         writeUserStorageCache(getDisplayUserStorageSnapshot(chosenSnapshot));
         restoredSnapshot = true;
@@ -2520,6 +2548,7 @@ async function hydrateSignedInUserStorage(user) {
     }
     void loadUserQuestionSubmissions();
   } finally {
+    state.profileLoadedFromCache = false;
     setProfileLoading(false);
   }
 }
@@ -2660,6 +2689,8 @@ const soundState = {
   timerWarningRampId: null,
   musicDuckFrame: null,
   musicUnlocked: false,
+  musicAutoStartAttempted: false,
+  musicPreloadStarted: false,
   muted: false,
   lastSfxAt: 0,
   activeAudioNodes: new Set(),
@@ -3168,6 +3199,7 @@ const state = {
   supabaseSignInInProgress: false,
   profileLoading: false,
   profileLoadingTimerId: null,
+  profileLoadedFromCache: false,
   realtimeLobbyChannel: null,
   realtimeRoomChannel: null,
   realtimeRoomCode: "",
@@ -3673,6 +3705,35 @@ function updateSoundButton() {
   });
 }
 
+function ensureMusicAudio(preload = "auto") {
+  if (soundState.musicAudio) {
+    if (preload === "auto" && soundState.musicAudio.preload !== "auto") {
+      soundState.musicAudio.preload = "auto";
+    }
+    return soundState.musicAudio;
+  }
+  soundState.musicAudio = new Audio(audioAssets.music);
+  soundState.musicAudio.loop = true;
+  soundState.musicAudio.preload = preload;
+  soundState.musicAudio.addEventListener("error", () => {
+    soundState.musicUnlocked = false;
+    soundState.musicAudio = null;
+    armMusicUnlockListeners();
+  });
+  return soundState.musicAudio;
+}
+
+function preloadMusicAudio() {
+  if (soundState.muted || soundState.musicVolume <= 0 || soundState.musicPreloadStarted) {
+    return;
+  }
+  const audio = ensureMusicAudio("auto");
+  soundState.musicPreloadStarted = true;
+  try {
+    audio.load();
+  } catch {}
+}
+
 function primeAudioPlayback() {
   if (soundState.muted) {
     return;
@@ -4090,16 +4151,7 @@ function startMusic() {
     return;
   }
 
-  if (!soundState.musicAudio) {
-    soundState.musicAudio = new Audio(audioAssets.music);
-    soundState.musicAudio.loop = true;
-    soundState.musicAudio.preload = "none";
-    soundState.musicAudio.addEventListener("error", () => {
-      soundState.musicUnlocked = false;
-      soundState.musicAudio = null;
-      armMusicUnlockListeners();
-    });
-  }
+  ensureMusicAudio("auto");
 
   setMusicElementVolume(soundState.musicVolume);
   soundState.musicAudio.play()
@@ -4111,6 +4163,15 @@ function startMusic() {
       soundState.musicUnlocked = false;
       armMusicUnlockListeners();
     });
+}
+
+function startOpeningMusic() {
+  if (soundState.musicAutoStartAttempted || soundState.muted || soundState.musicVolume <= 0) {
+    return;
+  }
+  soundState.musicAutoStartAttempted = true;
+  preloadMusicAudio();
+  startMusic();
 }
 
 function stopMusic() {
@@ -11717,6 +11778,12 @@ function getProfileLoadingCopy() {
     };
   }
   if (state.userStorageHydrating) {
+    if (state.profileLoadedFromCache) {
+      return {
+        title: "Syncing profile",
+        text: "Showing your cached profile while the latest account data loads."
+      };
+    }
     return {
       title: "Loading profile",
       text: "Retrieving your coins, cosmetics, achievements, and settings..."
@@ -11916,6 +11983,24 @@ function hasAnyStoredSupabaseSession() {
   }
 }
 
+function getStoredSupabaseSessionUserId() {
+  try {
+    const storages = [localStorage, sessionStorage].filter(Boolean);
+    for (const storage of storages) {
+      const authKey = Object.keys(storage).find((key) => /^sb-.+-auth-token$/.test(key));
+      if (!authKey) {
+        continue;
+      }
+      const stored = JSON.parse(storage.getItem(authKey) || "null") || {};
+      const userId = String(stored?.user?.id || stored?.currentSession?.user?.id || "").trim();
+      if (userId) {
+        return userId;
+      }
+    }
+  } catch {}
+  return "";
+}
+
 function clearStoredSupabaseSession(config = state.supabaseConfig) {
   const projectRef = getSupabaseProjectRef(config?.url || "");
   if (!projectRef) {
@@ -12061,6 +12146,7 @@ function scheduleInitialSupabaseAuth() {
   if (hasSupabaseAuthCallback() || hasAnyStoredSupabaseSession()) {
     state.supabaseAuthResolving = true;
     setProfileLoading(true, { slow: false });
+    applyCachedSignedInProfilePreviewForUserId(getStoredSupabaseSessionUserId());
     void initSupabaseAuth();
     return;
   }
@@ -13282,6 +13368,7 @@ function applySupabaseSession(session) {
     }
     applySupabaseProfile(state.supabaseUser);
     if (state.supabaseUser.id !== previousUserId) {
+      applyCachedSignedInProfilePreview(state.supabaseUser);
       void hydrateSignedInUserStorage(state.supabaseUser);
       void refreshAdminSession();
     }
@@ -31238,6 +31325,7 @@ updateSoundButton();
 syncSettingsControls();
 if (!soundState.muted) {
   armMusicUnlockListeners();
+  window.setTimeout(startOpeningMusic, 0);
   const warmSfx = () => preloadSfxAudioAssets();
   if ("requestIdleCallback" in window) {
     soundState.sfxPreloadIdleId = window.requestIdleCallback(warmSfx, { timeout: 1800 });
