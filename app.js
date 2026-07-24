@@ -2592,7 +2592,7 @@ const tableEvents = [
     id: "jackpot_round",
     name: "Jackpot Round",
     short: "correct +15%",
-    description: "All correct players gain 15% of their current score.",
+    description: "All correct players gain 15% of their projected end-of-round score.",
     overlayKind: "bounty",
     detail: "Correct Players +15%",
     soundName: "bountyRound",
@@ -2602,7 +2602,7 @@ const tableEvents = [
     id: "sudden_death",
     name: "Sudden Death",
     short: "losers -25%",
-    description: "Second half only. Losing costs 25% of your total score.",
+    description: "Second half only. Losing costs 25% of your projected end-of-round score.",
     overlayKind: "sudden-death",
     detail: "Losers Lose 25%",
     soundName: "suddenDeath",
@@ -2622,7 +2622,7 @@ const tableEvents = [
     id: "no_mercy",
     name: "No Mercy",
     short: "losers -15%",
-    description: "Losing this round costs 15% of your total score.",
+    description: "Losing this round costs 15% of your projected end-of-round score.",
     overlayKind: "no-mercy",
     detail: "Losers Lose 15%",
     soundName: "noMercy",
@@ -7533,12 +7533,16 @@ function applyTableEventLoserDeltas(deltas, owners, winnerSet, startingScores, e
   owners
     .filter((owner) => !winnerSet.has(owner))
     .forEach((owner) => {
-      const currentTotal = Math.max(0, (startingScores[owner] || 0) + (deltas[owner] || 0));
-      const amount = Math.floor(currentTotal * percent);
+      const projectedTotal = getProjectedRoundTotal(owner, startingScores, deltas);
+      const amount = Math.floor(projectedTotal * percent);
       deltas[owner] -= amount;
       queueStatFlash(kind, event.name, formatSignedStat(-amount, "Point"), { owners: [owner], complex: true, soundName: event.soundName });
     });
-  events.push(`${event.name} made every loser lose ${Math.round(percent * 100)}% of their current total.`);
+  events.push(`${event.name} made every loser lose ${Math.round(percent * 100)}% of their projected end-of-round total.`);
+}
+
+function getProjectedRoundTotal(owner, startingScores, deltas) {
+  return Math.max(0, (startingScores[owner] || 0) + (deltas[owner] || 0));
 }
 
 function applyTableEventWinnerDeltas(deltas, owners, winnerSet, startingScores, events) {
@@ -7549,11 +7553,12 @@ function applyTableEventWinnerDeltas(deltas, owners, winnerSet, startingScores, 
   owners
     .filter((owner) => winnerSet.has(owner))
     .forEach((owner) => {
-      const amount = Math.floor(Math.max(0, startingScores[owner] || 0) * 0.15);
+      const projectedTotal = getProjectedRoundTotal(owner, startingScores, deltas);
+      const amount = Math.floor(projectedTotal * 0.15);
       deltas[owner] += amount;
       queueStatFlash("bounty", event.name, formatSignedStat(amount, "Point"), { owners: [owner], complex: true, soundName: event.soundName });
     });
-  events.push("Jackpot Round gave every correct player 15% of their current score.");
+  events.push("Jackpot Round gave every correct player 15% of their projected end-of-round total.");
 }
 
 function applyFinalTableEventGainMultipliers(deltas, owners, events) {
