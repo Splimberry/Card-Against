@@ -2890,6 +2890,7 @@ const state = {
   spectatorRoundResultPlaybackKey: "",
   roomRoundResultPlaybackKey: "",
   roomBotSequence: 0,
+  roomBotAddPending: false,
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
   roomRoundResolving: false,
@@ -26422,6 +26423,9 @@ function applyRoomDirectoryRoom(room) {
   if (!room || room.code !== state.roomSettings.code) {
     return;
   }
+  if (isStaleActiveRoomRealtimePayload({ code: room.code, room })) {
+    return;
+  }
   updateRoomEventRevision(room.revision);
   state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
   syncRoomMatchStateFromSettings(state.roomSettings);
@@ -27860,6 +27864,9 @@ function getRandomRoomBotName() {
 }
 
 async function addBotToRoom() {
+  if (state.roomBotAddPending) {
+    return;
+  }
   if (!isCurrentHost() || state.currentRoomStatus !== "lobby") {
     addSystemChat("Only the host can add bots while the room is in the lobby.", { private: true });
     return;
@@ -27891,29 +27898,21 @@ async function addBotToRoom() {
     muted: false,
     status: "bot"
   };
-  state.roomParticipants = normalizeRoomParticipantsList([...participants, bot]);
-  syncRoomPlayersFromParticipants();
-  addSystemChat(`${botName} joined as a bot.`);
-  const hostedRoom = state.hostedRooms.find((room) => room.code === state.roomSettings.code);
-  if (hostedRoom) {
-    hostedRoom.participants = [...state.roomParticipants];
-    hostedRoom.activePlayers = state.roomParticipants.filter((participant) => participant.active && !participant.spectator).length;
-    hostedRoom.spectators = state.roomParticipants.filter((participant) => participant.active && participant.spectator).length;
-    hostedRoom.updatedAt = Date.now();
-  }
-  broadcastRealtimeRoomChange("participant-updated", state.roomSettings.code, {
-    status: state.currentRoomStatus,
-    revision: state.roomEventRevision,
-    updatedAt: Date.now(),
-    participant: bot
-  });
-  publishRoomParticipantDelta(bot).then((data) => {
-    if (!data) {
-      upsertHostedRoom("lobby");
-    }
-  });
+  state.roomBotAddPending = true;
   renderRoomLobby();
-  playSound("click");
+  try {
+    const data = await publishRoomParticipantDelta(bot);
+    if (!data?.participant) {
+      addSystemChat("Could not add that bot. Try again in a moment.", { private: true });
+      return;
+    }
+    addSystemChat(`${data.participant.name || botName} joined as a bot.`);
+    renderRoomLobby();
+    playSound("click");
+  } finally {
+    state.roomBotAddPending = false;
+    renderRoomLobby();
+  }
 }
 
 function renderRoomLobby() {
@@ -27947,10 +27946,13 @@ function renderRoomLobby() {
       : "Start the match for everyone in this lobby."
   );
   setHidden(elements.lobbyAddBotButton, !isCurrentHost());
-  elements.lobbyAddBotButton.disabled = state.currentRoomStatus !== "lobby" || getRoomOpenSlotCount() <= 0;
+  elements.lobbyAddBotButton.disabled = state.roomBotAddPending || state.currentRoomStatus !== "lobby" || getRoomOpenSlotCount() <= 0;
+  elements.lobbyAddBotButton.textContent = state.roomBotAddPending ? "Adding..." : "Add Bot";
   setButtonHint(
     elements.lobbyAddBotButton,
-    getRoomOpenSlotCount() <= 0
+    state.roomBotAddPending
+      ? "Adding a bot to this room."
+      : getRoomOpenSlotCount() <= 0
       ? "This room is full."
       : "Add a bot to occupy an empty player slot for multiplayer testing."
   );
@@ -28159,6 +28161,16 @@ function createRoomModerationControls(owner, context = "list") {
   const player = getPlayer(owner);
   const controls = document.createElement("div");
   controls.className = context === "chat" ? "chat-options" : "room-player-controls";
+  if (player?.active && (player.bot || player.type === "bot") && canKickRoomBot(player.owner, player.participantId)) {
+    const kickButton = document.createElement("button");
+    kickButton.type = "button";
+    kickButton.className = "mini-button danger-button";
+    kickButton.dataset.action = "kick-bot";
+    kickButton.dataset.owner = player.owner;
+    kickButton.textContent = "Kick";
+    controls.appendChild(kickButton);
+    return controls;
+  }
   if (!player || !player.active || player.owner === state.currentOwner || player.bot || player.type === "bot") {
     return controls;
   }
@@ -28302,9 +28314,11 @@ function renderRoomPlayerList(target) {
     }
     card.append(avatar, name, status);
 
-    if (state.mode === "room" && player.owner !== state.currentOwner && player.active && !player.bot && player.type !== "bot") {
+    if (state.mode === "room" && player.owner !== state.currentOwner && player.active) {
       const controls = createRoomModerationControls(player.owner);
-      card.appendChild(controls);
+      if (controls.childElementCount) {
+        card.appendChild(controls);
+      }
     }
     target.appendChild(card);
   });
@@ -28420,12 +28434,18 @@ function voteBanRoomPlayer(owner) {
 function handleRoomPlayerAction(action, owner) {
   if (action === "mute") {
     muteRoomPlayer(owner);
+    return;
   }
   if (action === "ban") {
     banRoomPlayer(owner);
+    return;
   }
   if (action === "vote-ban") {
     voteBanRoomPlayer(owner);
+    return;
+  }
+  if (action === "kick-bot") {
+    kickRoomBot(owner);
   }
 }
 
