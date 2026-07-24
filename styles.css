@@ -5521,10 +5521,12 @@ input:focus {
   pointer-events: none;
   background:
     linear-gradient(110deg, transparent 0 18%, rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.28) 32%, rgba(255, 255, 255, 0.42) 43%, rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.18) 54%, transparent 68%);
+  background-size: 180% 100%;
+  background-position: -120% 0;
   border-radius: inherit;
+  clip-path: inset(0 round 8px);
   mix-blend-mode: screen;
   opacity: 0.46;
-  transform: translateX(-18%);
   animation: cardMetallicShine 5200ms ease-in-out infinite;
 }
 
@@ -5920,10 +5922,12 @@ input:focus {
   pointer-events: none;
   background:
     linear-gradient(110deg, transparent 0 18%, rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.28) 32%, rgba(255, 255, 255, 0.42) 43%, rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.18) 54%, transparent 68%);
+  background-size: 180% 100%;
+  background-position: -120% 0;
   border-radius: inherit;
+  clip-path: inset(0 round 8px);
   mix-blend-mode: screen;
   opacity: 0.46;
-  transform: translateX(-18%);
   animation: cardMetallicShine 5200ms ease-in-out infinite;
 }
 
@@ -6662,17 +6666,17 @@ input:focus {
   0%,
   100% {
     opacity: 0.22;
-    transform: translateX(-22%);
+    background-position: -120% 0;
   }
 
   42% {
     opacity: 0.42;
-    transform: translateX(18%);
+    background-position: 35% 0;
   }
 
   64% {
     opacity: 0.28;
-    transform: translateX(26%);
+    background-position: 120% 0;
   }
 }
 
@@ -11178,13 +11182,6 @@ body[data-performance-mode="balanced"][data-game-active] .white-card.winner {
 
 body[data-performance-mode="balanced"][data-game-active] .white-card.winner::after {
   animation-play-state: paused !important;
-}
-
-body[data-performance-mode="low-power"]
-  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="metallic"],
-body[data-performance-mode="minimal"]
-  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-special="false"][data-card-effects~="metallic"] {
-  overflow: hidden !important;
 }
 
 body[data-performance-mode="low-power"] *,
