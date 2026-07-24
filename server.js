@@ -32,6 +32,7 @@ const roomParticipantSessionTtlSeconds = 60 * 60 * 12;
 const maxRoomEvents = 100;
 const roomRequestMaxBytes = 750_000;
 const hostReconnectGraceMs = 60 * 1000;
+const participantReconnectGraceMs = 60 * 1000;
 const rateLimitBuckets = new Map();
 const chatCooldownBuckets = new Map();
 const aiRoundCache = new Map();
@@ -536,12 +537,13 @@ async function handleGetRoom(reqOrRes, resOrCode, maybeCode) {
     sendJson(res, 404, { error: "Room not found.", code: normalizedCode });
     return;
   }
-  if (!(await ensureRoomHostReconnectGrace(room))) {
+  const activeRoom = await ensureRoomReconnectGrace(room);
+  if (!activeRoom) {
     sendJson(res, 410, { closed: true, close: createRoomClosePayload(normalizedCode, "host-disconnected") });
     return;
   }
   sendJson(res, 200, {
-    room: sanitizeRoomForClient(room, { includePrivateSecrets: req ? hasRoomHostAuth(req, room) : false })
+    room: sanitizeRoomForClient(activeRoom, { includePrivateSecrets: req ? hasRoomHostAuth(req, activeRoom) : false })
   });
 }
 
@@ -2350,8 +2352,42 @@ function isRoomHostReconnectGraceExpired(room, now = Date.now()) {
   return Boolean(hostInactive && pendingAt && now - pendingAt >= hostReconnectGraceMs);
 }
 
-async function ensureRoomHostReconnectGrace(room) {
+function pruneExpiredDisconnectedParticipants(room, now = Date.now()) {
+  if (!room || room.status === "complete" || !Array.isArray(room.participants)) {
+    return [];
+  }
+  const removed = [];
+  room.participants = room.participants.filter((participant) => {
+    if (
+      participant.host
+      || participant.bot
+      || participant.active !== false
+      || !participant.disconnectedAt
+      || now - Number(participant.disconnectedAt) < participantReconnectGraceMs
+    ) {
+      return true;
+    }
+    removed.push(participant);
+    return false;
+  });
+  removed.forEach((participant) => {
+    stampRoomEvent(room, "participant_left", {
+      participantId: participant.id,
+      participantName: participant.name || "A player",
+      participant,
+      reason: "disconnect-timeout"
+    });
+  });
+  return removed;
+}
+
+async function ensureRoomReconnectGrace(room) {
   if (!isRoomHostReconnectGraceExpired(room)) {
+    const removed = pruneExpiredDisconnectedParticipants(room);
+    if (removed.length) {
+      finalizeRoom(room);
+      return backendStore.upsertRoom(room);
+    }
     return room;
   }
   await closeStoredRoom(room.code, "host-disconnected");
@@ -2360,16 +2396,21 @@ async function ensureRoomHostReconnectGrace(room) {
 
 async function listRoomsForDirectory() {
   const rooms = await backendStore.listRooms();
-  const checked = await Promise.all(rooms.map(ensureRoomHostReconnectGrace));
+  const checked = await Promise.all(rooms.map(ensureRoomReconnectGrace));
   return checked.filter(Boolean);
 }
 
 async function handleRoomPresence(req, res, code) {
   try {
     const normalizedCode = String(code || "").trim().toUpperCase();
-    const room = await backendStore.getRoom(normalizedCode);
+    let room = await backendStore.getRoom(normalizedCode);
     if (!room) {
       sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+    room = await ensureRoomReconnectGrace(room);
+    if (!room) {
+      sendJson(res, 410, { closed: true, close: createRoomClosePayload(normalizedCode, "host-disconnected") });
       return;
     }
 
@@ -2614,9 +2655,14 @@ async function handleRoomSettings(req, res, code) {
 async function handleRoomHeartbeat(req, res, code) {
   try {
     const normalizedCode = String(code || "").trim().toUpperCase();
-    const room = await backendStore.getRoom(normalizedCode);
+    let room = await backendStore.getRoom(normalizedCode);
     if (!room) {
       sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+    room = await ensureRoomReconnectGrace(room);
+    if (!room) {
+      sendJson(res, 410, { closed: true, close: createRoomClosePayload(normalizedCode, "host-disconnected") });
       return;
     }
 
