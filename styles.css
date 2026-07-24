@@ -1725,7 +1725,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   display: grid;
   gap: 0.35rem;
   min-width: 0;
-  max-height: calc((3.25rem * 3) + (0.35rem * 2) + 0.3rem);
+  max-height: calc((3.25rem * 2) + 0.35rem + 0.3rem);
   overflow-x: hidden;
   overflow-y: auto;
   padding-right: 0.18rem;
