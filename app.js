@@ -61,6 +61,7 @@ const roomDirectoryFetchTimeoutMs = 4500;
 const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
+const profileLoadingSlowWarningMs = 20000;
 const roomAppliedEventLimit = 300;
 const supabaseAvatarBucket = "profile-avatars";
 const supabaseSdkUrl = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
@@ -2449,6 +2450,9 @@ function applyCachedSignedInProfilePreviewForUserId(userId, options = {}) {
     fallbackName: options.fallbackName || state.profile.name,
     displayOnly: true
   });
+  if (options.dismissLoading !== false) {
+    setProfileLoading(false, { slow: false });
+  }
   syncProfileLoadingState();
   renderSupabaseAuthControls();
   return true;
@@ -2459,16 +2463,24 @@ async function hydrateSignedInUserStorage(user) {
     return;
   }
   let restoredSnapshot = false;
-  setProfileLoading(true);
   let chosenSnapshot = null;
-  let localSnapshot = null;
+  let localSnapshot = loadUserStorageCacheForUser(user.id);
+  const hasCachedProfile = localSnapshot?.version === userStorageVersion;
+  if (hasCachedProfile && !state.profileLoadedFromCache) {
+    state.profileLoadedFromCache = true;
+    applyUserStorageSnapshot(localSnapshot, {
+      fallbackName: state.profile.name,
+      displayOnly: true
+    });
+  }
+  setProfileLoading(!hasCachedProfile);
   let cachedInventory = null;
   try {
     state.userStorageHydrating = true;
     syncProfileLoadingState();
     renderSupabaseAuthControls();
     try {
-      localSnapshot = loadUserStorageCacheForUser(user.id);
+      localSnapshot = hasCachedProfile ? localSnapshot : loadUserStorageCacheForUser(user.id);
       const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
       chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
       if (chosenSnapshot) {
@@ -4725,7 +4737,7 @@ function roomPayloadMatchesCurrentMatch(payload = {}) {
   return !incomingMatchId || !currentMatchId || incomingMatchId === currentMatchId;
 }
 
-function isJoinedRoomWaitingForSyncedSetup(round = state.round) {
+function isRemoteRoomWaitingForSyncedSetup(round = state.round) {
   if (!isRoomMode() || !state.joiningRoom || isCurrentHost()) {
     return false;
   }
@@ -4744,7 +4756,7 @@ function canAdoptIncomingRoomGame(game = null, room = null, round = state.round)
     game.setup
     && Number(game.round || 0) >= Number(round || 1)
     && String(room?.status || game.status || "").toLowerCase() !== "complete"
-    && isJoinedRoomWaitingForSyncedSetup(round)
+    && isRemoteRoomWaitingForSyncedSetup(round)
   );
 }
 
@@ -11885,8 +11897,8 @@ function getProfileLoadingCopy() {
   }
   if (state.supabaseAuthLoadSlow) {
     return {
-      title: "Still checking account",
-      text: "Slow connection detected. Keeping your profile locked until account data loads."
+      title: "Still syncing account",
+      text: "Account storage is taking longer than usual. Your cached profile is protected while it finishes."
     };
   }
   if (state.userStorageHydrating) {
@@ -11930,7 +11942,7 @@ function setProfileLoading(loading, options = {}) {
         syncProfileLoadingState();
         renderSupabaseAuthControls();
       }
-    }, 9000);
+    }, Math.max(12000, Number(options.slowAfterMs) || profileLoadingSlowWarningMs));
   } else {
     state.supabaseAuthLoadSlow = false;
   }
@@ -12799,7 +12811,7 @@ function applyRoomServerEvent(event = {}) {
     && canAdoptIncomingRoomGame(incomingGame, { status: payload.status || "in-progress" }, payload.round || incomingGame.round || state.round);
   const shouldAdoptRoundAdvance = type === "round_advancing"
     && getRoomMatchIdFromPayload(eventPayload)
-    && isJoinedRoomWaitingForSyncedSetup(payload.round || state.round);
+    && isRemoteRoomWaitingForSyncedSetup(payload.round || state.round);
   if (!roomPayloadMatchesCurrentMatch(eventPayload) && !shouldAdoptNewRoomGame && !shouldAdoptRoundAdvance) {
     rememberAppliedRoomServerEvent(event);
     updateRoomEventRevision(event.revision);
@@ -26656,7 +26668,7 @@ function applyRealtimeRoundAdvancing(payload = {}) {
     return false;
   }
   const incomingMatchId = getRoomMatchIdFromPayload(payload);
-  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !isJoinedRoomWaitingForSyncedSetup(nextRound || state.round)) {
+  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !isRemoteRoomWaitingForSyncedSetup(nextRound || state.round)) {
     return false;
   }
   if (payload.matchSettings || payload.settings) {
