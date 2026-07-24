@@ -3085,8 +3085,12 @@ async function handleRoomModeration(req, res, code) {
       participant.muted = muted;
       participant.status = muted ? "muted" : String(participant.status || "joined").slice(0, 32);
     } else if (action === "kick" || action === "ban") {
+      const shouldRemoveParticipant = action === "kick" && participant.bot;
       participant.active = false;
       participant.status = action === "ban" ? "banned" : "kicked";
+      if (shouldRemoveParticipant) {
+        room.participants = room.participants.filter((entry) => entry.id !== participantId);
+      }
       if (action === "ban") {
         room.banned = [...new Set([...(Array.isArray(room.banned) ? room.banned : []), participant.id, participant.name].filter(Boolean))];
       }

@@ -2890,7 +2890,6 @@ const state = {
   spectatorRoundResultPlaybackKey: "",
   roomRoundResultPlaybackKey: "",
   roomBotSequence: 0,
-  roomBotAddPending: false,
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
   roomRoundResolving: false,
@@ -10225,6 +10224,16 @@ function getRoomParticipantIdForOwner(owner) {
   }
   const participant = state.roomParticipants.find((entry, index) => getRoomOwnerForParticipant(entry, index) === owner);
   return participant?.id || "";
+}
+
+function getCurrentRoomHostParticipantId() {
+  return String(
+    state.roomParticipants.find((participant) => participant.host && participant.active !== false)?.id
+    || state.joiningRoom?.host?.id
+    || state.hostedRooms.find((room) => room.code === state.roomSettings.code)?.host?.id
+    || state.clientId
+    || ""
+  ).slice(0, 80);
 }
 
 function updateRoomParticipantSubmission(participantId, answer, round, remainingTime, matchId = getCurrentRoomMatchId()) {
@@ -26216,13 +26225,16 @@ async function publishRoomParticipantDelta(participant, options = {}) {
       body: JSON.stringify({
         participant,
         compact: true,
-        hostParticipantId: state.clientId,
+        hostParticipantId: getCurrentRoomHostParticipantId(),
         ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
       })
     }, roomPresenceFetchTimeoutMs);
     if (!response.ok) {
       state.roomDirectoryOnline = false;
-      return null;
+      const errorPayload = await response.json().catch(() => ({}));
+      return options.includeError
+        ? { ok: false, status: response.status, error: errorPayload.error || "Room participant update failed." }
+        : null;
     }
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
@@ -26243,10 +26255,12 @@ async function publishRoomParticipantDelta(participant, options = {}) {
         });
       }
     }
-    return data;
+    return { ...data, ok: true };
   } catch {
     state.roomDirectoryOnline = false;
-    return null;
+    return options.includeError
+      ? { ok: false, status: 0, error: "Room participant update failed." }
+      : null;
   }
 }
 
@@ -27296,18 +27310,16 @@ function canKickRoomBot(owner = "", participantId = "") {
   return Boolean(getKickableRoomBotTarget(owner, participantId));
 }
 
-function kickRoomBot(owner = "", participantId = "") {
-  const target = getKickableRoomBotTarget(owner, participantId);
-  if (!target) {
-    return false;
+async function confirmKickRoomBot(target) {
+  playSound("click");
+  const data = await publishRoomModeration("kick", target.participantId, { reason: "bot-kicked", includeError: true });
+  if (!data?.ok && !data?.closed) {
+    addSystemChat(`Could not kick ${target.name}: ${data?.error || "room sync failed."}`, { private: true });
+    return;
   }
-
-  const opponentParticipantId = getPlayer("opponent")?.participantId;
-  removeRoomParticipantLocally(target.participantId, { status: "kicked" });
-  if (target.owner === "opponent" || opponentParticipantId === target.participantId) {
+  if (target.owner === "opponent" || getPlayer("opponent")?.participantId === target.participantId) {
     state.localAnswers.playerTwo = "";
   }
-
   addSystemChat(`${target.name} was kicked from the room.`);
   const opponent = getPlayer("opponent");
   if (opponent?.active && state.roomSubmissions.opponent === undefined) {
@@ -27317,18 +27329,15 @@ function kickRoomBot(owner = "", participantId = "") {
   renderRoomPlayers();
   renderSubmissionStatus();
   maybeResolveRoomSubmissions();
-  publishRoomModeration("kick", target.participantId, { reason: "bot-kicked" }).then((data) => {
-    if (!data) {
-      upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
-      broadcastRealtimeRoomChange("participant-moderated", state.roomSettings.code, {
-        action: "kick",
-        participantId: target.participantId,
-        participantName: target.name,
-        updatedAt: Date.now()
-      });
-    }
-  });
-  playSound("click");
+}
+
+function kickRoomBot(owner = "", participantId = "") {
+  const target = getKickableRoomBotTarget(owner, participantId);
+  if (!target) {
+    return false;
+  }
+
+  void confirmKickRoomBot(target);
   return true;
 }
 
@@ -27864,9 +27873,6 @@ function getRandomRoomBotName() {
 }
 
 async function addBotToRoom() {
-  if (state.roomBotAddPending) {
-    return;
-  }
   if (!isCurrentHost() || state.currentRoomStatus !== "lobby") {
     addSystemChat("Only the host can add bots while the room is in the lobby.", { private: true });
     return;
@@ -27898,21 +27904,20 @@ async function addBotToRoom() {
     muted: false,
     status: "bot"
   };
-  state.roomBotAddPending = true;
-  renderRoomLobby();
-  try {
-    const data = await publishRoomParticipantDelta(bot);
-    if (!data?.participant) {
-      addSystemChat("Could not add that bot. Try again in a moment.", { private: true });
-      return;
+  const data = await publishRoomParticipantDelta(bot, { includeError: true });
+  if (!data?.participant) {
+    addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
+    if (data?.status === 409 || /full/i.test(data?.error || "")) {
+      const lookup = await fetchRoomByCode(state.roomSettings.code);
+      if (lookup.status === "found" && lookup.room) {
+        syncActiveRoomFromDirectory(lookup.room, { skipHeartbeat: true });
+      }
     }
-    addSystemChat(`${data.participant.name || botName} joined as a bot.`);
-    renderRoomLobby();
-    playSound("click");
-  } finally {
-    state.roomBotAddPending = false;
-    renderRoomLobby();
+    return;
   }
+  addSystemChat(`${data.participant.name || botName} joined as a bot.`);
+  renderRoomLobby();
+  playSound("click");
 }
 
 function renderRoomLobby() {
@@ -27946,13 +27951,11 @@ function renderRoomLobby() {
       : "Start the match for everyone in this lobby."
   );
   setHidden(elements.lobbyAddBotButton, !isCurrentHost());
-  elements.lobbyAddBotButton.disabled = state.roomBotAddPending || state.currentRoomStatus !== "lobby" || getRoomOpenSlotCount() <= 0;
-  elements.lobbyAddBotButton.textContent = state.roomBotAddPending ? "Adding..." : "Add Bot";
+  elements.lobbyAddBotButton.disabled = state.currentRoomStatus !== "lobby" || getRoomOpenSlotCount() <= 0;
+  elements.lobbyAddBotButton.textContent = "Add Bot";
   setButtonHint(
     elements.lobbyAddBotButton,
-    state.roomBotAddPending
-      ? "Adding a bot to this room."
-      : getRoomOpenSlotCount() <= 0
+    getRoomOpenSlotCount() <= 0
       ? "This room is full."
       : "Add a bot to occupy an empty player slot for multiplayer testing."
   );
@@ -28334,24 +28337,29 @@ function publishRoomModeration(action, participantId, options = {}) {
     body: JSON.stringify({
       action,
       participantId,
-      hostParticipantId: state.clientId,
+      hostParticipantId: getCurrentRoomHostParticipantId(),
       muted: options.muted,
       reason: options.reason || ""
     })
   }, roomPresenceFetchTimeoutMs).then(async (response) => {
     if (!response.ok) {
-      return null;
+      const errorPayload = await response.json().catch(() => ({}));
+      return options.includeError
+        ? { ok: false, status: response.status, error: errorPayload.error || "Room moderation failed." }
+        : null;
     }
     const data = await response.json();
     if (data.closed) {
       broadcastRealtimeRoomChange("room-closed", state.roomSettings.code, { reason: data.reason || action });
-      return data;
+      return { ...data, ok: true };
     }
     updateRoomEventRevision(data.revision);
     applyRoomModerationDelta({ ...data, code: state.roomSettings.code, silent: true });
     broadcastRealtimeRoomChange("participant-moderated", state.roomSettings.code, data);
-    return data;
-  }).catch(() => null);
+    return { ...data, ok: true };
+  }).catch(() => (options.includeError
+    ? { ok: false, status: 0, error: "Room moderation failed." }
+    : null));
 }
 
 function muteRoomPlayer(owner) {

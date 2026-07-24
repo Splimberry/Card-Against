@@ -1554,9 +1554,33 @@ async function testRoomModerationEndpointKicksBot() {
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
   const storedBot = stored.payload.room.participants.find((participant) => participant.id === "bot-client");
-  assert.equal(storedBot.active, false);
+  assert.equal(storedBot, undefined);
   assert.equal(stored.payload.room.activePlayers, 1);
   assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated" && event.payload.participantId === "bot-client"), true);
+
+  const added = await request("POST", `/api/rooms/${code}/presence`, {
+    hostParticipantId: "host-client",
+    compact: true,
+    participant: {
+      id: "bot-client-2",
+      name: "Replacement Bot",
+      host: false,
+      spectator: false,
+      bot: true,
+      active: true,
+      muted: false,
+      status: "bot"
+    }
+  });
+  assert.equal(added.response.status, 200, added.payload.error);
+  assert.equal(added.payload.participant.id, "bot-client-2");
+  assert.equal(added.payload.participant.bot, true);
+
+  const storedAfterAdd = await getRoom(code);
+  assert.equal(storedAfterAdd.response.status, 200, storedAfterAdd.payload.error);
+  assert.equal(storedAfterAdd.payload.room.participants.some((participant) => participant.id === "bot-client"), false);
+  assert.equal(storedAfterAdd.payload.room.participants.some((participant) => participant.id === "bot-client-2"), true);
+  assert.equal(storedAfterAdd.payload.room.activePlayers, 2);
 }
 
 async function testHostCloseEndpointDeletesRoom() {
