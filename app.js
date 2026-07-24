@@ -4725,6 +4725,29 @@ function roomPayloadMatchesCurrentMatch(payload = {}) {
   return !incomingMatchId || !currentMatchId || incomingMatchId === currentMatchId;
 }
 
+function isJoinedRoomWaitingForSyncedSetup(round = state.round) {
+  if (!isRoomMode() || !state.joiningRoom || isCurrentHost()) {
+    return false;
+  }
+  const loadingVisible = elements.loadingPanel && !elements.loadingPanel.classList.contains("hidden");
+  return state.currentRoomStatus === "lobby"
+    || state.currentRoomStatus === "complete"
+    || elements.gameStage.classList.contains("hidden")
+    || (loadingVisible && (!state.questionId || Number(round) <= Number(state.round || 1)));
+}
+
+function canAdoptIncomingRoomGame(game = null, room = null, round = state.round) {
+  if (!game?.matchId || roomPayloadMatchesCurrentMatch({ game })) {
+    return true;
+  }
+  return Boolean(
+    game.setup
+    && Number(game.round || 0) >= Number(round || 1)
+    && String(room?.status || game.status || "").toLowerCase() !== "complete"
+    && isJoinedRoomWaitingForSyncedSetup(round)
+  );
+}
+
 function cancelActiveMatchWork(options = {}) {
   state.matchWorkToken += 1;
   if (state.roundRequestAbortController) {
@@ -12770,7 +12793,14 @@ function applyRoomServerEvent(event = {}) {
     revision: Number(event.revision) || 0,
     updatedAt: Number(event.createdAt) || Date.now()
   };
-  if (!roomPayloadMatchesCurrentMatch(eventPayload)) {
+  const incomingGame = payload.game || payload.room?.game || null;
+  const shouldAdoptNewRoomGame = type === "round_started"
+    && incomingGame
+    && canAdoptIncomingRoomGame(incomingGame, { status: payload.status || "in-progress" }, payload.round || incomingGame.round || state.round);
+  const shouldAdoptRoundAdvance = type === "round_advancing"
+    && getRoomMatchIdFromPayload(eventPayload)
+    && isJoinedRoomWaitingForSyncedSetup(payload.round || state.round);
+  if (!roomPayloadMatchesCurrentMatch(eventPayload) && !shouldAdoptNewRoomGame && !shouldAdoptRoundAdvance) {
     rememberAppliedRoomServerEvent(event);
     updateRoomEventRevision(event.revision);
     return true;
@@ -26291,7 +26321,8 @@ function applyRoomDirectoryRoom(room) {
   const shouldAcceptIncomingGame = !incomingGame
     || !getCurrentRoomMatchId()
     || !incomingGame.matchId
-    || incomingGame.matchId === getCurrentRoomMatchId();
+    || incomingGame.matchId === getCurrentRoomMatchId()
+    || canAdoptIncomingRoomGame(incomingGame, room);
   state.roomGame = shouldAcceptIncomingGame ? incomingGame : state.roomGame;
   if (state.roomGame?.matchId) {
     setCurrentRoomMatchId(state.roomGame.matchId);
@@ -26356,8 +26387,11 @@ function getSyncedRoomSetupForRound(round = state.round) {
   if (!game || game.status === "ended" || Number(game.round) !== Number(round) || !game.setup) {
     return null;
   }
-  if (!roomPayloadMatchesCurrentMatch({ game })) {
+  if (!canAdoptIncomingRoomGame(game, state.joiningRoom, round)) {
     return null;
+  }
+  if (game.matchId) {
+    setCurrentRoomMatchId(game.matchId);
   }
   try {
     return normalizeSetupPayload(game.setup);
@@ -26504,6 +26538,7 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
   const matchToken = state.matchWorkToken;
   const startedAt = Date.now();
   let lastEventRefreshAt = 0;
+  let lastDirectRoomRefreshAt = 0;
   while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeoutMs) {
     const setup = getSyncedRoomSetupForRound(round);
     if (setup) {
@@ -26521,7 +26556,10 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
         return eventSetup;
       }
     }
-    if (!(state.supabaseEnabled && state.realtimeRoomChannel)) {
+    const directRoomRefreshIntervalMs = state.realtimeRoomReady ? 1600 : 800;
+    const shouldDirectRefresh = Date.now() - lastDirectRoomRefreshAt > directRoomRefreshIntervalMs;
+    if (shouldDirectRefresh || !(state.supabaseEnabled && state.realtimeRoomChannel)) {
+      lastDirectRoomRefreshAt = Date.now();
       const lookup = await fetchRoomByCode(state.roomSettings.code);
       if (!isCurrentMatchWork(matchToken)) {
         throw createAbortError();
@@ -26529,6 +26567,10 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
       if (lookup.status === "found" && lookup.room) {
         mergeHostedRoom(lookup.room);
         applyRoomDirectoryRoom(lookup.room);
+        const roomSetup = getSyncedRoomSetupForRound(round);
+        if (roomSetup) {
+          return roomSetup;
+        }
       } else if (lookup.status === "closed") {
         handleCurrentRoomClosed("The room was closed by the host or an admin.");
         break;
@@ -26573,7 +26615,7 @@ function startJoinedRoomMatchFromRealtime(payload = {}, game = null) {
   const sourceRoom = payload.room && typeof payload.room === "object" ? payload.room : state.joiningRoom;
   const nextGame = game || sourceRoom?.game || null;
   const incomingMatchId = getRoomMatchIdFromPayload({ ...payload, game: nextGame });
-  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId()) {
+  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !canAdoptIncomingRoomGame(nextGame, sourceRoom)) {
     return false;
   }
   if (incomingMatchId) {
@@ -26614,7 +26656,7 @@ function applyRealtimeRoundAdvancing(payload = {}) {
     return false;
   }
   const incomingMatchId = getRoomMatchIdFromPayload(payload);
-  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId()) {
+  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !isJoinedRoomWaitingForSyncedSetup(nextRound || state.round)) {
     return false;
   }
   if (payload.matchSettings || payload.settings) {
@@ -26683,7 +26725,7 @@ function applyRealtimeRoundStarted(payload = {}) {
   if (!game?.setup) {
     return false;
   }
-  if (!roomPayloadMatchesCurrentMatch({ ...payload, game })) {
+  if (!canAdoptIncomingRoomGame(game, payload.room || state.joiningRoom)) {
     return false;
   }
   const nextRound = Number(game.round) || 0;
