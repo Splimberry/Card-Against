@@ -15029,11 +15029,9 @@ function createPowerHandExitHold(owner, indexes = [], durationMs = 420) {
     if (state.powerHandExitHolds?.[owner]?.token !== token) {
       return;
     }
-    const layoutSnapshot = capturePowerHandLayoutSnapshot(owner);
     delete state.powerHandExitHolds[owner];
     if (owner === getCurrentPowerOwner()) {
       renderPowerUps();
-      playPowerHandLayoutShift(owner, layoutSnapshot);
     }
   }, durationMs);
 }
@@ -15076,13 +15074,34 @@ function playPowerHandLayoutShift(owner, snapshot) {
     if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
       return;
     }
-    card.animate([
-      { transform: `translate(${deltaX}px, ${deltaY}px)`, filter: "brightness(1.08)" },
-      { transform: "translate(0, 0)", filter: "brightness(1)" }
+    card.getAnimations?.().forEach((animation) => {
+      if (!("animationName" in animation)) {
+        animation.cancel();
+      }
+    });
+    card.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
+    card.style.filter = "brightness(1.08)";
+    card.style.willChange = "transform, filter";
+    const animationToken = String(Date.now() + Math.random());
+    card.dataset.powerLayoutAnimationToken = animationToken;
+    void card.offsetWidth;
+    const animation = card.animate([
+      { transform: `translate3d(${deltaX}px, ${deltaY}px, 0)`, filter: "brightness(1.08)" },
+      { transform: "translate3d(0, 0, 0)", filter: "brightness(1)" }
     ], {
       duration: 360,
       easing: "cubic-bezier(0.16, 1, 0.3, 1)"
     });
+    const clearLayoutAnimationStyles = () => {
+      if (card.dataset.powerLayoutAnimationToken !== animationToken) {
+        return;
+      }
+      delete card.dataset.powerLayoutAnimationToken;
+      card.style.removeProperty("transform");
+      card.style.removeProperty("filter");
+      card.style.removeProperty("will-change");
+    };
+    animation.finished.then(clearLayoutAnimationStyles, clearLayoutAnimationStyles);
   });
 }
 
