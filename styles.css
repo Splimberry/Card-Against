@@ -1131,16 +1131,19 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .room-code-share {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: max-content max-content;
   gap: 0.65rem;
   align-items: center;
+  align-content: center;
   justify-content: flex-start;
+  width: 100%;
 }
 
 .room-code-share h2 {
   margin: 0;
-  line-height: 1;
+  line-height: 0.86;
+  white-space: nowrap;
 }
 
 .invite-copy-button {
@@ -1150,9 +1153,9 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   align-items: center;
   justify-content: center;
   gap: 0.48rem;
-  min-height: 2.42rem;
-  min-width: 13.6rem;
-  padding: 0 0.9rem;
+  min-height: 2.56rem;
+  min-width: 12.25rem;
+  padding: 0 0.78rem;
   border-color: rgba(255, 255, 255, 0.24);
   background:
     linear-gradient(135deg, rgba(255, 77, 125, 0.16), rgba(34, 211, 238, 0.1)),
@@ -1162,6 +1165,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     0 0.65rem 1.35rem rgba(0, 0, 0, 0.2);
   line-height: 1;
   white-space: nowrap;
+  transform: translateY(-0.04em);
 }
 
 .invite-copy-button::before {
@@ -1421,6 +1425,17 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   margin: 0 0 1rem;
   font-size: clamp(2.2rem, 5vw, 4rem);
   letter-spacing: 0;
+}
+
+.room-preview .room-code-share h2 {
+  margin: 0;
+  font-size: clamp(2.35rem, 4.35vw, 3.85rem);
+  line-height: 0.86;
+  white-space: nowrap;
+}
+
+#roomScreen .room-preview .room-code-share h2 {
+  font-size: clamp(2.15rem, 3.7vw, 3.35rem);
 }
 
 .room-host-profile {
@@ -12659,6 +12674,10 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
 
   .room-mode-options {
     grid-template-columns: 1fr;
+  }
+
+  .room-code-share {
+    grid-template-columns: max-content;
   }
 
   .achievement-grid,
