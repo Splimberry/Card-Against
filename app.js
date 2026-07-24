@@ -2890,6 +2890,8 @@ const state = {
   spectatorRoundResultPlaybackKey: "",
   roomRoundResultPlaybackKey: "",
   roomBotSequence: 0,
+  pendingRoomBotAdds: [],
+  pendingRoomBotKicks: {},
   roomAutoResolveId: null,
   roomSubmissionResolveId: null,
   roomRoundResolving: false,
@@ -27359,12 +27361,17 @@ function canKickRoomBot(owner = "", participantId = "") {
 }
 
 async function confirmKickRoomBot(target) {
+  setPendingRoomBotKick(target.participantId, true);
+  renderRoomPlayers();
   playSound("click");
   const data = await publishRoomModeration("kick", target.participantId, { reason: "bot-kicked", includeError: true });
   if (!data?.ok && !data?.closed) {
+    setPendingRoomBotKick(target.participantId, false);
+    renderRoomPlayers();
     addSystemChat(`Could not kick ${target.name}: ${data?.error || "room sync failed."}`, { private: true });
     return;
   }
+  setPendingRoomBotKick(target.participantId, false);
   if (target.owner === "opponent" || getPlayer("opponent")?.participantId === target.participantId) {
     state.localAnswers.playerTwo = "";
   }
@@ -27911,6 +27918,53 @@ function getRoomOpenSlotCount() {
   return Math.max(0, getRoomMaxPlayers() - getActiveRoomPlayerCount());
 }
 
+function getPendingRoomBotAdds() {
+  return Array.isArray(state.pendingRoomBotAdds) ? state.pendingRoomBotAdds : [];
+}
+
+function prunePendingRoomBotAdds() {
+  const pendingAdds = getPendingRoomBotAdds();
+  if (!pendingAdds.length) {
+    return;
+  }
+  const participantIds = new Set(state.roomParticipants.map((participant) => participant.id));
+  state.pendingRoomBotAdds = pendingAdds.filter((bot) => !participantIds.has(bot.id));
+}
+
+function rememberPendingRoomBotAdd(bot) {
+  if (!bot?.id) {
+    return;
+  }
+  state.pendingRoomBotAdds = [
+    ...getPendingRoomBotAdds().filter((entry) => entry.id !== bot.id),
+    {
+      id: bot.id,
+      name: bot.name || "Bot",
+      createdAt: Date.now()
+    }
+  ].slice(-4);
+}
+
+function clearPendingRoomBotAdd(botId) {
+  const id = String(botId || "");
+  state.pendingRoomBotAdds = getPendingRoomBotAdds().filter((entry) => entry.id !== id);
+}
+
+function setPendingRoomBotKick(participantId, pending) {
+  const id = String(participantId || "");
+  if (!id) {
+    return;
+  }
+  if (!state.pendingRoomBotKicks || typeof state.pendingRoomBotKicks !== "object") {
+    state.pendingRoomBotKicks = {};
+  }
+  if (pending) {
+    state.pendingRoomBotKicks[id] = true;
+  } else {
+    delete state.pendingRoomBotKicks[id];
+  }
+}
+
 function getRandomRoomBotName() {
   const existingNames = new Set(getRoomParticipantsFromPlayers("lobby").map((participant) => String(participant.name || "").toLowerCase()));
   const candidates = getRandomBotUsernames(12).filter((name) => !existingNames.has(name.toLowerCase()));
@@ -27952,7 +28006,10 @@ async function addBotToRoom() {
     muted: false,
     status: "bot"
   };
+  rememberPendingRoomBotAdd(bot);
+  renderRoomLobby();
   const data = await publishRoomParticipantDelta(bot, { includeError: true });
+  clearPendingRoomBotAdd(bot.id);
   if (!data?.participant) {
     addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
     if (data?.status === 409 || /full/i.test(data?.error || "")) {
@@ -27961,6 +28018,7 @@ async function addBotToRoom() {
         syncActiveRoomFromDirectory(lookup.room, { skipHeartbeat: true });
       }
     }
+    renderRoomLobby();
     return;
   }
   addSystemChat(`${data.participant.name || botName} joined as a bot.`);
@@ -28115,7 +28173,14 @@ function animateRoomPlayerListChange(target, renderList) {
 
   target.classList.add("room-player-list-resizing");
   target.style.height = `${previousHeight}px`;
-  renderList();
+  const renderResult = renderList();
+  if (renderResult === false) {
+    target.classList.remove("room-player-list-resizing");
+    if (!target.classList.contains("room-player-list-holding")) {
+      target.style.height = "";
+    }
+    return;
+  }
   const previousInlineTransition = target.style.transition;
   target.style.transition = "none";
   target.style.height = "auto";
@@ -28205,7 +28270,9 @@ function scheduleRoomPanelHeightSync() {
 function renderRoomPlayers() {
   animateRoomPlayerListChange(elements.roomPlayerList, () => renderRoomPlayerList(elements.roomPlayerList));
   animateRoomPlayerListChange(elements.roomLobbyPlayerList, () => renderRoomPlayerList(elements.roomLobbyPlayerList));
-  scheduleRoomPanelHeightSync();
+  if (!elements.roomPlayerList?.dataset.roomPlayerExitAnimating && !elements.roomLobbyPlayerList?.dataset.roomPlayerExitAnimating) {
+    scheduleRoomPanelHeightSync();
+  }
 }
 
 function createRoomModerationControls(owner, context = "list") {
@@ -28213,12 +28280,14 @@ function createRoomModerationControls(owner, context = "list") {
   const controls = document.createElement("div");
   controls.className = context === "chat" ? "chat-options" : "room-player-controls";
   if (player?.active && (player.bot || player.type === "bot") && canKickRoomBot(player.owner, player.participantId)) {
+    const kickPending = Boolean(state.pendingRoomBotKicks?.[player.participantId]);
     const kickButton = document.createElement("button");
     kickButton.type = "button";
     kickButton.className = "mini-button danger-button";
     kickButton.dataset.action = "kick-bot";
     kickButton.dataset.owner = player.owner;
-    kickButton.textContent = "Kick";
+    kickButton.disabled = kickPending;
+    kickButton.textContent = kickPending ? "Kicking" : "Kick";
     controls.appendChild(kickButton);
     return controls;
   }
@@ -28253,10 +28322,14 @@ function createRoomModerationControls(owner, context = "list") {
   return controls;
 }
 
-function renderRoomPlayerList(target) {
+function renderRoomPlayerList(target, options = {}) {
   if (!target) {
-    return;
+    return true;
   }
+  if (target.dataset.roomPlayerExitAnimating && !options.skipExitAnimation) {
+    return false;
+  }
+  prunePendingRoomBotAdds();
 
   const renderKey = `${state.roomSettings.code || "draft"}:${target.id || "room-player-list"}:${state.currentRoomStatus || "draft"}`;
   const canAnimateNewRows = target.dataset.roomPlayerListRenderKey === renderKey;
@@ -28314,6 +28387,19 @@ function renderRoomPlayerList(target) {
     }
     return !(hostProfileIsShown && player.owner === "player");
   });
+  const existingParticipantIds = new Set(state.roomParticipants.map((participant) => participant.id));
+  const pendingBotPlayers = isRoomSetupList
+    ? getPendingRoomBotAdds()
+      .filter((bot) => !existingParticipantIds.has(bot.id))
+      .map((bot) => createPlayer(`pending-${bot.id}`, bot.name || "Bot", {
+        participantId: bot.id,
+        type: "bot",
+        bot: true,
+        active: true,
+        connectionStatus: "joining"
+      }))
+    : [];
+  const displayedPlayers = [...visiblePlayers, ...pendingBotPlayers];
   const openSlotCount = Math.max(0, maxPlayers - activePlayers.length);
   const openSlots = isRoomSetupList ? [] : Array.from({ length: openSlotCount }, (_, index) => {
     const slotNumber = activePlayers.length + index + 1;
@@ -28322,22 +28408,80 @@ function renderRoomPlayerList(target) {
       connectionStatus: "waiting"
     });
   });
+  const nextPlayers = [...displayedPlayers, ...openSlots];
+  const nextCardKeys = new Set(nextPlayers
+    .map((player) => String(player.participantId || player.owner || player.label || "").trim())
+    .filter(Boolean));
+  const exitingCards = !options.skipExitAnimation && canAnimateNewRows && !shouldReduceMotion()
+    ? [...target.querySelectorAll(".room-player-card[data-room-player-key]")]
+      .filter((card) => {
+        const key = card.dataset.roomPlayerKey || "";
+        return key && !nextCardKeys.has(key) && !card.classList.contains("room-player-card-exiting");
+      })
+    : [];
+  if (exitingCards.length) {
+    const previousHeight = target.getBoundingClientRect().height;
+    if (previousHeight > 0) {
+      target.style.height = `${previousHeight}px`;
+    }
+    target.classList.add("room-player-list-holding");
+    exitingCards.forEach((card) => {
+      card.classList.add("room-player-card-exiting");
+      card.setAttribute("aria-hidden", "true");
+    });
+    const exitToken = `${Date.now()}-${Math.random()}`;
+    target.dataset.roomPlayerExitAnimating = exitToken;
+    window.setTimeout(() => {
+      if (target.dataset.roomPlayerExitAnimating !== exitToken) {
+        return;
+      }
+      delete target.dataset.roomPlayerExitAnimating;
+      const lockedHeight = previousHeight;
+      target.classList.remove("room-player-list-holding");
+      target.style.height = "auto";
+      renderRoomPlayerList(target, { skipExitAnimation: true });
+      const nextHeight = target.getBoundingClientRect().height;
+      if (lockedHeight > 0 && Math.abs(nextHeight - lockedHeight) >= 2) {
+        const previousInlineTransition = target.style.transition;
+        target.classList.add("room-player-list-resizing");
+        target.style.transition = "none";
+        target.style.height = `${lockedHeight}px`;
+        target.offsetHeight;
+        target.style.transition = previousInlineTransition;
+        window.requestAnimationFrame(() => {
+          target.style.height = `${nextHeight}px`;
+        });
+        window.setTimeout(() => {
+          target.classList.remove("room-player-list-resizing");
+          target.style.height = "";
+        }, 340);
+      } else {
+        target.style.height = "";
+      }
+      scheduleRoomPanelHeightSync();
+    }, 300);
+    return false;
+  }
 
   target.replaceChildren();
   target.dataset.roomPlayerListRenderKey = renderKey;
-  if (isRoomSetupList && !visiblePlayers.length) {
+  if (isRoomSetupList && !displayedPlayers.length) {
     const empty = document.createElement("p");
     empty.className = "room-waiting-copy";
     empty.textContent = "Waiting for more players to join.";
     target.appendChild(empty);
     return;
   }
-  [...visiblePlayers, ...openSlots].forEach((player) => {
+  nextPlayers.forEach((player) => {
     const cardKey = String(player.participantId || player.owner || player.label || "").trim();
     const card = document.createElement("div");
     card.className = "room-player-card";
     card.dataset.roomPlayerKey = cardKey;
     card.classList.toggle("waiting-slot", !player.active);
+    const botIsJoining = player.connectionStatus === "joining";
+    const botIsKicking = Boolean(player.participantId && state.pendingRoomBotKicks?.[player.participantId]);
+    card.classList.toggle("room-player-card-pending", botIsJoining || botIsKicking);
+    card.classList.toggle("room-player-card-kicking", botIsKicking);
     const isNewActiveParticipant = Boolean(
       canAnimateNewRows
       && player.active
@@ -28352,9 +28496,15 @@ function renderRoomPlayerList(target) {
     const name = document.createElement("strong");
     renderPlayerNameWithTitle(name, player, player.label);
     const status = document.createElement("small");
-    status.textContent = player.bot || player.type === "bot"
-      ? "BOT"
-      : player.muted ? "muted" : player.connectionStatus || "ready";
+    if (botIsJoining) {
+      status.textContent = "JOINING";
+    } else if (botIsKicking) {
+      status.textContent = "KICKING";
+    } else if (player.bot || player.type === "bot") {
+      status.textContent = "BOT";
+    } else {
+      status.textContent = player.muted ? "muted" : player.connectionStatus || "ready";
+    }
     card.dataset.owner = player.owner;
     card.dataset.participantId = player.participantId || "";
     card.dataset.bot = String(Boolean(player.bot));
@@ -28373,6 +28523,7 @@ function renderRoomPlayerList(target) {
     }
     target.appendChild(card);
   });
+  return true;
 }
 
 function publishRoomModeration(action, participantId, options = {}) {
