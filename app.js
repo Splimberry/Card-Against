@@ -2854,6 +2854,7 @@ const state = {
   chatMessageTimestamps: [],
   chatCooldownUntil: 0,
   chatCooldownTimerId: null,
+  chatCooldownPlaceholderTimerId: null,
   hostedRooms: [],
   hostedRoomsRenderSignature: "",
   devRooms: [],
@@ -9842,6 +9843,7 @@ function resetChatCooldown() {
     window.clearTimeout(state.chatCooldownTimerId);
     state.chatCooldownTimerId = null;
   }
+  clearChatCooldownPlaceholderTimer({ restore: true });
 }
 
 function getChatCooldownRemainingMs(now = Date.now()) {
@@ -9858,6 +9860,49 @@ function startChatCooldown(now = Date.now()) {
     state.chatCooldownTimerId = null;
     state.chatCooldownUntil = 0;
   }, chatCooldownDurationMs);
+}
+
+function getChatInputDefaultPlaceholder(input) {
+  if (!input) {
+    return "Send a message";
+  }
+  if (!input.dataset.defaultPlaceholder) {
+    input.dataset.defaultPlaceholder = input.getAttribute("placeholder") || "Send a message";
+  }
+  return input.dataset.defaultPlaceholder;
+}
+
+function restoreChatCooldownPlaceholders() {
+  [elements.chatInput, elements.lobbyChatInput].filter(Boolean).forEach((input) => {
+    if (String(input.placeholder || "").startsWith("Chat cooldown:")) {
+      input.placeholder = getChatInputDefaultPlaceholder(input);
+    }
+  });
+}
+
+function clearChatCooldownPlaceholderTimer(options = {}) {
+  if (state.chatCooldownPlaceholderTimerId) {
+    window.clearInterval(state.chatCooldownPlaceholderTimerId);
+    state.chatCooldownPlaceholderTimerId = null;
+  }
+  if (options.restore) {
+    restoreChatCooldownPlaceholders();
+  }
+}
+
+function updateChatCooldownPlaceholder(input) {
+  if (!input) {
+    return false;
+  }
+  const remainingMs = getChatCooldownRemainingMs();
+  if (remainingMs <= 0) {
+    input.placeholder = getChatInputDefaultPlaceholder(input);
+    clearChatCooldownPlaceholderTimer();
+    return false;
+  }
+  const remainingSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+  input.placeholder = `Chat cooldown: ${remainingSeconds}s`;
+  return true;
 }
 
 function canSendClientChatMessage(now = Date.now()) {
@@ -9879,12 +9924,12 @@ function showLocalChatCooldownNotice(input = elements.chatInput) {
   addSystemChat(`Slow down. Chat cooldown: ${remainingSeconds}s.`, { private: true, sync: false });
   if (input) {
     input.value = "";
-    input.placeholder = `Chat cooldown: ${remainingSeconds}s`;
-    window.setTimeout(() => {
-      if (getChatCooldownRemainingMs() <= 0 && input.placeholder.startsWith("Chat cooldown:")) {
-        input.placeholder = "Send a message";
-      }
-    }, Math.min(chatCooldownDurationMs, remainingSeconds * 1000));
+    clearChatCooldownPlaceholderTimer({ restore: true });
+    getChatInputDefaultPlaceholder(input);
+    updateChatCooldownPlaceholder(input);
+    state.chatCooldownPlaceholderTimerId = window.setInterval(() => {
+      updateChatCooldownPlaceholder(input);
+    }, 250);
   }
 }
 
