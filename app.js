@@ -12523,6 +12523,9 @@ function toggleProfilePasswordVisibility() {
   elements.profilePasswordInput.type = shouldShow ? "text" : "password";
   elements.profilePasswordToggleButton.setAttribute("aria-pressed", String(shouldShow));
   elements.profilePasswordToggleButton.setAttribute("aria-label", shouldShow ? "Hide password" : "Show password");
+  elements.profilePasswordToggleButton.classList.remove("profile-auth-password-toggle-pulse");
+  void elements.profilePasswordToggleButton.offsetWidth;
+  elements.profilePasswordToggleButton.classList.add("profile-auth-password-toggle-pulse");
   elements.profilePasswordInput.focus();
   playSound("click");
 }
