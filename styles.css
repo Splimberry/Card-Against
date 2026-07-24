@@ -1819,6 +1819,20 @@ body:has(.game-stage:not(.hidden)) .app-shell {
     rgba(255, 255, 255, 0.06);
 }
 
+.leaderboard-player.spectator-self-row {
+  border-color: rgba(148, 163, 184, 0.36);
+  background:
+    linear-gradient(135deg, rgba(148, 163, 184, 0.14), rgba(255, 255, 255, 0.045)),
+    rgba(255, 255, 255, 0.05);
+  opacity: 0.92;
+}
+
+.leaderboard-player.spectator-self-row .leaderboard-rank,
+.leaderboard-player.spectator-self-row .leaderboard-score,
+.leaderboard-player.spectator-self-row .leaderboard-streak {
+  color: rgba(226, 232, 240, 0.66);
+}
+
 .leaderboard-rank,
 .leaderboard-streak,
 .scoreboard span {

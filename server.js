@@ -31,6 +31,7 @@ const roomHostSessionTtlSeconds = 60 * 60 * 12;
 const roomParticipantSessionTtlSeconds = 60 * 60 * 12;
 const maxRoomEvents = 100;
 const roomRequestMaxBytes = 750_000;
+const hostReconnectGraceMs = 60 * 1000;
 const rateLimitBuckets = new Map();
 const chatCooldownBuckets = new Map();
 const aiRoundCache = new Map();
@@ -533,6 +534,10 @@ async function handleGetRoom(reqOrRes, resOrCode, maybeCode) {
       return;
     }
     sendJson(res, 404, { error: "Room not found.", code: normalizedCode });
+    return;
+  }
+  if (!(await ensureRoomHostReconnectGrace(room))) {
+    sendJson(res, 410, { closed: true, close: createRoomClosePayload(normalizedCode, "host-disconnected") });
     return;
   }
   sendJson(res, 200, {
@@ -2329,8 +2334,34 @@ async function closeStoredRoom(code, reason) {
   return backendStore.deleteRoom(normalizedCode);
 }
 
+function getRoomHostParticipant(room) {
+  return Array.isArray(room?.participants)
+    ? room.participants.find((participant) => participant.id === room.host?.id || participant.host) || null
+    : null;
+}
+
+function isRoomHostReconnectGraceExpired(room, now = Date.now()) {
+  if (!room || room.status === "complete") {
+    return false;
+  }
+  const hostParticipant = getRoomHostParticipant(room);
+  const hostInactive = !hostParticipant || hostParticipant.active === false;
+  const pendingAt = Number(room.hostExitPendingAt) || Number(hostParticipant?.disconnectedAt) || 0;
+  return Boolean(hostInactive && pendingAt && now - pendingAt >= hostReconnectGraceMs);
+}
+
+async function ensureRoomHostReconnectGrace(room) {
+  if (!isRoomHostReconnectGraceExpired(room)) {
+    return room;
+  }
+  await closeStoredRoom(room.code, "host-disconnected");
+  return null;
+}
+
 async function listRoomsForDirectory() {
-  return backendStore.listRooms();
+  const rooms = await backendStore.listRooms();
+  const checked = await Promise.all(rooms.map(ensureRoomHostReconnectGrace));
+  return checked.filter(Boolean);
 }
 
 async function handleRoomPresence(req, res, code) {
@@ -2345,8 +2376,32 @@ async function handleRoomPresence(req, res, code) {
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const rawParticipant = body.participant || {};
     const participant = normalizeParticipant(rawParticipant);
-    const existingIndex = room.participants.findIndex((entry) => entry.id === participant.id);
+    let existingIndex = room.participants.findIndex((entry) => entry.id === participant.id);
+    const sameProfileIndex = participant.profileUserId && !participant.bot
+      ? room.participants.findIndex((entry) => (
+        entry.id !== participant.id
+        && !entry.bot
+        && String(entry.profileUserId || "") === participant.profileUserId
+      ))
+      : -1;
+    const sameProfileParticipant = sameProfileIndex >= 0 ? room.participants[sameProfileIndex] : null;
+    if (
+      sameProfileParticipant
+      && sameProfileParticipant.active !== false
+      && participant.active !== false
+    ) {
+      sendJson(res, 409, { error: "This profile is already in the room.", duplicateParticipantId: sameProfileParticipant.id });
+      return;
+    }
+    const reclaimingInactiveProfile = existingIndex < 0 && sameProfileParticipant?.active === false && participant.active !== false;
+    if (reclaimingInactiveProfile) {
+      existingIndex = sameProfileIndex;
+    }
     const hostAuthenticated = hasRoomHostAuth(req, room, body);
+    if (reclaimingInactiveProfile && sameProfileParticipant?.host && (!participant.host || !hostAuthenticated)) {
+      sendJson(res, 403, { error: "Only the host can reclaim the host slot." });
+      return;
+    }
     const isHostIdentity = participant.id === room.host?.id || participant.host;
     if (isHostIdentity && !hostAuthenticated) {
       sendJson(res, 403, { error: "Only the host can update the host participant." });
@@ -2356,7 +2411,7 @@ async function handleRoomPresence(req, res, code) {
       sendJson(res, 403, { error: "Only the host can update bot participants." });
       return;
     }
-    if (existingIndex >= 0 && !hostAuthenticated && !hasRoomParticipantAuth(req, room, participant.id, body)) {
+    if (existingIndex >= 0 && !reclaimingInactiveProfile && !hostAuthenticated && !hasRoomParticipantAuth(req, room, participant.id, body)) {
       sendJson(res, 403, { error: "Only this participant can update their room state." });
       return;
     }
@@ -2386,11 +2441,15 @@ async function handleRoomPresence(req, res, code) {
     const acceptsSubmissionUpdate = !hasSubmissionUpdate
       || !currentMatchId
       || (submissionMatchId && submissionMatchId === currentMatchId);
+    const existingParticipant = existingIndex >= 0 ? room.participants[existingIndex] : null;
+    const wasActive = existingParticipant ? existingParticipant.active !== false : false;
+    const isNowActive = participant.active !== false;
     if (existingIndex >= 0) {
-      const existingParticipant = room.participants[existingIndex];
       room.participants[existingIndex] = {
         ...existingParticipant,
         ...participant,
+        disconnectedAt: isNowActive ? 0 : Date.now(),
+        lastConnectedAt: isNowActive ? Date.now() : existingParticipant.lastConnectedAt || 0,
         status: hasSubmissionUpdate && !acceptsSubmissionUpdate ? existingParticipant.status : participant.status,
         answer: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "answer") ? participant.answer : existingParticipant.answer,
         submittedRound: acceptsSubmissionUpdate && Object.hasOwn(rawParticipant, "submittedRound") ? participant.submittedRound : existingParticipant.submittedRound,
@@ -2405,6 +2464,8 @@ async function handleRoomPresence(req, res, code) {
         participant.remainingTime = 0;
         participant.status = participant.host ? "host" : participant.spectator ? "spectating" : participant.bot ? "bot" : "joined";
       }
+      participant.disconnectedAt = participant.active === false ? Date.now() : 0;
+      participant.lastConnectedAt = participant.active === false ? 0 : Date.now();
       room.participants.push(participant);
     }
 
@@ -2412,6 +2473,7 @@ async function handleRoomPresence(req, res, code) {
       room.host = {
         ...(room.host || {}),
         id: participant.id,
+        profileUserId: participant.profileUserId || participant.id,
         name: participant.name,
         avatar: participant.avatar,
         equippedTitleId: participant.equippedTitleId || "",
@@ -2419,19 +2481,29 @@ async function handleRoomPresence(req, res, code) {
         cardCustomization: participant.cardCustomization || null
       };
     }
-    if (participant.host || participant.id === room.host?.id) {
-      room.hostExitPendingAt = 0;
+    const storedParticipant = room.participants[existingIndex >= 0 ? existingIndex : room.participants.length - 1] || participant;
+    if (storedParticipant.host || storedParticipant.id === room.host?.id) {
+      room.hostExitPendingAt = storedParticipant.active === false ? Date.now() : 0;
     }
     if (!participant.bot) {
       ensureRoomParticipantToken(room, participant.id);
     }
     finalizeRoom(room);
-    stampRoomEvent(room, existingIndex >= 0 ? "participant_updated" : "participant_joined", {
-      participantId: participant.id,
-      host: Boolean(participant.host),
-      spectator: Boolean(participant.spectator),
-      status: participant.status,
-      participant: room.participants.find((entry) => entry.id === participant.id) || participant
+    const finalParticipant = room.participants.find((entry) => entry.id === participant.id) || storedParticipant || participant;
+    const eventType = existingIndex >= 0
+      ? !isNowActive
+        ? "participant_disconnected"
+        : !wasActive
+          ? "participant_reconnected"
+          : "participant_updated"
+      : "participant_joined";
+    stampRoomEvent(room, eventType, {
+      participantId: finalParticipant.id,
+      participantName: finalParticipant.name || "A player",
+      host: Boolean(finalParticipant.host),
+      spectator: Boolean(finalParticipant.spectator),
+      status: finalParticipant.status,
+      participant: finalParticipant
     });
     const storedRoom = await backendStore.upsertRoom(room);
     const participantCookie = !participant.bot ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
@@ -2442,6 +2514,7 @@ async function handleRoomPresence(req, res, code) {
         status: storedRoom.status,
         revision: getRoomRevision(storedRoom),
         updatedAt: storedRoom.updatedAt,
+        eventType,
         participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true })
       }, participantCookie ? { "Set-Cookie": participantCookie } : {});
       return;
@@ -2480,6 +2553,7 @@ async function handleRoomSettings(req, res, code) {
       room.host = {
         ...(room.host || {}),
         id: String(body.host.id || room.host?.id || "host").slice(0, 80),
+        profileUserId: String(body.host.profileUserId || room.host?.profileUserId || body.host.userId || room.host?.id || "host").slice(0, 140),
         name: String(body.host.name || room.host?.name || "Host").slice(0, 24),
         avatar: String(body.host.avatar || room.host?.avatar || "").slice(0, 60000),
         equippedTitleId: String(body.host.equippedTitleId || room.host?.equippedTitleId || "").slice(0, 80),
@@ -2489,6 +2563,7 @@ async function handleRoomSettings(req, res, code) {
       const hostParticipant = room.participants.find((participant) => participant.id === room.host.id || participant.host);
       if (hostParticipant) {
         hostParticipant.name = room.host.name;
+        hostParticipant.profileUserId = room.host.profileUserId || hostParticipant.profileUserId || hostParticipant.id;
         hostParticipant.avatar = room.host.avatar;
         hostParticipant.equippedTitleId = room.host.equippedTitleId || "";
         hostParticipant.specialBadges = normalizeSpecialBadges(room.host.specialBadges);
@@ -2534,8 +2609,21 @@ async function handleRoomHeartbeat(req, res, code) {
 
     room.hostExitPendingAt = 0;
     if (participant) {
+      const wasActive = participant.active !== false;
       participant.active = true;
       participant.status = String(body.status || participant.status || "host").slice(0, 32);
+      participant.disconnectedAt = 0;
+      participant.lastConnectedAt = Date.now();
+      if (!wasActive) {
+        stampRoomEvent(room, "participant_reconnected", {
+          participantId: participant.id,
+          participantName: participant.name || "Host",
+          host: Boolean(participant.host),
+          spectator: Boolean(participant.spectator),
+          status: participant.status,
+          participant
+        });
+      }
     }
     finalizeRoom(room);
     room.updatedAt = Date.now();
@@ -3013,6 +3101,7 @@ function normalizeRoom(room) {
     settings: normalizeRoomSettings(settings, code),
     host: {
       id: String(host.id || participants.find((entry) => entry.host)?.id || "host").slice(0, 80),
+      profileUserId: String(host.profileUserId || host.userId || participants.find((entry) => entry.host)?.profileUserId || host.id || "host").slice(0, 140),
       name: String(host.name || "Host").slice(0, 24),
       avatar: String(host.avatar || "").slice(0, 60000),
       equippedTitleId: String(host.equippedTitleId || "").slice(0, 80),
@@ -3023,7 +3112,7 @@ function normalizeRoom(room) {
     banned: Array.isArray(room.banned) ? room.banned.map((entry) => String(entry).slice(0, 80)) : [],
     game: normalizeRoomGame(room.game),
     chat: normalizeRoomChat(room.chat),
-    hostExitPendingAt: 0,
+    hostExitPendingAt: clampServerNumber(room.hostExitPendingAt, 0, Number.MAX_SAFE_INTEGER, 0),
     revision: clampServerNumber(room.revision, 0, Number.MAX_SAFE_INTEGER, 0),
     events: normalizeRoomEvents(room.events),
     updatedAt: Date.now()
@@ -3063,6 +3152,7 @@ function normalizeParticipant(participant) {
 
   return {
     id,
+    profileUserId: String(participant.profileUserId || participant.userId || id).slice(0, 140),
     name: String(participant.name || "Guest").slice(0, 24),
     avatar: String(participant.avatar || "").slice(0, 60000),
     equippedTitleId: String(participant.equippedTitleId || "").slice(0, 80),
@@ -3077,7 +3167,9 @@ function normalizeParticipant(participant) {
     answer: String(participant.answer || "").slice(0, 500),
     submittedRound: clampServerNumber(participant.submittedRound, 0, 100, 0),
     submissionMatchId: String(participant.submissionMatchId || "").slice(0, 80),
-    remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0)
+    remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0),
+    disconnectedAt: clampServerNumber(participant.disconnectedAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    lastConnectedAt: clampServerNumber(participant.lastConnectedAt, 0, Number.MAX_SAFE_INTEGER, 0)
   };
 }
 
@@ -3471,6 +3563,7 @@ function finalizeRoom(room) {
   if (!room.participants.some((participant) => participant.host)) {
     const repairedHost = {
       id: room.host.id,
+      profileUserId: room.host.profileUserId || room.host.id,
       name: room.host.name,
       avatar: room.host.avatar,
       equippedTitleId: room.host.equippedTitleId || "",

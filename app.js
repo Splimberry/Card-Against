@@ -8282,6 +8282,7 @@ function createPlayer(owner, label, options = {}) {
     handLimit: options.handLimit ?? 3,
     avatar: options.avatar || "",
     participantId: options.participantId || owner,
+    profileUserId: options.profileUserId || "",
     host: Boolean(options.host),
     spectator: Boolean(options.spectator),
     bot: Boolean(options.bot || options.type === "bot"),
@@ -8614,6 +8615,7 @@ function getRoomPlayersForMode() {
       handLimit: participant.spectator ? 0 : 3,
       avatar: participant.avatar || "",
       participantId: participant.id || owner,
+      profileUserId: participant.profileUserId || "",
       host: Boolean(participant.host),
       spectator: Boolean(participant.spectator),
       bot: Boolean(participant.bot),
@@ -8632,6 +8634,7 @@ function getRoomPlayersForMode() {
     const host = state.joiningRoom?.host || {};
     addParticipantPlayer({
       id: host.id || state.clientId,
+      profileUserId: host.profileUserId || getRoomParticipantProfileUserId(),
       name: host.name || state.profile.name || "Host",
       avatar: host.avatar || state.profile.avatar,
       equippedTitleId: host.equippedTitleId || state.profile.equippedTitleId,
@@ -8649,6 +8652,7 @@ function getRoomPlayersForMode() {
       handLimit: 0,
       avatar: state.profile.avatar,
       participantId: state.clientId,
+      profileUserId: getRoomParticipantProfileUserId(),
       spectator: true,
       equippedTitleId: state.profile.equippedTitleId,
       specialBadges: state.profile.specialBadges,
@@ -9264,7 +9268,8 @@ function getActiveRoomSpectatorCount() {
   if (!(isRoomMode() || state.currentRoomStatus === "lobby") || !state.roomParticipants.length) {
     return 0;
   }
-  return state.roomParticipants.filter((participant) => participant.active !== false && participant.spectator).length;
+  return normalizeRoomParticipantsList(state.roomParticipants)
+    .filter((participant) => participant.active !== false && participant.spectator).length;
 }
 
 function renderSpectatorCountIndicator() {
@@ -9438,6 +9443,7 @@ function getRoomSyncCardCustomization(customization) {
 function getCurrentParticipant(options = {}) {
   return {
     id: state.clientId,
+    profileUserId: getRoomParticipantProfileUserId(),
     name: state.profile.name || "Guest",
     avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
@@ -9454,6 +9460,12 @@ function getCurrentParticipant(options = {}) {
     submissionMatchId: String(options.submissionMatchId || "").trim(),
     remainingTime: Math.max(0, Number(options.remainingTime) || 0)
   };
+}
+
+function getRoomParticipantProfileUserId() {
+  return state.supabaseUser?.id
+    ? `user:${state.supabaseUser.id}`
+    : `guest:${state.clientId}`;
 }
 
 function participantSubmissionMatchesCurrentMatch(participant = {}) {
@@ -9487,6 +9499,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
       const preserveParticipantSubmission = preserveSubmissions && participantSubmissionMatchesCurrentMatch(existingParticipant);
       return {
         id,
+        profileUserId: player.profileUserId || existingParticipant?.profileUserId || (id === state.clientId ? getRoomParticipantProfileUserId() : `participant:${id}`),
         name: player.label,
         avatar: getRoomSyncAvatar(player.avatar),
         equippedTitleId: player.equippedTitleId || "",
@@ -9513,6 +9526,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
     const preserveParticipantSubmission = preserveSubmissions && participantSubmissionMatchesCurrentMatch(participant);
     participants.push({
       id: participant.id,
+      profileUserId: participant.profileUserId || `participant:${participant.id}`,
       name: participant.name,
       avatar: getRoomSyncAvatar(participant.avatar),
       equippedTitleId: participant.equippedTitleId || "",
@@ -12451,13 +12465,9 @@ function cleanupReloadedHostedRoomSession() {
   if (!marker) {
     return;
   }
-  markRoomLocallyClosed(marker.code);
-  removeHostedRoom(marker.code);
-  clearHostedRoomSession(marker.code);
-  closeHostedRoomByCode(marker.code, {
-    participantId: marker.participantId,
-    reason: "page-refresh-cleanup"
-  });
+  if (Date.now() - marker.updatedAt > 2 * 60 * 60 * 1000) {
+    clearHostedRoomSession(marker.code);
+  }
 }
 
 function pruneLocallyClosedRooms() {
@@ -12731,6 +12741,14 @@ function applyRoomServerEvent(event = {}) {
     applied = applyRoomParticipantDelta(payload.participant, eventPayload);
   } else if (type === "participant_left" && payload.participantId) {
     applied = applyRealtimeParticipantLeft(eventPayload);
+  } else if ((type === "participant_disconnected" || type === "participant_reconnected") && payload.participant) {
+    applied = applyRoomParticipantConnectionDelta({
+      ...eventPayload,
+      eventType: type.replaceAll("_", "-"),
+      participant: payload.participant,
+      participantId: payload.participantId,
+      participantName: payload.participantName
+    });
   } else if (type === "chat_message" && payload.message) {
     applied = applyRealtimeRoomChatMessage(payload.message);
   } else if (type === "power_state" && payload.powerState) {
@@ -13116,6 +13134,7 @@ function applyRealtimeParticipantLeft(payload = {}) {
   renderRoomChat();
   renderScore();
   renderSubmissionStatus();
+  renderSpectatorCountIndicator();
   maybeResolveRoomSubmissions();
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
@@ -13232,7 +13251,7 @@ function handleRealtimeRoomChange(payload = {}) {
     return;
   }
   if (!elements.joinScreen.classList.contains("hidden") && shouldRealtimeRefreshJoinDirectory(payload.eventType)) {
-    const appliedJoinDelta = payload.eventType === "participant-updated" && payload.participant
+    const appliedJoinDelta = (payload.eventType === "participant-updated" || payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant
       ? applyHostedRoomParticipantDelta(payload)
       : payload.eventType === "participant-left" && payload.participantId
         ? applyHostedRoomParticipantLeft(payload)
@@ -13259,6 +13278,9 @@ function handleRealtimeRoomChange(payload = {}) {
     }
     if (payload.eventType === "participant-updated" && payload.participant) {
       appliedDelta = applyRoomParticipantDelta(payload.participant, payload);
+    }
+    if ((payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant) {
+      appliedDelta = applyRoomParticipantConnectionDelta(payload);
     }
     if (payload.eventType === "participant-left" && payload.participantId) {
       appliedDelta = applyRealtimeParticipantLeft(payload);
@@ -13287,7 +13309,7 @@ function handleRealtimeRoomChange(payload = {}) {
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
+    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "participant-disconnected", "participant-reconnected", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
     if (shouldRefreshRoomAfterRealtimeMiss(payload)) {
@@ -13322,6 +13344,8 @@ function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
     "answer-draft",
     "power-state",
     "participant-updated",
+    "participant-disconnected",
+    "participant-reconnected",
     "participant-left",
     "participant-moderated",
     "round-advancing",
@@ -13338,6 +13362,8 @@ function shouldRealtimeRefreshJoinDirectory(eventType = "") {
     "room-left",
     "participant-left",
     "participant-updated",
+    "participant-disconnected",
+    "participant-reconnected",
     "participant-moderated",
     "room-settings",
     "game-ended",
@@ -13428,7 +13454,8 @@ function applyGuestProfile(options = {}) {
 }
 
 function syncProfileToPlayer() {
-  const player = getPlayer("player");
+  const localOwner = isRoomMode() ? state.currentOwner : "player";
+  const player = getPlayer(localOwner) || (!isRoomMode() ? getPlayer("player") : null);
   if (!player) {
     return;
   }
@@ -14223,6 +14250,20 @@ function renderLeaderboard() {
       };
     })
     .sort(compareScoreRowsForLeaderboard);
+  const spectatorSelf = state.isSpectator && isRoomMode()
+    ? getPlayer("spectator") || createPlayer("spectator", state.profile.name || "Spectator", {
+      type: "spectator",
+      handLimit: 0,
+      avatar: state.profile.avatar,
+      participantId: state.clientId,
+      profileUserId: getRoomParticipantProfileUserId(),
+      spectator: true,
+      equippedTitleId: state.profile.equippedTitleId,
+      specialBadges: state.profile.specialBadges,
+      cardCustomization: state.profile.cardCustomization,
+      connectionStatus: "spectating"
+    })
+    : null;
 
   elements.leaderboard.replaceChildren();
   leaders.forEach((entry, index) => {
@@ -14277,6 +14318,32 @@ function renderLeaderboard() {
     chip.append(rank, avatar, name, powers, score, streak);
     elements.leaderboard.appendChild(chip);
   });
+  if (spectatorSelf) {
+    const chip = document.createElement("div");
+    chip.className = "leaderboard-player spectator-self-row";
+    chip.dataset.owner = "spectator";
+    chip.dataset.participantId = spectatorSelf.participantId || state.clientId;
+    applyPlayerCustomizationSurface(chip, spectatorSelf);
+    const rank = document.createElement("span");
+    rank.className = "leaderboard-rank";
+    rank.textContent = "View";
+    const avatar = document.createElement("span");
+    avatar.className = "leaderboard-avatar";
+    renderAvatar(avatar, spectatorSelf);
+    const name = document.createElement("span");
+    name.className = "leaderboard-name";
+    renderPlayerNameWithTitle(name, spectatorSelf, spectatorSelf.label);
+    const powers = document.createElement("div");
+    powers.className = "leaderboard-power-list";
+    const score = document.createElement("strong");
+    score.className = "leaderboard-score";
+    score.textContent = "Watching";
+    const streak = document.createElement("span");
+    streak.className = "leaderboard-streak";
+    streak.textContent = "No score";
+    chip.append(rank, avatar, name, powers, score, streak);
+    elements.leaderboard.appendChild(chip);
+  }
   animateReorderedChildren(
     elements.leaderboard,
     previousRects,
@@ -25144,6 +25211,49 @@ function leavePublishedRoom(options = {}) {
   }).catch(() => null);
 }
 
+function markCurrentRoomParticipantDisconnected(options = {}) {
+  const code = String(options.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code === "CAI-0000") {
+    return Promise.resolve(null);
+  }
+  const isHost = Object.hasOwn(options, "host")
+    ? Boolean(options.host)
+    : isCurrentHost() && !state.joiningRoom;
+  const isSpectator = Object.hasOwn(options, "spectator")
+    ? Boolean(options.spectator)
+    : Boolean(state.isSpectator);
+  const participant = getCurrentParticipant({
+    host: isHost,
+    spectator: isSpectator,
+    active: false,
+    status: isHost ? "host-disconnected" : isSpectator ? "spectator-disconnected" : "disconnected"
+  });
+  const payload = JSON.stringify({
+    participant,
+    compact: true,
+    hostParticipantId: isHost ? state.clientId : ""
+  });
+  broadcastRealtimeRoomChange("participant-disconnected", code, {
+    participantId: participant.id,
+    participantName: participant.name,
+    host: participant.host,
+    spectator: participant.spectator,
+    status: participant.status,
+    participant
+  });
+  const url = `/api/rooms/${encodeURIComponent(code)}/presence`;
+  if (options.keepalive && navigator.sendBeacon) {
+    navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
+    return Promise.resolve(null);
+  }
+  return fetchWithTimeout(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: Boolean(options.keepalive)
+  }, roomLeaveFetchTimeoutMs).catch(() => null);
+}
+
 function clearLocalRoomState(options = {}) {
   if (options.clearHostedSession) {
     clearHostedRoomSession(state.roomSettings.code);
@@ -25173,6 +25283,7 @@ function clearLocalRoomState(options = {}) {
   stopRoomHeartbeat();
   stopRoomEventPolling();
   stopRoomRealtime();
+  renderSpectatorCountIndicator();
   if (options.resetCode !== false) {
     state.roomSettings.code = "CAI-0000";
   }
@@ -25192,12 +25303,17 @@ function handleWindowBeforeUnload() {
     return;
   }
   state.roomExitLeaveSent = true;
-  leavePublishedRoom({ keepalive: true, reason: "page-exit" });
+  markCurrentRoomParticipantDisconnected({ keepalive: true });
 }
 
 function handleWindowPageHide() {
   flushUserStorageSnapshot();
   flushPendingUserInventoryBeforePageExit();
+  if (!shouldSendRoomExitLeave()) {
+    return;
+  }
+  state.roomExitLeaveSent = true;
+  markCurrentRoomParticipantDisconnected({ keepalive: true });
 }
 
 function handleCurrentRoomClosed(reason = "Room closed.") {
@@ -25583,6 +25699,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
   const hostSource = (!state.joiningRoom && isCurrentHost())
     ? {
       id: state.clientId,
+      profileUserId: getRoomParticipantProfileUserId(),
       name: state.profile.name || "Host",
       avatar: getRoomSyncAvatar(state.profile.avatar),
       equippedTitleId: state.profile.equippedTitleId || "",
@@ -25596,6 +25713,7 @@ function buildRoomDirectoryPayload(status = "lobby") {
     settings: { ...state.roomSettings },
     host: {
       id: hostSource.id || state.clientId,
+      profileUserId: hostSource.profileUserId || getRoomParticipantProfileUserId(),
       name: hostSource.name || "Host",
       avatar: getRoomSyncAvatar(hostSource.avatar),
       equippedTitleId: hostSource.equippedTitleId || "",
@@ -25867,7 +25985,8 @@ async function updateRoomPresence(room, options = {}) {
     if (data.participant) {
       applyRoomParticipantDelta(data.participant, data);
       if (!options.skipRealtimeBroadcast) {
-        broadcastRealtimeRoomChange("participant-updated", state.roomSettings.code, {
+        const eventType = String(data.eventType || "participant_updated").replaceAll("_", "-");
+        broadcastRealtimeRoomChange(eventType || "participant-updated", state.roomSettings.code, {
           status: data.status || "",
           revision: data.revision || 0,
           updatedAt: data.updatedAt || Date.now(),
@@ -25925,7 +26044,8 @@ async function publishRoomParticipantDelta(participant, options = {}) {
         updatedAt: data.updatedAt || Date.now()
       });
       if (!options.skipRealtimeBroadcast) {
-        broadcastRealtimeRoomChange("participant-updated", code, {
+        const eventType = String(data.eventType || "participant_updated").replaceAll("_", "-");
+        broadcastRealtimeRoomChange(eventType || "participant-updated", code, {
           status: data.status || "",
           revision: data.revision || 0,
           updatedAt: data.updatedAt || Date.now(),
@@ -25948,6 +26068,7 @@ function normalizeRoomParticipantDelta(participant = {}) {
   }
   return {
     id,
+    profileUserId: String(source.profileUserId || source.userId || `participant:${id}`).slice(0, 140),
     name: String(source.name || "Guest").slice(0, 32),
     avatar: getRoomSyncAvatar(source.avatar),
     equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
@@ -25962,7 +26083,9 @@ function normalizeRoomParticipantDelta(participant = {}) {
     answer: cleanInput(source.answer || ""),
     submittedRound: Number(source.submittedRound) || 0,
     submissionMatchId: String(source.submissionMatchId || "").trim(),
-    remainingTime: Math.max(0, Number(source.remainingTime) || 0)
+    remainingTime: Math.max(0, Number(source.remainingTime) || 0),
+    disconnectedAt: Math.max(0, Number(source.disconnectedAt) || 0),
+    lastConnectedAt: Math.max(0, Number(source.lastConnectedAt) || 0)
   };
 }
 
@@ -26059,6 +26182,7 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   renderRoomChat();
   renderSubmissionStatus();
   renderSpectatorAnswerCards();
+  renderSpectatorCountIndicator();
   if (normalized.spectator && normalized.active !== false) {
     broadcastSpectatorAnswerDraft(elements.answerInput?.value || "");
   }
@@ -26069,6 +26193,38 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   if (state.currentRoomStatus === "draft" && !state.joiningRoom && isCurrentHost()) {
     scheduleRoomSettingsPublish("draft", 120);
   }
+  return true;
+}
+
+function applyRoomParticipantConnectionDelta(payload = {}) {
+  const participant = payload.participant || {};
+  const normalized = normalizeRoomParticipantDelta(participant);
+  if (!normalized) {
+    return false;
+  }
+  const eventType = String(payload.eventType || "").replaceAll("_", "-");
+  const applied = applyRoomParticipantDelta(normalized, payload);
+  if (!applied) {
+    return false;
+  }
+  const name = String(payload.participantName || normalized.name || "A player").trim();
+  if (normalized.id !== state.clientId) {
+    if (eventType === "participant-disconnected") {
+      addSystemChat(
+        normalized.host
+          ? "Waiting for host to reconnect. The room will close if the host does not return within 1 minute."
+          : `${name} disconnected. Waiting for them to reconnect.`,
+        { sync: false }
+      );
+    } else if (eventType === "participant-reconnected") {
+      addSystemChat(normalized.host ? "Host rejoined." : `${name} reconnected.`, { sync: false });
+    }
+  }
+  renderRoomPlayers();
+  renderRoomChat();
+  renderScore();
+  renderSubmissionStatus();
+  renderSpectatorCountIndicator();
   return true;
 }
 
@@ -26112,6 +26268,7 @@ function applyRoomDirectoryRoom(room) {
   state.joiningRoom = state.joiningRoom ? room : state.joiningRoom;
   syncRoomSubmissionsFromParticipants();
   renderSpectatorAnswerCards();
+  renderSpectatorCountIndicator();
 }
 
 function syncRoomSubmissionsFromParticipants() {
@@ -27121,14 +27278,25 @@ function renderHostedRooms(options = {}) {
     joinButton.type = "button";
     joinButton.dataset.roomAction = "join";
     joinButton.dataset.joinRoom = room.code;
-    joinButton.textContent = "Join Game";
+    const currentProfileParticipant = getRoomParticipantWithCurrentProfile(room);
+    const currentProfileIsHost = isCurrentProfileHostOfRoom(room);
+    const currentProfileIsActive = Boolean(
+      currentProfileParticipant
+      && currentProfileParticipant.active !== false
+      && !currentProfileIsHost
+    );
+    joinButton.textContent = currentProfileIsHost || currentProfileParticipant?.active === false ? "Rejoin" : "Join Game";
     const roomIsFull = activePlayers >= getRoomMaxPlayers(room.settings);
-    joinButton.disabled = room.status !== "lobby" || roomIsFull;
+    joinButton.disabled = currentProfileIsActive || (!currentProfileIsHost && room.status !== "lobby") || (!currentProfileParticipant && roomIsFull);
     const joinHint = room.status === "lobby"
-      ? roomIsFull
+      ? currentProfileIsActive
+        ? "This profile is already active in this room."
+        : roomIsFull
         ? "This room is full, but you can still watch as a spectator."
-        : room.settings.private ? "Enter the room password to join before the match starts." : "Join this lobby as an active player before the match starts."
-      : "This game already started. You can spectate instead.";
+        : currentProfileIsHost
+          ? "Rejoin your hosted room."
+          : room.settings.private ? "Enter the room password to join before the match starts." : "Join this lobby as an active player before the match starts."
+      : currentProfileIsHost ? "Rejoin your active room as host." : "This game already started. You can spectate instead.";
     setFloatingButtonHint(joinButton, joinHint);
     const spectateButton = document.createElement("button");
     spectateButton.type = "button";
@@ -27149,6 +27317,76 @@ function getHostedRoomActivePlayerCount(room) {
     return room.participants.filter((participant) => participant.active !== false && !participant.spectator).length;
   }
   return Number(room?.activePlayers || 0);
+}
+
+function getRoomParticipantWithCurrentProfile(room = null) {
+  const profileUserId = getRoomParticipantProfileUserId();
+  return normalizeRoomParticipantsList(room?.participants || [])
+    .find((participant) => (
+      participant.id === state.clientId
+      || (profileUserId && participant.profileUserId === profileUserId)
+    )) || null;
+}
+
+function isCurrentProfileHostOfRoom(room = null) {
+  const participant = getRoomParticipantWithCurrentProfile(room);
+  const hostProfileUserId = String(room?.host?.profileUserId || "").trim();
+  const profileUserId = getRoomParticipantProfileUserId();
+  return Boolean(
+    participant?.host
+    || participant?.id === room?.host?.id
+    || room?.host?.id === state.clientId
+    || (hostProfileUserId && hostProfileUserId === profileUserId)
+  );
+}
+
+async function rejoinHostedRoomAsHost(room) {
+  state.roomSettings = { ...room.settings };
+  syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
+  startRoomRealtime(state.roomSettings.code);
+  state.joiningRoom = null;
+  state.isSpectator = false;
+  state.mode = "room";
+  state.currentOwner = "player";
+  state.currentRoomStatus = room.status === "in-progress" ? "in-progress" : "lobby";
+  state.roomSessionId += 1;
+  state.roomExitLeaveSent = false;
+  state.roomMissingSince = 0;
+  state.roomClosedNotice = "";
+  state.roomParticipants = normalizeRoomParticipantsList(room.participants);
+  setCurrentRoomMatchId(room.game?.matchId || "");
+  state.roomGame = room.game || null;
+  rememberHostedRoomSession(room.code);
+  setRoomInviteUrlPath(room.code);
+  const updatedRoom = await updateRoomPresence(room, {
+    host: true,
+    status: "host",
+    compactResponse: true
+  });
+  const activeRoom = updatedRoom || room;
+  mergeHostedRoom(activeRoom);
+  applyRoomDirectoryRoom(activeRoom);
+  state.roomChat = [];
+  resetChatCooldown();
+  if (Array.isArray(activeRoom.chat)) {
+    mergeRoomChatMessages(activeRoom.chat);
+  }
+  addSystemChat("Host rejoined.", { sync: false });
+  stopJoinDirectoryPolling();
+  setJoinInviteMode(false);
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.gameStage, true);
+  if (state.currentRoomStatus === "lobby") {
+    setPlayersForMode("room");
+    renderRoomLobby();
+    startRoomDirectoryPolling();
+    setHidden(elements.roomLobbyScreen, false);
+  } else {
+    startGame("room");
+  }
+  playSound("click");
 }
 
 function getRoomModeLabel(settings = state.roomSettings) {
@@ -27241,6 +27479,18 @@ async function joinHostedRoom(code, options = {}) {
     }
     if (!room) {
       addSystemChat(`Room ${normalizedCode || "code"} was not found.`, { private: true });
+      return;
+    }
+    if (isCurrentProfileHostOfRoom(room)) {
+      await rejoinHostedRoomAsHost(room);
+      return;
+    }
+    const sameProfileParticipant = getRoomParticipantWithCurrentProfile(room);
+    if (
+      sameProfileParticipant
+      && sameProfileParticipant.active !== false
+    ) {
+      addSystemChat("This profile is already active in that room. Use the existing tab, or reconnect after it disconnects.", { private: true, sync: false });
       return;
     }
     const banList = state.roomModeration.bannedByRoom[normalizedCode] || [];
