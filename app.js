@@ -11489,7 +11489,11 @@ function isOwnerTimerSpedUpByTimeBender(owner) {
 }
 
 function getOwnerTimerDrainStep(owner) {
-  return isOwnerTimerSpedUpByTimeBender(owner) ? 2 : 1;
+  return 1;
+}
+
+function getOwnerTimerDrainIntervalMs(owner) {
+  return isOwnerTimerSpedUpByTimeBender(owner) ? 500 : 1000;
 }
 
 function getOwnerAnswerTimerDuration(owner) {
@@ -19478,7 +19482,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "time_bender") {
-    state.timerRemaining = Math.min(99, state.timerRemaining + 5);
+    if (owner === getCurrentPowerOwner() && state.timerId && isAnswerInputLive()) {
+      state.timerRemaining = Math.min(99, state.timerRemaining + 5);
+    }
     queueStatFlash("mixed", power.name, ["+5 Seconds", "Others Drain 2x"], { owners: [owner], complex: true });
     renderTimer();
   }
@@ -20667,6 +20673,8 @@ function startTimer(options = {}) {
   }
   renderTimer();
 
+  let timerDrainElapsedMs = 0;
+  const timerTickMs = 500;
   state.timerId = setInterval(() => {
     if (
       timerSessionId !== state.timerSessionId
@@ -20678,8 +20686,15 @@ function startTimer(options = {}) {
       return;
     }
 
+    const currentTimerOwner = getCurrentPowerOwner();
+    timerDrainElapsedMs += timerTickMs;
+    const drainIntervalMs = getOwnerTimerDrainIntervalMs(currentTimerOwner);
+    if (timerDrainElapsedMs < drainIntervalMs) {
+      return;
+    }
+    timerDrainElapsedMs = 0;
     const previousRemaining = state.timerRemaining;
-    state.timerRemaining = Math.max(0, state.timerRemaining - getOwnerTimerDrainStep(getCurrentPowerOwner()));
+    state.timerRemaining = Math.max(0, state.timerRemaining - getOwnerTimerDrainStep(currentTimerOwner));
     renderTimer();
     commitScheduledBotPowerUps();
     commitScheduledRoomBotAnswers();
@@ -20696,7 +20711,7 @@ function startTimer(options = {}) {
       playSound("error");
       handleTimerExpired();
     }
-  }, 1000);
+  }, timerTickMs);
 }
 
 function canUseBotPowerDebugPanel() {

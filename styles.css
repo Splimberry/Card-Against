@@ -2361,6 +2361,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .timer-metric-icon {
+  width: 1.14rem;
+  height: 1.14rem;
   -webkit-mask: url("assets/topbar-stop-watch.svg") center / contain no-repeat;
   mask: url("assets/topbar-stop-watch.svg") center / contain no-repeat;
 }
@@ -2402,6 +2404,10 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   animation: timerIconWarningPulse 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.score-metric.timer-warning.metric-value-pop strong {
+  animation: metricUrgentValuePulse 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .score-metric.time-money {
   border-color: rgba(255, 198, 74, 0.85);
   background:
@@ -2429,6 +2435,23 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 @keyframes metricValuePulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  48% {
+    transform: scale(1.065);
+    filter: brightness(1.14);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes metricUrgentValuePulse {
   0% {
     transform: scale(1);
     filter: brightness(1);
