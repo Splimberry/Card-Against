@@ -25543,6 +25543,15 @@ async function startGame(mode) {
     }
   }
   resetMatch(mode);
+  const syncedRoomGame = mode === "room" && !isCurrentHost()
+    ? state.roomGame || state.joiningRoom?.game || null
+    : null;
+  if (syncedRoomGame && Number(syncedRoomGame.round) > 0) {
+    state.round = clampNumber(syncedRoomGame.round, 1, Math.max(state.maxRounds, Number(syncedRoomGame.round) || 1), 1);
+    if (syncedRoomGame.matchId) {
+      setCurrentRoomMatchId(syncedRoomGame.matchId);
+    }
+  }
   const matchToken = state.matchWorkToken;
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
@@ -25557,9 +25566,9 @@ async function startGame(mode) {
   resetRoundUiForLoading();
   try {
     const enabledThemes = getEnabledTriviaThemes();
-    const firstRoundSetupOptions = { round: 1, totalRounds: state.maxRounds };
+    const firstRoundSetupOptions = { round: state.round, totalRounds: state.maxRounds };
     const syncedSetup = mode === "room" && !isCurrentHost()
-      ? getSyncedRoomSetupForRound(1) || await waitForSyncedRoomSetupForRound(1)
+      ? getSyncedRoomSetupForRound(state.round) || await waitForSyncedRoomSetupForRound(state.round)
       : null;
     const firstSetup = syncedSetup
       || takeReservedSetup(enabledThemes, "", firstRoundSetupOptions)
@@ -25575,6 +25584,11 @@ async function startGame(mode) {
     applyRoundSetup(firstSetup);
     if (mode === "room" && !isCurrentHost()) {
       applyRoomGamePowerState();
+      if (state.isSpectator) {
+        maybePlaySpectatorRoomRoundResult(state.roomGame?.roundResult || state.joiningRoom?.game?.roundResult || state.roomRoundResult);
+      } else {
+        playSyncedRoomRoundResult(state.roomGame?.roundResult || state.joiningRoom?.game?.roundResult || state.roomRoundResult);
+      }
     }
   } catch (error) {
     if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {

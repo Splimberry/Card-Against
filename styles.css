@@ -2785,20 +2785,21 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .game-stage.spectator-mode.room-active .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden)) {
-  grid-template-rows: minmax(0, auto) auto;
-  align-content: start;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: center;
 }
 
 .game-stage.spectator-mode.room-active
   .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden))
   .question-card-stack {
-  grid-row: 1 / span 2;
+  grid-row: 1;
 }
 
 .game-stage.spectator-mode.room-active
   .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden))
   .cards-area.spectator-answer-mode {
   grid-row: 1;
+  align-self: center;
   max-height: none;
   z-index: 12;
 }
