@@ -6348,6 +6348,11 @@ function renderAnswerCardLayout(cards, correctIndexes = [], preferredIndex = -1)
     elements.cardsArea.style.setProperty("--answer-card-count", String(state.isSpectator && isRoomMode()
       ? Math.min(9, Math.max(1, state.visibleAnswerCardIndexes.length + (showStackButton ? 1 : 0)))
       : showStackButton ? 3 : Math.max(1, state.visibleAnswerCardIndexes.length)));
+    if (state.isSpectator && isRoomMode()) {
+      elements.cardsArea.style.setProperty("--spectator-answer-columns", String(Math.min(3, Math.max(1, state.visibleAnswerCardIndexes.length + (showStackButton ? 1 : 0)))));
+    } else {
+      elements.cardsArea.style.removeProperty("--spectator-answer-columns");
+    }
   }
 }
 
@@ -6401,13 +6406,13 @@ function decorateSpectatorAnswerCard(card, cardIndex) {
   if (text) {
     text.textContent = displayAnswer || (submitted ? "Submitted blank" : "Typing...");
   }
-  const ownerRow = card.querySelector(".answer-owner");
-  const existingPill = ownerRow?.querySelector(".spectator-submitted-pill");
-  if (submitted && ownerRow && !existingPill) {
+  card.querySelector(".answer-owner .spectator-submitted-pill")?.remove();
+  const existingPill = card.querySelector(":scope > .spectator-submitted-pill");
+  if (submitted && !existingPill) {
     const pill = document.createElement("span");
     pill.className = "spectator-submitted-pill";
     pill.textContent = "Submitted";
-    ownerRow.appendChild(pill);
+    card.appendChild(pill);
   } else if (!submitted && existingPill) {
     existingPill.remove();
   }
