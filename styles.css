@@ -422,8 +422,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
 .user-question-screen:not(.hidden) :is(.room-header, .dev-create-form, .dev-create-preview-shell, .user-question-submissions),
 .profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
-.profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
-.achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card) {
+.profile-shop-modal.motion-opening:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
+.achievements-modal.motion-opening:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card) {
   animation: motionPolishSlideIn var(--motion-polish-duration, 560ms) cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: var(--motion-polish-delay, 0ms);
   will-change: opacity, transform, filter;
@@ -9099,6 +9099,7 @@ input:focus {
     -0.16rem 0 1rem rgba(255, 77, 125, 0.12),
     0.16rem 0 1rem rgba(34, 211, 238, 0.12),
     inset 0 0 0.9rem rgb(255 255 255 / 0.06);
+  animation: chaosAbilityViewerPulse 1550ms ease-in-out infinite;
 }
 
 .ability-card.chaos-infused::after {
@@ -9118,6 +9119,7 @@ input:focus {
     0 0;
   mix-blend-mode: screen;
   opacity: 0.34;
+  animation: chaosAbilityViewerScan 1200ms linear infinite;
 }
 
 .ability-card.chaos-infused[data-rarity="blue"] {
@@ -9130,6 +9132,40 @@ input:focus {
 
 .ability-card.chaos-infused[data-rarity="gold"] {
   --chaos-rarity-rgb: 251 191 36;
+}
+
+@keyframes chaosAbilityViewerPulse {
+  0%, 100% {
+    filter: brightness(1) saturate(1.05);
+    box-shadow:
+      0 0 1.2rem rgba(64, 222, 164, 0.24),
+      -0.16rem 0 1rem rgba(255, 77, 125, 0.12),
+      0.16rem 0 1rem rgba(34, 211, 238, 0.12),
+      inset 0 0 0.9rem rgb(255 255 255 / 0.06);
+  }
+
+  50% {
+    filter: brightness(1.12) saturate(1.24);
+    box-shadow:
+      0 0 1.55rem rgba(64, 222, 164, 0.32),
+      -0.22rem 0 1.15rem rgba(255, 77, 125, 0.18),
+      0.22rem 0 1.15rem rgba(34, 211, 238, 0.18),
+      inset 0 0 1rem rgb(255 255 255 / 0.08);
+  }
+}
+
+@keyframes chaosAbilityViewerScan {
+  0% {
+    background-position:
+      0 -80%,
+      0 0;
+  }
+
+  100% {
+    background-position:
+      0 118%,
+      0 10px;
+  }
 }
 
 .ability-card.chaos-unavailable {
@@ -9291,6 +9327,15 @@ input:focus {
   background: rgba(255, 213, 93, 0.08);
 }
 
+.achievement-milestone.milestone-just-claimed {
+  animation: milestoneClaimPulse 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  z-index: 3;
+}
+
+.achievement-milestone.milestone-just-claimed .achievement-milestone-marker {
+  animation: milestoneMarkerClaimPulse 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .achievement-milestone strong {
   color: var(--ink);
   font-size: 0.86rem;
@@ -9320,6 +9365,45 @@ input:focus {
 .achievement-milestone-claim:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+@keyframes milestoneClaimPulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow: 0 0 0 rgba(255, 213, 93, 0);
+  }
+
+  42% {
+    transform: scale(1.035);
+    filter: brightness(1.26);
+    box-shadow:
+      0 0 0 1px rgba(255, 213, 93, 0.3),
+      0 0 1.4rem rgba(255, 213, 93, 0.28);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow: 0 0 0 rgba(255, 213, 93, 0);
+  }
+}
+
+@keyframes milestoneMarkerClaimPulse {
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+
+  42% {
+    transform: translateX(-50%) scale(1.18);
+    box-shadow:
+      0 0 0 0.24rem rgba(255, 213, 93, 0.16),
+      0 0 1.2rem rgba(255, 213, 93, 0.38);
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
 }
 
 .achievement-section {
@@ -9399,8 +9483,19 @@ input:focus {
 }
 
 .achievement-card[data-unlocked="false"] {
-  opacity: 0.62;
-  filter: saturate(0.6);
+  opacity: 0.42;
+  filter: grayscale(0.36) saturate(0.5) brightness(0.74);
+  box-shadow: none;
+}
+
+.achievement-card[data-unlocked="false"] strong,
+.achievement-card[data-unlocked="false"] small,
+.achievement-card[data-unlocked="false"] em {
+  color: rgba(238, 244, 255, 0.58);
+}
+
+.achievement-card[data-unlocked="false"] span {
+  opacity: 0.72;
 }
 
 .achievement-card[data-equipped="true"] {
@@ -10388,6 +10483,11 @@ input:focus {
   box-shadow: 0 0 1rem rgba(64, 222, 164, 0.12);
 }
 
+.profile-shop-item.profile-shop-item-just-purchased {
+  animation: profileShopPurchasePulse 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  z-index: 2;
+}
+
 .profile-shop-item[data-affordable="false"][data-owned="false"] {
   border-color: rgba(255, 77, 125, 0.26);
 }
@@ -10516,6 +10616,28 @@ input:focus {
 
 .profile-shop-item:disabled {
   cursor: default;
+}
+
+@keyframes profileShopPurchasePulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow: 0 0 0 rgba(64, 222, 164, 0);
+  }
+
+  44% {
+    transform: scale(1.025);
+    filter: brightness(1.22);
+    box-shadow:
+      0 0 0 1px rgba(64, 222, 164, 0.26),
+      0 0 1.35rem rgba(64, 222, 164, 0.24);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow: 0 0 1rem rgba(64, 222, 164, 0.12);
+  }
 }
 
 .settings-header h2 {
@@ -11633,8 +11755,8 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .profile-custom-modal:not(.hidden) :is(.settings-header, .profile-custom-controls > *, .profile-custom-preview),
-  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
-  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .profile-shop-modal.motion-opening:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .achievements-modal.motion-opening:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .game-stage:not(.hidden) :is(.scoreboard, .power-panel:not(.hidden), .effect-panel:not(.hidden), .judge-panel:not(.hidden), .input-panel:not(.hidden), .answer-progress:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden), .room-chat:not(.hidden)),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-player-card.room-player-card-new,
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-player-card.room-player-card-exiting,
