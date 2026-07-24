@@ -8598,6 +8598,16 @@ input:focus {
     opacity 160ms ease;
 }
 
+button.profile-auth-password-toggle,
+button.profile-auth-password-toggle:hover:not(:disabled),
+button.profile-auth-password-toggle:focus-visible,
+button.profile-auth-password-toggle:active:not(:disabled) {
+  border: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: translateY(-50%) !important;
+}
+
 .profile-auth-password-toggle span {
   width: 1.16rem;
   height: 1.16rem;
@@ -8616,7 +8626,7 @@ input:focus {
 
 .profile-auth-password-toggle:hover,
 .profile-auth-password-toggle:focus-visible {
-  transform: translateY(-50%);
+  transform: translateY(-50%) !important;
 }
 
 .profile-auth-password-toggle:disabled {
