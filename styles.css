@@ -9237,7 +9237,7 @@ input:focus {
   gap: 1rem;
   align-items: stretch;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .profile-custom-controls,
@@ -9256,6 +9256,9 @@ input:focus {
 .profile-custom-preview {
   align-content: center;
   justify-items: center;
+  overflow: visible;
+  margin: -1rem 0;
+  padding: 1rem 1.35rem 1rem 0.35rem;
 }
 
 .profile-custom-preview > * {
