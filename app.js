@@ -62,6 +62,9 @@ const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
 const profileLoadingSlowWarningMs = 20000;
+const profileHydrationVisibleBudgetMs = 4800;
+const profileHydrationRemoteTimeoutMs = 3200;
+const profileHydrationQueueTimeoutMs = 1400;
 const roomAppliedEventLimit = 300;
 const supabaseAvatarBucket = "profile-avatars";
 const supabaseSdkUrl = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
@@ -1528,6 +1531,26 @@ function loadUserInventoryCache(userId = getUserInventoryStorageId()) {
   return cache && typeof cache === "object" ? cache : null;
 }
 
+function withTimeout(promise, timeoutMs, fallback = null, label = "operation") {
+  let timeoutId = null;
+  const timeoutPromise = new Promise((resolve) => {
+    timeoutId = window.setTimeout(() => {
+      console.warn(`${label} timed out after ${timeoutMs}ms; continuing with cached data.`);
+      resolve(fallback);
+    }, Math.max(0, Number(timeoutMs) || 0));
+  });
+  return Promise.race([Promise.resolve(promise), timeoutPromise])
+    .catch((error) => {
+      console.warn(`${label} failed; continuing with cached data:`, error.message || error);
+      return fallback;
+    })
+    .finally(() => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    });
+}
+
 function hasPendingUserInventoryWork(userId = getUserInventoryStorageId()) {
   return Boolean(userId && (loadUserInventoryQueue(userId).length || loadUserInventoryMutationQueue(userId).length));
 }
@@ -2462,9 +2485,11 @@ async function hydrateSignedInUserStorage(user) {
   if (!user?.id) {
     return;
   }
+  const userId = getUserInventoryStorageId(user);
+  const stillActiveUser = () => Boolean(userId && state.supabaseUser?.id === userId);
   let restoredSnapshot = false;
   let chosenSnapshot = null;
-  let localSnapshot = loadUserStorageCacheForUser(user.id);
+  let localSnapshot = loadUserStorageCacheForUser(userId);
   const hasCachedProfile = localSnapshot?.version === userStorageVersion;
   if (hasCachedProfile && !state.profileLoadedFromCache) {
     state.profileLoadedFromCache = true;
@@ -2474,14 +2499,58 @@ async function hydrateSignedInUserStorage(user) {
     });
   }
   setProfileLoading(!hasCachedProfile);
+  const visibleLoadingTimerId = window.setTimeout(() => {
+    if (stillActiveUser()) {
+      setProfileLoading(false, { slow: false });
+      renderProfile();
+    }
+  }, profileHydrationVisibleBudgetMs);
   let cachedInventory = null;
+  let remoteSnapshotPromise = null;
+  let inventoryPromise = null;
+  let queueFlushPromise = null;
   try {
     state.userStorageHydrating = true;
     syncProfileLoadingState();
     renderSupabaseAuthControls();
     try {
-      localSnapshot = hasCachedProfile ? localSnapshot : loadUserStorageCacheForUser(user.id);
-      const remoteSnapshot = await loadRemoteUserStorageSnapshot(user);
+      localSnapshot = hasCachedProfile ? localSnapshot : loadUserStorageCacheForUser(userId);
+      cachedInventory = loadUserInventoryCache(userId);
+      const canTrustCurrentBrowserInventory = doesActiveUserStorageCacheBelongToUser(user);
+      const currentBrowserInventory = canTrustCurrentBrowserInventory
+        ? getLocalUserInventorySnapshot(user)
+        : null;
+      const initialRecoverySources = [
+        cachedInventory,
+        getInventoryFromUserStorageSnapshot(localSnapshot, userId),
+        currentBrowserInventory
+      ];
+      enqueueInventoryRecoveryOpsForUser(user, initialRecoverySources);
+      remoteSnapshotPromise = withTimeout(
+        loadRemoteUserStorageSnapshot(user),
+        profileHydrationRemoteTimeoutMs,
+        null,
+        "Remote profile snapshot load"
+      );
+      inventoryPromise = withTimeout(
+        fetchServerUserInventory(user),
+        profileHydrationRemoteTimeoutMs,
+        null,
+        "Server inventory load"
+      );
+      queueFlushPromise = withTimeout(
+        (async () => {
+          await flushPendingUserInventoryWrites({ user });
+          await flushPendingUserInventoryMutations({ user });
+        })(),
+        profileHydrationQueueTimeoutMs,
+        null,
+        "Pending inventory sync"
+      );
+      const remoteSnapshot = await remoteSnapshotPromise;
+      if (!stillActiveUser()) {
+        return;
+      }
       chosenSnapshot = chooseBestUserStorageSnapshot(localSnapshot, remoteSnapshot);
       if (chosenSnapshot) {
         state.profileLoadedFromCache = false;
@@ -2495,38 +2564,50 @@ async function hydrateSignedInUserStorage(user) {
       state.userStorageHydrating = false;
     }
     try {
-      cachedInventory = loadUserInventoryCache(user.id);
+      cachedInventory = loadUserInventoryCache(userId);
       const canTrustCurrentBrowserInventory = doesActiveUserStorageCacheBelongToUser(user);
       const currentBrowserInventory = canTrustCurrentBrowserInventory
         ? getLocalUserInventorySnapshot(user)
         : null;
       const recoverySources = [
         cachedInventory,
-        getInventoryFromUserStorageSnapshot(localSnapshot, user.id),
-        getInventoryFromUserStorageSnapshot(chosenSnapshot, user.id)
+        getInventoryFromUserStorageSnapshot(localSnapshot, userId),
+        getInventoryFromUserStorageSnapshot(chosenSnapshot, userId)
       ];
       if (currentBrowserInventory) {
         recoverySources.unshift(currentBrowserInventory);
       }
       enqueueInventoryRecoveryOpsForUser(user, recoverySources);
-      await flushPendingUserInventoryWrites({ user });
-      await flushPendingUserInventoryMutations({ user });
-      let inventory = await fetchServerUserInventory(user);
-      cachedInventory = loadUserInventoryCache(user.id);
-      let migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, user.id) : [];
+      await queueFlushPromise;
+      let inventory = await (inventoryPromise || withTimeout(
+        fetchServerUserInventory(user),
+        profileHydrationRemoteTimeoutMs,
+        null,
+        "Server inventory load"
+      ));
+      if (!stillActiveUser()) {
+        return;
+      }
+      cachedInventory = loadUserInventoryCache(userId);
+      let migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, userId) : [];
       if (!migrationOps.length && isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
-        migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId: user.id, prefix: "cache" });
+        migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId, prefix: "cache" });
       }
       if (migrationOps.length) {
-        const migrated = await postUserInventoryOps(user.id, migrationOps);
+        const migrated = await withTimeout(
+          postUserInventoryOps(userId, migrationOps),
+          profileHydrationQueueTimeoutMs,
+          {},
+          "Inventory migration"
+        );
         inventory = migrated.inventory || inventory;
       }
       if (inventory) {
         const mergedInventory = mergeUserInventoriesForHydration(user, [
           inventory,
           cachedInventory,
-          getInventoryFromUserStorageSnapshot(localSnapshot, user.id),
-          getInventoryFromUserStorageSnapshot(chosenSnapshot, user.id),
+          getInventoryFromUserStorageSnapshot(localSnapshot, userId),
+          getInventoryFromUserStorageSnapshot(chosenSnapshot, userId),
           currentBrowserInventory
         ]);
         const inventoryToApply = mergedInventory || (
@@ -2536,7 +2617,7 @@ async function hydrateSignedInUserStorage(user) {
         );
         applyServerUserInventory(inventoryToApply, { includeLocalSnapshot: canTrustCurrentBrowserInventory });
         const recoveryOps = getInventoryStateOpsFromInventory(inventoryToApply, {
-          userId: user.id,
+          userId,
           prefix: "hydration",
           coveredCoinOps: getCoveredCoinOpsForInventoryQueue(userId)
         });
@@ -2551,8 +2632,8 @@ async function hydrateSignedInUserStorage(user) {
       }
     } catch (error) {
       console.warn("Server inventory hydration failed:", error.message || error);
-      const cachedInventory = loadUserInventoryCache(user.id);
-      if (cachedInventory) {
+      const cachedInventory = loadUserInventoryCache(userId);
+      if (cachedInventory && stillActiveUser()) {
         applyServerUserInventory(cachedInventory);
       }
     }
@@ -2561,8 +2642,12 @@ async function hydrateSignedInUserStorage(user) {
     }
     void loadUserQuestionSubmissions();
   } finally {
+    window.clearTimeout(visibleLoadingTimerId);
     state.profileLoadedFromCache = false;
-    setProfileLoading(false);
+    state.userStorageHydrating = false;
+    if (stillActiveUser()) {
+      setProfileLoading(false);
+    }
   }
 }
 const audioAssets = {
@@ -4737,7 +4822,7 @@ function roomPayloadMatchesCurrentMatch(payload = {}) {
   return !incomingMatchId || !currentMatchId || incomingMatchId === currentMatchId;
 }
 
-function isRemoteRoomWaitingForSyncedSetup(round = state.round) {
+function isJoinedRoomWaitingForSyncedSetup(round = state.round) {
   if (!isRoomMode() || !state.joiningRoom || isCurrentHost()) {
     return false;
   }
@@ -4756,7 +4841,7 @@ function canAdoptIncomingRoomGame(game = null, room = null, round = state.round)
     game.setup
     && Number(game.round || 0) >= Number(round || 1)
     && String(room?.status || game.status || "").toLowerCase() !== "complete"
-    && isRemoteRoomWaitingForSyncedSetup(round)
+    && isJoinedRoomWaitingForSyncedSetup(round)
   );
 }
 
@@ -12811,7 +12896,7 @@ function applyRoomServerEvent(event = {}) {
     && canAdoptIncomingRoomGame(incomingGame, { status: payload.status || "in-progress" }, payload.round || incomingGame.round || state.round);
   const shouldAdoptRoundAdvance = type === "round_advancing"
     && getRoomMatchIdFromPayload(eventPayload)
-    && isRemoteRoomWaitingForSyncedSetup(payload.round || state.round);
+    && isJoinedRoomWaitingForSyncedSetup(payload.round || state.round);
   if (!roomPayloadMatchesCurrentMatch(eventPayload) && !shouldAdoptNewRoomGame && !shouldAdoptRoundAdvance) {
     rememberAppliedRoomServerEvent(event);
     updateRoomEventRevision(event.revision);
@@ -26668,7 +26753,7 @@ function applyRealtimeRoundAdvancing(payload = {}) {
     return false;
   }
   const incomingMatchId = getRoomMatchIdFromPayload(payload);
-  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !isRemoteRoomWaitingForSyncedSetup(nextRound || state.round)) {
+  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !isJoinedRoomWaitingForSyncedSetup(nextRound || state.round)) {
     return false;
   }
   if (payload.matchSettings || payload.settings) {
