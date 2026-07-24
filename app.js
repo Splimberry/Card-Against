@@ -19440,6 +19440,7 @@ function renderPowerUps() {
   const freshIds = [...(state.freshPowerUps[owner] || [])];
   const panelVisible = !elements.powerPanel.classList.contains("hidden");
   const beforeHeight = getPowerPanelHeightForAnimation();
+  const layoutSnapshot = panelVisible ? capturePowerHandLayoutSnapshot(owner) : null;
   const powersBlocked = isClassicModeEnabled() || isTableEventActive("power_outage");
   const label = isDuelMode() ? `${getOwnerLabel(owner)} power-ups` : "Your power-ups";
   const hint = powersBlocked
@@ -19563,6 +19564,7 @@ function renderPowerUps() {
     }
   }
   animatePowerPanelHeightChange(beforeHeight);
+  playPowerHandLayoutShift(owner, layoutSnapshot);
 }
 
 function selectPowerUp(powerId) {
