@@ -125,184 +125,13 @@
 }
 
 body {
-  position: relative;
-  isolation: isolate;
   min-height: 100vh;
   margin: 0;
-  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(255, 77, 125, 0.14), transparent 32rem),
     radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.12), transparent 36rem),
     linear-gradient(145deg, #08090d, #16131d 58%, #08090d);
   color: var(--ink);
-}
-
-/* Menu ambience background: self-contained and safe to revert as one block. */
-.menu-ambience {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  opacity: 0.82;
-  pointer-events: none;
-  transition: opacity 360ms ease;
-}
-
-.menu-ambience-layer {
-  position: absolute;
-  inset: -7vmax;
-  transform-origin: center;
-  will-change: transform;
-}
-
-.menu-ambience-table {
-  animation: menuHologramParallax 64s ease-in-out infinite alternate;
-}
-
-.menu-ambience-cards {
-  animation: menuFragmentsParallax 42s ease-in-out infinite alternate;
-}
-
-.menu-table-ring,
-.menu-table-line,
-.menu-card-fragment {
-  position: absolute;
-  display: block;
-}
-
-.menu-table-ring {
-  left: 50%;
-  top: 58%;
-  border: 1px solid rgba(34, 211, 238, 0.16);
-  border-radius: 50%;
-  box-shadow:
-    0 0 1.5rem rgba(34, 211, 238, 0.055),
-    inset 0 0 2.4rem rgba(255, 77, 125, 0.035);
-  transform: translate(-50%, -50%);
-}
-
-.menu-table-ring-outer {
-  width: min(82rem, 92vw);
-  height: min(30rem, 34vw);
-  border-color: rgba(34, 211, 238, 0.2);
-}
-
-.menu-table-ring-middle {
-  width: min(64rem, 72vw);
-  height: min(22rem, 25vw);
-  border-color: rgba(255, 77, 125, 0.16);
-}
-
-.menu-table-ring-inner {
-  width: min(44rem, 50vw);
-  height: min(13rem, 15vw);
-  border-color: rgba(246, 242, 238, 0.105);
-  background: radial-gradient(ellipse at center, rgba(34, 211, 238, 0.06), transparent 68%);
-}
-
-.menu-table-line {
-  left: 50%;
-  top: 58%;
-  width: min(74rem, 84vw);
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.13), rgba(255, 77, 125, 0.08), transparent);
-  transform-origin: center;
-}
-
-.menu-table-line-a {
-  transform: translateX(-50%) rotate(0deg);
-}
-
-.menu-table-line-b {
-  transform: translateX(-50%) rotate(14deg);
-}
-
-.menu-table-line-c {
-  transform: translateX(-50%) rotate(-14deg);
-}
-
-.menu-table-line-d {
-  width: min(54rem, 62vw);
-  transform: translateX(-50%) rotate(90deg);
-}
-
-.menu-card-fragment {
-  width: clamp(4.8rem, 8vw, 8.6rem);
-  aspect-ratio: 1.58;
-  border: 1px solid rgba(34, 211, 238, 0.24);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(255, 77, 125, 0.035)),
-    rgba(255, 255, 255, 0.018);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.045),
-    0 0 1.15rem rgba(34, 211, 238, 0.09);
-  opacity: 0.42;
-}
-
-.menu-card-fragment::before,
-.menu-card-fragment::after {
-  content: "";
-  position: absolute;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.menu-card-fragment::before {
-  inset: 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.075);
-}
-
-.menu-card-fragment::after {
-  left: 0.72rem;
-  right: 0.72rem;
-  bottom: 0.68rem;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), transparent);
-}
-
-.menu-card-fragment-a {
-  left: 8%;
-  top: 17%;
-  transform: rotate(-8deg);
-}
-
-.menu-card-fragment-b {
-  right: 10%;
-  top: 19%;
-  border-color: rgba(255, 77, 125, 0.24);
-  transform: rotate(7deg);
-}
-
-.menu-card-fragment-c {
-  left: 16%;
-  bottom: 12%;
-  border-color: rgba(64, 222, 164, 0.22);
-  transform: rotate(5deg);
-}
-
-.menu-card-fragment-d {
-  right: 17%;
-  bottom: 13%;
-  width: clamp(5.2rem, 9vw, 9.4rem);
-  transform: rotate(-5deg);
-}
-
-.menu-card-fragment-e {
-  left: 48%;
-  top: 9%;
-  width: clamp(3.8rem, 6vw, 6rem);
-  border-color: rgba(251, 191, 36, 0.18);
-  opacity: 0.3;
-  transform: rotate(12deg);
-}
-
-body:has(.game-stage:not(.hidden)) .menu-ambience {
-  opacity: 0;
-}
-
-body:has(.game-stage:not(.hidden)) .menu-ambience-layer {
-  animation-play-state: paused;
 }
 
 body:has(.game-stage:not(.hidden)) {
@@ -405,8 +234,6 @@ button[aria-disabled="true"]:hover {
 }
 
 .app-shell {
-  position: relative;
-  z-index: 1;
   width: min(1500px, calc(100% - 3rem));
   margin: 0 auto;
   padding: 1rem 0;
@@ -2316,33 +2143,9 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   }
 }
 
-@keyframes menuHologramParallax {
-  0% {
-    transform: translate3d(-1.4rem, -0.8rem, 0) rotate(-0.25deg) scale(1.015);
-  }
-
-  100% {
-    transform: translate3d(1.1rem, 0.9rem, 0) rotate(0.28deg) scale(1.02);
-  }
-}
-
-@keyframes menuFragmentsParallax {
-  0% {
-    transform: translate3d(1.8rem, -1.2rem, 0) rotate(0.45deg) scale(1.01);
-  }
-
-  100% {
-    transform: translate3d(-2rem, 1.55rem, 0) rotate(-0.55deg) scale(1.018);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   [data-tooltip]::after {
     transition: none;
-  }
-
-  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .menu-ambience-layer {
-    animation: none;
   }
 
   .effect-badge:hover::after,
