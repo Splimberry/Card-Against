@@ -12637,6 +12637,7 @@ function getRealtimeRoomPayload(room = {}, options = {}) {
     settings: { ...settings },
     host: {
       id: String(host.id || "").slice(0, 80),
+      profileUserId: String(host.profileUserId || host.userId || "").slice(0, 140),
       name: String(host.name || "Host").slice(0, 32),
       avatar: getRoomSyncAvatar(host.avatar),
       equippedTitleId: String(host.equippedTitleId || "").slice(0, 80),
@@ -13139,6 +13140,8 @@ function applyRoomServerEvent(event = {}) {
     });
   } else if (type === "participant_moderated") {
     applied = applyRoomModerationDelta(eventPayload);
+  } else if (type === "host_transferred") {
+    applied = applyRealtimeHostTransferred(eventPayload);
   } else if (type === "room_updated" || type === "room_created") {
     applied = false;
   }
@@ -13244,6 +13247,98 @@ function applyRealtimeRoomPayload(room = {}) {
   return true;
 }
 
+function applyRealtimeHostTransferred(payload = {}) {
+  const room = payload.room && typeof payload.room === "object" ? payload.room : null;
+  const code = String(payload.code || room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || isRoomLocallyClosed(code)) {
+    return false;
+  }
+  const newHost = payload.host || room?.host || {};
+  const newHostId = String(payload.newHostId || newHost.id || "").slice(0, 80);
+  const previousHostId = String(payload.previousHostId || "").slice(0, 80);
+  const promotedParticipant = payload.participant ? normalizeRoomParticipantDelta(payload.participant) : null;
+  let applied = false;
+
+  if (room) {
+    applied = applyRealtimeRoomPayload(room);
+  }
+
+  const hostedRoom = state.hostedRooms.find((entry) => entry.code === code);
+  if (hostedRoom && newHostId) {
+    hostedRoom.host = {
+      ...(hostedRoom.host || {}),
+      ...newHost,
+      id: newHostId
+    };
+    const hostedParticipants = normalizeRoomParticipantsList(hostedRoom.participants || [])
+      .map((participant) => ({
+        ...participant,
+        host: participant.id === newHostId,
+        status: participant.id === newHostId ? "host" : participant.status === "host" ? "joined" : participant.status
+      }));
+    if (promotedParticipant && !hostedParticipants.some((participant) => participant.id === promotedParticipant.id)) {
+      hostedParticipants.push({ ...promotedParticipant, host: true, status: "host" });
+    }
+    hostedRoom.participants = normalizeRoomParticipantsList(hostedParticipants);
+    hostedRoom.activePlayers = getHostedRoomActivePlayerCount(hostedRoom);
+    hostedRoom.revision = Number(payload.revision) || Number(hostedRoom.revision) || 0;
+    hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
+    applied = true;
+  }
+
+  if (code === state.roomSettings.code && hasActiveRoomContext()) {
+    if (!room && newHostId) {
+      state.roomParticipants = normalizeRoomParticipantsList([
+        ...state.roomParticipants.map((participant) => ({
+          ...participant,
+          host: participant.id === newHostId,
+          status: participant.id === newHostId ? "host" : participant.status === "host" ? "joined" : participant.status
+        })),
+        ...(promotedParticipant && !state.roomParticipants.some((participant) => participant.id === promotedParticipant.id)
+          ? [{ ...promotedParticipant, host: true, status: "host" }]
+          : [])
+      ]);
+      setPlayersForMode("room");
+    }
+    if (newHostId === state.clientId) {
+      state.joiningRoom = null;
+      state.isSpectator = false;
+      state.currentOwner = "player";
+      state.currentRoomStatus = room?.status || state.currentRoomStatus || "lobby";
+      rememberHostedRoomSession(code);
+      setPlayersForMode("room");
+      startRoomHeartbeat();
+      addSystemChat("Host left. You are now the room host.", { private: true, sync: false });
+      renderRoomPlayers();
+      renderScore();
+      renderSubmissionStatus();
+      applied = true;
+    } else if (previousHostId === state.clientId) {
+      stopRoomHeartbeat();
+      if (room) {
+        state.joiningRoom = room;
+        state.currentOwner = "opponent";
+        state.roomParticipants = normalizeRoomParticipantsList(room.participants || state.roomParticipants);
+        setPlayersForMode("room");
+      }
+      addSystemChat(`${newHost.name || "Another player"} is now the room host.`, { private: true, sync: false });
+      applied = true;
+    } else if (newHostId) {
+      addSystemChat(`${newHost.name || "Another player"} is now the room host.`, { sync: false });
+      applied = true;
+    }
+    if (!elements.roomLobbyScreen.classList.contains("hidden")) {
+      renderRoomLobby();
+    }
+  }
+
+  updateRoomEventRevision(payload.revision || room?.revision);
+  if (!elements.joinScreen.classList.contains("hidden")) {
+    renderHostedRooms({ force: true });
+  }
+  return applied;
+}
+
 function applyRealtimeRoomSettings(payload = {}) {
   const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
   if (!code || isRoomLocallyClosed(code)) {
@@ -13334,6 +13429,7 @@ function applyHostedRoomParticipantDelta(payload = {}) {
     room.host = {
       ...(room.host || {}),
       id: participant.id,
+      profileUserId: participant.profileUserId || participant.id,
       name: participant.name,
       avatar: participant.avatar,
       equippedTitleId: participant.equippedTitleId || "",
@@ -13601,6 +13697,8 @@ function handleRealtimeRoomChange(payload = {}) {
       ? applyHostedRoomParticipantDelta(payload)
       : payload.eventType === "participant-left" && payload.participantId
         ? applyHostedRoomParticipantLeft(payload)
+        : payload.eventType === "host-transferred"
+          ? applyRealtimeHostTransferred(payload)
         : payload.eventType === "room-settings"
           ? applyRealtimeRoomSettings(payload)
           : false;
@@ -13634,6 +13732,9 @@ function handleRealtimeRoomChange(payload = {}) {
     if (payload.eventType === "participant-moderated") {
       appliedDelta = applyRoomModerationDelta(payload);
     }
+    if (payload.eventType === "host-transferred") {
+      appliedDelta = applyRealtimeHostTransferred(payload);
+    }
     if (payload.eventType === "room-settings") {
       appliedDelta = applyRealtimeRoomSettings(payload);
     }
@@ -13655,7 +13756,7 @@ function handleRealtimeRoomChange(payload = {}) {
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "participant-disconnected", "participant-reconnected", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "room-settings", "game-ended"].includes(payload.eventType)) {
+    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "participant-disconnected", "participant-reconnected", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "host-transferred", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
     if (shouldRefreshRoomAfterRealtimeMiss(payload)) {
@@ -13694,6 +13795,7 @@ function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
     "participant-reconnected",
     "participant-left",
     "participant-moderated",
+    "host-transferred",
     "round-advancing",
     "round-skipped"
   ].includes(eventType);
@@ -13711,6 +13813,7 @@ function shouldRealtimeRefreshJoinDirectory(eventType = "") {
     "participant-disconnected",
     "participant-reconnected",
     "participant-moderated",
+    "host-transferred",
     "room-settings",
     "game-ended",
     "round-advancing",
@@ -26178,6 +26281,14 @@ async function publishRoomDirectory(room) {
     if (data.room) {
       broadcastRealtimeRoomChange("room-updated", data.room);
     }
+    if (Array.isArray(data.transferredRooms)) {
+      data.transferredRooms.forEach((transferredRoom) => {
+        if (transferredRoom?.code) {
+          mergeHostedRoom(transferredRoom);
+          broadcastRealtimeRoomChange("host-transferred", transferredRoom);
+        }
+      });
+    }
     return data.room || room;
   } catch {
     state.roomDirectoryOnline = false;
@@ -26526,7 +26637,8 @@ function normalizeRoomParticipantDelta(participant = {}) {
     submissionMatchId: String(source.submissionMatchId || "").trim(),
     remainingTime: Math.max(0, Number(source.remainingTime) || 0),
     disconnectedAt: Math.max(0, Number(source.disconnectedAt) || 0),
-    lastConnectedAt: Math.max(0, Number(source.lastConnectedAt) || 0)
+    lastConnectedAt: Math.max(0, Number(source.lastConnectedAt) || 0),
+    joinedAt: Math.max(0, Number(source.joinedAt) || 0)
   };
 }
 
@@ -26541,11 +26653,11 @@ function normalizeRoomParticipantsList(participants = []) {
     byId.set(normalized.id, {
       ...previous,
       ...normalized,
-      host: Boolean(previous.host || normalized.host),
-      bot: Boolean(previous.bot || normalized.bot),
+      host: Boolean(normalized.host),
+      bot: Boolean(normalized.bot),
       active: normalized.active !== false,
       spectator: Boolean(normalized.spectator),
-      status: previous.host || normalized.host
+      status: normalized.host
         ? "host"
         : normalized.status || previous.status || (normalized.bot ? "bot" : normalized.spectator ? "spectating" : "joined")
     });

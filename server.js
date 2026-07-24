@@ -2034,10 +2034,12 @@ async function handleUpsertRoom(req, res) {
     }
     room.events = normalizeRoomEvents(existingRoom?.events);
     room.revision = clampServerNumber(existingRoom?.revision, 0, Number.MAX_SAFE_INTEGER, 0);
+    const transferredRooms = await transferExistingHostRooms(room);
     stampRoomEvent(room, existingRoom ? "room_updated" : "room_created", { status: room.status });
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, {
-      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hasRoomHostAuth(req, storedRoom, authBody) || issueHostCookie })
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hasRoomHostAuth(req, storedRoom, authBody) || issueHostCookie }),
+      transferredRooms: transferredRooms.map((entry) => sanitizeRoomForClient(entry))
     }, issueHostCookie ? { "Set-Cookie": createRoomHostCookie(req, storedRoom) } : {});
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room update failed." });
@@ -2194,7 +2196,16 @@ function hasRoomHostAuth(req, room, body = {}) {
     const hostParticipantId = body.hostParticipantId || body.participantId || body.host?.id || body.room?.host?.id;
     return isHostParticipant(room, hostParticipantId);
   }
-  return secureEqual(getRequestRoomHostToken(req, room, body), security.hostToken);
+  if (secureEqual(getRequestRoomHostToken(req, room, body), security.hostToken)) {
+    return true;
+  }
+  const hostParticipantId = body.hostParticipantId
+    || body.participantId
+    || body.participant?.id
+    || body.host?.id
+    || body.room?.host?.id
+    || room?.host?.id;
+  return Boolean(isHostParticipant(room, hostParticipantId) && hasRoomParticipantTokenAuth(req, room, hostParticipantId, body));
 }
 
 function requireRoomHostAuth(req, res, room, body = {}, message = "Only the host can update this room.") {
@@ -2218,6 +2229,18 @@ function getRequestRoomParticipantToken(req, room, participantId, body = {}) {
 function getStoredRoomParticipantToken(room, participantId) {
   const id = String(participantId || "").slice(0, 80);
   return String(room?.security?.participantTokens?.[id] || "").trim();
+}
+
+function hasRoomParticipantTokenAuth(req, room, participantId, body = {}) {
+  const id = String(participantId || "").slice(0, 80);
+  if (!id) {
+    return false;
+  }
+  const storedToken = getStoredRoomParticipantToken(room, id);
+  if (!storedToken) {
+    return false;
+  }
+  return secureEqual(getRequestRoomParticipantToken(req, room, id, body), storedToken);
 }
 
 function ensureRoomParticipantToken(room, participantId) {
@@ -2250,11 +2273,7 @@ function hasRoomParticipantAuth(req, room, participantId, body = {}) {
   if (hasRoomHostAuth(req, room, body)) {
     return true;
   }
-  const storedToken = getStoredRoomParticipantToken(room, id);
-  if (!storedToken) {
-    return false;
-  }
-  return secureEqual(getRequestRoomParticipantToken(req, room, id, body), storedToken);
+  return hasRoomParticipantTokenAuth(req, room, id, body);
 }
 
 function requireRoomParticipantAuth(req, res, room, participantId, body = {}, message = "Only this participant can update their room state.") {
@@ -2342,6 +2361,130 @@ function getRoomHostParticipant(room) {
     : null;
 }
 
+function getRoomOwnerKey(room) {
+  const hostParticipant = getRoomHostParticipant(room);
+  const ownerKey = String(
+    room?.host?.profileUserId
+    || hostParticipant?.profileUserId
+    || ""
+  ).trim();
+  return /^(user|guest):/.test(ownerKey) ? ownerKey : "";
+}
+
+function getParticipantJoinOrder(participant, index = 0) {
+  return Number(participant?.joinedAt)
+    || Number(participant?.lastConnectedAt)
+    || Number(participant?.disconnectedAt)
+    || index + 1;
+}
+
+function getHostTransferCandidate(room) {
+  if (!Array.isArray(room?.participants)) {
+    return null;
+  }
+  const currentHostId = String(room.host?.id || "").slice(0, 80);
+  return room.participants
+    .map((participant, index) => ({ participant, index }))
+    .filter(({ participant }) => (
+      participant
+      && participant.id !== currentHostId
+      && !participant.host
+      && !participant.bot
+      && !participant.spectator
+      && participant.active !== false
+    ))
+    .sort((a, b) => getParticipantJoinOrder(a.participant, a.index) - getParticipantJoinOrder(b.participant, b.index) || a.index - b.index)[0]?.participant || null;
+}
+
+function getHostPayloadFromParticipant(participant) {
+  return {
+    id: participant.id,
+    profileUserId: participant.profileUserId || participant.id,
+    name: participant.name || "Host",
+    avatar: participant.avatar || "",
+    equippedTitleId: participant.equippedTitleId || "",
+    specialBadges: normalizeSpecialBadges(participant.specialBadges),
+    cardCustomization: participant.cardCustomization || null
+  };
+}
+
+function rotateRoomHostToken(room) {
+  room.security = normalizeRoomSecurity(room.security);
+  room.security.hostToken = randomBytes(32).toString("base64url");
+  room.security.createdAt = Date.now();
+}
+
+function transferRoomHostToOldestPlayer(room, reason = "host-transfer") {
+  if (!room || room.status === "complete" || !Array.isArray(room.participants)) {
+    return null;
+  }
+  const previousHost = getRoomHostParticipant(room) || room.host || null;
+  const nextHost = getHostTransferCandidate(room);
+  if (!nextHost) {
+    return null;
+  }
+  room.participants.forEach((participant) => {
+    participant.host = participant.id === nextHost.id;
+    if (participant.host) {
+      participant.spectator = false;
+      participant.bot = false;
+      participant.active = true;
+      participant.status = "host";
+      participant.disconnectedAt = 0;
+      participant.lastConnectedAt = participant.lastConnectedAt || Date.now();
+    } else if (participant.id === previousHost?.id) {
+      participant.host = false;
+      if (reason === "host-created-another-room") {
+        participant.active = false;
+        participant.disconnectedAt = Date.now();
+        participant.status = "left";
+      } else {
+        participant.status = participant.active === false ? "disconnected" : participant.status || "joined";
+      }
+    }
+  });
+  room.host = getHostPayloadFromParticipant(nextHost);
+  room.hostExitPendingAt = 0;
+  rotateRoomHostToken(room);
+  finalizeRoom(room);
+  stampRoomEvent(room, "host_transferred", {
+    previousHostId: previousHost?.id || "",
+    previousHostName: previousHost?.name || room.host?.name || "Host",
+    newHostId: nextHost.id,
+    newHostName: nextHost.name || "Host",
+    reason: String(reason || "host-transfer").slice(0, 60),
+    participant: nextHost,
+    host: room.host
+  });
+  return room;
+}
+
+async function transferExistingHostRooms(nextRoom) {
+  const ownerKey = getRoomOwnerKey(nextRoom);
+  if (!ownerKey || nextRoom.status === "complete") {
+    return [];
+  }
+  const rooms = await backendStore.listRooms();
+  const transferred = [];
+  await Promise.all(rooms.map(async (room) => {
+    if (!room || room.code === nextRoom.code || room.status === "complete" || getRoomOwnerKey(room) !== ownerKey) {
+      return;
+    }
+    const activeRoom = await ensureRoomReconnectGrace(room, { skipHostTransfer: true });
+    if (!activeRoom) {
+      return;
+    }
+    const promotedRoom = transferRoomHostToOldestPlayer(activeRoom, "host-created-another-room");
+    if (!promotedRoom) {
+      await closeStoredRoom(activeRoom.code, "host-created-another-room");
+      return;
+    }
+    const storedRoom = await backendStore.upsertRoom(promotedRoom);
+    transferred.push(storedRoom);
+  }));
+  return transferred;
+}
+
 function isRoomHostReconnectGraceExpired(room, now = Date.now()) {
   if (!room || room.status === "complete") {
     return false;
@@ -2381,7 +2524,7 @@ function pruneExpiredDisconnectedParticipants(room, now = Date.now()) {
   return removed;
 }
 
-async function ensureRoomReconnectGrace(room) {
+async function ensureRoomReconnectGrace(room, options = {}) {
   if (!isRoomHostReconnectGraceExpired(room)) {
     const removed = pruneExpiredDisconnectedParticipants(room);
     if (removed.length) {
@@ -2389,6 +2532,12 @@ async function ensureRoomReconnectGrace(room) {
       return backendStore.upsertRoom(room);
     }
     return room;
+  }
+  if (!options.skipHostTransfer) {
+    const promotedRoom = transferRoomHostToOldestPlayer(room, "host-reconnect-timeout");
+    if (promotedRoom) {
+      return backendStore.upsertRoom(promotedRoom);
+    }
   }
   await closeStoredRoom(room.code, "host-disconnected");
   return null;
@@ -2509,6 +2658,7 @@ async function handleRoomPresence(req, res, code) {
       room.participants[existingIndex] = {
         ...existingParticipant,
         ...participant,
+        joinedAt: existingParticipant.joinedAt || participant.joinedAt || existingParticipant.lastConnectedAt || Date.now(),
         disconnectedAt: isNowActive ? 0 : Date.now(),
         lastConnectedAt: isNowActive ? Date.now() : existingParticipant.lastConnectedAt || 0,
         status: hasSubmissionUpdate && !acceptsSubmissionUpdate ? existingParticipant.status : participant.status,
@@ -2527,6 +2677,7 @@ async function handleRoomPresence(req, res, code) {
       }
       participant.disconnectedAt = participant.active === false ? Date.now() : 0;
       participant.lastConnectedAt = participant.active === false ? 0 : Date.now();
+      participant.joinedAt = participant.joinedAt || Date.now();
       room.participants.push(participant);
     }
 
@@ -3240,7 +3391,8 @@ function normalizeParticipant(participant) {
     submissionMatchId: String(participant.submissionMatchId || "").slice(0, 80),
     remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0),
     disconnectedAt: clampServerNumber(participant.disconnectedAt, 0, Number.MAX_SAFE_INTEGER, 0),
-    lastConnectedAt: clampServerNumber(participant.lastConnectedAt, 0, Number.MAX_SAFE_INTEGER, 0)
+    lastConnectedAt: clampServerNumber(participant.lastConnectedAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    joinedAt: clampServerNumber(participant.joinedAt, 0, Number.MAX_SAFE_INTEGER, 0)
   };
 }
 
@@ -3649,7 +3801,10 @@ function finalizeRoom(room) {
       answer: "",
       submittedRound: 0,
       submissionMatchId: "",
-      remainingTime: 0
+      remainingTime: 0,
+      disconnectedAt: 0,
+      lastConnectedAt: 0,
+      joinedAt: Date.now()
     };
     const existingHostIndex = room.participants.findIndex((participant) => participant.id === room.host.id);
     if (existingHostIndex >= 0) {

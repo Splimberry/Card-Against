@@ -707,6 +707,144 @@ async function testHostPageExitDeletesRoom() {
   assert.equal(rooms.some((entry) => entry.code === code), false);
 }
 
+async function testHostReconnectTimeoutPromotesOldestPlayer() {
+  const code = makeCode(8184);
+  const expiredAt = Date.now() - 61_000;
+  await upsertRoom(makeRoom(code, {
+    hostExitPendingAt: expiredAt,
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "user:host-owner",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: false,
+        muted: false,
+        status: "disconnected",
+        disconnectedAt: expiredAt,
+        joinedAt: 1
+      },
+      {
+        id: "oldest-player",
+        profileUserId: "user:oldest-player",
+        name: "Oldest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined",
+        joinedAt: 2
+      },
+      {
+        id: "newest-player",
+        profileUserId: "user:newest-player",
+        name: "Newest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined",
+        joinedAt: 3
+      }
+    ]
+  }));
+
+  const rooms = await listRooms();
+  const room = rooms.find((entry) => entry.code === code);
+  assert.ok(room, "Room should remain open after host handoff.");
+  assert.equal(room.host.id, "oldest-player");
+  assert.equal(room.host.name, "Oldest");
+  assert.equal(room.hostExitPendingAt, 0);
+  assert.equal(room.participants.find((participant) => participant.id === "oldest-player").host, true);
+  assert.equal(room.participants.find((participant) => participant.id === "host-client").host, false);
+  assert.equal(room.events.at(-1).type, "host_transferred");
+  assert.equal(room.events.at(-1).payload.reason, "host-reconnect-timeout");
+}
+
+async function testCreatingSecondRoomTransfersOlderRoomHost() {
+  const oldCode = makeCode(8187);
+  const newCode = makeCode(8188);
+  await upsertRoom(makeRoom(oldCode, {
+    host: {
+      id: "host-client",
+      profileUserId: "user:host-owner",
+      name: "Host",
+      avatar: "",
+      equippedTitleId: "",
+      cardCustomization: null
+    },
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "user:host-owner",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host",
+        joinedAt: 1
+      },
+      {
+        id: "oldest-player",
+        profileUserId: "user:oldest-player",
+        name: "Oldest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined",
+        joinedAt: 2
+      }
+    ]
+  }));
+
+  const { response, payload } = await request("PUT", "/api/rooms", {
+    room: makeRoom(newCode, {
+      host: {
+        id: "new-host-client",
+        profileUserId: "user:host-owner",
+        name: "Host Again",
+        avatar: "",
+        equippedTitleId: "",
+        cardCustomization: null
+      },
+      participants: [
+        {
+          id: "new-host-client",
+          profileUserId: "user:host-owner",
+          name: "Host Again",
+          host: true,
+          spectator: false,
+          bot: false,
+          active: true,
+          muted: false,
+          status: "host",
+          joinedAt: 1
+        }
+      ]
+    })
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.room.code, newCode);
+  assert.equal(payload.transferredRooms.length, 1);
+  assert.equal(payload.transferredRooms[0].code, oldCode);
+  assert.equal(payload.transferredRooms[0].host.id, "oldest-player");
+  assert.equal(payload.transferredRooms[0].activePlayers, 1);
+  assert.equal(payload.transferredRooms[0].participants.find((participant) => participant.id === "host-client").active, false);
+
+  const oldRoom = (await listRooms()).find((room) => room.code === oldCode);
+  assert.equal(oldRoom.host.id, "oldest-player");
+  assert.equal(oldRoom.events.at(-1).type, "host_transferred");
+  assert.equal(oldRoom.events.at(-1).payload.reason, "host-created-another-room");
+}
+
 async function testAnswerSurvivesHeartbeat() {
   const code = makeCode(8103);
   await upsertRoom(makeRoom(code, {
@@ -2109,6 +2247,8 @@ async function main() {
   await testSecurityHeadersAreApplied();
   await testAdminLoginRateLimit();
   await testHostPageExitDeletesRoom();
+  await testHostReconnectTimeoutPromotesOldestPlayer();
+  await testCreatingSecondRoomTransfersOlderRoomHost();
   await testAnswerSurvivesHeartbeat();
   await testLateJoinerReceivesRoundState();
   await testRoomChatPreservesMessageIds();
