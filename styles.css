@@ -125,13 +125,61 @@
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(255, 77, 125, 0.14), transparent 32rem),
     radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.12), transparent 36rem),
     linear-gradient(145deg, #08090d, #16131d 58%, #08090d);
   color: var(--ink);
+}
+
+/* Menu ambience background: self-contained and safe to revert as one block. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 360ms ease;
+  will-change: transform;
+}
+
+body::before {
+  inset: -18vmax;
+  opacity: 0.42;
+  background:
+    repeating-linear-gradient(0deg, rgba(34, 211, 238, 0.055) 0 1px, transparent 1px 5.4rem),
+    repeating-linear-gradient(90deg, rgba(255, 77, 125, 0.045) 0 1px, transparent 1px 5.4rem),
+    linear-gradient(115deg, transparent 22%, rgba(34, 211, 238, 0.075) 22.15% 22.42%, transparent 22.58%),
+    linear-gradient(65deg, transparent 68%, rgba(255, 77, 125, 0.06) 68.16% 68.4%, transparent 68.56%);
+  -webkit-mask-image: radial-gradient(ellipse 76% 56% at 50% 52%, #000 0 58%, transparent 86%);
+  mask-image: radial-gradient(ellipse 76% 56% at 50% 52%, #000 0 58%, transparent 86%);
+  animation: menuHologramParallax 58s ease-in-out infinite alternate;
+}
+
+body::after {
+  inset: -10vmax;
+  opacity: 0.28;
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(34, 211, 238, 0.045) 28%, transparent 29%) 7% 16% / 8rem 5rem no-repeat,
+    linear-gradient(135deg, rgba(255, 77, 125, 0.18), rgba(255, 77, 125, 0.042) 32%, transparent 33%) 83% 17% / 6.5rem 4rem no-repeat,
+    linear-gradient(135deg, rgba(246, 242, 238, 0.14), rgba(246, 242, 238, 0.034) 30%, transparent 31%) 18% 78% / 7.25rem 4.5rem no-repeat,
+    linear-gradient(135deg, rgba(64, 222, 164, 0.16), rgba(64, 222, 164, 0.04) 30%, transparent 31%) 70% 72% / 8.5rem 5.25rem no-repeat,
+    linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.032) 26%, transparent 27%) 47% 9% / 5.5rem 3.5rem no-repeat,
+    linear-gradient(135deg, rgba(168, 85, 247, 0.13), rgba(168, 85, 247, 0.032) 28%, transparent 29%) 42% 88% / 6rem 3.75rem no-repeat;
+  filter: drop-shadow(0 0 0.8rem rgba(34, 211, 238, 0.08));
+  mix-blend-mode: screen;
+  animation: menuFragmentsParallax 34s ease-in-out infinite alternate;
+}
+
+body:has(.game-stage:not(.hidden))::before,
+body:has(.game-stage:not(.hidden))::after {
+  opacity: 0;
+  animation-play-state: paused;
 }
 
 body:has(.game-stage:not(.hidden)) {
@@ -234,6 +282,8 @@ button[aria-disabled="true"]:hover {
 }
 
 .app-shell {
+  position: relative;
+  z-index: 1;
   width: min(1500px, calc(100% - 3rem));
   margin: 0 auto;
   padding: 1rem 0;
@@ -2143,9 +2193,34 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   }
 }
 
+@keyframes menuHologramParallax {
+  0% {
+    transform: translate3d(-1.4rem, -0.8rem, 0) rotate(-0.25deg) scale(1.015);
+  }
+
+  100% {
+    transform: translate3d(1.1rem, 0.9rem, 0) rotate(0.28deg) scale(1.02);
+  }
+}
+
+@keyframes menuFragmentsParallax {
+  0% {
+    transform: translate3d(1.8rem, -1.2rem, 0) rotate(0.45deg) scale(1.01);
+  }
+
+  100% {
+    transform: translate3d(-2rem, 1.55rem, 0) rotate(-0.55deg) scale(1.018);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-tooltip]::after {
     transition: none;
+  }
+
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])::before,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])::after {
+    animation: none;
   }
 
   .effect-badge:hover::after,
