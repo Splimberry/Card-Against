@@ -28556,6 +28556,14 @@ async function playRound(rawInput, options = {}) {
     return;
   }
   const syncedRoundResult = options.roundResult ? normalizeRoomRoundResultPayload(options.roundResult) : null;
+  if (isRoomMode() && (!isCurrentHost() || state.joiningRoom) && !syncedRoundResult) {
+    if (!state.roomRoundResolving) {
+      state.roomRoundResolving = true;
+    }
+    showWaitingForRoomRoundResult();
+    void waitForRoomRoundResultThenPlay(rawInput, matchToken);
+    return;
+  }
   clearRoomAutoResolve();
   applyCheatSheetPowers();
   resetTimerDisplay();
