@@ -2444,6 +2444,26 @@ async function handleRoomPresence(req, res, code) {
     const existingParticipant = existingIndex >= 0 ? room.participants[existingIndex] : null;
     const wasActive = existingParticipant ? existingParticipant.active !== false : false;
     const isNowActive = participant.active !== false;
+    const staleDisconnectForNewConnection = Boolean(
+      existingParticipant
+      && !isNowActive
+      && existingParticipant.active !== false
+      && existingParticipant.connectionId
+      && participant.connectionId
+      && existingParticipant.connectionId !== participant.connectionId
+    );
+    if (staleDisconnectForNewConnection) {
+      const storedParticipant = existingParticipant;
+      sendJson(res, 200, {
+        code: room.code,
+        status: room.status,
+        revision: getRoomRevision(room),
+        updatedAt: room.updatedAt,
+        eventType: "participant_updated",
+        participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true })
+      });
+      return;
+    }
     if (existingIndex >= 0) {
       room.participants[existingIndex] = {
         ...existingParticipant,
@@ -3153,6 +3173,7 @@ function normalizeParticipant(participant) {
   return {
     id,
     profileUserId: String(participant.profileUserId || participant.userId || id).slice(0, 140),
+    connectionId: String(participant.connectionId || "").slice(0, 120),
     name: String(participant.name || "Guest").slice(0, 24),
     avatar: String(participant.avatar || "").slice(0, 60000),
     equippedTitleId: String(participant.equippedTitleId || "").slice(0, 80),

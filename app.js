@@ -1028,6 +1028,7 @@ const savedEquippedAchievementId = achievementTitleMap[localStorage.getItem(equi
 const savedProfileCustomization = loadProfileCustomization();
 const savedClientId = localStorage.getItem("cardsAgainstAiClientId") || `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 localStorage.setItem("cardsAgainstAiClientId", savedClientId);
+const pageConnectionId = `conn-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const fallbackBotUsernames = [
   "michael_scott",
   "ghost84",
@@ -2813,6 +2814,7 @@ const state = {
   },
   profileCustomizationDraft: null,
   clientId: savedClientId,
+  connectionId: pageConnectionId,
   nextRoundAutoTimerId: null,
   nextRoundCountdown: 0,
   pendingPowerBonuses: {
@@ -8283,6 +8285,7 @@ function createPlayer(owner, label, options = {}) {
     avatar: options.avatar || "",
     participantId: options.participantId || owner,
     profileUserId: options.profileUserId || "",
+    connectionId: options.connectionId || "",
     host: Boolean(options.host),
     spectator: Boolean(options.spectator),
     bot: Boolean(options.bot || options.type === "bot"),
@@ -8581,11 +8584,11 @@ function getPlayersForMode(mode) {
 }
 
 function getRoomOwnerForParticipant(participant, fallbackIndex = 0) {
+  if (participant?.id === state.clientId && !state.isSpectator) {
+    return state.joiningRoom ? "opponent" : "player";
+  }
   if (participant?.host) {
     return "player";
-  }
-  if (participant?.id === state.clientId && !state.isSpectator) {
-    return "opponent";
   }
   const rawId = String(participant?.id || participant?.name || fallbackIndex);
   const safeId = (hashString(rawId) >>> 0).toString(36).slice(0, 8) || String(fallbackIndex + 1);
@@ -8609,6 +8612,16 @@ function getRoomPlayersForMode() {
     if (seenOwners.has(owner)) {
       return;
     }
+    const ownerIsHost = owner === "player" && Boolean(participant.host);
+    const connectionStatus = ownerIsHost
+      ? "host"
+      : participant.bot
+        ? "bot"
+        : participant.spectator
+          ? "spectating"
+          : participant.status === "host"
+            ? "joined"
+            : participant.status || "joined";
     seenOwners.add(owner);
     players.push(createPlayer(owner, participant.name || fallback.name || "Room Player", {
       type: participant.bot ? "bot" : "human",
@@ -8616,7 +8629,8 @@ function getRoomPlayersForMode() {
       avatar: participant.avatar || "",
       participantId: participant.id || owner,
       profileUserId: participant.profileUserId || "",
-      host: Boolean(participant.host),
+      connectionId: participant.connectionId || "",
+      host: ownerIsHost,
       spectator: Boolean(participant.spectator),
       bot: Boolean(participant.bot),
       equippedTitleId: participant.equippedTitleId || "",
@@ -8624,7 +8638,7 @@ function getRoomPlayersForMode() {
       cardCustomization: participant.cardCustomization || null,
       muted: Boolean(participant.muted),
       active: participant.active !== false,
-      connectionStatus: participant.status || (participant.host ? "host" : participant.bot ? "bot" : "joined")
+      connectionStatus
     }));
   };
 
@@ -8635,6 +8649,7 @@ function getRoomPlayersForMode() {
     addParticipantPlayer({
       id: host.id || state.clientId,
       profileUserId: host.profileUserId || getRoomParticipantProfileUserId(),
+      connectionId: host.connectionId || state.connectionId,
       name: host.name || state.profile.name || "Host",
       avatar: host.avatar || state.profile.avatar,
       equippedTitleId: host.equippedTitleId || state.profile.equippedTitleId,
@@ -8674,6 +8689,9 @@ function getRoomPlayersForMode() {
 }
 
 function setPlayersForMode(mode) {
+  if (mode === "room") {
+    ensureRoomCurrentOwner();
+  }
   state.players = getPlayersForMode(mode);
   syncLegacyScoresFromPlayers();
 }
@@ -8682,6 +8700,7 @@ function syncRoomPlayersFromParticipants(options = {}) {
   if (!state.roomParticipants.length) {
     return;
   }
+  ensureRoomCurrentOwner();
   const previousByParticipant = new Map();
   const previousByOwner = new Map();
   state.players.forEach((player) => {
@@ -8742,7 +8761,21 @@ function isRoomLobbyActive() {
 }
 
 function isCurrentHost() {
-  return !isRoomMode() || state.currentOwner === "player";
+  return !isRoomMode() || (state.currentOwner === "player" && !state.joiningRoom);
+}
+
+function getExpectedRoomCurrentOwner() {
+  if (state.isSpectator) {
+    return "spectator";
+  }
+  return state.joiningRoom ? "opponent" : "player";
+}
+
+function ensureRoomCurrentOwner() {
+  if (!(state.mode === "room" || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress")) {
+    return;
+  }
+  state.currentOwner = getExpectedRoomCurrentOwner();
 }
 
 function getRoomMaxPlayers(settings = state.roomSettings) {
@@ -9444,6 +9477,7 @@ function getCurrentParticipant(options = {}) {
   return {
     id: state.clientId,
     profileUserId: getRoomParticipantProfileUserId(),
+    connectionId: state.connectionId,
     name: state.profile.name || "Guest",
     avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
@@ -9500,6 +9534,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
       return {
         id,
         profileUserId: player.profileUserId || existingParticipant?.profileUserId || (id === state.clientId ? getRoomParticipantProfileUserId() : `participant:${id}`),
+        connectionId: player.connectionId || existingParticipant?.connectionId || (id === state.clientId ? state.connectionId : ""),
         name: player.label,
         avatar: getRoomSyncAvatar(player.avatar),
         equippedTitleId: player.equippedTitleId || "",
@@ -9527,6 +9562,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
     participants.push({
       id: participant.id,
       profileUserId: participant.profileUserId || `participant:${participant.id}`,
+      connectionId: participant.connectionId || "",
       name: participant.name,
       avatar: getRoomSyncAvatar(participant.avatar),
       equippedTitleId: participant.equippedTitleId || "",
@@ -10020,6 +10056,9 @@ function getRoomOwnerForParticipantId(participantId) {
   const id = String(participantId || "");
   if (!id) {
     return "";
+  }
+  if (id === state.clientId && !state.isSpectator) {
+    return state.joiningRoom ? "opponent" : "player";
   }
   const player = state.players.find((entry) => entry.participantId === id);
   if (player) {
@@ -24817,8 +24856,11 @@ async function startGame(mode) {
   clearRoomAutoResolve();
   stopRoomDirectoryPolling();
   if (mode === "room") {
-    applyRoomGameMatchSettings(state.roomGame || state.joiningRoom?.game, { code: state.roomSettings.code }, { render: false, resetTimer: true });
-    syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
+    ensureRoomCurrentOwner();
+    const appliedSyncedSettings = applyRoomGameMatchSettings(state.roomGame || state.joiningRoom?.game, { code: state.roomSettings.code }, { render: false, resetTimer: true });
+    if (!appliedSyncedSettings) {
+      syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
+    }
   }
   resetMatch(mode);
   const matchToken = state.matchWorkToken;
@@ -26069,6 +26111,7 @@ function normalizeRoomParticipantDelta(participant = {}) {
   return {
     id,
     profileUserId: String(source.profileUserId || source.userId || `participant:${id}`).slice(0, 140),
+    connectionId: String(source.connectionId || "").slice(0, 120),
     name: String(source.name || "Guest").slice(0, 32),
     avatar: getRoomSyncAvatar(source.avatar),
     equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
@@ -27280,6 +27323,7 @@ function renderHostedRooms(options = {}) {
     joinButton.dataset.joinRoom = room.code;
     const currentProfileParticipant = getRoomParticipantWithCurrentProfile(room);
     const currentProfileIsHost = isCurrentProfileHostOfRoom(room);
+    const currentProfileCanReconnectAsPlayer = canReconnectCurrentProfileAsRoomPlayer(room);
     const currentProfileIsActive = Boolean(
       currentProfileParticipant
       && currentProfileParticipant.active !== false
@@ -27287,7 +27331,9 @@ function renderHostedRooms(options = {}) {
     );
     joinButton.textContent = currentProfileIsHost || currentProfileParticipant?.active === false ? "Rejoin" : "Join Game";
     const roomIsFull = activePlayers >= getRoomMaxPlayers(room.settings);
-    joinButton.disabled = currentProfileIsActive || (!currentProfileIsHost && room.status !== "lobby") || (!currentProfileParticipant && roomIsFull);
+    joinButton.disabled = currentProfileIsActive
+      || (!currentProfileIsHost && !currentProfileCanReconnectAsPlayer && room.status !== "lobby")
+      || (!currentProfileParticipant && roomIsFull);
     const joinHint = room.status === "lobby"
       ? currentProfileIsActive
         ? "This profile is already active in this room."
@@ -27296,7 +27342,11 @@ function renderHostedRooms(options = {}) {
         : currentProfileIsHost
           ? "Rejoin your hosted room."
           : room.settings.private ? "Enter the room password to join before the match starts." : "Join this lobby as an active player before the match starts."
-      : currentProfileIsHost ? "Rejoin your active room as host." : "This game already started. You can spectate instead.";
+      : currentProfileIsHost
+        ? "Rejoin your active room as host."
+        : currentProfileCanReconnectAsPlayer
+          ? "Reconnect to your player slot in this active match."
+          : "This game already started. You can spectate instead.";
     setFloatingButtonHint(joinButton, joinHint);
     const spectateButton = document.createElement("button");
     spectateButton.type = "button";
@@ -27337,6 +27387,18 @@ function isCurrentProfileHostOfRoom(room = null) {
     || participant?.id === room?.host?.id
     || room?.host?.id === state.clientId
     || (hostProfileUserId && hostProfileUserId === profileUserId)
+  );
+}
+
+function canReconnectCurrentProfileAsRoomPlayer(room = null) {
+  const participant = getRoomParticipantWithCurrentProfile(room);
+  return Boolean(
+    participant
+    && participant.active === false
+    && !participant.host
+    && !participant.spectator
+    && room?.status === "in-progress"
+    && room?.game
   );
 }
 
@@ -27486,6 +27548,7 @@ async function joinHostedRoom(code, options = {}) {
       return;
     }
     const sameProfileParticipant = getRoomParticipantWithCurrentProfile(room);
+    const reconnectAsPlayer = canReconnectCurrentProfileAsRoomPlayer(room);
     if (
       sameProfileParticipant
       && sameProfileParticipant.active !== false
@@ -27500,12 +27563,12 @@ async function joinHostedRoom(code, options = {}) {
     }
     const activePlayerCount = getHostedRoomActivePlayerCount(room);
     const roomIsFull = activePlayerCount >= getRoomMaxPlayers(room.settings);
-    const shouldSpectate = Boolean(options.spectate || (options.fromInvite && (room.status !== "lobby" || roomIsFull)));
-    if (room.status !== "lobby" && !shouldSpectate) {
+    const shouldSpectate = Boolean(options.spectate || (!reconnectAsPlayer && options.fromInvite && (room.status !== "lobby" || roomIsFull)));
+    if (room.status !== "lobby" && !shouldSpectate && !reconnectAsPlayer) {
       addSystemChat("That match already started. Join as a spectator instead.", { private: true });
       return;
     }
-    if (!shouldSpectate && roomIsFull) {
+    if (!shouldSpectate && !reconnectAsPlayer && roomIsFull) {
       addSystemChat(`${normalizedCode} is full. Join as a spectator instead.`, { private: true });
       return;
     }
@@ -27524,7 +27587,7 @@ async function joinHostedRoom(code, options = {}) {
     syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
     startRoomRealtime(state.roomSettings.code);
     state.joiningRoom = room;
-    state.isSpectator = shouldSpectate || room.status !== "lobby";
+    state.isSpectator = shouldSpectate || (!reconnectAsPlayer && room.status !== "lobby");
     state.roomSessionId += 1;
     state.roomExitLeaveSent = false;
     state.roomMissingSince = 0;
@@ -27542,14 +27605,14 @@ async function joinHostedRoom(code, options = {}) {
       return;
     }
     room = joinedRoom;
-    if (room.status !== "lobby" && !shouldSpectate) {
+    if (room.status !== "lobby" && !shouldSpectate && !reconnectAsPlayer) {
       await leavePublishedRoom({ reason: "join-race" });
       clearLocalRoomState();
       addSystemChat("That match just started. Join as a spectator instead.", { private: true, sync: false });
       renderHostedRooms();
       return;
     }
-    state.isSpectator = shouldSpectate || room.status !== "lobby";
+    state.isSpectator = shouldSpectate || (!reconnectAsPlayer && room.status !== "lobby");
     state.currentOwner = state.isSpectator ? "spectator" : "opponent";
     state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
     state.roomChat = [];
@@ -27557,7 +27620,9 @@ async function joinHostedRoom(code, options = {}) {
     if (Array.isArray(room.chat)) {
       mergeRoomChatMessages(room.chat);
     }
-    addSystemChat(`${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
+    addSystemChat(reconnectAsPlayer
+      ? `${state.profile.name || "Guest"} reconnected to the match.`
+      : `${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
     stopJoinDirectoryPolling();
     setJoinInviteMode(false);
     setRoomInviteUrlPath(normalizedCode);
@@ -27990,16 +28055,18 @@ function renderRoomPlayerList(target) {
         equippedTitleId: participant.equippedTitleId || "",
         specialBadges: normalizeSpecialBadges(participant.specialBadges || []),
         cardCustomization: participant.cardCustomization || null,
-      participantId: participant.id,
-      host: participant.host,
-      spectator: participant.spectator,
-      bot: Boolean(participant.bot),
-      type: participant.bot ? "bot" : participant.spectator ? "spectator" : "human",
-      active: participant.active,
-      muted: participant.muted,
-      connectionStatus: participant.status || (participant.host ? "host" : participant.bot ? "bot" : participant.spectator ? "spectating" : "joined")
-    }
-  ));
+        participantId: participant.id,
+        profileUserId: participant.profileUserId || "",
+        connectionId: participant.connectionId || "",
+        host: participant.host,
+        spectator: participant.spectator,
+        bot: Boolean(participant.bot),
+        type: participant.bot ? "bot" : participant.spectator ? "spectator" : "human",
+        active: participant.active,
+        muted: participant.muted,
+        connectionStatus: participant.status || (participant.host ? "host" : participant.bot ? "bot" : participant.spectator ? "spectating" : "joined")
+      }
+    ));
   const basePlayers = participantPlayers.length
     ? participantPlayers
     : state.mode === "room" && state.players.length
