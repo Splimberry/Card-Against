@@ -4003,13 +4003,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   --power-card-rest-filter: brightness(1);
   --power-card-refill-mid-filter: brightness(1.08);
   --power-card-refresh-mid-filter: saturate(1.08) brightness(1.1);
-  --power-enter-x: 2.35rem;
-  --power-enter-y: 0rem;
-  --power-enter-scale: 0.92;
-  --power-enter-rotate: -1deg;
-  --power-enter-glow: rgba(34, 211, 238, 0.24);
-  --power-enter-duration: 560ms;
-  --power-refresh-duration: 620ms;
   min-height: clamp(4.25rem, 10vh, 5.4rem);
   padding: 0.62rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -4045,12 +4038,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card[data-rarity="grey"] {
   border-color: rgba(180, 187, 198, 0.38);
-  --power-enter-x: 1.75rem;
-  --power-enter-scale: 0.96;
-  --power-enter-rotate: -0.25deg;
-  --power-enter-glow: rgba(180, 187, 198, 0.16);
-  --power-enter-duration: 420ms;
-  --power-refresh-duration: 480ms;
 }
 
 .power-card[data-rarity="grey"] strong {
@@ -4060,14 +4047,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .power-card[data-rarity="blue"] {
   border-color: rgba(34, 211, 238, 0.5);
   background: rgba(34, 211, 238, 0.08);
-  --power-enter-x: 2.45rem;
-  --power-enter-y: 0rem;
-  --power-enter-scale: 0.93;
-  --power-enter-rotate: -1.2deg;
-  --power-enter-glow: rgba(34, 211, 238, 0.34);
-  --power-enter-duration: 520ms;
-  --power-refresh-duration: 560ms;
-  --power-card-refill-mid-filter: saturate(1.15) brightness(1.15);
 }
 
 .power-card[data-rarity="blue"] strong {
@@ -4077,14 +4056,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .power-card[data-rarity="purple"] {
   border-color: rgba(168, 85, 247, 0.58);
   background: rgba(168, 85, 247, 0.1);
-  --power-enter-x: 2.25rem;
-  --power-enter-y: 0.28rem;
-  --power-enter-scale: 0.91;
-  --power-enter-rotate: 1.8deg;
-  --power-enter-glow: rgba(168, 85, 247, 0.42);
-  --power-enter-duration: 620ms;
-  --power-refresh-duration: 660ms;
-  --power-card-refill-mid-filter: saturate(1.22) brightness(1.18);
 }
 
 .power-card[data-rarity="purple"] strong {
@@ -4094,14 +4065,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 .power-card[data-rarity="gold"] {
   border-color: rgba(251, 191, 36, 0.72);
   background: rgba(251, 191, 36, 0.12);
-  --power-enter-x: 2.7rem;
-  --power-enter-y: -0.2rem;
-  --power-enter-scale: 0.9;
-  --power-enter-rotate: -2deg;
-  --power-enter-glow: rgba(251, 191, 36, 0.52);
-  --power-enter-duration: 680ms;
-  --power-refresh-duration: 700ms;
-  --power-card-refill-mid-filter: saturate(1.3) brightness(1.24);
 }
 
 .power-card[data-rarity="gold"] strong {
@@ -4185,34 +4148,14 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card.fresh-refill {
   animation-name: powerRefillSlideIn;
-  animation-duration: var(--power-enter-duration, 560ms);
+  animation-duration: 560ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .power-card.fresh-refresh {
   animation-name: powerRefreshSlideIn;
-  animation-duration: var(--power-refresh-duration, 620ms);
+  animation-duration: 620ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.power-card:not(.chaos-infused)[data-rarity="grey"].fresh-refill,
-.power-card:not(.chaos-infused)[data-rarity="grey"].fresh-refresh {
-  animation-name: powerCommonDealIn;
-}
-
-.power-card:not(.chaos-infused)[data-rarity="blue"].fresh-refill,
-.power-card:not(.chaos-infused)[data-rarity="blue"].fresh-refresh {
-  animation-name: powerRareSnapIn;
-}
-
-.power-card:not(.chaos-infused)[data-rarity="purple"].fresh-refill,
-.power-card:not(.chaos-infused)[data-rarity="purple"].fresh-refresh {
-  animation-name: powerEpicPhaseIn;
-}
-
-.power-card:not(.chaos-infused)[data-rarity="gold"].fresh-refill,
-.power-card:not(.chaos-infused)[data-rarity="gold"].fresh-refresh {
-  animation-name: powerLegendaryDealIn;
 }
 
 .power-card.unusable {
@@ -4335,13 +4278,13 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 
 .power-card.chaos-infused.fresh-refill {
   animation:
-    powerRefillSlideIn var(--power-enter-duration, 560ms) cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.fresh-refresh {
   animation:
-    powerRefreshSlideIn var(--power-refresh-duration, 620ms) cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
@@ -4379,20 +4322,15 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 @keyframes powerRefillSlideIn {
   0% {
     opacity: 0;
-    transform: translate3d(var(--power-enter-x, 2.4rem), var(--power-enter-y, 0), 0) scale(var(--power-enter-scale, 0.92)) rotate(var(--power-enter-rotate, -1deg));
+    transform: translateX(2.4rem) scale(0.92);
     filter: blur(5px) brightness(1.18);
     box-shadow: 0 0 0 rgba(34, 211, 238, 0);
-  }
-
-  38% {
-    transform: translate3d(calc(var(--power-enter-x, 2.4rem) * -0.08), calc(var(--power-enter-y, 0) * -0.4), 0) scale(1.025) rotate(calc(var(--power-enter-rotate, -1deg) * -0.35));
-    box-shadow: 0 0 1.15rem var(--power-enter-glow, rgba(34, 211, 238, 0.24));
   }
 
   64% {
     opacity: var(--power-card-visible-opacity);
     filter: blur(0) var(--power-card-refill-mid-filter);
-    box-shadow: 0 0 1.7rem var(--power-enter-glow, rgba(34, 211, 238, 0.3));
+    box-shadow: 0 0 1.5rem rgba(34, 211, 238, 0.3);
   }
 
   100% {
@@ -4405,13 +4343,8 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 @keyframes powerRefreshSlideIn {
   0% {
     opacity: 0;
-    transform: translate3d(calc(var(--power-enter-x, 2.8rem) * 1.08), var(--power-enter-y, 0), 0) scale(calc(var(--power-enter-scale, 0.94) + 0.02)) rotate(calc(var(--power-enter-rotate, -1deg) * 1.25));
+    transform: translateX(2.8rem) scale(0.94);
     filter: blur(7px) saturate(0.78) brightness(1.22);
-  }
-
-  34% {
-    transform: translate3d(calc(var(--power-enter-x, 2.8rem) * 0.18), calc(var(--power-enter-y, 0) * -0.5), 0) scale(1.035) rotate(calc(var(--power-enter-rotate, -1deg) * -0.55));
-    box-shadow: 0 0 1.85rem var(--power-enter-glow, rgba(34, 211, 238, 0.28));
   }
 
   62% {
@@ -4422,104 +4355,6 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   100% {
     opacity: var(--power-card-visible-opacity);
     transform: translateX(0) scale(1);
-    filter: blur(0) var(--power-card-rest-filter);
-  }
-}
-
-@keyframes powerCommonDealIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(1.25rem, 0, 0) scale(0.98);
-    filter: blur(2px) brightness(1.08);
-  }
-
-  72% {
-    opacity: var(--power-card-visible-opacity);
-    transform: translate3d(-0.08rem, 0, 0) scale(1.005);
-    filter: blur(0) var(--power-card-refill-mid-filter);
-    box-shadow: 0 0 0.65rem rgba(180, 187, 198, 0.16);
-  }
-
-  100% {
-    opacity: var(--power-card-visible-opacity);
-    transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0) var(--power-card-rest-filter);
-  }
-}
-
-@keyframes powerRareSnapIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(2.25rem, 0.12rem, 0) scale(0.93) skewX(-3deg);
-    filter: blur(4px) saturate(0.82) brightness(1.16);
-    box-shadow: 0 0 0 rgba(34, 211, 238, 0);
-  }
-
-  46% {
-    opacity: var(--power-card-visible-opacity);
-    transform: translate3d(-0.16rem, -0.02rem, 0) scale(1.018) skewX(1deg);
-    filter: blur(0) saturate(1.18) brightness(1.16);
-    box-shadow:
-      0 0 1.35rem rgba(34, 211, 238, 0.34),
-      inset 0 0 0.75rem rgba(34, 211, 238, 0.08);
-  }
-
-  100% {
-    opacity: var(--power-card-visible-opacity);
-    transform: translate3d(0, 0, 0) scale(1) skewX(0);
-    filter: blur(0) var(--power-card-rest-filter);
-  }
-}
-
-@keyframes powerEpicPhaseIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(1.65rem, 0.48rem, 0) scale(0.9) rotate(1.5deg);
-    filter: blur(8px) saturate(0.7) brightness(1.24);
-  }
-
-  38% {
-    opacity: 0.72;
-    transform: translate3d(0.28rem, -0.18rem, 0) scale(1.035) rotate(-0.7deg);
-    filter: blur(1px) saturate(1.25) brightness(1.2);
-    box-shadow:
-      0 0 1.6rem rgba(168, 85, 247, 0.38),
-      inset 0 0 0.9rem rgba(255, 255, 255, 0.07);
-  }
-
-  100% {
-    opacity: var(--power-card-visible-opacity);
-    transform: translate3d(0, 0, 0) scale(1) rotate(0);
-    filter: blur(0) var(--power-card-rest-filter);
-  }
-}
-
-@keyframes powerLegendaryDealIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(2.35rem, -0.24rem, 0) scale(0.9) rotate(-2deg);
-    filter: blur(5px) saturate(0.86) brightness(1.28);
-    box-shadow: 0 0 0 rgba(251, 191, 36, 0);
-  }
-
-  28% {
-    opacity: 0.88;
-    transform: translate3d(0.34rem, 0.04rem, 0) scale(1.045) rotate(0.6deg);
-    filter: blur(0) saturate(1.28) brightness(1.28);
-    box-shadow:
-      0 0 1.9rem rgba(251, 191, 36, 0.48),
-      inset 0 0.08rem 0 rgba(255, 255, 255, 0.34);
-  }
-
-  68% {
-    opacity: var(--power-card-visible-opacity);
-    transform: translate3d(-0.08rem, 0, 0) scale(1.012) rotate(0);
-    filter: blur(0) saturate(1.15) brightness(1.08);
-  }
-
-  100% {
-    opacity: var(--power-card-visible-opacity);
-    transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0) var(--power-card-rest-filter);
   }
 }
