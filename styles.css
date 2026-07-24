@@ -468,7 +468,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   --motion-polish-delay: 300ms;
 }
 
-.room-player-card[data-bot="true"] {
+.room-player-card.room-player-card-new {
   animation: motionPolishRowIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -11277,7 +11277,7 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .profile-shop-modal:not(.hidden) :is(.settings-header, .profile-shop-balance, .profile-shop-section, .profile-shop-status),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .achievements-modal:not(.hidden) :is(.settings-header, .achievement-equip-bar, .achievement-milestones, .achievement-section, .achievement-card),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .game-stage:not(.hidden) :is(.scoreboard, .power-panel:not(.hidden), .effect-panel:not(.hidden), .judge-panel:not(.hidden), .input-panel:not(.hidden), .answer-progress:not(.hidden), .answer-progress-panel:not(.hidden), .cards-area:not(.hidden), .verdict-panel:not(.hidden), .loading-panel:not(.hidden), .end-panel:not(.hidden), .room-chat:not(.hidden)),
-  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-player-card[data-bot="true"],
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-player-card.room-player-card-new,
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .chat-message.chat-message-new,
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .answer-progress-box.answer-progress-box-new,
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .black-card.incoming-question-card,

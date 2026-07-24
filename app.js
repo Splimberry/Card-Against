@@ -28090,6 +28090,13 @@ function renderRoomPlayerList(target) {
     return;
   }
 
+  const renderKey = `${state.roomSettings.code || "draft"}:${target.id || "room-player-list"}:${state.currentRoomStatus || "draft"}`;
+  const canAnimateNewRows = target.dataset.roomPlayerListRenderKey === renderKey;
+  const previousCardKeys = new Set(
+    [...target.querySelectorAll(".room-player-card[data-room-player-key]")]
+      .map((card) => card.dataset.roomPlayerKey)
+      .filter(Boolean)
+  );
   const maxPlayers = getRoomMaxPlayers();
   const isCreationPanel = target === elements.roomPlayerList;
   const isLobbyPanel = target === elements.roomLobbyPlayerList;
@@ -28149,6 +28156,7 @@ function renderRoomPlayerList(target) {
   });
 
   target.replaceChildren();
+  target.dataset.roomPlayerListRenderKey = renderKey;
   if (isRoomSetupList && !visiblePlayers.length) {
     const empty = document.createElement("p");
     empty.className = "room-waiting-copy";
@@ -28157,9 +28165,19 @@ function renderRoomPlayerList(target) {
     return;
   }
   [...visiblePlayers, ...openSlots].forEach((player) => {
+    const cardKey = String(player.participantId || player.owner || player.label || "").trim();
     const card = document.createElement("div");
     card.className = "room-player-card";
+    card.dataset.roomPlayerKey = cardKey;
     card.classList.toggle("waiting-slot", !player.active);
+    const isNewActiveParticipant = Boolean(
+      canAnimateNewRows
+      && player.active
+      && !player.spectator
+      && cardKey
+      && !previousCardKeys.has(cardKey)
+    );
+    card.classList.toggle("room-player-card-new", isNewActiveParticipant);
     const avatar = document.createElement("span");
     avatar.className = "room-player-avatar";
     renderAvatar(avatar, player);
