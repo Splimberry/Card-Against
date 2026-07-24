@@ -5842,9 +5842,6 @@ function markAnswerCardDamaged(owner, amount = 0) {
   }
   state.roundAnswerDamageByOwner = normalizeAnswerDamageMap(state.roundAnswerDamageByOwner);
   state.roundAnswerDamageByOwner[owner] = true;
-  getAnswerCardNodes()
-    .filter((card) => card.dataset.owner === owner)
-    .forEach((card) => applyAnswerCardDamageState(card, owner));
   return true;
 }
 
@@ -5874,13 +5871,6 @@ function applyDamagedAnswerParticipantIds(participantIds = []) {
     ...nextDamage
   });
   return Object.keys(nextDamage).length > 0;
-}
-
-function applyAnswerCardDamageState(card, owner = card?.dataset?.owner || "") {
-  if (!card) {
-    return;
-  }
-  card.classList.toggle("answer-damaged", isAnswerCardDamaged(owner));
 }
 
 const answerDamagePowerTypes = new Set([
@@ -5966,10 +5956,7 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   const text = document.createElement("p");
   const gradingReason = document.createElement("small");
   gradingReason.className = "grading-reason hidden";
-  const damage = document.createElement("span");
-  damage.className = "answer-card-damage";
-  damage.setAttribute("aria-hidden", "true");
-  card.append(answerOwner, badge, text, gradingReason, damage);
+  card.append(answerOwner, badge, text, gradingReason);
   if (shouldUseAnswerCardCustomization(owner)) {
     applyProfileCustomizationSurface(card, getProfileCardCustomizationForOwner(owner) || defaultProfileCustomization, {
       forceCustom: isRoomMode()
@@ -5977,7 +5964,6 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   } else {
     applyProfileCustomizationSurface(card, defaultProfileCustomization);
   }
-  applyAnswerCardDamageState(card, owner);
   return card;
 }
 
@@ -6040,7 +6026,6 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
     const gradingReason = card.querySelector(".grading-reason");
     updateInlineGradingReason(gradingReason, reason);
     card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
-    applyAnswerCardDamageState(card);
   });
 }
 
@@ -6059,7 +6044,6 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   updateInlineGradingReason(gradingReason, reason);
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
   card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
-  applyAnswerCardDamageState(card, owner);
 }
 
 function getOwnAnswerCardIndex(cards) {
@@ -11031,9 +11015,6 @@ function applyRoomPowerState(payload = {}) {
     );
   }
   renderScore();
-  if (effectsApplied) {
-    getAnswerCardNodes().forEach((card) => applyAnswerCardDamageState(card));
-  }
   renderTableEventControls();
   renderPowerUps();
   renderRoomPlayers();
