@@ -4838,6 +4838,27 @@ function roomPayloadMatchesCurrentMatch(payload = {}) {
   return !incomingMatchId || !currentMatchId || incomingMatchId === currentMatchId;
 }
 
+function isIncomingRoomRematchPayload(payload = {}, round = 0) {
+  const incomingMatchId = getRoomMatchIdFromPayload(payload);
+  const currentMatchId = getCurrentRoomMatchId();
+  const nextRound = Number(
+    round
+      || payload.round
+      || payload.nextRound
+      || payload.game?.round
+      || payload.room?.game?.round
+      || 0
+  ) || 0;
+  if (!incomingMatchId || (currentMatchId && incomingMatchId === currentMatchId) || nextRound > 1) {
+    return false;
+  }
+  return state.matchEnded
+    || state.currentRoomStatus === "complete"
+    || !elements.endPanel.classList.contains("hidden")
+    || !elements.verdictPanel.classList.contains("hidden")
+    || state.gradingActive;
+}
+
 function isJoinedRoomWaitingForSyncedSetup(round = state.round) {
   if (!isRoomMode() || !state.joiningRoom || isCurrentHost()) {
     return false;
@@ -4852,6 +4873,9 @@ function isJoinedRoomWaitingForSyncedSetup(round = state.round) {
 function canAdoptIncomingRoomGame(game = null, room = null, round = state.round) {
   if (!game?.matchId || roomPayloadMatchesCurrentMatch({ game })) {
     return true;
+  }
+  if (isIncomingRoomRematchPayload({ game }, game.round || round)) {
+    return String(room?.status || game.status || "").toLowerCase() !== "complete";
   }
   return Boolean(
     game.setup
@@ -13923,7 +13947,7 @@ function handleRealtimeRoomChange(payload = {}) {
     return;
   }
   if (!elements.joinScreen.classList.contains("hidden") && shouldRealtimeRefreshJoinDirectory(payload.eventType)) {
-    const appliedJoinDelta = (payload.eventType === "participant-updated" || payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant
+    const appliedJoinDelta = (payload.eventType === "participant-updated" || payload.eventType === "participant-joined" || payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant
       ? applyHostedRoomParticipantDelta(payload)
       : payload.eventType === "participant-left" && payload.participantId
         ? applyHostedRoomParticipantLeft(payload)
@@ -13950,7 +13974,7 @@ function handleRealtimeRoomChange(payload = {}) {
     if (payload.eventType === "power-state") {
       appliedDelta = applyRoomPowerState(payload);
     }
-    if (payload.eventType === "participant-updated" && payload.participant) {
+    if ((payload.eventType === "participant-updated" || payload.eventType === "participant-joined") && payload.participant) {
       appliedDelta = applyRoomParticipantDelta(payload.participant, payload);
     }
     if ((payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant) {
@@ -13986,7 +14010,7 @@ function handleRealtimeRoomChange(payload = {}) {
     if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
-    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "participant-disconnected", "participant-reconnected", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "host-transferred", "room-settings", "game-ended"].includes(payload.eventType)) {
+    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "participant-joined", "participant-disconnected", "participant-reconnected", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "host-transferred", "room-settings", "game-ended"].includes(payload.eventType)) {
       return;
     }
     if (shouldRefreshRoomAfterRealtimeMiss(payload)) {
@@ -14021,6 +14045,7 @@ function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
     "answer-draft",
     "power-state",
     "participant-updated",
+    "participant-joined",
     "participant-disconnected",
     "participant-reconnected",
     "participant-left",
@@ -14039,6 +14064,7 @@ function shouldRealtimeRefreshJoinDirectory(eventType = "") {
     "room-closed",
     "room-left",
     "participant-left",
+    "participant-joined",
     "participant-updated",
     "participant-disconnected",
     "participant-reconnected",
@@ -27516,22 +27542,24 @@ function startJoinedRoomMatchFromRealtime(payload = {}, game = null) {
 
 function applyRealtimeRoundAdvancing(payload = {}) {
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  const nextRound = Number(payload.round || payload.nextRound) || 0;
+  const incomingMatchId = getRoomMatchIdFromPayload(payload);
+  const isIncomingRematch = isIncomingRoomRematchPayload(payload, nextRound);
   const canStartFromLobby = state.currentRoomStatus === "lobby"
     || state.currentRoomStatus === "complete"
     || elements.gameStage.classList.contains("hidden")
-    || !elements.endPanel.classList.contains("hidden");
+    || !elements.endPanel.classList.contains("hidden")
+    || isIncomingRematch;
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || (state.matchEnded && !canStartFromLobby)) {
     return false;
   }
   if (isCurrentHost() && !state.joiningRoom) {
     return false;
   }
-  const nextRound = Number(payload.round || payload.nextRound) || 0;
-  if (!nextRound || nextRound < Number(state.round)) {
+  if (!nextRound || (nextRound < Number(state.round) && !isIncomingRematch)) {
     return false;
   }
-  const incomingMatchId = getRoomMatchIdFromPayload(payload);
-  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !isJoinedRoomWaitingForSyncedSetup(nextRound || state.round)) {
+  if (incomingMatchId && getCurrentRoomMatchId() && incomingMatchId !== getCurrentRoomMatchId() && !isIncomingRematch && !isJoinedRoomWaitingForSyncedSetup(nextRound || state.round)) {
     return false;
   }
   if (payload.matchSettings || payload.settings) {
@@ -27582,29 +27610,31 @@ function applyRealtimeRoundAdvancing(payload = {}) {
 
 function applyRealtimeRoundStarted(payload = {}) {
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  const game = payload.game && typeof payload.game === "object"
+    ? payload.game
+    : payload.room?.game && typeof payload.room.game === "object"
+      ? payload.room.game
+      : null;
+  const nextRound = Number(game?.round) || 0;
+  const isIncomingRematch = isIncomingRoomRematchPayload({ ...payload, game }, nextRound);
   const canStartFromLobby = state.currentRoomStatus === "lobby"
     || state.currentRoomStatus === "complete"
     || elements.gameStage.classList.contains("hidden")
-    || !elements.endPanel.classList.contains("hidden");
+    || !elements.endPanel.classList.contains("hidden")
+    || isIncomingRematch;
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext() || (state.matchEnded && !canStartFromLobby)) {
     return false;
   }
   if (isCurrentHost() && !state.joiningRoom) {
     return false;
   }
-  const game = payload.game && typeof payload.game === "object"
-    ? payload.game
-    : payload.room?.game && typeof payload.room.game === "object"
-      ? payload.room.game
-      : null;
   if (!game?.setup) {
     return false;
   }
   if (!canAdoptIncomingRoomGame(game, payload.room || state.joiningRoom)) {
     return false;
   }
-  const nextRound = Number(game.round) || 0;
-  if (!nextRound || nextRound < Number(state.round)) {
+  if (!nextRound || (nextRound < Number(state.round) && !isIncomingRematch)) {
     return false;
   }
   if (game.matchId) {
