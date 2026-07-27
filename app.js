@@ -28930,10 +28930,6 @@ function animateRoomPlayerListChange(target, renderList) {
   if (!target || typeof renderList !== "function") {
     return;
   }
-  if (target === elements.roomPlayerList) {
-    renderList();
-    return;
-  }
   const reduceMotion = shouldReduceMotion();
   const panelIsVisible = target.isConnected && !target.closest(".hidden");
   const previousHeight = target.getBoundingClientRect().height;
