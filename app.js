@@ -12782,6 +12782,17 @@ async function ensureSupabaseClient() {
 
 async function ensureSupabaseAuthReady(options = {}) {
   if (state.supabaseAuthPromise && !options.force) {
+    if (options.realtime) {
+      return state.supabaseAuthPromise.then((client) => {
+        if (client || state.supabaseClient) {
+          startSupabaseRealtime();
+          if (hasActiveRoomContext()) {
+            startRoomRealtime(state.roomSettings.code);
+          }
+        }
+        return client || state.supabaseClient || null;
+      });
+    }
     return state.supabaseAuthPromise;
   }
   if (state.supabaseAuthResolved && !options.force) {
@@ -13011,8 +13022,44 @@ function getRealtimeRoomPayload(room = {}, options = {}) {
   };
 }
 
+function isParticipantRealtimeEvent(eventType = "") {
+  return [
+    "participant-updated",
+    "participant-joined",
+    "participant-disconnected",
+    "participant-reconnected",
+    "participant-left",
+    "participant-moderated"
+  ].includes(String(eventType || ""));
+}
+
+function sendRealtimeRoomPayload(channel, payload) {
+  if (!channel) {
+    return false;
+  }
+  channel.send({
+    type: "broadcast",
+    event: "room-change",
+    payload
+  }).catch(() => {});
+  return true;
+}
+
+function retryRoomParticipantBroadcastWhenReady(payload, code = "") {
+  if (!isParticipantRealtimeEvent(payload?.eventType) || !state.realtimeRoomChannel || state.realtimeRoomCode !== code || state.realtimeRoomReady) {
+    return;
+  }
+  [300, 900, 1600].forEach((delay) => {
+    window.setTimeout(() => {
+      if (state.realtimeRoomChannel && state.realtimeRoomCode === code) {
+        sendRealtimeRoomPayload(state.realtimeRoomChannel, payload);
+      }
+    }, delay);
+  });
+}
+
 function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.code, details = {}) {
-  if (!state.supabaseClient || !state.realtimeLobbyChannel) {
+  if (!state.supabaseClient) {
     return;
   }
   const room = roomOrCode && typeof roomOrCode === "object" ? roomOrCode : null;
@@ -13034,18 +13081,14 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
       includeGame: eventType === "round-started" || room.status === "in-progress"
     });
   }
-  state.realtimeLobbyChannel.send({
-    type: "broadcast",
-    event: "room-change",
-    payload
-  }).catch(() => {});
-  if (state.realtimeRoomChannel && state.realtimeRoomCode === code) {
-    state.realtimeRoomChannel.send({
-      type: "broadcast",
-      event: "room-change",
-      payload
-    }).catch(() => {});
+  const sentToLobby = sendRealtimeRoomPayload(state.realtimeLobbyChannel, payload);
+  const sentToRoom = state.realtimeRoomCode === code
+    ? sendRealtimeRoomPayload(state.realtimeRoomChannel, payload)
+    : false;
+  if (!sentToLobby && !sentToRoom) {
+    return;
   }
+  retryRoomParticipantBroadcastWhenReady(payload, code);
 }
 
 function broadcastRealtimeAppEvent(eventType, details = {}) {
