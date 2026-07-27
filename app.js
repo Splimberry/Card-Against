@@ -27329,8 +27329,9 @@ async function fetchRoomByCode(code = state.roomSettings.code) {
 }
 
 async function updateRoomPresence(room, options = {}) {
+  let participant = null;
   try {
-    const participant = getCurrentParticipant({
+    participant = getCurrentParticipant({
       host: Object.hasOwn(options, "host") ? Boolean(options.host) : isCurrentHost() && !state.joiningRoom,
       spectator: Boolean(options.spectator),
       active: options.active !== false,
@@ -27350,6 +27351,14 @@ async function updateRoomPresence(room, options = {}) {
     if (!Object.hasOwn(options, "remainingTime")) {
       delete participant.remainingTime;
     }
+    if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+      broadcastRealtimeRoomChange(options.optimisticEventType || "participant-updated", room.code, {
+        status: room.status || state.currentRoomStatus || "",
+        participant,
+        optimistic: true,
+        updatedAt: Date.now()
+      });
+    }
     const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(room.code)}/presence`, {
       method: "POST",
       headers: {
@@ -27362,6 +27371,16 @@ async function updateRoomPresence(room, options = {}) {
       })
     }, roomPresenceFetchTimeoutMs);
     if (!response.ok) {
+      if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+        broadcastRealtimeRoomChange("participant-left", room.code, {
+          participantId: participant.id,
+          participantName: participant.name,
+          participant,
+          reason: "presence-rejected",
+          optimisticRollback: true,
+          updatedAt: Date.now()
+        });
+      }
       return null;
     }
     const data = await response.json();
@@ -27396,6 +27415,16 @@ async function updateRoomPresence(room, options = {}) {
       participants: state.roomParticipants
     };
   } catch {
+    if (participant && options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+      broadcastRealtimeRoomChange("participant-left", room.code, {
+        participantId: participant.id,
+        participantName: participant.name,
+        participant,
+        reason: "presence-failed",
+        optimisticRollback: true,
+        updatedAt: Date.now()
+      });
+    }
     return null;
   }
 }
@@ -27406,6 +27435,14 @@ async function publishRoomParticipantDelta(participant, options = {}) {
     return null;
   }
   try {
+    if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+      broadcastRealtimeRoomChange(options.optimisticEventType || "participant-joined", code, {
+        status: state.currentRoomStatus || "",
+        participant,
+        optimistic: true,
+        updatedAt: Date.now()
+      });
+    }
     const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/presence`, {
       method: "POST",
       headers: {
@@ -27420,6 +27457,16 @@ async function publishRoomParticipantDelta(participant, options = {}) {
     }, roomPresenceFetchTimeoutMs);
     if (!response.ok) {
       state.roomDirectoryOnline = false;
+      if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+        broadcastRealtimeRoomChange("participant-left", code, {
+          participantId: participant.id,
+          participantName: participant.name || "A player",
+          participant,
+          reason: "presence-rejected",
+          optimisticRollback: true,
+          updatedAt: Date.now()
+        });
+      }
       const errorPayload = await response.json().catch(() => ({}));
       return options.includeError
         ? { ok: false, status: response.status, error: errorPayload.error || "Room participant update failed." }
@@ -27447,6 +27494,16 @@ async function publishRoomParticipantDelta(participant, options = {}) {
     return { ...data, ok: true };
   } catch {
     state.roomDirectoryOnline = false;
+    if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+      broadcastRealtimeRoomChange("participant-left", code, {
+        participantId: participant.id,
+        participantName: participant.name || "A player",
+        participant,
+        reason: "presence-failed",
+        optimisticRollback: true,
+        updatedAt: Date.now()
+      });
+    }
     return options.includeError
       ? { ok: false, status: 0, error: "Room participant update failed." }
       : null;
@@ -29078,6 +29135,8 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined",
     compactResponse: !needsFullRoomState,
+    optimisticRealtime: !room.settings?.private,
+    optimisticEventType: "participant-joined",
     ...(Object.hasOwn(options, "roomPassword") ? { roomPassword: options.roomPassword } : {})
   });
   if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
@@ -29409,7 +29468,11 @@ async function addBotToRoom() {
   };
   rememberPendingRoomBotAdd(bot);
   renderRoomLobby();
-  const data = await publishRoomParticipantDelta(bot, { includeError: true });
+  const data = await publishRoomParticipantDelta(bot, {
+    includeError: true,
+    optimisticRealtime: true,
+    optimisticEventType: "participant-joined"
+  });
   clearPendingRoomBotAdd(bot.id);
   if (!data?.participant) {
     addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
