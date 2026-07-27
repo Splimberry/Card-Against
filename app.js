@@ -3365,6 +3365,7 @@ window.addEventListener("focus", () => {
 
 const elements = {
   modeScreen: document.querySelector("#modeScreen"),
+  menuBackgroundVideo: document.querySelector("#menuBackgroundVideo"),
   devToolScreen: null,
   adminAuthModal: null,
   adminAuthForm: null,
@@ -5763,6 +5764,34 @@ function getPerformanceOverlayKind(kind) {
   return "positive";
 }
 
+function shouldPlayMenuBackgroundVideo() {
+  if (!elements.modeScreen || !elements.menuBackgroundVideo) {
+    return false;
+  }
+  if (elements.modeScreen.classList.contains("hidden") || document.visibilityState === "hidden") {
+    return false;
+  }
+  if (state.performanceMode === "low-power" || state.performanceMode === "minimal") {
+    return false;
+  }
+  return !(typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+
+function syncMenuBackgroundVideo() {
+  const video = elements.menuBackgroundVideo;
+  if (!video) {
+    return;
+  }
+  if (!shouldPlayMenuBackgroundVideo()) {
+    video.pause();
+    return;
+  }
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise.catch(() => {});
+  }
+}
+
 function applyPerformanceMode(mode = state.performanceMode) {
   const normalized = normalizePerformanceMode(mode);
   state.performanceMode = normalized;
@@ -5776,6 +5805,7 @@ function applyPerformanceMode(mode = state.performanceMode) {
     elements.cardsArea?.classList.remove("answer-stack-mode");
   }
   refreshPerformanceModeSurfaces();
+  syncMenuBackgroundVideo();
 }
 
 function refreshPerformanceModeSurfaces() {
@@ -32876,6 +32906,19 @@ if (!soundState.muted) {
 }
 syncRoomControls();
 syncBotAdvancedControls();
+const menuBackgroundObserver = elements.modeScreen && elements.menuBackgroundVideo
+  ? new MutationObserver(syncMenuBackgroundVideo)
+  : null;
+menuBackgroundObserver?.observe(elements.modeScreen, { attributes: true, attributeFilter: ["class"] });
+const menuBackgroundMotionQuery = typeof window.matchMedia === "function"
+  ? window.matchMedia("(prefers-reduced-motion: reduce)")
+  : null;
+if (menuBackgroundMotionQuery?.addEventListener) {
+  menuBackgroundMotionQuery.addEventListener("change", syncMenuBackgroundVideo);
+} else if (menuBackgroundMotionQuery?.addListener) {
+  menuBackgroundMotionQuery.addListener(syncMenuBackgroundVideo);
+}
+document.addEventListener("visibilitychange", syncMenuBackgroundVideo);
 applyPerformanceMode(state.performanceMode);
 renderProfile();
 syncSpecialBadgesToProfile();
