@@ -3333,6 +3333,8 @@ const state = {
   appliedRoomEventOrder: [],
   locallyClosedRooms: {},
   roomEventRevision: 0,
+  roomRevisionByCode: {},
+  roomUpdatedAtByCode: {},
   roomSettingsRevisionByCode: {},
   roomSettingsUpdatedAtByCode: {},
   roomSettingsLocalUpdatedAtByCode: {},
@@ -10309,7 +10311,7 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
-    updateRoomEventRevision(data.revision);
+    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     if (data.message) {
       applyRealtimeRoomChatMessage(data.message);
     } else if (data.room) {
@@ -10836,7 +10838,7 @@ function applyRealtimeRoomRoundResult(payload = {}) {
       updatedAt: Number(payload.updatedAt) || Date.now()
     };
   }
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload(payload);
   playSyncedRoomRoundResult(result);
   maybePlaySpectatorRoomRoundResult(result);
   return true;
@@ -11293,7 +11295,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
     }
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    updateRoomEventRevision(data.revision);
+    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     if (data.roundResult) {
       applyRealtimeRoomRoundResult({
         ...data,
@@ -11408,7 +11410,7 @@ function publishRoomPowerState(payload = {}) {
       return null;
     }
     const data = await response.json();
-    updateRoomEventRevision(data.revision);
+    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     if (state.roomGame) {
       state.roomGame.powerState = mergeLocalRoomPowerState(state.roomGame.powerState, {
         updatedAt: data.updatedAt || Date.now(),
@@ -11588,7 +11590,7 @@ function applyRoomPowerState(payload = {}) {
     return false;
   }
   state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt || Date.now());
-  updateRoomEventRevision(revision);
+  rememberRoomRevisionPayload({ ...payload, code: payload.code || state.roomSettings.code, revision });
   if (state.roomGame) {
     const syncedParticipantIds = new Set(hands.map((entry) => String(entry?.participantId || "")).filter(Boolean));
     const syncedPlayedParticipantIds = new Set(played.map((entry) => String(entry?.participantId || "")).filter(Boolean));
@@ -12073,7 +12075,7 @@ function forceRoomRoundToGrading(payload = {}) {
   } else {
     playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
   }
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload(payload);
   return true;
 }
 
@@ -12101,7 +12103,7 @@ function publishRoomRoundSkip(payload = {}) {
       return null;
     }
     const data = await response.json();
-    updateRoomEventRevision(data.revision);
+    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, data);
     return data;
   }).catch(() => {
@@ -13409,8 +13411,63 @@ function getRoomPayloadUpdatedAt(payload = {}) {
   return Number(payload.updatedAt || payload.room?.updatedAt || 0) || 0;
 }
 
+function getRoomPayloadCode(payload = {}) {
+  return String(payload.code || payload.room?.code || payload.settings?.code || "").trim().toUpperCase();
+}
+
+function getKnownRoomRevision(code = "") {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode) {
+    return 0;
+  }
+  return Math.max(
+    Number(state.roomRevisionByCode?.[normalizedCode]) || 0,
+    Number(state.roomSettingsRevisionByCode?.[normalizedCode]) || 0,
+    normalizedCode === state.roomSettings.code ? Number(state.roomEventRevision) || 0 : 0
+  );
+}
+
+function getKnownRoomUpdatedAt(code = "") {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode) {
+    return 0;
+  }
+  return Math.max(
+    Number(state.roomUpdatedAtByCode?.[normalizedCode]) || 0,
+    Number(state.roomSettingsUpdatedAtByCode?.[normalizedCode]) || 0
+  );
+}
+
+function rememberRoomRevisionPayload(payload = {}) {
+  const code = getRoomPayloadCode(payload);
+  if (!code) {
+    return;
+  }
+  const revision = getRoomPayloadRevision(payload);
+  const updatedAt = getRoomPayloadUpdatedAt(payload);
+  if (revision) {
+    state.roomRevisionByCode[code] = Math.max(Number(state.roomRevisionByCode[code]) || 0, revision);
+    if (code === state.roomSettings.code) {
+      updateRoomEventRevision(revision);
+    }
+  }
+  if (updatedAt) {
+    state.roomUpdatedAtByCode[code] = Math.max(Number(state.roomUpdatedAtByCode[code]) || 0, updatedAt);
+  }
+}
+
+function isStaleRoomRevisionPayload(payload = {}) {
+  const code = getRoomPayloadCode(payload);
+  if (!code) {
+    return false;
+  }
+  const revision = getRoomPayloadRevision(payload);
+  const knownRevision = getKnownRoomRevision(code);
+  return Boolean(revision && knownRevision && revision < knownRevision);
+}
+
 function isStaleActiveRoomRealtimePayload(payload = {}, previousRevision = state.roomEventRevision) {
-  const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
+  const code = getRoomPayloadCode(payload);
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext()) {
     return false;
   }
@@ -13418,7 +13475,8 @@ function isStaleActiveRoomRealtimePayload(payload = {}, previousRevision = state
     return false;
   }
   const revision = getRoomPayloadRevision(payload);
-  return Boolean(revision && previousRevision && revision < previousRevision);
+  const knownRevision = Math.max(Number(previousRevision) || 0, getKnownRoomRevision(code));
+  return Boolean(revision && knownRevision && revision < knownRevision);
 }
 
 function markRoomSettingsLocallyChanged(code = state.roomSettings.code) {
@@ -13497,6 +13555,7 @@ function rememberRoomSettingsPayload(payload = {}) {
   if (meta.updatedAt) {
     state.roomSettingsUpdatedAtByCode[meta.code] = Math.max(Number(state.roomSettingsUpdatedAtByCode[meta.code]) || 0, meta.updatedAt);
   }
+  rememberRoomRevisionPayload({ code: meta.code, revision: meta.revision, updatedAt: meta.updatedAt });
 }
 
 function mergeRoomSettingsFresh(currentSettings = {}, incomingSettings = {}, payload = {}) {
@@ -13841,7 +13900,11 @@ function applyRoomEventPayload(payload = {}, source = {}) {
 
 function applyRoomServerEvent(event = {}) {
   if (hasAppliedRoomServerEvent(event)) {
-    updateRoomEventRevision(event.revision);
+    rememberRoomRevisionPayload({
+      code: event.payload?.code || event.payload?.room?.code || state.roomSettings.code,
+      revision: event.revision,
+      updatedAt: event.createdAt
+    });
     return true;
   }
   const type = String(event.type || "");
@@ -13855,13 +13918,13 @@ function applyRoomServerEvent(event = {}) {
   });
   if (hasAppliedRoomPayloadEvent(eventPayload)) {
     rememberAppliedRoomServerEvent(event);
-    updateRoomEventRevision(event.revision);
+    rememberRoomRevisionPayload(eventPayload);
     return true;
   }
   if (!canApplyRoomEventForCurrentMatch(eventPayload) || isOlderRoomRoundEvent(eventPayload)) {
     rememberAppliedRoomServerEvent(event);
     rememberAppliedRoomPayloadEvent(eventPayload);
-    updateRoomEventRevision(event.revision);
+    rememberRoomRevisionPayload(eventPayload);
     return true;
   }
   const applied = applyRoomEventPayload(eventPayload, { source: "server-event" });
@@ -13869,7 +13932,7 @@ function applyRoomServerEvent(event = {}) {
     rememberAppliedRoomPayloadEvent(eventPayload);
   }
   rememberAppliedRoomServerEvent(event);
-  updateRoomEventRevision(event.revision);
+  rememberRoomRevisionPayload(eventPayload);
   return applied;
 }
 
@@ -13898,7 +13961,7 @@ async function refreshRoomEventsSinceLastRevision(options = {}) {
         needsRoomRefresh = true;
       }
     });
-    updateRoomEventRevision(data.revision);
+    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     if (needsRoomRefresh && options.refreshRoom !== false) {
       const lookup = await fetchRoomByCode(state.roomSettings.code);
       if (lookup.status === "found" && lookup.room) {
@@ -13955,11 +14018,48 @@ function getRoomSnapshotMeta(room = {}) {
   };
 }
 
+function getRoomSnapshotKey(room = {}) {
+  const meta = getRoomSnapshotMeta(room);
+  if (!meta.code || !meta.revision) {
+    return "";
+  }
+  return [
+    "snapshot",
+    meta.code,
+    meta.revision,
+    meta.updatedAt || "",
+    meta.status || "",
+    meta.matchId || "",
+    meta.round || ""
+  ].join(":");
+}
+
+function hasAppliedRoomSnapshot(room = {}) {
+  const snapshotKey = getRoomSnapshotKey(room);
+  return Boolean(snapshotKey && state.appliedRoomEventIds instanceof Set && state.appliedRoomEventIds.has(snapshotKey));
+}
+
+function rememberAppliedRoomSnapshot(room = {}) {
+  const snapshotKey = getRoomSnapshotKey(room);
+  if (snapshotKey) {
+    rememberAppliedRoomServerEvent({ id: snapshotKey });
+  }
+}
+
 function normalizeRoomApplySource(source = {}) {
   if (typeof source === "string") {
     return { source };
   }
   return source && typeof source === "object" ? { ...source } : {};
+}
+
+function roomSnapshotCanAdoptGame(room = {}) {
+  const incomingGame = room.game && typeof room.game === "object" ? room.game : null;
+  const currentMatchId = getCurrentRoomMatchId();
+  if (!incomingGame?.matchId || !currentMatchId || incomingGame.matchId === currentMatchId) {
+    return true;
+  }
+  return canAdoptIncomingRoomGame(incomingGame, room, incomingGame.round || state.round);
 }
 
 function shouldSyncActiveRoomSnapshot(room = {}, options = {}) {
@@ -13973,14 +14073,7 @@ function shouldSyncActiveRoomSnapshot(room = {}, options = {}) {
   if (shouldIgnoreStaleLobbySnapshot(room)) {
     return false;
   }
-  const incomingGame = room.game && typeof room.game === "object" ? room.game : null;
-  const currentMatchId = getCurrentRoomMatchId();
-  if (
-    incomingGame?.matchId
-    && currentMatchId
-    && incomingGame.matchId !== currentMatchId
-    && !canAdoptIncomingRoomGame(incomingGame, room, incomingGame.round || state.round)
-  ) {
+  if (!roomSnapshotCanAdoptGame(room)) {
     return false;
   }
   return true;
@@ -13991,25 +14084,40 @@ function isStaleRoomSnapshot(room = {}, options = {}) {
     return false;
   }
   const meta = getRoomSnapshotMeta(room);
-  if (!meta.code || meta.code !== state.roomSettings.code || !hasActiveRoomContext()) {
+  if (!meta.code) {
     return false;
   }
-  return isStaleActiveRoomRealtimePayload({
-    code: meta.code,
-    revision: meta.revision,
-    updatedAt: meta.updatedAt,
-    room
-  }, Number(options.previousRevision ?? state.roomEventRevision) || 0);
+  if (meta.code === state.roomSettings.code && hasActiveRoomContext() && !roomSnapshotCanAdoptGame(room)) {
+    return true;
+  }
+  const knownRevision = getKnownRoomRevision(meta.code);
+  const knownUpdatedAt = getKnownRoomUpdatedAt(meta.code);
+  if (meta.revision && knownRevision && meta.revision < knownRevision) {
+    return true;
+  }
+  if (meta.revision && knownRevision && meta.revision === knownRevision) {
+    if (hasAppliedRoomSnapshot(room)) {
+      return true;
+    }
+    if (meta.updatedAt && knownUpdatedAt && meta.updatedAt < knownUpdatedAt) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function applyRoomSnapshot(room = {}, source = {}) {
   const options = normalizeRoomApplySource(source);
+  if (isStaleRoomSnapshot(room, options)) {
+    return false;
+  }
   const merged = mergeRealtimeRoomPayload(room);
   if (!merged || isStaleRoomSnapshot(merged, options)) {
     return false;
   }
-  updateRoomEventRevision(merged.revision);
+  rememberRoomRevisionPayload(merged);
   mergeHostedRoom(merged);
+  rememberAppliedRoomSnapshot(merged);
   if (!elements.joinScreen.classList.contains("hidden") && options.renderDirectory !== false) {
     renderHostedRooms();
   }
@@ -14178,7 +14286,7 @@ function applyRealtimeRoomSettings(payload = {}) {
       renderRoomLobby();
     }
   }
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload({ ...payload, code });
   if (!elements.joinScreen.classList.contains("hidden")) {
     renderHostedRooms();
   }
@@ -14451,7 +14559,7 @@ function applyRoomModerationDelta(payload = {}) {
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
   }
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload(payload);
   return true;
 }
 
@@ -14493,7 +14601,7 @@ function applyRoomEvent(event = {}, source = {}) {
   const payloadRevision = getRoomPayloadRevision(payload);
   const previousRevision = Number(state.roomEventRevision) || 0;
   if (hasAppliedRoomPayloadEvent(payload)) {
-    updateRoomEventRevision(payloadRevision);
+    rememberRoomRevisionPayload(payload);
     return true;
   }
   payload.revisionGap = Boolean(payloadRevision && previousRevision && payloadRevision > previousRevision + 1);
@@ -14503,7 +14611,7 @@ function applyRoomEvent(event = {}, source = {}) {
     || isOlderRoomRoundEvent(payload)
   ) {
     rememberAppliedRoomPayloadEvent(payload);
-    updateRoomEventRevision(payloadRevision);
+    rememberRoomRevisionPayload(payload);
     return true;
   }
   if (payload.eventType === "question-submission-updated") {
@@ -14511,14 +14619,14 @@ function applyRoomEvent(event = {}, source = {}) {
     if (appliedQuestionUpdate) {
       rememberAppliedRoomPayloadEvent(payload);
     }
-    updateRoomEventRevision(payloadRevision);
+    rememberRoomRevisionPayload(payload);
     return appliedQuestionUpdate;
   }
   const applied = applyRoomEventPayload(payload, options);
   if (applied) {
     rememberAppliedRoomPayloadEvent(payload);
   }
-  updateRoomEventRevision(payloadRevision);
+  rememberRoomRevisionPayload(payload);
   return applied;
 }
 
@@ -27413,7 +27521,7 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
-    updateRoomEventRevision(data.revision);
+    rememberRoomRevisionPayload({ ...data, code });
     const latestSeq = getRoomSettingsEditSeq(code);
     if (state.roomSettings.code === code && latestSeq === publishSeq) {
       applyRealtimeRoomSettings({ ...data, code, localSettingsEcho: true, settingsEditSeq: publishSeq });
@@ -27628,6 +27736,7 @@ async function updateRoomPresence(room, options = {}) {
     }
     const data = await response.json();
     if (data.participant) {
+      rememberRoomRevisionPayload({ ...data, code: data.code || room.code || state.roomSettings.code });
       applyRoomParticipantDelta(data.participant, data);
       if (!options.skipRealtimeBroadcast) {
         const eventType = String(data.eventType || "participant_updated").replaceAll("_", "-");
@@ -27717,6 +27826,7 @@ async function publishRoomParticipantDelta(participant, options = {}) {
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
     if (data.participant) {
+      rememberRoomRevisionPayload({ ...data, code });
       applyRoomParticipantDelta(data.participant, {
         code,
         status: data.status || "",
@@ -27825,6 +27935,9 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   if (code && code !== state.roomSettings.code) {
     return false;
   }
+  if (isStaleRoomRevisionPayload({ ...payload, code })) {
+    return false;
+  }
   const existingIndex = state.roomParticipants.findIndex((entry) => entry.id === normalized.id);
   if (existingIndex >= 0) {
     state.roomParticipants[existingIndex] = {
@@ -27884,7 +27997,7 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   if (!elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
   }
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload({ ...payload, code });
   if (state.currentRoomStatus === "draft" && !state.joiningRoom && isCurrentHost()) {
     scheduleRoomSettingsPublish("draft", 120);
   }
@@ -28057,7 +28170,7 @@ function applyRoomDirectoryRoom(room) {
   if (isStaleActiveRoomRealtimePayload({ code: room.code, room })) {
     return;
   }
-  updateRoomEventRevision(room.revision);
+  rememberRoomRevisionPayload(room);
   state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
   syncRoomMatchStateFromSettings(state.roomSettings);
   const previousParticipants = [...state.roomParticipants];
@@ -28558,11 +28671,11 @@ function applyRealtimeRoundAdvancing(payload = {}) {
     state.roomGame = null;
     state.roomRoundResult = null;
     clearRoundSubmissionState();
-    updateRoomEventRevision(payload.revision);
+    rememberRoomRevisionPayload(payload);
     return startJoinedRoomMatchFromRealtime(payload, null);
   }
   if (nextRound === Number(state.round) && elements.verdictPanel.classList.contains("hidden")) {
-    updateRoomEventRevision(payload.revision);
+    rememberRoomRevisionPayload(payload);
     return true;
   }
   cancelActiveMatchWork();
@@ -28581,7 +28694,7 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   state.judge = null;
   state.multipleChoiceOptions = [];
   resetRoundUiForLoading({ resetBlackCardTheme: true });
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload(payload);
   return true;
 }
 
@@ -28635,7 +28748,7 @@ function applyRealtimeRoundStarted(payload = {}) {
         updatedAt: Number(payload.updatedAt) || Date.now()
       };
     }
-    updateRoomEventRevision(payload.revision);
+    rememberRoomRevisionPayload(payload);
     return startJoinedRoomMatchFromRealtime(payload, game);
   }
   const sameRound = nextRound === Number(state.round);
@@ -28648,7 +28761,7 @@ function applyRealtimeRoundStarted(payload = {}) {
     state.roomGame = game;
     syncCurrentRoundSetupMetadata(setup);
     applyRoomGamePowerState(state.roomGame);
-    updateRoomEventRevision(payload.revision);
+    rememberRoomRevisionPayload(payload);
     return true;
   }
   cancelActiveMatchWork();
@@ -28667,7 +28780,7 @@ function applyRealtimeRoundStarted(payload = {}) {
   resetRoundUiForLoading({ resetBlackCardTheme: true });
   applyRoundSetup(setup);
   applyRoomGamePowerState(game);
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload(payload);
   return true;
 }
 
@@ -28705,7 +28818,7 @@ function applyRealtimeRoomGameEnded(payload = {}) {
     hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
     hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
   }
-  updateRoomEventRevision(payload.revision);
+  rememberRoomRevisionPayload(payload);
   if (!state.matchEnded) {
     addSystemChat("The host ended the game.", { private: true, sync: false });
     endMatch(true, { syncRoom: false });
@@ -30337,7 +30450,7 @@ function publishRoomModeration(action, participantId, options = {}) {
       broadcastRealtimeRoomChange("room-closed", state.roomSettings.code, { reason: data.reason || action });
       return { ...data, ok: true };
     }
-    updateRoomEventRevision(data.revision);
+    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     applyRoomModerationDelta({ ...data, code: state.roomSettings.code, silent: true });
     broadcastRealtimeRoomChange("participant-moderated", state.roomSettings.code, data);
     return { ...data, ok: true };
