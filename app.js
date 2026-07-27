@@ -2899,6 +2899,8 @@ const state = {
   pendingRoomBotAdds: [],
   pendingRoomBotKicks: {},
   roomAutoResolveId: null,
+  roomAutoResolveKey: "",
+  roomAutoResolveDueAt: 0,
   roomSubmissionResolveId: null,
   roomRoundResolving: false,
   matchWorkToken: 0,
@@ -3319,6 +3321,7 @@ const state = {
   roomRealtimeStatus: "idle",
   roomRealtimeUnhealthySince: 0,
   roomLastCatchupAt: 0,
+  pendingRoomRealtimePayloads: [],
   realtimeSourceId: `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   hostedRoomsRefreshPromise: null,
   currentRoomRefreshPromise: null,
@@ -10339,6 +10342,12 @@ function clearRoomAutoResolve() {
     clearTimeout(state.roomAutoResolveId);
     state.roomAutoResolveId = null;
   }
+  state.roomAutoResolveKey = "";
+  state.roomAutoResolveDueAt = 0;
+  clearRoomSubmissionResolve();
+}
+
+function clearRoomSubmissionResolve() {
   if (state.roomSubmissionResolveId) {
     clearTimeout(state.roomSubmissionResolveId);
     state.roomSubmissionResolveId = null;
@@ -10391,7 +10400,7 @@ function applyLocalRoomSubmission() {
   if (!owner || !getActiveOwners().includes(owner)) {
     return false;
   }
-  state.roomSubmissions[player.owner] = true;
+  state.roomSubmissions[owner] = true;
   state.answerRemainingTimes[owner] = Math.max(0, Number(localSubmission.remainingTime) || 0);
   if (localSubmission.answer) {
     lockRoundAnswer(owner, localSubmission.answer);
@@ -10465,9 +10474,19 @@ function broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime = st
       submissionMatchId: getCurrentRoomMatchId(),
       remainingTime
     }) : null);
+  const submittedParticipant = participant
+    ? {
+        ...participant,
+        status: "submitted",
+        answer: cleanInput(answer || ""),
+        submittedRound: state.round,
+        submissionMatchId: getCurrentRoomMatchId(),
+        remainingTime: Math.max(0, Number(remainingTime) || 0)
+      }
+    : null;
   broadcastRealtimeRoomChange("answer-submitted", state.roomSettings.code, {
     participantId,
-    participant,
+    participant: submittedParticipant,
     owner,
     round: state.round,
     matchId: getCurrentRoomMatchId(),
@@ -10483,7 +10502,6 @@ function shouldBroadcastSpectatorAnswerDraft() {
       && state.currentRoomStatus === "in-progress"
       && !state.matchEnded
       && !state.roomSubmissions[state.currentOwner]
-      && getActiveRoomSpectatorCount() > 0
       && state.roomSettings.code
       && state.roomSettings.code !== "CAI-0000"
       && getRoomParticipantIdForOwner(state.currentOwner)
@@ -10533,7 +10551,7 @@ function scheduleSpectatorAnswerDraftBroadcast() {
 }
 
 function applySpectatorAnswerDraft(payload = {}) {
-  if (!state.isSpectator || !isRoomMode() || !hasActiveRoomContext()) {
+  if (!isRoomMode() || !hasActiveRoomContext()) {
     return true;
   }
   const code = String(payload.code || "").trim().toUpperCase();
@@ -10557,7 +10575,9 @@ function applySpectatorAnswerDraft(payload = {}) {
     answer: cleanAnswerDraft(payload.answer || ""),
     updatedAt: Number(payload.updatedAt) || Date.now()
   };
-  renderSpectatorAnswerCards();
+  if (state.isSpectator) {
+    renderSpectatorAnswerCards();
+  }
   return true;
 }
 
@@ -11728,14 +11748,32 @@ async function refreshRoomRoundResultSnapshot(localFallback = "", matchToken = s
 }
 
 async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = state.matchWorkToken, timeoutMs = null) {
+  const playSyncedResultIfReady = () => {
+    const result = getRoomRoundResultForCurrentRound();
+    if (!result) {
+      return false;
+    }
+    playSyncedRoomRoundResult(result, localFallback);
+    return true;
+  };
+  if (playSyncedResultIfReady()) {
+    return;
+  }
+  if (isRoomRealtimeHealthy()) {
+    showWaitingForRoomRoundResult();
+    void requestRoomRealtimeCatchup("round-result-wait", { force: true, snapshot: false }).then(() => {
+      if (isCurrentMatchWork(matchToken)) {
+        playSyncedResultIfReady();
+      }
+    });
+    return;
+  }
   const effectiveTimeoutMs = Number.isFinite(Number(timeoutMs)) ? Number(timeoutMs) : getRoomRoundResultWaitTimeoutMs();
   const startedAt = Date.now();
   let lastEventRefreshAt = 0;
   let lastSnapshotRefreshAt = 0;
   while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < effectiveTimeoutMs) {
-    const result = getRoomRoundResultForCurrentRound();
-    if (result) {
-      playSyncedRoomRoundResult(result, localFallback);
+    if (playSyncedResultIfReady()) {
       return;
     }
     const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
@@ -11831,59 +11869,22 @@ function maybeResolveBotSubmissions() {
 
 async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   const matchToken = state.matchWorkToken;
-  const startedAt = Date.now();
-  let lastEventRefreshAt = 0;
-  let lastSnapshotRefreshAt = 0;
-  while (isCurrentMatchWork(matchToken)) {
-    const syncedResult = getRoomRoundResultForCurrentRound();
-    if (syncedResult && (!isCurrentHost() || state.joiningRoom)) {
-      playSyncedRoomRoundResult(syncedResult, localFallback);
-      return;
-    }
-    if (getPendingSubmitters().length === 0) {
-      break;
-    }
-    const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
-    if (Date.now() - lastEventRefreshAt > eventRefreshIntervalMs) {
-      lastEventRefreshAt = Date.now();
-      await refreshRoomEventsSinceLastRevision({ refreshRoom: false });
-      if (!isCurrentMatchWork(matchToken)) {
-        state.roomRoundResolving = false;
-        return;
-      }
-      if (getPendingSubmitters().length === 0) {
-        break;
-      }
-    }
-    const shouldSnapshotRefresh = !(state.supabaseEnabled && state.realtimeRoomChannel)
-      || (Date.now() - startedAt > 1800 && Date.now() - lastSnapshotRefreshAt > 1800);
-    if (shouldSnapshotRefresh) {
-      lastSnapshotRefreshAt = Date.now();
-      const snapshotStatus = await refreshActiveRoomSnapshotForSync(matchToken);
-      if (!isCurrentMatchWork(matchToken)) {
-        state.roomRoundResolving = false;
-        return;
-      }
-      if (snapshotStatus === "closed" || snapshotStatus === "stale") {
-        return;
-      }
-      if (getPendingSubmitters().length === 0) {
-        break;
-      }
-    }
-    await sleep(260);
-  }
   if (!isCurrentMatchWork(matchToken)) {
     state.roomRoundResolving = false;
     return;
   }
-
-  state.roomAutoResolveId = null;
-  if (state.roomSubmissionResolveId) {
-    window.clearTimeout(state.roomSubmissionResolveId);
-    state.roomSubmissionResolveId = null;
+  const syncedResult = getRoomRoundResultForCurrentRound();
+  if (syncedResult && (!isCurrentHost() || state.joiningRoom)) {
+    playSyncedRoomRoundResult(syncedResult, localFallback);
+    return;
   }
-  resolveRoomSubmissionsNow(localFallback, matchToken);
+  if (getPendingSubmitters().length === 0) {
+    if (state.roomSubmissionResolveId) {
+      window.clearTimeout(state.roomSubmissionResolveId);
+      state.roomSubmissionResolveId = null;
+    }
+    resolveRoomSubmissionsNow(localFallback, matchToken);
+  }
 }
 
 function getPendingSubmitters() {
@@ -11939,6 +11940,58 @@ function getRoomRoundResultWaitTimeoutMs() {
   return getRoomSubmissionWaitTimeoutMs() + 15000;
 }
 
+function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
+    return false;
+  }
+  const deadlineKey = [
+    matchToken,
+    getCurrentRoomMatchId(),
+    Number(state.round) || 0
+  ].join("|");
+  if (state.roomAutoResolveId && state.roomAutoResolveKey === deadlineKey) {
+    return true;
+  }
+  if (state.roomAutoResolveId) {
+    window.clearTimeout(state.roomAutoResolveId);
+    state.roomAutoResolveId = null;
+  }
+  const timeoutMs = getRoomSubmissionWaitTimeoutMs();
+  state.roomAutoResolveKey = deadlineKey;
+  state.roomAutoResolveDueAt = Date.now() + timeoutMs;
+  state.roomAutoResolveId = window.setTimeout(() => {
+    state.roomAutoResolveId = null;
+    state.roomAutoResolveKey = "";
+    state.roomAutoResolveDueAt = 0;
+    if (
+      !isCurrentMatchWork(matchToken)
+      || !isRoomMode()
+      || !isCurrentHost()
+      || state.joiningRoom
+      || state.roomRoundResolving
+      || state.matchEnded
+      || elements.inputPanel.classList.contains("hidden")
+    ) {
+      return;
+    }
+    if (getPendingSubmitters().length === 0) {
+      maybeResolveRoomSubmissions();
+      return;
+    }
+    const payload = {
+      code: state.roomSettings.code,
+      round: state.round,
+      hostParticipantId: state.clientId,
+      reason: "timer-expired",
+      submissions: buildRoundSkipSubmissions(),
+      updatedAt: Date.now()
+    };
+    forceRoomRoundToGrading(payload);
+    void publishRoomRoundSkip(payload);
+  }, timeoutMs);
+  return true;
+}
+
 function getRemoteActiveOwners() {
   if (!isRoomMode()) {
     return [];
@@ -11957,9 +12010,12 @@ function buildRoundSkipSubmissions() {
       const currentInput = owner === state.currentOwner && !state.roomSubmissions[owner]
         ? cleanInput(elements.answerInput.value || "")
         : "";
+      const draftedAnswer = !state.roomSubmissions[owner]
+        ? cleanInput(state.spectatorAnswerDrafts?.[participantId]?.answer || "")
+        : "";
       const answer = state.roomSubmissions[owner]
         ? getLockedRoundAnswer(owner)
-        : currentInput;
+        : currentInput || draftedAnswer;
       return {
         participantId,
         owner,
@@ -12015,8 +12071,14 @@ function forceRoomRoundToGrading(payload = {}) {
   stopTimer();
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
-  document.querySelector("#inputTitle").textContent = "Host skipped to grading.";
-  addSystemChat("The host skipped to grading. Unsubmitted answers were left blank.", { private: true, sync: false });
+  const timedOut = String(payload.reason || "") === "timer-expired";
+  document.querySelector("#inputTitle").textContent = timedOut ? "Timer expired. Moving to grading." : "Host skipped to grading.";
+  addSystemChat(
+    timedOut
+      ? "The timer expired. Pending players were submitted with their latest answer box."
+      : "The host skipped to grading. Unsubmitted answers were left blank.",
+    { private: true, sync: false }
+  );
   renderSubmissionStatus();
   state.roomRoundResolving = true;
   if (!isCurrentHost() || state.joiningRoom) {
@@ -12035,7 +12097,7 @@ function publishRoomRoundSkip(payload = {}) {
   const body = {
     round: state.round,
     hostParticipantId: state.clientId,
-    reason: "host-skip",
+    reason: payload.reason || "host-skip",
     submissions: buildRoundSkipSubmissions(),
     ...payload
   };
@@ -13024,12 +13086,29 @@ function getRealtimeRoomPayload(room = {}, options = {}) {
 
 function isParticipantRealtimeEvent(eventType = "") {
   return [
+    "answer-submitted",
+    "answer-draft",
+    "round-result",
+    "round-skipped",
+    "round-started",
+    "power-state",
     "participant-updated",
     "participant-joined",
     "participant-disconnected",
     "participant-reconnected",
     "participant-left",
     "participant-moderated"
+  ].includes(String(eventType || ""));
+}
+
+function isCriticalRoomRealtimeEvent(eventType = "") {
+  return [
+    "answer-submitted",
+    "answer-draft",
+    "round-result",
+    "round-skipped",
+    "round-started",
+    "power-state"
   ].includes(String(eventType || ""));
 }
 
@@ -13056,6 +13135,48 @@ function retryRoomParticipantBroadcastWhenReady(payload, code = "") {
       }
     }, delay);
   });
+}
+
+function queueCriticalRoomRealtimePayload(payload = {}, code = "") {
+  if (!isCriticalRoomRealtimeEvent(payload.eventType) || !code) {
+    return false;
+  }
+  state.pendingRoomRealtimePayloads = [
+    ...state.pendingRoomRealtimePayloads.filter((entry) => {
+      const existing = entry?.payload || {};
+      return !(
+        existing.eventType === payload.eventType
+        && existing.code === payload.code
+        && existing.matchId === payload.matchId
+        && existing.round === payload.round
+        && existing.participantId === payload.participantId
+        && existing.powerId === payload.powerId
+      );
+    }),
+    { code, payload, queuedAt: Date.now() }
+  ].slice(-40);
+  return true;
+}
+
+function flushPendingRoomRealtimePayloads(code = state.roomSettings.code) {
+  const roomCode = String(code || "").trim().toUpperCase();
+  if (!state.realtimeRoomChannel || state.realtimeRoomCode !== roomCode || !state.realtimeRoomReady) {
+    return false;
+  }
+  const remaining = [];
+  state.pendingRoomRealtimePayloads.forEach((entry) => {
+    if (entry.code === roomCode) {
+      sendRealtimeRoomPayload(state.realtimeRoomChannel, {
+        ...entry.payload,
+        replayed: true,
+        replayedAt: Date.now()
+      });
+    } else {
+      remaining.push(entry);
+    }
+  });
+  state.pendingRoomRealtimePayloads = remaining;
+  return true;
 }
 
 function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.code, details = {}) {
@@ -13085,6 +13206,9 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
   const sentToRoom = state.realtimeRoomCode === code
     ? sendRealtimeRoomPayload(state.realtimeRoomChannel, payload)
     : false;
+  if (isCriticalRoomRealtimeEvent(payload.eventType) && (!sentToRoom || !state.realtimeRoomReady)) {
+    queueCriticalRoomRealtimePayload(payload, code);
+  }
   if (!sentToLobby && !sentToRoom) {
     return;
   }
@@ -13539,7 +13663,9 @@ function applyRoomServerEvent(event = {}) {
     applied = forceRoomRoundToGrading({
       ...eventPayload,
       round: payload.round,
+      matchId: payload.matchId,
       hostParticipantId: payload.hostParticipantId,
+      reason: payload.reason,
       submissions: payload.submissions || []
     });
   } else if (type === "participant_moderated") {
@@ -22154,8 +22280,9 @@ function renderRound() {
   renderSubmissionStatus();
   startTimer();
   if (isRoomRealtimeHealthy()) {
-    startRoomEventPolling();
+    flushPendingRoomRealtimePayloads(state.roomSettings.code);
   }
+  scheduleHostRoomSubmissionDeadline();
 
   getAnswerCardNodes().forEach((card) => card.classList.remove("winner", "launching"));
   elements.cardsArea.classList.remove("revealed");
@@ -28279,7 +28406,7 @@ function startRoomHeartbeat() {
 
 function startRoomEventPolling() {
   stopRoomEventPolling();
-  if (!hasActiveRoomContext() || (state.realtimeRoomReady && !isRoomCriticalSyncState() && !isRoomInWaitingSyncState())) {
+  if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
     return;
   }
   const sessionId = state.roomSessionId;
@@ -28288,7 +28415,7 @@ function startRoomEventPolling() {
     if (
       sessionId !== state.roomSessionId
       || !hasActiveRoomContext()
-      || (state.realtimeRoomReady && !isRoomCriticalSyncState() && !isRoomInWaitingSyncState())
+      || isRoomRealtimeHealthy()
     ) {
       stopRoomEventPolling();
       return;
@@ -28322,7 +28449,7 @@ function handleRoomRealtimeStatus(status = "") {
     state.roomRealtimeUnhealthySince = 0;
     stopRoomFallbackPolling({ keepHeartbeat: true });
     startRoomHeartbeat();
-    startRoomEventPolling();
+    flushPendingRoomRealtimePayloads(state.realtimeRoomCode);
     requestRoomRealtimeCatchup("subscribed", { force: true, snapshot: !isRoomInWaitingSyncState() ? false : true });
     return;
   }
@@ -28449,7 +28576,6 @@ function startRoomDirectoryPolling() {
   stopRoomFallbackPolling({ keepHeartbeat: true });
   startRoomHeartbeat();
   if (isRoomRealtimeHealthy()) {
-    startRoomEventPolling();
     requestRoomRealtimeCatchup("start", { force: true, snapshot: !isRoomInWaitingSyncState() ? false : true });
     return;
   }
@@ -30596,7 +30722,11 @@ function submitRoomAnswer(rawInput, options = {}) {
     ? "Waiting for Time Bender bonus time..."
     : "Waiting for the other player...";
   playSound("lock");
-  clearRoomAutoResolve();
+  if (getPendingSubmitters().length === 0) {
+    clearRoomAutoResolve();
+  } else {
+    clearRoomSubmissionResolve();
+  }
   void waitForRoomSubmissionsThenPlay(lockedInput);
 }
 
