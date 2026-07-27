@@ -2904,6 +2904,7 @@ const state = {
   roomAutoResolveKey: "",
   roomAutoResolveDueAt: 0,
   roomSubmissionResolveId: null,
+  roomSubmissionResolveKey: "",
   roomRoundResolving: false,
   matchWorkToken: 0,
   roundRequestAbortController: null,
@@ -4844,6 +4845,18 @@ function getCurrentRoomMatchId() {
 function setCurrentRoomMatchId(matchId = "") {
   state.roomMatchId = String(matchId || "").trim();
   return state.roomMatchId;
+}
+
+function getCurrentRoomRoundSyncKey(round = state.round) {
+  return [
+    state.roomSettings.code || "",
+    getCurrentRoomMatchId() || "",
+    Number(round) || 0
+  ].join("|");
+}
+
+function isCurrentRoomRoundSyncKey(syncKey = "") {
+  return Boolean(syncKey && syncKey === getCurrentRoomRoundSyncKey());
 }
 
 function roomPayloadMatchesCurrentMatch(payload = {}) {
@@ -9969,6 +9982,9 @@ function getRoomParticipantProfileUserId() {
 function participantSubmissionMatchesCurrentMatch(participant = {}) {
   const submissionMatchId = String(participant?.submissionMatchId || "").trim();
   const currentMatchId = getCurrentRoomMatchId();
+  if (!submissionMatchId && currentMatchId && Number(participant?.submittedRound) > 0) {
+    return false;
+  }
   return !submissionMatchId || !currentMatchId || submissionMatchId === currentMatchId;
 }
 
@@ -10359,6 +10375,7 @@ function clearRoomSubmissionResolve() {
     clearTimeout(state.roomSubmissionResolveId);
     state.roomSubmissionResolveId = null;
   }
+  state.roomSubmissionResolveKey = "";
 }
 
 function getRoomBanList() {
@@ -11794,8 +11811,15 @@ function maybeResolveRoomSubmissions() {
     return;
   }
   const matchToken = state.matchWorkToken;
+  const roundSyncKey = getCurrentRoomRoundSyncKey();
+  state.roomSubmissionResolveKey = roundSyncKey;
   state.roomSubmissionResolveId = window.setTimeout(() => {
     state.roomSubmissionResolveId = null;
+    state.roomSubmissionResolveKey = "";
+    if (!isCurrentRoomRoundSyncKey(roundSyncKey)) {
+      state.roomRoundResolving = false;
+      return;
+    }
     if (!resolveRoomSubmissionsNow("", matchToken) && getPendingSubmitters().length > 0) {
       state.roomRoundResolving = false;
     }
@@ -11810,9 +11834,12 @@ function maybeResolveBotSubmissions() {
     return;
   }
   const matchToken = state.matchWorkToken;
+  const roundSyncKey = getCurrentRoomRoundSyncKey();
+  state.roomSubmissionResolveKey = roundSyncKey;
   state.roomSubmissionResolveId = window.setTimeout(() => {
     state.roomSubmissionResolveId = null;
-    if (state.mode !== "bots" || !isCurrentMatchWork(matchToken) || getPendingSubmitters().length > 0 || state.roomRoundResolving) {
+    state.roomSubmissionResolveKey = "";
+    if (!isCurrentRoomRoundSyncKey(roundSyncKey) || state.mode !== "bots" || !isCurrentMatchWork(matchToken) || getPendingSubmitters().length > 0 || state.roomRoundResolving) {
       return;
     }
     state.roomRoundResolving = true;
@@ -11899,7 +11926,7 @@ function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
   }
   const deadlineKey = [
     matchToken,
-    getCurrentRoomMatchId(),
+    getCurrentRoomRoundSyncKey(),
     Number(state.round) || 0
   ].join("|");
   if (state.roomAutoResolveId && state.roomAutoResolveKey === deadlineKey) {
@@ -11918,6 +11945,11 @@ function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
     state.roomAutoResolveDueAt = 0;
     if (
       !isCurrentMatchWork(matchToken)
+      || deadlineKey !== [
+        matchToken,
+        getCurrentRoomRoundSyncKey(),
+        Number(state.round) || 0
+      ].join("|")
       || !isRoomMode()
       || !isCurrentHost()
       || state.joiningRoom
@@ -14929,6 +14961,10 @@ function renderSubmissionStatus() {
   const owners = getActiveOwners();
   const pending = getPendingSubmitters();
   const submitted = owners.filter((owner) => state.roomSubmissions[owner]);
+  if (submitted.length === 0) {
+    setHidden(elements.roomSubmitStatus, true);
+    return;
+  }
   elements.roomSubmitStatus.replaceChildren();
   const title = document.createElement("strong");
   const waitingForTimeBender = pending.length > 0 && hasPendingTimeBenderSubmitter(pending);
@@ -25772,6 +25808,8 @@ function scheduleNextSetupPrefetch() {
 async function newRound() {
   const matchToken = state.matchWorkToken;
   const previousBlackCard = state.blackCard;
+  clearRoomAutoResolve();
+  clearRoomSubmissionResolve();
   state.questionId = "";
   state.blackCard = "";
   state.questionType = "image";
