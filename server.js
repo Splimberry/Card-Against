@@ -2329,6 +2329,59 @@ function stampRoomEvent(room, type, payload = {}) {
   return room;
 }
 
+const serverRoomEventClientTypeMap = {
+  settings_updated: "room-settings"
+};
+
+function getClientRoomEventType(type = "") {
+  const normalizedType = String(type || "room_updated");
+  return serverRoomEventClientTypeMap[normalizedType] || normalizedType.replaceAll("_", "-");
+}
+
+function getRoomEventMatchId(room, extra = {}) {
+  return String(
+    extra.matchId
+    || extra.game?.matchId
+    || extra.roundResult?.matchId
+    || extra.powerState?.matchId
+    || room?.game?.matchId
+    || ""
+  ).slice(0, 80);
+}
+
+function getRoomEventRound(room, extra = {}) {
+  return clampServerNumber(
+    extra.round
+    || extra.nextRound
+    || extra.game?.round
+    || extra.roundResult?.round
+    || room?.game?.round,
+    0,
+    100,
+    0
+  );
+}
+
+function createRoomEventResponse(room, type = "room_updated", extra = {}) {
+  const response = {
+    code: room.code,
+    status: room.status,
+    revision: getRoomRevision(room),
+    updatedAt: room.updatedAt,
+    eventType: getClientRoomEventType(type),
+    ...extra
+  };
+  const matchId = getRoomEventMatchId(room, response);
+  const round = getRoomEventRound(room, response);
+  if (matchId) {
+    response.matchId = matchId;
+  }
+  if (round) {
+    response.round = round;
+  }
+  return response;
+}
+
 function hasActiveRealPlayers(room) {
   return Array.isArray(room?.participants)
     && room.participants.some((participant) => participant.active !== false && !participant.bot && !participant.spectator);
@@ -2634,13 +2687,17 @@ async function handleRoomPresence(req, res, code) {
       }
     }
     const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
     const submissionMatchId = String(participant.submissionMatchId || "").slice(0, 80);
+    const submissionRound = clampServerNumber(participant.submittedRound, 0, 100, 0);
     const hasSubmissionUpdate = Object.hasOwn(rawParticipant, "answer")
       || Object.hasOwn(rawParticipant, "submittedRound")
       || Object.hasOwn(rawParticipant, "remainingTime");
     const acceptsSubmissionUpdate = !hasSubmissionUpdate
-      || !currentMatchId
-      || (submissionMatchId && submissionMatchId === currentMatchId);
+      || (
+        (!currentMatchId || (submissionMatchId && submissionMatchId === currentMatchId))
+        && (!currentRound || (submissionRound && submissionRound === currentRound))
+      );
     const existingParticipant = existingIndex >= 0 ? room.participants[existingIndex] : null;
     const wasActive = existingParticipant ? existingParticipant.active !== false : false;
     const isNowActive = participant.active !== false;
@@ -2712,33 +2769,45 @@ async function handleRoomPresence(req, res, code) {
     }
     finalizeRoom(room);
     const finalParticipant = room.participants.find((entry) => entry.id === participant.id) || storedParticipant || participant;
-    const eventType = existingIndex >= 0
+    const participantEventType = existingIndex >= 0
       ? !isNowActive
         ? "participant_disconnected"
         : !wasActive
           ? "participant_reconnected"
           : "participant_updated"
       : "participant_joined";
-    stampRoomEvent(room, eventType, {
+    const answerSubmitted = Boolean(
+      hasSubmissionUpdate
+      && acceptsSubmissionUpdate
+      && Number(finalParticipant.submittedRound) > 0
+      && String(finalParticipant.status || "") === "submitted"
+    );
+    const eventType = answerSubmitted ? "answer_submitted" : participantEventType;
+    const eventPayload = {
       participantId: finalParticipant.id,
       participantName: finalParticipant.name || "A player",
       host: Boolean(finalParticipant.host),
       spectator: Boolean(finalParticipant.spectator),
       status: finalParticipant.status,
       participant: finalParticipant
-    });
+    };
+    if (answerSubmitted) {
+      eventPayload.matchId = String(finalParticipant.submissionMatchId || currentMatchId || "").slice(0, 80);
+      eventPayload.round = clampServerNumber(finalParticipant.submittedRound, 1, 100, room.game?.round || 1);
+      eventPayload.answer = String(finalParticipant.answer || "").slice(0, 500);
+      eventPayload.remainingTime = clampServerNumber(finalParticipant.remainingTime, 0, 600, 0);
+    }
+    stampRoomEvent(room, eventType, eventPayload);
     const storedRoom = await backendStore.upsertRoom(room);
     const participantCookie = !participant.bot ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
     if (body.compact) {
       const storedParticipant = storedRoom.participants.find((entry) => entry.id === participant.id) || participant;
-      sendJson(res, 200, {
-        code: storedRoom.code,
-        status: storedRoom.status,
-        revision: getRoomRevision(storedRoom),
-        updatedAt: storedRoom.updatedAt,
-        eventType,
-        participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true })
-      }, participantCookie ? { "Set-Cookie": participantCookie } : {});
+      sendJson(res, 200, createRoomEventResponse(storedRoom, eventType, {
+        ...eventPayload,
+        participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true }),
+        answer: answerSubmitted ? String(storedParticipant.answer || "").slice(0, 500) : undefined,
+        remainingTime: answerSubmitted ? clampServerNumber(storedParticipant.remainingTime, 0, 600, 0) : undefined
+      }), participantCookie ? { "Set-Cookie": participantCookie } : {});
       return;
     }
     sendJson(res, 200, {
@@ -2800,14 +2869,10 @@ async function handleRoomSettings(req, res, code) {
       host: room.host
     });
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, {
-      code: storedRoom.code,
-      status: storedRoom.status,
-      revision: getRoomRevision(storedRoom),
-      updatedAt: storedRoom.updatedAt,
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "settings_updated", {
       settings: sanitizeRoomSettingsForClient(storedRoom.settings, { includePrivateSecrets: true }),
       host: storedRoom.host
-    });
+    }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room settings update failed." });
   }
@@ -2912,13 +2977,9 @@ async function handleRoomChat(req, res, code) {
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     if (body.compact) {
-      sendJson(res, 200, {
-        code: storedRoom.code,
-        status: storedRoom.status,
-        revision: getRoomRevision(storedRoom),
-        updatedAt: storedRoom.updatedAt,
+      sendJson(res, 200, createRoomEventResponse(storedRoom, "chat_message", {
         message
-      });
+      }));
       return;
     }
     sendJson(res, 200, { room: sanitizeRoomForClient(storedRoom), message });
@@ -3007,6 +3068,12 @@ async function handleRoomPowerState(req, res, code) {
       sendJson(res, 409, { error: "Power state belongs to a previous match." });
       return;
     }
+    const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
+    const payloadRound = clampServerNumber(body.round || body.powerState?.round, 0, 100, 0);
+    if (payloadRound && currentRound && payloadRound < currentRound) {
+      sendJson(res, 409, { error: "Power state belongs to a previous round." });
+      return;
+    }
     const powerState = normalizeRoomPowerState({
       matchId: payloadMatchId || currentMatchId,
       updatedAt: Date.now(),
@@ -3045,11 +3112,7 @@ async function handleRoomPowerState(req, res, code) {
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, {
-      code: storedRoom.code,
-      status: storedRoom.status,
-      revision: getRoomRevision(storedRoom),
-      updatedAt: storedRoom.updatedAt,
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "power_state", {
       round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
       matchId: storedRoom.game?.matchId || powerState.matchId || "",
       powerId: String(body.powerId || "").slice(0, 80),
@@ -3061,7 +3124,7 @@ async function handleRoomPowerState(req, res, code) {
       played: powerState.played,
       players: powerState.players,
       effects: powerState.effects
-    });
+    }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room power update failed." });
   }
@@ -3090,6 +3153,11 @@ async function handleRoomRoundResult(req, res, code) {
       sendJson(res, 409, { error: "Round result belongs to a previous match." });
       return;
     }
+    const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
+    if (roundResult.round && currentRound && roundResult.round !== currentRound) {
+      sendJson(res, 409, { error: "Round result belongs to a different round." });
+      return;
+    }
     if (!roundResult.matchId && currentMatchId) {
       roundResult.matchId = currentMatchId;
     }
@@ -3110,14 +3178,12 @@ async function handleRoomRoundResult(req, res, code) {
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, {
-      code: storedRoom.code,
-      status: storedRoom.status,
-      revision: getRoomRevision(storedRoom),
-      updatedAt: storedRoom.updatedAt,
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "round_result", {
+      matchId: storedRoom.game?.matchId || roundResult.matchId || "",
+      round: storedRoom.game?.round || roundResult.round,
       roundResult: storedRoom.game?.roundResult || roundResult,
       game: storedRoom.game || room.game
-    });
+    }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Round result sync failed." });
   }
@@ -3153,7 +3219,18 @@ async function handleRoomRoundSkip(req, res, code) {
       return;
     }
 
-    const round = clampServerNumber(body.round, 1, 100, room.game?.round || 1);
+    const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    const payloadMatchId = String(body.matchId || "").slice(0, 80);
+    if (payloadMatchId && currentMatchId && payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Round skip belongs to a previous match." });
+      return;
+    }
+    const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
+    const round = clampServerNumber(body.round, 1, 100, currentRound || 1);
+    if (currentRound && round !== currentRound) {
+      sendJson(res, 409, { error: "Round skip belongs to a different round." });
+      return;
+    }
     const submissions = normalizeRoundSkipSubmissions(body.submissions);
     submissions.forEach((submission) => {
       const participant = room.participants.find((entry) => entry.id === submission.participantId);
@@ -3167,24 +3244,23 @@ async function handleRoomRoundSkip(req, res, code) {
       participant.status = "submitted";
     });
 
+    const matchId = currentMatchId || payloadMatchId;
     stampRoomEvent(room, "round_skipped", {
       round,
+      matchId,
       hostParticipantId,
       submissions,
       reason: String(body.reason || "host-skip").slice(0, 60)
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, {
-      code: storedRoom.code,
-      status: storedRoom.status,
-      revision: getRoomRevision(storedRoom),
-      updatedAt: storedRoom.updatedAt,
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "round_skipped", {
       round,
+      matchId,
       hostParticipantId,
       submissions,
       reason: String(body.reason || "host-skip").slice(0, 60)
-    });
+    }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Round skip failed." });
   }
@@ -3209,6 +3285,7 @@ async function handleRoomEvents(req, url, res, code) {
   sendJson(res, 200, {
     code: room.code,
     revision: getRoomRevision(room),
+    updatedAt: room.updatedAt,
     events
   });
 }
@@ -3275,16 +3352,12 @@ async function handleRoomModeration(req, res, code) {
     }
     const storedRoom = await backendStore.upsertRoom(room);
     const storedParticipant = storedRoom.participants.find((entry) => entry.id === participantId) || participant;
-    sendJson(res, 200, {
-      code: storedRoom.code,
-      status: storedRoom.status,
-      revision: getRoomRevision(storedRoom),
-      updatedAt: storedRoom.updatedAt,
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "participant_moderated", {
       action,
       participantId,
       participant: storedParticipant,
       banned: storedRoom.banned || []
-    });
+    }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room moderation failed." });
   }

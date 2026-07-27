@@ -10473,8 +10473,7 @@ function publishCurrentRoomSubmission(answer) {
     answer,
     submittedRound: state.round,
     submissionMatchId: getCurrentRoomMatchId(),
-    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0,
-    skipRealtimeBroadcast: true
+    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0
   });
 }
 
@@ -11273,14 +11272,6 @@ function publishRoomRoundResult(roundResult, options = {}) {
     powerState: result.powerState || getRoomPowerStatePayload(),
     updatedAt: result.updatedAt
   };
-  broadcastRealtimeRoomChange("round-result", state.roomSettings.code, {
-    status: "in-progress",
-    round: state.round,
-    matchId: getCurrentRoomMatchId(),
-    roundResult: result,
-    game: state.roomGame,
-    updatedAt: result.updatedAt
-  });
   return fetchWithTimeout(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/round-result`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -11970,6 +11961,7 @@ function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
     const payload = {
       code: state.roomSettings.code,
       round: state.round,
+      matchId: getCurrentRoomMatchId(),
       hostParticipantId: state.clientId,
       reason: "timer-expired",
       submissions: buildRoundSkipSubmissions(),
@@ -12021,6 +12013,9 @@ function forceRoomRoundToGrading(payload = {}) {
   }
   const code = String(payload.code || "").trim().toUpperCase();
   if (code && code !== state.roomSettings.code) {
+    return false;
+  }
+  if (!roomPayloadMatchesCurrentMatch(payload)) {
     return false;
   }
   const round = Number(payload.round) || state.round;
@@ -12085,6 +12080,7 @@ function publishRoomRoundSkip(payload = {}) {
   }
   const body = {
     round: state.round,
+    matchId: getCurrentRoomMatchId(),
     hostParticipantId: state.clientId,
     reason: payload.reason || "host-skip",
     submissions: buildRoundSkipSubmissions(),
@@ -12122,6 +12118,7 @@ function skipRoomRoundToGrading() {
   const payload = {
     code: state.roomSettings.code,
     round: state.round,
+    matchId: getCurrentRoomMatchId(),
     hostParticipantId: state.clientId,
     submissions: buildRoundSkipSubmissions(),
     updatedAt: Date.now()
@@ -13663,6 +13660,7 @@ function applyRoomGameMatchSettings(game = null, payload = {}, options = {}) {
 }
 
 const roomServerEventTypeMap = {
+  answer_submitted: "answer-submitted",
   chat_message: "chat-message",
   game_ended: "game-ended",
   host_transferred: "host-transferred",
@@ -27740,11 +27738,28 @@ async function updateRoomPresence(room, options = {}) {
       applyRoomParticipantDelta(data.participant, data);
       if (!options.skipRealtimeBroadcast) {
         const eventType = String(data.eventType || "participant_updated").replaceAll("_", "-");
-        broadcastRealtimeRoomChange(eventType || "participant-updated", state.roomSettings.code, {
+        const isAnswerSubmissionEvent = eventType === "answer-submitted";
+        const broadcastParticipant = data.participant && typeof data.participant === "object"
+          ? {
+            ...data.participant,
+            answer: isAnswerSubmissionEvent ? data.participant.answer : ""
+          }
+          : data.participant;
+        broadcastRealtimeRoomChange(eventType || "participant-updated", data.code || state.roomSettings.code, {
+          ...data,
+          eventType: eventType || data.eventType || "participant-updated",
+          code: data.code || state.roomSettings.code,
           status: data.status || "",
           revision: data.revision || 0,
           updatedAt: data.updatedAt || Date.now(),
-          participant: data.participant
+          participantId: data.participantId || broadcastParticipant?.id || "",
+          participant: broadcastParticipant,
+          matchId: data.matchId || broadcastParticipant?.submissionMatchId || "",
+          round: Number(data.round || broadcastParticipant?.submittedRound) || 0,
+          answer: isAnswerSubmissionEvent
+            ? Object.hasOwn(data, "answer") ? data.answer : broadcastParticipant?.answer
+            : undefined,
+          remainingTime: isAnswerSubmissionEvent ? Number(data.remainingTime ?? broadcastParticipant?.remainingTime) || 0 : undefined
         });
       }
     } else if (data.room) {
@@ -27835,11 +27850,28 @@ async function publishRoomParticipantDelta(participant, options = {}) {
       });
       if (!options.skipRealtimeBroadcast) {
         const eventType = String(data.eventType || "participant_updated").replaceAll("_", "-");
+        const isAnswerSubmissionEvent = eventType === "answer-submitted";
+        const broadcastParticipant = data.participant && typeof data.participant === "object"
+          ? {
+            ...data.participant,
+            answer: isAnswerSubmissionEvent ? data.participant.answer : ""
+          }
+          : data.participant;
         broadcastRealtimeRoomChange(eventType || "participant-updated", code, {
+          ...data,
+          eventType: eventType || data.eventType || "participant-updated",
+          code,
           status: data.status || "",
           revision: data.revision || 0,
           updatedAt: data.updatedAt || Date.now(),
-          participant: data.participant
+          participantId: data.participantId || broadcastParticipant?.id || "",
+          participant: broadcastParticipant,
+          matchId: data.matchId || broadcastParticipant?.submissionMatchId || "",
+          round: Number(data.round || broadcastParticipant?.submittedRound) || 0,
+          answer: isAnswerSubmissionEvent
+            ? Object.hasOwn(data, "answer") ? data.answer : broadcastParticipant?.answer
+            : undefined,
+          remainingTime: isAnswerSubmissionEvent ? Number(data.remainingTime ?? broadcastParticipant?.remainingTime) || 0 : undefined
         });
       }
     }
@@ -28296,13 +28328,6 @@ function publishRoomRoundSetup(setup) {
       : Date.now(),
     updatedAt: Date.now()
   };
-  broadcastRealtimeRoomChange("round-started", state.roomSettings.code, {
-    status: "in-progress",
-    matchId,
-    revision: state.roomEventRevision || 0,
-    updatedAt: state.roomGame.updatedAt,
-    game: state.roomGame
-  });
   fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/game`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -31271,7 +31296,6 @@ function submitRoomAnswer(rawInput, options = {}) {
 
   setRoomSubmission(owner, true);
   rememberLocalRoomSubmission(owner, lockedInput, state.answerRemainingTimes[owner]);
-  broadcastRoomAnswerSubmission(lockedInput);
   void publishCurrentRoomSubmission(lockedInput);
   maybeSubmitRoomBotsAfterRealPlayers();
   elements.answerInput.disabled = true;
