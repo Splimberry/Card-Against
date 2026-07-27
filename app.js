@@ -11790,7 +11790,6 @@ function maybeResolveRoomSubmissions() {
   if (!isRoomMode() || state.isSpectator) {
     return;
   }
-  maybeAutoSubmitHostAnswerForResolve();
   if (!state.roomSubmissions[state.currentOwner]) {
     return;
   }
@@ -11887,32 +11886,6 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
 function getPendingSubmitters() {
   applyLocalRoomSubmission();
   return getActiveOwners().filter((owner) => !state.roomSubmissions[owner]);
-}
-
-function maybeAutoSubmitHostAnswerForResolve() {
-  if (
-    !isRoomMode()
-    || state.isSpectator
-    || !isCurrentHost()
-    || state.joiningRoom
-    || state.roomSubmissions[state.currentOwner]
-    || state.roomRoundResolving
-    || state.matchEnded
-    || elements.inputPanel.classList.contains("hidden")
-  ) {
-    return false;
-  }
-  const pending = getActiveOwners().filter((owner) => !state.roomSubmissions[owner]);
-  if (pending.length !== 1 || pending[0] !== state.currentOwner) {
-    return false;
-  }
-  submitRoomAnswer(lockRoundAnswer(state.currentOwner, elements.answerInput.value, ""), {
-    allowBlank: true,
-    timedOut: true,
-    autoSubmitted: true
-  });
-  addSystemChat("Host answer auto-submitted so grading can start.", { private: true, sync: false });
-  return true;
 }
 
 function hasPendingTimeBenderSubmitter(pendingOwners = getPendingSubmitters()) {
