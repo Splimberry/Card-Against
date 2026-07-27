@@ -10309,8 +10309,7 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
     if (data.message) {
       applyRealtimeRoomChatMessage(data.message);
     } else if (data.room) {
-      mergeHostedRoom(data.room);
-      applyRoomDirectoryRoom(data.room);
+      applyRoomSnapshot(data.room, { source: "chat-response" });
     }
     return data.room || null;
   }).catch(() => {
@@ -11729,8 +11728,7 @@ async function refreshActiveRoomSnapshotForSync(matchToken = state.matchWorkToke
     return "stale";
   }
   if (lookup.status === "found" && lookup.room) {
-    mergeHostedRoom(lookup.room);
-    applyRoomDirectoryRoom(lookup.room);
+    applyRoomSnapshot(lookup.room, { source: "round-result-snapshot" });
     return "found";
   }
   if (lookup.status === "closed") {
@@ -13716,7 +13714,7 @@ async function refreshRoomEventsSinceLastRevision(options = {}) {
     const events = Array.isArray(data.events) ? data.events : [];
     let needsRoomRefresh = false;
     events.forEach((event) => {
-      if (!applyRoomServerEvent(event)) {
+      if (!applyRoomEvent(event, { source: "server-events" })) {
         needsRoomRefresh = true;
       }
     });
@@ -13724,9 +13722,10 @@ async function refreshRoomEventsSinceLastRevision(options = {}) {
     if (needsRoomRefresh && options.refreshRoom !== false) {
       const lookup = await fetchRoomByCode(state.roomSettings.code);
       if (lookup.status === "found" && lookup.room) {
-        mergeHostedRoom(lookup.room);
-        syncActiveRoomFromDirectory(lookup.room, { skipHeartbeat: true });
-        updateRoomEventRevision(lookup.room.revision);
+        applyRoomSnapshot(lookup.room, {
+          source: "event-catchup-snapshot",
+          skipHeartbeat: true
+        });
       } else if (lookup.status === "closed") {
         handleCurrentRoomClosed("The room was closed by the host or an admin.");
       }
@@ -13763,6 +13762,85 @@ function mergeRealtimeRoomPayload(room = {}) {
   };
 }
 
+function getRoomSnapshotMeta(room = {}) {
+  const source = room && typeof room === "object" ? room : {};
+  const game = source.game && typeof source.game === "object" ? source.game : null;
+  return {
+    code: String(source.code || source.settings?.code || "").trim().toUpperCase(),
+    status: String(source.status || "").trim().toLowerCase(),
+    revision: Number(source.revision) || 0,
+    updatedAt: Number(source.updatedAt) || 0,
+    matchId: String(game?.matchId || "").trim(),
+    round: Number(game?.round) || 0
+  };
+}
+
+function normalizeRoomApplySource(source = {}) {
+  if (typeof source === "string") {
+    return { source };
+  }
+  return source && typeof source === "object" ? { ...source } : {};
+}
+
+function shouldSyncActiveRoomSnapshot(room = {}, options = {}) {
+  const meta = getRoomSnapshotMeta(room);
+  if (!meta.code || meta.code !== state.roomSettings.code || !hasActiveRoomContext()) {
+    return false;
+  }
+  if (options.syncActive === false) {
+    return false;
+  }
+  if (shouldIgnoreStaleLobbySnapshot(room)) {
+    return false;
+  }
+  const incomingGame = room.game && typeof room.game === "object" ? room.game : null;
+  const currentMatchId = getCurrentRoomMatchId();
+  if (
+    incomingGame?.matchId
+    && currentMatchId
+    && incomingGame.matchId !== currentMatchId
+    && !canAdoptIncomingRoomGame(incomingGame, room, incomingGame.round || state.round)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isStaleRoomSnapshot(room = {}, options = {}) {
+  if (options.guardRevision === false) {
+    return false;
+  }
+  const meta = getRoomSnapshotMeta(room);
+  if (!meta.code || meta.code !== state.roomSettings.code || !hasActiveRoomContext()) {
+    return false;
+  }
+  return isStaleActiveRoomRealtimePayload({
+    code: meta.code,
+    revision: meta.revision,
+    updatedAt: meta.updatedAt,
+    room
+  }, Number(options.previousRevision ?? state.roomEventRevision) || 0);
+}
+
+function applyRoomSnapshot(room = {}, source = {}) {
+  const options = normalizeRoomApplySource(source);
+  const merged = mergeRealtimeRoomPayload(room);
+  if (!merged || isStaleRoomSnapshot(merged, options)) {
+    return false;
+  }
+  updateRoomEventRevision(merged.revision);
+  mergeHostedRoom(merged);
+  if (!elements.joinScreen.classList.contains("hidden") && options.renderDirectory !== false) {
+    renderHostedRooms();
+  }
+  if (shouldSyncActiveRoomSnapshot(merged, options)) {
+    syncActiveRoomFromDirectory(merged, {
+      skipHeartbeat: options.skipHeartbeat !== false
+    });
+  }
+  return true;
+}
+
 function removeHostedRoom(code = "") {
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!normalizedCode) {
@@ -13777,19 +13855,10 @@ function removeHostedRoom(code = "") {
 }
 
 function applyRealtimeRoomPayload(room = {}) {
-  const merged = mergeRealtimeRoomPayload(room);
-  if (!merged) {
-    return false;
-  }
-  updateRoomEventRevision(merged.revision);
-  mergeHostedRoom(merged);
-  if (!elements.joinScreen.classList.contains("hidden")) {
-    renderHostedRooms();
-  }
-  if (merged.code === state.roomSettings.code && hasActiveRoomContext()) {
-    syncActiveRoomFromDirectory(merged, { skipHeartbeat: true });
-  }
-  return true;
+  return applyRoomSnapshot(room, {
+    source: "realtime-room-payload",
+    skipHeartbeat: true
+  });
 }
 
 function applyRealtimeHostTransferred(payload = {}) {
@@ -14229,29 +14298,36 @@ function applyRealtimeQuestionSubmissionUpdate(payload = {}) {
   return true;
 }
 
-function handleRealtimeRoomChange(payload = {}) {
-  if (!payload || payload.sourceId === state.realtimeSourceId) {
-    return;
+function applyRoomEvent(event = {}, source = {}) {
+  const options = normalizeRoomApplySource(source);
+  if (!event || typeof event !== "object") {
+    return false;
   }
+  if (event.type && !event.eventType) {
+    return applyRoomServerEvent(event);
+  }
+  if (options.source === "realtime" && event.sourceId === state.realtimeSourceId) {
+    return true;
+  }
+  const payload = { ...event };
   const payloadRevision = getRoomPayloadRevision(payload);
   const previousRevision = Number(state.roomEventRevision) || 0;
   if (isStaleActiveRoomRealtimePayload(payload, previousRevision)) {
-    return;
+    return true;
   }
   payload.revisionGap = Boolean(payloadRevision && previousRevision && payloadRevision > previousRevision + 1);
   updateRoomEventRevision(payloadRevision);
   if (payload.eventType === "question-submission-updated") {
-    applyRealtimeQuestionSubmissionUpdate(payload);
-    return;
+    return applyRealtimeQuestionSubmissionUpdate(payload);
   }
   const code = String(payload.code || "").trim().toUpperCase();
   if (!code) {
-    return;
+    return false;
   }
   if (["room-closed", "room-deleted"].includes(payload.eventType)) {
-    applyRealtimeRoomClosed(payload);
-    return;
+    return applyRealtimeRoomClosed(payload);
   }
+  let applied = false;
   if (!elements.joinScreen.classList.contains("hidden") && shouldRealtimeRefreshJoinDirectory(payload.eventType)) {
     const appliedJoinDelta = (payload.eventType === "participant-updated" || payload.eventType === "participant-joined" || payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant
       ? applyHostedRoomParticipantDelta(payload)
@@ -14262,6 +14338,7 @@ function handleRealtimeRoomChange(payload = {}) {
         : payload.eventType === "room-settings"
           ? applyRealtimeRoomSettings(payload)
           : false;
+    applied = applied || appliedJoinDelta;
     if (!appliedJoinDelta && (!payload.room || !applyRealtimeRoomPayload(payload.room))) {
       scheduleRealtimeJoinRefresh();
     }
@@ -14317,12 +14394,18 @@ function handleRealtimeRoomChange(payload = {}) {
       appliedDelta = applyRealtimeRoomPayload(payload.room);
     }
     if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "participant-joined", "participant-disconnected", "participant-reconnected", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "host-transferred", "room-settings", "game-ended"].includes(payload.eventType)) {
-      return;
+      return true;
     }
     if (shouldRefreshRoomAfterRealtimeMiss(payload)) {
       scheduleRealtimeRoomRefresh(payload);
     }
+    applied = applied || appliedDelta;
   }
+  return applied;
+}
+
+function handleRealtimeRoomChange(payload = {}) {
+  applyRoomEvent(payload, { source: "realtime" });
 }
 
 function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
@@ -14421,8 +14504,10 @@ async function refreshCurrentRoomFromRealtime(payload = {}, expectedSessionId = 
     return;
   }
   if (lookup.status === "found" && lookup.room) {
-    mergeHostedRoom(lookup.room);
-    syncActiveRoomFromDirectory(lookup.room);
+    applyRoomSnapshot(lookup.room, {
+      source: "realtime-miss-snapshot",
+      skipHeartbeat: false
+    });
     return;
   }
   if (lookup.status === "closed") {
@@ -26442,7 +26527,7 @@ function publishDraftRoom(attempt = 0) {
   const room = buildRoomDirectoryPayload("lobby");
   publishRoomDirectory(room).then(async (serverRoom) => {
     if (serverRoom) {
-      mergeHostedRoom(serverRoom);
+      applyRoomSnapshot(serverRoom, { source: "draft-publish-response" });
       if (state.currentRoomStatus === "draft" && state.roomSettings.code === serverRoom.code) {
         state.roomParticipants = normalizeRoomParticipantsList(Array.isArray(serverRoom.participants) ? serverRoom.participants : state.roomParticipants);
         renderRoomPlayers();
@@ -26598,8 +26683,10 @@ async function reconnectCurrentRoomParticipant(reason = "reconnect") {
     status
   });
   if (updatedRoom) {
-    mergeHostedRoom(updatedRoom);
-    syncActiveRoomFromDirectory(updatedRoom, { skipHeartbeat: true });
+    applyRoomSnapshot(updatedRoom, {
+      source: "presence-reconnect-response",
+      skipHeartbeat: true
+    });
   }
   requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
   return updatedRoom;
@@ -27144,7 +27231,10 @@ async function publishRoomDirectory(room) {
     if (Array.isArray(data.transferredRooms)) {
       data.transferredRooms.forEach((transferredRoom) => {
         if (transferredRoom?.code) {
-          mergeHostedRoom(transferredRoom);
+          applyRoomSnapshot(transferredRoom, {
+            source: "host-transfer-response",
+            syncActive: false
+          });
           broadcastRealtimeRoomChange("host-transferred", transferredRoom);
         }
       });
@@ -27234,10 +27324,7 @@ function upsertHostedRoom(status = "lobby") {
       if (shouldIgnoreStaleLobbySnapshot(serverRoom)) {
         return;
       }
-      mergeHostedRoom(serverRoom);
-      if (state.roomSettings.code === serverRoom.code) {
-        applyRoomDirectoryRoom(serverRoom);
-      }
+      applyRoomSnapshot(serverRoom, { source: "room-publish-response" });
     }
   });
   return room;
@@ -27434,8 +27521,7 @@ async function updateRoomPresence(room, options = {}) {
         });
       }
     } else if (data.room) {
-      mergeHostedRoom(data.room);
-      applyRoomDirectoryRoom(data.room);
+      applyRoomSnapshot(data.room, { source: "presence-response" });
       if (!options.skipRealtimeBroadcast) {
         const currentParticipant = Array.isArray(data.room.participants)
           ? data.room.participants.find((entry) => entry.id === state.clientId)
@@ -27765,8 +27851,10 @@ async function runHostReconnectHandoffCheck(code, previousHostId) {
     return false;
   }
   const room = lookup.room;
-  mergeHostedRoom(room);
-  syncActiveRoomFromDirectory(room, { skipHeartbeat: true });
+  applyRoomSnapshot(room, {
+    source: "host-handoff-check",
+    skipHeartbeat: true
+  });
   const newHostId = String(room.host?.id || room.participants?.find?.((participant) => participant.host)?.id || "").slice(0, 80);
   if (newHostId && newHostId !== previousHostId) {
     broadcastRealtimeRoomChange("host-transferred", code, {
@@ -27996,8 +28084,7 @@ function publishRoomRoundSetup(setup) {
     const data = await response.json();
     state.roomDirectoryOnline = true;
     if (data.room) {
-      mergeHostedRoom(data.room);
-      applyRoomDirectoryRoom(data.room);
+      applyRoomSnapshot(data.room, { source: "round-started-response" });
       broadcastRealtimeRoomChange("round-started", data.room);
     }
   }).catch(() => {
@@ -28175,7 +28262,10 @@ function publishRoomGameEnded() {
     const data = await response.json();
     state.roomDirectoryOnline = true;
     if (data.room) {
-      mergeHostedRoom(data.room);
+      applyRoomSnapshot(data.room, {
+        source: "game-ended-response",
+        syncActive: false
+      });
       broadcastRealtimeRoomChange("game-ended", data.room.code || state.roomSettings.code, {
         status: "complete",
         matchId: game.matchId,
@@ -28214,8 +28304,10 @@ function publishRoomHeartbeat(status = "host") {
     }
     const data = await response.json();
     if (data.room) {
-      mergeHostedRoom(data.room);
-      applyRoomDirectoryRoom(data.room);
+      applyRoomSnapshot(data.room, {
+        source: "heartbeat-response",
+        skipHeartbeat: true
+      });
     }
     return data.room || null;
   }).catch(() => null);
@@ -28587,14 +28679,16 @@ async function refreshCurrentRoomDirectory(expectedSessionId = state.roomSession
     }
     if (directRoom.status === "found" && directRoom.room) {
       state.roomMissingSince = 0;
-      mergeHostedRoom(directRoom.room);
       const closeEvent = Array.isArray(directRoom.room.events)
         && directRoom.room.events.some((event) => event.type === "room_closed");
       if (directRoom.room.closed || closeEvent) {
         handleCurrentRoomClosed("The room was closed by the host or an admin.");
         return;
       }
-      syncActiveRoomFromDirectory(directRoom.room, { skipHeartbeat: true });
+      applyRoomSnapshot(directRoom.room, {
+        source: "current-room-refresh",
+        skipHeartbeat: true
+      });
       return;
     }
     if (directRoom.status === "closed") {
@@ -29117,8 +29211,7 @@ async function rejoinHostedRoomAsHost(room) {
     compactResponse: true
   });
   const activeRoom = updatedRoom || room;
-  mergeHostedRoom(activeRoom);
-  applyRoomDirectoryRoom(activeRoom);
+  applyRoomSnapshot(activeRoom, { source: "host-rejoin" });
   state.roomChat = [];
   resetChatCooldown();
   if (Array.isArray(activeRoom.chat)) {
@@ -29202,8 +29295,7 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
       return null;
     }
   }
-  mergeHostedRoom(serverRoom);
-  applyRoomDirectoryRoom(serverRoom);
+  applyRoomSnapshot(serverRoom, { source: "joined-presence-response" });
   if (state.currentRoomStatus === "lobby" && !elements.roomLobbyScreen.classList.contains("hidden")) {
     renderRoomLobby();
   }
@@ -29232,7 +29324,10 @@ async function joinHostedRoom(code, options = {}) {
       }
       if (lookup.status === "found" && lookup.room) {
         room = lookup.room;
-        mergeHostedRoom(room);
+        applyRoomSnapshot(room, {
+          source: "join-room-lookup",
+          syncActive: false
+        });
       }
     }
     if (room && !fetchedRoomDirectly) {
@@ -29247,7 +29342,10 @@ async function joinHostedRoom(code, options = {}) {
       }
       if (lookup.status === "found" && lookup.room) {
         room = lookup.room;
-        mergeHostedRoom(room);
+        applyRoomSnapshot(room, {
+          source: "join-room-refresh",
+          syncActive: false
+        });
       }
     }
     if (!room) {
@@ -29356,7 +29454,9 @@ async function joinHostedRoom(code, options = {}) {
     if (room.status === "lobby") {
       state.mode = "room";
       setPlayersForMode("room");
-      applyRoomDirectoryRoom(state.hostedRooms.find((entry) => entry.code === normalizedCode) || room);
+      applyRoomSnapshot(state.hostedRooms.find((entry) => entry.code === normalizedCode) || room, {
+        source: "joined-lobby-entry"
+      });
       renderRoomLobby();
       startRoomDirectoryPolling();
       setHidden(elements.roomLobbyScreen, false);
@@ -29401,7 +29501,10 @@ async function processInitialRoomInvite() {
     setJoinInviteStatus("Room lookup is taking too long. Check your connection, then try again.", "error");
     return;
   }
-  mergeHostedRoom(lookup.room);
+  applyRoomSnapshot(lookup.room, {
+    source: "initial-invite-lookup",
+    syncActive: false
+  });
   elements.joinRoomCodeInput.value = getRoomShortCode(inviteCode) || inviteCode;
   if (lookup.room.settings?.private) {
     setJoinInviteStatus(`Room ${getRoomShortCode(inviteCode)} is private. Enter the password to join.`);
@@ -29517,7 +29620,10 @@ async function addBotToRoom() {
     if (data?.status === 409 || /full/i.test(data?.error || "")) {
       const lookup = await fetchRoomByCode(state.roomSettings.code);
       if (lookup.status === "found" && lookup.room) {
-        syncActiveRoomFromDirectory(lookup.room, { skipHeartbeat: true });
+        applyRoomSnapshot(lookup.room, {
+          source: "bot-add-conflict-snapshot",
+          skipHeartbeat: true
+        });
       }
     }
     renderRoomLobby();
@@ -33401,7 +33507,7 @@ async function startNextRoomMatchWithSpectatorMode(spectating) {
     });
     if (updatedRoom) {
       state.joiningRoom = updatedRoom;
-      applyRoomDirectoryRoom(updatedRoom);
+      applyRoomSnapshot(updatedRoom, { source: "spectator-mode-presence" });
     }
   }
   setPlayersForMode("room");
