@@ -28279,7 +28279,7 @@ function startRoomHeartbeat() {
 
 function startRoomEventPolling() {
   stopRoomEventPolling();
-  if (!hasActiveRoomContext() || (state.realtimeRoomReady && !isRoomCriticalSyncState())) {
+  if (!hasActiveRoomContext() || (state.realtimeRoomReady && !isRoomCriticalSyncState() && !isRoomInWaitingSyncState())) {
     return;
   }
   const sessionId = state.roomSessionId;
@@ -28288,7 +28288,7 @@ function startRoomEventPolling() {
     if (
       sessionId !== state.roomSessionId
       || !hasActiveRoomContext()
-      || (state.realtimeRoomReady && !isRoomCriticalSyncState())
+      || (state.realtimeRoomReady && !isRoomCriticalSyncState() && !isRoomInWaitingSyncState())
     ) {
       stopRoomEventPolling();
       return;
@@ -28323,7 +28323,7 @@ function handleRoomRealtimeStatus(status = "") {
     stopRoomFallbackPolling({ keepHeartbeat: true });
     startRoomHeartbeat();
     startRoomEventPolling();
-    requestRoomRealtimeCatchup("subscribed", { force: true, snapshot: false });
+    requestRoomRealtimeCatchup("subscribed", { force: true, snapshot: !isRoomInWaitingSyncState() ? false : true });
     return;
   }
   if (!state.roomRealtimeUnhealthySince) {
@@ -28408,7 +28408,8 @@ function stopRoomFallbackPolling(options = {}) {
 }
 
 function isRoomInWaitingSyncState() {
-  return state.currentRoomStatus === "lobby"
+  return state.currentRoomStatus === "draft"
+    || state.currentRoomStatus === "lobby"
     || state.currentRoomStatus === "complete"
     || !elements.endPanel.classList.contains("hidden");
 }
@@ -28429,9 +28430,9 @@ function isRoomCriticalSyncState() {
 
 function getRoomEventPollIntervalMs() {
   if (isRoomTabBackgrounded()) {
-    return 20000;
+    return isRoomInWaitingSyncState() ? 12000 : 20000;
   }
-  return isRoomInWaitingSyncState() ? 6000 : 3000;
+  return isRoomInWaitingSyncState() ? 1500 : 3000;
 }
 
 function getRoomSnapshotPollIntervalMs() {
@@ -28449,7 +28450,7 @@ function startRoomDirectoryPolling() {
   startRoomHeartbeat();
   if (isRoomRealtimeHealthy()) {
     startRoomEventPolling();
-    requestRoomRealtimeCatchup("start", { force: true, snapshot: false });
+    requestRoomRealtimeCatchup("start", { force: true, snapshot: !isRoomInWaitingSyncState() ? false : true });
     return;
   }
   scheduleRoomFallbackPolling("start");
