@@ -1545,39 +1545,38 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   overflow: hidden !important;
 }
 
-#roomPlayerList,
-#roomLobbyPlayerList {
+.room-preview > .room-player-list {
+  --room-player-list-max-height: none;
+  --room-player-list-glow-gutter: 0.85rem;
   display: grid;
   align-content: start;
+  align-self: stretch;
   grid-auto-rows: max-content;
   overflow-x: hidden;
   overflow-y: auto;
-  min-height: 0;
-  padding-right: 0.25rem;
-  scroll-snap-type: none;
-}
-
-#roomPlayerList {
-  align-self: stretch;
   height: auto;
-  max-height: none;
-}
-
-#roomLobbyPlayerList {
-  max-height: 24rem;
-}
-
-.room-lobby-screen #roomLobbyPlayerList {
-  max-height: 18.7rem;
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding-right: 0.3rem;
+  max-height: var(--room-player-list-max-height);
+  min-height: 0;
+  padding: var(--room-player-list-glow-gutter) calc(var(--room-player-list-glow-gutter) + 0.25rem) var(--room-player-list-glow-gutter) var(--room-player-list-glow-gutter);
+  scroll-snap-type: none;
+  scroll-padding: var(--room-player-list-glow-gutter);
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
 
-#roomPlayerList .room-player-card,
-#roomLobbyPlayerList .room-player-card {
+#roomPlayerList {
+  --room-player-list-max-height: none;
+}
+
+#roomLobbyPlayerList {
+  --room-player-list-max-height: 24rem;
+}
+
+.room-lobby-screen .room-preview > .room-player-list {
+  --room-player-list-max-height: 18.7rem;
+}
+
+.room-preview > .room-player-list .room-player-card {
   align-self: start;
   flex: initial;
   min-height: 5.4rem;

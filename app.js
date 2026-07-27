@@ -29680,6 +29680,24 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
   window.setTimeout(() => cleanup({ propertyName: "height" }), 420);
 }
 
+function getSharedRoomPlayerLists() {
+  return [elements.roomPlayerList, elements.roomLobbyPlayerList].filter(Boolean);
+}
+
+function isSharedRoomPlayerList(target) {
+  return getSharedRoomPlayerLists().includes(target);
+}
+
+function isRoomPlayerListHostProfileVisible(target) {
+  if (target === elements.roomPlayerList) {
+    return Boolean(elements.roomHostProfile && !elements.roomHostProfile.classList.contains("hidden"));
+  }
+  if (target === elements.roomLobbyPlayerList) {
+    return Boolean(elements.lobbyHostProfile && !elements.lobbyHostProfile.classList.contains("hidden"));
+  }
+  return false;
+}
+
 function syncRoomPanelHeights() {
   const roomScreenVisible = elements.roomScreen && !elements.roomScreen.classList.contains("hidden");
   const settingsPanel = elements.roomScreen?.querySelector(".room-settings-panel");
@@ -29729,9 +29747,11 @@ function scheduleRoomPanelHeightSync() {
 }
 
 function renderRoomPlayers() {
-  animateRoomPlayerListChange(elements.roomPlayerList, () => renderRoomPlayerList(elements.roomPlayerList), { animateFromZero: true });
-  animateRoomPlayerListChange(elements.roomLobbyPlayerList, () => renderRoomPlayerList(elements.roomLobbyPlayerList));
-  if (!elements.roomPlayerList?.dataset.roomPlayerExitAnimating && !elements.roomLobbyPlayerList?.dataset.roomPlayerExitAnimating) {
+  const playerLists = getSharedRoomPlayerLists();
+  playerLists.forEach((target) => {
+    animateRoomPlayerListChange(target, () => renderRoomPlayerList(target), { animateFromZero: true });
+  });
+  if (!playerLists.some((target) => target.dataset.roomPlayerExitAnimating)) {
     scheduleRoomPanelHeightSync();
   }
 }
@@ -29847,10 +29867,8 @@ function renderRoomPlayerList(target, options = {}) {
       .filter(Boolean)
   );
   const maxPlayers = getRoomMaxPlayers();
-  const isCreationPanel = target === elements.roomPlayerList;
-  const isLobbyPanel = target === elements.roomLobbyPlayerList;
-  const isRoomSetupList = isCreationPanel || isLobbyPanel;
-  const hostProfileIsShown = isCreationPanel && !state.joiningRoom;
+  const isRoomSetupList = isSharedRoomPlayerList(target);
+  const hideFeaturedHost = isRoomSetupList && isRoomPlayerListHostProfileVisible(target);
   const featuredHostId = (state.roomParticipants.find((participant) => participant.host)?.id
     || state.joiningRoom?.host?.id
     || state.hostedRooms.find((room) => room.code === state.roomSettings.code)?.host?.id
@@ -29890,10 +29908,7 @@ function renderRoomPlayerList(target, options = {}) {
       || (featuredHostId && player.participantId === featuredHostId)
       || (player.participantId === state.clientId && isCurrentHost() && !state.joiningRoom)
       || String(player.connectionStatus || "").toLowerCase() === "host";
-    if (isLobbyPanel && isFeaturedHost) {
-      return false;
-    }
-    return !(hostProfileIsShown && player.owner === "player");
+    return !(hideFeaturedHost && isFeaturedHost);
   });
   const existingParticipantIds = new Set(state.roomParticipants.map((participant) => participant.id));
   const pendingBotPlayers = isRoomSetupList
@@ -29991,7 +30006,7 @@ function renderRoomPlayerList(target, options = {}) {
     card.classList.toggle("room-player-card-pending", botIsJoining || botIsKicking);
     card.classList.toggle("room-player-card-kicking", botIsKicking);
     const isNewActiveParticipant = Boolean(
-      (canAnimateNewRows || (isCreationPanel && hadWaitingCopy))
+      (canAnimateNewRows || (isRoomSetupList && hadWaitingCopy))
       && player.active
       && !player.spectator
       && cardKey
