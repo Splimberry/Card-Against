@@ -29544,6 +29544,7 @@ function renderRoomPlayerList(target, options = {}) {
 
   const renderKey = `${state.roomSettings.code || "draft"}:${target.id || "room-player-list"}:${state.currentRoomStatus || "draft"}`;
   const canAnimateNewRows = target.dataset.roomPlayerListRenderKey === renderKey;
+  const hadWaitingCopy = Boolean(target.querySelector(".room-waiting-copy"));
   const previousCardKeys = new Set(
     [...target.querySelectorAll(".room-player-card[data-room-player-key]")]
       .map((card) => card.dataset.roomPlayerKey)
@@ -29694,7 +29695,7 @@ function renderRoomPlayerList(target, options = {}) {
     card.classList.toggle("room-player-card-pending", botIsJoining || botIsKicking);
     card.classList.toggle("room-player-card-kicking", botIsKicking);
     const isNewActiveParticipant = Boolean(
-      canAnimateNewRows
+      (canAnimateNewRows || (isCreationPanel && hadWaitingCopy))
       && player.active
       && !player.spectator
       && cardKey
@@ -29772,8 +29773,16 @@ function publishRoomModeration(action, participantId, options = {}) {
     : null));
 }
 
+function canModerateCurrentRoom() {
+  return isCurrentHost()
+    && !state.joiningRoom
+    && state.roomSettings.code
+    && state.roomSettings.code !== "CAI-0000"
+    && (isRoomMode() || state.currentRoomStatus === "draft" || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress");
+}
+
 function muteRoomPlayer(owner, participantId = "") {
-  if (!isRoomMode() || !isCurrentHost()) {
+  if (!canModerateCurrentRoom()) {
     return;
   }
 
@@ -29792,7 +29801,7 @@ function muteRoomPlayer(owner, participantId = "") {
 }
 
 function kickRoomPlayer(owner, participantId = "", reason = "kicked by the host") {
-  if (!isRoomMode() || !isCurrentHost()) {
+  if (!canModerateCurrentRoom()) {
     return;
   }
 
@@ -29819,7 +29828,7 @@ function kickRoomPlayer(owner, participantId = "", reason = "kicked by the host"
 }
 
 function banRoomPlayer(owner, reason = "banned by the host", participantId = "") {
-  if (!isRoomMode()) {
+  if (!canModerateCurrentRoom()) {
     return;
   }
 
@@ -29839,13 +29848,11 @@ function banRoomPlayer(owner, reason = "banned by the host", participantId = "")
   }
   state.roomSubmissions[owner] = true;
   addSystemChat(`${player.label} was kicked and cannot rejoin room ${state.roomSettings.code} (${reason}).`);
-  if (isCurrentHost() && state.currentRoomStatus !== "draft") {
-    const resolvedParticipantId = participantId || player.participantId || "";
-    if (resolvedParticipantId) {
-      publishRoomModeration("ban", resolvedParticipantId, { reason });
-    } else {
-      upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
-    }
+  const resolvedParticipantId = participantId || player.participantId || "";
+  if (resolvedParticipantId) {
+    publishRoomModeration("ban", resolvedParticipantId, { reason });
+  } else {
+    upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
   }
   renderRoomPlayers();
   renderScore();

@@ -2592,6 +2592,16 @@ async function handleRoomPresence(req, res, code) {
       sendJson(res, 403, { error: "Only the host can reclaim the host slot." });
       return;
     }
+    const existingParticipantForAuth = existingIndex >= 0 ? room.participants[existingIndex] : null;
+    const reclaimingKickedParticipant = Boolean(
+      existingParticipantForAuth
+      && existingParticipantForAuth.active === false
+      && String(existingParticipantForAuth.status || "") === "kicked"
+      && participant.active !== false
+      && !existingParticipantForAuth.host
+      && !existingParticipantForAuth.bot
+      && String(existingParticipantForAuth.profileUserId || "") === String(participant.profileUserId || "")
+    );
     const isHostIdentity = participant.id === room.host?.id || participant.host;
     if (isHostIdentity && !hostAuthenticated) {
       sendJson(res, 403, { error: "Only the host can update the host participant." });
@@ -2601,7 +2611,7 @@ async function handleRoomPresence(req, res, code) {
       sendJson(res, 403, { error: "Only the host can update bot participants." });
       return;
     }
-    if (existingIndex >= 0 && !reclaimingInactiveProfile && !hostAuthenticated && !hasRoomParticipantAuth(req, room, participant.id, body)) {
+    if (existingIndex >= 0 && !reclaimingInactiveProfile && !reclaimingKickedParticipant && !hostAuthenticated && !hasRoomParticipantAuth(req, room, participant.id, body)) {
       sendJson(res, 403, { error: "Only this participant can update their room state." });
       return;
     }
