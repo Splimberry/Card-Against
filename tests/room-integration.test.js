@@ -1002,6 +1002,79 @@ async function testSpectatorPresenceDoesNotConsumePlayerSlot() {
   assert.equal(payload.room.participants.some((participant) => participant.id === "spectator-client" && participant.spectator), true);
 }
 
+async function testParticipantWithoutActiveDefaultsActiveAndRole() {
+  const code = makeCode(8145);
+  await upsertRoom(makeRoom(code));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "implicit-active-client",
+      name: "Implicit",
+      status: "joined"
+    }
+  });
+  assert.equal(response.status, 200, payload.error);
+  const participant = payload.room.participants.find((entry) => entry.id === "implicit-active-client");
+  assert.equal(participant.active, true);
+  assert.equal(participant.role, "player");
+  assert.equal(payload.room.activePlayers, 2);
+  assert.equal(payload.room.spectators, 0);
+}
+
+async function testSpectatorCannotSubmitGameplayAnswer() {
+  const code = makeCode(8146);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const join = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    participant: {
+      id: "spectator-submit-client",
+      profileUserId: "guest:spectator-submit",
+      name: "Watcher",
+      spectator: true,
+      active: true,
+      status: "spectating"
+    }
+  });
+  assert.equal(join.response.status, 200, join.payload.error);
+  assert.equal(join.payload.participant.role, "spectator");
+
+  const submit = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    participant: {
+      id: "spectator-submit-client",
+      profileUserId: "guest:spectator-submit",
+      name: "Watcher",
+      active: true,
+      status: "submitted",
+      answer: "Answer",
+      submittedRound: 1,
+      submissionMatchId: matchId,
+      remainingTime: 18
+    }
+  });
+  assert.equal(submit.response.status, 403);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const spectator = stored.payload.room.participants.find((entry) => entry.id === "spectator-submit-client");
+  assert.equal(spectator.role, "spectator");
+  assert.equal(spectator.answer, "");
+  assert.equal(spectator.submittedRound, 0);
+  assert.equal(stored.payload.room.activePlayers, 1);
+  assert.equal(stored.payload.room.spectators, 1);
+}
+
 async function testDuplicateHostPresenceRemovesStaleHostRow() {
   const code = makeCode(8114);
   await upsertRoom(makeRoom(code, {
@@ -2047,6 +2120,165 @@ async function testRoomModerationEndpointMutesAndBans() {
   assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated"), true);
 }
 
+async function testKickedParticipantCanRejoinWithSameProfile() {
+  const code = makeCode(8147);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "kickable-client",
+        profileUserId: "guest:kickable-profile",
+        name: "Kickable",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  }));
+
+  const kick = await request("POST", `/api/rooms/${code}/moderation`, {
+    hostParticipantId: "host-client",
+    participantId: "kickable-client",
+    action: "kick"
+  });
+  assert.equal(kick.response.status, 200, kick.payload.error);
+  assert.equal(kick.payload.participant.active, false);
+  assert.equal(kick.payload.participant.status, "kicked");
+
+  const rejoin = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "kickable-rejoin-client",
+      profileUserId: "guest:kickable-profile",
+      name: "Kickable",
+      active: true,
+      status: "joined"
+    }
+  });
+  assert.equal(rejoin.response.status, 200, rejoin.payload.error);
+  assert.equal(rejoin.payload.room.participants.some((participant) => participant.id === "kickable-client"), false);
+  const participant = rejoin.payload.room.participants.find((entry) => entry.id === "kickable-rejoin-client");
+  assert.equal(participant.active, true);
+  assert.equal(participant.role, "player");
+  assert.equal(rejoin.payload.room.activePlayers, 2);
+}
+
+async function testBannedParticipantProfileCannotRejoinWithNewId() {
+  const code = makeCode(8148);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "banned-client",
+        profileUserId: "guest:banned-profile",
+        name: "Banned",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  }));
+
+  const ban = await request("POST", `/api/rooms/${code}/moderation`, {
+    hostParticipantId: "host-client",
+    participantId: "banned-client",
+    action: "ban"
+  });
+  assert.equal(ban.response.status, 200, ban.payload.error);
+  assert.equal(ban.payload.banned.includes("guest:banned-profile"), true);
+
+  const rejoin = await request("POST", `/api/rooms/${code}/presence`, {
+    participant: {
+      id: "banned-rejoin-client",
+      profileUserId: "guest:banned-profile",
+      name: "Banned",
+      active: true,
+      status: "joined"
+    }
+  });
+  assert.equal(rejoin.response.status, 403);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.participants.some((participant) => participant.id === "banned-rejoin-client"), false);
+  assert.equal(stored.payload.room.banned.includes("guest:banned-profile"), true);
+}
+
+async function testRoomPresenceRejectsBotWhenRoomFull() {
+  const code = makeCode(8149);
+  await upsertRoom(makeRoom(code, {
+    settings: {
+      ...makeRoom(code).settings,
+      maxPlayers: 2
+    },
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "second-client",
+        profileUserId: "guest:second-client",
+        name: "Second",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  }));
+
+  const added = await request("POST", `/api/rooms/${code}/presence`, {
+    hostParticipantId: "host-client",
+    compact: true,
+    participant: {
+      id: "overfill-bot-client",
+      name: "Extra Bot",
+      role: "bot",
+      active: true,
+      status: "bot"
+    }
+  });
+  assert.equal(added.response.status, 409);
+  assert.match(added.payload.error, /full/i);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.participants.some((participant) => participant.id === "overfill-bot-client"), false);
+  assert.equal(stored.payload.room.activePlayers, 2);
+}
+
 async function testRoomModerationEndpointKicksBot() {
   const code = makeCode(8116);
   await upsertRoom(makeRoom(code, {
@@ -2658,6 +2890,8 @@ async function main() {
   await testRoomChatPreservesMessageIds();
   await testCompactRoomDeltasAvoidFullRoomPayloads();
   await testSpectatorPresenceDoesNotConsumePlayerSlot();
+  await testParticipantWithoutActiveDefaultsActiveAndRole();
+  await testSpectatorCannotSubmitGameplayAnswer();
   await testDuplicateHostPresenceRemovesStaleHostRow();
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
@@ -2680,6 +2914,9 @@ async function main() {
   await testRoomPowerStateCanClearPlayedHistory();
   await testRoomRoundSkipEndpointStampsEvent();
   await testRoomModerationEndpointMutesAndBans();
+  await testKickedParticipantCanRejoinWithSameProfile();
+  await testBannedParticipantProfileCannotRejoinWithNewId();
+  await testRoomPresenceRejectsBotWhenRoomFull();
   await testRoomModerationEndpointKicksBot();
   await testHostCloseEndpointDeletesRoom();
   await testUserInventoryOpsAreIdempotent();

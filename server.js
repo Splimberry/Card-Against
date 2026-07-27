@@ -605,9 +605,10 @@ async function handleAdminRooms(req, res) {
         ? room.participants.map((participant) => ({
           id: participant.id,
           name: participant.name,
+          role: normalizeParticipantRole(participant),
           host: Boolean(participant.host),
           spectator: Boolean(participant.spectator),
-          active: Boolean(participant.active),
+          active: participant.active !== false,
           muted: Boolean(participant.muted),
           status: participant.status,
           bot: Boolean(participant.bot)
@@ -2390,12 +2391,15 @@ function createRoomEventResponse(room, type = "room_updated", extra = {}) {
 
 function hasActiveRealPlayers(room) {
   return Array.isArray(room?.participants)
-    && room.participants.some((participant) => participant.active !== false && !participant.bot && !participant.spectator);
+    && room.participants.some((participant) => {
+      const role = normalizeParticipantRole(participant);
+      return participant.active !== false && role !== "bot" && role !== "spectator";
+    });
 }
 
 function getRoomActivePlayerCount(room) {
   if (Array.isArray(room?.participants) && room.participants.length) {
-    return room.participants.filter((participant) => participant.active !== false && !participant.spectator).length;
+    return room.participants.filter(isGameplayParticipant).length;
   }
   return Number(room?.activePlayers || 0);
 }
@@ -2416,7 +2420,7 @@ async function closeStoredRoom(code, reason) {
 
 function getRoomHostParticipant(room) {
   return Array.isArray(room?.participants)
-    ? room.participants.find((participant) => participant.id === room.host?.id || participant.host) || null
+    ? room.participants.find((participant) => participant.id === room.host?.id || normalizeParticipantRole(participant) === "host") || null
     : null;
 }
 
@@ -2447,9 +2451,7 @@ function getHostTransferCandidate(room) {
     .filter(({ participant }) => (
       participant
       && participant.id !== currentHostId
-      && !participant.host
-      && !participant.bot
-      && !participant.spectator
+      && normalizeParticipantRole(participant) === "player"
       && participant.active !== false
     ))
     .sort((a, b) => getParticipantJoinOrder(a.participant, a.index) - getParticipantJoinOrder(b.participant, b.index) || a.index - b.index)[0]?.participant || null;
@@ -2483,8 +2485,16 @@ function transferRoomHostToOldestPlayer(room, reason = "host-transfer") {
     return null;
   }
   room.participants.forEach((participant) => {
-    participant.host = participant.id === nextHost.id;
-    if (participant.host) {
+    const becomesHost = participant.id === nextHost.id;
+    participant.host = becomesHost;
+    participant.role = becomesHost
+      ? "host"
+      : participant.bot
+        ? "bot"
+        : participant.spectator
+          ? "spectator"
+          : "player";
+    if (becomesHost) {
       participant.spectator = false;
       participant.bot = false;
       participant.active = true;
@@ -2561,8 +2571,8 @@ function pruneExpiredDisconnectedParticipants(room, now = Date.now()) {
   const removed = [];
   room.participants = room.participants.filter((participant) => {
     if (
-      participant.host
-      || participant.bot
+      normalizeParticipantRole(participant) === "host"
+      || normalizeParticipantRole(participant) === "bot"
       || participant.active !== false
       || !participant.disconnectedAt
       || now - Number(participant.disconnectedAt) < participantReconnectGraceMs
@@ -2626,10 +2636,10 @@ async function handleRoomPresence(req, res, code) {
     const rawParticipant = body.participant || {};
     const participant = normalizeParticipant(rawParticipant);
     let existingIndex = room.participants.findIndex((entry) => entry.id === participant.id);
-    const sameProfileIndex = participant.profileUserId && !participant.bot
+    const sameProfileIndex = participant.profileUserId && normalizeParticipantRole(participant) !== "bot"
       ? room.participants.findIndex((entry) => (
         entry.id !== participant.id
-        && !entry.bot
+        && normalizeParticipantRole(entry) !== "bot"
         && String(entry.profileUserId || "") === participant.profileUserId
       ))
       : -1;
@@ -2647,7 +2657,7 @@ async function handleRoomPresence(req, res, code) {
       existingIndex = sameProfileIndex;
     }
     const hostAuthenticated = hasRoomHostAuth(req, room, body);
-    if (reclaimingInactiveProfile && sameProfileParticipant?.host && (!participant.host || !hostAuthenticated)) {
+    if (reclaimingInactiveProfile && normalizeParticipantRole(sameProfileParticipant) === "host" && (normalizeParticipantRole(participant) !== "host" || !hostAuthenticated)) {
       sendJson(res, 403, { error: "Only the host can reclaim the host slot." });
       return;
     }
@@ -2657,16 +2667,15 @@ async function handleRoomPresence(req, res, code) {
       && existingParticipantForAuth.active === false
       && String(existingParticipantForAuth.status || "") === "kicked"
       && participant.active !== false
-      && !existingParticipantForAuth.host
-      && !existingParticipantForAuth.bot
+      && normalizeParticipantRole(existingParticipantForAuth) === "player"
       && String(existingParticipantForAuth.profileUserId || "") === String(participant.profileUserId || "")
     );
-    const isHostIdentity = participant.id === room.host?.id || participant.host;
+    const isHostIdentity = participant.id === room.host?.id || normalizeParticipantRole(participant) === "host";
     if (isHostIdentity && !hostAuthenticated) {
       sendJson(res, 403, { error: "Only the host can update the host participant." });
       return;
     }
-    if (participant.bot && !hostAuthenticated) {
+    if (normalizeParticipantRole(participant) === "bot" && !hostAuthenticated) {
       sendJson(res, 403, { error: "Only the host can update bot participants." });
       return;
     }
@@ -2674,7 +2683,7 @@ async function handleRoomPresence(req, res, code) {
       sendJson(res, 403, { error: "Only this participant can update their room state." });
       return;
     }
-    if (room.banned?.includes(participant.id) || room.banned?.includes(participant.name)) {
+    if (room.banned?.includes(participant.id) || room.banned?.includes(participant.name) || room.banned?.includes(participant.profileUserId)) {
       sendJson(res, 403, { error: "This participant is banned from the room." });
       return;
     }
@@ -2685,8 +2694,8 @@ async function handleRoomPresence(req, res, code) {
         return;
       }
     }
-    if (existingIndex < 0 && !participant.spectator && !participant.host) {
-      const activePlayers = room.participants.filter((entry) => entry.active !== false && !entry.spectator).length;
+    if (existingIndex < 0 && isGameplayParticipant(participant)) {
+      const activePlayers = room.participants.filter(isGameplayParticipant).length;
       if (activePlayers >= room.settings.maxPlayers) {
         sendJson(res, 409, { error: "Room is full." });
         return;
@@ -2699,12 +2708,28 @@ async function handleRoomPresence(req, res, code) {
     const hasSubmissionUpdate = Object.hasOwn(rawParticipant, "answer")
       || Object.hasOwn(rawParticipant, "submittedRound")
       || Object.hasOwn(rawParticipant, "remainingTime");
+    const existingParticipant = existingIndex >= 0 ? room.participants[existingIndex] : null;
+    if (
+      normalizeParticipantRole(existingParticipant) === "spectator"
+      && room.status === "in-progress"
+      && !hostAuthenticated
+      && normalizeParticipantRole(participant) !== "spectator"
+    ) {
+      participant.role = "spectator";
+      participant.host = false;
+      participant.bot = false;
+      participant.spectator = true;
+      participant.status = String(existingParticipant.status || getParticipantDefaultStatus("spectator")).slice(0, 32);
+    }
+    if (hasSubmissionUpdate && (normalizeParticipantRole(participant) === "spectator" || normalizeParticipantRole(existingParticipant) === "spectator")) {
+      sendJson(res, 403, { error: "Spectators cannot submit gameplay answers." });
+      return;
+    }
     const acceptsSubmissionUpdate = !hasSubmissionUpdate
       || (
         (!currentMatchId || (submissionMatchId && submissionMatchId === currentMatchId))
         && (!currentRound || (submissionRound && submissionRound === currentRound))
       );
-    const existingParticipant = existingIndex >= 0 ? room.participants[existingIndex] : null;
     const wasActive = existingParticipant ? existingParticipant.active !== false : false;
     const isNowActive = participant.active !== false;
     const staleDisconnectForNewConnection = Boolean(
@@ -2728,9 +2753,14 @@ async function handleRoomPresence(req, res, code) {
       return;
     }
     if (existingIndex >= 0) {
+      const nextRole = participant.role || normalizeParticipantRole(participant);
       room.participants[existingIndex] = {
         ...existingParticipant,
         ...participant,
+        role: nextRole,
+        host: nextRole === "host",
+        bot: nextRole === "bot",
+        spectator: nextRole === "spectator",
         joinedAt: existingParticipant.joinedAt || participant.joinedAt || existingParticipant.lastConnectedAt || Date.now(),
         disconnectedAt: isNowActive ? 0 : Date.now(),
         lastConnectedAt: isNowActive ? Date.now() : existingParticipant.lastConnectedAt || 0,
@@ -2746,7 +2776,7 @@ async function handleRoomPresence(req, res, code) {
         participant.submittedRound = 0;
         participant.submissionMatchId = "";
         participant.remainingTime = 0;
-        participant.status = participant.host ? "host" : participant.spectator ? "spectating" : participant.bot ? "bot" : "joined";
+        participant.status = getParticipantDefaultStatus(participant.role);
       }
       participant.disconnectedAt = participant.active === false ? Date.now() : 0;
       participant.lastConnectedAt = participant.active === false ? 0 : Date.now();
@@ -2754,7 +2784,7 @@ async function handleRoomPresence(req, res, code) {
       room.participants.push(participant);
     }
 
-    if (participant.host) {
+    if (normalizeParticipantRole(participant) === "host") {
       room.host = {
         ...(room.host || {}),
         id: participant.id,
@@ -2770,7 +2800,7 @@ async function handleRoomPresence(req, res, code) {
     if (storedParticipant.host || storedParticipant.id === room.host?.id) {
       room.hostExitPendingAt = storedParticipant.active === false ? Date.now() : 0;
     }
-    if (!participant.bot) {
+    if (normalizeParticipantRole(participant) !== "bot") {
       ensureRoomParticipantToken(room, participant.id);
     }
     finalizeRoom(room);
@@ -2792,6 +2822,7 @@ async function handleRoomPresence(req, res, code) {
     const eventPayload = {
       participantId: finalParticipant.id,
       participantName: finalParticipant.name || "A player",
+      role: normalizeParticipantRole(finalParticipant),
       host: Boolean(finalParticipant.host),
       spectator: Boolean(finalParticipant.spectator),
       status: finalParticipant.status,
@@ -2805,7 +2836,7 @@ async function handleRoomPresence(req, res, code) {
     }
     stampRoomEvent(room, eventType, eventPayload);
     const storedRoom = await backendStore.upsertRoom(room);
-    const participantCookie = !participant.bot ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
+    const participantCookie = normalizeParticipantRole(participant) !== "bot" ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
     if (body.compact) {
       const storedParticipant = storedRoom.participants.find((entry) => entry.id === participant.id) || participant;
       sendJson(res, 200, createRoomEventResponse(storedRoom, eventType, {
@@ -2857,7 +2888,7 @@ async function handleRoomSettings(req, res, code) {
         specialBadges: normalizeSpecialBadges(body.host.specialBadges || room.host?.specialBadges),
         cardCustomization: normalizeCardCustomization(body.host.cardCustomization || room.host?.cardCustomization)
       };
-      const hostParticipant = room.participants.find((participant) => participant.id === room.host.id || participant.host);
+      const hostParticipant = room.participants.find((participant) => participant.id === room.host.id || normalizeParticipantRole(participant) === "host");
       if (hostParticipant) {
         hostParticipant.name = room.host.name;
         hostParticipant.profileUserId = room.host.profileUserId || hostParticipant.profileUserId || hostParticipant.id;
@@ -2916,6 +2947,7 @@ async function handleRoomHeartbeat(req, res, code) {
         stampRoomEvent(room, "participant_reconnected", {
           participantId: participant.id,
           participantName: participant.name || "Host",
+          role: normalizeParticipantRole(participant),
           host: Boolean(participant.host),
           spectator: Boolean(participant.spectator),
           status: participant.status,
@@ -3343,7 +3375,7 @@ async function handleRoomRoundSkip(req, res, code) {
     const submissions = normalizeRoundSkipSubmissions(body.submissions);
     submissions.forEach((submission) => {
       const participant = room.participants.find((entry) => entry.id === submission.participantId);
-      if (!participant || participant.active === false || participant.spectator) {
+      if (!participant || !isGameplayParticipant(participant)) {
         return;
       }
       participant.answer = submission.answer;
@@ -3401,7 +3433,7 @@ async function handleRoomEvents(req, url, res, code) {
 
 function isHostParticipant(room, participantId) {
   const id = String(participantId || "").slice(0, 80);
-  return Boolean(id && (id === room.host?.id || room.participants.some((participant) => participant.id === id && participant.host)));
+  return Boolean(id && (id === room.host?.id || room.participants.some((participant) => participant.id === id && normalizeParticipantRole(participant) === "host")));
 }
 
 async function handleRoomModeration(req, res, code) {
@@ -3422,7 +3454,7 @@ async function handleRoomModeration(req, res, code) {
     const action = String(body.action || "").slice(0, 32);
     const participantId = String(body.participantId || "").slice(0, 80);
     const participant = room.participants.find((entry) => entry.id === participantId);
-    if (!participant || participant.host || participant.id === room.host?.id) {
+    if (!participant || normalizeParticipantRole(participant) === "host" || participant.id === room.host?.id) {
       sendJson(res, 404, { error: "Participant not found." });
       return;
     }
@@ -3432,14 +3464,14 @@ async function handleRoomModeration(req, res, code) {
       participant.muted = muted;
       participant.status = muted ? "muted" : String(participant.status || "joined").slice(0, 32);
     } else if (action === "kick" || action === "ban") {
-      const shouldRemoveParticipant = action === "kick" && participant.bot;
+      const shouldRemoveParticipant = action === "kick" && normalizeParticipantRole(participant) === "bot";
       participant.active = false;
       participant.status = action === "ban" ? "banned" : "kicked";
       if (shouldRemoveParticipant) {
         room.participants = room.participants.filter((entry) => entry.id !== participantId);
       }
       if (action === "ban") {
-        room.banned = [...new Set([...(Array.isArray(room.banned) ? room.banned : []), participant.id, participant.name].filter(Boolean))];
+        room.banned = [...new Set([...(Array.isArray(room.banned) ? room.banned : []), participant.id, participant.name, participant.profileUserId].filter(Boolean))];
       }
     } else {
       sendJson(res, 400, { error: "Unknown moderation action." });
@@ -3513,8 +3545,8 @@ function normalizeRoom(room) {
     status: ["draft", "lobby", "in-progress", "complete"].includes(room.status) ? room.status : "lobby",
     settings: normalizeRoomSettings(settings, code),
     host: {
-      id: String(host.id || participants.find((entry) => entry.host)?.id || "host").slice(0, 80),
-      profileUserId: String(host.profileUserId || host.userId || participants.find((entry) => entry.host)?.profileUserId || host.id || "host").slice(0, 140),
+      id: String(host.id || participants.find((entry) => normalizeParticipantRole(entry) === "host")?.id || "host").slice(0, 80),
+      profileUserId: String(host.profileUserId || host.userId || participants.find((entry) => normalizeParticipantRole(entry) === "host")?.profileUserId || host.id || "host").slice(0, 140),
       name: String(host.name || "Host").slice(0, 24),
       avatar: String(host.avatar || "").slice(0, 60000),
       equippedTitleId: String(host.equippedTitleId || "").slice(0, 80),
@@ -3557,14 +3589,52 @@ function normalizeRoomSettings(settings = {}, code = "") {
   };
 }
 
+function normalizeParticipantRole(participant = {}) {
+  const source = participant && typeof participant === "object" ? participant : {};
+  const role = String(source.role || "").trim().toLowerCase();
+  if (role === "host" || source.host) {
+    return "host";
+  }
+  if (role === "bot" || source.bot) {
+    return "bot";
+  }
+  if (role === "spectator" || source.spectator) {
+    return "spectator";
+  }
+  return "player";
+}
+
+function isGameplayParticipant(participant = {}) {
+  return participant?.active !== false && normalizeParticipantRole(participant) !== "spectator";
+}
+
+function isSpectatorParticipant(participant = {}) {
+  return participant?.active !== false && normalizeParticipantRole(participant) === "spectator";
+}
+
+function getParticipantDefaultStatus(role = "player") {
+  if (role === "host") {
+    return "host";
+  }
+  if (role === "bot") {
+    return "bot";
+  }
+  if (role === "spectator") {
+    return "spectating";
+  }
+  return "joined";
+}
+
 function normalizeParticipant(participant) {
   const id = String(participant.id || "").slice(0, 80);
   if (!id) {
     throw new Error("Missing participant id.");
   }
+  const role = normalizeParticipantRole(participant);
 
   return {
     id,
+    userId: String(participant.userId || participant.profileUserId || id).slice(0, 140),
     profileUserId: String(participant.profileUserId || participant.userId || id).slice(0, 140),
     connectionId: String(participant.connectionId || "").slice(0, 120),
     name: String(participant.name || "Guest").slice(0, 24),
@@ -3572,12 +3642,13 @@ function normalizeParticipant(participant) {
     equippedTitleId: String(participant.equippedTitleId || "").slice(0, 80),
     specialBadges: normalizeSpecialBadges(participant.specialBadges),
     cardCustomization: normalizeCardCustomization(participant.cardCustomization),
-    host: Boolean(participant.host),
-    spectator: Boolean(participant.spectator),
-    bot: Boolean(participant.bot),
+    role,
+    host: role === "host",
+    spectator: role === "spectator",
+    bot: role === "bot",
     active: participant.active !== false,
     muted: Boolean(participant.muted),
-    status: String(participant.status || (participant.bot ? "bot" : participant.spectator ? "spectating" : "ready")).slice(0, 32),
+    status: String(participant.status || getParticipantDefaultStatus(role)).slice(0, 32),
     answer: String(participant.answer || "").slice(0, 500),
     submittedRound: clampServerNumber(participant.submittedRound, 0, 100, 0),
     submissionMatchId: String(participant.submissionMatchId || "").slice(0, 80),
@@ -3963,28 +4034,41 @@ function normalizeRoomAbilityEffects(effects) {
 }
 
 function finalizeRoom(room) {
+  room.banned = Array.isArray(room.banned) ? room.banned.map((entry) => String(entry).slice(0, 140)).filter(Boolean) : [];
   const participantById = new Map();
   room.participants.forEach((participant) => {
-    if (!room.banned.includes(participant.id) && !room.banned.includes(participant.name)) {
-      participantById.set(participant.id, participant);
+    const role = normalizeParticipantRole(participant);
+    const normalizedParticipant = {
+      ...participant,
+      role,
+      userId: participant.userId || participant.profileUserId || participant.id,
+      host: role === "host",
+      bot: role === "bot",
+      spectator: role === "spectator",
+      active: participant.active !== false
+    };
+    if (!room.banned.includes(normalizedParticipant.id) && !room.banned.includes(normalizedParticipant.name) && !room.banned.includes(normalizedParticipant.profileUserId)) {
+      participantById.set(normalizedParticipant.id, normalizedParticipant);
     }
   });
   room.participants = [...participantById.values()];
-  const activeHosts = room.participants.filter((participant) => participant.host && participant.active !== false && !participant.spectator);
+  const activeHosts = room.participants.filter((participant) => normalizeParticipantRole(participant) === "host" && participant.active !== false);
   if (activeHosts.length > 1) {
     const preferredHost = activeHosts.find((participant) => participant.id === room.host?.id) || activeHosts.at(-1);
     const staleHostIds = new Set(activeHosts.filter((participant) => participant.id !== preferredHost.id).map((participant) => participant.id));
     room.participants = room.participants.filter((participant) => !staleHostIds.has(participant.id));
   }
-  if (!room.participants.some((participant) => participant.host)) {
+  if (!room.participants.some((participant) => normalizeParticipantRole(participant) === "host")) {
     const repairedHost = {
       id: room.host.id,
+      userId: room.host.profileUserId || room.host.id,
       profileUserId: room.host.profileUserId || room.host.id,
       name: room.host.name,
       avatar: room.host.avatar,
       equippedTitleId: room.host.equippedTitleId || "",
       specialBadges: normalizeSpecialBadges(room.host.specialBadges),
       cardCustomization: room.host.cardCustomization || null,
+      role: "host",
       host: true,
       spectator: false,
       bot: false,
@@ -4009,8 +4093,8 @@ function finalizeRoom(room) {
       room.participants.unshift(repairedHost);
     }
   }
-  room.activePlayers = room.participants.filter((participant) => participant.active !== false && !participant.spectator).length;
-  room.spectators = room.participants.filter((participant) => participant.active !== false && participant.spectator).length;
+  room.activePlayers = room.participants.filter(isGameplayParticipant).length;
+  room.spectators = room.participants.filter(isSpectatorParticipant).length;
   pruneRoomParticipantTokens(room);
 }
 
