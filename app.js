@@ -10390,7 +10390,7 @@ function applyLocalRoomSubmission() {
   if (!owner || !getActiveOwners().includes(owner)) {
     return false;
   }
-  state.roomSubmissions[owner] = true;
+  state.roomSubmissions[player.owner] = true;
   state.answerRemainingTimes[owner] = Math.max(0, Number(localSubmission.remainingTime) || 0);
   if (localSubmission.answer) {
     lockRoundAnswer(owner, localSubmission.answer);
@@ -29252,14 +29252,14 @@ async function leaveCurrentRoom() {
   playSound("click");
 }
 
-function animateRoomPlayerListChange(target, renderList) {
+function animateRoomPlayerListChange(target, renderList, options = {}) {
   if (!target || typeof renderList !== "function") {
     return;
   }
   const reduceMotion = shouldReduceMotion();
   const panelIsVisible = target.isConnected && !target.closest(".hidden");
   const previousHeight = target.getBoundingClientRect().height;
-  if (reduceMotion || !panelIsVisible || previousHeight <= 0) {
+  if (reduceMotion || !panelIsVisible || (previousHeight <= 0 && !options.animateFromZero)) {
     renderList();
     return;
   }
@@ -29361,15 +29361,50 @@ function scheduleRoomPanelHeightSync() {
 }
 
 function renderRoomPlayers() {
-  animateRoomPlayerListChange(elements.roomPlayerList, () => renderRoomPlayerList(elements.roomPlayerList));
+  animateRoomPlayerListChange(elements.roomPlayerList, () => renderRoomPlayerList(elements.roomPlayerList), { animateFromZero: true });
   animateRoomPlayerListChange(elements.roomLobbyPlayerList, () => renderRoomPlayerList(elements.roomLobbyPlayerList));
   if (!elements.roomPlayerList?.dataset.roomPlayerExitAnimating && !elements.roomLobbyPlayerList?.dataset.roomPlayerExitAnimating) {
     scheduleRoomPanelHeightSync();
   }
 }
 
-function createRoomModerationControls(owner, context = "list") {
-  const player = getPlayer(owner);
+function getRoomPlayerForModeration(owner = "", participantId = "") {
+  const existing = getPlayer(owner)
+    || (participantId ? state.players.find((player) => player.participantId === participantId) : null);
+  if (existing) {
+    return existing;
+  }
+  const participantIndex = state.roomParticipants.findIndex((participant, index) => {
+    if (participantId && participant.id === participantId) {
+      return true;
+    }
+    return getRoomOwnerForParticipant(participant, index) === owner;
+  });
+  if (participantIndex < 0) {
+    return null;
+  }
+  const participant = state.roomParticipants[participantIndex];
+  const resolvedOwner = getRoomOwnerForParticipant(participant, participantIndex);
+  return createPlayer(resolvedOwner, participant.name, {
+    avatar: participant.avatar,
+    equippedTitleId: participant.equippedTitleId || "",
+    specialBadges: normalizeSpecialBadges(participant.specialBadges || []),
+    cardCustomization: participant.cardCustomization || null,
+    participantId: participant.id,
+    profileUserId: participant.profileUserId || "",
+    connectionId: participant.connectionId || "",
+    host: participant.host,
+    spectator: participant.spectator,
+    bot: Boolean(participant.bot),
+    type: participant.bot ? "bot" : participant.spectator ? "spectator" : "human",
+    active: participant.active !== false,
+    muted: Boolean(participant.muted),
+    connectionStatus: participant.status || (participant.host ? "host" : participant.bot ? "bot" : participant.spectator ? "spectating" : "joined")
+  });
+}
+
+function createRoomModerationControls(owner, context = "list", sourcePlayer = null) {
+  const player = sourcePlayer || getRoomPlayerForModeration(owner);
   const controls = document.createElement("div");
   controls.className = context === "chat" ? "chat-options" : "room-player-controls";
   if (player?.active && (player.bot || player.type === "bot") && canKickRoomBot(player.owner, player.participantId)) {
@@ -29379,6 +29414,7 @@ function createRoomModerationControls(owner, context = "list") {
     kickButton.className = "mini-button danger-button";
     kickButton.dataset.action = "kick-bot";
     kickButton.dataset.owner = player.owner;
+    kickButton.dataset.participantId = player.participantId || "";
     kickButton.disabled = kickPending;
     kickButton.textContent = kickPending ? "Kicking" : "Kick";
     controls.appendChild(kickButton);
@@ -29394,14 +29430,23 @@ function createRoomModerationControls(owner, context = "list") {
     muteButton.className = "mini-button";
     muteButton.dataset.action = "mute";
     muteButton.dataset.owner = player.owner;
+    muteButton.dataset.participantId = player.participantId || "";
     muteButton.textContent = player.muted ? "Unmute" : "Mute";
+    const kickButton = document.createElement("button");
+    kickButton.type = "button";
+    kickButton.className = "mini-button danger-button";
+    kickButton.dataset.action = "kick-player";
+    kickButton.dataset.owner = player.owner;
+    kickButton.dataset.participantId = player.participantId || "";
+    kickButton.textContent = "Kick";
     const banButton = document.createElement("button");
     banButton.type = "button";
     banButton.className = "mini-button danger-button";
     banButton.dataset.action = "ban";
     banButton.dataset.owner = player.owner;
+    banButton.dataset.participantId = player.participantId || "";
     banButton.textContent = "Ban";
-    controls.append(muteButton, banButton);
+    controls.append(muteButton, kickButton, banButton);
     return controls;
   }
 
@@ -29410,6 +29455,7 @@ function createRoomModerationControls(owner, context = "list") {
   voteButton.className = "mini-button";
   voteButton.dataset.action = "vote-ban";
   voteButton.dataset.owner = player.owner;
+  voteButton.dataset.participantId = player.participantId || "";
   voteButton.textContent = "Vote ban";
   controls.appendChild(voteButton);
   return controls;
@@ -29608,8 +29654,8 @@ function renderRoomPlayerList(target, options = {}) {
     }
     card.append(avatar, name, status);
 
-    if (state.mode === "room" && player.owner !== state.currentOwner && player.active) {
-      const controls = createRoomModerationControls(player.owner);
+    if ((state.mode === "room" || isRoomSetupList) && player.owner !== state.currentOwner && player.active) {
+      const controls = createRoomModerationControls(player.owner, "list", player);
       if (controls.childElementCount) {
         card.appendChild(controls);
       }
@@ -29654,12 +29700,12 @@ function publishRoomModeration(action, participantId, options = {}) {
     : null));
 }
 
-function muteRoomPlayer(owner) {
+function muteRoomPlayer(owner, participantId = "") {
   if (!isRoomMode() || !isCurrentHost()) {
     return;
   }
 
-  const player = getPlayer(owner);
+  const player = getRoomPlayerForModeration(owner, participantId);
   if (!player || player.owner === state.currentOwner) {
     return;
   }
@@ -29673,12 +29719,39 @@ function muteRoomPlayer(owner) {
   renderRoomPlayers();
 }
 
-function banRoomPlayer(owner, reason = "banned by the host") {
+function kickRoomPlayer(owner, participantId = "", reason = "kicked by the host") {
+  if (!isRoomMode() || !isCurrentHost()) {
+    return;
+  }
+
+  const player = getRoomPlayerForModeration(owner, participantId);
+  if (!player || player.owner === state.currentOwner || player.host) {
+    return;
+  }
+
+  const resolvedParticipantId = participantId || player.participantId || "";
+  removeRoomParticipantLocally(resolvedParticipantId, {
+    status: "kicked",
+    updatedAt: Date.now()
+  });
+  state.roomSubmissions[player.owner] = true;
+  addSystemChat(`${player.label} was kicked from the room. They can rejoin later.`);
+  if (resolvedParticipantId) {
+    void publishRoomModeration("kick", resolvedParticipantId, { reason });
+  } else {
+    upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  }
+  renderRoomPlayers();
+  renderScore();
+  renderSubmissionStatus();
+}
+
+function banRoomPlayer(owner, reason = "banned by the host", participantId = "") {
   if (!isRoomMode()) {
     return;
   }
 
-  const player = getPlayer(owner);
+  const player = getRoomPlayerForModeration(owner, participantId);
   if (!player || player.owner === "player") {
     return;
   }
@@ -29695,8 +29768,9 @@ function banRoomPlayer(owner, reason = "banned by the host") {
   state.roomSubmissions[owner] = true;
   addSystemChat(`${player.label} was kicked and cannot rejoin room ${state.roomSettings.code} (${reason}).`);
   if (isCurrentHost() && state.currentRoomStatus !== "draft") {
-    if (player.participantId) {
-      publishRoomModeration("ban", player.participantId, { reason });
+    const resolvedParticipantId = participantId || player.participantId || "";
+    if (resolvedParticipantId) {
+      publishRoomModeration("ban", resolvedParticipantId, { reason });
     } else {
       upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
     }
@@ -29731,13 +29805,17 @@ function voteBanRoomPlayer(owner) {
   }
 }
 
-function handleRoomPlayerAction(action, owner) {
+function handleRoomPlayerAction(action, owner, participantId = "") {
   if (action === "mute") {
-    muteRoomPlayer(owner);
+    muteRoomPlayer(owner, participantId);
+    return;
+  }
+  if (action === "kick-player") {
+    kickRoomPlayer(owner, participantId);
     return;
   }
   if (action === "ban") {
-    banRoomPlayer(owner);
+    banRoomPlayer(owner, "banned by the host", participantId);
     return;
   }
   if (action === "vote-ban") {
@@ -29745,7 +29823,7 @@ function handleRoomPlayerAction(action, owner) {
     return;
   }
   if (action === "kick-bot") {
-    kickRoomBot(owner);
+    kickRoomBot(owner, participantId);
   }
 }
 
@@ -32811,7 +32889,7 @@ function handleModerationClick(event) {
   if (!button) {
     return false;
   }
-  handleRoomPlayerAction(button.dataset.action, button.dataset.owner);
+  handleRoomPlayerAction(button.dataset.action, button.dataset.owner, button.dataset.participantId || "");
   return true;
 }
 
