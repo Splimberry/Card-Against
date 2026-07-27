@@ -2882,6 +2882,7 @@ const state = {
   error404Schedule: [],
   currentRoomStatus: "draft",
   publishedDraftRoomCode: "",
+  roomMatchStartGuardUntil: 0,
   roomClosedNotice: "",
   isSpectator: false,
   currentOwner: "player",
@@ -26364,6 +26365,7 @@ function clearLocalRoomState(options = {}) {
   state.publishedDraftRoomCode = "";
   state.roomEventRevision = 0;
   state.roomConnectionNoticeKeys = new Set();
+  state.roomMatchStartGuardUntil = 0;
   resetChatCooldown();
   stopRoomHeartbeat();
   stopRoomEventPolling();
@@ -26923,6 +26925,9 @@ function upsertHostedRoom(status = "lobby") {
   }
   publishRoomDirectory(room).then((serverRoom) => {
     if (serverRoom && serverRoom.code === room.code) {
+      if (shouldIgnoreStaleLobbySnapshot(serverRoom)) {
+        return;
+      }
       mergeHostedRoom(serverRoom);
       if (state.roomSettings.code === serverRoom.code) {
         applyRoomDirectoryRoom(serverRoom);
@@ -26930,6 +26935,23 @@ function upsertHostedRoom(status = "lobby") {
     }
   });
   return room;
+}
+
+function shouldIgnoreStaleLobbySnapshot(room = {}) {
+  const code = String(room.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code) {
+    return false;
+  }
+  if (String(room.status || "").toLowerCase() !== "lobby" || room.game) {
+    return false;
+  }
+  return Boolean(
+    Date.now() < (Number(state.roomMatchStartGuardUntil) || 0)
+    && state.currentRoomStatus === "in-progress"
+    && !state.matchEnded
+    && !state.roomRoundResult
+    && (getCurrentRoomMatchId() || !elements.gameStage.classList.contains("hidden"))
+  );
 }
 
 function mergeHostedRoom(room) {
@@ -27385,6 +27407,9 @@ function addRoomConnectionNoticesFromSnapshot(previousParticipants = [], nextPar
 
 function applyRoomDirectoryRoom(room) {
   if (!room || room.code !== state.roomSettings.code) {
+    return;
+  }
+  if (shouldIgnoreStaleLobbySnapshot(room)) {
     return;
   }
   if (isStaleActiveRoomRealtimePayload({ code: room.code, room })) {
@@ -28101,6 +28126,9 @@ function isRoomTabBackgrounded() {
 
 function syncActiveRoomFromDirectory(room, options = {}) {
   state.roomMissingSince = 0;
+  if (shouldIgnoreStaleLobbySnapshot(room)) {
+    return false;
+  }
   applyRoomDirectoryRoom(room);
   if (room?.status === "lobby" && applyRealtimeRoomReturnedToLobby(room)) {
     return true;
@@ -29201,6 +29229,7 @@ async function beginRoomMatch() {
     return;
   }
   state.currentRoomStatus = "in-progress";
+  state.roomMatchStartGuardUntil = Date.now() + 25000;
   setCurrentRoomMatchId(createRoomMatchId());
   state.roomGame = null;
   state.roomRoundResult = null;
@@ -32995,6 +33024,7 @@ function returnToRoomLobbyAfterMatch(options = {}) {
   stopNextRoundCountdown();
   resetTimerDisplay();
   stopLoadingMessages();
+  state.roomMatchStartGuardUntil = 0;
   state.matchEnded = true;
   state.currentRoomStatus = "lobby";
   state.roomGame = null;
