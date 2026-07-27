@@ -2331,7 +2331,7 @@ function stampRoomEvent(room, type, payload = {}) {
 
 function hasActiveRealPlayers(room) {
   return Array.isArray(room?.participants)
-    && room.participants.some((participant) => participant.active && !participant.bot && !participant.spectator);
+    && room.participants.some((participant) => participant.active !== false && !participant.bot && !participant.spectator);
 }
 
 function getRoomActivePlayerCount(room) {
@@ -3827,8 +3827,8 @@ function finalizeRoom(room) {
       room.participants.unshift(repairedHost);
     }
   }
-  room.activePlayers = room.participants.filter((participant) => participant.active && !participant.spectator).length;
-  room.spectators = room.participants.filter((participant) => participant.active && participant.spectator).length;
+  room.activePlayers = room.participants.filter((participant) => participant.active !== false && !participant.spectator).length;
+  room.spectators = room.participants.filter((participant) => participant.active !== false && participant.spectator).length;
   pruneRoomParticipantTokens(room);
 }
 

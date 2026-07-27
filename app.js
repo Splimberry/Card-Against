@@ -11759,72 +11759,18 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
   if (playSyncedResultIfReady()) {
     return;
   }
-  if (isRoomRealtimeHealthy()) {
-    showWaitingForRoomRoundResult();
-    void requestRoomRealtimeCatchup("round-result-wait", { force: true, snapshot: false }).then(() => {
-      if (isCurrentMatchWork(matchToken)) {
-        playSyncedResultIfReady();
-      }
-    });
-    return;
-  }
-  const effectiveTimeoutMs = Number.isFinite(Number(timeoutMs)) ? Number(timeoutMs) : getRoomRoundResultWaitTimeoutMs();
-  const startedAt = Date.now();
-  let lastEventRefreshAt = 0;
-  let lastSnapshotRefreshAt = 0;
-  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < effectiveTimeoutMs) {
-    if (playSyncedResultIfReady()) {
-      return;
-    }
-    const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
-    if (Date.now() - lastEventRefreshAt > eventRefreshIntervalMs) {
-      lastEventRefreshAt = Date.now();
-      await refreshRoomEventsSinceLastRevision({ refreshRoom: Date.now() - startedAt > 5000 });
-      if (!isCurrentMatchWork(matchToken)) {
-        state.roomRoundResolving = false;
-        return;
-      }
-      const eventResult = getRoomRoundResultForCurrentRound();
-      if (eventResult) {
-        playSyncedRoomRoundResult(eventResult, localFallback);
-        return;
-      }
-    }
-    const shouldSnapshotRefresh = !(state.supabaseEnabled && state.realtimeRoomChannel)
-      || (Date.now() - startedAt > 5000 && Date.now() - lastSnapshotRefreshAt > 2200);
-    if (shouldSnapshotRefresh) {
-      lastSnapshotRefreshAt = Date.now();
-      const snapshotStatus = await refreshActiveRoomSnapshotForSync(matchToken);
-      if (snapshotStatus === "stale" || snapshotStatus === "closed") {
-        return;
-      }
-      const snapshotResult = getRoomRoundResultForCurrentRound();
-      if (snapshotResult) {
-        playSyncedRoomRoundResult(snapshotResult, localFallback);
-        return;
-      }
-    }
-    await sleep(260);
-  }
-  if (!isCurrentMatchWork(matchToken)) {
-    state.roomRoundResolving = false;
-    return;
-  }
-  if (await refreshRoomRoundResultSnapshot(localFallback, matchToken)) {
-    return;
-  }
   if (!isCurrentMatchWork(matchToken)) {
     state.roomRoundResolving = false;
     return;
   }
   showWaitingForRoomRoundResult();
-  window.setTimeout(() => {
+  void requestRoomRealtimeCatchup("round-result-wait", { force: true, snapshot: false }).then(() => {
     if (!isCurrentMatchWork(matchToken) || !isRoomMode() || state.matchEnded) {
       state.roomRoundResolving = false;
       return;
     }
-    waitForRoomRoundResultThenPlay(localFallback, matchToken, 15000);
-  }, 900);
+    playSyncedResultIfReady();
+  });
 }
 
 function maybeResolveRoomSubmissions() {
@@ -13033,7 +12979,6 @@ function startRoomRealtime(code = state.roomSettings.code) {
   state.realtimeRoomCode = roomCode;
   state.roomRealtimeStatus = "connecting";
   state.realtimeRoomReady = false;
-  scheduleRoomFallbackPolling("connecting");
 }
 
 function stopRoomRealtime() {
@@ -13103,12 +13048,27 @@ function isParticipantRealtimeEvent(eventType = "") {
 
 function isCriticalRoomRealtimeEvent(eventType = "") {
   return [
+    "chat-message",
     "answer-submitted",
     "answer-draft",
     "round-result",
     "round-skipped",
     "round-started",
-    "power-state"
+    "round-advancing",
+    "power-state",
+    "room-settings",
+    "game-ended",
+    "host-transferred",
+    "participant-updated",
+    "participant-joined",
+    "participant-disconnected",
+    "participant-reconnected",
+    "participant-left",
+    "participant-moderated",
+    "room-updated",
+    "room-created",
+    "room-closed",
+    "room-deleted"
   ].includes(String(eventType || ""));
 }
 
@@ -13137,23 +13097,38 @@ function retryRoomParticipantBroadcastWhenReady(payload, code = "") {
   });
 }
 
+function getCriticalRoomRealtimeQueueKey(payload = {}) {
+  const eventType = String(payload.eventType || "");
+  const code = String(payload.code || "");
+  const round = Number(payload.round) || "";
+  const matchId = String(payload.matchId || payload.game?.matchId || payload.room?.game?.matchId || "");
+  const participantId = String(payload.participantId || payload.participant?.id || "");
+  const messageId = String(payload.message?.id || "");
+  const powerId = String(payload.powerId || "");
+  const revision = Number(payload.revision) || "";
+  if (messageId) {
+    return [eventType, code, messageId].join("|");
+  }
+  if (participantId) {
+    return [eventType, code, matchId, round, participantId, powerId].join("|");
+  }
+  if (eventType === "room-settings") {
+    return [eventType, code].join("|");
+  }
+  if (eventType === "room-updated" || eventType === "room-created") {
+    return [eventType, code].join("|");
+  }
+  return [eventType, code, matchId, round, powerId, revision || payload.updatedAt || ""].join("|");
+}
+
 function queueCriticalRoomRealtimePayload(payload = {}, code = "") {
   if (!isCriticalRoomRealtimeEvent(payload.eventType) || !code) {
     return false;
   }
+  const queueKey = getCriticalRoomRealtimeQueueKey(payload);
   state.pendingRoomRealtimePayloads = [
-    ...state.pendingRoomRealtimePayloads.filter((entry) => {
-      const existing = entry?.payload || {};
-      return !(
-        existing.eventType === payload.eventType
-        && existing.code === payload.code
-        && existing.matchId === payload.matchId
-        && existing.round === payload.round
-        && existing.participantId === payload.participantId
-        && existing.powerId === payload.powerId
-      );
-    }),
-    { code, payload, queuedAt: Date.now() }
+    ...state.pendingRoomRealtimePayloads.filter((entry) => entry.queueKey !== queueKey),
+    { code, queueKey, payload, queuedAt: Date.now() }
   ].slice(-40);
   return true;
 }
@@ -13180,9 +13155,6 @@ function flushPendingRoomRealtimePayloads(code = state.roomSettings.code) {
 }
 
 function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.code, details = {}) {
-  if (!state.supabaseClient) {
-    return;
-  }
   const room = roomOrCode && typeof roomOrCode === "object" ? roomOrCode : null;
   const code = String(room?.code || roomOrCode || state.roomSettings.code || "").trim().toUpperCase();
   if (!code || code === "CAI-0000") {
@@ -13201,6 +13173,10 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
     payload.room = getRealtimeRoomPayload(room, {
       includeGame: eventType === "round-started" || room.status === "in-progress"
     });
+  }
+  if (!state.supabaseClient) {
+    queueCriticalRoomRealtimePayload(payload, code);
+    return;
   }
   const sentToLobby = sendRealtimeRoomPayload(state.realtimeLobbyChannel, payload);
   const sentToRoom = state.realtimeRoomCode === code
@@ -14128,7 +14104,21 @@ function applyRoomModerationDelta(payload = {}) {
   const isLocalTarget = participantId === state.clientId;
   if (action === "kick" || action === "ban") {
     if (isLocalTarget) {
-      handleCurrentRoomClosed(action === "ban" ? "You were removed from this room by the host." : "You were kicked from this room by the host.");
+      const hostedRoom = state.hostedRooms.find((entry) => entry.code === (code || state.roomSettings.code));
+      if (hostedRoom) {
+        hostedRoom.participants = normalizeRoomParticipantsList(hostedRoom.participants || [])
+          .map((entry) => entry.id === participantId
+            ? { ...entry, active: false, status: action === "ban" ? "banned" : "kicked" }
+            : entry);
+        hostedRoom.activePlayers = hostedRoom.participants.filter((entry) => entry.active !== false && !entry.spectator).length;
+        hostedRoom.spectators = hostedRoom.participants.filter((entry) => entry.active !== false && entry.spectator).length;
+        hostedRoom.banned = Array.isArray(payload.banned) ? [...payload.banned] : hostedRoom.banned || [];
+        hostedRoom.updatedAt = Number(payload.updatedAt) || Date.now();
+        hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
+      }
+      handleCurrentRoomModerationRemoval(action, action === "ban"
+        ? "The host banned you from this room. You cannot rejoin it."
+        : "The host kicked you from this room. You can rejoin if there is space.");
       return true;
     }
     const removal = removeRoomParticipantLocally(participantId, {
@@ -22208,6 +22198,14 @@ function resetRoundUiForLoading(options = {}) {
   renderScore();
 }
 
+function showWaitingForHostRoundSetup(round = state.round) {
+  stopLoadingMessages();
+  elements.loadingText.textContent = `Waiting for the host to deal round ${round}...`;
+  setHidden(elements.loadingPanel, false);
+  setHidden(elements.errorPanel, true);
+  setHidden(elements.inputPanel, true);
+}
+
 function renderRound() {
   stopNextRoundCountdown();
   stopLoadingMessages();
@@ -25782,8 +25780,12 @@ async function newRound() {
   resetPlayedPowersForRound();
   if (isRoomMode() && !isCurrentHost()) {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
+    showWaitingForHostRoundSetup(state.round);
     try {
       const setup = await waitForSyncedRoomSetupForRound(state.round);
+      if (!setup) {
+        return;
+      }
       if (isCurrentMatchWork(matchToken)) {
         applyRoundSetup(setup);
         applyRoomGamePowerState();
@@ -26077,9 +26079,17 @@ async function startGame(mode) {
   try {
     const enabledThemes = getEnabledTriviaThemes();
     const firstRoundSetupOptions = { round: state.round, totalRounds: state.maxRounds };
-    const syncedSetup = mode === "room" && !isCurrentHost()
-      ? getSyncedRoomSetupForRound(state.round) || await waitForSyncedRoomSetupForRound(state.round)
-      : null;
+    let syncedSetup = null;
+    if (mode === "room" && !isCurrentHost()) {
+      syncedSetup = getSyncedRoomSetupForRound(state.round);
+      if (!syncedSetup) {
+        showWaitingForHostRoundSetup(state.round);
+        syncedSetup = await waitForSyncedRoomSetupForRound(state.round);
+      }
+    }
+    if (mode === "room" && !isCurrentHost() && !syncedSetup) {
+      return;
+    }
     const firstSetup = syncedSetup
       || takeReservedSetup(enabledThemes, "", firstRoundSetupOptions)
       || takeWarmSetup(enabledThemes, firstRoundSetupOptions)
@@ -26606,6 +26616,55 @@ function handleCurrentRoomClosed(reason = "Room closed.") {
   });
 }
 
+function handleCurrentRoomModerationRemoval(action = "kick", reason = "") {
+  if (!(isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft")) {
+    return;
+  }
+  if (state.roomClosedNotice) {
+    return;
+  }
+  const normalizedAction = action === "ban" ? "ban" : "kick";
+  const roomCode = state.roomSettings.code;
+  const roomLabel = getRoomShortCode(roomCode) || roomCode || "the room";
+  const isBan = normalizedAction === "ban";
+  const title = isBan ? "You were banned" : "You were kicked";
+  const copy = reason || (isBan
+    ? `The host banned you from ${roomLabel}. You cannot rejoin this room.`
+    : `The host kicked you from ${roomLabel}. You can rejoin if there is space.`);
+
+  state.matchEnded = true;
+  cancelActiveMatchWork({ stopRoomSync: true });
+  state.roomClosedNotice = copy;
+  clearLocalRoomState({ clearHostedSession: true });
+  clearRoomInviteUrlPath();
+  addSystemChat(copy, { private: true, sync: false });
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomChat, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.roomScreen, true);
+  elements.gameStage.classList.remove("room-active");
+  if (isBan) {
+    removeHostedRoom(roomCode);
+    const banList = state.roomModeration.bannedByRoom[roomCode] || [];
+    state.roomModeration.bannedByRoom[roomCode] = [...new Set([...banList, state.profile.name].filter(Boolean))];
+    setHidden(elements.joinScreen, true);
+    setHidden(elements.modeScreen, false);
+  } else {
+    setJoinInviteMode(false);
+    setHidden(elements.modeScreen, true);
+    setHidden(elements.joinScreen, false);
+    renderHostedRooms({ force: true });
+  }
+  showAppConfirm({
+    eyebrow: isBan ? "Banned" : "Kicked",
+    title,
+    copy,
+    confirmLabel: "OK",
+    cancelLabel: "Close",
+    danger: isBan
+  });
+}
+
 function setJoinInviteStatus(message = "", tone = "") {
   if (!elements.joinInviteStatus) {
     return;
@@ -26715,17 +26774,6 @@ function closeJoinScreen() {
 
 function startJoinDirectoryPolling() {
   stopJoinDirectoryPolling();
-  if (state.supabaseEnabled && state.realtimeLobbyReady) {
-    return;
-  }
-  const intervalMs = state.supabaseEnabled ? 6000 : 1800;
-  state.joinDirectoryPollId = window.setInterval(async () => {
-    if (elements.joinScreen.classList.contains("hidden")) {
-      stopJoinDirectoryPolling();
-      return;
-    }
-    await refreshHostedRoomsAndRender();
-  }, intervalMs);
 }
 
 function stopJoinDirectoryPolling() {
@@ -27958,51 +28006,32 @@ function publishRoomHeartbeat(status = "host") {
 async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 12000) {
   const matchToken = state.matchWorkToken;
   const startedAt = Date.now();
-  let lastEventRefreshAt = 0;
-  let lastDirectRoomRefreshAt = 0;
-  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeoutMs) {
+  let catchupRequested = false;
+  const timeout = Math.max(3000, Number(timeoutMs) || 12000);
+  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeout) {
     const setup = getSyncedRoomSetupForRound(round);
     if (setup) {
       return setup;
     }
-    const eventRefreshIntervalMs = state.realtimeRoomReady ? 2500 : 800;
-    if (Date.now() - lastEventRefreshAt > eventRefreshIntervalMs) {
-      lastEventRefreshAt = Date.now();
-      await refreshRoomEventsSinceLastRevision();
+    if (!catchupRequested && isRoomRealtimeHealthy()) {
+      catchupRequested = true;
+      await requestRoomRealtimeCatchup("round-setup-wait", { force: true, snapshot: false });
       if (!isCurrentMatchWork(matchToken)) {
         throw createAbortError();
       }
-      const eventSetup = getSyncedRoomSetupForRound(round);
-      if (eventSetup) {
-        return eventSetup;
-      }
     }
-    const directRoomRefreshIntervalMs = state.realtimeRoomReady ? 1600 : 800;
-    const shouldDirectRefresh = Date.now() - lastDirectRoomRefreshAt > directRoomRefreshIntervalMs;
-    if (shouldDirectRefresh || !(state.supabaseEnabled && state.realtimeRoomChannel)) {
-      lastDirectRoomRefreshAt = Date.now();
-      const lookup = await fetchRoomByCode(state.roomSettings.code);
-      if (!isCurrentMatchWork(matchToken)) {
-        throw createAbortError();
-      }
-      if (lookup.status === "found" && lookup.room) {
-        mergeHostedRoom(lookup.room);
-        applyRoomDirectoryRoom(lookup.room);
-        const roomSetup = getSyncedRoomSetupForRound(round);
-        if (roomSetup) {
-          return roomSetup;
-        }
-      } else if (lookup.status === "closed") {
-        handleCurrentRoomClosed("The room was closed by the host or an admin.");
-        break;
-      }
-    }
-    await sleep(650);
+    await sleep(180);
   }
   if (!isCurrentMatchWork(matchToken)) {
     throw createAbortError();
   }
-  throw new Error("Timed out waiting for the host to sync this round.");
+  if (isRoomMode() && !isCurrentHost()) {
+    showWaitingForHostRoundSetup(round);
+    elements.loadingText.textContent = isRoomRealtimeHealthy()
+      ? `Still waiting for the host to sync round ${round}...`
+      : "Realtime sync is reconnecting. Waiting for the room channel...";
+  }
+  return null;
 }
 
 function shouldStartJoinedRoomMatch(room) {
@@ -28385,9 +28414,6 @@ function handleRoomVisibilityChange() {
   }
   state.roomMissingSince = 0;
   requestRoomRealtimeCatchup("visible", { force: true, snapshot: false });
-  if (!isRoomRealtimeHealthy()) {
-    startRoomDirectoryPolling();
-  }
 }
 
 function startRoomHeartbeat() {
@@ -28406,22 +28432,6 @@ function startRoomHeartbeat() {
 
 function startRoomEventPolling() {
   stopRoomEventPolling();
-  if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
-    return;
-  }
-  const sessionId = state.roomSessionId;
-  const intervalMs = getRoomEventPollIntervalMs();
-  state.roomEventPollId = window.setInterval(() => {
-    if (
-      sessionId !== state.roomSessionId
-      || !hasActiveRoomContext()
-      || isRoomRealtimeHealthy()
-    ) {
-      stopRoomEventPolling();
-      return;
-    }
-    refreshRoomEventsSinceLastRevision();
-  }, intervalMs);
 }
 
 function stopRoomEventPolling() {
@@ -28456,7 +28466,6 @@ function handleRoomRealtimeStatus(status = "") {
   if (!state.roomRealtimeUnhealthySince) {
     state.roomRealtimeUnhealthySince = Date.now();
   }
-  scheduleRoomFallbackPolling(`realtime-${state.roomRealtimeStatus.toLowerCase()}`);
 }
 
 function getRoomFallbackDelayMs() {
@@ -28484,38 +28493,12 @@ function requestRoomRealtimeCatchup(reason = "sync", options = {}) {
 }
 
 function scheduleRoomFallbackPolling(reason = "realtime-unhealthy") {
-  if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
-    stopRoomFallbackPolling({ keepHeartbeat: true });
-    return;
-  }
   startRoomHeartbeat();
-  if (state.roomFallbackActive || state.roomFallbackStartTimerId) {
-    return;
-  }
-  const delayMs = getRoomFallbackDelayMs();
-  state.roomFallbackStartTimerId = window.setTimeout(() => {
-    state.roomFallbackStartTimerId = null;
-    if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
-      stopRoomFallbackPolling({ keepHeartbeat: true });
-      return;
-    }
-    startRoomFallbackPolling(reason);
-  }, delayMs);
 }
 
 function startRoomFallbackPolling(reason = "realtime-unhealthy") {
-  if (!hasActiveRoomContext() || isRoomRealtimeHealthy()) {
-    stopRoomFallbackPolling({ keepHeartbeat: true });
-    return;
-  }
-  state.roomFallbackActive = true;
-  startRoomEventPolling();
-  refreshRoomEventsSinceLastRevision({ force: true });
-  if (!state.roomDirectoryPollId) {
-    const sessionId = state.roomSessionId;
-    const intervalMs = getRoomSnapshotPollIntervalMs();
-    state.roomDirectoryPollId = window.setInterval(() => refreshCurrentRoomDirectory(sessionId), intervalMs);
-  }
+  startRoomHeartbeat();
+  requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
 }
 
 function stopRoomFallbackPolling(options = {}) {
@@ -28579,7 +28562,7 @@ function startRoomDirectoryPolling() {
     requestRoomRealtimeCatchup("start", { force: true, snapshot: !isRoomInWaitingSyncState() ? false : true });
     return;
   }
-  scheduleRoomFallbackPolling("start");
+  requestRoomRealtimeCatchup("start", { force: true, snapshot: false });
 }
 
 function stopRoomDirectoryPolling() {
