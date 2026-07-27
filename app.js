@@ -9767,11 +9767,15 @@ function getActiveMatchModifierNames() {
   return names.length ? names : ["No Modifiers"];
 }
 
+function isRoomParticipantActive(participant = {}) {
+  return participant?.active !== false;
+}
+
 function getActiveRoomPlayerCount(players = state.players) {
   if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomParticipants.length) {
-    return state.roomParticipants.filter((participant) => participant.active && !participant.spectator).length;
+    return state.roomParticipants.filter((participant) => isRoomParticipantActive(participant) && !participant.spectator).length;
   }
-  return players.filter((player) => player.active && !player.spectator).length;
+  return players.filter((player) => player.active !== false && !player.spectator).length;
 }
 
 function getActiveRoomSpectatorCount() {
@@ -10006,7 +10010,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
     return "joined";
   };
   const participants = state.players
-    .filter((player) => player.active || player.spectator)
+    .filter((player) => player.active !== false || player.spectator)
     .map((player) => {
       const id = player.participantId || player.owner;
       const existingParticipant = state.roomParticipants.find((participant) => participant.id === id);
@@ -10035,7 +10039,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
 
   const participantIds = new Set(participants.map((participant) => participant.id));
   state.roomParticipants.forEach((participant) => {
-    if (participantIds.has(participant.id) || (!participant.active && !participant.spectator) || status === "complete") {
+    if (participantIds.has(participant.id) || (participant.active === false && !participant.spectator) || status === "complete") {
       return;
     }
     const preserveParticipantSubmission = preserveSubmissions && participantSubmissionMatchesCurrentMatch(participant);
@@ -10388,7 +10392,7 @@ function getRoomBanList() {
 function setRoomSubmission(owner, submitted) {
   state.roomSubmissions[owner] = Boolean(submitted);
   const player = getPlayer(owner);
-  if (player && player.active && !player.muted) {
+  if (player && player.active !== false && !player.muted) {
     player.connectionStatus = submitted ? "submitted" : player.owner === "player" ? "host" : "waiting";
   }
   renderRoomPlayers();
@@ -10437,7 +10441,7 @@ function applyLocalRoomSubmission() {
   const participantId = localSubmission.participantId || getRoomParticipantIdForOwner(owner) || state.clientId;
   updateRoomParticipantSubmission(participantId, localSubmission.answer, localSubmission.round, localSubmission.remainingTime, localSubmission.matchId);
   const player = getPlayer(owner);
-  if (player && player.active && !player.muted) {
+  if (player && player.active !== false && !player.muted) {
     player.connectionStatus = "submitted";
   }
   return true;
@@ -10448,7 +10452,7 @@ function resetRoomSubmissions() {
   state.roomSubmissions = Object.fromEntries(getActiveOwners().map((owner) => [owner, false]));
   state.roomRoundResolving = false;
   state.players.forEach((player) => {
-    if (player.active && !player.muted) {
+    if (player.active !== false && !player.muted) {
       player.connectionStatus = player.owner === "player" ? "host" : "waiting";
     }
   });
@@ -13057,8 +13061,8 @@ function getRealtimeRoomPayload(room = {}, options = {}) {
     participants,
     activePlayers: Number.isFinite(Number(source.activePlayers))
       ? Math.max(0, Number(source.activePlayers))
-      : participants.filter((participant) => participant.active && !participant.spectator).length,
-    spectators: Number(source.spectators) || participants.filter((participant) => participant.active && participant.spectator).length || 0,
+      : participants.filter((participant) => isRoomParticipantActive(participant) && !participant.spectator).length,
+    spectators: Number(source.spectators) || participants.filter((participant) => isRoomParticipantActive(participant) && participant.spectator).length || 0,
     banned: Array.isArray(source.banned) ? source.banned.map((entry) => String(entry).slice(0, 80)) : [],
     game: options.includeGame ? (source.game || null) : null,
     revision: Number(source.revision) || 0,
@@ -13599,6 +13603,242 @@ function applyRoomGameMatchSettings(game = null, payload = {}, options = {}) {
   return syncRoomMatchStateFromSettings(state.roomSettings, options);
 }
 
+const roomServerEventTypeMap = {
+  chat_message: "chat-message",
+  game_ended: "game-ended",
+  host_transferred: "host-transferred",
+  participant_disconnected: "participant-disconnected",
+  participant_joined: "participant-joined",
+  participant_left: "participant-left",
+  participant_moderated: "participant-moderated",
+  participant_reconnected: "participant-reconnected",
+  participant_updated: "participant-updated",
+  power_state: "power-state",
+  room_closed: "room-closed",
+  room_created: "room-created",
+  room_deleted: "room-deleted",
+  room_updated: "room-updated",
+  round_advancing: "round-advancing",
+  round_result: "round-result",
+  round_skipped: "round-skipped",
+  round_started: "round-started",
+  settings_updated: "room-settings"
+};
+
+const roomRoundScopedEventTypes = [
+  "answer-submitted",
+  "answer-draft",
+  "power-state",
+  "round-result",
+  "round-skipped"
+];
+
+const handledRoomEventTypes = [
+  "chat-message",
+  "answer-submitted",
+  "answer-draft",
+  "power-state",
+  "participant-updated",
+  "participant-joined",
+  "participant-disconnected",
+  "participant-reconnected",
+  "room-updated",
+  "room-created",
+  "round-advancing",
+  "round-started",
+  "round-result",
+  "round-skipped",
+  "participant-left",
+  "participant-moderated",
+  "host-transferred",
+  "room-settings",
+  "game-ended"
+];
+
+function normalizeRoomEventType(type = "") {
+  const rawType = String(type || "").trim();
+  return roomServerEventTypeMap[rawType] || rawType.replaceAll("_", "-");
+}
+
+function getRoomPayloadRound(payload = {}) {
+  return Number(
+    payload.round
+      || payload.nextRound
+      || payload.game?.round
+      || payload.room?.game?.round
+      || payload.roundResult?.round
+      || payload.powerState?.round
+      || 0
+  ) || 0;
+}
+
+function getRoomPayloadEventKey(payload = {}) {
+  const eventType = normalizeRoomEventType(payload.eventType || payload.type || "");
+  const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
+  const revision = getRoomPayloadRevision(payload);
+  const messageId = String(payload.message?.id || "").trim();
+  if (messageId && code && eventType) {
+    return `payload:${code}:${eventType}:message:${messageId}`;
+  }
+  if (!code || !eventType || !revision) {
+    return "";
+  }
+  const matchId = getRoomMatchIdFromPayload(payload);
+  const round = getRoomPayloadRound(payload) || "";
+  const participantId = String(payload.participantId || payload.participant?.id || "").trim();
+  const powerId = String(payload.powerId || "").trim();
+  return ["payload", code, revision, eventType, matchId, round, participantId, powerId].join(":");
+}
+
+function hasAppliedRoomPayloadEvent(payload = {}) {
+  const eventId = getRoomPayloadEventKey(payload);
+  return Boolean(eventId && state.appliedRoomEventIds instanceof Set && state.appliedRoomEventIds.has(eventId));
+}
+
+function rememberAppliedRoomPayloadEvent(payload = {}) {
+  const eventId = getRoomPayloadEventKey(payload);
+  if (eventId) {
+    rememberAppliedRoomServerEvent({ id: eventId });
+  }
+}
+
+function canApplyRoomEventForCurrentMatch(payload = {}) {
+  if (roomPayloadMatchesCurrentMatch(payload)) {
+    return true;
+  }
+  const eventType = normalizeRoomEventType(payload.eventType || "");
+  const incomingGame = payload.game || payload.room?.game || null;
+  const round = getRoomPayloadRound(payload) || state.round;
+  const isRematch = isIncomingRoomRematchPayload(payload, round);
+  const canAdoptNewRoomGame = eventType === "round-started"
+    && incomingGame
+    && canAdoptIncomingRoomGame(incomingGame, payload.room || { status: payload.status || "in-progress" }, round);
+  const canAdoptRoundAdvance = eventType === "round-advancing"
+    && getRoomMatchIdFromPayload(payload)
+    && (isRematch || isJoinedRoomWaitingForSyncedSetup(round));
+  return Boolean(isRematch || canAdoptNewRoomGame || canAdoptRoundAdvance);
+}
+
+function isOlderRoomRoundEvent(payload = {}) {
+  const eventType = normalizeRoomEventType(payload.eventType || "");
+  if (!roomRoundScopedEventTypes.includes(eventType)) {
+    return false;
+  }
+  const incomingRound = getRoomPayloadRound(payload);
+  const currentRound = Number(state.round) || 0;
+  if (!incomingRound || !currentRound || incomingRound >= currentRound) {
+    return false;
+  }
+  return !isIncomingRoomRematchPayload(payload, incomingRound);
+}
+
+function normalizeRoomEventPayload(payload = {}, options = {}) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const eventType = normalizeRoomEventType(source.eventType || source.type || options.eventType || "");
+  const code = String(source.code || source.room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  const normalized = {
+    ...source,
+    eventType,
+    code,
+    revision: Number(source.revision) || 0,
+    updatedAt: Number(source.updatedAt) || Date.now()
+  };
+  if (normalized.powerState && typeof normalized.powerState === "object") {
+    normalized.hands = normalized.hands || normalized.powerState.hands;
+    normalized.played = normalized.played || normalized.powerState.played;
+    normalized.players = normalized.players || normalized.powerState.players;
+    normalized.effects = normalized.effects || normalized.powerState.effects;
+  }
+  return normalized;
+}
+
+function applyRoomEventPayload(payload = {}, source = {}) {
+  const options = normalizeRoomApplySource(source);
+  const normalizedPayload = normalizeRoomEventPayload(payload, options);
+  const code = String(normalizedPayload.code || "").trim().toUpperCase();
+  if (!code) {
+    return false;
+  }
+  if (["room-closed", "room-deleted"].includes(normalizedPayload.eventType)) {
+    return applyRealtimeRoomClosed(normalizedPayload);
+  }
+  let applied = false;
+  if (!elements.joinScreen.classList.contains("hidden") && shouldRealtimeRefreshJoinDirectory(normalizedPayload.eventType)) {
+    const appliedJoinDelta = (normalizedPayload.eventType === "participant-updated" || normalizedPayload.eventType === "participant-joined" || normalizedPayload.eventType === "participant-disconnected" || normalizedPayload.eventType === "participant-reconnected") && normalizedPayload.participant
+      ? applyHostedRoomParticipantDelta(normalizedPayload)
+      : normalizedPayload.eventType === "participant-left" && normalizedPayload.participantId
+        ? applyHostedRoomParticipantLeft(normalizedPayload)
+        : normalizedPayload.eventType === "host-transferred"
+          ? applyRealtimeHostTransferred(normalizedPayload)
+          : normalizedPayload.eventType === "room-settings"
+            ? applyRealtimeRoomSettings(normalizedPayload)
+            : false;
+    applied = applied || appliedJoinDelta;
+    if (!appliedJoinDelta && (!normalizedPayload.room || !applyRealtimeRoomPayload(normalizedPayload.room))) {
+      scheduleRealtimeJoinRefresh();
+    }
+  }
+  if (code === state.roomSettings.code && hasActiveRoomContext()) {
+    let appliedDelta = false;
+    if (normalizedPayload.eventType === "chat-message" && normalizedPayload.message) {
+      appliedDelta = applyRealtimeRoomChatMessage(normalizedPayload.message);
+    }
+    if (normalizedPayload.eventType === "answer-submitted") {
+      appliedDelta = applyRoomAnswerSubmission(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "answer-draft") {
+      appliedDelta = applySpectatorAnswerDraft(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "power-state") {
+      appliedDelta = applyRoomPowerState(normalizedPayload);
+    }
+    if ((normalizedPayload.eventType === "participant-updated" || normalizedPayload.eventType === "participant-joined") && normalizedPayload.participant) {
+      appliedDelta = applyRoomParticipantDelta(normalizedPayload.participant, normalizedPayload);
+    }
+    if ((normalizedPayload.eventType === "participant-disconnected" || normalizedPayload.eventType === "participant-reconnected") && normalizedPayload.participant) {
+      appliedDelta = applyRoomParticipantConnectionDelta(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "participant-left" && normalizedPayload.participantId) {
+      appliedDelta = applyRealtimeParticipantLeft(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "participant-moderated") {
+      appliedDelta = applyRoomModerationDelta(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "host-transferred") {
+      appliedDelta = applyRealtimeHostTransferred(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "room-settings") {
+      appliedDelta = applyRealtimeRoomSettings(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "game-ended") {
+      appliedDelta = applyRealtimeRoomGameEnded(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "round-advancing") {
+      appliedDelta = applyRealtimeRoundAdvancing(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "round-started") {
+      appliedDelta = applyRealtimeRoundStarted(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "round-result") {
+      appliedDelta = applyRealtimeRoomRoundResult(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "round-skipped") {
+      appliedDelta = forceRoomRoundToGrading(normalizedPayload);
+    }
+    if ((normalizedPayload.eventType === "room-updated" || normalizedPayload.eventType === "room-created" || normalizedPayload.eventType === "round-started" || normalizedPayload.eventType === "participant-left") && normalizedPayload.room) {
+      appliedDelta = applyRealtimeRoomPayload(normalizedPayload.room);
+    }
+    if (appliedDelta && handledRoomEventTypes.includes(normalizedPayload.eventType)) {
+      return true;
+    }
+    if (shouldRefreshRoomAfterRealtimeMiss(normalizedPayload)) {
+      scheduleRealtimeRoomRefresh(normalizedPayload);
+    }
+    applied = applied || appliedDelta;
+  }
+  return applied;
+}
+
 function applyRoomServerEvent(event = {}) {
   if (hasAppliedRoomServerEvent(event)) {
     updateRoomEventRevision(event.revision);
@@ -13606,87 +13846,27 @@ function applyRoomServerEvent(event = {}) {
   }
   const type = String(event.type || "");
   const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
-  const eventPayload = {
+  const eventPayload = normalizeRoomEventPayload({
     ...payload,
-    code: state.roomSettings.code,
+    eventType: normalizeRoomEventType(type),
+    code: payload.code || payload.room?.code || state.roomSettings.code,
     revision: Number(event.revision) || 0,
     updatedAt: Number(event.createdAt) || Date.now()
-  };
-  const incomingGame = payload.game || payload.room?.game || null;
-  const shouldAdoptNewRoomGame = type === "round_started"
-    && incomingGame
-    && canAdoptIncomingRoomGame(incomingGame, { status: payload.status || "in-progress" }, payload.round || incomingGame.round || state.round);
-  const shouldAdoptRoundAdvance = type === "round_advancing"
-    && getRoomMatchIdFromPayload(eventPayload)
-    && isJoinedRoomWaitingForSyncedSetup(payload.round || state.round);
-  if (!roomPayloadMatchesCurrentMatch(eventPayload) && !shouldAdoptNewRoomGame && !shouldAdoptRoundAdvance) {
+  });
+  if (hasAppliedRoomPayloadEvent(eventPayload)) {
     rememberAppliedRoomServerEvent(event);
     updateRoomEventRevision(event.revision);
     return true;
   }
-  let applied = false;
-  if ((type === "participant_updated" || type === "participant_joined") && payload.participant) {
-    applied = applyRoomParticipantDelta(payload.participant, eventPayload);
-  } else if (type === "participant_left" && payload.participantId) {
-    applied = applyRealtimeParticipantLeft(eventPayload);
-  } else if ((type === "participant_disconnected" || type === "participant_reconnected") && payload.participant) {
-    applied = applyRoomParticipantConnectionDelta({
-      ...eventPayload,
-      eventType: type.replaceAll("_", "-"),
-      participant: payload.participant,
-      participantId: payload.participantId,
-      participantName: payload.participantName
-    });
-  } else if (type === "chat_message" && payload.message) {
-    applied = applyRealtimeRoomChatMessage(payload.message);
-  } else if (type === "power_state" && payload.powerState) {
-    applied = applyRoomPowerState({
-      ...eventPayload,
-      round: payload.round,
-      powerId: payload.powerId,
-      actorParticipantId: payload.actorParticipantId,
-      targetParticipantId: payload.targetParticipantId,
-      deletedPowerId: payload.deletedPowerId,
-      stolenPowerId: payload.stolenPowerId,
-      hands: payload.powerState.hands,
-      played: payload.powerState.played,
-      players: payload.powerState.players,
-      effects: payload.powerState.effects
-    });
-  } else if (type === "settings_updated") {
-    applied = applyRealtimeRoomSettings(eventPayload);
-  } else if (type === "game_ended" && payload.game) {
-    applied = applyRealtimeRoomGameEnded({
-      ...eventPayload,
-      game: payload.game
-    });
-  } else if (type === "round_started" && payload.game) {
-    applied = applyRealtimeRoundStarted({
-      ...eventPayload,
-      game: payload.game
-    });
-  } else if (type === "round_result" && payload.roundResult) {
-    applied = applyRealtimeRoomRoundResult({
-      ...eventPayload,
-      round: payload.round,
-      roundResult: payload.roundResult,
-      game: payload.game
-    });
-  } else if (type === "round_skipped") {
-    applied = forceRoomRoundToGrading({
-      ...eventPayload,
-      round: payload.round,
-      matchId: payload.matchId,
-      hostParticipantId: payload.hostParticipantId,
-      reason: payload.reason,
-      submissions: payload.submissions || []
-    });
-  } else if (type === "participant_moderated") {
-    applied = applyRoomModerationDelta(eventPayload);
-  } else if (type === "host_transferred") {
-    applied = applyRealtimeHostTransferred(eventPayload);
-  } else if (type === "room_updated" || type === "room_created") {
-    applied = false;
+  if (!canApplyRoomEventForCurrentMatch(eventPayload) || isOlderRoomRoundEvent(eventPayload)) {
+    rememberAppliedRoomServerEvent(event);
+    rememberAppliedRoomPayloadEvent(eventPayload);
+    updateRoomEventRevision(event.revision);
+    return true;
+  }
+  const applied = applyRoomEventPayload(eventPayload, { source: "server-event" });
+  if (applied) {
+    rememberAppliedRoomPayloadEvent(eventPayload);
   }
   rememberAppliedRoomServerEvent(event);
   updateRoomEventRevision(event.revision);
@@ -14138,8 +14318,8 @@ function removeRoomParticipantLocally(participantId, options = {}) {
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (hostedRoom) {
     hostedRoom.participants = [...state.roomParticipants];
-    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length;
-    hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
+    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => isRoomParticipantActive(entry) && !entry.spectator).length;
+    hostedRoom.spectators = state.roomParticipants.filter((entry) => isRoomParticipantActive(entry) && entry.spectator).length;
     hostedRoom.updatedAt = Number(options.updatedAt) || hostedRoom.updatedAt || Date.now();
     hostedRoom.revision = Number(options.revision) || hostedRoom.revision || 0;
     if (Array.isArray(options.banned)) {
@@ -14257,8 +14437,8 @@ function applyRoomModerationDelta(payload = {}) {
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (hostedRoom) {
     hostedRoom.participants = [...state.roomParticipants];
-    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length;
-    hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
+    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => isRoomParticipantActive(entry) && !entry.spectator).length;
+    hostedRoom.spectators = state.roomParticipants.filter((entry) => isRoomParticipantActive(entry) && entry.spectator).length;
     hostedRoom.banned = Array.isArray(payload.banned) ? [...payload.banned] : hostedRoom.banned || [];
     hostedRoom.updatedAt = Number(payload.updatedAt) || Date.now();
     hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
@@ -14309,98 +14489,36 @@ function applyRoomEvent(event = {}, source = {}) {
   if (options.source === "realtime" && event.sourceId === state.realtimeSourceId) {
     return true;
   }
-  const payload = { ...event };
+  const payload = normalizeRoomEventPayload(event, options);
   const payloadRevision = getRoomPayloadRevision(payload);
   const previousRevision = Number(state.roomEventRevision) || 0;
-  if (isStaleActiveRoomRealtimePayload(payload, previousRevision)) {
+  if (hasAppliedRoomPayloadEvent(payload)) {
+    updateRoomEventRevision(payloadRevision);
     return true;
   }
   payload.revisionGap = Boolean(payloadRevision && previousRevision && payloadRevision > previousRevision + 1);
-  updateRoomEventRevision(payloadRevision);
+  if (
+    isStaleActiveRoomRealtimePayload(payload, previousRevision)
+    || !canApplyRoomEventForCurrentMatch(payload)
+    || isOlderRoomRoundEvent(payload)
+  ) {
+    rememberAppliedRoomPayloadEvent(payload);
+    updateRoomEventRevision(payloadRevision);
+    return true;
+  }
   if (payload.eventType === "question-submission-updated") {
-    return applyRealtimeQuestionSubmissionUpdate(payload);
+    const appliedQuestionUpdate = applyRealtimeQuestionSubmissionUpdate(payload);
+    if (appliedQuestionUpdate) {
+      rememberAppliedRoomPayloadEvent(payload);
+    }
+    updateRoomEventRevision(payloadRevision);
+    return appliedQuestionUpdate;
   }
-  const code = String(payload.code || "").trim().toUpperCase();
-  if (!code) {
-    return false;
+  const applied = applyRoomEventPayload(payload, options);
+  if (applied) {
+    rememberAppliedRoomPayloadEvent(payload);
   }
-  if (["room-closed", "room-deleted"].includes(payload.eventType)) {
-    return applyRealtimeRoomClosed(payload);
-  }
-  let applied = false;
-  if (!elements.joinScreen.classList.contains("hidden") && shouldRealtimeRefreshJoinDirectory(payload.eventType)) {
-    const appliedJoinDelta = (payload.eventType === "participant-updated" || payload.eventType === "participant-joined" || payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant
-      ? applyHostedRoomParticipantDelta(payload)
-      : payload.eventType === "participant-left" && payload.participantId
-        ? applyHostedRoomParticipantLeft(payload)
-        : payload.eventType === "host-transferred"
-          ? applyRealtimeHostTransferred(payload)
-        : payload.eventType === "room-settings"
-          ? applyRealtimeRoomSettings(payload)
-          : false;
-    applied = applied || appliedJoinDelta;
-    if (!appliedJoinDelta && (!payload.room || !applyRealtimeRoomPayload(payload.room))) {
-      scheduleRealtimeJoinRefresh();
-    }
-  }
-  if (code === state.roomSettings.code && hasActiveRoomContext()) {
-    let appliedDelta = false;
-    if (payload.eventType === "chat-message" && payload.message) {
-      appliedDelta = applyRealtimeRoomChatMessage(payload.message);
-    }
-    if (payload.eventType === "answer-submitted") {
-      appliedDelta = applyRoomAnswerSubmission(payload);
-    }
-    if (payload.eventType === "answer-draft") {
-      appliedDelta = applySpectatorAnswerDraft(payload);
-    }
-    if (payload.eventType === "power-state") {
-      appliedDelta = applyRoomPowerState(payload);
-    }
-    if ((payload.eventType === "participant-updated" || payload.eventType === "participant-joined") && payload.participant) {
-      appliedDelta = applyRoomParticipantDelta(payload.participant, payload);
-    }
-    if ((payload.eventType === "participant-disconnected" || payload.eventType === "participant-reconnected") && payload.participant) {
-      appliedDelta = applyRoomParticipantConnectionDelta(payload);
-    }
-    if (payload.eventType === "participant-left" && payload.participantId) {
-      appliedDelta = applyRealtimeParticipantLeft(payload);
-    }
-    if (payload.eventType === "participant-moderated") {
-      appliedDelta = applyRoomModerationDelta(payload);
-    }
-    if (payload.eventType === "host-transferred") {
-      appliedDelta = applyRealtimeHostTransferred(payload);
-    }
-    if (payload.eventType === "room-settings") {
-      appliedDelta = applyRealtimeRoomSettings(payload);
-    }
-    if (payload.eventType === "game-ended") {
-      appliedDelta = applyRealtimeRoomGameEnded(payload);
-    }
-    if (payload.eventType === "round-advancing") {
-      appliedDelta = applyRealtimeRoundAdvancing(payload);
-    }
-    if (payload.eventType === "round-started") {
-      appliedDelta = applyRealtimeRoundStarted(payload);
-    }
-    if (payload.eventType === "round-result") {
-      appliedDelta = applyRealtimeRoomRoundResult(payload);
-    }
-    if (payload.eventType === "round-skipped") {
-      appliedDelta = forceRoomRoundToGrading(payload);
-    }
-    if ((payload.eventType === "room-updated" || payload.eventType === "room-created" || payload.eventType === "round-started" || payload.eventType === "participant-left") && payload.room) {
-      appliedDelta = applyRealtimeRoomPayload(payload.room);
-    }
-    if (appliedDelta && ["chat-message", "answer-submitted", "answer-draft", "power-state", "participant-updated", "participant-joined", "participant-disconnected", "participant-reconnected", "room-updated", "room-created", "round-advancing", "round-started", "round-result", "round-skipped", "participant-left", "participant-moderated", "host-transferred", "room-settings", "game-ended"].includes(payload.eventType)) {
-      return true;
-    }
-    if (shouldRefreshRoomAfterRealtimeMiss(payload)) {
-      scheduleRealtimeRoomRefresh(payload);
-    }
-    applied = applied || appliedDelta;
-  }
+  updateRoomEventRevision(payloadRevision);
   return applied;
 }
 
@@ -15364,7 +15482,7 @@ function getActiveOwners() {
   if (isRoomMode()) {
     const playersByParticipant = new Map();
     state.players
-      .filter((player) => player.active && !player.spectator)
+      .filter((player) => player.active !== false && !player.spectator)
       .forEach((player) => {
         const key = String(player.participantId || player.owner || "");
         if (!key) {
@@ -15388,7 +15506,7 @@ function getActiveOwners() {
   return [
     ...new Set(
       state.players
-        .filter((player) => player.active && !player.spectator)
+        .filter((player) => player.active !== false && !player.spectator)
         .map((player) => player.owner)
         .filter(Boolean)
     )
@@ -27201,8 +27319,8 @@ function buildRoomDirectoryPayload(status = "lobby") {
       cardCustomization: getRoomSyncCardCustomization(hostSource.cardCustomization)
     },
     participants,
-    activePlayers: participants.filter((participant) => participant.active && !participant.spectator).length,
-    spectators: participants.filter((participant) => participant.active && participant.spectator).length,
+    activePlayers: participants.filter((participant) => isRoomParticipantActive(participant) && !participant.spectator).length,
+    spectators: participants.filter((participant) => isRoomParticipantActive(participant) && participant.spectator).length,
     banned: [...getRoomBanList()],
     game: inProgressGame
   };
@@ -27729,8 +27847,8 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (hostedRoom) {
     hostedRoom.participants = [...state.roomParticipants];
-    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => entry.active && !entry.spectator).length;
-    hostedRoom.spectators = state.roomParticipants.filter((entry) => entry.active && entry.spectator).length;
+    hostedRoom.activePlayers = state.roomParticipants.filter((entry) => isRoomParticipantActive(entry) && !entry.spectator).length;
+    hostedRoom.spectators = state.roomParticipants.filter((entry) => isRoomParticipantActive(entry) && entry.spectator).length;
     hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
     hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
   }
@@ -27996,7 +28114,7 @@ function syncRoomSubmissionsFromParticipants() {
   let changed = false;
   state.roomParticipants.forEach((participant, index) => {
     if (
-      !participant.active
+      participant.active === false
       || participant.spectator
       || Number(participant.submittedRound) !== Number(state.round)
       || !participantSubmissionMatchesCurrentMatch(participant)
@@ -28022,7 +28140,7 @@ function syncRoomSubmissionsFromParticipants() {
     if (Number.isFinite(Number(participant.remainingTime))) {
       state.answerRemainingTimes[owner] = Math.max(0, Number(participant.remainingTime));
     }
-    if (player && player.active && !player.muted) {
+    if (player && player.active !== false && !player.muted) {
       player.connectionStatus = "submitted";
     }
   });
@@ -29939,7 +30057,7 @@ function createRoomModerationControls(owner, context = "list", sourcePlayer = nu
   const player = sourcePlayer || getRoomPlayerForModeration(owner);
   const controls = document.createElement("div");
   controls.className = context === "chat" ? "chat-options" : "room-player-controls";
-  if (player?.active && (player.bot || player.type === "bot") && canKickRoomBot(player.owner, player.participantId)) {
+  if (player && player.active !== false && (player.bot || player.type === "bot") && canKickRoomBot(player.owner, player.participantId)) {
     const kickPending = Boolean(state.pendingRoomBotKicks?.[player.participantId]);
     const kickButton = document.createElement("button");
     kickButton.type = "button";
@@ -29952,7 +30070,7 @@ function createRoomModerationControls(owner, context = "list", sourcePlayer = nu
     controls.appendChild(kickButton);
     return controls;
   }
-  if (!player || !player.active || player.owner === state.currentOwner || player.bot || player.type === "bot") {
+  if (!player || player.active === false || player.owner === state.currentOwner || player.bot || player.type === "bot") {
     return controls;
   }
 
@@ -30018,7 +30136,7 @@ function renderRoomPlayerList(target, options = {}) {
     || state.hostedRooms.find((room) => room.code === state.roomSettings.code)?.host?.id
     || (!state.joiningRoom && isCurrentHost() ? state.clientId : ""));
   const participantPlayers = state.roomParticipants
-    .filter((participant) => participant.active)
+    .filter((participant) => isRoomParticipantActive(participant))
     .map((participant, index) => createPlayer(
       getRoomOwnerForParticipant(participant, index),
       participant.name,
@@ -30034,7 +30152,7 @@ function renderRoomPlayerList(target, options = {}) {
         spectator: participant.spectator,
         bot: Boolean(participant.bot),
         type: participant.bot ? "bot" : participant.spectator ? "spectator" : "human",
-        active: participant.active,
+        active: participant.active !== false,
         muted: participant.muted,
         connectionStatus: participant.status || (participant.host ? "host" : participant.bot ? "bot" : participant.spectator ? "spectating" : "joined")
       }
@@ -30046,7 +30164,7 @@ function renderRoomPlayerList(target, options = {}) {
     : [
       createPlayer("player", state.profile.name || "You", { avatar: state.profile.avatar, host: true, equippedTitleId: state.profile.equippedTitleId, specialBadges: state.profile.specialBadges, cardCustomization: state.profile.cardCustomization, connectionStatus: "host" })
     ];
-  const activePlayers = basePlayers.filter((player) => player.active && !player.spectator);
+  const activePlayers = basePlayers.filter((player) => player.active !== false && !player.spectator);
   const visiblePlayers = activePlayers.filter((player) => {
     const isFeaturedHost = player.host
       || (featuredHostId && player.participantId === featuredHostId)
@@ -30144,14 +30262,14 @@ function renderRoomPlayerList(target, options = {}) {
     const card = document.createElement("div");
     card.className = "room-player-card";
     card.dataset.roomPlayerKey = cardKey;
-    card.classList.toggle("waiting-slot", !player.active);
+    card.classList.toggle("waiting-slot", player.active === false);
     const botIsJoining = player.connectionStatus === "joining";
     const botIsKicking = Boolean(player.participantId && state.pendingRoomBotKicks?.[player.participantId]);
     card.classList.toggle("room-player-card-pending", botIsJoining || botIsKicking);
     card.classList.toggle("room-player-card-kicking", botIsKicking);
     const isNewActiveParticipant = Boolean(
       (canAnimateNewRows || (isRoomSetupList && hadWaitingCopy))
-      && player.active
+      && player.active !== false
       && !player.spectator
       && cardKey
       && !previousCardKeys.has(cardKey)
@@ -30182,7 +30300,7 @@ function renderRoomPlayerList(target, options = {}) {
     }
     card.append(avatar, name, status);
 
-    if ((state.mode === "room" || isRoomSetupList) && player.owner !== state.currentOwner && player.active) {
+    if ((state.mode === "room" || isRoomSetupList) && player.owner !== state.currentOwner && player.active !== false) {
       const controls = createRoomModerationControls(player.owner, "list", player);
       if (controls.childElementCount) {
         card.appendChild(controls);
