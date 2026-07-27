@@ -288,7 +288,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
 }
 
 .mode-screen:not(.hidden) .menu-video-bg {
-  opacity: 0.34;
+  opacity: 0.5;
 }
 
 .menu-video-bg::after {
@@ -307,6 +307,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   object-fit: cover;
   object-position: center center;
   filter: saturate(0.92) brightness(0.62) contrast(1.08);
+  transform: scale(1.18);
 }
 
 .mode-screen > :not(.menu-video-bg) {
