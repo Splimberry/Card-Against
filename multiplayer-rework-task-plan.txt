@@ -153,6 +153,16 @@ Expected fixes:
 - Old answer submissions do not affect new rounds.
 - Old power states do not overwrite newer refill or chaos refresh state.
 
+Progress:
+
+- Added revision-aware client room snapshot/event application.
+- Server-stamped answer submissions, round results, round skips, power-state
+  writes, game end, and round-advancing transitions.
+- Removed client-only fallback broadcasts for round results, round skips,
+  power state, round advancing, and game end.
+- Added stale match/round guards for participant submissions, round results,
+  round skips, power-state writes, round setup writes, and round advancing.
+
 
 PHASE 3: NORMALIZE PARTICIPANTS
 -------------------------------

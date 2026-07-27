@@ -259,6 +259,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomRoundAdvancingMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/round-advancing$/);
+    if (roomRoundAdvancingMatch && req.method === "POST") {
+      await handleRoomRoundAdvancing(req, res, roomRoundAdvancingMatch[1]);
+      return;
+    }
+
     const roomPowerStateMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/power-state$/);
     if (roomPowerStateMatch && req.method === "POST") {
       await handleRoomPowerState(req, res, roomPowerStateMatch[1]);
@@ -3007,14 +3013,29 @@ async function handleRoomGame(req, res, code) {
       return;
     }
     const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
+    const payloadMatchId = String(game.matchId || "").slice(0, 80);
+    const roomIsActiveMatch = room.status === "in-progress" && room.game?.status !== "ended";
+    if (roomIsActiveMatch && currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: game.status === "ended" ? "Game end belongs to a previous match." : "Round setup belongs to a previous match." });
+      return;
+    }
+    if (room.game?.status === "ended" && game.status !== "ended" && currentMatchId && payloadMatchId === currentMatchId) {
+      sendJson(res, 409, { error: "Round setup belongs to a completed match." });
+      return;
+    }
+    if (roomIsActiveMatch && currentRound && game.round < currentRound) {
+      sendJson(res, 409, { error: game.status === "ended" ? "Game end belongs to a previous round." : "Round setup belongs to a previous round." });
+      return;
+    }
     if (
-      game.status === "ended"
-      && room.status === "in-progress"
-      && currentMatchId
-      && game.matchId
-      && game.matchId !== currentMatchId
+      game.status !== "ended"
+      && roomIsActiveMatch
+      && currentRound
+      && game.round === currentRound
+      && (room.game?.roundResult || room.game?.status === "grading" || room.game?.status === "ended")
     ) {
-      sendJson(res, 409, { error: "Game end belongs to a previous match." });
+      sendJson(res, 409, { error: "Round setup cannot overwrite a completed round." });
       return;
     }
     room.status = game.status === "ended" ? "complete" : "in-progress";
@@ -3039,6 +3060,94 @@ async function handleRoomGame(req, res, code) {
     });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room game update failed." });
+  }
+}
+
+async function handleRoomRoundAdvancing(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can advance the room round.")) {
+      return;
+    }
+
+    const currentGame = room.game && typeof room.game === "object" ? room.game : null;
+    const currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
+    const payloadMatchId = String(body.matchId || body.game?.matchId || "").slice(0, 80);
+    const matchId = payloadMatchId || currentMatchId || `${normalizedCode}-${Date.now()}`;
+    const currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
+    const round = clampServerNumber(body.round || body.nextRound, 1, 100, currentRound || 1);
+    const roomIsActiveMatch = room.status === "in-progress" && currentGame && currentGame.status !== "ended";
+    if (roomIsActiveMatch && currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Round advance belongs to a previous match." });
+      return;
+    }
+    if (roomIsActiveMatch && currentRound && round < currentRound) {
+      sendJson(res, 409, { error: "Round advance belongs to a previous round." });
+      return;
+    }
+    if (
+      roomIsActiveMatch
+      && currentRound
+      && round === currentRound
+      && currentGame.setup
+      && currentGame.status !== "starting"
+    ) {
+      sendJson(res, 200, createRoomEventResponse(room, "round_advancing", {
+        duplicate: true,
+        round,
+        matchId: currentMatchId || matchId,
+        matchSettings: currentGame.matchSettings || normalizeRoomGameSettings(room.settings),
+        game: currentGame
+      }));
+      return;
+    }
+
+    const matchSettings = normalizeRoomGameSettings(body.matchSettings || body.settings || currentGame?.matchSettings || room.settings);
+    room.status = "in-progress";
+    room.settings = normalizeRoomSettings({
+      ...(room.settings || {}),
+      ...matchSettings,
+      randomModifiers: false,
+      code: normalizedCode
+    }, normalizedCode);
+    room.game = normalizeRoomGame({
+      ...(currentMatchId === matchId ? currentGame || {} : {}),
+      matchId,
+      status: "starting",
+      round,
+      setup: null,
+      matchSettings,
+      roundResult: null,
+      powerState: currentMatchId === matchId ? currentGame?.powerState || null : null,
+      roundStartedAt: 0,
+      updatedAt: Date.now()
+    });
+    stampRoomEvent(room, "round_advancing", {
+      round,
+      matchId,
+      hostParticipantId,
+      matchSettings,
+      game: room.game
+    });
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "round_advancing", {
+      round: storedRoom.game?.round || round,
+      matchId: storedRoom.game?.matchId || matchId,
+      hostParticipantId,
+      matchSettings: storedRoom.game?.matchSettings || matchSettings,
+      game: storedRoom.game || room.game
+    }));
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Round advance failed." });
   }
 }
 

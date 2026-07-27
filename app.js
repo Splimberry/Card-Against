@@ -28476,14 +28476,33 @@ function resumeSyncedRoomGame(room, options = {}) {
 
 function publishRoomRoundAdvancing(round = state.round) {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
-    return;
+    return Promise.resolve(null);
   }
-  broadcastRealtimeRoomChange("round-advancing", state.roomSettings.code, {
-    status: "in-progress",
+  const body = {
+    hostParticipantId: state.clientId,
     round: Number(round) || state.round,
-    matchId: getCurrentRoomMatchId(),
-    matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
-    updatedAt: Date.now()
+    matchId: setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId()),
+    matchSettings: getRoomMatchSettingsPayload(state.roomSettings)
+  };
+  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/round-advancing`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }, roomPresenceFetchTimeoutMs).then(async (response) => {
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return null;
+    }
+    const data = await response.json().catch(() => ({}));
+    state.roomDirectoryOnline = true;
+    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
+    if (!data.duplicate) {
+      broadcastRealtimeRoomChange("round-advancing", state.roomSettings.code, data);
+    }
+    return data;
+  }).catch(() => {
+    state.roomDirectoryOnline = false;
+    return null;
   });
 }
 
@@ -28508,12 +28527,6 @@ function publishRoomGameEnded() {
   }).then(async (response) => {
     if (!response.ok) {
       state.roomDirectoryOnline = false;
-      broadcastRealtimeRoomChange("game-ended", state.roomSettings.code, {
-        status: "complete",
-        matchId: game.matchId,
-        game,
-        updatedAt: game.updatedAt
-      });
       return null;
     }
     const data = await response.json();
@@ -28534,12 +28547,6 @@ function publishRoomGameEnded() {
     return data.room || null;
   }).catch(() => {
     state.roomDirectoryOnline = false;
-    broadcastRealtimeRoomChange("game-ended", state.roomSettings.code, {
-      status: "complete",
-      matchId: game.matchId,
-      game,
-      updatedAt: game.updatedAt
-    });
     return null;
   });
 }
@@ -29977,8 +29984,7 @@ async function beginRoomMatch() {
   clearRoundSubmissionState();
   applyRandomRoomModifiersForMatch();
   addSystemChat("The host started the match.");
-  upsertHostedRoom("in-progress");
-  publishRoomRoundAdvancing(1);
+  await publishRoomRoundAdvancing(1);
   startGame("room");
 }
 
@@ -33446,7 +33452,6 @@ function endMatch(wasExited = false, options = {}) {
   let roomEndPublish = null;
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
     state.currentRoomStatus = "complete";
-    upsertHostedRoom("complete");
     if (options.syncRoom !== false) {
       roomEndPublish = publishRoomGameEnded();
     }

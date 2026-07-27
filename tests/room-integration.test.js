@@ -1370,6 +1370,164 @@ async function testCurrentRoundSubmissionIsAnswerEvent() {
   assert.equal(answerEvent.payload.round, 2);
 }
 
+async function testRoomRoundAdvancingEndpointStampsEvent() {
+  const code = makeCode(8140);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/round-advancing`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1,
+    matchSettings: {
+      rounds: 7,
+      timerSeconds: 45,
+      maxPlayers: 6,
+      chaos: true,
+      autoAdvance: false,
+      enabledThemes: ["Science"]
+    }
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.eventType, "round-advancing");
+  assert.equal(payload.matchId, matchId);
+  assert.equal(payload.round, 1);
+  assert.equal(payload.game.status, "starting");
+  assert.equal(payload.game.setup, null);
+  assert.equal(payload.matchSettings.chaos, true);
+  assert.equal(payload.matchSettings.autoAdvance, false);
+  assert.ok(payload.revision >= 2);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.status, "in-progress");
+  assert.equal(stored.payload.room.game.matchId, matchId);
+  assert.equal(stored.payload.room.game.round, 1);
+  assert.equal(stored.payload.room.game.status, "starting");
+  assert.equal(stored.payload.room.settings.chaos, true);
+  assert.equal(stored.payload.room.settings.randomModifiers, false);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
+}
+
+async function testStaleRoomRoundAdvancingCannotOverwriteCurrentRound() {
+  const code = makeCode(8141);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const stale = await request("POST", `/api/rooms/${code}/round-advancing`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1
+  });
+  assert.equal(stale.response.status, 409);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.round, 2);
+  assert.equal(stored.payload.room.game.status, "playing");
+  assert.equal(stored.payload.room.game.setup.blackCard, "Round 2 question?");
+}
+
+async function testDelayedRoomRoundAdvancingCannotClearStartedSetup() {
+  const code = makeCode(8142);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const delayed = await request("POST", `/api/rooms/${code}/round-advancing`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1
+  });
+  assert.equal(delayed.response.status, 200, delayed.payload.error);
+  assert.equal(delayed.payload.duplicate, true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "playing");
+  assert.equal(stored.payload.room.game.setup.blackCard, "Round 1 question?");
+}
+
+async function testStaleRoomSetupCannotOverwriteGrading() {
+  const code = makeCode(8143);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "grading",
+      round: 2,
+      setup: makeSetup(2),
+      roundResult: makeRoundResult(2, { matchId }),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const stale = await request("PUT", `/api/rooms/${code}/game`, {
+    hostParticipantId: "host-client",
+    game: {
+      matchId,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      updatedAt: Date.now()
+    }
+  });
+  assert.equal(stale.response.status, 409);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "grading");
+  assert.equal(stored.payload.room.game.roundResult.questionId, "test-question-2");
+}
+
+async function testRematchRoundSetupCanStartAfterCompleteMatch() {
+  const code = makeCode(8144);
+  await upsertRoom(makeRoom(code, {
+    status: "complete",
+    game: {
+      matchId: `${code}-old-match`,
+      status: "ended",
+      round: 10,
+      setup: makeSetup(10),
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("PUT", `/api/rooms/${code}/game`, {
+    hostParticipantId: "host-client",
+    game: {
+      matchId: `${code}-new-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      updatedAt: Date.now()
+    }
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.room.status, "in-progress");
+  assert.equal(payload.room.game.matchId, `${code}-new-match`);
+  assert.equal(payload.room.game.round, 1);
+  assert.equal(payload.room.game.setup.blackCard, "Round 1 question?");
+}
+
 async function testStaleRoomRoundResultCannotOverwriteCurrentRound() {
   const code = makeCode(8133);
   const matchId = `${code}-match`;
@@ -2508,6 +2666,11 @@ async function main() {
   await testStaleParticipantSubmissionCannotOverwriteRematch();
   await testStaleParticipantSubmissionCannotOverwriteCurrentRound();
   await testCurrentRoundSubmissionIsAnswerEvent();
+  await testRoomRoundAdvancingEndpointStampsEvent();
+  await testStaleRoomRoundAdvancingCannotOverwriteCurrentRound();
+  await testDelayedRoomRoundAdvancingCannotClearStartedSetup();
+  await testStaleRoomSetupCannotOverwriteGrading();
+  await testRematchRoundSetupCanStartAfterCompleteMatch();
   await testStaleRoomRoundResultCannotOverwriteCurrentRound();
   await testStaleRoomRoundSkipCannotOverwriteCurrentRound();
   await testStaleRoomPowerStateCannotOverwriteCurrentRound();
