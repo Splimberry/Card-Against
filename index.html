@@ -36,13 +36,13 @@
   </head>
   <body>
     <main class="app-shell">
+      <div class="menu-video-bg" aria-hidden="true">
+        <video id="menuBackgroundVideo" class="menu-video-bg-media" poster="assets/backgrounds/menu-bg-poster.jpg" muted loop playsinline preload="metadata">
+          <source src="assets/backgrounds/menu-bg.webm" type="video/webm">
+          <source src="assets/backgrounds/menu-bg.mp4" type="video/mp4">
+        </video>
+      </div>
       <section class="mode-screen" id="modeScreen" aria-labelledby="modeTitle">
-        <div class="menu-video-bg" aria-hidden="true">
-          <video id="menuBackgroundVideo" class="menu-video-bg-media" poster="assets/backgrounds/menu-bg-poster.jpg" muted loop playsinline preload="metadata">
-            <source src="assets/backgrounds/menu-bg.webm" type="video/webm">
-            <source src="assets/backgrounds/menu-bg.mp4" type="video/mp4">
-          </video>
-        </div>
         <button type="button" class="round-help-button menu-help-button" id="menuHelpButton" aria-label="Game help">?</button>
         <div class="mode-header">
           <div class="mode-title-stack">
