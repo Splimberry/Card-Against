@@ -2893,6 +2893,7 @@ const state = {
   spectatorRoundResultPlaybackKey: "",
   roomRoundResultPlaybackKey: "",
   roomConnectionNoticeKeys: new Set(),
+  renderingSyncedRoomResume: false,
   roomBotSequence: 0,
   pendingRoomBotAdds: [],
   pendingRoomBotKicks: {},
@@ -10451,8 +10452,19 @@ function broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime = st
   if (!participantId) {
     return;
   }
+  const participant = state.roomParticipants.find((entry) => entry.id === participantId)
+    || (owner === state.currentOwner ? getCurrentParticipant({
+      host: isCurrentHost() && !state.joiningRoom,
+      spectator: state.isSpectator,
+      status: "submitted",
+      answer,
+      submittedRound: state.round,
+      submissionMatchId: getCurrentRoomMatchId(),
+      remainingTime
+    }) : null);
   broadcastRealtimeRoomChange("answer-submitted", state.roomSettings.code, {
     participantId,
+    participant,
     owner,
     round: state.round,
     matchId: getCurrentRoomMatchId(),
@@ -10622,7 +10634,15 @@ function applyRoomAnswerSubmission(payload = {}) {
     return false;
   }
   const participantId = String(payload.participantId || "");
-  const owner = getRoomOwnerForParticipantId(participantId);
+  let owner = getRoomOwnerForParticipantId(participantId);
+  if (!owner && payload.participant) {
+    applyRoomParticipantDelta(payload.participant, {
+      code,
+      revision: payload.revision,
+      updatedAt: payload.updatedAt
+    });
+    owner = getRoomOwnerForParticipantId(participantId);
+  }
   if (!owner || !getActiveOwners().includes(owner)) {
     return false;
   }
@@ -11028,7 +11048,9 @@ const roomAbilityEffectMapKeys = [
   "bartenders",
   "hotInHereOwners",
   "worldBurnOwners",
-  "lawnMowerOwners"
+  "lawnMowerOwners",
+  "tableEventSabotageUsed",
+  "blackMarketPurchases"
 ];
 
 const roomAbilityEffectArrayKeys = [
@@ -11066,7 +11088,9 @@ function getRoomAbilityEffectStatePayload() {
     values: {
       loserPenaltyRounds: Math.max(0, Number(state.loserPenaltyRounds) || 0),
       hotPotatoCount: Math.max(0, Number(state.hotPotatoCount) || 0),
-      nextPreferredTheme: String(state.nextPreferredTheme || "")
+      nextPreferredTheme: String(state.nextPreferredTheme || ""),
+      roundAmplifiedMultiplier: Math.max(1, Number(state.roundAmplifiedMultiplier) || 1),
+      currentTableEvent: cloneRoomAbilitySyncValue(state.currentTableEvent, null)
     }
   };
 }
@@ -11097,6 +11121,16 @@ function applyRoomAbilityEffectStatePayload(effects) {
   }
   if (Object.hasOwn(values, "nextPreferredTheme")) {
     state.nextPreferredTheme = String(values.nextPreferredTheme || "");
+  }
+  if (Object.hasOwn(values, "roundAmplifiedMultiplier")) {
+    state.roundAmplifiedMultiplier = Math.max(1, Number(values.roundAmplifiedMultiplier) || 1);
+  }
+  if (Object.hasOwn(values, "currentTableEvent")) {
+    state.currentTableEvent = values.currentTableEvent && typeof values.currentTableEvent === "object"
+      ? cloneRoomAbilitySyncValue(values.currentTableEvent, null)
+      : null;
+    applyTableEventStageClasses();
+    renderTableEventControls();
   }
   return true;
 }
@@ -11584,18 +11618,28 @@ function applyRoomPowerState(payload = {}) {
 }
 
 function applyRoomGamePowerState(game = state.roomGame) {
-  if (!game?.powerState?.hands?.length) {
+  const powerState = game?.powerState && typeof game.powerState === "object" ? game.powerState : null;
+  const hasPowerState = Boolean(
+    powerState
+    && (
+      (Array.isArray(powerState.hands) && powerState.hands.length)
+      || (Array.isArray(powerState.played) && powerState.played.length)
+      || (Array.isArray(powerState.players) && powerState.players.length)
+      || powerState.effects
+    )
+  );
+  if (!hasPowerState) {
     return false;
   }
   return applyRoomPowerState({
     code: state.roomSettings.code,
     matchId: game.matchId,
     round: game.round,
-    updatedAt: game.powerState.updatedAt,
-    hands: game.powerState.hands,
-    played: game.powerState.played,
-    players: game.powerState.players,
-    effects: game.powerState.effects
+    updatedAt: powerState.updatedAt,
+    hands: powerState.hands,
+    played: powerState.played,
+    players: powerState.players,
+    effects: powerState.effects
   });
 }
 
@@ -22062,17 +22106,26 @@ function renderRound() {
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   resetRoomSubmissions();
   resetPlayedPowersForRound();
-  rollRoundTableEvent();
-  rollRoundAmplifiedMultiplier();
+  if (state.renderingSyncedRoomResume) {
+    state.currentTableEvent = null;
+    state.tableEventSabotageUsed = {};
+    state.blackMarketPurchases = {};
+    applyTableEventStageClasses();
+  } else {
+    rollRoundTableEvent();
+    rollRoundAmplifiedMultiplier();
+  }
   state.timerPenalties = createOwnerValueMap(0);
   state.forcedWinnerOwner = null;
   elements.answerInput.disabled = state.isSpectator;
   elements.playerTwoInput.disabled = false;
   elements.submitButton.disabled = state.isSpectator;
-  applyRoundStartEffects();
-  applyRoundStartTableEventEffects();
-  applyRoomRoundStartModifiers();
-  applyPendingLegendaryPowerRewards();
+  if (!state.renderingSyncedRoomResume) {
+    applyRoundStartEffects();
+    applyRoundStartTableEventEffects();
+    applyRoomRoundStartModifiers();
+    applyPendingLegendaryPowerRewards();
+  }
   updateModeUi();
   if (!state.isSpectator) {
     focusAnswerControl();
@@ -22108,7 +22161,9 @@ function renderRound() {
   restartAnimation(judgePanel, "entering");
   renderPowerUps();
   renderScore();
-  publishRoomScoreState("round-start-score");
+  if (!state.renderingSyncedRoomResume) {
+    publishRoomScoreState("round-start-score");
+  }
   if (state.isSpectator) {
     stopTimer();
     setHidden(elements.inputPanel, true);
@@ -22213,7 +22268,7 @@ function syncCurrentRoundSetupMetadata(setup) {
   }
 }
 
-function applyRoundSetup(setup) {
+function applyRoundSetup(setup, options = {}) {
   stopLoadingMessages();
   setHidden(elements.errorPanel, true);
   state.roomRoundResult = null;
@@ -22237,8 +22292,16 @@ function applyRoundSetup(setup) {
   state.recentTriviaThemes = [...state.recentTriviaThemes, state.triviaTheme].filter(Boolean).slice(-triviaThemes.length);
   recordQuestionUsage(setup);
   preloadQuestionImage(setup);
-  renderRound();
-  publishRoomRoundSetup(setup);
+  const wasRenderingSyncedRoomResume = state.renderingSyncedRoomResume;
+  state.renderingSyncedRoomResume = Boolean(options.resumeSyncedRoom);
+  try {
+    renderRound();
+  } finally {
+    state.renderingSyncedRoomResume = wasRenderingSyncedRoomResume;
+  }
+  if (!options.skipPublish) {
+    publishRoomRoundSetup(setup);
+  }
   scheduleNextSetupPrefetch();
   playSound("reveal");
 }
@@ -27473,6 +27536,9 @@ function publishRoomRoundSetup(setup) {
     setup: syncedSetup,
     matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
     powerState: getRoomPowerStatePayload(),
+    roundStartedAt: state.roomGame?.matchId === matchId && Number(state.roomGame?.round) === Number(state.round)
+      ? Number(state.roomGame.roundStartedAt) || Date.now()
+      : Date.now(),
     updatedAt: Date.now()
   };
   broadcastRealtimeRoomChange("round-started", state.roomSettings.code, {
@@ -27501,6 +27567,131 @@ function publishRoomRoundSetup(setup) {
   }).catch(() => {
     state.roomDirectoryOnline = false;
   });
+}
+
+function getRoomGameRoundStartedAt(game = null) {
+  return Math.max(
+    0,
+    Number(game?.roundStartedAt)
+      || Number(game?.startedAt)
+      || Number(game?.setupStartedAt)
+      || Number(game?.updatedAt)
+      || 0
+  );
+}
+
+function syncTimerFromRoomGame(game = state.roomGame) {
+  if (
+    !isRoomMode()
+    || state.isSpectator
+    || !game
+    || game.status === "grading"
+    || game.roundResult
+    || elements.inputPanel.classList.contains("hidden")
+  ) {
+    stopTimer();
+    renderTimer();
+    return;
+  }
+  if (state.roomSubmissions[state.currentOwner]) {
+    stopTimer();
+    renderTimer();
+    return;
+  }
+  const roundStartedAt = getRoomGameRoundStartedAt(game);
+  const owner = getCurrentPowerOwner();
+  const duration = getOwnerAnswerTimerDuration(owner);
+  const elapsedSeconds = roundStartedAt ? Math.floor(Math.max(0, Date.now() - roundStartedAt) / 1000) : 0;
+  state.timerRemaining = Math.max(0, duration - elapsedSeconds);
+  state.timerWarned = state.timerRemaining <= 10;
+  stopTimer();
+  renderTimer();
+  if (state.timerRemaining <= 0) {
+    window.setTimeout(() => handleTimerExpired(), 0);
+    return;
+  }
+  startTimer({ resume: true });
+}
+
+function resumeSyncedRoomGame(room, options = {}) {
+  const game = room?.game && typeof room.game === "object" ? room.game : state.roomGame;
+  if (!room || room.status !== "in-progress" || !game?.setup) {
+    return false;
+  }
+  let setup;
+  try {
+    setup = normalizeSetupPayload(game.setup);
+  } catch {
+    return false;
+  }
+
+  initAudio();
+  startMusic();
+  clearRoomAutoResolve();
+  stopJoinDirectoryPolling();
+  stopRoomDirectoryPolling();
+  cancelActiveMatchWork();
+
+  const host = Boolean(options.host);
+  state.roomSettings = mergeRoomSettingsFresh(state.roomSettings, room.settings || {}, room);
+  applyRoomGameMatchSettings(game, { room, code: room.code }, { render: false, resetTimer: false });
+  state.mode = "room";
+  state.matchEnded = false;
+  state.currentRoomStatus = "in-progress";
+  state.joiningRoom = host ? null : {
+    ...(state.joiningRoom || {}),
+    ...room,
+    status: "in-progress",
+    game
+  };
+  state.isSpectator = Boolean(options.spectator);
+  state.currentOwner = state.isSpectator ? "spectator" : host ? "player" : "opponent";
+  state.roomExitLeaveSent = false;
+  state.roomMissingSince = 0;
+  state.roomClosedNotice = "";
+  state.roomParticipants = normalizeRoomParticipantsList(room.participants);
+  state.roomGame = game;
+  state.round = clampNumber(game.round, 1, Math.max(state.maxRounds || 1, Number(game.round) || 1), 1);
+  if (game.matchId) {
+    setCurrentRoomMatchId(game.matchId);
+  }
+  setPlayersForMode("room");
+
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.gameStage, false);
+  startRoomRealtime(state.roomSettings.code);
+  startRoomDirectoryPolling();
+
+  applyRoundSetup(setup, { skipPublish: true, resumeSyncedRoom: true });
+  state.roomGame = game;
+  applyRoomGamePowerState(game);
+  syncRoomSubmissionsFromParticipants();
+  renderRoomPlayers();
+  renderSubmissionStatus();
+  renderSpectatorAnswerCards();
+  renderScore();
+  renderTableEventControls();
+
+  const result = normalizeRoomRoundResultPayload(game.roundResult || null);
+  if (result && Number(result.round) === Number(state.round)) {
+    state.roomRoundResult = result;
+    if (state.isSpectator) {
+      maybePlaySpectatorRoomRoundResult(result);
+    } else if (host) {
+      state.roomRoundResolving = true;
+      playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""), { roundResult: result });
+    } else {
+      playSyncedRoomRoundResult(result);
+    }
+  } else {
+    syncTimerFromRoomGame(game);
+    maybeResolveRoomSubmissions();
+  }
+
+  return true;
 }
 
 function publishRoomRoundAdvancing(round = state.round) {
@@ -28571,7 +28762,7 @@ async function rejoinHostedRoomAsHost(room) {
     renderRoomLobby();
     startRoomDirectoryPolling();
     setHidden(elements.roomLobbyScreen, false);
-  } else {
+  } else if (!resumeSyncedRoomGame(activeRoom, { host: true })) {
     startGame("room");
   }
   playSound("click");
@@ -28798,7 +28989,9 @@ async function joinHostedRoom(code, options = {}) {
     }
 
     setHidden(elements.roomLobbyScreen, true);
-    startGame("room");
+    if (!resumeSyncedRoomGame(room, { spectator: state.isSpectator })) {
+      startGame("room");
+    }
   } finally {
     setJoinRoomBusy(false);
   }

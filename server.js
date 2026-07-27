@@ -3538,6 +3538,7 @@ function normalizeRoomGame(game) {
     matchSettings,
     roundResult,
     powerState: normalizeRoomPowerState(game.powerState),
+    roundStartedAt: clampServerNumber(game.roundStartedAt || game.startedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(game.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
   };
 }
