@@ -11397,7 +11397,6 @@ function publishRoomPowerState(payload = {}) {
     body: JSON.stringify(syncedPayload)
   }, roomPresenceFetchTimeoutMs).then(async (response) => {
     if (!response.ok) {
-      broadcastRealtimeRoomChange("power-state", state.roomSettings.code, syncedPayload);
       return null;
     }
     const data = await response.json();
@@ -11416,10 +11415,7 @@ function publishRoomPowerState(payload = {}) {
       matchId: data.matchId || syncedPayload.matchId
     });
     return data;
-  }).catch(() => {
-    broadcastRealtimeRoomChange("power-state", state.roomSettings.code, syncedPayload);
-    return null;
-  });
+  }).catch(() => null);
 }
 
 function publishRoomPowerRoundReset(round = state.round) {
@@ -12092,23 +12088,13 @@ function publishRoomRoundSkip(payload = {}) {
     body: JSON.stringify(body)
   }, roomPresenceFetchTimeoutMs).then(async (response) => {
     if (!response.ok) {
-      broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, {
-        ...body,
-        updatedAt: Date.now()
-      });
       return null;
     }
     const data = await response.json();
     rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, data);
     return data;
-  }).catch(() => {
-    broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, {
-      ...body,
-      updatedAt: Date.now()
-    });
-    return null;
-  });
+  }).catch(() => null);
 }
 
 function skipRoomRoundToGrading() {
@@ -14154,6 +14140,9 @@ function applyRealtimeHostTransferred(payload = {}) {
   if (!code || isRoomLocallyClosed(code)) {
     return false;
   }
+  if (isStaleRoomRevisionPayload({ ...payload, code, room })) {
+    return false;
+  }
   const newHost = payload.host || room?.host || {};
   const newHostId = String(payload.newHostId || newHost.id || "").slice(0, 80);
   const previousHostId = String(payload.previousHostId || "").slice(0, 80);
@@ -14233,7 +14222,7 @@ function applyRealtimeHostTransferred(payload = {}) {
     }
   }
 
-  updateRoomEventRevision(payload.revision || room?.revision);
+  rememberRoomRevisionPayload({ ...payload, code, room });
   if (!elements.joinScreen.classList.contains("hidden")) {
     renderHostedRooms({ force: true });
   }
@@ -14310,6 +14299,9 @@ function applyHostedRoomParticipantDelta(payload = {}) {
   if (!room || !payload.participant) {
     return false;
   }
+  if (isStaleRoomRevisionPayload({ ...payload, code })) {
+    return false;
+  }
   const participant = normalizeRoomParticipantDelta(payload.participant);
   if (!participant) {
     return false;
@@ -14349,6 +14341,9 @@ function applyHostedRoomParticipantLeft(payload = {}) {
   const participantId = String(payload.participantId || "").slice(0, 80);
   const room = state.hostedRooms.find((entry) => entry.code === code);
   if (!room || !participantId) {
+    return false;
+  }
+  if (isStaleRoomRevisionPayload({ ...payload, code })) {
     return false;
   }
   const leavingParticipant = (room.participants || []).find((entry) => entry.id === participantId);
@@ -14446,6 +14441,9 @@ function applyRealtimeParticipantLeft(payload = {}) {
   if (code && code !== state.roomSettings.code) {
     return false;
   }
+  if (isStaleRoomRevisionPayload({ ...payload, code })) {
+    return false;
+  }
   const participantId = String(payload.participantId || "").slice(0, 80);
   if (!participantId) {
     return false;
@@ -14488,6 +14486,9 @@ function applyRealtimeParticipantLeft(payload = {}) {
 function applyRoomModerationDelta(payload = {}) {
   const code = String(payload.code || "").trim().toUpperCase();
   if (code && code !== state.roomSettings.code) {
+    return false;
+  }
+  if (isStaleRoomRevisionPayload({ ...payload, code })) {
     return false;
   }
   const participantId = String(payload.participantId || payload.participant?.id || "").slice(0, 80);
