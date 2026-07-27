@@ -57,6 +57,8 @@ const chatCooldownDurationMs = 10000;
 const userQuestionSubmissionCost = 250;
 const roomChatHistoryLimit = 50;
 const roomMissingGraceMs = 10000;
+const roomHostReconnectGraceMs = 60 * 1000;
+const roomHostReconnectCheckBufferMs = 1500;
 const roomDirectoryFetchTimeoutMs = 4500;
 const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
@@ -3342,6 +3344,9 @@ const state = {
   },
   roomHeartbeatTimerId: null,
   roomEventPollId: null,
+  roomHostReconnectTimerId: null,
+  roomHostReconnectKey: "",
+  roomLastReconnectPresenceAt: 0,
   userStorageWriteTimerId: null,
   userStorageHydrating: false,
   userStorageApplying: false,
@@ -3361,12 +3366,14 @@ window.addEventListener("online", () => {
   if (state.supabaseAuthError || (hasAnyStoredSupabaseSession() && !state.supabaseAuthResolved)) {
     void initSupabaseAuth();
   }
+  void reconnectCurrentRoomParticipant("online");
 });
 window.addEventListener("focus", () => {
   void flushUserInventoryQueue();
   if (state.supabaseAuthError || (hasAnyStoredSupabaseSession() && !state.supabaseAuthResolved)) {
     void initSupabaseAuth();
   }
+  void reconnectCurrentRoomParticipant("focus");
 });
 
 const elements = {
@@ -13754,6 +13761,7 @@ function applyRealtimeRoomPayload(room = {}) {
 }
 
 function applyRealtimeHostTransferred(payload = {}) {
+  clearHostReconnectHandoffCheck();
   const room = payload.room && typeof payload.room === "object" ? payload.room : null;
   const code = String(payload.code || room?.code || state.roomSettings.code || "").trim().toUpperCase();
   if (!code || isRoomLocallyClosed(code)) {
@@ -26519,6 +26527,46 @@ function markCurrentRoomParticipantDisconnected(options = {}) {
   }, roomLeaveFetchTimeoutMs).catch(() => null);
 }
 
+async function reconnectCurrentRoomParticipant(reason = "reconnect") {
+  if (
+    !navigator.onLine
+    || !state.roomSettings.code
+    || state.roomSettings.code === "CAI-0000"
+    || !(isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft")
+  ) {
+    return null;
+  }
+  const now = Date.now();
+  if (now - (Number(state.roomLastReconnectPresenceAt) || 0) < 1500) {
+    requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
+    return null;
+  }
+  state.roomLastReconnectPresenceAt = now;
+  const code = String(state.roomSettings.code || "").trim().toUpperCase();
+  const room = state.hostedRooms.find((entry) => entry.code === code) || state.joiningRoom || { code };
+  state.roomExitLeaveSent = false;
+  startRoomRealtime(code);
+  const status = state.roomSubmissions[state.currentOwner]
+    ? "submitted"
+    : isCurrentHost() && !state.joiningRoom
+      ? (state.currentRoomStatus === "in-progress" ? "playing" : "host")
+      : state.isSpectator
+        ? "spectating"
+        : "joined";
+  const updatedRoom = await updateRoomPresence(room, {
+    host: isCurrentHost() && !state.joiningRoom,
+    spectator: state.isSpectator,
+    active: true,
+    status
+  });
+  if (updatedRoom) {
+    mergeHostedRoom(updatedRoom);
+    syncActiveRoomFromDirectory(updatedRoom, { skipHeartbeat: true });
+  }
+  requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
+  return updatedRoom;
+}
+
 function clearLocalRoomState(options = {}) {
   if (options.clearHostedSession) {
     clearHostedRoomSession(state.roomSettings.code);
@@ -26546,7 +26594,9 @@ function clearLocalRoomState(options = {}) {
   state.roomEventRevision = 0;
   state.roomConnectionNoticeKeys = new Set();
   state.roomMatchStartGuardUntil = 0;
+  state.roomLastReconnectPresenceAt = 0;
   resetChatCooldown();
+  clearHostReconnectHandoffCheck();
   stopRoomHeartbeat();
   stopRoomEventPolling();
   stopRoomRealtime();
@@ -27557,12 +27607,85 @@ function applyRoomParticipantConnectionDelta(payload = {}) {
   if (normalized.id !== state.clientId) {
     addRoomConnectionSystemNotice(normalized, eventType, name);
   }
+  if (normalized.host && normalized.active === false) {
+    scheduleHostReconnectHandoffCheck({
+      code: String(payload.code || state.roomSettings.code || "").trim().toUpperCase(),
+      previousHostId: normalized.id,
+      disconnectedAt: normalized.disconnectedAt || payload.updatedAt || Date.now()
+    });
+  } else if (normalized.host && normalized.active !== false) {
+    clearHostReconnectHandoffCheck();
+  }
   renderRoomPlayers();
   renderRoomChat();
   renderScore();
   renderSubmissionStatus();
   renderSpectatorCountIndicator();
   return true;
+}
+
+function clearHostReconnectHandoffCheck() {
+  if (state.roomHostReconnectTimerId) {
+    window.clearTimeout(state.roomHostReconnectTimerId);
+    state.roomHostReconnectTimerId = null;
+  }
+  state.roomHostReconnectKey = "";
+}
+
+function scheduleHostReconnectHandoffCheck(options = {}) {
+  const code = String(options.code || state.roomSettings.code || "").trim().toUpperCase();
+  const previousHostId = String(options.previousHostId || "").slice(0, 80);
+  if (!code || code !== state.roomSettings.code || !previousHostId || previousHostId === state.clientId || !hasActiveRoomContext()) {
+    return false;
+  }
+  const key = `${code}|${previousHostId}`;
+  if (state.roomHostReconnectTimerId && state.roomHostReconnectKey === key) {
+    return true;
+  }
+  clearHostReconnectHandoffCheck();
+  state.roomHostReconnectKey = key;
+  const disconnectedAt = Math.max(0, Number(options.disconnectedAt) || Date.now());
+  const dueIn = Math.max(500, disconnectedAt + roomHostReconnectGraceMs + roomHostReconnectCheckBufferMs - Date.now());
+  state.roomHostReconnectTimerId = window.setTimeout(() => {
+    state.roomHostReconnectTimerId = null;
+    state.roomHostReconnectKey = "";
+    void runHostReconnectHandoffCheck(code, previousHostId);
+  }, dueIn);
+  return true;
+}
+
+async function runHostReconnectHandoffCheck(code, previousHostId) {
+  if (!hasActiveRoomContext() || code !== state.roomSettings.code) {
+    return false;
+  }
+  const lookup = await fetchRoomByCode(code);
+  if (!hasActiveRoomContext() || code !== state.roomSettings.code) {
+    return false;
+  }
+  if (lookup.status === "closed") {
+    handleCurrentRoomClosed("The room was closed after the host did not reconnect.");
+    return true;
+  }
+  if (lookup.status !== "found" || !lookup.room) {
+    return false;
+  }
+  const room = lookup.room;
+  mergeHostedRoom(room);
+  syncActiveRoomFromDirectory(room, { skipHeartbeat: true });
+  const newHostId = String(room.host?.id || room.participants?.find?.((participant) => participant.host)?.id || "").slice(0, 80);
+  if (newHostId && newHostId !== previousHostId) {
+    broadcastRealtimeRoomChange("host-transferred", code, {
+      room,
+      previousHostId,
+      newHostId,
+      host: room.host,
+      participant: room.participants?.find?.((participant) => participant.id === newHostId) || null,
+      revision: room.revision || 0,
+      updatedAt: room.updatedAt || Date.now()
+    });
+    return true;
+  }
+  return false;
 }
 
 function getRoomConnectionNoticeKey(participant = {}, eventType = "") {
