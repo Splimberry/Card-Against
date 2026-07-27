@@ -5781,10 +5781,12 @@ function shouldPlayMenuBackgroundVideo() {
 
 function syncMenuBackgroundVideo() {
   const video = elements.menuBackgroundVideo;
+  const shouldPlay = shouldPlayMenuBackgroundVideo();
+  document.body?.toggleAttribute("data-menu-active", shouldPlay);
   if (!video) {
     return;
   }
-  if (!shouldPlayMenuBackgroundVideo()) {
+  if (!shouldPlay) {
     video.pause();
     return;
   }

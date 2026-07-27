@@ -289,7 +289,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   transition: opacity 700ms ease;
 }
 
-body:has(.mode-screen:not(.hidden)) > .menu-video-bg {
+body[data-menu-active] > .menu-video-bg {
   opacity: 1;
 }
 
