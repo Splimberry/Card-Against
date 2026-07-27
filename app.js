@@ -13060,6 +13060,12 @@ function clearHostedRoomSession(code = state.roomSettings.code) {
   } catch {}
 }
 
+function hasCurrentTabHostedRoomSession(code = state.roomSettings.code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const marker = readHostedRoomSessionMarker();
+  return Boolean(marker && normalizedCode && marker.code === normalizedCode);
+}
+
 function closeHostedRoomByCode(code, options = {}) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!/^CAI-\d{4}$/.test(normalizedCode)) {
@@ -28543,10 +28549,18 @@ async function joinHostedRoom(code, options = {}) {
       return;
     }
     const sameProfileParticipant = getRoomParticipantWithCurrentProfile(room);
-    const reconnectAsPlayer = canReconnectCurrentProfileAsRoomPlayer(room);
+    const canReclaimCurrentTabParticipant = Boolean(
+      sameProfileParticipant
+      && sameProfileParticipant.active !== false
+      && !sameProfileParticipant.host
+      && hasCurrentTabHostedRoomSession(normalizedCode)
+    );
+    const canReclaimCurrentTabPlayer = Boolean(canReclaimCurrentTabParticipant && !sameProfileParticipant.spectator);
+    const reconnectAsPlayer = canReconnectCurrentProfileAsRoomPlayer(room) || canReclaimCurrentTabPlayer;
     if (
       sameProfileParticipant
       && sameProfileParticipant.active !== false
+      && !canReclaimCurrentTabParticipant
     ) {
       addSystemChat("This profile is already active in that room. Use the existing tab, or reconnect after it disconnects.", { private: true, sync: false });
       return;
@@ -28558,7 +28572,7 @@ async function joinHostedRoom(code, options = {}) {
     }
     const activePlayerCount = getHostedRoomActivePlayerCount(room);
     const roomIsFull = activePlayerCount >= getRoomMaxPlayers(room.settings);
-    const shouldSpectate = Boolean(options.spectate || (!reconnectAsPlayer && options.fromInvite && (room.status !== "lobby" || roomIsFull)));
+    const shouldSpectate = Boolean(options.spectate || (canReclaimCurrentTabParticipant && sameProfileParticipant?.spectator) || (!reconnectAsPlayer && options.fromInvite && (room.status !== "lobby" || roomIsFull)));
     if (room.status !== "lobby" && !shouldSpectate && !reconnectAsPlayer) {
       addSystemChat("That match already started. Join as a spectator instead.", { private: true });
       return;
@@ -28610,6 +28624,7 @@ async function joinHostedRoom(code, options = {}) {
       renderHostedRooms();
       return;
     }
+    rememberHostedRoomSession(normalizedCode);
     state.isSpectator = shouldSpectate || (!reconnectAsPlayer && room.status !== "lobby");
     state.currentOwner = state.isSpectator ? "spectator" : "opponent";
     state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
