@@ -1,0 +1,832 @@
+MULTIPLAYER REWORK TASK PLAN
+Created: 2026-07-27
+
+Purpose
+-------
+Multiplayer currently has too many small fixes layered on top of each other.
+The goal of this plan is to make multiplayer consistent, realtime, and durable
+without changing the intended gameplay.
+
+This file should be used as the reference checklist while fixing multiplayer.
+Future fixes should point back to one of these tasks instead of adding more
+one-off sync patches.
+
+
+CORE MULTIPLAYER RULE
+---------------------
+Every important multiplayer change should follow this flow:
+
+1. A client requests an action.
+2. The server validates the action.
+3. The server saves the new room/match state.
+4. The server assigns a newer revision.
+5. Realtime broadcasts or server responses deliver that authoritative state.
+6. Every client applies the same authoritative state.
+
+Do not let local optimistic state become permanent truth.
+
+No constant polling should be used during multiplayer. Realtime is the main
+sync method. One-shot recovery is allowed only for reconnects, detected missed
+revisions, or manual retry.
+
+
+TARGET ROOM PHASES
+------------------
+Use one shared phase value for the room/match state:
+
+- lobby
+- preparing_round
+- answering
+- grading
+- round_complete
+- match_complete
+
+Rules:
+
+- lobby:
+  Players, bots, spectators, chat, room settings, kick, mute, ban, and start
+  match are managed here.
+
+- preparing_round:
+  Host/server is preparing the next question and round state.
+  Non-hosts and spectators must wait here.
+  They must not show "could not generate" just because the host has not
+  finished preparing yet.
+
+- answering:
+  All active gameplay players see the same question and submit answers.
+  Spectators see the same question and player answer cards.
+
+- grading:
+  Submissions are locked.
+  Grading results are shared to every client.
+  Leaderboard, tags, power effects, and score changes should sync from the
+  same result state.
+
+- round_complete:
+  The round is done.
+  If auto-advance is enabled, every client sees the same server-based
+  countdown.
+  If manual advance is enabled, only the host can continue.
+  Non-hosts wait for the host.
+
+- match_complete:
+  Match is finished.
+  Only the host can rematch or return the room to lobby.
+  Non-hosts and spectators wait for the host action.
+
+
+PHASE 1: CENTRALIZE ROOM STATE APPLICATION
+------------------------------------------
+Problem:
+Room state is currently applied through too many separate paths:
+
+- realtime broadcast handlers
+- room event catch-up handlers
+- direct room snapshot fetches
+- hosted-room directory merge logic
+- local optimistic mutations
+- special case handlers for join, kick, bot, spectator, round, power, and chat
+
+This causes inconsistent behavior because each path can merge, reject, or
+overwrite state slightly differently.
+
+Tasks:
+
+- Create one central room snapshot function:
+  applyRoomSnapshot(room, source)
+
+- Create one central room event function:
+  applyRoomEvent(event, source)
+
+- Route all room-changing realtime payloads through these functions.
+
+- Route all server room responses through these functions.
+
+- Route create-room and room-lobby state updates through the same logic.
+
+- Remove component/page-specific room merge behavior where possible.
+
+- Ensure every state application checks room code, match id, round id, and
+  revision before applying.
+
+Expected fixes:
+
+- Create room and room lobby stop behaving differently.
+- Player rows do not need separate bug fixes per screen.
+- Old state is less likely to overwrite new state.
+- Kicked bots and players should not reappear from stale state.
+
+
+PHASE 2: SERVER REVISIONS MUST BE AUTHORITATIVE
+-----------------------------------------------
+Problem:
+Old realtime events, stale snapshots, or delayed local changes can overwrite
+newer state.
+
+Tasks:
+
+- Ensure every room-changing server action increments a monotonic room
+  revision.
+
+- Ensure all important updates include:
+  - room code
+  - room revision
+  - match id when in a match
+  - round id when in a round
+  - event type
+  - server timestamp
+
+- Client rule:
+  Ignore an update if its revision is older than or equal to the current
+  revision, unless it is explicitly marked as a harmless duplicate.
+
+- Match/round rule:
+  Ignore an update if it belongs to an old match id or old round id.
+
+- Remove permanent trust in client-only optimistic state.
+
+Expected fixes:
+
+- Previous game data does not carry into rematch.
+- Old MCQ choices do not appear in new games.
+- Old answer submissions do not affect new rounds.
+- Old power states do not overwrite newer refill or chaos refresh state.
+
+
+PHASE 3: NORMALIZE PARTICIPANTS
+-------------------------------
+Problem:
+The server treats missing active as active, but the client has strict truthy
+checks in places. This causes participants to disappear, count incorrectly, or
+become ghost entries.
+
+Target participant model:
+
+{
+  id,
+  userId,
+  name,
+  role: "host" | "player" | "bot" | "spectator",
+  active: true | false,
+  banned: true | false,
+  muted: true | false
+}
+
+Tasks:
+
+- Normalize participant.active everywhere:
+  active unless active === false.
+
+- Replace strict participant.active checks with active !== false logic.
+
+- Use role instead of scattered host/bot/spectator booleans where possible.
+
+- Spectators must not be included in gameplay player arrays.
+
+- Spectators may appear in:
+  - spectator count
+  - spectator eye icon
+  - chat identity
+  - spectator-specific UI
+
+- Spectators must never:
+  - replace real players in leaderboard
+  - receive host crown
+  - submit gameplay answers
+  - receive gameplay power hands
+  - affect all-player-submitted checks
+
+- Kicked players should be marked as kicked/inactive but not banned.
+
+- Banned players should be blocked by server validation.
+
+- Bots should be server-owned room participants, not fragile local-only rows.
+
+Expected fixes:
+
+- Player duplication in leaderboard.
+- Spectator replacing a real player.
+- Spectator getting host status.
+- Spectator count not updating.
+- Kicked players unable to rejoin.
+- Kicked bots remaining as ghost state.
+- Add bot / remove bot sync issues.
+
+
+PHASE 4: REWORK JOIN, LEAVE, KICK, BAN, ADD BOT, REMOVE BOT
+-----------------------------------------------------------
+Problem:
+Room membership actions are currently vulnerable to local state racing server
+state.
+
+Tasks:
+
+- All membership changes must be server-first:
+  - join room
+  - leave room
+  - spectator join
+  - spectator leave
+  - kick player
+  - ban player
+  - add bot
+  - remove bot
+
+- Server should return the authoritative room snapshot after each membership
+  change.
+
+- Realtime should broadcast that same authoritative snapshot or event.
+
+- Client should apply the server room snapshot through applyRoomSnapshot.
+
+- Remove any artificial wait/delay used as a fix for add/kick races.
+
+- Add smooth row enter/exit animation at the shared player-row component level.
+
+- Animate only the newly added or removed row.
+
+- Do not replay row entry animations for every existing player when one player
+  joins or leaves.
+
+- Do not clip player row glow effects.
+
+- Keep buttons such as Add Bot, Begin, Kick, Mute, and Ban responsive, but do
+  not let duplicate requests create duplicate state.
+
+Expected fixes:
+
+- Host sees player joins in realtime.
+- Player join rows animate once.
+- Bot add/remove syncs reliably.
+- Kicked bot does not block adding another bot.
+- Kick and ban work consistently in create room and room lobby.
+- Kicked player sees accurate kicked text and can rejoin.
+- Banned player sees accurate banned text and cannot rejoin.
+
+
+PHASE 5: REWORK ROUND START
+---------------------------
+Problem:
+Non-hosts can enter a generation/waiting state before the host/server has
+finished preparing the shared round. This creates false "could not generate"
+errors and indefinite loading.
+
+Correct flow:
+
+1. Host clicks Start Match or Next Round.
+2. Client requests round preparation from server.
+3. Server creates the question and round setup.
+4. Server saves:
+   - match id
+   - round id
+   - question id/question payload
+   - question style
+   - multiple choice options/order if needed
+   - timer data
+   - active players
+   - power state needed for the round
+5. Server moves phase to answering.
+6. Every client receives the same authoritative round state.
+
+Tasks:
+
+- Non-host clients must not generate multiplayer questions.
+
+- Spectators must not generate multiplayer questions.
+
+- Non-hosts and spectators should show "waiting for host/server" UI during
+  preparing_round.
+
+- Do not show generation failure unless the server has actually failed to
+  prepare the round.
+
+- The question must be identical for host, players, and spectators.
+
+- MCQ option order should be stored in shared round state, not randomized per
+  client.
+
+- Round setup must include enough data for late-joining spectators to see the
+  correct current question.
+
+Expected fixes:
+
+- Non-host no longer briefly sees "could not generate."
+- Player and host always see the same question.
+- Spectators always see the actual game question.
+- Rematch first round starts cleanly.
+- Next round question generation failures become easier to diagnose.
+
+
+PHASE 6: REWORK ANSWER SUBMISSION
+---------------------------------
+Problem:
+Answer submission state can carry over, desync, or fail to trigger the waiting
+section correctly.
+
+Target answer state:
+
+answers: {
+  participantId: {
+    status: "answering" | "submitted" | "timed_out",
+    answer,
+    submittedAt,
+    autoSubmitted: true | false
+  }
+}
+
+Tasks:
+
+- Submit answer through a server endpoint.
+
+- Auto-submit timed-out answers through the same server path or equivalent
+  server-authoritative event.
+
+- Store submissions by participant id and round id.
+
+- Ignore submission updates from old round ids or old match ids.
+
+- Clear answer state at the start of every new round and rematch.
+
+- Show waiting-for-others section once any active player has submitted or timed
+  out.
+
+- Waiting section should update in realtime for host, players, and spectators.
+
+- Spectator player cards should show a correctly sized submitted pill.
+
+- Submitted pill should be green and consistent with the rest of the UI.
+
+- MCQ option clicks should submit immediately and only for the current round.
+
+- Previous MCQ selections must not affect future rounds.
+
+Expected fixes:
+
+- Previous game MCQ selections do not carry over.
+- Waiting for others section appears consistently.
+- Spectators can see who has submitted.
+- Answer submission does not silently fail after rematch.
+
+
+PHASE 7: REWORK GRADING TRIGGER
+-------------------------------
+Problem:
+Grading can trigger too early, too late, or differently per client when timers
+or answer states desync.
+
+Correct trigger rules:
+
+- If every active gameplay player has submitted or timed out, grading starts.
+
+- If the longest effective timer has expired, grading is forced to start.
+
+- Host manual skip to results may trigger grading early if allowed.
+
+- Grading should only be triggered once per round.
+
+Tasks:
+
+- Server should decide when grading starts.
+
+- Server should lock submissions before grading.
+
+- Client should not locally decide that grading starts except by receiving the
+  authoritative room phase/result.
+
+- Use round id to prevent duplicate grading from old events.
+
+- If grading is in progress, clients should display waiting/grading UI, not
+  generation failure.
+
+- Server should save the round result before broadcasting grading state.
+
+Expected fixes:
+
+- Non-host does not enter grading earlier than host.
+- Timer differences do not break grading.
+- Manual skip and auto grading do not double-trigger.
+- Grading phase is consistent for host, players, and spectators.
+
+
+PHASE 8: REWORK TIMERS
+----------------------
+Problem:
+Some time-changing powers currently affect local timers in a way that can make
+one player enter grading before another.
+
+Target timing model:
+
+{
+  roundStartedAt,
+  baseDurationMs,
+  participantTimers: {
+    participantId: {
+      endsAt,
+      speedMultiplier,
+      status: "running" | "ended"
+    }
+  },
+  gradingForceAt
+}
+
+Tasks:
+
+- Round timers should be based on server timestamps.
+
+- Every player should derive their countdown from shared timer state.
+
+- Time Bender-style effects should modify shared participant timer state.
+
+- Time Bender should:
+  - give the user 5 seconds
+  - speed up other players' timers by 2x
+  - not instantly remove 10 seconds locally
+
+- Auto grading should wait for all players to be done or for gradingForceAt.
+
+- Manual skip to results remains host-controlled.
+
+- Next-round countdown should be server-synced, not local-only.
+
+Expected fixes:
+
+- Timer powers do not desync grading.
+- Everyone sees fair countdown behavior.
+- Next round timer syncs for everyone.
+
+
+PHASE 9: REWORK GRADING RESULT AND NEXT ROUND
+---------------------------------------------
+Problem:
+Round result, leaderboard, earned tags, power effects, and next round advance
+can diverge between clients.
+
+Tasks:
+
+- Server should produce or save one authoritative round result.
+
+- Round result should include:
+  - graded answers
+  - correctness
+  - human-readable judgement justification
+  - earned tags
+  - score deltas
+  - streak changes
+  - leaderboard after scoring
+  - power effects used this round
+  - active effects after scoring
+
+- Clients should render result from this shared result object.
+
+- Auto-advance should be represented by a shared nextRoundAt timestamp.
+
+- Host manual next round should request the server to prepare the next round.
+
+- Non-host next round/rematch/back-to-room buttons should be hidden or disabled.
+
+- Continue playing should remain removed if rematch/back-to-room covers it.
+
+Expected fixes:
+
+- Round complete panel is consistent.
+- Leaderboard syncs.
+- Prefix/tag pills display consistently.
+- Host actions sync for all players.
+- Non-hosts wait instead of starting their own flow.
+
+
+PHASE 10: REWORK REMATCH AND BACK TO ROOM
+-----------------------------------------
+Problem:
+Previous match data can survive into rematch or new room state.
+
+Tasks:
+
+- Rematch must create a new match id.
+
+- Back to room must clear match-specific state for everyone.
+
+- The following must be cleared on rematch/back-to-room:
+  - current question
+  - MCQ selected option
+  - text answer
+  - submitted answers
+  - grading result
+  - round tags
+  - temporary power effects
+  - round timers
+  - round id
+  - match-complete panel state
+
+- Persistent player data should remain:
+  - account/profile
+  - coins
+  - owned cosmetics
+  - saved settings
+  - allowed room membership
+
+- All clients should receive rematch/back-to-room from the server room state.
+
+Expected fixes:
+
+- Previous answer/MCQ choice does not carry into next match.
+- Question generation after rematch is reliable.
+- Host and player return to lobby together.
+- Host and player rematch together.
+
+
+PHASE 11: REWORK POWER STATE SYNC
+---------------------------------
+Problem:
+Power state is currently complex and vulnerable to stale updates, especially
+with chaos refresh, dead weight, refill, reroll, targeted powers, and debug
+tools.
+
+Target power state:
+
+powerState: {
+  participantId: {
+    hand: [],
+    activeEffects: [],
+    playedThisRound: [],
+    locks: [],
+    updatedAt,
+    revision
+  }
+}
+
+Tasks:
+
+- Route all multiplayer power changes through server-authoritative actions:
+  - use power
+  - give power
+  - bot use power
+  - refill hand
+  - chaos refresh
+  - reroll
+  - dead weight transformation
+  - clear used power
+  - add active effect
+  - remove active effect
+
+- Server should return affected participants' full updated power state.
+
+- Client should apply power state by participant id, match id, round id, and
+  revision.
+
+- Do not let old hand state overwrite newer hand state.
+
+- Ensure chaos first round overlay does not refresh the initial starting hand.
+
+- Ensure chaos first round overlay still tells players chaos mode is active,
+  but does not show refill/refresh text on initial round.
+
+- Ensure dead weight and similar effects do not block future valid chaos
+  refresh/refill unless intended by rules.
+
+- Ensure bot power debug uses the same server path as normal power updates.
+
+Expected fixes:
+
+- Used powers do not permanently disappear.
+- Chaos refresh does not briefly show powers then remove them.
+- Dead weight does not break normal refresh.
+- Power debug can reliably give powers in 1vbot testing.
+- Player, host, bot, and spectator views agree on power use.
+
+
+PHASE 12: REWORK CHAT AND ROOM ACTION SYNC
+------------------------------------------
+Problem:
+Chat and room actions should be realtime, but they should not poll or depend on
+fragile UI-only state.
+
+Tasks:
+
+- Chat messages should be saved through the server.
+
+- Server should assign message timestamp/revision.
+
+- Realtime should deliver the saved message.
+
+- Chat cooldown text should update locally and accurately in the textarea.
+
+- Too many chat messages should make chat scroll internally instead of growing
+  the whole room.
+
+- Spectator chat identity should include the spectator icon before owned icons.
+
+- Spectator icon should match spectator name color.
+
+- Host icon should remain first next to host name.
+
+Expected fixes:
+
+- Chat does not cause room layout growth bugs.
+- Chat cooldown text updates correctly.
+- Spectator identity is clear and consistent.
+
+
+PHASE 13: REMOVE CONSTANT POLLING
+---------------------------------
+Problem:
+Constant polling increases traffic, heats up devices, and hides sync bugs
+instead of fixing them.
+
+Allowed recovery:
+
+- One-shot resync when realtime reconnects.
+
+- One-shot resync when a revision gap is detected.
+
+- Manual retry button for genuine failed state.
+
+- Room directory refresh only where needed outside active gameplay.
+
+Not allowed:
+
+- Constant room polling during active match.
+
+- Polling to detect player joins.
+
+- Polling to detect answer submissions.
+
+- Polling to detect bot changes.
+
+- Polling to detect spectators.
+
+- Polling as the main way to keep multiplayer alive.
+
+Tasks:
+
+- Search for interval-based room sync.
+
+- Remove or disable constant active-match polling.
+
+- Replace with realtime subscription health tracking.
+
+- Add visible or logged diagnostics for realtime connection state.
+
+- Add one-shot recovery for reconnect/revision gap only.
+
+Expected fixes:
+
+- Lower network traffic.
+- Less laptop heat.
+- Realtime bugs become visible instead of hidden.
+- Multiplayer feels more immediate.
+
+
+PHASE 14: ADD MULTIPLAYER DIAGNOSTICS
+-------------------------------------
+Problem:
+When sync fails, it is currently hard to see which event was missed or applied
+out of order.
+
+Tasks:
+
+- Add a developer-only room event timeline.
+
+- Track:
+  - current room code
+  - current revision
+  - current match id
+  - current round id
+  - current phase
+  - realtime connection state
+  - last received event type
+  - last applied event type
+  - ignored stale events
+  - detected revision gaps
+  - one-shot resync attempts
+
+- Keep this hidden from normal users.
+
+- Make it available only in local/dev/admin mode.
+
+Expected fixes:
+
+- Easier to identify real sync failures.
+- Less guessing.
+- Faster debugging without adding random patches.
+
+
+PHASE 15: ADD MULTIPLAYER BROWSER TESTS
+---------------------------------------
+Problem:
+Server endpoint tests pass, but browser-to-browser multiplayer behavior is not
+well covered.
+
+Tasks:
+
+- Add tests using two or three browser contexts:
+  - host
+  - player
+  - spectator
+
+- Test host creates room.
+
+- Test player joins and appears for host in realtime.
+
+- Test spectator joins and spectator count updates in realtime.
+
+- Test kicked player can rejoin.
+
+- Test banned player cannot rejoin.
+
+- Test add bot syncs.
+
+- Test remove bot syncs.
+
+- Test host starts match and player sees same question.
+
+- Test spectator sees same question.
+
+- Test player submits answer and waiting section updates.
+
+- Test all submitted triggers grading once.
+
+- Test timeout auto-submits.
+
+- Test host next round syncs to player and spectator.
+
+- Test auto-advance countdown syncs.
+
+- Test rematch clears old answer/question/MCQ state.
+
+- Test back to room returns everyone.
+
+- Test power use syncs across host/player/spectator.
+
+- Test chaos refresh does not break hands.
+
+Expected fixes:
+
+- Future multiplayer regressions are caught earlier.
+- Fixes become safer.
+- Multiplayer changes can be committed with confidence.
+
+
+IMPLEMENTATION ORDER
+--------------------
+Use this order to avoid another patch spiral:
+
+1. Centralize room snapshot/event application.
+
+2. Normalize participants and roles.
+
+3. Rework join/leave/kick/ban/add bot/remove bot as server-authoritative
+   actions.
+
+4. Rework round start so only shared server-created round state starts
+   answering.
+
+5. Rework answer submission and waiting-for-others state.
+
+6. Rework grading trigger and submission locking.
+
+7. Rework shared timer model.
+
+8. Rework grading result, next round, rematch, and back-to-room sync.
+
+9. Rework power state sync.
+
+10. Rework chat and spectator identity details.
+
+11. Remove constant polling.
+
+12. Add diagnostics.
+
+13. Add multiplayer browser tests.
+
+
+DO NOT DO
+---------
+- Do not add random wait times to hide race conditions.
+
+- Do not add constant polling to hide realtime bugs.
+
+- Do not make separate player-row logic for create room and room lobby.
+
+- Do not let spectators enter gameplay player state.
+
+- Do not let non-hosts generate multiplayer questions.
+
+- Do not show generation errors while waiting for host/server preparation.
+
+- Do not let old match/round updates apply to the current match/round.
+
+- Do not make local optimistic room state permanent unless server confirms it.
+
+
+FIRST CODING TARGET
+-------------------
+The first coding target should be:
+
+1. Add or identify central room apply helpers.
+2. Normalize client participant active checks to active !== false.
+3. Ensure create room and room lobby use the same participant/row data path.
+4. Make membership actions server-authoritative.
+5. Add tests for join, kick, ban, add bot, remove bot, and spectator count.
+
+This gives the rest of the rework a stable foundation.
