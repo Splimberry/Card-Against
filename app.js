@@ -10693,7 +10693,8 @@ function applyServerChatCooldown(retryAfterMs = chatCooldownDurationMs, input = 
 }
 
 function publishRoomChat(message = state.roomChat.at(-1), input = elements.chatInput) {
-  if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+  const code = state.roomSettings.code;
+  if (!code || code === "CAI-0000") {
     return Promise.resolve(null);
   }
   if (!(isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft")) {
@@ -10702,10 +10703,18 @@ function publishRoomChat(message = state.roomChat.at(-1), input = elements.chatI
   if (!message) {
     return Promise.resolve(null);
   }
-  return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/chat`, {
+  const clientEventId = createRoomClientEventId("chat-message", code);
+  const optimisticMessage = getRoomSyncChatMessage(message);
+  broadcastRealtimeRoomChange("chat-message", code, {
+    clientEventId,
+    optimistic: true,
+    message: optimisticMessage,
+    updatedAt: optimisticMessage.createdAt
+  });
+  return fetch(`/api/rooms/${encodeURIComponent(code)}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: getRoomSyncChatMessage(message), compact: true })
+    body: JSON.stringify({ clientEventId, message: optimisticMessage, compact: true })
   }).then(async (response) => {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -10719,11 +10728,12 @@ function publishRoomChat(message = state.roomChat.at(-1), input = elements.chatI
       return null;
     }
     state.roomDirectoryOnline = true;
-    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
+    rememberRoomRevisionPayload({ ...data, code: data.code || code });
     if (data.message) {
       applyRealtimeRoomChatMessage(data.message);
       broadcastRealtimeRoomChange("chat-message", state.roomSettings.code, {
         ...data,
+        clientEventId,
         message: getRoomSyncChatMessage(data.message)
       });
     } else if (data.room) {
@@ -10957,9 +10967,13 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
     state.roomDirectoryOnline = true;
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || buildRoomDirectoryPayload("in-progress");
     const appliedRoom = applyRoomPresenceResponse(data, room, {}, "answer-response");
-    if (data.grading && typeof data.grading === "object" && isCurrentHost() && !state.joiningRoom && !state.isSpectator) {
-      applyRealtimeRoomGrading(data.grading);
-      broadcastRealtimeRoomChange(data.grading.eventType || "round-grading", state.roomSettings.code, data.grading);
+    if (data.grading && typeof data.grading === "object") {
+      const gradingPayload = {
+        ...data.grading,
+        clientEventId: data.grading.clientEventId || clientEventId
+      };
+      applyRealtimeRoomGrading(gradingPayload);
+      broadcastRealtimeRoomChange(gradingPayload.eventType || "round-grading", state.roomSettings.code, gradingPayload);
     }
     return appliedRoom;
   }).catch(() => {
@@ -13100,6 +13114,41 @@ function buildRoundSkipSubmissions() {
     .filter(Boolean);
 }
 
+function createOptimisticRoomGradingGame(submissions = [], options = {}) {
+  const matchId = String(options.matchId || getCurrentRoomMatchId() || state.roomGame?.matchId || "").trim();
+  const round = Number(options.round || state.round) || state.round;
+  const updatedAt = Number(options.updatedAt) || Date.now();
+  const answers = {};
+  submissions.forEach((entry) => {
+    const participantId = String(entry?.participantId || "").slice(0, 80);
+    if (!participantId) {
+      return;
+    }
+    answers[participantId] = {
+      participantId,
+      status: String(entry.status || "submitted").toLowerCase() === "timed_out" ? "timed_out" : "submitted",
+      answer: cleanInput(entry.answer || ""),
+      submittedAt: Math.max(0, Number(entry.submittedAt) || updatedAt),
+      autoSubmitted: Boolean(entry.autoSubmitted),
+      remainingTime: Math.max(0, Number(entry.remainingTime) || 0),
+      matchId,
+      round
+    };
+  });
+  return {
+    ...(state.roomGame || {}),
+    matchId,
+    status: "grading",
+    round,
+    answers,
+    roundResult: null,
+    gradingStartedAt: updatedAt,
+    gradingReason: String(options.reason || "all-submitted"),
+    gradingForceAt: Math.max(0, Number(options.gradingForceAt) || 0),
+    updatedAt
+  };
+}
+
 function getRoomBotAnswerSubmissionKey(owner = "") {
   return [getCurrentRoomRoundSyncKey(), owner].join("|");
 }
@@ -13280,12 +13329,14 @@ function publishRoomRoundSkip(payload = {}) {
     updatedAt
   };
   if (payload.optimisticRealtime !== false) {
+    const optimisticGame = createOptimisticRoomGradingGame(body.submissions, body);
     const optimisticPayload = {
       ...body,
       code,
       eventType: "round-grading",
       clientEventId,
       optimistic: true,
+      game: optimisticGame,
       updatedAt
     };
     applyRealtimeRoomGrading(optimisticPayload);
@@ -14400,15 +14451,34 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
   ].includes(String(eventType || ""));
 }
 
-function sendRealtimeRoomPayload(channel, payload) {
+function sendRealtimeRoomPayload(channel, payload, options = {}) {
   if (!channel) {
     return false;
   }
-  channel.send({
+  const sendPromise = channel.send({
     type: "broadcast",
     event: "room-change",
     payload
-  }).catch(() => {});
+  });
+  if (sendPromise && typeof sendPromise.then === "function") {
+    sendPromise.then((result) => {
+      const status = typeof result === "string" ? result : String(result?.status || result || "");
+      if (status && status !== "ok") {
+        recordRoomDiagnosticEvent("send-warning", payload, {
+          source: options.source || "supabase",
+          reason: `Realtime send returned ${status}.`
+        });
+      }
+    }).catch((error) => {
+      recordRoomDiagnosticEvent("send-failed", payload, {
+        source: options.source || "supabase",
+        reason: error?.message || "Realtime send failed."
+      });
+      if (options.queueOnFailure && options.code) {
+        queueCriticalRoomRealtimePayload(payload, options.code);
+      }
+    });
+  }
   return true;
 }
 
@@ -14419,7 +14489,7 @@ function retryRoomParticipantBroadcastWhenReady(payload, code = "") {
   [300, 900, 1600].forEach((delay) => {
     window.setTimeout(() => {
       if (state.realtimeRoomChannel && state.realtimeRoomCode === code) {
-        sendRealtimeRoomPayload(state.realtimeRoomChannel, payload);
+        sendRealtimeRoomPayload(state.realtimeRoomChannel, payload, { source: "room-retry" });
       }
     }, delay);
   });
@@ -14602,7 +14672,7 @@ function flushPendingRoomRealtimePayloads(code = state.roomSettings.code) {
         ...entry.payload,
         replayed: true,
         replayedAt: Date.now()
-      });
+      }, { source: "room-queue-flush" });
     } else {
       remaining.push(entry);
     }
@@ -14617,6 +14687,8 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
   if (!code || code === "CAI-0000") {
     return;
   }
+  const forceRoomChannel = Boolean(details.forceRoomChannel);
+  const forceLobbyChannel = Boolean(details.forceLobbyChannel);
   const payload = {
     eventType: String(eventType || "room-updated"),
     code,
@@ -14627,6 +14699,8 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
     ...details,
     clientEventId: String(details.clientEventId || room?.clientEventId || createRoomClientEventId(eventType, code)).slice(0, 160)
   };
+  delete payload.forceRoomChannel;
+  delete payload.forceLobbyChannel;
   if (room) {
     payload.room = getRealtimeRoomPayload(room, {
       includeGame: eventType === "round-started" || room.status === "in-progress"
@@ -14637,8 +14711,8 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
   } else {
     markRoomClientEventConfirmed(payload, { source: "client" });
   }
-  const sendToRoom = shouldSendRealtimeEventToRoom(payload.eventType);
-  const sendToLobby = shouldSendRealtimeEventToLobby(payload.eventType);
+  const sendToRoom = forceRoomChannel || shouldSendRealtimeEventToRoom(payload.eventType);
+  const sendToLobby = forceLobbyChannel || shouldSendRealtimeEventToLobby(payload.eventType);
   if (!state.supabaseClient) {
     if (sendToRoom) {
       queueCriticalRoomRealtimePayload(payload, code);
@@ -14646,10 +14720,14 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
     return;
   }
   const sentToLobby = sendToLobby
-    ? sendRealtimeRoomPayload(state.realtimeLobbyChannel, createRealtimeLobbySummaryPayload(payload))
+    ? sendRealtimeRoomPayload(state.realtimeLobbyChannel, createRealtimeLobbySummaryPayload(payload), { source: "lobby" })
     : false;
   const sentToRoom = sendToRoom && state.realtimeRoomCode === code
-    ? sendRealtimeRoomPayload(state.realtimeRoomChannel, payload)
+    ? sendRealtimeRoomPayload(state.realtimeRoomChannel, payload, {
+        source: "room",
+        code,
+        queueOnFailure: isCriticalRoomRealtimeEvent(payload.eventType)
+      })
     : false;
   if (sendToRoom && isCriticalRoomRealtimeEvent(payload.eventType) && (!sentToRoom || !state.realtimeRoomReady)) {
     queueCriticalRoomRealtimePayload(payload, code);
@@ -16862,7 +16940,9 @@ function publishProfileIdentityUpdate() {
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
     updateRoomPresence(room, {
       spectator: state.isSpectator,
-      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined"
+      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined",
+      optimisticRealtime: true,
+      optimisticEventType: "participant-updated"
     });
     return;
   }
@@ -20224,7 +20304,9 @@ function setEquippedAchievement(id) {
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
     updateRoomPresence(room, {
       spectator: state.isSpectator,
-      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined"
+      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined",
+      optimisticRealtime: true,
+      optimisticEventType: "participant-updated"
     });
   } else if (state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress") {
     publishRoomSettings(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
@@ -20911,7 +20993,9 @@ async function saveProfileCustomizationDraft() {
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
     updateRoomPresence(room, {
       spectator: state.isSpectator,
-      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined"
+      status: state.isSpectator ? "spectating" : state.currentRoomStatus === "in-progress" ? "playing" : "joined",
+      optimisticRealtime: true,
+      optimisticEventType: "participant-updated"
     });
   } else if (state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress") {
     publishRoomSettings(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
@@ -23842,12 +23926,14 @@ function commitRoomBotAnswer(owner, options = {}) {
   }
   if (isRoomMode()) {
     updateRoomParticipantSubmission(getRoomParticipantIdForOwner(owner), answer, state.round, remainingTime);
+    setRoomSubmission(owner, true);
     registerRoomBotAnswerSubmission(
       owner,
       publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime, { autoSubmitted: true })
     );
+  } else {
+    setRoomSubmission(owner, true);
   }
-  setRoomSubmission(owner, true);
   return true;
 }
 
@@ -29830,13 +29916,26 @@ function buildRoomDirectoryPayload(status = "lobby") {
 }
 
 async function publishRoomDirectory(room) {
+  const code = String(room?.code || room?.settings?.code || state.roomSettings.code || "").trim().toUpperCase();
+  const clientEventId = createRoomClientEventId("room-updated", code);
+  const optimisticRoom = {
+    ...(room || {}),
+    code,
+    updatedAt: Number(room?.updatedAt) || Date.now()
+  };
+  if (code && code !== "CAI-0000") {
+    broadcastRealtimeRoomChange("room-updated", optimisticRoom, {
+      clientEventId,
+      optimistic: true
+    });
+  }
   try {
     const response = await fetch("/api/rooms", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ room })
+      body: JSON.stringify({ room: optimisticRoom, clientEventId })
     });
     if (!response.ok) {
       state.roomDirectoryOnline = false;
@@ -29847,7 +29946,7 @@ async function publishRoomDirectory(room) {
     const data = await response.json();
     state.roomDirectoryOnline = true;
     if (data.room) {
-      broadcastRealtimeRoomChange("room-updated", data.room);
+      broadcastRealtimeRoomChange("room-updated", data.room, { clientEventId });
     }
     if (Array.isArray(data.transferredRooms)) {
       data.transferredRooms.forEach((transferredRoom) => {
@@ -29860,7 +29959,7 @@ async function publishRoomDirectory(room) {
         }
       });
     }
-    return data.room || room;
+    return data.room || optimisticRoom;
   } catch {
     state.roomDirectoryOnline = false;
     console.warn("Room directory update failed.");
@@ -30756,9 +30855,11 @@ function publishRoomRoundSetup(setup) {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !setup) {
     return;
   }
+  const code = state.roomSettings.code;
   const syncedSetup = normalizeSetupPayload(setup);
   const matchId = setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId());
-  const clientEventId = createRoomClientEventId("round-started", state.roomSettings.code);
+  const clientEventId = createRoomClientEventId("round-started", code);
+  const updatedAt = Date.now();
   state.roomGame = {
     matchId,
     status: "playing",
@@ -30766,13 +30867,28 @@ function publishRoomRoundSetup(setup) {
     setup: syncedSetup,
     matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
     powerState: getRoomPowerStatePayload(),
-    setupStartedAt: Number(state.roomGame?.setupStartedAt) || Date.now(),
+    setupStartedAt: Number(state.roomGame?.setupStartedAt) || updatedAt,
     roundStartedAt: state.roomGame?.matchId === matchId && Number(state.roomGame?.round) === Number(state.round)
-      ? Number(state.roomGame.roundStartedAt) || Date.now()
-      : Date.now(),
-    updatedAt: Date.now()
+      ? Number(state.roomGame.roundStartedAt) || updatedAt
+      : updatedAt,
+    updatedAt
   };
-  fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/game`, {
+  const hostedRoom = state.hostedRooms.find((entry) => entry.code === code);
+  if (hostedRoom) {
+    hostedRoom.status = "in-progress";
+    hostedRoom.game = state.roomGame;
+    hostedRoom.updatedAt = updatedAt;
+  }
+  broadcastRealtimeRoomChange("round-started", code, {
+    clientEventId,
+    optimistic: true,
+    status: "in-progress",
+    matchId,
+    round: state.round,
+    game: state.roomGame,
+    updatedAt
+  });
+  fetch(`/api/rooms/${encodeURIComponent(code)}/game`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ clientEventId, game: state.roomGame })
@@ -31062,10 +31178,49 @@ function publishRoomReturnToLobby() {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
+  const clientEventId = createRoomClientEventId("room-updated", code);
+  const updatedAt = Date.now();
+  const existingRoom = state.hostedRooms.find((entry) => entry.code === code) || state.joiningRoom || buildRoomDirectoryPayload("lobby");
+  const participants = normalizeRoomParticipantsList(state.roomParticipants.length ? state.roomParticipants : existingRoom.participants || [])
+    .map((participant) => ({
+      ...participant,
+      answer: "",
+      submittedRound: 0,
+      submissionMatchId: "",
+      remainingTime: 0,
+      status: isRoomParticipantHost(participant)
+        ? "host"
+        : isRoomParticipantSpectator(participant)
+          ? "spectating"
+          : "joined"
+    }));
+  const optimisticRoom = {
+    ...existingRoom,
+    code,
+    status: "lobby",
+    settings: { ...state.roomSettings, code },
+    participants,
+    activePlayers: participants.filter(isRoomGameplayParticipant).length,
+    spectators: participants.filter((participant) => isRoomParticipantActive(participant) && isRoomParticipantSpectator(participant)).length,
+    game: null,
+    updatedAt
+  };
+  const hostedRoom = state.hostedRooms.find((entry) => entry.code === code);
+  if (hostedRoom) {
+    Object.assign(hostedRoom, optimisticRoom);
+  }
+  broadcastRealtimeRoomChange("room-updated", optimisticRoom, {
+    clientEventId,
+    optimistic: true,
+    status: "lobby",
+    game: null,
+    forceRoomChannel: true
+  });
   return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/lobby`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      clientEventId,
       hostParticipantId: state.clientId,
       matchId: getCurrentRoomMatchId()
     })
@@ -31082,7 +31237,10 @@ function publishRoomReturnToLobby() {
       ? applyRoomSnapshot(room, { source: "return-lobby-response" })
       : false;
     if (room) {
-      broadcastRealtimeRoomChange("room-updated", room);
+      broadcastRealtimeRoomChange("room-updated", room, {
+        clientEventId,
+        forceRoomChannel: true
+      });
     }
     return { room, applied };
   }).catch(() => {
@@ -36560,6 +36718,8 @@ async function startNextRoomMatchWithSpectatorMode(spectating) {
     const updatedRoom = await updateRoomPresence(room, {
       spectator: state.isSpectator,
       status: state.isSpectator ? "spectating" : "joined",
+      optimisticRealtime: true,
+      optimisticEventType: "participant-updated",
       includeRoomSnapshot: true
     });
     if (updatedRoom) {
@@ -36590,17 +36750,8 @@ function returnToRoomLobbyAfterMatch(options = {}) {
     void publishRoomReturnToLobby().then((result) => {
       if (!result?.room) {
         addSystemChat("Could not return the room to lobby. Please try again.", { private: true, sync: false });
-        return;
-      }
-      if (!result.applied) {
-        returnToRoomLobbyAfterMatch({
-          sync: false,
-          playSound: false,
-          participants: result.room.participants
-        });
       }
     });
-    return;
   }
   clearRoomMatchScopedStateForLobby();
   state.roomMatchStartGuardUntil = 0;
@@ -36628,6 +36779,8 @@ function returnToRoomLobbyAfterMatch(options = {}) {
         answer: "",
         submittedRound: 0,
         remainingTime: 0,
+        optimisticRealtime: true,
+        optimisticEventType: "participant-updated",
         includeRoomSnapshot: true
       });
     }

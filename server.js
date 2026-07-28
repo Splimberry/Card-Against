@@ -2117,6 +2117,7 @@ function isAnswerCorrectByStrictness(answer, acceptedAnswers = [], strictness = 
 async function handleUpsertRoom(req, res) {
   try {
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const rawRoom = body.room || body;
     const existingRoom = await backendStore.getRoom(rawRoom.code);
     const authBody = { ...body, room: rawRoom, host: rawRoom.host };
@@ -2154,9 +2155,10 @@ async function handleUpsertRoom(req, res) {
     room.events = normalizeRoomEvents(existingRoom?.events);
     room.revision = clampServerNumber(existingRoom?.revision, 0, Number.MAX_SAFE_INTEGER, 0);
     const transferredRooms = await transferExistingHostRooms(room);
-    stampRoomEvent(room, existingRoom ? "room_updated" : "room_created", { status: room.status });
+    stampRoomEvent(room, existingRoom ? "room_updated" : "room_created", { clientEventId, status: room.status });
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, {
+      clientEventId,
       room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hasRoomHostAuth(req, storedRoom, authBody) || issueHostCookie }),
       transferredRooms: transferredRooms.map((entry) => sanitizeRoomForClient(entry))
     }, issueHostCookie ? { "Set-Cookie": createRoomHostCookie(req, storedRoom) } : {});
@@ -3127,6 +3129,7 @@ async function handleRoomChat(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const [message] = normalizeRoomChat([body.message || body]);
     if (!message) {
       sendJson(res, 400, { error: "Chat message is empty." });
@@ -3167,6 +3170,7 @@ async function handleRoomChat(req, res, code) {
     message.createdAt = messageCreatedAt;
     room.chat = normalizeRoomChat([...(Array.isArray(room.chat) ? room.chat : []), message]);
     stampRoomEvent(room, "chat_message", {
+      clientEventId,
       owner: message.owner,
       sender: message.sender,
       participantId,
@@ -3177,6 +3181,7 @@ async function handleRoomChat(req, res, code) {
     const storedRoom = await backendStore.upsertRoom(room);
     if (body.compact) {
       sendJson(res, 200, createRoomEventResponse(storedRoom, "chat_message", {
+        clientEventId,
         message
       }));
       return;
@@ -3283,6 +3288,7 @@ async function handleRoomReturnToLobby(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can return the room to lobby.")) {
       return;
     }
@@ -3303,6 +3309,7 @@ async function handleRoomReturnToLobby(req, res, code) {
     finalizeRoom(room);
     const lobbySnapshot = sanitizeRoomForClient({ ...room, events: [] }, { includePrivateSecrets: true });
     stampRoomEvent(room, "room_updated", {
+      clientEventId,
       status: "lobby",
       previousMatchId: currentMatchId,
       room: lobbySnapshot,
@@ -3310,6 +3317,7 @@ async function handleRoomReturnToLobby(req, res, code) {
     });
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, createRoomEventResponse(storedRoom, "room_updated", {
+      clientEventId,
       previousMatchId: currentMatchId,
       room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true }),
       game: null
