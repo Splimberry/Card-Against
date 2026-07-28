@@ -277,6 +277,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomGradingMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/grading$/);
+    if (roomGradingMatch && req.method === "POST") {
+      await handleRoomRoundGrading(req, res, roomGradingMatch[1]);
+      return;
+    }
+
     const roomPowerStateMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/power-state$/);
     if (roomPowerStateMatch && req.method === "POST") {
       await handleRoomPowerState(req, res, roomPowerStateMatch[1]);
@@ -2102,6 +2108,9 @@ function sanitizeRoomEventForClient(event, options = {}) {
   if (sanitized.payload.room && typeof sanitized.payload.room === "object") {
     sanitized.payload.room = sanitizeRoomForClient(sanitized.payload.room, options);
   }
+  if (sanitized.payload.game && typeof sanitized.payload.game === "object") {
+    sanitized.payload.game = sanitizeRoomGameForClient(sanitized.payload.game, options);
+  }
   if (!options.includePrivateSecrets) {
     delete sanitized.payload.hostToken;
     delete sanitized.payload.roomHostToken;
@@ -3444,6 +3453,10 @@ async function handleRoomAnswer(req, res, code) {
       autoSubmitted: answerState.autoSubmitted
     };
     stampRoomEvent(room, "answer_submitted", eventPayload);
+    const gradingTransition = startRoomGradingTransition(room, {
+      reason: "all-submitted",
+      force: false
+    });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     const storedParticipant = storedRoom.participants.find((entry) => entry.id === participantId) || participant;
@@ -3455,12 +3468,263 @@ async function handleRoomAnswer(req, res, code) {
       submissionStatus: answerStatus,
       autoSubmitted: answerState.autoSubmitted
     });
+    if (gradingTransition.started) {
+      response.grading = createRoomEventResponse(storedRoom, "round_grading", {
+        ...gradingTransition.payload,
+        game: storedRoom.game || gradingTransition.payload.game
+      });
+    }
     if (body.includeRoom || body.includeRoomSnapshot) {
       response.room = sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hasRoomHostAuth(req, storedRoom, body) });
     }
     sendJson(res, 200, response);
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room answer submission failed." });
+  }
+}
+
+function getRoomGameplayParticipants(room = {}) {
+  return (Array.isArray(room.participants) ? room.participants : [])
+    .filter(isGameplayParticipant);
+}
+
+function normalizeRoomGradingReason(reason = "") {
+  const normalized = String(reason || "").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").slice(0, 60);
+  return normalized || "all-submitted";
+}
+
+function getParticipantAnswerStateForRound(participant = {}, answers = {}, matchId = "", round = 0) {
+  const participantId = String(participant.id || "").slice(0, 80);
+  if (!participantId) {
+    return null;
+  }
+  const existing = answers[participantId];
+  if (
+    existing
+    && existing.matchId === matchId
+    && Number(existing.round) === Number(round)
+  ) {
+    return existing;
+  }
+  const submittedRound = clampServerNumber(participant.submittedRound, 0, 100, 0);
+  const submissionMatchId = String(participant.submissionMatchId || "").slice(0, 80);
+  if (submittedRound !== Number(round) || (matchId && submissionMatchId && submissionMatchId !== matchId)) {
+    return null;
+  }
+  if (participant.status !== "submitted" && participant.status !== "timed_out") {
+    return null;
+  }
+  const status = participant.status === "timed_out" ? "timed_out" : "submitted";
+  return {
+    participantId,
+    status,
+    answer: String(participant.answer || "").trim().slice(0, 500),
+    submittedAt: clampServerNumber(participant.submittedAt || participant.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()),
+    autoSubmitted: status === "timed_out",
+    remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0),
+    matchId,
+    round
+  };
+}
+
+function getRoomGradingSubmissionMap(submissions = []) {
+  return new Map(
+    normalizeRoundSkipSubmissions(submissions)
+      .map((submission) => [submission.participantId, submission])
+  );
+}
+
+function createRoomAnswerStateFromSubmission(participant = {}, submission = {}, options = {}) {
+  const participantId = String(participant.id || submission.participantId || "").slice(0, 80);
+  const status = submission.status === "timed_out" || options.defaultStatus === "timed_out"
+    ? "timed_out"
+    : "submitted";
+  return {
+    participantId,
+    status,
+    answer: String(submission.answer || "").trim().slice(0, 500),
+    submittedAt: clampServerNumber(submission.submittedAt || options.now, 0, Number.MAX_SAFE_INTEGER, options.now || Date.now()),
+    autoSubmitted: Boolean(submission.autoSubmitted || status === "timed_out" || options.autoSubmitted),
+    remainingTime: clampServerNumber(submission.remainingTime, 0, 600, 0),
+    matchId: String(options.matchId || "").slice(0, 80),
+    round: clampServerNumber(options.round, 0, 100, 0)
+  };
+}
+
+function applyAnswerStateToParticipant(participant = {}, answerState = {}) {
+  participant.status = "submitted";
+  participant.answer = String(answerState.answer || "").slice(0, 500);
+  participant.submittedRound = clampServerNumber(answerState.round, 0, 100, 0);
+  participant.submissionMatchId = String(answerState.matchId || "").slice(0, 80);
+  participant.remainingTime = clampServerNumber(answerState.remainingTime, 0, 600, 0);
+  participant.submittedAt = clampServerNumber(answerState.submittedAt, 0, Number.MAX_SAFE_INTEGER, Date.now());
+}
+
+function getRoomGradingSubmissions(participants = [], answers = {}) {
+  return participants
+    .map((participant) => {
+      const answerState = answers[String(participant.id || "").slice(0, 80)];
+      if (!answerState) {
+        return null;
+      }
+      return {
+        participantId: answerState.participantId,
+        answer: String(answerState.answer || "").slice(0, 500),
+        remainingTime: clampServerNumber(answerState.remainingTime, 0, 600, 0),
+        status: answerState.status,
+        autoSubmitted: Boolean(answerState.autoSubmitted)
+      };
+    })
+    .filter(Boolean);
+}
+
+function startRoomGradingTransition(room, options = {}) {
+  const game = room.game && typeof room.game === "object" ? room.game : null;
+  if (!game || room.status !== "in-progress") {
+    return { started: false, duplicate: false, pendingParticipantIds: [] };
+  }
+  const matchId = String(game.matchId || options.matchId || "").slice(0, 80);
+  const round = clampServerNumber(game.round || options.round, 0, 100, 0);
+  if (!matchId || !round) {
+    return { started: false, duplicate: false, pendingParticipantIds: [] };
+  }
+  const participants = getRoomGameplayParticipants(room);
+  const existingAnswers = normalizeRoomAnswerState(game.answers, matchId, round);
+  const submissionMap = getRoomGradingSubmissionMap(options.submissions);
+  const answers = { ...existingAnswers };
+  const reason = normalizeRoomGradingReason(options.reason);
+  const defaultStatus = reason === "timer-expired" ? "timed_out" : "submitted";
+  const now = Date.now();
+  const pendingParticipantIds = [];
+
+  participants.forEach((participant) => {
+    const participantId = String(participant.id || "").slice(0, 80);
+    const currentAnswer = getParticipantAnswerStateForRound(participant, answers, matchId, round);
+    if (currentAnswer) {
+      answers[participantId] = currentAnswer;
+      return;
+    }
+    const submission = submissionMap.get(participantId);
+    if (submission || options.force) {
+      answers[participantId] = createRoomAnswerStateFromSubmission(participant, submission || { participantId }, {
+        matchId,
+        round,
+        now,
+        defaultStatus,
+        autoSubmitted: !submission || reason === "timer-expired"
+      });
+      return;
+    }
+    pendingParticipantIds.push(participantId);
+  });
+
+  if (pendingParticipantIds.length && !options.force) {
+    return { started: false, duplicate: false, pendingParticipantIds };
+  }
+
+  participants.forEach((participant) => {
+    const answerState = answers[String(participant.id || "").slice(0, 80)];
+    if (answerState) {
+      applyAnswerStateToParticipant(participant, answerState);
+    }
+  });
+
+  if (game.status === "grading" || game.roundResult) {
+    return {
+      started: false,
+      duplicate: true,
+      pendingParticipantIds: [],
+      payload: {
+        round,
+        matchId,
+        reason: game.gradingReason || reason,
+        hostParticipantId: String(options.hostParticipantId || "").slice(0, 80),
+        submissions: getRoomGradingSubmissions(participants, answers),
+        game: room.game
+      }
+    };
+  }
+
+  room.game = normalizeRoomGame({
+    ...game,
+    status: "grading",
+    round,
+    answers,
+    roundResult: null,
+    gradingStartedAt: now,
+    gradingReason: reason,
+    gradingForceAt: clampServerNumber(options.gradingForceAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    updatedAt: now
+  });
+  const payload = {
+    round,
+    matchId,
+    reason,
+    hostParticipantId: String(options.hostParticipantId || "").slice(0, 80),
+    submissions: getRoomGradingSubmissions(participants, answers),
+    game: room.game
+  };
+  stampRoomEvent(room, "round_grading", payload);
+  return {
+    started: true,
+    duplicate: false,
+    pendingParticipantIds: [],
+    payload
+  };
+}
+
+async function handleRoomRoundGrading(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can move the round to grading.")) {
+      return;
+    }
+    const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    const payloadMatchId = String(body.matchId || "").slice(0, 80);
+    if (payloadMatchId && currentMatchId && payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Grading request belongs to a previous match." });
+      return;
+    }
+    const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
+    const round = clampServerNumber(body.round, 1, 100, currentRound || 1);
+    if (currentRound && round !== currentRound) {
+      sendJson(res, 409, { error: "Grading request belongs to a different round." });
+      return;
+    }
+
+    const transition = startRoomGradingTransition(room, {
+      force: true,
+      reason: body.reason || "host-skip",
+      hostParticipantId,
+      matchId: currentMatchId || payloadMatchId,
+      round,
+      submissions: body.submissions,
+      gradingForceAt: body.gradingForceAt
+    });
+    if (!transition.started && !transition.duplicate) {
+      sendJson(res, 409, {
+        error: "Round still has pending answers.",
+        pendingParticipantIds: transition.pendingParticipantIds
+      });
+      return;
+    }
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "round_grading", {
+      ...(transition.payload || {}),
+      duplicate: Boolean(transition.duplicate),
+      game: storedRoom.game || transition.payload?.game || null
+    }));
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Round grading transition failed." });
   }
 }
 
@@ -3583,6 +3847,10 @@ async function handleRoomRoundResult(req, res, code) {
     if (!roundResult.matchId && currentMatchId) {
       roundResult.matchId = currentMatchId;
     }
+    if (room.game?.status !== "grading" && !room.game?.roundResult) {
+      sendJson(res, 409, { error: "Round must be locked for grading before publishing results." });
+      return;
+    }
 
     room.status = "in-progress";
     room.game = normalizeRoomGame({
@@ -3619,7 +3887,10 @@ function normalizeRoundSkipSubmissions(submissions) {
         participantId: String(source.participantId || "").slice(0, 120),
         owner: String(source.owner || "").slice(0, 80),
         answer: String(source.answer || "").slice(0, 500),
-        remainingTime: clampServerNumber(source.remainingTime, 0, 600, 0)
+        remainingTime: clampServerNumber(source.remainingTime, 0, 600, 0),
+        status: String(source.status || "").toLowerCase() === "timed_out" ? "timed_out" : "submitted",
+        autoSubmitted: Boolean(source.autoSubmitted),
+        submittedAt: clampServerNumber(source.submittedAt, 0, Number.MAX_SAFE_INTEGER, 0)
       };
     })
     .filter((entry) => entry.participantId)
@@ -3653,35 +3924,29 @@ async function handleRoomRoundSkip(req, res, code) {
       sendJson(res, 409, { error: "Round skip belongs to a different round." });
       return;
     }
-    const submissions = normalizeRoundSkipSubmissions(body.submissions);
-    submissions.forEach((submission) => {
-      const participant = room.participants.find((entry) => entry.id === submission.participantId);
-      if (!participant || !isGameplayParticipant(participant)) {
-        return;
-      }
-      participant.answer = submission.answer;
-      participant.submittedRound = round;
-      participant.submissionMatchId = String(room.game?.matchId || "").slice(0, 80);
-      participant.remainingTime = submission.remainingTime;
-      participant.status = "submitted";
-    });
-
     const matchId = currentMatchId || payloadMatchId;
-    stampRoomEvent(room, "round_skipped", {
-      round,
-      matchId,
+    const transition = startRoomGradingTransition(room, {
+      force: true,
+      reason: body.reason || "host-skip",
       hostParticipantId,
-      submissions,
-      reason: String(body.reason || "host-skip").slice(0, 60)
+      matchId,
+      round,
+      submissions: body.submissions,
+      gradingForceAt: body.gradingForceAt
     });
+    if (!transition.started && !transition.duplicate) {
+      sendJson(res, 409, {
+        error: "Round still has pending answers.",
+        pendingParticipantIds: transition.pendingParticipantIds
+      });
+      return;
+    }
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
-    sendJson(res, 200, createRoomEventResponse(storedRoom, "round_skipped", {
-      round,
-      matchId,
-      hostParticipantId,
-      submissions,
-      reason: String(body.reason || "host-skip").slice(0, 60)
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "round_grading", {
+      ...(transition.payload || {}),
+      duplicate: Boolean(transition.duplicate),
+      game: storedRoom.game || transition.payload?.game || null
     }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Round skip failed." });
@@ -3701,9 +3966,10 @@ async function handleRoomEvents(req, url, res, code) {
   }
   const since = clampServerNumber(url.searchParams.get("since"), 0, Number.MAX_SAFE_INTEGER, 0);
   const includePrivateSecrets = hasRoomHostAuth(req, room);
+  const includeSubmittedAnswers = shouldExposeRoomAnswers(room, { includePrivateSecrets });
   const events = normalizeRoomEvents(room.events)
     .filter((event) => event.revision > since)
-    .map((event) => sanitizeRoomEventForClient(event, { includePrivateSecrets }));
+    .map((event) => sanitizeRoomEventForClient(event, { includePrivateSecrets, includeSubmittedAnswers }));
   sendJson(res, 200, {
     code: room.code,
     revision: getRoomRevision(room),
@@ -4086,6 +4352,9 @@ function normalizeRoomGame(game) {
     powerState: normalizeRoomPowerState(game.powerState),
     setupStartedAt: clampServerNumber(game.setupStartedAt || game.preparingStartedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     roundStartedAt: clampServerNumber(game.roundStartedAt || game.startedAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    gradingStartedAt: clampServerNumber(game.gradingStartedAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    gradingReason: String(game.gradingReason || "").slice(0, 60),
+    gradingForceAt: clampServerNumber(game.gradingForceAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(game.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
   };
 }

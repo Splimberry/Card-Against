@@ -10663,7 +10663,12 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || buildRoomDirectoryPayload("in-progress");
-    return applyRoomPresenceResponse(data, room, {}, "answer-response");
+    const appliedRoom = applyRoomPresenceResponse(data, room, {}, "answer-response");
+    if (data.grading && typeof data.grading === "object") {
+      applyRealtimeRoomGrading(data.grading);
+      broadcastRealtimeRoomChange(data.grading.eventType || "round-grading", state.roomSettings.code, data.grading);
+    }
+    return appliedRoom;
   }).catch(() => {
     state.roomDirectoryOnline = false;
     return null;
@@ -11948,6 +11953,10 @@ function maybeResolveRoomSubmissions() {
   if (getPendingSubmitters().length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
     return;
   }
+  if (!isRoomGradingPhaseStarted()) {
+    requestRoomGradingCatchup("submissions-complete-wait");
+    return;
+  }
   const matchToken = state.matchWorkToken;
   const roundSyncKey = getCurrentRoomRoundSyncKey();
   state.roomSubmissionResolveKey = roundSyncKey;
@@ -11997,6 +12006,10 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
     return;
   }
   if (getPendingSubmitters().length === 0) {
+    if (!isRoomGradingPhaseStarted()) {
+      requestRoomGradingCatchup("submissions-complete-wait");
+      return;
+    }
     if (state.roomSubmissionResolveId) {
       window.clearTimeout(state.roomSubmissionResolveId);
       state.roomSubmissionResolveId = null;
@@ -12058,6 +12071,21 @@ function getRoomRoundResultWaitTimeoutMs() {
   return getRoomSubmissionWaitTimeoutMs() + 15000;
 }
 
+function isRoomGradingPhaseStarted() {
+  const game = state.roomGame || state.joiningRoom?.game || null;
+  return Boolean(
+    getRoomRoundResultForCurrentRound()
+    || (game && game.status === "grading" && Number(game.round) === Number(state.round))
+  );
+}
+
+function requestRoomGradingCatchup(reason = "grading-wait") {
+  if (!isRoomMode() || !hasActiveRoomContext()) {
+    return;
+  }
+  void requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
+}
+
 function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
     return false;
@@ -12110,7 +12138,6 @@ function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
       submissions: buildRoundSkipSubmissions(),
       updatedAt: Date.now()
     };
-    forceRoomRoundToGrading(payload);
     void publishRoomRoundSkip(payload);
   }, timeoutMs);
   return true;
@@ -12150,8 +12177,8 @@ function buildRoundSkipSubmissions() {
     .filter(Boolean);
 }
 
-function forceRoomRoundToGrading(payload = {}) {
-  if (!isRoomMode() || state.isSpectator || state.roomRoundResolving || state.matchEnded) {
+function applyRealtimeRoomGrading(payload = {}) {
+  if (!isRoomMode() || state.matchEnded) {
     return false;
   }
   const code = String(payload.code || "").trim().toUpperCase();
@@ -12162,8 +12189,34 @@ function forceRoomRoundToGrading(payload = {}) {
     return false;
   }
   const round = Number(payload.round) || state.round;
-  if (round !== Number(state.round) || elements.inputPanel.classList.contains("hidden")) {
+  if (round !== Number(state.round)) {
     return false;
+  }
+  const incomingGame = payload.game && typeof payload.game === "object" ? payload.game : null;
+  if (incomingGame) {
+    state.roomGame = {
+      ...(state.roomGame || {}),
+      ...incomingGame,
+      status: "grading",
+      round
+    };
+  } else {
+    state.roomGame = {
+      ...(state.roomGame || {}),
+      matchId: getCurrentRoomMatchId(),
+      status: "grading",
+      round,
+      updatedAt: Number(payload.updatedAt) || Date.now()
+    };
+  }
+  if (state.joiningRoom) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      status: "in-progress",
+      game: state.roomGame,
+      revision: Number(payload.revision) || state.joiningRoom.revision || 0,
+      updatedAt: Number(payload.updatedAt) || Date.now()
+    };
   }
 
   const submissions = Array.isArray(payload.submissions) ? payload.submissions : [];
@@ -12199,22 +12252,41 @@ function forceRoomRoundToGrading(payload = {}) {
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
   const timedOut = String(payload.reason || "") === "timer-expired";
-  document.querySelector("#inputTitle").textContent = timedOut ? "Timer expired. Moving to grading." : "Host skipped to grading.";
-  addSystemChat(
-    timedOut
-      ? "The timer expired. Pending players were submitted with their latest answer box."
-      : "The host skipped to grading. Unsubmitted answers were left blank.",
-    { private: true, sync: false }
-  );
+  const skipped = String(payload.reason || "") === "host-skip";
+  document.querySelector("#inputTitle").textContent = timedOut
+    ? "Timer expired. Moving to grading."
+    : skipped
+      ? "Host skipped to grading."
+      : "All answers locked. Moving to grading.";
+  if (timedOut || skipped) {
+    addSystemChat(
+      timedOut
+        ? "The timer expired. Pending players were submitted with their latest answer box."
+        : "The host skipped to grading. Unsubmitted answers were left blank.",
+      { private: true, sync: false }
+    );
+  }
   renderSubmissionStatus();
+  rememberRoomRevisionPayload(payload);
+  if (state.isSpectator) {
+    clearSpectatorAnswerDraftState();
+    renderSpectatorAnswerCards();
+    return true;
+  }
+  if (state.roomRoundResolving) {
+    return true;
+  }
   state.roomRoundResolving = true;
   if (!isCurrentHost() || state.joiningRoom) {
     waitForRoomRoundResultThenPlay(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
   } else {
     playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
   }
-  rememberRoomRevisionPayload(payload);
   return true;
+}
+
+function forceRoomRoundToGrading(payload = {}) {
+  return applyRealtimeRoomGrading(payload);
 }
 
 function publishRoomRoundSkip(payload = {}) {
@@ -12229,7 +12301,7 @@ function publishRoomRoundSkip(payload = {}) {
     submissions: buildRoundSkipSubmissions(),
     ...payload
   };
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/round-skip`, {
+  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/grading`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
@@ -12239,7 +12311,8 @@ function publishRoomRoundSkip(payload = {}) {
     }
     const data = await response.json();
     rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
-    broadcastRealtimeRoomChange("round-skipped", state.roomSettings.code, data);
+    applyRealtimeRoomGrading(data);
+    broadcastRealtimeRoomChange(data.eventType || "round-grading", state.roomSettings.code, data);
     return data;
   }).catch(() => null);
 }
@@ -12256,7 +12329,6 @@ function skipRoomRoundToGrading() {
     submissions: buildRoundSkipSubmissions(),
     updatedAt: Date.now()
   };
-  forceRoomRoundToGrading(payload);
   void publishRoomRoundSkip(payload);
 }
 
@@ -13206,6 +13278,7 @@ function isParticipantRealtimeEvent(eventType = "") {
   return [
     "answer-submitted",
     "answer-draft",
+    "round-grading",
     "round-result",
     "round-skipped",
     "round-started",
@@ -13224,6 +13297,7 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
     "chat-message",
     "answer-submitted",
     "answer-draft",
+    "round-grading",
     "round-result",
     "round-skipped",
     "round-started",
@@ -13809,6 +13883,7 @@ const roomServerEventTypeMap = {
   room_deleted: "room-deleted",
   room_updated: "room-updated",
   round_advancing: "round-advancing",
+  round_grading: "round-grading",
   round_result: "round-result",
   round_skipped: "round-skipped",
   round_started: "round-started",
@@ -13819,6 +13894,7 @@ const roomRoundScopedEventTypes = [
   "answer-submitted",
   "answer-draft",
   "power-state",
+  "round-grading",
   "round-result",
   "round-skipped"
 ];
@@ -13836,6 +13912,7 @@ const handledRoomEventTypes = [
   "room-created",
   "round-advancing",
   "round-started",
+  "round-grading",
   "round-result",
   "round-skipped",
   "participant-left",
@@ -14020,6 +14097,9 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     }
     if (normalizedPayload.eventType === "round-started") {
       appliedDelta = applyRealtimeRoundStarted(normalizedPayload);
+    }
+    if (normalizedPayload.eventType === "round-grading") {
+      appliedDelta = applyRealtimeRoomGrading(normalizedPayload);
     }
     if (normalizedPayload.eventType === "round-result") {
       appliedDelta = applyRealtimeRoomRoundResult(normalizedPayload);
@@ -14820,6 +14900,9 @@ function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
   if (eventType === "round-started") {
     return !(payload.game || payload.room?.game);
   }
+  if (eventType === "round-grading") {
+    return !(payload.game || payload.room?.game);
+  }
   if (eventType === "round-result") {
     return !(payload.roundResult || payload.game?.roundResult || payload.room?.game?.roundResult);
   }
@@ -14842,6 +14925,7 @@ function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
     "participant-moderated",
     "host-transferred",
     "round-advancing",
+    "round-grading",
     "round-skipped"
   ].includes(eventType);
 }
@@ -28447,6 +28531,17 @@ function applyRoomDirectoryRoom(room) {
       roundResult: state.roomGame.roundResult,
       game: state.roomGame
     });
+  } else if (state.roomGame?.status === "grading") {
+    applyRealtimeRoomGrading({
+      code: room.code,
+      revision: room.revision,
+      updatedAt: room.updatedAt,
+      matchId: state.roomGame.matchId,
+      round: state.roomGame.round,
+      reason: state.roomGame.gradingReason || "all-submitted",
+      submissions: Object.values(state.roomGame.answers || {}),
+      game: state.roomGame
+    });
   }
   applyRoomGamePowerState(state.roomGame);
   state.joiningRoom = state.joiningRoom ? room : state.joiningRoom;
@@ -28677,6 +28772,17 @@ function resumeSyncedRoomGame(room, options = {}) {
     } else {
       playSyncedRoomRoundResult(result);
     }
+  } else if (game.status === "grading") {
+    applyRealtimeRoomGrading({
+      code: room.code,
+      revision: room.revision,
+      updatedAt: room.updatedAt,
+      matchId: game.matchId,
+      round: game.round,
+      reason: game.gradingReason || "all-submitted",
+      submissions: Object.values(game.answers || {}),
+      game
+    });
   } else {
     syncTimerFromRoomGame(game);
     maybeResolveRoomSubmissions();
