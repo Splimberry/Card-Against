@@ -1003,19 +1003,27 @@ async function testCompactRoomDeltasAvoidFullRoomPayloads() {
   const code = makeCode(8110);
   await upsertRoom(makeRoom(code));
 
+  const chatStartedAt = Date.now();
   const chat = await request("POST", `/api/rooms/${code}/chat`, {
     compact: true,
     message: {
       id: "chat-compact-message-1",
-      sender: "Host",
+      sender: "Fake Host",
       owner: "player",
       participantId: "host-client",
+      host: false,
+      spectator: true,
       text: "Compact hello",
-      createdAt: Date.now()
+      createdAt: 1
     }
   });
   assert.equal(chat.response.status, 200, chat.payload.error);
   assert.equal(chat.payload.message.id, "chat-compact-message-1");
+  assert.equal(chat.payload.message.sender, "Host");
+  assert.equal(chat.payload.message.host, true);
+  assert.equal(chat.payload.message.spectator, false);
+  assert.equal(chat.payload.message.revision, chat.payload.revision);
+  assert.ok(chat.payload.message.createdAt >= chatStartedAt);
   assert.equal(chat.payload.room, undefined);
   assert.ok(chat.payload.revision >= 2);
 

@@ -10224,6 +10224,8 @@ function getRoomSyncChatMessage(message = {}) {
     avatar: getRoomSyncAvatar(message.avatar),
     specialBadges: getRoomSyncSpecialBadges(message.specialBadges || []),
     cardCustomization: getRoomSyncCardCustomization(message.cardCustomization),
+    revision: Number(message.revision) || 0,
+    createdAt: Number(message.createdAt) || Date.now(),
     spectator: Boolean(message.spectator)
   };
 }
@@ -10395,13 +10397,22 @@ function pushRoomChatMessage(message) {
     spectator: Boolean(source.spectator),
     private: Boolean(source.private),
     audience: source.audience || "",
+    revision: Number(source.revision) || 0,
     createdAt
   };
   if (!cleanMessage.text) {
     return null;
   }
-  if (state.roomChat.some((entry) => getRoomChatMessageKey(entry) === getRoomChatMessageKey(cleanMessage))) {
-    return cleanMessage;
+  const chatKey = getRoomChatMessageKey(cleanMessage);
+  const existingIndex = state.roomChat.findIndex((entry) => getRoomChatMessageKey(entry) === chatKey);
+  if (existingIndex >= 0) {
+    state.roomChat[existingIndex] = {
+      ...state.roomChat[existingIndex],
+      ...cleanMessage,
+      own: Boolean(state.roomChat[existingIndex].own || cleanMessage.own)
+    };
+    pruneRoomChatHistory();
+    return state.roomChat[existingIndex];
   }
   state.roomChat.push(cleanMessage);
   pruneRoomChatHistory();
@@ -10458,6 +10469,7 @@ function mergeRoomChatMessages(remoteMessages = []) {
       spectator: Boolean(source.spectator),
       private: Boolean(source.private),
       audience: source.audience || "",
+      revision: Number(source.revision) || 0,
       createdAt: Number(source.createdAt) || Date.now()
     };
     if (normalized.text) {
@@ -10483,8 +10495,9 @@ function getChatCooldownRemainingMs(now = Date.now()) {
   return Math.max(0, (Number(state.chatCooldownUntil) || 0) - now);
 }
 
-function startChatCooldown(now = Date.now()) {
-  state.chatCooldownUntil = now + chatCooldownDurationMs;
+function startChatCooldown(now = Date.now(), durationMs = chatCooldownDurationMs) {
+  const duration = Math.max(1000, Number(durationMs) || chatCooldownDurationMs);
+  state.chatCooldownUntil = now + duration;
   state.chatMessageTimestamps = [];
   if (state.chatCooldownTimerId) {
     window.clearTimeout(state.chatCooldownTimerId);
@@ -10492,7 +10505,8 @@ function startChatCooldown(now = Date.now()) {
   state.chatCooldownTimerId = window.setTimeout(() => {
     state.chatCooldownTimerId = null;
     state.chatCooldownUntil = 0;
-  }, chatCooldownDurationMs);
+    clearChatCooldownPlaceholderTimer({ restore: true });
+  }, duration);
 }
 
 function getChatInputDefaultPlaceholder(input) {
@@ -10538,6 +10552,18 @@ function updateChatCooldownPlaceholder(input) {
   return true;
 }
 
+function updateChatCooldownPlaceholders(primaryInput = null) {
+  const inputs = [...new Set([primaryInput, elements.chatInput, elements.lobbyChatInput].filter(Boolean))];
+  let active = false;
+  inputs.forEach((input) => {
+    active = updateChatCooldownPlaceholder(input) || active;
+  });
+  if (!active) {
+    clearChatCooldownPlaceholderTimer({ restore: true });
+  }
+  return active;
+}
+
 function canSendClientChatMessage(now = Date.now()) {
   if (getChatCooldownRemainingMs(now) > 0) {
     return false;
@@ -10557,28 +10583,41 @@ function showLocalChatCooldownNotice(input = elements.chatInput) {
   addSystemChat(`Slow down. Chat cooldown: ${remainingSeconds}s.`, { private: true, sync: false });
   if (input) {
     input.value = "";
-    clearChatCooldownPlaceholderTimer({ restore: true });
-    getChatInputDefaultPlaceholder(input);
-    updateChatCooldownPlaceholder(input);
-    state.chatCooldownPlaceholderTimerId = window.setInterval(() => {
-      updateChatCooldownPlaceholder(input);
-    }, 250);
   }
+  clearChatCooldownPlaceholderTimer({ restore: true });
+  [elements.chatInput, elements.lobbyChatInput].filter(Boolean).forEach(getChatInputDefaultPlaceholder);
+  updateChatCooldownPlaceholders(input);
+  state.chatCooldownPlaceholderTimerId = window.setInterval(() => {
+    updateChatCooldownPlaceholders(input);
+  }, 250);
 }
 
 function applyRealtimeRoomChatMessage(message = {}) {
-  const beforeCount = state.roomChat.length;
   const normalized = normalizeRoomChatMessage(message);
   if (!normalized) {
     return false;
   }
-  if (state.roomChat.length !== beforeCount || state.roomChat.at(-1)?.id === normalized.id) {
-    renderRoomChat();
-  }
+  renderRoomChat();
   return true;
 }
 
-function publishRoomChat(message = state.roomChat.at(-1)) {
+function removeRoomChatMessage(message = {}) {
+  const chatKey = getRoomChatMessageKey(message);
+  const beforeCount = state.roomChat.length;
+  state.roomChat = state.roomChat.filter((entry) => getRoomChatMessageKey(entry) !== chatKey);
+  if (state.roomChat.length !== beforeCount) {
+    renderRoomChat();
+    return true;
+  }
+  return false;
+}
+
+function applyServerChatCooldown(retryAfterMs = chatCooldownDurationMs, input = elements.chatInput) {
+  startChatCooldown(Date.now(), retryAfterMs);
+  showLocalChatCooldownNotice(input);
+}
+
+function publishRoomChat(message = state.roomChat.at(-1), input = elements.chatInput) {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
   }
@@ -10588,29 +10627,38 @@ function publishRoomChat(message = state.roomChat.at(-1)) {
   if (!message) {
     return Promise.resolve(null);
   }
-  broadcastRealtimeRoomChange("chat-message", state.roomSettings.code, {
-    message: getRoomSyncChatMessage(message)
-  });
   return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: getRoomSyncChatMessage(message), compact: true })
   }).then(async (response) => {
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       state.roomDirectoryOnline = false;
+      removeRoomChatMessage(message);
+      if (response.status === 429) {
+        applyServerChatCooldown(data.retryAfterMs, input);
+      } else {
+        addSystemChat(data.error || "Chat message could not be sent.", { private: true, sync: false });
+      }
       return null;
     }
-    const data = await response.json();
     state.roomDirectoryOnline = true;
     rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     if (data.message) {
       applyRealtimeRoomChatMessage(data.message);
+      broadcastRealtimeRoomChange("chat-message", state.roomSettings.code, {
+        ...data,
+        message: getRoomSyncChatMessage(data.message)
+      });
     } else if (data.room) {
       applyRoomSnapshot(data.room, { source: "chat-response" });
     }
     return data.room || null;
   }).catch(() => {
     state.roomDirectoryOnline = false;
+    removeRoomChatMessage(message);
+    addSystemChat("Chat message could not be sent.", { private: true, sync: false });
     return null;
   });
 }
@@ -32188,7 +32236,7 @@ function sendChatMessage(text, input = elements.chatInput) {
   }
   input.value = "";
   renderRoomChat();
-  publishRoomChat(message);
+  publishRoomChat(message, input);
   playSound("click");
 }
 

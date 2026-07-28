@@ -3113,9 +3113,19 @@ async function handleRoomChat(req, res, code) {
       });
       return;
     }
+    const messageRevision = getRoomRevision(room) + 1;
+    const messageCreatedAt = Date.now();
+    message.id = String(message.id || `${normalizedCode}-chat-${messageRevision}`).slice(0, 120);
     message.participantId = participantId;
+    message.sender = String(participant.name || message.sender || "Guest").slice(0, 32);
+    message.avatar = String(participant.avatar || "").slice(0, 60000);
+    message.equippedTitleId = String(participant.equippedTitleId || "").slice(0, 80);
+    message.specialBadges = normalizeSpecialBadges(participant.specialBadges);
+    message.cardCustomization = normalizeCardCustomization(participant.cardCustomization);
     message.spectator = Boolean(participant.spectator);
     message.host = Boolean(participant.host || participant.id === room.host?.id);
+    message.revision = messageRevision;
+    message.createdAt = messageCreatedAt;
     room.chat = normalizeRoomChat([...(Array.isArray(room.chat) ? room.chat : []), message]);
     stampRoomEvent(room, "chat_message", {
       owner: message.owner,
@@ -4612,6 +4622,7 @@ function normalizeRoomChat(chat) {
         spectator: Boolean(source.spectator),
         private: Boolean(source.private),
         audience: String(source.audience || "").slice(0, 80),
+        revision: clampServerNumber(source.revision, 0, Number.MAX_SAFE_INTEGER, 0),
         createdAt: clampServerNumber(source.createdAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
       };
     })
