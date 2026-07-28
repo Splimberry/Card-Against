@@ -59,9 +59,14 @@ assertAccepted("oppenhiemer", ["Oppenheimer"], "swapped-letter person/title answ
 assertAccepted("einsten", ["Albert Einstein"], "misspelled distinctive surname");
 assertAccepted("phillandefia", ["Philadelphia"], "phonetic Philadelphia misspelling with inserted sound");
 assertAccepted("filadelfia", ["Philadelphia"], "phonetic Philadelphia spelling");
+assertAccepted("yt", ["YouTube"], "common YouTube abbreviation");
+assertAccepted("ig", ["Instagram"], "common Instagram abbreviation");
+assertAccepted("js", ["JavaScript"], "common JavaScript abbreviation");
+assertAccepted("usa", ["United States of America"], "common country abbreviation");
 realNearMissCases.forEach(([answer, acceptedAnswers, label]) => assertAiReviewCandidate(answer, acceptedAnswers, label));
 
 assertRejected("cat", ["Jackal"], "unrelated animal");
+assertRejected("yt", ["TikTok"], "wrong platform abbreviation");
 assertRejected("pennsylvania", ["Philadelphia"], "related place but not the city");
 assertRejected("14th", ["Louis XIV"], "number alone is too ambiguous");
 assertRejected("marinara", ["Margherita"], "different pizza variety");

@@ -990,15 +990,50 @@ function getStoredPerformanceMode() {
   return normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey));
 }
 
+const defaultMatchTimerSeconds = 30;
+const timerSettingMinSeconds = 10;
+const timerSettingMaxSeconds = 60;
+const timerDefaultMigrationStorageKey = "cardsAgainstAiTimerDefaultMigratedV2";
+
+function readTimerSecondsSetting(storageKey, fallback = defaultMatchTimerSeconds, options = {}) {
+  const storedValue = storageKey ? localStorage.getItem(storageKey) : null;
+  const value = clampNumber(
+    storedValue ?? fallback,
+    timerSettingMinSeconds,
+    timerSettingMaxSeconds,
+    defaultMatchTimerSeconds
+  );
+  const migrationKey = options.migrationKey || timerDefaultMigrationStorageKey;
+  if (options.migrateLegacyMinimum && localStorage.getItem(migrationKey) !== "1") {
+    localStorage.setItem(migrationKey, "1");
+    if (value === timerSettingMinSeconds) {
+      if (storageKey) {
+        localStorage.setItem(storageKey, String(defaultMatchTimerSeconds));
+      }
+      return defaultMatchTimerSeconds;
+    }
+  }
+  return value;
+}
+
 const savedUserCache = loadUserStorageCache();
 const savedEnabledThemes = normalizeCachedThemes(savedUserCache?.settings?.lastSelectedThemes);
 const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds") || savedUserCache?.settings?.maxRounds, 1, 10, 5);
-const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds") || savedUserCache?.settings?.timerSeconds, 10, 60, 30);
+const savedTimerSeconds = readTimerSecondsSetting("cardsAgainstAiTimerSeconds", savedUserCache?.settings?.timerSeconds || defaultMatchTimerSeconds, {
+  migrateLegacyMinimum: true,
+  migrationKey: "cardsAgainstAiGlobalTimerDefaultMigratedV2"
+});
 const savedPerformanceMode = normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey) || savedUserCache?.settings?.performanceMode);
 const savedBotRounds = clampNumber(localStorage.getItem("cardsAgainstAiBotRounds"), 5, 10, 5);
 const savedLocalRounds = clampNumber(localStorage.getItem("cardsAgainstAiLocalRounds"), 5, 10, 5);
-const savedBotTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiBotTimerSeconds"), 10, 60, 30);
-const savedLocalTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiLocalTimerSeconds"), 10, 60, 30);
+const savedBotTimerSeconds = readTimerSecondsSetting("cardsAgainstAiBotTimerSeconds", defaultMatchTimerSeconds, {
+  migrateLegacyMinimum: true,
+  migrationKey: "cardsAgainstAiBotTimerDefaultMigratedV2"
+});
+const savedLocalTimerSeconds = readTimerSecondsSetting("cardsAgainstAiLocalTimerSeconds", defaultMatchTimerSeconds, {
+  migrateLegacyMinimum: true,
+  migrationKey: "cardsAgainstAiLocalTimerDefaultMigratedV2"
+});
 const BOT_OWNER_IDS = Array.from({ length: 9 }, (_, index) => `bot${index + 1}`);
 const DEFAULT_OWNER_IDS = ["player", "opponent", ...BOT_OWNER_IDS];
 
@@ -1765,11 +1800,43 @@ async function postUserInventoryMilestone(userId, milestoneId, opId = "", option
   })());
 }
 
+async function getFreshSupabaseSession(options = {}) {
+  if (options.session && (!options.forceRefresh || isLikelyFreshJwt(options.session.access_token))) {
+    return options.session;
+  }
+  const client = options.client || state.supabaseClient || await ensureSupabaseClient();
+  if (!client?.auth) {
+    return options.session || state.supabaseSession || null;
+  }
+  let session = options.session || state.supabaseSession || null;
+  if (!session) {
+    session = (await client.auth.getSession())?.data?.session || null;
+  }
+  if (session && !options.forceRefresh && isLikelyFreshJwt(session.access_token)) {
+    state.supabaseSession = session;
+    state.supabaseUser = session.user || state.supabaseUser;
+    return session;
+  }
+  const refreshArg = session?.refresh_token ? { refresh_token: session.refresh_token } : undefined;
+  const { data, error } = await client.auth.refreshSession(refreshArg);
+  if (error) {
+    if (session && !options.forceRefresh && isLikelyFreshJwt(session.access_token)) {
+      return session;
+    }
+    return null;
+  }
+  const refreshedSession = data?.session || null;
+  if (refreshedSession) {
+    state.supabaseSession = refreshedSession;
+    state.supabaseUser = refreshedSession.user || state.supabaseUser;
+    renderSupabaseAuthControls();
+  }
+  return refreshedSession;
+}
+
 async function getInventoryAuthHeaders(options = {}) {
   try {
-    const session = options.session || state.supabaseSession || (state.supabaseClient
-      ? (await state.supabaseClient.auth.getSession())?.data?.session
-      : null);
+    const session = await getFreshSupabaseSession(options);
     const token = String(session?.access_token || "").trim();
     return token ? { Authorization: `Bearer ${token}` } : {};
   } catch {
@@ -1793,9 +1860,13 @@ function isLikelyFreshJwt(token) {
 }
 
 async function getQuestionSubmissionAuthHeaders(options = {}) {
-  const headers = await getInventoryAuthHeaders(options);
-  const token = String(headers.Authorization || "").replace(/^Bearer\s+/i, "").trim();
-  return token && isLikelyFreshJwt(token) ? headers : {};
+  try {
+    const session = await getFreshSupabaseSession(options);
+    const token = String(session?.access_token || "").trim();
+    return token && isLikelyFreshJwt(token) ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
 }
 
 function getInventoryAuthHeadersSync(options = {}) {
@@ -4914,8 +4985,69 @@ function createAbortError(message = "The active match work was cancelled.") {
   return error;
 }
 
+function createHttpRequestError(message, response = null, payload = null) {
+  const error = new Error(message || `Request failed${response?.status ? ` with status ${response.status}` : ""}.`);
+  if (response?.status) {
+    error.status = response.status;
+  }
+  if (payload && typeof payload === "object") {
+    error.payload = payload;
+    if (payload.code) {
+      error.code = String(payload.code);
+    }
+  }
+  return error;
+}
+
+function isStaleRoomSetupError(error) {
+  if (!error) {
+    return false;
+  }
+  if (error.roomSyncStale) {
+    return true;
+  }
+  const message = String(error.message || error.payload?.error || "").toLowerCase();
+  return Number(error.status) === 409
+    || message.includes("previous match")
+    || message.includes("previous round")
+    || message.includes("completed match")
+    || message.includes("completed round")
+    || message.includes("cannot overwrite")
+    || message.includes("cannot skip")
+    || message.includes("locked round");
+}
+
 function isCurrentMatchWork(token) {
   return token === state.matchWorkToken && !state.matchEnded;
+}
+
+function createRoundSetupWorkContext(extra = {}) {
+  return {
+    matchToken: state.matchWorkToken,
+    roomCode: state.roomSettings.code || "",
+    matchId: getCurrentRoomMatchId(),
+    round: Number(state.round) || 0,
+    ...extra
+  };
+}
+
+function isCurrentRoundSetupWork(context = {}) {
+  if (!isCurrentMatchWork(context.matchToken)) {
+    return false;
+  }
+  const roomCode = String(context.roomCode || "").trim().toUpperCase();
+  if (roomCode && roomCode !== String(state.roomSettings.code || "").trim().toUpperCase()) {
+    return false;
+  }
+  if (Number(context.round || 0) && Number(context.round) !== Number(state.round)) {
+    return false;
+  }
+  const matchId = String(context.matchId || "").trim();
+  const currentMatchId = getCurrentRoomMatchId();
+  if (matchId && currentMatchId && matchId !== currentMatchId) {
+    return false;
+  }
+  return true;
 }
 
 function createRoomMatchId(code = state.roomSettings.code) {
@@ -5212,7 +5344,13 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || `Room round setup failed with status ${response.status}.`);
+      const requestError = createHttpRequestError(
+        error.error || `Room round setup failed with status ${response.status}.`,
+        response,
+        error
+      );
+      requestError.roomSyncStale = isStaleRoomSetupError(requestError);
+      throw requestError;
     }
 
     const data = await response.json().catch(() => ({}));
@@ -5239,7 +5377,9 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
       || normalizeSetupPayload(data.room?.game?.setup || data.game?.setup || {});
     return setup;
   } catch (error) {
-    state.roomDirectoryOnline = false;
+    if (!isStaleRoomSetupError(error)) {
+      state.roomDirectoryOnline = false;
+    }
     throw error;
   } finally {
     if (controller) {
@@ -6101,6 +6241,62 @@ function normalizeTriviaAnswer(answer) {
     .replace(/\b(the|a|an)\b/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+const commonTriviaAbbreviationAliases = new Map([
+  ["youtube", ["yt", "u tube"]],
+  ["instagram", ["ig", "insta"]],
+  ["facebook", ["fb"]],
+  ["tiktok", ["tt", "tik tok"]],
+  ["twitter", ["x", "twttr"]],
+  ["reddit", ["rdt"]],
+  ["discord", ["dc"]],
+  ["snapchat", ["sc"]],
+  ["wikipedia", ["wiki"]],
+  ["javascript", ["js"]],
+  ["typescript", ["ts"]],
+  ["artificial intelligence", ["ai"]],
+  ["virtual reality", ["vr"]],
+  ["augmented reality", ["ar"]],
+  ["united states", ["us", "usa", "u s", "u s a"]],
+  ["united states of america", ["us", "usa", "u s", "u s a"]],
+  ["united kingdom", ["uk", "u k"]],
+  ["european union", ["eu", "e u"]],
+  ["united nations", ["un", "u n"]],
+  ["world war", ["ww"]],
+  ["world wide web", ["www"]],
+  ["national basketball association", ["nba"]],
+  ["national football league", ["nfl"]],
+  ["major league baseball", ["mlb"]],
+  ["national hockey league", ["nhl"]]
+]);
+
+function getTriviaAnswerAcronym(value) {
+  return normalizeTriviaAnswer(value)
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("");
+}
+
+function getKnownTriviaAbbreviations(normalizedAccepted) {
+  const aliases = new Set();
+  const compactAccepted = String(normalizedAccepted || "").replace(/\s+/g, "");
+  const directAliases = commonTriviaAbbreviationAliases.get(normalizedAccepted)
+    || commonTriviaAbbreviationAliases.get(compactAccepted);
+  (directAliases || []).forEach((alias) => aliases.add(normalizeTriviaAnswer(alias)));
+  const acronym = getTriviaAnswerAcronym(normalizedAccepted);
+  if (acronym && acronym.length >= 2) {
+    aliases.add(acronym);
+  }
+  return [...aliases].filter(Boolean);
+}
+
+function isKnownTriviaAbbreviation(normalizedAnswer, normalizedAccepted) {
+  if (!normalizedAnswer || !normalizedAccepted) {
+    return false;
+  }
+  return getKnownTriviaAbbreviations(normalizedAccepted).includes(normalizedAnswer);
 }
 
 function levenshteinDistance(a, b) {
@@ -8684,14 +8880,52 @@ function getAchievementMilestoneFillPercent(unlockedCount = getUnlockedAchieveme
 
 function getAchievementMilestoneFillWidth(unlockedCount = getUnlockedAchievementCount()) {
   const percent = getAchievementMilestoneFillPercent(unlockedCount);
-  if (percent <= 0 || percent >= 100) {
-    return `${percent}%`;
+  return `${percent}%`;
+}
+
+function updateAchievementMilestoneFillFromLayout(track, unlockedCount = getUnlockedAchievementCount()) {
+  const fill = track?.querySelector(".achievement-milestone-fill");
+  const nodes = [...(track?.querySelectorAll(".achievement-milestone") || [])];
+  if (!fill || !track || !nodes.length) {
+    return;
   }
 
-  const reachedExactMilestone = achievementMilestones.some((milestone) => milestone.target === unlockedCount);
-  return reachedExactMilestone
-    ? `min(100%, calc(${percent}% + 0.95rem))`
-    : `${percent}%`;
+  const trackRect = track.getBoundingClientRect();
+  const markers = nodes
+    .map((node) => {
+      const marker = node.querySelector(".achievement-milestone-marker");
+      const target = Number(node.dataset.target || 0);
+      if (!marker || !Number.isFinite(target)) {
+        return null;
+      }
+      const markerRect = marker.getBoundingClientRect();
+      return {
+        target,
+        right: markerRect.right - trackRect.left
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.target - b.target);
+  if (!markers.length) {
+    return;
+  }
+
+  let width = 0;
+  if (unlockedCount >= markers[markers.length - 1].target) {
+    width = track.scrollWidth;
+  } else if (unlockedCount <= 0) {
+    width = 0;
+  } else if (unlockedCount < markers[0].target) {
+    width = markers[0].right * (unlockedCount / Math.max(1, markers[0].target));
+  } else {
+    const nextIndex = markers.findIndex((marker) => unlockedCount < marker.target);
+    const previous = markers[Math.max(0, nextIndex - 1)];
+    const next = markers[nextIndex];
+    const progress = (unlockedCount - previous.target) / Math.max(1, next.target - previous.target);
+    width = previous.right + (next.right - previous.right) * Math.max(0, Math.min(1, progress));
+  }
+
+  fill.style.width = `${Math.max(0, Math.min(track.scrollWidth, width))}px`;
 }
 
 function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
@@ -8732,6 +8966,7 @@ function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
     const isReady = unlockedCount >= milestone.target;
     const node = document.createElement("article");
     node.className = "achievement-milestone";
+    node.dataset.target = String(milestone.target);
     node.dataset.ready = String(isReady);
     node.dataset.claimed = String(isClaimed);
     if (state.justClaimedAchievementMilestoneId === milestone.id) {
@@ -8768,6 +9003,9 @@ function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
         Math.max(0, scroller.scrollWidth - scroller.clientWidth)
       );
     }
+    updateAchievementMilestoneFillFromLayout(track, unlockedCount);
+    window.requestAnimationFrame(() => updateAchievementMilestoneFillFromLayout(track, unlockedCount));
+    window.setTimeout(() => updateAchievementMilestoneFillFromLayout(track, unlockedCount), 80);
   });
   road.addEventListener("click", (event) => {
     const button = event.target.closest("[data-milestone-claim]");
@@ -24854,6 +25092,53 @@ function showWaitingForHostRoundSetup(round = state.round) {
   setHidden(elements.inputPanel, true);
 }
 
+async function recoverFromStaleRoomRoundSetup(error, context = {}) {
+  if (!isRoomMode() || !isStaleRoomSetupError(error)) {
+    return false;
+  }
+
+  const round = Number(context.round || state.round) || state.round;
+  setHidden(elements.errorPanel, true);
+  stopLoadingMessages();
+
+  if (!isCurrentRoundSetupWork(context)) {
+    return true;
+  }
+
+  if (state.questionId && elements.inputPanel && !elements.inputPanel.classList.contains("hidden")) {
+    return true;
+  }
+
+  let setup = getSyncedRoomSetupForRound(round);
+  if (!setup) {
+    elements.loadingText.textContent = isCurrentHost()
+      ? "Resyncing the shared round..."
+      : `Waiting for the host to deal round ${round}...`;
+    setHidden(elements.loadingPanel, false);
+    setHidden(elements.errorPanel, true);
+    await requestRoomRealtimeCatchup("stale-round-setup", { force: true, snapshot: true });
+    if (!isCurrentRoundSetupWork(context)) {
+      return true;
+    }
+    setup = getSyncedRoomSetupForRound(round);
+  }
+
+  if (setup && isCurrentRoundSetupWork(context)) {
+    applyRoundSetup(setup, { skipPublish: true });
+    applyRoomGamePowerState();
+    return true;
+  }
+
+  if (isCurrentRoundSetupWork(context) && !state.questionId) {
+    showWaitingForHostRoundSetup(round);
+    elements.loadingText.textContent = isCurrentHost()
+      ? "Waiting for the room to finish syncing this round..."
+      : `Waiting for the host to deal round ${round}...`;
+  }
+
+  return true;
+}
+
 function renderRound() {
   stopNextRoundCountdown();
   stopLoadingMessages();
@@ -25988,18 +26273,7 @@ async function submitUserQuestion(event) {
   elements.userQuestionSubmitButton.disabled = true;
   elements.userQuestionStatus.textContent = "Submitting for admin review...";
   try {
-    const response = await fetch("/api/question-submissions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(await getQuestionSubmissionAuthHeaders()) },
-      body: JSON.stringify({
-        question: payload,
-        creator: { id: state.supabaseUser?.id || state.clientId, name: state.profile.name || "Player" }
-      })
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(result.error || `Submission failed with status ${response.status}.`);
-    }
+    const result = await postUserQuestionSubmission(payload);
     elements.userQuestionStatus.textContent = "Submitted for review. An admin will approve or deny it.";
     elements.userQuestionForm.reset();
     updateUserQuestionImageFields();
@@ -26018,6 +26292,36 @@ async function submitUserQuestion(event) {
   } finally {
     elements.userQuestionSubmitButton.disabled = false;
   }
+}
+
+function isQuestionSubmissionAuthError(response, result = {}) {
+  const message = String(result?.error || "").toLowerCase();
+  return [401, 403].includes(Number(response?.status))
+    && /auth|token|session|creator/.test(message);
+}
+
+async function postUserQuestionSubmission(payload) {
+  const body = JSON.stringify({
+    question: payload,
+    creator: { id: state.supabaseUser?.id || state.clientId, name: state.profile.name || "Player" }
+  });
+  const send = async (options = {}) => {
+    const response = await fetch("/api/question-submissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await getQuestionSubmissionAuthHeaders(options)) },
+      body
+    });
+    const result = await response.json().catch(() => ({}));
+    return { response, result };
+  };
+  let { response, result } = await send();
+  if (!response.ok && isQuestionSubmissionAuthError(response, result)) {
+    ({ response, result } = await send({ forceRefresh: true }));
+  }
+  if (!response.ok) {
+    throw new Error(result.error || `Submission failed with status ${response.status}.`);
+  }
+  return result;
 }
 
 function loadSubmissionSeenIds() {
@@ -26056,12 +26360,7 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
   }
   try {
     const creatorId = state.supabaseUser?.id || state.clientId;
-    const response = await fetch(`/api/question-submissions?creatorId=${encodeURIComponent(creatorId)}`, {
-      cache: "no-store",
-      headers: await getQuestionSubmissionAuthHeaders()
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || "Could not load your submissions.");
+    const result = await fetchUserQuestionSubmissions(creatorId);
     state.userQuestionSubmissions = Array.isArray(result.submissions) ? result.submissions : [];
     processQuestionSubmissionRefunds();
     if (markSeen) {
@@ -26078,6 +26377,26 @@ async function loadUserQuestionSubmissions({ markSeen = false } = {}) {
         : error.message || "Could not load your submissions.";
     }
   }
+}
+
+async function fetchUserQuestionSubmissions(creatorId) {
+  const url = `/api/question-submissions?creatorId=${encodeURIComponent(creatorId)}`;
+  const send = async (options = {}) => {
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: await getQuestionSubmissionAuthHeaders(options)
+    });
+    const result = await response.json().catch(() => ({}));
+    return { response, result };
+  };
+  let { response, result } = await send();
+  if (!response.ok && isQuestionSubmissionAuthError(response, result)) {
+    ({ response, result } = await send({ forceRefresh: true }));
+  }
+  if (!response.ok) {
+    throw new Error(result.error || "Could not load your submissions.");
+  }
+  return result;
 }
 
 function hasPendingUserQuestionSubmissions() {
@@ -28601,6 +28920,7 @@ async function newRound() {
   resetPlayedPowersForRound();
   const preferredTheme = state.nextPreferredTheme;
   state.nextPreferredTheme = "";
+  const roomSetupContext = createRoundSetupWorkContext({ matchToken });
   if (isRoomMode() && !isCurrentHost()) {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
     showWaitingForHostRoundSetup(state.round);
@@ -28615,6 +28935,9 @@ async function newRound() {
       }
     } catch (error) {
       if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+        return;
+      }
+      if (await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
         return;
       }
       console.warn(error);
@@ -28635,11 +28958,14 @@ async function newRound() {
         totalRounds: state.maxRounds
       };
       const setup = await requestAuthoritativeRoomRoundSetup(setupOptions);
-      if (isCurrentMatchWork(matchToken)) {
+      if (isCurrentRoundSetupWork(roomSetupContext)) {
         applyRoundSetup(setup, { skipPublish: true });
       }
     } catch (error) {
       if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+        return;
+      }
+      if (await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
         return;
       }
       console.warn(error);
@@ -28924,6 +29250,7 @@ async function startGame(mode) {
     startRoomDirectoryPolling();
   }
   resetRoundUiForLoading();
+  const roomSetupContext = mode === "room" ? createRoundSetupWorkContext({ matchToken }) : null;
   try {
     const enabledThemes = getEnabledTriviaThemes();
     const firstRoundSetupOptions = { round: state.round, totalRounds: state.maxRounds };
@@ -28949,7 +29276,7 @@ async function startGame(mode) {
       || takeWarmSetup(enabledThemes, firstRoundSetupOptions)
       || await getWarmSetupPromise(enabledThemes, firstRoundSetupOptions)
       || await requestRoundSetup(firstRoundSetupOptions);
-    if (!isCurrentMatchWork(matchToken)) {
+    if (mode === "room" ? !isCurrentRoundSetupWork(roomSetupContext) : !isCurrentMatchWork(matchToken)) {
       return;
     }
     if (state.warmSetup === firstSetup) {
@@ -28966,6 +29293,9 @@ async function startGame(mode) {
     }
   } catch (error) {
     if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+      return;
+    }
+    if (roomSetupContext && await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
       return;
     }
     console.warn(error);
@@ -33992,20 +34322,15 @@ function scoreAnswerAgainstAcceptedAnswers(answer, acceptedAnswers) {
   if (accepted.includes(normalized)) {
     return 1;
   }
+  if (accepted.some((target) => isKnownTriviaAbbreviation(normalized, target))) {
+    return 0.94;
+  }
   if (accepted.some((target) => isMessyTriviaTypo(normalized, target))) {
     return 0.84;
   }
   const bestDistance = Math.min(...accepted.map((target) => levenshteinDistance(normalized, target)));
   const longest = Math.max(normalized.length, ...accepted.map((target) => target.length), 1);
   return 1 - (bestDistance / longest);
-}
-
-function getTriviaAnswerAcronym(value) {
-  return normalizeTriviaAnswer(value)
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join("");
 }
 
 function compactNormalizedTriviaAnswer(value) {
@@ -34027,6 +34352,9 @@ function getGradingSimilarityDetails(answer, acceptedAnswers = []) {
   const compactNormalized = compactNormalizedTriviaAnswer(answer);
   if (compactNormalized && accepted.some((target) => compactNormalized === target.replace(/\s+/g, ""))) {
     return { kind: "formatting", score: 0.98 };
+  }
+  if (accepted.some((target) => isKnownTriviaAbbreviation(normalized, target))) {
+    return { kind: "abbreviation", score: 0.94 };
   }
   if (accepted.some((target) => normalized === getTriviaAnswerAcronym(target) || getTriviaAnswerAcronym(normalized) === target)) {
     return { kind: "abbreviation", score: 0.95 };
