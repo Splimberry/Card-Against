@@ -1546,6 +1546,82 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
 }
 
+async function testRoomRoundSetupEndpointCreatesSharedSetup() {
+  const code = makeCode(8160);
+  const matchId = `${code}-match`;
+  const setupStartedAt = Date.now() - 1500;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "starting",
+      round: 1,
+      setup: null,
+      matchSettings: {
+        rounds: 5,
+        timerSeconds: 30,
+        maxPlayers: 4,
+        enabledThemes: ["Science"]
+      },
+      setupStartedAt,
+      roundStartedAt: 0,
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/round-setup`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1,
+    totalRounds: 5,
+    enabledThemes: ["Science"],
+    setupSeed: `${code}-seed`
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.eventType, "round-started");
+  assert.equal(payload.matchId, matchId);
+  assert.equal(payload.round, 1);
+  assert.equal(payload.game.status, "playing");
+  assert.ok(payload.game.setup.blackCard);
+  assert.equal(payload.game.setupStartedAt, setupStartedAt);
+  assert.ok(payload.game.roundStartedAt >= setupStartedAt);
+  assert.equal(payload.room.game.setup.blackCard, payload.game.setup.blackCard);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "playing");
+  assert.equal(stored.payload.room.game.setup.blackCard, payload.game.setup.blackCard);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_started"), true);
+}
+
+async function testRoomRoundSetupCannotSkipPreparedRound() {
+  const code = makeCode(8161);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "starting",
+      round: 1,
+      setup: null,
+      updatedAt: Date.now()
+    }
+  }));
+
+  const skipped = await request("POST", `/api/rooms/${code}/round-setup`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 2,
+    totalRounds: 5
+  });
+  assert.equal(skipped.response.status, 409);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "starting");
+  assert.equal(stored.payload.room.game.setup, null);
+}
+
 async function testStaleRoomRoundAdvancingCannotOverwriteCurrentRound() {
   const code = makeCode(8141);
   const matchId = `${code}-match`;
@@ -2971,6 +3047,8 @@ async function main() {
   await testStaleParticipantSubmissionCannotOverwriteCurrentRound();
   await testCurrentRoundSubmissionIsAnswerEvent();
   await testRoomRoundAdvancingEndpointStampsEvent();
+  await testRoomRoundSetupEndpointCreatesSharedSetup();
+  await testRoomRoundSetupCannotSkipPreparedRound();
   await testStaleRoomRoundAdvancingCannotOverwriteCurrentRound();
   await testDelayedRoomRoundAdvancingCannotClearStartedSetup();
   await testStaleRoomSetupCannotOverwriteGrading();

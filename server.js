@@ -265,6 +265,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomRoundSetupMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/round-setup$/);
+    if (roomRoundSetupMatch && req.method === "POST") {
+      await handleRoomRoundSetup(req, res, roomRoundSetupMatch[1]);
+      return;
+    }
+
     const roomPowerStateMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/power-state$/);
     if (roomPowerStateMatch && req.method === "POST") {
       await handleRoomPowerState(req, res, roomPowerStateMatch[1]);
@@ -3185,6 +3191,106 @@ async function handleRoomRoundAdvancing(req, res, code) {
     }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Round advance failed." });
+  }
+}
+
+async function handleRoomRoundSetup(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can prepare a room round.")) {
+      return;
+    }
+
+    const currentGame = room.game && typeof room.game === "object" ? room.game : null;
+    const currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
+    const payloadMatchId = String(body.matchId || body.game?.matchId || "").slice(0, 80);
+    const matchId = payloadMatchId || currentMatchId || `${normalizedCode}-${Date.now()}`;
+    const currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
+    const round = clampServerNumber(body.round || currentRound, 1, 100, currentRound || 1);
+
+    if (room.status !== "in-progress" || !currentGame) {
+      sendJson(res, 409, { error: "Round setup needs a round preparation state first." });
+      return;
+    }
+    if (currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Round setup belongs to a previous match." });
+      return;
+    }
+    if (currentRound && round < currentRound) {
+      sendJson(res, 409, { error: "Round setup belongs to a previous round." });
+      return;
+    }
+    if (currentRound && round > currentRound) {
+      sendJson(res, 409, { error: "Round setup cannot skip the prepared round." });
+      return;
+    }
+    if (currentGame.setup && currentGame.status !== "starting") {
+      sendJson(res, 200, createRoomEventResponse(room, "round_started", {
+        duplicate: true,
+        round: currentRound || round,
+        matchId: currentMatchId || matchId,
+        game: currentGame,
+        room: sanitizeRoomForClient(room, { includePrivateSecrets: true })
+      }));
+      return;
+    }
+
+    const matchSettings = normalizeRoomGameSettings(body.matchSettings || body.settings || currentGame.matchSettings || room.settings);
+    const enabledThemes = normalizeEnabledThemes(body.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
+    const preferredTheme = normalizePreferredTheme(body.preferredTheme, enabledThemes);
+    const recentBlackCards = Array.isArray(body.recentBlackCards) ? body.recentBlackCards.map(String).slice(-30) : [];
+    const totalRounds = clampServerNumber(body.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
+    const setupSeed = String(body.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
+    const setup = await getSeedQuestionSetup({
+      recentBlackCards,
+      enabledThemes,
+      preferredTheme,
+      setupSeed,
+      backgroundMode: false,
+      round,
+      totalRounds
+    });
+    if (!setup) {
+      throw new Error("No seed questions are available for the selected themes.");
+    }
+
+    const now = Date.now();
+    room.status = "in-progress";
+    room.game = normalizeRoomGame({
+      ...(currentMatchId === matchId ? currentGame : {}),
+      matchId,
+      status: "playing",
+      round,
+      setup,
+      matchSettings,
+      roundResult: null,
+      powerState: body.powerState || currentGame.powerState || null,
+      setupStartedAt: currentGame.setupStartedAt || now,
+      roundStartedAt: now,
+      updatedAt: now
+    });
+    stampRoomEvent(room, "round_started", {
+      round,
+      matchId,
+      game: room.game
+    });
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "round_started", {
+      round: storedRoom.game?.round || round,
+      matchId: storedRoom.game?.matchId || matchId,
+      game: storedRoom.game || room.game,
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
+    }));
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Round setup generation failed." });
   }
 }
 

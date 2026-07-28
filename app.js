@@ -5067,6 +5067,82 @@ async function requestRoundSetup(options = {}) {
   }
 }
 
+async function requestAuthoritativeRoomRoundSetup(options = {}) {
+  ensureServerMode();
+  await waitForGradingPriority();
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    throw new Error("Only the room host can prepare a shared round.");
+  }
+  if (options.signal?.aborted) {
+    throw createAbortError();
+  }
+
+  const controller = options.signal ? null : new AbortController();
+  const signal = options.signal || controller.signal;
+  if (controller) {
+    state.setupRequestAbortControllers.add(controller);
+  }
+  const timingOptions = getRoundSetupTimingOptions(options);
+  const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
+  const preferredTheme = options.preferredTheme || "";
+  const setupSeed = String(options.setupSeed || `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 80);
+
+  try {
+    const response = await fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/round-setup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal,
+      body: JSON.stringify({
+        hostParticipantId: state.clientId,
+        matchId: getCurrentRoomMatchId(),
+        round: timingOptions.round,
+        totalRounds: timingOptions.totalRounds,
+        recentBlackCards: Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards,
+        enabledThemes,
+        preferredTheme,
+        setupSeed,
+        matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
+        powerState: getRoomPowerStatePayload()
+      })
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `Room round setup failed with status ${response.status}.`);
+    }
+
+    const data = await response.json().catch(() => ({}));
+    state.roomDirectoryOnline = true;
+    if (data.room) {
+      applyRoomSnapshot(data.room, { source: "room-round-setup-response" });
+      if (!data.duplicate) {
+        broadcastRealtimeRoomChange("round-started", data.room);
+      }
+    } else {
+      rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
+      if (data.game && typeof data.game === "object") {
+        state.roomGame = data.game;
+        if (data.game.matchId) {
+          setCurrentRoomMatchId(data.game.matchId);
+        }
+      }
+      if (!data.duplicate) {
+        broadcastRealtimeRoomChange("round-started", state.roomSettings.code, data);
+      }
+    }
+
+    const setup = getSyncedRoomSetupForRound(timingOptions.round)
+      || normalizeSetupPayload(data.room?.game?.setup || data.game?.setup || {});
+    return setup;
+  } catch (error) {
+    state.roomDirectoryOnline = false;
+    throw error;
+  } finally {
+    if (controller) {
+      state.setupRequestAbortControllers.delete(controller);
+    }
+  }
+}
+
 function normalizePromptText(text) {
   return String(text || "")
     .toLowerCase()
@@ -26176,7 +26252,7 @@ function triggerOverlayDebug(type) {
 }
 
 function prefetchNextSetup() {
-  if (state.matchEnded || state.round >= state.maxRounds || state.gradingActive || state.nextSetup || state.nextSetupPromise) {
+  if (isRoomMode() || state.matchEnded || state.round >= state.maxRounds || state.gradingActive || state.nextSetup || state.nextSetupPromise) {
     return;
   }
 
@@ -26213,7 +26289,7 @@ function prefetchNextSetup() {
 }
 
 function scheduleNextSetupPrefetch() {
-  if (isRoomMode() && !isCurrentHost()) {
+  if (isRoomMode()) {
     return;
   }
   if (state.matchEnded || state.round >= state.maxRounds || state.nextSetup || state.nextSetupPromise) {
@@ -26245,6 +26321,8 @@ async function newRound() {
   state.botCards = [];
   state.multipleChoiceOptions = [];
   resetPlayedPowersForRound();
+  const preferredTheme = state.nextPreferredTheme;
+  state.nextPreferredTheme = "";
   if (isRoomMode() && !isCurrentHost()) {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
     showWaitingForHostRoundSetup(state.round);
@@ -26270,8 +26348,31 @@ async function newRound() {
     }
     return;
   }
-  const preferredTheme = state.nextPreferredTheme;
-  state.nextPreferredTheme = "";
+  if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
+    resetRoundUiForLoading({ resetBlackCardTheme: true });
+    try {
+      const setupOptions = {
+        ...(preferredTheme ? getThemeSetupOptions(preferredTheme) : {}),
+        round: state.round,
+        totalRounds: state.maxRounds
+      };
+      const setup = await requestAuthoritativeRoomRoundSetup(setupOptions);
+      if (isCurrentMatchWork(matchToken)) {
+        applyRoundSetup(setup, { skipPublish: true });
+      }
+    } catch (error) {
+      if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+        return;
+      }
+      console.warn(error);
+      stopLoadingMessages();
+      playSound("error");
+      elements.errorText.textContent = `${error.message} Ask players to wait while the room keeps its last synced state.`;
+      setHidden(elements.loadingPanel, true);
+      setHidden(elements.errorPanel, false);
+    }
+    return;
+  }
   if (preferredTheme) {
     reserveQuestionSetups([state.nextSetup, ...state.setupStack].filter(Boolean));
     state.setupStack = [];
@@ -26547,7 +26648,12 @@ async function startGame(mode) {
     const enabledThemes = getEnabledTriviaThemes();
     const firstRoundSetupOptions = { round: state.round, totalRounds: state.maxRounds };
     let syncedSetup = null;
-    if (mode === "room" && !isCurrentHost()) {
+    let firstSetup = null;
+    let setupAlreadyPublished = false;
+    if (mode === "room" && isCurrentHost() && !state.joiningRoom) {
+      firstSetup = await requestAuthoritativeRoomRoundSetup(firstRoundSetupOptions);
+      setupAlreadyPublished = true;
+    } else if (mode === "room" && !isCurrentHost()) {
       syncedSetup = getSyncedRoomSetupForRound(state.round);
       if (!syncedSetup) {
         showWaitingForHostRoundSetup(state.round);
@@ -26557,7 +26663,8 @@ async function startGame(mode) {
     if (mode === "room" && !isCurrentHost() && !syncedSetup) {
       return;
     }
-    const firstSetup = syncedSetup
+    firstSetup = firstSetup
+      || syncedSetup
       || takeReservedSetup(enabledThemes, "", firstRoundSetupOptions)
       || takeWarmSetup(enabledThemes, firstRoundSetupOptions)
       || await getWarmSetupPromise(enabledThemes, firstRoundSetupOptions)
@@ -26568,7 +26675,7 @@ async function startGame(mode) {
     if (state.warmSetup === firstSetup) {
       clearWarmSetup();
     }
-    applyRoundSetup(firstSetup);
+    applyRoundSetup(firstSetup, { skipPublish: setupAlreadyPublished });
     if (mode === "room" && !isCurrentHost()) {
       applyRoomGamePowerState();
       if (state.isSpectator) {
@@ -31226,13 +31333,13 @@ function startNextRoundCountdown() {
     if (state.nextRoundCountdown <= 0) {
       stopNextRoundCountdown();
       if (canAdvanceVerdict()) {
-        advanceAfterVerdict();
+        void advanceAfterVerdict();
       }
     }
   }, 1000);
 }
 
-function advanceAfterVerdict() {
+async function advanceAfterVerdict() {
   if (!canAdvanceVerdict()) {
     updateNextRoundButtonLabel();
     return;
@@ -31244,8 +31351,18 @@ function advanceAfterVerdict() {
     return;
   }
 
-  state.round += 1;
-  publishRoomRoundAdvancing(state.round);
+  const nextRound = state.round + 1;
+  if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
+    const advance = await publishRoomRoundAdvancing(nextRound);
+    if (!advance) {
+      addSystemChat("Could not sync the next round yet. Try again in a moment.", { private: true });
+      updateNextRoundButtonLabel();
+      return;
+    }
+  } else {
+    publishRoomRoundAdvancing(nextRound);
+  }
+  state.round = nextRound;
   newRound();
 }
 
@@ -33771,7 +33888,7 @@ elements.nextRoundButton.addEventListener("click", (event) => {
     updateNextRoundButtonLabel();
     return;
   }
-  advanceAfterVerdict();
+  void advanceAfterVerdict();
 });
 elements.roomSubmitStatus?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action='skip-room-round']");
