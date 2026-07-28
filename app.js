@@ -2931,6 +2931,8 @@ const state = {
   roomBotSequence: 0,
   pendingRoomBotAdds: [],
   pendingRoomBotKicks: {},
+  roomBotAnswerSubmissions: {},
+  roomBotAnswerWaitKey: "",
   pendingRoomModeration: {},
   roomAutoResolveId: null,
   roomAutoResolveKey: "",
@@ -4467,6 +4469,8 @@ function clearRoundSubmissionState(options = {}) {
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
   state.roomGradingRequestKey = "";
+  state.roomBotAnswerSubmissions = {};
+  state.roomBotAnswerWaitKey = "";
   state.roomSubmissions = {};
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   state.localAnswers = { playerOne: "", playerTwo: "" };
@@ -12567,7 +12571,11 @@ function maybeResolveRoomSubmissions() {
   if (isRoomSubmissionResolveStale()) {
     state.roomRoundResolving = false;
   }
-  if (getPendingSubmitters().length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
+  const pendingSubmitters = getPendingSubmitters();
+  if (pendingSubmitters.length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
+    return;
+  }
+  if (maybeWaitForRoomBotAnswerSubmissions()) {
     return;
   }
   if (!isRoomGradingPhaseStarted()) {
@@ -12623,6 +12631,9 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
     return;
   }
   if (getPendingSubmitters().length === 0) {
+    if (maybeWaitForRoomBotAnswerSubmissions()) {
+      return;
+    }
     if (!isRoomGradingPhaseStarted()) {
       requestRoomAllSubmittedGradingLock("submissions-complete-wait");
       return;
@@ -13013,6 +13024,55 @@ function buildRoundSkipSubmissions() {
       };
     })
     .filter(Boolean);
+}
+
+function getRoomBotAnswerSubmissionKey(owner = "") {
+  return [getCurrentRoomRoundSyncKey(), owner].join("|");
+}
+
+function registerRoomBotAnswerSubmission(owner, promise) {
+  if (!owner || !promise || typeof promise.then !== "function") {
+    return promise;
+  }
+  const key = getRoomBotAnswerSubmissionKey(owner);
+  state.roomBotAnswerSubmissions = {
+    ...(state.roomBotAnswerSubmissions || {}),
+    [owner]: { key, promise }
+  };
+  promise.finally(() => {
+    const current = state.roomBotAnswerSubmissions?.[owner];
+    if (current?.key === key) {
+      delete state.roomBotAnswerSubmissions[owner];
+    }
+  }).catch(() => {});
+  return promise;
+}
+
+function getPendingRoomBotAnswerSubmissionPromises(roundSyncKey = getCurrentRoomRoundSyncKey()) {
+  const prefix = `${roundSyncKey}|`;
+  return Object.values(state.roomBotAnswerSubmissions || {})
+    .filter((entry) => entry?.key?.startsWith(prefix) && entry.promise && typeof entry.promise.then === "function")
+    .map((entry) => entry.promise);
+}
+
+function maybeWaitForRoomBotAnswerSubmissions(roundSyncKey = getCurrentRoomRoundSyncKey()) {
+  const pendingPromises = getPendingRoomBotAnswerSubmissionPromises(roundSyncKey);
+  if (!pendingPromises.length) {
+    return false;
+  }
+  if (state.roomBotAnswerWaitKey === roundSyncKey) {
+    return true;
+  }
+  state.roomBotAnswerWaitKey = roundSyncKey;
+  Promise.allSettled(pendingPromises).then(() => {
+    if (state.roomBotAnswerWaitKey === roundSyncKey) {
+      state.roomBotAnswerWaitKey = "";
+    }
+    if (isCurrentRoomRoundSyncKey(roundSyncKey)) {
+      maybeResolveRoomSubmissions();
+    }
+  });
+  return true;
 }
 
 function applyRealtimeRoomGrading(payload = {}) {
@@ -14021,6 +14081,9 @@ function startSupabaseRealtime() {
     state.realtimeLobbyReady = status === "SUBSCRIBED";
     if (state.realtimeLobbyReady) {
       stopJoinDirectoryPolling();
+      if (!elements.joinScreen.classList.contains("hidden") && !state.roomInvite.active) {
+        void refreshHostedRoomsAndRender({ force: true });
+      }
       if (hasActiveRoomContext()) {
         startRoomDirectoryPolling();
       }
@@ -16117,7 +16180,12 @@ function shouldRefreshRoomAfterRealtimeMiss(payload = {}) {
     return true;
   }
   if (eventType === "answer-submitted") {
-    return true;
+    return !(
+      payload.participantId
+      && getRoomPayloadRound(payload)
+      && getRoomMatchIdFromPayload(payload)
+      && Object.hasOwn(payload, "answer")
+    );
   }
   if (eventType === "room-updated" || eventType === "room-created") {
     return !payload.room;
@@ -17600,6 +17668,8 @@ function resetPlayedPowersForRound() {
   state.extraPowerUses = {};
   state.botPowerSchedule = {};
   state.roomBotAnswerSchedule = {};
+  state.roomBotAnswerSubmissions = {};
+  state.roomBotAnswerWaitKey = "";
   publishRoomPowerRoundReset(state.round);
 }
 
@@ -23270,7 +23340,10 @@ function commitRoomBotAnswer(owner, options = {}) {
   }
   if (isRoomMode()) {
     updateRoomParticipantSubmission(getRoomParticipantIdForOwner(owner), answer, state.round, remainingTime);
-    void publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime, { autoSubmitted: true });
+    registerRoomBotAnswerSubmission(
+      owner,
+      publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime, { autoSubmitted: true })
+    );
   }
   setRoomSubmission(owner, true);
   return true;
@@ -28754,6 +28827,8 @@ function clearLocalRoomState(options = {}) {
   state.roomParticipants = [];
   clearLocalRoomSubmission();
   state.roomSubmissions = {};
+  state.roomBotAnswerSubmissions = {};
+  state.roomBotAnswerWaitKey = "";
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
@@ -29381,6 +29456,16 @@ function shouldIgnoreStaleLobbySnapshot(room = {}) {
   }
   if (String(room.status || "").toLowerCase() !== "lobby" || room.game) {
     return false;
+  }
+  const roomGameStatus = String(state.roomGame?.status || "").toLowerCase();
+  const liveGameStatus = ["starting", "preparing", "preparing_round", "playing", "grading"].includes(roomGameStatus);
+  const activeLiveMatch = Boolean(
+    state.currentRoomStatus === "in-progress"
+      && !state.matchEnded
+      && (getCurrentRoomMatchId() || state.roomGame || !elements.gameStage.classList.contains("hidden"))
+  );
+  if (activeLiveMatch && liveGameStatus) {
+    return true;
   }
   return Boolean(
     Date.now() < (Number(state.roomMatchStartGuardUntil) || 0)
@@ -30789,6 +30874,17 @@ function applyRealtimeRoomReturnedToLobby(room = {}) {
   if (!code || code !== state.roomSettings.code || !hasActiveRoomContext()) {
     return false;
   }
+  if (shouldIgnoreStaleLobbySnapshot(room)) {
+    recordRoomDiagnosticEvent("ignored-stale", room, {
+      source: "room-lobby-return",
+      eventType: "room-updated",
+      reason: "Lobby snapshot ignored because a live match is active."
+    });
+    return false;
+  }
+  if (state.currentRoomStatus === "in-progress" && !state.matchEnded && !state.roomRoundResult) {
+    return false;
+  }
   if (!isRoomMode() && state.currentRoomStatus !== "complete" && state.currentRoomStatus !== "in-progress") {
     return false;
   }
@@ -31473,6 +31569,8 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
     status: state.isSpectator ? "spectating" : "joined",
     compactResponse: !needsFullRoomState,
     includeRoomSnapshot: true,
+    optimisticRealtime: !room.settings?.private,
+    optimisticEventType: "participant-joined",
     ...(Object.hasOwn(options, "roomPassword") ? { roomPassword: options.roomPassword } : {})
   });
   if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
