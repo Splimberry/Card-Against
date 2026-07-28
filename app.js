@@ -2937,6 +2937,7 @@ const state = {
   roomAutoResolveDueAt: 0,
   roomSubmissionResolveId: null,
   roomSubmissionResolveKey: "",
+  roomGradingRequestKey: "",
   roomRoundResolving: false,
   matchWorkToken: 0,
   roundRequestAbortController: null,
@@ -4465,6 +4466,7 @@ function clearRoundSubmissionState(options = {}) {
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
+  state.roomGradingRequestKey = "";
   state.roomSubmissions = {};
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   state.localAnswers = { playerOne: "", playerTwo: "" };
@@ -12569,7 +12571,7 @@ function maybeResolveRoomSubmissions() {
     return;
   }
   if (!isRoomGradingPhaseStarted()) {
-    requestRoomGradingCatchup("submissions-complete-wait");
+    requestRoomAllSubmittedGradingLock("submissions-complete-wait");
     return;
   }
   const matchToken = state.matchWorkToken;
@@ -12622,7 +12624,7 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
   }
   if (getPendingSubmitters().length === 0) {
     if (!isRoomGradingPhaseStarted()) {
-      requestRoomGradingCatchup("submissions-complete-wait");
+      requestRoomAllSubmittedGradingLock("submissions-complete-wait");
       return;
     }
     if (state.roomSubmissionResolveId) {
@@ -12887,6 +12889,34 @@ function requestRoomGradingCatchup(reason = "grading-wait") {
   void requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
 }
 
+function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
+    requestRoomGradingCatchup(reason);
+    return false;
+  }
+  const requestKey = `${getCurrentRoomRoundSyncKey()}|all-submitted`;
+  if (state.roomGradingRequestKey === requestKey) {
+    return true;
+  }
+  state.roomGradingRequestKey = requestKey;
+  void publishRoomRoundSkip({
+    reason: "all-submitted",
+    force: false,
+    submissions: buildRoundSkipSubmissions()
+  }).then((data) => {
+    if (data && isRoomGradingPhaseStarted()) {
+      return;
+    }
+    window.setTimeout(() => {
+      if (state.roomGradingRequestKey === requestKey && !isRoomGradingPhaseStarted()) {
+        state.roomGradingRequestKey = "";
+      }
+    }, 1000);
+    requestRoomGradingCatchup(`${reason}-grading-lock`);
+  });
+  return true;
+}
+
 function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
     return false;
@@ -13027,6 +13057,7 @@ function applyRealtimeRoomGrading(payload = {}) {
     };
   }
 
+  state.roomGradingRequestKey = "";
   const submissions = Array.isArray(payload.submissions) ? payload.submissions : [];
   submissions.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId) || String(entry?.owner || "");

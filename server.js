@@ -4087,9 +4087,11 @@ async function handleRoomRoundGrading(req, res, code) {
       return;
     }
 
+    const reason = normalizeRoomGradingReason(body.reason || "host-skip");
+    const force = Object.hasOwn(body, "force") ? Boolean(body.force) : reason !== "all-submitted";
     const transition = startRoomGradingTransition(room, {
-      force: true,
-      reason: body.reason || "host-skip",
+      force,
+      reason,
       hostParticipantId,
       matchId: currentMatchId || payloadMatchId,
       round,

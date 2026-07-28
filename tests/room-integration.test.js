@@ -1971,7 +1971,7 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
 }
 
 async function testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound() {
-  const code = makeCode(8165);
+  const code = makeCode(8167);
   const matchId = `${code}-match`;
   await upsertRoom(makeRoom(code, {
     status: "in-progress",
@@ -2957,6 +2957,160 @@ async function testRoomRoundSkipEndpointStampsEvent() {
   assert.equal(stored.payload.room.game.status, "grading");
   assert.equal(stored.payload.room.game.answers["host-client"].answer, "Host answer");
   assert.equal(stored.payload.room.game.answers["guest-client"].answer, "");
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_grading"), true);
+}
+
+async function testRoomGradingAllSubmittedDoesNotForcePendingAnswers() {
+  const code = makeCode(8168);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Host answer",
+        submittedRound: 2,
+        submissionMatchId: matchId,
+        remainingTime: 12
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      answers: {
+        "host-client": {
+          participantId: "host-client",
+          matchId,
+          round: 2,
+          status: "submitted",
+          answer: "Host answer",
+          remainingTime: 12,
+          submittedAt: Date.now()
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const grading = await request("POST", `/api/rooms/${code}/grading`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 2,
+    reason: "all-submitted",
+    submissions: [
+      { participantId: "host-client", owner: "player", answer: "Host answer", remainingTime: 12 }
+    ]
+  });
+  assert.equal(grading.response.status, 409);
+  assert.deepEqual(grading.payload.pendingParticipantIds, ["guest-client"]);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "playing");
+  assert.equal(stored.payload.room.game.answers["guest-client"], undefined);
+}
+
+async function testRoomGradingAllSubmittedLocksWhenAllAnswersPresent() {
+  const code = makeCode(8169);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Host answer",
+        submittedRound: 2,
+        submissionMatchId: matchId,
+        remainingTime: 12
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Guest answer",
+        submittedRound: 2,
+        submissionMatchId: matchId,
+        remainingTime: 9
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      answers: {
+        "host-client": {
+          participantId: "host-client",
+          matchId,
+          round: 2,
+          status: "submitted",
+          answer: "Host answer",
+          remainingTime: 12,
+          submittedAt: Date.now() - 2000
+        },
+        "guest-client": {
+          participantId: "guest-client",
+          matchId,
+          round: 2,
+          status: "submitted",
+          answer: "Guest answer",
+          remainingTime: 9,
+          submittedAt: Date.now() - 1000
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const grading = await request("POST", `/api/rooms/${code}/grading`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 2,
+    reason: "all-submitted",
+    submissions: [
+      { participantId: "host-client", owner: "player", answer: "Host answer", remainingTime: 12 },
+      { participantId: "guest-client", owner: "opponent", answer: "Guest answer", remainingTime: 9 }
+    ]
+  });
+  assert.equal(grading.response.status, 200, grading.payload.error);
+  assert.equal(grading.payload.eventType, "round-grading");
+  assert.equal(grading.payload.reason, "all-submitted");
+  assert.equal(grading.payload.submissions.length, 2);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "grading");
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_grading"), true);
 }
 
@@ -3966,6 +4120,8 @@ async function main() {
   await testRoomPowerStateCanClearPlayedHistory();
   await testSpectatorCannotUpdateRoomPowerState();
   await testRoomRoundSkipEndpointStampsEvent();
+  await testRoomGradingAllSubmittedDoesNotForcePendingAnswers();
+  await testRoomGradingAllSubmittedLocksWhenAllAnswersPresent();
   await testRoomRoundResultRequiresGradingLock();
   await testRoomModerationEndpointMutesAndBans();
   await testKickedParticipantCanRejoinWithSameProfile();
