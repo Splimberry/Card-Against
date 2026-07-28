@@ -5791,13 +5791,38 @@ function shouldPlayMenuBackgroundVideo() {
   if (!elements.modeScreen || !elements.menuBackgroundVideo) {
     return false;
   }
-  if (elements.modeScreen.classList.contains("hidden") || document.visibilityState === "hidden") {
+  const backgroundScreenVisible = [
+    elements.modeScreen,
+    elements.roomScreen,
+    elements.joinScreen,
+    elements.roomLobbyScreen
+  ].some((screen) => screen && !screen.classList.contains("hidden"));
+  if (!backgroundScreenVisible || document.visibilityState === "hidden") {
     return false;
   }
   if (state.performanceMode === "low-power" || state.performanceMode === "minimal") {
     return false;
   }
   return !(typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+
+function syncMenuBackgroundVideoSource(video = elements.menuBackgroundVideo) {
+  if (!video) {
+    return false;
+  }
+  const sourceKey = state.performanceMode === "full" ? "fullSrc" : "balancedSrc";
+  let changed = false;
+  video.querySelectorAll("source").forEach((source) => {
+    const nextSource = source.dataset[sourceKey] || source.dataset.balancedSrc || source.getAttribute("src");
+    if (nextSource && source.getAttribute("src") !== nextSource) {
+      source.setAttribute("src", nextSource);
+      changed = true;
+    }
+  });
+  if (changed) {
+    video.load();
+  }
+  return changed;
 }
 
 function syncMenuBackgroundVideo() {
@@ -5807,6 +5832,7 @@ function syncMenuBackgroundVideo() {
   if (!video) {
     return;
   }
+  syncMenuBackgroundVideoSource(video);
   if (!shouldPlay) {
     video.pause();
     return;

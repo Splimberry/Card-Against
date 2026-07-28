@@ -277,7 +277,7 @@ body:has(.game-stage:not(.hidden)) .app-shell {
   margin: 0 auto;
 }
 
-/* Main menu video background. Remove this block and the matching index.html node to revert. */
+/* Menu and room video background. Remove this block and the matching index.html node to revert. */
 .menu-video-bg {
   position: fixed;
   inset: 0;
@@ -10972,6 +10972,10 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   min-height: auto;
   padding: 0;
   accent-color: var(--accent);
+}
+
+.settings-select-row {
+  grid-template-columns: 8rem minmax(0, 1fr);
 }
 
 .settings-select-row select {

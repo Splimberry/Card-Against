@@ -37,8 +37,8 @@
   <body>
     <div class="menu-video-bg" aria-hidden="true">
       <video id="menuBackgroundVideo" class="menu-video-bg-media" poster="assets/backgrounds/menu-bg-poster.jpg" muted loop playsinline preload="metadata">
-        <source src="assets/backgrounds/menu-bg.webm" type="video/webm">
-        <source src="assets/backgrounds/menu-bg.mp4" type="video/mp4">
+        <source src="assets/backgrounds/menu-bg-full.mp4" type="video/mp4" data-full-src="assets/backgrounds/menu-bg-full.mp4" data-balanced-src="assets/backgrounds/menu-bg.mp4">
+        <source src="assets/backgrounds/menu-bg-full.webm" type="video/webm" data-full-src="assets/backgrounds/menu-bg-full.webm" data-balanced-src="assets/backgrounds/menu-bg.webm">
       </video>
     </div>
     <main class="app-shell">
@@ -584,7 +584,6 @@
               <option value="low-power">Low power</option>
               <option value="minimal">Minimal</option>
             </select>
-            <strong id="performanceModeValue">Full</strong>
           </label>
         </div>
       </section>
