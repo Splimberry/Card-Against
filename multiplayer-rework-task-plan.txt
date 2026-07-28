@@ -16,18 +16,26 @@ CORE MULTIPLAYER RULE
 ---------------------
 Every important multiplayer change should follow this flow:
 
-1. A client requests an action.
-2. The server validates the action.
-3. The server saves the new room/match state.
-4. The server assigns a newer revision.
-5. Realtime broadcasts or server responses deliver that authoritative state.
-6. Every client applies the same authoritative state.
+1. The acting client creates a unique clientEventId for the action.
+2. The acting client applies the safe local result immediately.
+3. The acting client broadcasts the realtime delta immediately.
+4. The acting client sends the same clientEventId to the server.
+5. The server validates and stores the action with a newer revision.
+6. The server response/event log echoes the same clientEventId.
+7. Clients reconcile the server confirmation only if it disagrees.
 
-Do not let local optimistic state become permanent truth.
+Realtime broadcast is the main live-game path. Server events and room snapshots
+are backup/reconnect tools, not the normal way other clients learn about live
+gameplay actions.
 
-No constant polling should be used during multiplayer. Realtime is the main
-sync method. One-shot recovery is allowed only for reconnects, detected missed
-revisions, or manual retry.
+Do not let local optimistic state become permanent truth if the server rejects
+it, but do not put the server round trip in front of the visible multiplayer
+action.
+
+No constant polling should be used during multiplayer. One-shot recovery is
+allowed only for reconnects, incomplete realtime payloads, server rejection, or
+manual retry. A revision gap alone should not force catchup when the live
+realtime delta already contains the needed state.
 
 
 TARGET ROOM PHASES
@@ -222,7 +230,7 @@ state.
 
 Tasks:
 
-- All membership changes must be server-first:
+- All membership changes must be realtime-first with server reconciliation:
   - join room
   - leave room
   - spectator join
@@ -232,8 +240,11 @@ Tasks:
   - add bot
   - remove bot
 
-- Server should return the authoritative room snapshot after each membership
-  change.
+- Each membership action should broadcast a compact participant delta
+  immediately with clientEventId.
+
+- Server should return the authoritative room snapshot or compact participant
+  delta after each membership change, echoing the same clientEventId.
 
 - Realtime should broadcast that same authoritative snapshot or event.
 
@@ -386,12 +397,19 @@ Correct trigger rules:
 
 Tasks:
 
-- Server should decide when grading starts.
+- Host/server should validate when grading starts.
+
+- When the host sees every active gameplay player submitted or the force timer
+  expired, the host should broadcast the grading lock immediately with
+  clientEventId and the current submission list.
 
 - Server should lock submissions before grading.
 
-- Client should not locally decide that grading starts except by receiving the
-  authoritative room phase/result.
+- Non-host clients should enter grading only from realtime/server room phase,
+  not from their own local timer guess.
+
+- Server confirmation should echo the same clientEventId and reconcile only if
+  the optimistic grading lock was rejected or materially different.
 
 - Use round id to prevent duplicate grading from old events.
 

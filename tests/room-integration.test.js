@@ -3363,12 +3363,15 @@ async function testRoomModerationEndpointMutesAndBans() {
     ]
   }));
 
+  const muteClientEventId = `${code}:mute:event`;
   const mute = await request("POST", `/api/rooms/${code}/moderation`, {
+    clientEventId: muteClientEventId,
     hostParticipantId: "host-client",
     participantId: "guest-client",
     action: "mute"
   });
   assert.equal(mute.response.status, 200, mute.payload.error);
+  assert.equal(mute.payload.clientEventId, muteClientEventId);
   assert.equal(mute.payload.participant.muted, true);
 
   const ban = await request("POST", `/api/rooms/${code}/moderation`, {
@@ -3385,6 +3388,7 @@ async function testRoomModerationEndpointMutesAndBans() {
   assert.equal(stored.response.status, 200, stored.payload.error);
   assert.equal(stored.payload.room.participants.some((participant) => participant.id === "guest-client"), false);
   assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated"), true);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated" && event.payload?.clientEventId === muteClientEventId), true);
 }
 
 async function testKickedParticipantCanRejoinWithSameProfile() {

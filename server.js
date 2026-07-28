@@ -91,6 +91,33 @@ const triviaThemes = [
 ];
 const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
 const gradingStrictnessSet = new Set(gradingStrictnessOptions);
+const commonTriviaAbbreviationAliases = new Map([
+  ["youtube", ["yt", "u tube"]],
+  ["instagram", ["ig", "insta"]],
+  ["facebook", ["fb"]],
+  ["tiktok", ["tt", "tik tok"]],
+  ["twitter", ["x", "twttr"]],
+  ["reddit", ["rdt"]],
+  ["discord", ["dc"]],
+  ["snapchat", ["sc"]],
+  ["wikipedia", ["wiki"]],
+  ["javascript", ["js"]],
+  ["typescript", ["ts"]],
+  ["artificial intelligence", ["ai"]],
+  ["virtual reality", ["vr"]],
+  ["augmented reality", ["ar"]],
+  ["united states", ["us", "usa", "u s", "u s a"]],
+  ["united states of america", ["us", "usa", "u s", "u s a"]],
+  ["united kingdom", ["uk", "u k"]],
+  ["european union", ["eu", "e u"]],
+  ["united nations", ["un", "u n"]],
+  ["world war", ["ww"]],
+  ["world wide web", ["www"]],
+  ["national basketball association", ["nba"]],
+  ["national football league", ["nfl"]],
+  ["major league baseball", ["mlb"]],
+  ["national hockey league", ["nhl"]]
+]);
 const questionBank = loadQuestionBank();
 
 const mimeTypes = {
@@ -2453,6 +2480,12 @@ function getClientRoomEventType(type = "") {
   return serverRoomEventClientTypeMap[normalizedType] || normalizedType.replaceAll("_", "-");
 }
 
+function getRoomClientEventId(body = {}) {
+  return String(body?.clientEventId || body?.clientEventID || body?.eventId || "")
+    .trim()
+    .slice(0, 160);
+}
+
 function getRoomEventMatchId(room, extra = {}) {
   return String(
     extra.matchId
@@ -2741,6 +2774,7 @@ async function handleRoomPresence(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const rawParticipant = body.participant || {};
     const participant = normalizeParticipant(rawParticipant);
     let existingIndex = room.participants.findIndex((entry) => entry.id === participant.id);
@@ -2855,6 +2889,7 @@ async function handleRoomPresence(req, res, code) {
         status: room.status,
         revision: getRoomRevision(room),
         updatedAt: room.updatedAt,
+        clientEventId,
         eventType: "participant_updated",
         participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true })
       });
@@ -2928,6 +2963,7 @@ async function handleRoomPresence(req, res, code) {
     );
     const eventType = answerSubmitted ? "answer_submitted" : participantEventType;
     const eventPayload = {
+      clientEventId,
       participantId: finalParticipant.id,
       participantName: finalParticipant.name || "A player",
       role: normalizeParticipantRole(finalParticipant),
@@ -2977,6 +3013,7 @@ async function handleRoomSettings(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can update room settings.")) {
       return;
     }
@@ -3013,12 +3050,14 @@ async function handleRoomSettings(req, res, code) {
     }
     finalizeRoom(room);
     stampRoomEvent(room, "settings_updated", {
+      clientEventId,
       status: room.status,
-      settings: room.settings,
+      settings: sanitizeRoomSettingsForClient(room.settings),
       host: room.host
     });
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, createRoomEventResponse(storedRoom, "settings_updated", {
+      clientEventId,
       settings: sanitizeRoomSettingsForClient(storedRoom.settings, { includePrivateSecrets: true }),
       host: storedRoom.host
     }));
@@ -3158,6 +3197,7 @@ async function handleRoomGame(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can update room game state.")) {
       return;
     }
@@ -3196,12 +3236,14 @@ async function handleRoomGame(req, res, code) {
     room.game = game;
     if (game.status === "ended") {
       stampRoomEvent(room, "game_ended", {
+        clientEventId,
         round: game.round,
         matchId: game.matchId,
         game
       });
     } else {
       stampRoomEvent(room, "round_started", {
+        clientEventId,
         round: game.round,
         matchId: game.matchId,
         game
@@ -3210,6 +3252,7 @@ async function handleRoomGame(req, res, code) {
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, {
+      clientEventId,
       room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
     });
   } catch (error) {
@@ -3313,6 +3356,7 @@ function applyRoomRoundPreparationState(room, options = {}) {
 
   if (options.stampEvent !== false) {
     stampRoomEvent(room, "round_advancing", {
+      clientEventId: getRoomClientEventId(options),
       round,
       matchId,
       hostParticipantId: String(options.hostParticipantId || "").slice(0, 80),
@@ -3333,6 +3377,7 @@ async function handleRoomRoundAdvancing(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can advance the room round.")) {
       return;
@@ -3361,6 +3406,7 @@ async function handleRoomRoundAdvancing(req, res, code) {
       && currentGame.status !== "starting"
     ) {
       sendJson(res, 200, createRoomEventResponse(room, "round_advancing", {
+        clientEventId,
         duplicate: true,
         round,
         matchId: currentMatchId || matchId,
@@ -3377,11 +3423,13 @@ async function handleRoomRoundAdvancing(req, res, code) {
       matchId,
       round,
       matchSettings,
-      hostParticipantId
+      hostParticipantId,
+      clientEventId
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, createRoomEventResponse(storedRoom, "round_advancing", {
+      clientEventId,
       round: storedRoom.game?.round || round,
       matchId: storedRoom.game?.matchId || matchId,
       hostParticipantId,
@@ -3403,6 +3451,7 @@ async function handleRoomRoundSetup(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can prepare a room round.")) {
       return;
     }
@@ -3434,6 +3483,7 @@ async function handleRoomRoundSetup(req, res, code) {
     }
     if (currentGame?.setup && currentGame.status !== "starting") {
       sendJson(res, 200, createRoomEventResponse(room, "round_started", {
+        clientEventId,
         duplicate: true,
         round: currentRound || round,
         matchId: currentMatchId || matchId,
@@ -3449,7 +3499,8 @@ async function handleRoomRoundSetup(req, res, code) {
         matchId,
         round,
         matchSettings,
-        hostParticipantId: body.hostParticipantId || room.host?.id
+        hostParticipantId: body.hostParticipantId || room.host?.id,
+        clientEventId
       });
       currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
       currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
@@ -3494,6 +3545,7 @@ async function handleRoomRoundSetup(req, res, code) {
       updatedAt: now
     });
     stampRoomEvent(room, "round_started", {
+      clientEventId,
       round,
       matchId,
       game: room.game
@@ -3501,6 +3553,7 @@ async function handleRoomRoundSetup(req, res, code) {
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, createRoomEventResponse(storedRoom, "round_started", {
+      clientEventId,
       round: storedRoom.game?.round || round,
       matchId: storedRoom.game?.matchId || matchId,
       game: storedRoom.game || room.game,
@@ -3521,6 +3574,7 @@ async function handleRoomAnswer(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const participantId = String(body.participantId || body.participant?.id || "").slice(0, 80);
     if (!participantId) {
       sendJson(res, 400, { error: "Missing participant id." });
@@ -3571,7 +3625,8 @@ async function handleRoomAnswer(req, res, code) {
       };
       const gradingTransition = startRoomGradingTransition(room, {
         reason: "all-submitted",
-        force: false
+        force: false,
+        clientEventId
       });
       let responseRoom = room;
       if (gradingTransition.started) {
@@ -3579,6 +3634,7 @@ async function handleRoomAnswer(req, res, code) {
         responseRoom = await backendStore.upsertRoom(room);
       }
       const response = createRoomEventResponse(responseRoom, "answer_submitted", {
+        clientEventId,
         duplicate: true,
         participantId,
         participantName: participant.name || "A player",
@@ -3594,6 +3650,7 @@ async function handleRoomAnswer(req, res, code) {
       });
       if (gradingTransition.started) {
         response.grading = createRoomEventResponse(responseRoom, "round_grading", {
+          clientEventId,
           ...gradingTransition.payload,
           game: responseRoom.game || gradingTransition.payload.game
         });
@@ -3634,6 +3691,7 @@ async function handleRoomAnswer(req, res, code) {
     participant.remainingTime = remainingTime;
 
     const eventPayload = {
+      clientEventId,
       participantId,
       participantName: participant.name || "A player",
       role: normalizeParticipantRole(participant),
@@ -3651,12 +3709,14 @@ async function handleRoomAnswer(req, res, code) {
     stampRoomEvent(room, "answer_submitted", eventPayload);
     const gradingTransition = startRoomGradingTransition(room, {
       reason: "all-submitted",
-      force: false
+      force: false,
+      clientEventId
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     const storedParticipant = storedRoom.participants.find((entry) => entry.id === participantId) || participant;
     const response = createRoomEventResponse(storedRoom, "answer_submitted", {
+      clientEventId,
       ...eventPayload,
       participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true }),
       answer: String(storedParticipant.answer || answer).slice(0, 500),
@@ -3666,6 +3726,7 @@ async function handleRoomAnswer(req, res, code) {
     });
     if (gradingTransition.started) {
       response.grading = createRoomEventResponse(storedRoom, "round_grading", {
+        clientEventId,
         ...gradingTransition.payload,
         game: storedRoom.game || gradingTransition.payload.game
       });
@@ -4015,6 +4076,7 @@ function startRoomGradingTransition(room, options = {}) {
       duplicate: true,
       pendingParticipantIds: [],
       payload: {
+        clientEventId: getRoomClientEventId(options),
         round,
         matchId,
         reason: game.gradingReason || reason,
@@ -4044,6 +4106,7 @@ function startRoomGradingTransition(room, options = {}) {
     gradingForceAt: clampServerNumber(options.gradingForceAt, 0, Number.MAX_SAFE_INTEGER, lockedGame.gradingForceAt || now)
   });
   const payload = {
+    clientEventId: getRoomClientEventId(options),
     round,
     matchId,
     reason,
@@ -4070,6 +4133,7 @@ async function handleRoomRoundGrading(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can move the round to grading.")) {
       return;
@@ -4096,7 +4160,8 @@ async function handleRoomRoundGrading(req, res, code) {
       matchId: currentMatchId || payloadMatchId,
       round,
       submissions: body.submissions,
-      gradingForceAt: body.gradingForceAt
+      gradingForceAt: body.gradingForceAt,
+      clientEventId
     });
     if (!transition.started && !transition.duplicate) {
       sendJson(res, 409, {
@@ -4108,6 +4173,7 @@ async function handleRoomRoundGrading(req, res, code) {
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, createRoomEventResponse(storedRoom, "round_grading", {
+      clientEventId,
       ...(transition.payload || {}),
       duplicate: Boolean(transition.duplicate),
       game: storedRoom.game || transition.payload?.game || null
@@ -4127,6 +4193,7 @@ async function handleRoomPowerState(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const actorParticipantId = String(body.actorParticipantId || "").slice(0, 120);
     const requestHasHostAuth = hasRoomHostAuth(req, room, body);
     if (!requestHasHostAuth) {
@@ -4190,6 +4257,7 @@ async function handleRoomPowerState(req, res, code) {
     }
     const timerState = applyRoomTimerAction(room, body);
     stampRoomEvent(room, "power_state", {
+      clientEventId,
       round: clampServerNumber(body.round, 0, 100, room.game.round || 0),
       powerId: String(body.powerId || "").slice(0, 80),
       actorParticipantId,
@@ -4204,6 +4272,7 @@ async function handleRoomPowerState(req, res, code) {
     const storedRoom = await backendStore.upsertRoom(room);
     const responsePowerState = normalizeRoomPowerState(storedRoom.game?.powerState) || mergedPowerState;
     sendJson(res, 200, createRoomEventResponse(storedRoom, "power_state", {
+      clientEventId,
       round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
       matchId: storedRoom.game?.matchId || responsePowerState.matchId || "",
       powerId: String(body.powerId || "").slice(0, 80),
@@ -4234,6 +4303,7 @@ async function handleRoomRoundResult(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can publish round results.")) {
       return;
     }
@@ -4269,6 +4339,7 @@ async function handleRoomRoundResult(req, res, code) {
       updatedAt: Date.now()
     });
     stampRoomEvent(room, "round_result", {
+      clientEventId,
       round: roundResult.round,
       matchId: room.game?.matchId || "",
       roundResult,
@@ -4277,6 +4348,7 @@ async function handleRoomRoundResult(req, res, code) {
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, createRoomEventResponse(storedRoom, "round_result", {
+      clientEventId,
       matchId: storedRoom.game?.matchId || roundResult.matchId || "",
       round: storedRoom.game?.round || roundResult.round,
       roundResult: storedRoom.game?.roundResult || roundResult,
@@ -4315,6 +4387,7 @@ async function handleRoomRoundSkip(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can skip to grading.")) {
       return;
@@ -4340,7 +4413,8 @@ async function handleRoomRoundSkip(req, res, code) {
       matchId,
       round,
       submissions: body.submissions,
-      gradingForceAt: body.gradingForceAt
+      gradingForceAt: body.gradingForceAt,
+      clientEventId
     });
     if (!transition.started && !transition.duplicate) {
       sendJson(res, 409, {
@@ -4352,6 +4426,7 @@ async function handleRoomRoundSkip(req, res, code) {
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
     sendJson(res, 200, createRoomEventResponse(storedRoom, "round_grading", {
+      clientEventId,
       ...(transition.payload || {}),
       duplicate: Boolean(transition.duplicate),
       game: storedRoom.game || transition.payload?.game || null
@@ -4401,6 +4476,7 @@ async function handleRoomModeration(req, res, code) {
     }
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const clientEventId = getRoomClientEventId(body);
     const hostParticipantId = String(body.hostParticipantId || "").slice(0, 80);
     if (!requireRoomHostAuth(req, res, room, body, "Only the host can moderate this room.")) {
       return;
@@ -4435,6 +4511,7 @@ async function handleRoomModeration(req, res, code) {
 
     finalizeRoom(room);
     stampRoomEvent(room, "participant_moderated", {
+      clientEventId,
       action,
       participantId,
       muted: Boolean(participant.muted),
@@ -4449,6 +4526,7 @@ async function handleRoomModeration(req, res, code) {
     const storedRoom = await backendStore.upsertRoom(room);
     const storedParticipant = storedRoom.participants.find((entry) => entry.id === participantId) || participant;
     sendJson(res, 200, createRoomEventResponse(storedRoom, "participant_moderated", {
+      clientEventId,
       action,
       participantId,
       participant: sanitizeParticipantForClient(storedParticipant),
@@ -6227,6 +6305,7 @@ function buildRoundPrompt(payload) {
       "Blank or empty answers are always incorrect and must never appear in correctIndexes.",
       "Use general trivia knowledge to accept semantically equivalent answers even when they are not listed in acceptedAnswers.",
       "Accept common aliases, nicknames, abbreviations, acronyms, translations, alternate spellings, swapped word order, missing accents, and minor spelling mistakes when the intended answer is clearly correct.",
+      "Be generous with widely used shorthand for names, apps, countries, games, organizations, and technical terms, such as 'yt' for YouTube, 'ig' for Instagram, 'js' for JavaScript, 'usa' for United States, and common all-caps acronyms.",
       "Be deliberately forgiving with obvious typos and phonetic spellings: examples like 'Jackle' for 'Jackal', 'lui 14th' for 'Louis XIV', or 'vicent' for 'Vincent van Gogh' should be accepted when the intended answer is clear.",
       "Accept roman numerals, regular numbers, and ordinals as equivalent when they identify the same name/title/event, such as 'XIV', '14', and '14th'.",
       "Accept a distinctive partial answer when it clearly identifies the same thing as the canonical answer. This applies to all question types: people, places, teams, titles, objects, events, concepts, companies, artworks, games, and media. Do not require the full preset answer when the player gave enough information to identify it.",
@@ -6757,6 +6836,11 @@ function scoreAnswerAgainstBank(answer, acceptedAnswers) {
       continue;
     }
 
+    if (isKnownTriviaAbbreviation(normalizedAnswer, accepted)) {
+      bestScore = Math.max(bestScore, 0.94);
+      continue;
+    }
+
     if (normalizedAnswer === createAcronym(accepted) || createAcronym(normalizedAnswer) === accepted) {
       bestScore = Math.max(bestScore, 0.95);
       continue;
@@ -6996,6 +7080,27 @@ function normalizeTriviaAnswer(value) {
     .split(" ")
     .map(normalizeTriviaAnswerToken)
     .join(" ");
+}
+
+function getKnownTriviaAbbreviations(normalizedAccepted) {
+  const aliases = new Set();
+  const compactAccepted = String(normalizedAccepted || "").replace(/\s+/g, "");
+  const directAliases = commonTriviaAbbreviationAliases.get(normalizedAccepted)
+    || commonTriviaAbbreviationAliases.get(compactAccepted);
+  (directAliases || []).forEach((alias) => aliases.add(normalizeTriviaAnswer(alias)));
+  const acronym = createAcronym(normalizedAccepted);
+  if (acronym && acronym.length >= 2) {
+    aliases.add(acronym);
+  }
+  return [...aliases].filter(Boolean);
+}
+
+function isKnownTriviaAbbreviation(normalizedAnswer, normalizedAccepted) {
+  if (!normalizedAnswer || !normalizedAccepted) {
+    return false;
+  }
+  const aliases = getKnownTriviaAbbreviations(normalizedAccepted);
+  return aliases.includes(normalizedAnswer);
 }
 
 function createAcronym(value) {
