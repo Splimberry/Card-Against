@@ -10954,7 +10954,7 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
     state.roomDirectoryOnline = true;
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || buildRoomDirectoryPayload("in-progress");
     const appliedRoom = applyRoomPresenceResponse(data, room, {}, "answer-response");
-    if (data.grading && typeof data.grading === "object") {
+    if (data.grading && typeof data.grading === "object" && isCurrentHost() && !state.joiningRoom && !state.isSpectator) {
       applyRealtimeRoomGrading(data.grading);
       broadcastRealtimeRoomChange(data.grading.eventType || "round-grading", state.roomSettings.code, data.grading);
     }
@@ -12646,9 +12646,6 @@ function maybeResolveRoomSubmissions() {
   if (pendingSubmitters.length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
     return;
   }
-  if (maybeWaitForRoomBotAnswerSubmissions()) {
-    return;
-  }
   if (!isRoomGradingPhaseStarted()) {
     requestRoomAllSubmittedGradingLock("submissions-complete-wait");
     return;
@@ -12702,9 +12699,6 @@ async function waitForRoomSubmissionsThenPlay(localFallback = "") {
     return;
   }
   if (getPendingSubmitters().length === 0) {
-    if (maybeWaitForRoomBotAnswerSubmissions()) {
-      return;
-    }
     if (!isRoomGradingPhaseStarted()) {
       requestRoomAllSubmittedGradingLock("submissions-complete-wait");
       return;
@@ -12973,7 +12967,9 @@ function requestRoomGradingCatchup(reason = "grading-wait") {
 
 function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
-    requestRoomGradingCatchup(reason);
+    return false;
+  }
+  if (getPendingSubmitters().length > 0) {
     return false;
   }
   const requestKey = `${getCurrentRoomRoundSyncKey()}|all-submitted`;
@@ -12986,7 +12982,7 @@ function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
     force: false,
     submissions: buildRoundSkipSubmissions()
   }).then((data) => {
-    if (data && isRoomGradingPhaseStarted()) {
+    if (isRoomGradingPhaseStarted()) {
       return;
     }
     window.setTimeout(() => {
@@ -13085,13 +13081,17 @@ function buildRoundSkipSubmissions() {
       const answer = state.roomSubmissions[owner]
         ? getLockedRoundAnswer(owner)
         : currentInput || draftedAnswer;
+      const timedOut = !state.roomSubmissions[owner] && getRoomParticipantTimerRemainingSeconds(owner) <= 0;
       return {
         participantId,
         owner,
         answer: cleanInput(answer || ""),
         remainingTime: state.roomSubmissions[owner]
           ? Math.max(0, Number(state.answerRemainingTimes[owner]) || 0)
-          : getRoomParticipantTimerRemainingSeconds(owner)
+          : getRoomParticipantTimerRemainingSeconds(owner),
+        status: timedOut ? "timed_out" : "submitted",
+        autoSubmitted: Boolean(isBotOwner(owner) || timedOut),
+        submittedAt: Date.now()
       };
     })
     .filter(Boolean);
