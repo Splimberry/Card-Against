@@ -71,6 +71,7 @@ const profileHydrationVisibleBudgetMs = 1600;
 const profileHydrationRemoteTimeoutMs = 1800;
 const profileHydrationQueueTimeoutMs = 800;
 const roomAppliedEventLimit = 300;
+const roomDiagnosticsEventLimit = 80;
 const supabaseAvatarBucket = "profile-avatars";
 const supabaseSdkUrl = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const specialPlayerBadgeOrder = ["admin", "verified", "creator"];
@@ -2881,6 +2882,22 @@ const state = {
   roomPowerPlayerRevision: {},
   roomPowerPlayerUpdatedAt: {},
   roomPlayedResetSyncedRound: null,
+  roomDiagnostics: {
+    timeline: [],
+    nextId: 0,
+    ignoredStaleEvents: 0,
+    ignoredEvents: 0,
+    ignoredDuplicates: 0,
+    revisionGaps: 0,
+    resyncAttempts: 0,
+    lastReceived: null,
+    lastApplied: null,
+    lastIgnored: null,
+    lastGap: null,
+    lastResync: null,
+    lastRealtimeStatus: null,
+    renderFrameId: 0
+  },
   achievementMilestoneScrollLeft: 0,
   justClaimedAchievementMilestoneId: "",
   justPurchasedProfileShopKey: "",
@@ -3599,6 +3616,12 @@ const elements = {
   devPowerClearButton: null,
   devPowerStatus: null,
   devPowerHand: null,
+  devRoomDiagnosticsStatus: null,
+  devRoomDiagnosticsSummary: null,
+  devRoomDiagnosticsList: null,
+  devRoomDiagnosticsRefreshButton: null,
+  devRoomDiagnosticsCatchupButton: null,
+  devRoomDiagnosticsClearButton: null,
   botPowerDebugOpenButton: document.querySelector("#botPowerDebugOpenButton"),
   botPowerDebugModal: document.querySelector("#botPowerDebugModal"),
   botPowerDebugPanel: document.querySelector("#botPowerDebugPanel"),
@@ -13969,9 +13992,23 @@ function startRoomRealtime(code = state.roomSettings.code) {
   state.realtimeRoomCode = roomCode;
   state.roomRealtimeStatus = "connecting";
   state.realtimeRoomReady = false;
+  recordRoomDiagnosticEvent("realtime-start", { code: roomCode }, {
+    source: "client",
+    eventType: "room-realtime",
+    status: "connecting",
+    reason: "Subscribing to the room realtime channel."
+  });
 }
 
 function stopRoomRealtime() {
+  if (state.realtimeRoomCode) {
+    recordRoomDiagnosticEvent("realtime-stop", { code: state.realtimeRoomCode }, {
+      source: "client",
+      eventType: "room-realtime",
+      status: "idle",
+      reason: "Room realtime channel was stopped."
+    });
+  }
   stopRoomFallbackPolling();
   if (state.realtimeRoomRefreshTimerId) {
     window.clearTimeout(state.realtimeRoomRefreshTimerId);
@@ -14774,6 +14811,272 @@ function normalizeRoomEventPayload(payload = {}, options = {}) {
   return normalized;
 }
 
+function getRoomDiagnosticsState() {
+  if (!state.roomDiagnostics || typeof state.roomDiagnostics !== "object") {
+    state.roomDiagnostics = {};
+  }
+  const diagnostics = state.roomDiagnostics;
+  diagnostics.timeline = Array.isArray(diagnostics.timeline) ? diagnostics.timeline : [];
+  diagnostics.nextId = Number(diagnostics.nextId) || 0;
+  diagnostics.ignoredStaleEvents = Number(diagnostics.ignoredStaleEvents) || 0;
+  diagnostics.ignoredEvents = Number(diagnostics.ignoredEvents) || 0;
+  diagnostics.ignoredDuplicates = Number(diagnostics.ignoredDuplicates) || 0;
+  diagnostics.revisionGaps = Number(diagnostics.revisionGaps) || 0;
+  diagnostics.resyncAttempts = Number(diagnostics.resyncAttempts) || 0;
+  diagnostics.renderFrameId = Number(diagnostics.renderFrameId) || 0;
+  return diagnostics;
+}
+
+function getRoomDiagnosticMeta(payload = {}, details = {}) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const eventType = normalizeRoomEventType(details.eventType || source.eventType || source.type || "");
+  const code = String(details.code || source.code || source.room?.code || source.settings?.code || state.roomSettings.code || "").trim().toUpperCase();
+  const revision = Number(details.revision || getRoomPayloadRevision(source)) || 0;
+  const knownRevision = code ? getKnownRoomRevision(code) : Number(state.roomEventRevision) || 0;
+  const matchId = String(details.matchId || getRoomMatchIdFromPayload(source) || getCurrentRoomMatchId() || "").trim();
+  const round = Number(
+    details.round
+      || getRoomPayloadRound(source)
+      || state.roomGame?.round
+      || state.round
+      || 0
+  ) || 0;
+  const phase = String(
+    details.phase
+      || source.phase
+      || source.game?.status
+      || source.room?.game?.status
+      || source.status
+      || source.room?.status
+      || state.roomGame?.status
+      || state.currentRoomStatus
+      || "idle"
+  ).trim();
+  return {
+    eventType: eventType || "room-event",
+    code,
+    revision,
+    knownRevision,
+    matchId,
+    round,
+    phase
+  };
+}
+
+function getRoomDiagnosticRevisionGap(payload = {}, previousRevision = 0) {
+  const revision = getRoomPayloadRevision(payload);
+  const knownRevision = Number(previousRevision) || getKnownRoomRevision(getRoomPayloadCode(payload));
+  if (!revision || !knownRevision || revision <= knownRevision + 1) {
+    return null;
+  }
+  return {
+    from: knownRevision + 1,
+    to: revision - 1,
+    current: knownRevision,
+    incoming: revision,
+    missed: Math.max(1, revision - knownRevision - 1)
+  };
+}
+
+function scheduleRoomDiagnosticsRender() {
+  if (!elements.devToolScreen || elements.devToolScreen.classList.contains("hidden")) {
+    return;
+  }
+  if (getCurrentDevToolTab() !== "diagnostics") {
+    return;
+  }
+  const diagnostics = getRoomDiagnosticsState();
+  if (diagnostics.renderFrameId) {
+    return;
+  }
+  const scheduleFrame = typeof window.requestAnimationFrame === "function"
+    ? window.requestAnimationFrame.bind(window)
+    : (callback) => window.setTimeout(callback, 16);
+  diagnostics.renderFrameId = scheduleFrame(() => {
+    diagnostics.renderFrameId = 0;
+    renderRoomDiagnosticsPanel();
+  });
+}
+
+function recordRoomDiagnosticEvent(type = "event", payload = {}, details = {}) {
+  const diagnostics = getRoomDiagnosticsState();
+  const meta = getRoomDiagnosticMeta(payload, details);
+  const entry = {
+    id: diagnostics.nextId + 1,
+    time: Date.now(),
+    type: String(type || "event"),
+    source: String(details.source || ""),
+    eventType: meta.eventType,
+    code: meta.code,
+    revision: meta.revision,
+    knownRevision: meta.knownRevision,
+    matchId: meta.matchId,
+    round: meta.round,
+    phase: meta.phase,
+    status: details.status ? String(details.status) : "",
+    reason: details.reason ? String(details.reason) : "",
+    result: details.result ? String(details.result) : ""
+  };
+  diagnostics.nextId = entry.id;
+  diagnostics.timeline = [entry, ...diagnostics.timeline].slice(0, roomDiagnosticsEventLimit);
+  if (entry.type === "received") {
+    diagnostics.lastReceived = entry;
+  }
+  if (entry.type === "applied" || entry.type === "snapshot-applied") {
+    diagnostics.lastApplied = entry;
+  }
+  if (entry.type.startsWith("ignored") || entry.type === "snapshot-stale" || entry.type === "snapshot-ignored") {
+    diagnostics.lastIgnored = entry;
+    diagnostics.ignoredEvents += 1;
+    if (entry.type === "ignored-stale" || entry.type === "snapshot-stale") {
+      diagnostics.ignoredStaleEvents += 1;
+    }
+    if (entry.type === "ignored-duplicate") {
+      diagnostics.ignoredDuplicates += 1;
+    }
+  }
+  if (entry.type === "revision-gap") {
+    diagnostics.lastGap = entry;
+    diagnostics.revisionGaps += 1;
+  }
+  if (entry.type === "resync") {
+    diagnostics.lastResync = entry;
+    diagnostics.resyncAttempts += 1;
+  }
+  if (entry.type === "realtime-status") {
+    diagnostics.lastRealtimeStatus = entry;
+  }
+  scheduleRoomDiagnosticsRender();
+  return entry;
+}
+
+function formatRoomDiagnosticTime(timestamp = 0) {
+  const date = new Date(Number(timestamp) || Date.now());
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+function getRoomDiagnosticSummaryValue(entry = null) {
+  if (!entry) {
+    return "None";
+  }
+  const suffix = entry.revision ? ` r${entry.revision}` : "";
+  return `${entry.eventType || entry.type}${suffix}`;
+}
+
+function createRoomDiagnosticMetric(label = "", value = "", detail = "") {
+  const card = document.createElement("article");
+  card.className = "room-diagnostics-card";
+  const name = document.createElement("span");
+  name.textContent = label;
+  const main = document.createElement("strong");
+  main.textContent = String(value || "None");
+  card.append(name, main);
+  if (detail) {
+    const note = document.createElement("small");
+    note.textContent = detail;
+    card.appendChild(note);
+  }
+  return card;
+}
+
+function getCurrentRoomDiagnosticPhase() {
+  if (!hasActiveRoomContext()) {
+    return "none";
+  }
+  if (state.matchEnded || state.currentRoomStatus === "complete") {
+    return "match_complete";
+  }
+  if (state.roomGame?.status) {
+    return state.roomGame.status;
+  }
+  return state.currentRoomStatus || "lobby";
+}
+
+function renderRoomDiagnosticsPanel() {
+  if (!elements.devRoomDiagnosticsSummary || !elements.devRoomDiagnosticsList || !elements.devRoomDiagnosticsStatus) {
+    return;
+  }
+  const diagnostics = getRoomDiagnosticsState();
+  const roomCode = String(state.roomSettings.code || state.realtimeRoomCode || "").trim().toUpperCase();
+  const activeCode = roomCode && roomCode !== "CAI-0000" ? roomCode : "No active room";
+  elements.devRoomDiagnosticsStatus.textContent = [
+    "Realtime is the main sync path.",
+    "One-shot catchup runs only after reconnect, revision gaps, or the button here.",
+    hasActiveRoomContext() ? "Inspecting the current room context." : "Open or join a room to inspect live room state."
+  ].join(" ");
+  elements.devRoomDiagnosticsSummary.replaceChildren(
+    createRoomDiagnosticMetric("Room", activeCode, state.isSpectator ? "Spectator client" : state.joiningRoom ? "Joined client" : isCurrentHost() ? "Host client" : "Local client"),
+    createRoomDiagnosticMetric("Revision", String(Number(state.roomEventRevision) || 0), `Known room revision ${getKnownRoomRevision(roomCode) || 0}`),
+    createRoomDiagnosticMetric("Match", getCurrentRoomMatchId() || "None", `Round ${Number(state.roomGame?.round || state.round) || 0}`),
+    createRoomDiagnosticMetric("Phase", getCurrentRoomDiagnosticPhase(), `Room status ${state.currentRoomStatus || "idle"}`),
+    createRoomDiagnosticMetric("Realtime", state.roomRealtimeStatus || "idle", state.realtimeRoomReady ? "Room channel subscribed" : "Room channel not ready"),
+    createRoomDiagnosticMetric("Last Received", getRoomDiagnosticSummaryValue(diagnostics.lastReceived), diagnostics.lastReceived ? formatRoomDiagnosticTime(diagnostics.lastReceived.time) : ""),
+    createRoomDiagnosticMetric("Last Applied", getRoomDiagnosticSummaryValue(diagnostics.lastApplied), diagnostics.lastApplied ? formatRoomDiagnosticTime(diagnostics.lastApplied.time) : ""),
+    createRoomDiagnosticMetric("Ignored", String(diagnostics.ignoredEvents), `${diagnostics.ignoredStaleEvents} stale, ${diagnostics.ignoredDuplicates} duplicate`),
+    createRoomDiagnosticMetric("Revision Gaps", String(diagnostics.revisionGaps), diagnostics.lastGap ? diagnostics.lastGap.reason : "No gaps detected"),
+    createRoomDiagnosticMetric("Catchups", String(diagnostics.resyncAttempts), diagnostics.lastResync ? diagnostics.lastResync.reason : "No catchup requested")
+  );
+  elements.devRoomDiagnosticsList.replaceChildren();
+  if (!diagnostics.timeline.length) {
+    const empty = document.createElement("div");
+    empty.className = "debug-status";
+    empty.textContent = "No room sync events have been recorded in this tab yet.";
+    elements.devRoomDiagnosticsList.appendChild(empty);
+    return;
+  }
+  diagnostics.timeline.forEach((entry) => {
+    const item = document.createElement("article");
+    item.className = "room-diagnostics-entry";
+    item.dataset.type = entry.type;
+    const top = document.createElement("div");
+    top.className = "room-diagnostics-entry-main";
+    const eventName = document.createElement("strong");
+    eventName.textContent = `${entry.eventType || "room-event"} ${entry.revision ? `r${entry.revision}` : ""}`.trim();
+    const type = document.createElement("span");
+    type.textContent = entry.type.replaceAll("-", " ");
+    top.append(eventName, type);
+    const meta = document.createElement("small");
+    meta.textContent = [
+      formatRoomDiagnosticTime(entry.time),
+      entry.source || "client",
+      entry.code || "no code",
+      entry.matchId ? `match ${entry.matchId}` : "",
+      entry.round ? `round ${entry.round}` : "",
+      entry.phase ? `phase ${entry.phase}` : "",
+      entry.status ? `status ${entry.status}` : ""
+    ].filter(Boolean).join(" | ");
+    item.append(top, meta);
+    if (entry.reason || entry.result) {
+      const detail = document.createElement("p");
+      detail.textContent = entry.reason || entry.result;
+      item.appendChild(detail);
+    }
+    elements.devRoomDiagnosticsList.appendChild(item);
+  });
+}
+
+function clearRoomDiagnosticsTimeline() {
+  const diagnostics = getRoomDiagnosticsState();
+  diagnostics.timeline = [];
+  diagnostics.ignoredStaleEvents = 0;
+  diagnostics.ignoredEvents = 0;
+  diagnostics.ignoredDuplicates = 0;
+  diagnostics.revisionGaps = 0;
+  diagnostics.resyncAttempts = 0;
+  diagnostics.lastReceived = null;
+  diagnostics.lastApplied = null;
+  diagnostics.lastIgnored = null;
+  diagnostics.lastGap = null;
+  diagnostics.lastResync = null;
+  diagnostics.lastRealtimeStatus = null;
+  renderRoomDiagnosticsPanel();
+  playSound("click");
+}
+
 function applyRoomEventPayload(payload = {}, source = {}) {
   const options = normalizeRoomApplySource(source);
   const normalizedPayload = normalizeRoomEventPayload(payload, options);
@@ -14867,8 +15170,15 @@ function applyRoomEventPayload(payload = {}, source = {}) {
   return applied;
 }
 
-function applyRoomServerEvent(event = {}) {
+function applyRoomServerEvent(event = {}, source = {}) {
+  const options = normalizeRoomApplySource(source);
   if (hasAppliedRoomServerEvent(event)) {
+    recordRoomDiagnosticEvent("ignored-duplicate", event.payload || {}, {
+      source: options.source || "server-event",
+      eventType: normalizeRoomEventType(event.type || event.payload?.eventType || ""),
+      revision: Number(event.revision) || 0,
+      reason: "Server event was already applied in this tab."
+    });
     rememberRoomRevisionPayload({
       code: event.payload?.code || event.payload?.room?.code || state.roomSettings.code,
       revision: event.revision,
@@ -14885,21 +15195,41 @@ function applyRoomServerEvent(event = {}) {
     revision: Number(event.revision) || 0,
     updatedAt: Number(event.createdAt) || Date.now()
   });
+  recordRoomDiagnosticEvent("received", eventPayload, {
+    source: options.source || "server-event",
+    reason: "Received from server event catchup."
+  });
   if (hasAppliedRoomPayloadEvent(eventPayload)) {
+    recordRoomDiagnosticEvent("ignored-duplicate", eventPayload, {
+      source: options.source || "server-event",
+      reason: "Event payload was already applied in this tab."
+    });
     rememberAppliedRoomServerEvent(event);
     rememberRoomRevisionPayload(eventPayload);
     return true;
   }
-  if (!canApplyRoomEventForCurrentMatch(eventPayload) || isOlderRoomRoundEvent(eventPayload)) {
+  const outOfMatch = !canApplyRoomEventForCurrentMatch(eventPayload);
+  const olderRound = isOlderRoomRoundEvent(eventPayload);
+  if (outOfMatch || olderRound) {
+    recordRoomDiagnosticEvent(outOfMatch ? "ignored-match" : "ignored-round", eventPayload, {
+      source: options.source || "server-event",
+      reason: outOfMatch
+        ? "Event belongs to another match and was ignored."
+        : "Event belongs to an older round and was ignored."
+    });
     rememberAppliedRoomServerEvent(event);
     rememberAppliedRoomPayloadEvent(eventPayload);
     rememberRoomRevisionPayload(eventPayload);
     return true;
   }
-  const applied = applyRoomEventPayload(eventPayload, { source: "server-event" });
+  const applied = applyRoomEventPayload(eventPayload, { source: options.source || "server-event" });
   if (applied) {
     rememberAppliedRoomPayloadEvent(eventPayload);
   }
+  recordRoomDiagnosticEvent(applied ? "applied" : "not-applied", eventPayload, {
+    source: options.source || "server-event",
+    reason: applied ? "Server event applied." : "Server event did not match a local handler."
+  });
   rememberAppliedRoomServerEvent(event);
   rememberRoomRevisionPayload(eventPayload);
   return applied;
@@ -14924,6 +15254,11 @@ async function refreshRoomEventsSinceLastRevision(options = {}) {
     }
     const data = await response.json();
     const events = Array.isArray(data.events) ? data.events : [];
+    recordRoomDiagnosticEvent("resync-events", { ...data, code: data.code || state.roomSettings.code }, {
+      source: "server-events",
+      eventType: "event-catchup",
+      result: `${events.length} event${events.length === 1 ? "" : "s"} returned since revision ${since}.`
+    });
     let needsRoomRefresh = false;
     events.forEach((event) => {
       if (!applyRoomEvent(event, { source: "server-events" })) {
@@ -14946,7 +15281,12 @@ async function refreshRoomEventsSinceLastRevision(options = {}) {
   })();
   try {
     return await state.roomEventRefreshPromise;
-  } catch {
+  } catch (error) {
+    recordRoomDiagnosticEvent("resync-error", { code: state.roomSettings.code, revision: since }, {
+      source: "server-events",
+      eventType: "event-catchup",
+      reason: error?.message || "Could not fetch room events."
+    });
     return false;
   } finally {
     state.roomEventRefreshPromise = null;
@@ -15078,11 +15418,29 @@ function isStaleRoomSnapshot(room = {}, options = {}) {
 function applyRoomSnapshot(room = {}, source = {}) {
   const options = normalizeRoomApplySource(source);
   if (isStaleRoomSnapshot(room, options)) {
+    recordRoomDiagnosticEvent("snapshot-stale", room, {
+      source: options.source || "snapshot",
+      eventType: "room-snapshot",
+      reason: "Older room snapshot ignored."
+    });
     return false;
   }
   const merged = mergeRealtimeRoomPayload(room);
   if (!merged || isStaleRoomSnapshot(merged, options)) {
+    recordRoomDiagnosticEvent(merged ? "snapshot-stale" : "snapshot-ignored", merged || room, {
+      source: options.source || "snapshot",
+      eventType: "room-snapshot",
+      reason: merged ? "Merged room snapshot was stale." : "Room snapshot was missing a usable room code or was locally closed."
+    });
     return false;
+  }
+  const gap = getRoomDiagnosticRevisionGap(merged, getKnownRoomRevision(String(merged.code || "").trim().toUpperCase()));
+  if (gap) {
+    recordRoomDiagnosticEvent("revision-gap", merged, {
+      source: options.source || "snapshot",
+      eventType: "room-snapshot",
+      reason: `Snapshot jumped from revision ${gap.current} to ${gap.incoming}.`
+    });
   }
   rememberRoomRevisionPayload(merged);
   mergeHostedRoom(merged);
@@ -15095,6 +15453,11 @@ function applyRoomSnapshot(room = {}, source = {}) {
       skipHeartbeat: options.skipHeartbeat !== false
     });
   }
+  recordRoomDiagnosticEvent("snapshot-applied", merged, {
+    source: options.source || "snapshot",
+    eventType: "room-snapshot",
+    reason: "Authoritative room snapshot applied."
+  });
   return true;
 }
 
@@ -15590,24 +15953,57 @@ function applyRoomEvent(event = {}, source = {}) {
     return false;
   }
   if (event.type && !event.eventType) {
-    return applyRoomServerEvent(event);
+    return applyRoomServerEvent(event, options);
   }
   if (options.source === "realtime" && event.sourceId === state.realtimeSourceId) {
+    recordRoomDiagnosticEvent("ignored-self", event, {
+      source: "realtime",
+      reason: "Ignored this tab's own realtime echo."
+    });
     return true;
   }
   const payload = normalizeRoomEventPayload(event, options);
   const payloadRevision = getRoomPayloadRevision(payload);
   const previousRevision = Number(state.roomEventRevision) || 0;
   if (hasAppliedRoomPayloadEvent(payload)) {
+    recordRoomDiagnosticEvent("ignored-duplicate", payload, {
+      source: options.source || "client",
+      reason: "Event payload was already applied in this tab."
+    });
     rememberRoomRevisionPayload(payload);
     return true;
   }
-  payload.revisionGap = Boolean(payloadRevision && previousRevision && payloadRevision > previousRevision + 1);
+  const revisionGap = getRoomDiagnosticRevisionGap(payload, previousRevision);
+  payload.revisionGap = Boolean(revisionGap);
+  if (revisionGap) {
+    recordRoomDiagnosticEvent("revision-gap", payload, {
+      source: options.source || "client",
+      reason: `Expected revision ${revisionGap.current + 1}, received ${revisionGap.incoming}. Missed ${revisionGap.missed} event${revisionGap.missed === 1 ? "" : "s"}.`
+    });
+    if (options.source !== "server-events") {
+      requestRoomRealtimeCatchup("revision-gap", {
+        force: true,
+        snapshot: false,
+        since: previousRevision
+      });
+    }
+  }
+  const stalePayload = isStaleActiveRoomRealtimePayload(payload, previousRevision);
+  const outOfMatch = !canApplyRoomEventForCurrentMatch(payload);
+  const olderRound = isOlderRoomRoundEvent(payload);
   if (
-    isStaleActiveRoomRealtimePayload(payload, previousRevision)
-    || !canApplyRoomEventForCurrentMatch(payload)
-    || isOlderRoomRoundEvent(payload)
+    stalePayload
+    || outOfMatch
+    || olderRound
   ) {
+    recordRoomDiagnosticEvent(stalePayload ? "ignored-stale" : outOfMatch ? "ignored-match" : "ignored-round", payload, {
+      source: options.source || "client",
+      reason: stalePayload
+        ? "Older room revision ignored."
+        : outOfMatch
+          ? "Event belongs to another match and was ignored."
+          : "Event belongs to an older round and was ignored."
+    });
     rememberAppliedRoomPayloadEvent(payload);
     rememberRoomRevisionPayload(payload);
     return true;
@@ -15617,6 +16013,10 @@ function applyRoomEvent(event = {}, source = {}) {
     if (appliedQuestionUpdate) {
       rememberAppliedRoomPayloadEvent(payload);
     }
+    recordRoomDiagnosticEvent(appliedQuestionUpdate ? "applied" : "not-applied", payload, {
+      source: options.source || "client",
+      reason: appliedQuestionUpdate ? "Question submission update applied." : "Question submission update did not change local state."
+    });
     rememberRoomRevisionPayload(payload);
     return appliedQuestionUpdate;
   }
@@ -15624,11 +16024,19 @@ function applyRoomEvent(event = {}, source = {}) {
   if (applied) {
     rememberAppliedRoomPayloadEvent(payload);
   }
+  recordRoomDiagnosticEvent(applied ? "applied" : "not-applied", payload, {
+    source: options.source || "client",
+    reason: applied ? "Room event applied." : "Room event did not match a local handler."
+  });
   rememberRoomRevisionPayload(payload);
   return applied;
 }
 
 function handleRealtimeRoomChange(payload = {}) {
+  recordRoomDiagnosticEvent("received", payload, {
+    source: "realtime",
+    reason: "Received realtime room broadcast."
+  });
   applyRoomEvent(payload, { source: "realtime" });
 }
 
@@ -15712,6 +16120,11 @@ function scheduleRealtimeRoomRefresh(payload = {}) {
   if (state.realtimeRoomRefreshTimerId) {
     window.clearTimeout(state.realtimeRoomRefreshTimerId);
   }
+  recordRoomDiagnosticEvent("resync-scheduled", payload, {
+    source: "client",
+    eventType: payload.eventType || "room-refresh",
+    reason: payload.revisionGap ? "Scheduled one-shot room refresh after a revision gap." : "Scheduled one-shot room refresh after an incomplete realtime event."
+  });
   const expectedSessionId = state.roomSessionId;
   state.realtimeRoomRefreshTimerId = window.setTimeout(async () => {
     state.realtimeRoomRefreshTimerId = null;
@@ -23935,6 +24348,7 @@ function buildDevToolScreen() {
     <div class="dev-tool-tabs" id="devToolTabs" role="tablist" aria-label="Dev tool sections">
       <button type="button" class="selected" data-dev-tab="questions">Question Debug</button>
       <button type="button" data-dev-tab="rooms">Rooms</button>
+      <button type="button" data-dev-tab="diagnostics">Multiplayer Diagnostics</button>
       <button type="button" data-dev-tab="submissions">Review Cards</button>
       <button type="button" data-dev-tab="create">Question Creation</button>
       <button type="button" data-dev-tab="achievements">Achievement Debug</button>
@@ -24015,6 +24429,22 @@ function buildDevToolScreen() {
       </div>
       <div class="debug-status" id="devRoomStatus">Load hosted rooms for moderation.</div>
       <div class="dev-room-list" id="devRoomList"></div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="diagnostics">
+      <div class="dev-panel-heading">
+        <div>
+          <p class="eyebrow">Realtime room sync</p>
+          <h2>Multiplayer Diagnostics</h2>
+        </div>
+        <div class="profile-debug-actions">
+          <button type="button" class="icon-button" id="devRoomDiagnosticsRefreshButton">Refresh View</button>
+          <button type="button" class="icon-button" id="devRoomDiagnosticsCatchupButton">Run Catchup</button>
+          <button type="button" class="icon-button danger-button" id="devRoomDiagnosticsClearButton">Clear Timeline</button>
+        </div>
+      </div>
+      <div class="debug-status" id="devRoomDiagnosticsStatus">Open or join a room to inspect realtime sync.</div>
+      <div class="room-diagnostics-summary" id="devRoomDiagnosticsSummary"></div>
+      <div class="room-diagnostics-list" id="devRoomDiagnosticsList" aria-live="polite"></div>
     </section>
     <section class="dev-tool-panel hidden" data-dev-panel="submissions">
       <div class="dev-panel-heading">
@@ -24262,6 +24692,12 @@ function buildDevToolScreen() {
   elements.devRoomStatus = screen.querySelector("#devRoomStatus");
   elements.devRoomList = screen.querySelector("#devRoomList");
   elements.devRoomRefreshButton = screen.querySelector("#devRoomRefreshButton");
+  elements.devRoomDiagnosticsStatus = screen.querySelector("#devRoomDiagnosticsStatus");
+  elements.devRoomDiagnosticsSummary = screen.querySelector("#devRoomDiagnosticsSummary");
+  elements.devRoomDiagnosticsList = screen.querySelector("#devRoomDiagnosticsList");
+  elements.devRoomDiagnosticsRefreshButton = screen.querySelector("#devRoomDiagnosticsRefreshButton");
+  elements.devRoomDiagnosticsCatchupButton = screen.querySelector("#devRoomDiagnosticsCatchupButton");
+  elements.devRoomDiagnosticsClearButton = screen.querySelector("#devRoomDiagnosticsClearButton");
   elements.devSubmissionStatus = screen.querySelector("#devSubmissionStatus");
   elements.devSubmissionList = screen.querySelector("#devSubmissionList");
   elements.devSubmissionReviewPanel = screen.querySelector("#devSubmissionReviewPanel");
@@ -24372,6 +24808,16 @@ function bindDevToolEvents() {
   });
   elements.devRoomRefreshButton.addEventListener("click", loadDevRooms);
   elements.devRoomList.addEventListener("click", handleDevRoomClick);
+  elements.devRoomDiagnosticsRefreshButton.addEventListener("click", () => {
+    renderRoomDiagnosticsPanel();
+    playSound("click");
+  });
+  elements.devRoomDiagnosticsCatchupButton.addEventListener("click", () => {
+    requestRoomRealtimeCatchup("dev-tool", { force: true, snapshot: true });
+    renderRoomDiagnosticsPanel();
+    playSound("click");
+  });
+  elements.devRoomDiagnosticsClearButton.addEventListener("click", clearRoomDiagnosticsTimeline);
   elements.devSubmissionRefreshButton.addEventListener("click", loadDevQuestionSubmissions);
   elements.devSubmissionList.addEventListener("click", handleDevSubmissionListClick);
   elements.devSubmissionReviewPanel.addEventListener("click", handleDevSubmissionClick);
@@ -25421,7 +25867,7 @@ async function requestDevToolTab(tab) {
 }
 
 function setDevToolTab(tab) {
-  const selectedTab = ["questions", "rooms", "submissions", "create", "achievements", "profile", "overlays", "victory", "powers"].includes(tab) ? tab : "questions";
+  const selectedTab = ["questions", "rooms", "diagnostics", "submissions", "create", "achievements", "profile", "overlays", "victory", "powers"].includes(tab) ? tab : "questions";
   elements.devToolTabs.querySelectorAll("[data-dev-tab]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.devTab === selectedTab);
   });
@@ -25433,6 +25879,9 @@ function setDevToolTab(tab) {
   }
   if (selectedTab === "rooms") {
     loadDevRooms();
+  }
+  if (selectedTab === "diagnostics") {
+    renderRoomDiagnosticsPanel();
   }
   if (selectedTab === "submissions") {
     loadDevQuestionSubmissions();
@@ -30410,6 +30859,12 @@ function isRoomRealtimeHealthy() {
 function handleRoomRealtimeStatus(status = "") {
   state.roomRealtimeStatus = String(status || "unknown");
   state.realtimeRoomReady = status === "SUBSCRIBED";
+  recordRoomDiagnosticEvent("realtime-status", { code: state.realtimeRoomCode || state.roomSettings.code }, {
+    source: "supabase",
+    eventType: "room-realtime",
+    status: state.roomRealtimeStatus,
+    reason: state.realtimeRoomReady ? "Room channel is subscribed." : "Room channel is not subscribed yet."
+  });
   if (state.realtimeRoomReady) {
     state.roomRealtimeUnhealthySince = 0;
     stopRoomFallbackPolling({ keepHeartbeat: true });
@@ -30439,11 +30894,29 @@ function requestRoomRealtimeCatchup(reason = "sync", options = {}) {
     return Promise.resolve(false);
   }
   state.roomLastCatchupAt = now;
-  return refreshRoomEventsSinceLastRevision({ force: true }).then((hadEvents) => {
+  const since = Math.max(0, Number(options.since ?? state.roomEventRevision) || 0);
+  recordRoomDiagnosticEvent("resync", { code: state.roomSettings.code, revision: since }, {
+    source: "client",
+    eventType: "event-catchup",
+    reason: `One-shot catchup requested: ${reason}.`
+  });
+  return refreshRoomEventsSinceLastRevision({ force: true, since }).then((hadEvents) => {
+    recordRoomDiagnosticEvent("resync-result", { code: state.roomSettings.code, revision: state.roomEventRevision }, {
+      source: "server-events",
+      eventType: "event-catchup",
+      result: hadEvents ? "Catchup returned room events." : "Catchup found no newer room events."
+    });
     if (hadEvents || options.snapshot === false) {
       return hadEvents;
     }
     return refreshCurrentRoomDirectory(state.roomSessionId).then(() => false);
+  }).catch((error) => {
+    recordRoomDiagnosticEvent("resync-error", { code: state.roomSettings.code, revision: state.roomEventRevision }, {
+      source: "server-events",
+      eventType: "event-catchup",
+      reason: error?.message || "Catchup failed."
+    });
+    return false;
   });
 }
 
