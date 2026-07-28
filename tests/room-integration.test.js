@@ -2464,10 +2464,20 @@ async function testRoomPowerStateDeltaPreservesStoredFullState() {
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
   const powerState = stored.payload.room.game.powerState;
+  assert.ok(powerState.revision >= 1);
   assert.deepEqual(powerState.hands.find((entry) => entry.participantId === "host-client").hand, ["shuffle"]);
   assert.deepEqual(powerState.hands.find((entry) => entry.participantId === "guest-client").hand, ["xray_hacks"]);
   assert.equal(powerState.players.find((entry) => entry.participantId === "guest-client").score, 0);
   assert.equal(powerState.players.find((entry) => entry.participantId === "host-client").score, 100);
+  assert.equal(payload.powerState.hands.some((entry) => entry.participantId === "guest-client"), true);
+  assert.equal(payload.hands.some((entry) => entry.participantId === "guest-client"), true);
+  assert.ok(payload.powerRevision >= 1);
+
+  const events = await request("GET", `/api/rooms/${code}/events?since=0`);
+  assert.equal(events.response.status, 200, events.payload.error);
+  const event = events.payload.events.find((entry) => entry.type === "power_state" && entry.payload?.powerId === "shuffle");
+  assert.ok(event);
+  assert.equal(event.payload.powerState.hands.some((entry) => entry.participantId === "guest-client"), true);
 }
 
 async function testRoomPowerStateIgnoresStaleHandEntries() {
@@ -2657,6 +2667,70 @@ async function testRoomPowerStateCanClearPlayedHistory() {
   assert.deepEqual(powerState.played.find((entry) => entry.participantId === "guest-client").stacks, []);
   assert.equal(powerState.played.find((entry) => entry.participantId === "host-client").primaryPowerId, "");
   assert.equal(powerState.played.find((entry) => entry.participantId === "guest-client").primaryPowerId, "");
+}
+
+async function testSpectatorCannotUpdateRoomPowerState() {
+  const code = makeCode(8135);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      }
+    ],
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId: `${code}-match`,
+        revision: 2,
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", revision: 2, updatedAt: 2000, hand: ["shuffle"], fresh: [] }
+        ],
+        played: [],
+        players: [{ participantId: "host-client", owner: "player", revision: 2, updatedAt: 2000, score: 0, streak: 0 }],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+  const presence = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    participant: {
+      id: "spectator-client",
+      name: "Spectator",
+      role: "spectator",
+      spectator: true,
+      active: true,
+      status: "spectating"
+    }
+  });
+  assert.equal(presence.response.status, 200, presence.payload.error);
+  const response = await request("POST", `/api/rooms/${code}/power-state`, {
+    matchId: `${code}-match`,
+    round: 1,
+    powerId: "shuffle",
+    actorParticipantId: "spectator-client",
+    hands: [
+      { participantId: "host-client", owner: "player", updatedAt: 3000, hand: ["dead_weight"], fresh: [] }
+    ]
+  }, roomParticipantCookieHeader(code, "spectator-client"));
+  assert.equal(response.response.status, 403);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const hostHand = stored.payload.room.game.powerState.hands.find((entry) => entry.participantId === "host-client");
+  assert.deepEqual(hostHand.hand, ["shuffle"]);
 }
 
 async function testRoomRoundSkipEndpointStampsEvent() {
@@ -3724,6 +3798,7 @@ async function main() {
   await testRoomPowerStateIgnoresStaleHandEntries();
   await testStaleRoomPowerStateCannotOverwriteRematchHands();
   await testRoomPowerStateCanClearPlayedHistory();
+  await testSpectatorCannotUpdateRoomPowerState();
   await testRoomRoundSkipEndpointStampsEvent();
   await testRoomRoundResultRequiresGradingLock();
   await testRoomModerationEndpointMutesAndBans();

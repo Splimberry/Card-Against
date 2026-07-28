@@ -2872,9 +2872,13 @@ const state = {
   roomGame: null,
   roomMatchId: "",
   roomRoundResult: null,
+  roomPowerStateRevision: 0,
   roomPowerStateUpdatedAt: 0,
+  roomPowerHandRevision: {},
   roomPowerHandUpdatedAt: {},
+  roomPowerPlayedRevision: {},
   roomPowerPlayedUpdatedAt: {},
+  roomPowerPlayerRevision: {},
   roomPowerPlayerUpdatedAt: {},
   roomPlayedResetSyncedRound: null,
   achievementMilestoneScrollLeft: 0,
@@ -11391,10 +11395,51 @@ function getRoomPowerEntryUpdatedAt(kind, owner, fallback = Date.now()) {
   return updatedAt;
 }
 
+function getRoomPowerEntryRevisionStore(kind) {
+  return kind === "played"
+    ? state.roomPowerPlayedRevision
+    : kind === "players"
+      ? state.roomPowerPlayerRevision
+      : state.roomPowerHandRevision;
+}
+
+function rememberRoomPowerEntryRevision(kind, owner, revision = 0) {
+  const store = getRoomPowerEntryRevisionStore(kind);
+  const value = Math.max(0, Number(revision) || 0);
+  if (owner && store && value) {
+    store[owner] = Math.max(Number(store[owner]) || 0, value);
+  }
+  return owner && store ? Number(store[owner]) || 0 : 0;
+}
+
+function isStaleRoomPowerEntry(kind, owner, entryRevision = 0, entryUpdatedAt = 0) {
+  const revisionStore = getRoomPowerEntryRevisionStore(kind);
+  const knownRevision = Math.max(0, Number(revisionStore?.[owner]) || 0);
+  const incomingRevision = Math.max(0, Number(entryRevision) || 0);
+  if (incomingRevision && knownRevision && incomingRevision < knownRevision) {
+    return true;
+  }
+  if (!incomingRevision || !knownRevision) {
+    const updatedAtStore = kind === "played"
+      ? state.roomPowerPlayedUpdatedAt
+      : kind === "players"
+        ? state.roomPowerPlayerUpdatedAt
+        : state.roomPowerHandUpdatedAt;
+    const knownUpdatedAt = Math.max(0, Number(updatedAtStore?.[owner]) || 0);
+    const incomingUpdatedAt = Math.max(0, Number(entryUpdatedAt) || 0);
+    return Boolean(incomingUpdatedAt && knownUpdatedAt && incomingUpdatedAt < knownUpdatedAt);
+  }
+  return false;
+}
+
 function resetRoomPowerSyncClocks() {
+  state.roomPowerStateRevision = 0;
   state.roomPowerStateUpdatedAt = 0;
+  state.roomPowerHandRevision = {};
   state.roomPowerHandUpdatedAt = {};
+  state.roomPowerPlayedRevision = {};
   state.roomPowerPlayedUpdatedAt = {};
+  state.roomPowerPlayerRevision = {};
   state.roomPowerPlayerUpdatedAt = {};
 }
 
@@ -11939,7 +11984,16 @@ function mergeLocalRoomPowerStateEntries(previousEntries = [], nextEntries = [])
   (Array.isArray(nextEntries) ? nextEntries : []).forEach((entry) => {
     const participantId = String(entry?.participantId || "");
     if (participantId) {
-      byParticipantId.set(participantId, entry);
+      const previous = byParticipantId.get(participantId);
+      const previousRevision = Math.max(0, Number(previous?.revision) || 0);
+      const nextRevision = Math.max(0, Number(entry?.revision) || 0);
+      const previousUpdatedAt = Math.max(0, Number(previous?.updatedAt) || 0);
+      const nextUpdatedAt = Math.max(0, Number(entry?.updatedAt) || 0);
+      const revisionWins = nextRevision && (!previousRevision || nextRevision >= previousRevision);
+      const timestampWins = (!nextRevision || !previousRevision) && nextUpdatedAt >= previousUpdatedAt;
+      if (!previous || revisionWins || timestampWins) {
+        byParticipantId.set(participantId, entry);
+      }
     }
   });
   return [...byParticipantId.values()].slice(-10);
@@ -11949,6 +12003,8 @@ function mergeLocalRoomPowerState(previousPowerState = {}, nextPowerState = {}) 
   const previous = previousPowerState && typeof previousPowerState === "object" ? previousPowerState : {};
   const next = nextPowerState && typeof nextPowerState === "object" ? nextPowerState : {};
   return {
+    matchId: next.matchId || previous.matchId || getCurrentRoomMatchId(),
+    revision: Math.max(Number(previous.revision) || 0, Number(next.revision) || Number(next.powerRevision) || 0),
     updatedAt: Math.max(Number(previous.updatedAt) || 0, Number(next.updatedAt) || Date.now()),
     hands: mergeLocalRoomPowerStateEntries(previous.hands, next.hands),
     played: mergeLocalRoomPowerStateEntries(previous.played, next.played),
@@ -11976,13 +12032,18 @@ function publishRoomPowerState(payload = {}) {
     const data = await response.json();
     rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
     if (state.roomGame) {
-      state.roomGame.powerState = mergeLocalRoomPowerState(state.roomGame.powerState, {
-        updatedAt: data.updatedAt || Date.now(),
-        hands: data.hands || [],
-        played: data.played || [],
-        players: data.players || [],
-        effects: data.effects || null
-      });
+      const responsePowerState = data.powerState && typeof data.powerState === "object"
+        ? data.powerState
+        : {
+            matchId: data.matchId || syncedPayload.matchId,
+            revision: Number(data.powerRevision) || 0,
+            updatedAt: data.updatedAt || Date.now(),
+            hands: data.hands || [],
+            played: data.played || [],
+            players: data.players || [],
+            effects: data.effects || null
+          };
+      state.roomGame.powerState = mergeLocalRoomPowerState(state.roomGame.powerState, responsePowerState);
     }
     applyRoomTimerStatePayload(data);
     broadcastRealtimeRoomChange("power-state", state.roomSettings.code, {
@@ -12042,8 +12103,14 @@ function applyRoomPowerState(payload = {}) {
   if (revision && revision < (state.roomEventRevision || 0)) {
     return false;
   }
+  const powerRevision = Math.max(0, Number(payload.powerRevision || payload.powerState?.revision) || 0);
+  if (powerRevision && powerRevision < (state.roomPowerStateRevision || 0)) {
+    return false;
+  }
   const updatedAt = Number(payload.updatedAt) || 0;
-  const payloadIsOlderThanKnownPowerState = Boolean(updatedAt && updatedAt < (state.roomPowerStateUpdatedAt || 0));
+  const payloadIsOlderThanKnownPowerState = powerRevision
+    ? Boolean(state.roomPowerStateRevision && powerRevision < state.roomPowerStateRevision)
+    : Boolean(updatedAt && updatedAt < (state.roomPowerStateUpdatedAt || 0));
   const hands = Array.isArray(payload.hands) ? payload.hands : [];
   const played = Array.isArray(payload.played) ? payload.played : [];
   const players = Array.isArray(payload.players) ? payload.players : [];
@@ -12059,7 +12126,8 @@ function applyRoomPowerState(payload = {}) {
       return;
     }
     const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
-    if (entryUpdatedAt && entryUpdatedAt < Math.max(0, Number(state.roomPowerHandUpdatedAt?.[owner]) || 0)) {
+    const entryRevision = Math.max(0, Number(entry.revision) || powerRevision || 0);
+    if (isStaleRoomPowerEntry("hands", owner, entryRevision, entryUpdatedAt)) {
       return;
     }
     const previousHand = [...(state.powerHands[owner] || [])];
@@ -12084,6 +12152,7 @@ function applyRoomPowerState(payload = {}) {
       }
     }
     getRoomPowerEntryUpdatedAt("hands", owner, entryUpdatedAt || Date.now());
+    rememberRoomPowerEntryRevision("hands", owner, entryRevision);
     state.powerHands[owner] = nextHand;
     state.freshPowerUps[owner] = syncedFreshIds.length
       ? syncedFreshIds
@@ -12105,7 +12174,8 @@ function applyRoomPowerState(payload = {}) {
       return;
     }
     const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
-    if (entryUpdatedAt && entryUpdatedAt < Math.max(0, Number(state.roomPowerPlayedUpdatedAt?.[owner]) || 0)) {
+    const entryRevision = Math.max(0, Number(entry.revision) || powerRevision || 0);
+    if (isStaleRoomPowerEntry("played", owner, entryRevision, entryUpdatedAt)) {
       return;
     }
     const nextStacks = (Array.isArray(entry.stacks) ? entry.stacks : [])
@@ -12132,6 +12202,7 @@ function applyRoomPowerState(payload = {}) {
       ? { ...entry.meta }
       : nextStacks.at(-1)?.meta || null;
     getRoomPowerEntryUpdatedAt("played", owner, entryUpdatedAt || Date.now());
+    rememberRoomPowerEntryRevision("played", owner, entryRevision);
     changed = true;
   });
   players.forEach((entry) => {
@@ -12140,12 +12211,14 @@ function applyRoomPowerState(payload = {}) {
       return;
     }
     const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
-    if (entryUpdatedAt && entryUpdatedAt < Math.max(0, Number(state.roomPowerPlayerUpdatedAt?.[owner]) || 0)) {
+    const entryRevision = Math.max(0, Number(entry.revision) || powerRevision || 0);
+    if (isStaleRoomPowerEntry("players", owner, entryRevision, entryUpdatedAt)) {
       return;
     }
     setScore(owner, Number(entry.score) || 0);
     setOwnerStreak(owner, Number(entry.streak) || 0, { force: true });
     getRoomPowerEntryUpdatedAt("players", owner, entryUpdatedAt || Date.now());
+    rememberRoomPowerEntryRevision("players", owner, entryRevision);
     changed = true;
   });
   const effectsApplied = !payloadIsOlderThanKnownPowerState && applyRoomAbilityEffectStatePayload(effects);
@@ -12155,6 +12228,7 @@ function applyRoomPowerState(payload = {}) {
   if (!changed) {
     return false;
   }
+  state.roomPowerStateRevision = Math.max(state.roomPowerStateRevision || 0, powerRevision || 0);
   state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt || Date.now());
   rememberRoomRevisionPayload({ ...payload, code: payload.code || state.roomSettings.code, revision });
   if (state.roomGame) {
@@ -12165,6 +12239,8 @@ function applyRoomPowerState(payload = {}) {
     const existingPlayed = Array.isArray(state.roomGame.powerState?.played) ? state.roomGame.powerState.played : [];
     const existingPlayers = Array.isArray(state.roomGame.powerState?.players) ? state.roomGame.powerState.players : [];
     state.roomGame.powerState = {
+      matchId: payload.matchId || getCurrentRoomMatchId(),
+      revision: state.roomPowerStateRevision || powerRevision || 0,
       updatedAt: state.roomPowerStateUpdatedAt,
       hands: [
         ...existingHands.filter((entry) => !syncedParticipantIds.has(String(entry?.participantId || ""))),
@@ -12253,6 +12329,7 @@ function applyRoomGamePowerState(game = state.roomGame) {
     code: state.roomSettings.code,
     matchId: game.matchId,
     round: game.round,
+    powerRevision: powerState.revision || 0,
     updatedAt: powerState.updatedAt,
     hands: powerState.hands,
     played: powerState.played,
@@ -14640,6 +14717,7 @@ function normalizeRoomEventPayload(payload = {}, options = {}) {
     updatedAt: Number(source.updatedAt) || Date.now()
   };
   if (normalized.powerState && typeof normalized.powerState === "object") {
+    normalized.powerRevision = Number(normalized.powerRevision || normalized.powerState.revision) || 0;
     normalized.hands = normalized.hands || normalized.powerState.hands;
     normalized.played = normalized.played || normalized.powerState.played;
     normalized.players = normalized.players || normalized.powerState.players;

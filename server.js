@@ -4060,12 +4060,18 @@ async function handleRoomPowerState(req, res, code) {
 
     const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
     const actorParticipantId = String(body.actorParticipantId || "").slice(0, 120);
-    if (!hasRoomHostAuth(req, room, body)) {
+    const requestHasHostAuth = hasRoomHostAuth(req, room, body);
+    if (!requestHasHostAuth) {
       if (!actorParticipantId) {
         sendJson(res, 400, { error: "Missing actor participant id." });
         return;
       }
       if (!requireRoomParticipantAuth(req, res, room, actorParticipantId, body, "Only the acting participant can update power state.")) {
+        return;
+      }
+      const actorParticipant = room.participants.find((participant) => participant.id === actorParticipantId);
+      if (!actorParticipant || !isGameplayParticipant(actorParticipant)) {
+        sendJson(res, 403, { error: "Spectators cannot update power state." });
         return;
       }
     }
@@ -4081,7 +4087,7 @@ async function handleRoomPowerState(req, res, code) {
       sendJson(res, 409, { error: "Power state belongs to a previous round." });
       return;
     }
-    const powerState = normalizeRoomPowerState({
+    const submittedPowerState = stripClientPowerStateRevisions({
       matchId: payloadMatchId || currentMatchId,
       updatedAt: Date.now(),
       hands: body.hands,
@@ -4089,11 +4095,18 @@ async function handleRoomPowerState(req, res, code) {
       players: body.players,
       effects: body.effects
     });
+    const powerState = filterRoomPowerStateParticipants(submittedPowerState, room);
     if (!powerState) {
       sendJson(res, 400, { error: "Room power update needs a power state payload." });
       return;
     }
-    const mergedPowerState = mergeRoomPowerState(room.game?.powerState, powerState);
+    const previousPowerState = normalizeRoomPowerState(room.game?.powerState);
+    const mergedPowerState = stampRoomPowerStateServerRevision(
+      previousPowerState,
+      powerState,
+      mergeRoomPowerState(previousPowerState, powerState),
+      getRoomPowerStateRevision(previousPowerState) + 1
+    );
     if (!room.game || typeof room.game !== "object") {
       room.game = {
         matchId: payloadMatchId || `${normalizedCode}-${Date.now()}`,
@@ -4116,23 +4129,26 @@ async function handleRoomPowerState(req, res, code) {
       deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
       stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
       matchId: room.game?.matchId || powerState.matchId || "",
-      powerState,
+      powerState: mergedPowerState,
       timerState
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
+    const responsePowerState = normalizeRoomPowerState(storedRoom.game?.powerState) || mergedPowerState;
     sendJson(res, 200, createRoomEventResponse(storedRoom, "power_state", {
       round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
-      matchId: storedRoom.game?.matchId || powerState.matchId || "",
+      matchId: storedRoom.game?.matchId || responsePowerState.matchId || "",
       powerId: String(body.powerId || "").slice(0, 80),
       actorParticipantId,
       targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
       deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
       stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
-      hands: powerState.hands,
-      played: powerState.played,
-      players: powerState.players,
-      effects: powerState.effects,
+      powerState: responsePowerState,
+      powerRevision: responsePowerState.revision || 0,
+      hands: responsePowerState.hands,
+      played: responsePowerState.played,
+      players: responsePowerState.players,
+      effects: responsePowerState.effects,
       timerState: getRoomTimerStatePayload(storedRoom.game) || timerState
     }));
   } catch (error) {
@@ -4980,6 +4996,7 @@ function normalizeRoomPowerState(powerState) {
   const hands = Array.isArray(powerState.hands) ? powerState.hands : [];
   return {
     matchId: String(powerState.matchId || "").slice(0, 80),
+    revision: clampServerNumber(powerState.revision || powerState.powerRevision, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(powerState.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()),
     hands: hands
       .map((entry) => {
@@ -4987,6 +5004,7 @@ function normalizeRoomPowerState(powerState) {
         return {
           participantId: String(source.participantId || "").slice(0, 120),
           owner: String(source.owner || "").slice(0, 80),
+          revision: clampServerNumber(source.revision, 0, Number.MAX_SAFE_INTEGER, 0),
           updatedAt: clampServerNumber(source.updatedAt, 0, Number.MAX_SAFE_INTEGER, powerState.updatedAt || Date.now()),
           hand: Array.isArray(source.hand)
             ? source.hand.map((powerId) => String(powerId || "").slice(0, 80)).filter(Boolean).slice(0, 10)
@@ -5004,6 +5022,7 @@ function normalizeRoomPowerState(powerState) {
         return {
           participantId: String(source.participantId || "").slice(0, 120),
           owner: String(source.owner || "").slice(0, 80),
+          revision: clampServerNumber(source.revision, 0, Number.MAX_SAFE_INTEGER, 0),
           updatedAt: clampServerNumber(source.updatedAt, 0, Number.MAX_SAFE_INTEGER, powerState.updatedAt || Date.now()),
           stacks: (Array.isArray(source.stacks) ? source.stacks : [])
             .map((stack) => {
@@ -5028,6 +5047,7 @@ function normalizeRoomPowerState(powerState) {
         return {
           participantId: String(source.participantId || "").slice(0, 120),
           owner: String(source.owner || "").slice(0, 80),
+          revision: clampServerNumber(source.revision, 0, Number.MAX_SAFE_INTEGER, 0),
           updatedAt: clampServerNumber(source.updatedAt, 0, Number.MAX_SAFE_INTEGER, powerState.updatedAt || Date.now()),
           score: clampServerNumber(source.score, 0, Number.MAX_SAFE_INTEGER, 0),
           streak: clampServerNumber(source.streak, 0, Number.MAX_SAFE_INTEGER, 0)
@@ -5037,6 +5057,95 @@ function normalizeRoomPowerState(powerState) {
       .slice(0, 10),
     effects: normalizeRoomAbilityEffects(powerState.effects)
   };
+}
+
+function getRoomPowerStateRevision(powerState) {
+  return clampServerNumber(powerState?.revision || powerState?.powerRevision, 0, Number.MAX_SAFE_INTEGER, 0);
+}
+
+function stripClientPowerStateRevisions(powerState) {
+  const normalized = normalizeRoomPowerState(powerState);
+  if (!normalized) {
+    return null;
+  }
+  const clearEntry = (entry) => ({
+    ...entry,
+    revision: 0
+  });
+  return {
+    ...normalized,
+    revision: 0,
+    hands: normalized.hands.map(clearEntry),
+    played: normalized.played.map(clearEntry),
+    players: normalized.players.map(clearEntry)
+  };
+}
+
+function getRoomGameplayParticipantIdSet(room) {
+  return new Set((Array.isArray(room?.participants) ? room.participants : [])
+    .filter(isGameplayParticipant)
+    .map((participant) => String(participant.id || "").slice(0, 120))
+    .filter(Boolean));
+}
+
+function filterRoomPowerStateParticipants(powerState, room) {
+  const normalized = normalizeRoomPowerState(powerState);
+  if (!normalized) {
+    return null;
+  }
+  const gameplayParticipantIds = getRoomGameplayParticipantIdSet(room);
+  if (!gameplayParticipantIds.size) {
+    return {
+      ...normalized,
+      hands: [],
+      played: [],
+      players: []
+    };
+  }
+  return {
+    ...normalized,
+    hands: normalized.hands.filter((entry) => gameplayParticipantIds.has(entry.participantId)),
+    played: normalized.played.filter((entry) => gameplayParticipantIds.has(entry.participantId)),
+    players: normalized.players.filter((entry) => gameplayParticipantIds.has(entry.participantId))
+  };
+}
+
+function shouldAcceptPowerStateEntry(previous, next) {
+  if (!next?.participantId) {
+    return false;
+  }
+  if (!previous) {
+    return true;
+  }
+  const previousRevision = clampServerNumber(previous.revision, 0, Number.MAX_SAFE_INTEGER, 0);
+  const nextRevision = clampServerNumber(next.revision, 0, Number.MAX_SAFE_INTEGER, 0);
+  if (nextRevision && previousRevision && nextRevision !== previousRevision) {
+    return nextRevision > previousRevision;
+  }
+  if (nextRevision && !previousRevision) {
+    return true;
+  }
+  const previousUpdatedAt = Number(previous.updatedAt) || 0;
+  const nextUpdatedAt = Number(next.updatedAt) || 0;
+  return nextUpdatedAt >= previousUpdatedAt;
+}
+
+function getPowerStateEntryMap(entries = []) {
+  const map = new Map();
+  (Array.isArray(entries) ? entries : []).forEach((entry) => {
+    const participantId = String(entry?.participantId || "").slice(0, 120);
+    if (participantId) {
+      map.set(participantId, entry);
+    }
+  });
+  return map;
+}
+
+function getAcceptedPowerStateParticipantIds(previousEntries = [], nextEntries = []) {
+  const previousByParticipantId = getPowerStateEntryMap(previousEntries);
+  return new Set((Array.isArray(nextEntries) ? nextEntries : [])
+    .filter((entry) => shouldAcceptPowerStateEntry(previousByParticipantId.get(entry.participantId), entry))
+    .map((entry) => entry.participantId));
 }
 
 function mergePowerStateEntries(previousEntries = [], nextEntries = []) {
@@ -5049,9 +5158,7 @@ function mergePowerStateEntries(previousEntries = [], nextEntries = []) {
   nextEntries.forEach((entry) => {
     if (entry?.participantId) {
       const previous = byParticipantId.get(entry.participantId);
-      const previousUpdatedAt = Number(previous?.updatedAt) || 0;
-      const nextUpdatedAt = Number(entry.updatedAt) || 0;
-      if (!previous || nextUpdatedAt >= previousUpdatedAt) {
+      if (shouldAcceptPowerStateEntry(previous, entry)) {
         byParticipantId.set(entry.participantId, entry);
       }
     }
@@ -5059,8 +5166,45 @@ function mergePowerStateEntries(previousEntries = [], nextEntries = []) {
   return [...byParticipantId.values()].slice(0, 10);
 }
 
+function stampRoomPowerStateServerRevision(previousPowerState, nextPowerState, mergedPowerState, revision) {
+  const previous = normalizeRoomPowerState(previousPowerState) || { hands: [], played: [], players: [] };
+  const next = normalizeRoomPowerState(nextPowerState) || { hands: [], played: [], players: [] };
+  const merged = normalizeRoomPowerState(mergedPowerState);
+  if (!merged) {
+    return null;
+  }
+  const serverRevision = clampServerNumber(
+    revision,
+    0,
+    Number.MAX_SAFE_INTEGER,
+    getRoomPowerStateRevision(previous) + 1
+  );
+  const stampEntries = (kind) => {
+    const acceptedIds = getAcceptedPowerStateParticipantIds(previous[kind], next[kind]);
+    const previousByParticipantId = getPowerStateEntryMap(previous[kind]);
+    return (Array.isArray(merged[kind]) ? merged[kind] : []).map((entry) => {
+      const previousEntry = previousByParticipantId.get(entry.participantId);
+      return {
+        ...entry,
+        revision: acceptedIds.has(entry.participantId)
+          ? serverRevision
+          : getRoomPowerStateRevision(previousEntry)
+      };
+    });
+  };
+  return {
+    ...merged,
+    revision: serverRevision,
+    updatedAt: Math.max(Number(merged.updatedAt) || 0, Date.now()),
+    hands: stampEntries("hands"),
+    played: stampEntries("played"),
+    players: stampEntries("players")
+  };
+}
+
 function mergeRoomPowerState(previousPowerState, nextPowerState) {
   const previous = normalizeRoomPowerState(previousPowerState) || {
+    revision: 0,
     updatedAt: 0,
     hands: [],
     played: [],
@@ -5073,6 +5217,7 @@ function mergeRoomPowerState(previousPowerState, nextPowerState) {
   }
   return {
     matchId: next.matchId || previous.matchId || "",
+    revision: Math.max(getRoomPowerStateRevision(previous), getRoomPowerStateRevision(next)),
     updatedAt: Math.max(previous.updatedAt || 0, next.updatedAt || Date.now()),
     hands: mergePowerStateEntries(previous.hands, next.hands),
     played: mergePowerStateEntries(previous.played, next.played),
