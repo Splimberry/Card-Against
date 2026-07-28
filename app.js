@@ -7076,7 +7076,42 @@ function renderEffectPanel() {
   });
 }
 
-function renderRoundRecap(awarded, winnerOwner, rating) {
+function getRoundRecapRowsFromSummary(resultSummary = null, awarded = null, winnerOwner = "") {
+  if (!resultSummary || !Array.isArray(resultSummary.leaderboard) || !resultSummary.leaderboard.length) {
+    return null;
+  }
+  const deltaByOwner = new Map(
+    (Array.isArray(resultSummary.scoreDeltas) ? resultSummary.scoreDeltas : [])
+      .map((entry) => [entry.owner || getRoomOwnerForParticipantId(entry.participantId), entry])
+      .filter(([owner]) => owner)
+  );
+  const winningSet = new Set(awarded?.winningOwners || [winnerOwner]);
+  const rows = resultSummary.leaderboard
+    .map((entry) => {
+      const owner = entry.owner || getRoomOwnerForParticipantId(entry.participantId);
+      if (!owner || !getPlayer(owner)) {
+        return null;
+      }
+      const deltaEntry = deltaByOwner.get(owner) || {};
+      return {
+        owner,
+        label: entry.label || getOwnerLabel(owner),
+        score: Number.isFinite(Number(entry.score)) ? Number(entry.score) : getScore(owner),
+        displayScore: entry.displayScore || getDisplayScoreText(owner),
+        hiddenScore: Boolean(entry.hiddenScore),
+        delta: Math.round(Number(deltaEntry.delta ?? entry.delta) || 0),
+        powers: getPlayedPowerEntries([owner])
+          .map((playedEntry) => playedEntry.power)
+          .filter((power) => power && !isSecretPower(power)),
+        streak: Number.isFinite(Number(entry.streak)) ? Number(entry.streak) : getOwnerStreak(owner),
+        correct: Boolean(deltaEntry.correct ?? entry.correct ?? winningSet.has(owner))
+      };
+    })
+    .filter(Boolean);
+  return rows.length ? rows : null;
+}
+
+function renderRoundRecap(awarded, winnerOwner, rating, resultSummary = null) {
   elements.roundRecap.replaceChildren();
   if (!awarded) {
     setHidden(elements.roundRecap, true);
@@ -7091,7 +7126,8 @@ function renderRoundRecap(awarded, winnerOwner, rating) {
   results.className = "trivia-results-list";
   results.classList.toggle("room-results-list", isRoomMode());
   const winningSet = new Set(awarded.winningOwners || [winnerOwner]);
-  getActiveOwners()
+  const recapRows = getRoundRecapRowsFromSummary(resultSummary, awarded, winnerOwner)
+    || getActiveOwners()
     .map((owner) => ({
       owner,
       label: getOwnerLabel(owner),
@@ -7105,8 +7141,8 @@ function renderRoundRecap(awarded, winnerOwner, rating) {
       streak: getOwnerStreak(owner),
       correct: winningSet.has(owner)
     }))
-    .sort(compareScoreRowsForLeaderboard)
-    .forEach((row, index) => {
+    .sort(compareScoreRowsForLeaderboard);
+  recapRows.forEach((row, index) => {
       const item = document.createElement("div");
       item.className = "trivia-result-row";
       item.dataset.owner = row.owner;
@@ -10912,6 +10948,151 @@ function applyRoomAnswerSubmission(payload = {}) {
   return true;
 }
 
+function normalizeRoomRoundResultSummaryText(value, maxLength = 240) {
+  return String(value || "")
+    .replace(/\s*\n+\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function normalizeRoomRoundResultSummaryPayload(summary = null, cards = []) {
+  if (!summary || typeof summary !== "object") {
+    return null;
+  }
+  const maxCards = Math.max(1, Array.isArray(cards) ? cards.length : 10);
+  const normalizeIndex = (value) => clampNumber(value, 0, maxCards - 1, -1);
+  const judgements = (Array.isArray(summary.judgements) ? summary.judgements : [])
+    .map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const index = normalizeIndex(source.index ?? source.cardIndex);
+      const participantId = String(source.participantId || "").trim().slice(0, 120);
+      const owner = String(source.owner || "").trim().slice(0, 80);
+      if (index < 0 && !participantId && !owner) {
+        return null;
+      }
+      return {
+        index,
+        participantId,
+        owner,
+        answer: normalizeRoomRoundResultSummaryText(source.answer, 500),
+        correct: Boolean(source.correct),
+        tag: normalizeRoomRoundResultSummaryText(source.tag, 48),
+        bonus: Math.round(clampNumber(source.bonus, -1000000, 1000000, 0)),
+        reason: normalizeRoomRoundResultSummaryText(source.reason || source.justification, 280),
+        aiReviewed: Boolean(source.aiReviewed),
+        aiSecondOpinion: Boolean(source.aiSecondOpinion)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+  const scoreDeltas = (Array.isArray(summary.scoreDeltas) ? summary.scoreDeltas : [])
+    .map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const participantId = String(source.participantId || "").trim().slice(0, 120);
+      const owner = String(source.owner || "").trim().slice(0, 80);
+      if (!participantId && !owner) {
+        return null;
+      }
+      return {
+        participantId,
+        owner,
+        label: normalizeRoomRoundResultSummaryText(source.label, 32),
+        delta: Math.round(clampNumber(source.delta, -1000000000, 1000000000, 0)),
+        scoreBefore: Math.round(clampNumber(source.scoreBefore, 0, Number.MAX_SAFE_INTEGER, 0)),
+        scoreAfter: Math.round(clampNumber(source.scoreAfter, 0, Number.MAX_SAFE_INTEGER, 0)),
+        streakBefore: Math.round(clampNumber(source.streakBefore, 0, Number.MAX_SAFE_INTEGER, 0)),
+        streakAfter: Math.round(clampNumber(source.streakAfter, 0, Number.MAX_SAFE_INTEGER, 0)),
+        streakDelta: Math.round(clampNumber(source.streakDelta, -1000000, 1000000, 0)),
+        correct: Boolean(source.correct),
+        tag: normalizeRoomRoundResultSummaryText(source.tag, 48)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+  const leaderboard = (Array.isArray(summary.leaderboard) ? summary.leaderboard : [])
+    .map((entry, index) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const participantId = String(source.participantId || "").trim().slice(0, 120);
+      const owner = String(source.owner || "").trim().slice(0, 80);
+      if (!participantId && !owner) {
+        return null;
+      }
+      return {
+        rank: Math.round(clampNumber(source.rank, 1, 10, index + 1)),
+        participantId,
+        owner,
+        label: normalizeRoomRoundResultSummaryText(source.label, 32),
+        score: Math.round(clampNumber(source.score, 0, Number.MAX_SAFE_INTEGER, 0)),
+        displayScore: normalizeRoomRoundResultSummaryText(source.displayScore, 40),
+        hiddenScore: Boolean(source.hiddenScore),
+        streak: Math.round(clampNumber(source.streak, 0, Number.MAX_SAFE_INTEGER, 0)),
+        delta: Math.round(clampNumber(source.delta, -1000000000, 1000000000, 0)),
+        correct: Boolean(source.correct),
+        tag: normalizeRoomRoundResultSummaryText(source.tag, 48)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+  const powerEvents = (Array.isArray(summary.powerEvents) ? summary.powerEvents : [])
+    .map((entry) => {
+      if (typeof entry === "string") {
+        const text = normalizeRoomRoundResultSummaryText(entry, 320);
+        return text ? { text, owner: "", participantId: "", powerId: "", rarity: "", name: "", secret: false, chaosInfused: false } : null;
+      }
+      const source = entry && typeof entry === "object" ? entry : {};
+      const text = normalizeRoomRoundResultSummaryText(source.text, 320);
+      if (!text) {
+        return null;
+      }
+      return {
+        owner: String(source.owner || "").trim().slice(0, 80),
+        participantId: String(source.participantId || "").trim().slice(0, 120),
+        powerId: String(source.powerId || "").trim().slice(0, 80),
+        rarity: String(source.rarity || "").trim().slice(0, 24),
+        name: normalizeRoomRoundResultSummaryText(source.name, 80),
+        text,
+        secret: Boolean(source.secret),
+        chaosInfused: Boolean(source.chaosInfused)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 40);
+  const activeEffects = (Array.isArray(summary.activeEffects) ? summary.activeEffects : [])
+    .map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const owner = String(source.owner || "").trim().slice(0, 80);
+      const name = normalizeRoomRoundResultSummaryText(source.name, 80);
+      if (!owner && !name) {
+        return null;
+      }
+      return {
+        owner,
+        participantId: String(source.participantId || "").trim().slice(0, 120),
+        label: normalizeRoomRoundResultSummaryText(source.label, 32),
+        name,
+        description: normalizeRoomRoundResultSummaryText(source.description, 320),
+        rarity: String(source.rarity || "").trim().slice(0, 24),
+        powerId: String(source.powerId || "").trim().slice(0, 80),
+        chaosInfused: Boolean(source.chaosInfused),
+        private: Boolean(source.private)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 40);
+
+  if (!judgements.length && !scoreDeltas.length && !leaderboard.length && !powerEvents.length && !activeEffects.length) {
+    return null;
+  }
+  return {
+    judgements,
+    scoreDeltas,
+    leaderboard,
+    powerEvents,
+    activeEffects
+  };
+}
+
 function normalizeRoomRoundResultPayload(payload = {}) {
   const source = payload.roundResult && typeof payload.roundResult === "object" ? payload.roundResult : payload;
   if (!source || typeof source !== "object") {
@@ -10961,6 +11142,7 @@ function normalizeRoomRoundResultPayload(payload = {}) {
     awarded: source.awarded && typeof source.awarded === "object" ? cloneRoomAbilitySyncValue(source.awarded, null) : null,
     powerState: source.powerState && typeof source.powerState === "object" ? cloneRoomAbilitySyncValue(source.powerState, null) : null,
     scoreState: Array.isArray(source.scoreState) ? cloneRoomAbilitySyncValue(source.scoreState, []) : [],
+    resultSummary: normalizeRoomRoundResultSummaryPayload(source.resultSummary, cards),
     source: String(source.source || "host").slice(0, 40),
     nextRoundAt: Math.max(0, Number(source.nextRoundAt) || 0),
     updatedAt: Number(source.updatedAt) || Date.now()
@@ -11412,6 +11594,142 @@ function publishRoomScoreState(reason = "score") {
   });
 }
 
+function buildRoomRoundResultJudgements(result, cardRatings = state.currentRoundCardRatings || [], gradingReasons = state.currentRoundGradingReasons || [], awarded = null) {
+  const correctSet = new Set(Array.isArray(result.correctIndexes) ? result.correctIndexes : []);
+  const aiReviewedSet = new Set(Array.isArray(result.aiReviewedIndexes) ? result.aiReviewedIndexes : []);
+  const aiSecondOpinionSet = new Set(Array.isArray(result.aiSecondOpinionIndexes) ? result.aiSecondOpinionIndexes : []);
+  return (Array.isArray(result.cards) ? result.cards : [])
+    .map((answer, index) => {
+      const owner = getOwnerFromCardIndex(index);
+      const rating = cardRatings[index] || {};
+      const payout = awarded?.payoutDetails?.[owner] || {};
+      return {
+        index,
+        participantId: getRoomParticipantIdForOwner(owner),
+        owner,
+        answer,
+        correct: Boolean(rating.correct || correctSet.has(index)),
+        tag: String(payout.tag || rating.label || (correctSet.has(index) ? "Correct" : "Incorrect")),
+        bonus: Math.round(Number(payout.tagBonus ?? rating.bonus) || 0),
+        reason: gradingReasons[index] || getAnswerGradingReason(answer, rating, result, index),
+        aiReviewed: aiReviewedSet.has(index),
+        aiSecondOpinion: aiSecondOpinionSet.has(index)
+      };
+    })
+    .filter((entry) => entry.participantId || entry.owner)
+    .slice(0, 10);
+}
+
+function buildRoomRoundResultScoreDeltas(awarded, scoreBefore = {}, streakBefore = {}) {
+  const winningOwners = new Set(awarded?.winningOwners || []);
+  return getActiveOwners()
+    .map((owner) => {
+      const scoreAfter = getScore(owner);
+      const streakAfter = getOwnerStreak(owner);
+      const delta = Math.round(Number(awarded?.deltas?.[owner]) || 0);
+      const beforeScore = Number.isFinite(Number(scoreBefore?.[owner]))
+        ? Number(scoreBefore[owner])
+        : Math.max(0, scoreAfter - delta);
+      const beforeStreak = Number.isFinite(Number(streakBefore?.[owner]))
+        ? Number(streakBefore[owner])
+        : streakAfter;
+      return {
+        participantId: getRoomParticipantIdForOwner(owner),
+        owner,
+        label: getOwnerLabel(owner),
+        delta,
+        scoreBefore: Math.max(0, Math.round(beforeScore)),
+        scoreAfter,
+        streakBefore: Math.max(0, Math.round(beforeStreak)),
+        streakAfter,
+        streakDelta: streakAfter - Math.max(0, Math.round(beforeStreak)),
+        correct: winningOwners.has(owner),
+        tag: String(awarded?.payoutDetails?.[owner]?.tag || (winningOwners.has(owner) ? awarded?.tag || "Correct" : "Incorrect"))
+      };
+    })
+    .filter((entry) => entry.participantId)
+    .slice(0, 10);
+}
+
+function buildRoomRoundResultLeaderboard(scoreDeltas = []) {
+  const deltaByOwner = Object.fromEntries(scoreDeltas.map((entry) => [entry.owner, entry]));
+  return getActiveOwners()
+    .map((owner) => {
+      const player = getPlayer(owner);
+      const deltaEntry = deltaByOwner[owner] || {};
+      return {
+        participantId: getRoomParticipantIdForOwner(owner),
+        owner,
+        label: player?.label || getOwnerLabel(owner),
+        score: getScore(owner),
+        displayScore: getDisplayScoreText(owner),
+        hiddenScore: isScoreHidden(owner),
+        streak: getOwnerStreak(owner),
+        delta: Math.round(Number(deltaEntry.delta) || 0),
+        correct: Boolean(deltaEntry.correct),
+        tag: String(deltaEntry.tag || "")
+      };
+    })
+    .filter((entry) => entry.participantId)
+    .sort(compareScoreRowsForLeaderboard)
+    .map((entry, index) => ({
+      rank: index + 1,
+      ...entry
+    }))
+    .slice(0, 10);
+}
+
+function buildRoomRoundResultPowerEvents(awarded) {
+  return (Array.isArray(awarded?.events) ? awarded.events : [])
+    .filter((event) => typeof event === "string" || !event.secret)
+    .map((event) => {
+      if (typeof event === "string") {
+        return { text: event };
+      }
+      const power = getPowerById(event.powerId);
+      return {
+        owner: String(event.owner || ""),
+        participantId: getRoomParticipantIdForOwner(event.owner),
+        powerId: String(event.powerId || ""),
+        rarity: power?.rarity || "",
+        name: power?.name || "",
+        text: String(event.text || ""),
+        secret: Boolean(event.secret),
+        chaosInfused: Boolean(power && isChaosInfusedPower(power))
+      };
+    })
+    .filter((event) => event.text)
+    .slice(0, 40);
+}
+
+function buildRoomRoundResultActiveEffects() {
+  return getActiveEffectEntries()
+    .filter((entry) => !entry.private)
+    .map((entry) => ({
+      owner: entry.owner,
+      participantId: entry.owner === "table" ? "" : getRoomParticipantIdForOwner(entry.owner),
+      label: entry.label,
+      name: entry.name,
+      description: entry.description,
+      rarity: entry.rarity,
+      powerId: entry.powerId,
+      chaosInfused: Boolean(entry.chaosInfused),
+      private: Boolean(entry.private)
+    }))
+    .slice(0, 40);
+}
+
+function buildRoomRoundResultSummary(result, options = {}) {
+  const scoreDeltas = buildRoomRoundResultScoreDeltas(options.awarded, options.scoreBefore, options.streakBefore);
+  return normalizeRoomRoundResultSummaryPayload({
+    judgements: buildRoomRoundResultJudgements(result, options.cardRatings, options.gradingReasons, options.awarded),
+    scoreDeltas,
+    leaderboard: buildRoomRoundResultLeaderboard(scoreDeltas),
+    powerEvents: buildRoomRoundResultPowerEvents(options.awarded),
+    activeEffects: buildRoomRoundResultActiveEffects()
+  }, result.cards);
+}
+
 function buildRoomRoundResultPayload(roundResult, options = {}) {
   const result = normalizeRoomRoundResultPayload({
     ...roundResult,
@@ -11445,6 +11763,13 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
   result.scoreState = getActiveOwners()
     .map(getRoomAbilityPlayerSyncEntry)
     .filter(Boolean);
+  result.resultSummary = buildRoomRoundResultSummary(result, {
+    awarded: result.awarded,
+    cardRatings: options.cardRatings,
+    gradingReasons: options.gradingReasons,
+    scoreBefore: options.scoreBefore,
+    streakBefore: options.streakBefore
+  });
   return result;
 }
 
@@ -32073,6 +32398,21 @@ function getRoundGradingReasons(cards = [], ratings = [], roundResult = {}) {
   return cards.map((card, index) => getAnswerGradingReason(card, ratings[index] || {}, roundResult, index));
 }
 
+function mergeRoomRoundResultSummaryReasons(roundResult = null, fallbackReasons = []) {
+  const reasons = [...fallbackReasons];
+  const judgements = Array.isArray(roundResult?.resultSummary?.judgements)
+    ? roundResult.resultSummary.judgements
+    : [];
+  judgements.forEach((entry) => {
+    const index = Number(entry?.index);
+    const reason = String(entry?.reason || "").trim();
+    if (Number.isInteger(index) && index >= 0 && reason) {
+      reasons[index] = reason;
+    }
+  });
+  return reasons;
+}
+
 function buildBlackCardAnswerReveal(bestAnswer, options = {}) {
   const showBestAnswer = options.showBestAnswer !== false;
   const lines = [state.blackCard];
@@ -32401,7 +32741,10 @@ async function playRound(rawInput, options = {}) {
   state.currentRoundCards = roundResult.cards;
   state.currentRoundCardRatings = cardRatings;
   state.currentRoundCorrectIndexes = roundResult.correctIndexes;
-  state.currentRoundGradingReasons = getRoundGradingReasons(roundResult.cards, cardRatings, roundResult);
+  state.currentRoundGradingReasons = mergeRoomRoundResultSummaryReasons(
+    syncedRoundResult,
+    getRoundGradingReasons(roundResult.cards, cardRatings, roundResult)
+  );
   if (syncedRoundResult?.damagedParticipantIds?.length) {
     applyDamagedAnswerParticipantIds(syncedRoundResult.damagedParticipantIds);
   }
@@ -32469,6 +32812,8 @@ async function playRound(rawInput, options = {}) {
   }
   const ratingsByOwner = getCardRatingsByOwner(cardRatings);
   const winningRating = cardRatings[winner.index] || { label: "Correct", bonus: 50 };
+  const scoreBeforeAward = Object.fromEntries(getActiveOwners().map((owner) => [owner, getScore(owner)]));
+  const streakBeforeAward = Object.fromEntries(getActiveOwners().map((owner) => [owner, getOwnerStreak(owner)]));
   let awarded;
   if (syncedRoundResult?.awarded) {
     awarded = syncedRoundResult.awarded;
@@ -32503,7 +32848,11 @@ async function playRound(rawInput, options = {}) {
       revealAnswerIndex,
       winningParticipantIds: winningOwners.map(getRoomParticipantIdForOwner).filter(Boolean),
       damagedParticipantIds: awarded.damagedParticipantIds || getDamagedAnswerParticipantIds(),
-      awarded
+      awarded,
+      cardRatings,
+      gradingReasons: state.currentRoundGradingReasons,
+      scoreBefore: scoreBeforeAward,
+      streakBefore: streakBeforeAward
     });
     void publishRoomScoreState("round-score");
   }
@@ -32526,7 +32875,7 @@ async function playRound(rawInput, options = {}) {
   }
   elements.winnerText.textContent = "";
   renderPowerLog(awarded);
-  renderRoundRecap(awarded, winnerOwner, winningRating);
+  renderRoundRecap(awarded, winnerOwner, winningRating, syncedRoundResult?.resultSummary || state.roomRoundResult?.resultSummary || null);
   resetReactionPanel();
   elements.nextRoundButton.disabled = true;
   state.nextRoundCountdown = 0;

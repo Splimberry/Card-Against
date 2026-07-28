@@ -2684,15 +2684,70 @@ async function testRoomRoundResultRequiresGradingLock() {
 
   const lockedResult = await request("POST", `/api/rooms/${code}/round-result`, {
     hostParticipantId: "host-client",
-    roundResult: makeRoundResult(2, { matchId })
+    roundResult: makeRoundResult(2, {
+      matchId,
+      resultSummary: {
+        judgements: [
+          {
+            index: 0,
+            participantId: "host-client",
+            owner: "player",
+            answer: "Answer",
+            correct: true,
+            tag: "Exact",
+            bonus: 150,
+            reason: "That matched the answer cleanly.",
+            aiReviewed: false,
+            aiSecondOpinion: false
+          }
+        ],
+        scoreDeltas: [
+          {
+            participantId: "host-client",
+            owner: "player",
+            label: "Host",
+            delta: 1200,
+            scoreBefore: 0,
+            scoreAfter: 1200,
+            streakBefore: 0,
+            streakAfter: 1,
+            streakDelta: 1,
+            correct: true,
+            tag: "Exact"
+          }
+        ],
+        leaderboard: [
+          {
+            rank: 1,
+            participantId: "host-client",
+            owner: "player",
+            label: "Host",
+            score: 1200,
+            displayScore: "1,200 points",
+            hiddenScore: false,
+            streak: 1,
+            delta: 1200,
+            correct: true,
+            tag: "Exact"
+          }
+        ],
+        powerEvents: [{ text: "Pocket Bounty paid out.", owner: "player", participantId: "host-client", powerId: "bounty", rarity: "green", name: "Pocket Bounty" }],
+        activeEffects: [{ owner: "player", participantId: "host-client", label: "Host", name: "Pocket Shield", description: "Blocks the next point loss.", rarity: "green", powerId: "shield" }]
+      }
+    })
   });
   assert.equal(lockedResult.response.status, 200, lockedResult.payload.error);
   assert.equal(lockedResult.payload.eventType, "round-result");
+  assert.equal(lockedResult.payload.roundResult.resultSummary.judgements[0].reason, "That matched the answer cleanly.");
+  assert.equal(lockedResult.payload.roundResult.resultSummary.scoreDeltas[0].delta, 1200);
+  assert.equal(lockedResult.payload.roundResult.resultSummary.leaderboard[0].rank, 1);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
   assert.equal(stored.payload.room.game.status, "grading");
   assert.equal(stored.payload.room.game.roundResult.questionId, "test-question-2");
+  assert.equal(stored.payload.room.game.roundResult.resultSummary.powerEvents[0].text, "Pocket Bounty paid out.");
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_result" && event.payload?.roundResult?.resultSummary?.activeEffects?.[0]?.name === "Pocket Shield"), true);
 }
 
 async function testRoomModerationEndpointMutesAndBans() {

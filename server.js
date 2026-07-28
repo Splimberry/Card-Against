@@ -4653,6 +4653,156 @@ function normalizeRoomAnswerState(answers = {}, matchId = "", round = 0) {
   );
 }
 
+function normalizeRoomRoundResultSummaryText(value, maxLength = 240) {
+  return String(value || "")
+    .replace(/\s*\n+\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function normalizeRoomRoundResultSummary(summary) {
+  if (!summary || typeof summary !== "object") {
+    return null;
+  }
+  try {
+    if (JSON.stringify(summary).length > 100000) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+  const judgements = (Array.isArray(summary.judgements) ? summary.judgements : [])
+    .map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const participantId = String(source.participantId || "").slice(0, 120);
+      const owner = String(source.owner || "").slice(0, 80);
+      const index = clampServerNumber(source.index ?? source.cardIndex, 0, 9, -1);
+      if (index < 0 && !participantId && !owner) {
+        return null;
+      }
+      return {
+        index,
+        participantId,
+        owner,
+        answer: normalizeRoomRoundResultSummaryText(source.answer, 500),
+        correct: Boolean(source.correct),
+        tag: normalizeRoomRoundResultSummaryText(source.tag, 48),
+        bonus: Math.round(clampServerNumber(source.bonus, -1000000, 1000000, 0)),
+        reason: normalizeRoomRoundResultSummaryText(source.reason || source.justification, 280),
+        aiReviewed: Boolean(source.aiReviewed),
+        aiSecondOpinion: Boolean(source.aiSecondOpinion)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+  const scoreDeltas = (Array.isArray(summary.scoreDeltas) ? summary.scoreDeltas : [])
+    .map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const participantId = String(source.participantId || "").slice(0, 120);
+      const owner = String(source.owner || "").slice(0, 80);
+      if (!participantId && !owner) {
+        return null;
+      }
+      return {
+        participantId,
+        owner,
+        label: normalizeRoomRoundResultSummaryText(source.label, 32),
+        delta: Math.round(clampServerNumber(source.delta, -1000000000, 1000000000, 0)),
+        scoreBefore: Math.round(clampServerNumber(source.scoreBefore, 0, Number.MAX_SAFE_INTEGER, 0)),
+        scoreAfter: Math.round(clampServerNumber(source.scoreAfter, 0, Number.MAX_SAFE_INTEGER, 0)),
+        streakBefore: Math.round(clampServerNumber(source.streakBefore, 0, Number.MAX_SAFE_INTEGER, 0)),
+        streakAfter: Math.round(clampServerNumber(source.streakAfter, 0, Number.MAX_SAFE_INTEGER, 0)),
+        streakDelta: Math.round(clampServerNumber(source.streakDelta, -1000000, 1000000, 0)),
+        correct: Boolean(source.correct),
+        tag: normalizeRoomRoundResultSummaryText(source.tag, 48)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+  const leaderboard = (Array.isArray(summary.leaderboard) ? summary.leaderboard : [])
+    .map((entry, index) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const participantId = String(source.participantId || "").slice(0, 120);
+      const owner = String(source.owner || "").slice(0, 80);
+      if (!participantId && !owner) {
+        return null;
+      }
+      return {
+        rank: Math.round(clampServerNumber(source.rank, 1, 10, index + 1)),
+        participantId,
+        owner,
+        label: normalizeRoomRoundResultSummaryText(source.label, 32),
+        score: Math.round(clampServerNumber(source.score, 0, Number.MAX_SAFE_INTEGER, 0)),
+        displayScore: normalizeRoomRoundResultSummaryText(source.displayScore, 40),
+        hiddenScore: Boolean(source.hiddenScore),
+        streak: Math.round(clampServerNumber(source.streak, 0, Number.MAX_SAFE_INTEGER, 0)),
+        delta: Math.round(clampServerNumber(source.delta, -1000000000, 1000000000, 0)),
+        correct: Boolean(source.correct),
+        tag: normalizeRoomRoundResultSummaryText(source.tag, 48)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+  const powerEvents = (Array.isArray(summary.powerEvents) ? summary.powerEvents : [])
+    .map((entry) => {
+      if (typeof entry === "string") {
+        const text = normalizeRoomRoundResultSummaryText(entry, 320);
+        return text ? { text, owner: "", participantId: "", powerId: "", rarity: "", name: "", secret: false, chaosInfused: false } : null;
+      }
+      const source = entry && typeof entry === "object" ? entry : {};
+      const text = normalizeRoomRoundResultSummaryText(source.text, 320);
+      if (!text) {
+        return null;
+      }
+      return {
+        owner: String(source.owner || "").slice(0, 80),
+        participantId: String(source.participantId || "").slice(0, 120),
+        powerId: String(source.powerId || "").slice(0, 80),
+        rarity: String(source.rarity || "").slice(0, 24),
+        name: normalizeRoomRoundResultSummaryText(source.name, 80),
+        text,
+        secret: Boolean(source.secret),
+        chaosInfused: Boolean(source.chaosInfused)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 40);
+  const activeEffects = (Array.isArray(summary.activeEffects) ? summary.activeEffects : [])
+    .map((entry) => {
+      const source = entry && typeof entry === "object" ? entry : {};
+      const owner = String(source.owner || "").slice(0, 80);
+      const name = normalizeRoomRoundResultSummaryText(source.name, 80);
+      if (!owner && !name) {
+        return null;
+      }
+      return {
+        owner,
+        participantId: String(source.participantId || "").slice(0, 120),
+        label: normalizeRoomRoundResultSummaryText(source.label, 32),
+        name,
+        description: normalizeRoomRoundResultSummaryText(source.description, 320),
+        rarity: String(source.rarity || "").slice(0, 24),
+        powerId: String(source.powerId || "").slice(0, 80),
+        chaosInfused: Boolean(source.chaosInfused),
+        private: Boolean(source.private)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 40);
+
+  if (!judgements.length && !scoreDeltas.length && !leaderboard.length && !powerEvents.length && !activeEffects.length) {
+    return null;
+  }
+  return {
+    judgements,
+    scoreDeltas,
+    leaderboard,
+    powerEvents,
+    activeEffects
+  };
+}
+
 function normalizeRoomRoundResult(result) {
   if (!result || typeof result !== "object") {
     return null;
@@ -4713,6 +4863,7 @@ function normalizeRoomRoundResult(result) {
     awarded: normalizeRoomRoundAward(result.awarded),
     powerState,
     scoreState,
+    resultSummary: normalizeRoomRoundResultSummary(result.resultSummary),
     source: String(result.source || "host").slice(0, 40),
     nextRoundAt: clampServerNumber(result.nextRoundAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(result.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
