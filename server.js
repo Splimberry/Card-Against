@@ -263,6 +263,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomLobbyMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/lobby$/);
+    if (roomLobbyMatch && req.method === "POST") {
+      await handleRoomReturnToLobby(req, res, roomLobbyMatch[1]);
+      return;
+    }
+
     const roomRoundAdvancingMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/round-advancing$/);
     if (roomRoundAdvancingMatch && req.method === "POST") {
       await handleRoomRoundAdvancing(req, res, roomRoundAdvancingMatch[1]);
@@ -3198,6 +3204,65 @@ async function handleRoomGame(req, res, code) {
     });
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room game update failed." });
+  }
+}
+
+function clearParticipantMatchState(participant = {}) {
+  const role = normalizeParticipantRole(participant);
+  const active = participant.active !== false;
+  return {
+    ...participant,
+    answer: "",
+    submittedRound: 0,
+    submissionMatchId: "",
+    remainingTime: 0,
+    status: active ? getParticipantDefaultStatus(role) : String(participant.status || getParticipantDefaultStatus(role)).slice(0, 32)
+  };
+}
+
+async function handleRoomReturnToLobby(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    if (!requireRoomHostAuth(req, res, room, body, "Only the host can return the room to lobby.")) {
+      return;
+    }
+
+    const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
+    const payloadMatchId = String(body.matchId || body.game?.matchId || "").slice(0, 80);
+    if (currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Lobby return belongs to a previous match." });
+      return;
+    }
+
+    room.status = "lobby";
+    room.game = null;
+    room.participants = (Array.isArray(room.participants) ? room.participants : [])
+      .map(clearParticipantMatchState)
+      .map(normalizeParticipant);
+    room.hostExitPendingAt = 0;
+    finalizeRoom(room);
+    const lobbySnapshot = sanitizeRoomForClient({ ...room, events: [] }, { includePrivateSecrets: true });
+    stampRoomEvent(room, "room_updated", {
+      status: "lobby",
+      previousMatchId: currentMatchId,
+      room: lobbySnapshot,
+      game: null
+    });
+    const storedRoom = await backendStore.upsertRoom(room);
+    sendJson(res, 200, createRoomEventResponse(storedRoom, "room_updated", {
+      previousMatchId: currentMatchId,
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true }),
+      game: null
+    }));
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Return to lobby failed." });
   }
 }
 

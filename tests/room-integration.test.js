@@ -1486,6 +1486,101 @@ async function testStaleRoomGameEndCannotCompleteRematch() {
   assert.equal(stored.payload.room.game.status, "starting");
 }
 
+async function testRoomReturnToLobbyClearsMatchState() {
+  const code = makeCode(8119);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "complete",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Host answer",
+        submittedRound: 3,
+        submissionMatchId: matchId,
+        remainingTime: 12
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Guest answer",
+        submittedRound: 3,
+        submissionMatchId: matchId,
+        remainingTime: 6
+      },
+      {
+        id: "spectator-client",
+        name: "Watcher",
+        host: false,
+        spectator: true,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "spectating",
+        answer: "Spectator answer",
+        submittedRound: 3,
+        submissionMatchId: matchId,
+        remainingTime: 4
+      }
+    ],
+    game: {
+      matchId,
+      status: "ended",
+      round: 3,
+      setup: makeSetup(3),
+      answers: {
+        "host-client": { participantId: "host-client", answer: "Host answer", status: "submitted", matchId, round: 3 },
+        "guest-client": { participantId: "guest-client", answer: "Guest answer", status: "submitted", matchId, round: 3 }
+      },
+      roundResult: makeRoundResult(3, { matchId }),
+      participantTimers: {
+        "host-client": { endsAt: Date.now() + 1000, speedMultiplier: 1, status: "ended" }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const returned = await request("POST", `/api/rooms/${code}/lobby`, {
+    hostParticipantId: "host-client",
+    matchId
+  });
+  assert.equal(returned.response.status, 200, returned.payload.error);
+  assert.equal(returned.payload.eventType, "room-updated");
+  assert.equal(returned.payload.room.status, "lobby");
+  assert.equal(returned.payload.room.game, null);
+
+  const host = returned.payload.room.participants.find((participant) => participant.id === "host-client");
+  const guest = returned.payload.room.participants.find((participant) => participant.id === "guest-client");
+  const spectator = returned.payload.room.participants.find((participant) => participant.id === "spectator-client");
+  assert.equal(host.status, "host");
+  assert.equal(guest.status, "joined");
+  assert.equal(spectator.status, "spectating");
+  [host, guest, spectator].forEach((participant) => {
+    assert.equal(participant.answer, "");
+    assert.equal(participant.submittedRound, 0);
+    assert.equal(participant.submissionMatchId, "");
+    assert.equal(participant.remainingTime, 0);
+  });
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.status, "lobby");
+  assert.equal(stored.payload.room.game, null);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "room_updated" && event.payload?.previousMatchId === matchId), true);
+}
+
 async function testStaleParticipantSubmissionCannotOverwriteRematch() {
   const code = makeCode(8118);
   await upsertRoom(makeRoom(code, {
@@ -3608,6 +3703,7 @@ async function main() {
   await testRoomPowerStateTimeBenderUpdatesSharedTimers();
   await testStaleRoomRoundResultCannotOverwriteRematch();
   await testStaleRoomGameEndCannotCompleteRematch();
+  await testRoomReturnToLobbyClearsMatchState();
   await testStaleParticipantSubmissionCannotOverwriteRematch();
   await testStaleParticipantSubmissionCannotOverwriteCurrentRound();
   await testCurrentRoundSubmissionIsAnswerEvent();

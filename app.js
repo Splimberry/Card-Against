@@ -4440,6 +4440,54 @@ function clearRoundSubmissionState(options = {}) {
   }
 }
 
+function clearRoomMatchScopedStateForLobby(options = {}) {
+  cancelActiveMatchWork();
+  stopTimer();
+  clearRoomAutoResolve();
+  stopNextRoundCountdown();
+  resetTimerDisplay();
+  stopLoadingMessages();
+  setGradingActive(false);
+  state.roomGame = null;
+  setCurrentRoomMatchId("");
+  state.roomRoundResult = null;
+  state.roomRoundResolving = false;
+  state.roomPlayedResetSyncedRound = null;
+  resetRoomPowerSyncClocks();
+  clearRoundSubmissionState({ clearParticipants: options.clearParticipants !== false });
+  state.round = 1;
+  state.localEntryStep = 1;
+  state.questionId = "";
+  state.blackCard = "";
+  state.questionType = "image";
+  state.questionStyle = "standard";
+  state.gradingStrictness = "normal";
+  state.questionDifficulty = "medium";
+  state.triviaTheme = "";
+  state.questionImage = null;
+  state.canonicalAnswer = "";
+  state.acceptedAnswers = [];
+  state.judge = null;
+  state.botCards = [];
+  state.multipleChoiceOptions = [];
+  state.currentRoundCards = [];
+  state.currentRoundCardRatings = [];
+  state.currentRoundCorrectIndexes = [];
+  state.currentRoundGradingReasons = [];
+  state.roundProgress = Array.from({ length: Math.max(1, Number(state.maxRounds) || 1) }, () => "unanswered");
+  if (elements.answerInput) {
+    elements.answerInput.value = "";
+  }
+  if (elements.playerTwoInput) {
+    elements.playerTwoInput.value = "";
+  }
+  renderMultipleChoiceOptions();
+  setHidden(elements.endPanel, true);
+  setHidden(elements.verdictPanel, true);
+  setHidden(elements.loadingPanel, true);
+  setHidden(elements.errorPanel, true);
+}
+
 function lockRoundAnswer(owner, input, fallback = "") {
   const answer = cleanInput(input || fallback || "");
   if (owner && answer) {
@@ -29689,6 +29737,40 @@ function publishRoomGameEnded() {
   });
 }
 
+function publishRoomReturnToLobby() {
+  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return Promise.resolve(null);
+  }
+  const code = state.roomSettings.code;
+  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/lobby`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      hostParticipantId: state.clientId,
+      matchId: getCurrentRoomMatchId()
+    })
+  }, roomPresenceFetchTimeoutMs).then(async (response) => {
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return null;
+    }
+    const data = await response.json().catch(() => ({}));
+    const room = data.room && typeof data.room === "object" ? data.room : null;
+    state.roomDirectoryOnline = true;
+    rememberRoomRevisionPayload({ ...data, code });
+    const applied = room
+      ? applyRoomSnapshot(room, { source: "return-lobby-response" })
+      : false;
+    if (room) {
+      broadcastRealtimeRoomChange("room-updated", room);
+    }
+    return { room, applied };
+  }).catch(() => {
+    state.roomDirectoryOnline = false;
+    return null;
+  });
+}
+
 function publishRoomHeartbeat(status = "host") {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
@@ -30045,9 +30127,7 @@ function applyRealtimeRoomReturnedToLobby(room = {}) {
   if (!shouldShowLobby) {
     return false;
   }
-  state.roomGame = null;
-  state.roomMatchId = "";
-  state.roomRoundResult = null;
+  clearRoomMatchScopedStateForLobby();
   if (state.joiningRoom) {
     state.joiningRoom = {
       ...state.joiningRoom,
@@ -35064,16 +35144,28 @@ function returnToRoomLobbyAfterMatch(options = {}) {
     playSound("click");
   }
   const sync = options.sync !== false;
-  clearRoomAutoResolve();
-  stopNextRoundCountdown();
-  resetTimerDisplay();
-  stopLoadingMessages();
+  if (sync && isCurrentHost() && !state.joiningRoom) {
+    void publishRoomReturnToLobby().then((result) => {
+      if (!result?.room) {
+        addSystemChat("Could not return the room to lobby. Please try again.", { private: true, sync: false });
+        return;
+      }
+      if (!result.applied) {
+        returnToRoomLobbyAfterMatch({
+          sync: false,
+          playSound: false,
+          participants: result.room.participants
+        });
+      }
+    });
+    return;
+  }
+  clearRoomMatchScopedStateForLobby();
   state.roomMatchStartGuardUntil = 0;
   state.matchEnded = true;
   state.currentRoomStatus = "lobby";
   state.roomGame = null;
   state.roomRoundResult = null;
-  clearRoundSubmissionState();
   state.roomParticipants = normalizeRoomParticipantsList(
     Array.isArray(options.participants) ? options.participants : getRoomParticipantsFromPlayers("lobby")
   );
@@ -35084,9 +35176,7 @@ function returnToRoomLobbyAfterMatch(options = {}) {
   setHidden(elements.joinScreen, true);
   setHidden(elements.modeScreen, true);
   elements.gameStage.classList.remove("room-active");
-  if (sync && isCurrentHost() && !state.joiningRoom) {
-    upsertHostedRoom("lobby");
-  } else if (sync) {
+  if (sync) {
     const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom;
     renderRoomPlayers();
     if (room) {
