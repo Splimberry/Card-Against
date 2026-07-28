@@ -1505,6 +1505,112 @@ async function testCurrentRoundSubmissionIsAnswerEvent() {
   assert.equal(answerEvent.payload.round, 2);
 }
 
+async function testRoomAnswerEndpointStoresRoundScopedAnswer() {
+  const code = makeCode(8162);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      answers: {},
+      updatedAt: Date.now()
+    }
+  }));
+
+  const submitted = await request("POST", `/api/rooms/${code}/answer`, {
+    participantId: "host-client",
+    matchId,
+    round: 2,
+    answer: "Fresh endpoint answer",
+    remainingTime: 11
+  });
+  assert.equal(submitted.response.status, 200, submitted.payload.error);
+  assert.equal(submitted.payload.eventType, "answer-submitted");
+  assert.equal(submitted.payload.matchId, matchId);
+  assert.equal(submitted.payload.round, 2);
+  assert.equal(submitted.payload.answer, "Fresh endpoint answer");
+  assert.equal(submitted.payload.remainingTime, 11);
+  assert.equal(submitted.payload.submissionStatus, "submitted");
+
+  const duplicate = await request("POST", `/api/rooms/${code}/answer`, {
+    participantId: "host-client",
+    matchId,
+    round: 2,
+    answer: "Different duplicate answer",
+    remainingTime: 1
+  });
+  assert.equal(duplicate.response.status, 200, duplicate.payload.error);
+  assert.equal(duplicate.payload.duplicate, true);
+  assert.equal(duplicate.payload.answer, "Fresh endpoint answer");
+  assert.equal(duplicate.payload.remainingTime, 11);
+
+  const hostCookieKey = `cai_room_host_${code.replace(/[^A-Z0-9]/g, "_")}`;
+  const previousHostCookie = cookieJar.get(hostCookieKey);
+  cookieJar.delete(hostCookieKey);
+  const stored = await getRoom(code);
+  if (previousHostCookie) {
+    cookieJar.set(hostCookieKey, previousHostCookie);
+  }
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const host = stored.payload.room.participants.find((participant) => participant.id === "host-client");
+  assert.equal(host.answer, "");
+  assert.equal(stored.payload.room.game.answers["host-client"].answer, "");
+  assert.equal(stored.payload.room.game.answers["host-client"].round, 2);
+
+  const events = await request("GET", `/api/rooms/${code}/events?since=0`);
+  assert.equal(events.response.status, 200, events.payload.error);
+  const answerEvent = events.payload.events.find((event) => event.type === "answer_submitted");
+  assert.ok(answerEvent);
+  assert.equal(answerEvent.payload.answer, "Fresh endpoint answer");
+  assert.equal(answerEvent.payload.matchId, matchId);
+  assert.equal(answerEvent.payload.round, 2);
+}
+
+async function testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState() {
+  const code = makeCode(8163);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "playing",
+      round: 3,
+      setup: makeSetup(3),
+      answers: {},
+      updatedAt: Date.now()
+    }
+  }));
+
+  const stale = await request("POST", `/api/rooms/${code}/answer`, {
+    participantId: "host-client",
+    matchId,
+    round: 2,
+    answer: "Old answer",
+    remainingTime: 4
+  });
+  assert.equal(stale.response.status, 409);
+
+  const timedOut = await request("POST", `/api/rooms/${code}/answer`, {
+    participantId: "host-client",
+    matchId,
+    round: 3,
+    answer: "",
+    remainingTime: 0,
+    timedOut: true
+  });
+  assert.equal(timedOut.response.status, 200, timedOut.payload.error);
+  assert.equal(timedOut.payload.submissionStatus, "timed_out");
+  assert.equal(timedOut.payload.autoSubmitted, true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.answers["host-client"].status, "timed_out");
+  assert.equal(stored.payload.room.game.answers["host-client"].answer, "");
+}
+
 async function testRoomRoundAdvancingEndpointStampsEvent() {
   const code = makeCode(8140);
   const matchId = `${code}-match`;
@@ -3046,6 +3152,8 @@ async function main() {
   await testStaleParticipantSubmissionCannotOverwriteRematch();
   await testStaleParticipantSubmissionCannotOverwriteCurrentRound();
   await testCurrentRoundSubmissionIsAnswerEvent();
+  await testRoomAnswerEndpointStoresRoundScopedAnswer();
+  await testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState();
   await testRoomRoundAdvancingEndpointStampsEvent();
   await testRoomRoundSetupEndpointCreatesSharedSetup();
   await testRoomRoundSetupCannotSkipPreparedRound();

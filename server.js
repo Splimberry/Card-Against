@@ -271,6 +271,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    const roomAnswerMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/answer$/);
+    if (roomAnswerMatch && req.method === "POST") {
+      await handleRoomAnswer(req, res, roomAnswerMatch[1]);
+      return;
+    }
+
     const roomPowerStateMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/power-state$/);
     if (roomPowerStateMatch && req.method === "POST") {
       await handleRoomPowerState(req, res, roomPowerStateMatch[1]);
@@ -2122,6 +2128,7 @@ function sanitizeRoomForClient(room, options = {}) {
   return {
     ...room,
     settings: sanitizeRoomSettingsForClient(room.settings, options),
+    game: sanitizeRoomGameForClient(room.game, { ...options, includeSubmittedAnswers }),
     participants: (Array.isArray(room.participants) ? room.participants : [])
       .map((participant) => sanitizeParticipantForClient(participant, { ...options, includeSubmittedAnswers })),
     events: normalizeRoomEvents(room.events).map((event) => sanitizeRoomEventForClient(event, { ...options, includeSubmittedAnswers })),
@@ -2141,6 +2148,25 @@ function shouldExposeRoomAnswers(room, options = {}) {
   const gameStatus = String(room?.game?.status || "").toLowerCase();
   const roomStatus = String(room?.status || "").toLowerCase();
   return gameStatus === "grading" || gameStatus === "ended" || roomStatus === "complete";
+}
+
+function sanitizeRoomGameForClient(game, options = {}) {
+  if (!game || typeof game !== "object") {
+    return game || null;
+  }
+  const sanitized = { ...game };
+  if (sanitized.answers && typeof sanitized.answers === "object" && !options.includeSubmittedAnswers) {
+    sanitized.answers = Object.fromEntries(
+      Object.entries(sanitized.answers).map(([participantId, answerState]) => [
+        participantId,
+        {
+          ...(answerState && typeof answerState === "object" ? answerState : {}),
+          answer: ""
+        }
+      ])
+    );
+  }
+  return sanitized;
 }
 
 function sanitizeParticipantForClient(participant, options = {}) {
@@ -3166,6 +3192,7 @@ async function handleRoomRoundAdvancing(req, res, code) {
       status: "starting",
       round,
       setup: null,
+      answers: {},
       matchSettings,
       roundResult: null,
       powerState: currentMatchId === matchId ? currentGame?.powerState || null : null,
@@ -3269,6 +3296,7 @@ async function handleRoomRoundSetup(req, res, code) {
       status: "playing",
       round,
       setup,
+      answers: {},
       matchSettings,
       roundResult: null,
       powerState: body.powerState || currentGame.powerState || null,
@@ -3291,6 +3319,148 @@ async function handleRoomRoundSetup(req, res, code) {
     }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Round setup generation failed." });
+  }
+}
+
+async function handleRoomAnswer(req, res, code) {
+  try {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const room = await backendStore.getRoom(normalizedCode);
+    if (!room) {
+      sendJson(res, 404, { error: "Room not found." });
+      return;
+    }
+
+    const body = await readRequestJson(req, { maxBytes: roomRequestMaxBytes });
+    const participantId = String(body.participantId || body.participant?.id || "").slice(0, 80);
+    if (!participantId) {
+      sendJson(res, 400, { error: "Missing participant id." });
+      return;
+    }
+    if (!requireRoomParticipantAuth(req, res, room, participantId, body, "Only this participant or the host can submit this answer.")) {
+      return;
+    }
+
+    const participant = room.participants.find((entry) => entry.id === participantId);
+    if (!participant || participant.active === false) {
+      sendJson(res, 404, { error: "Participant is not active in this room." });
+      return;
+    }
+    if (normalizeParticipantRole(participant) === "spectator") {
+      sendJson(res, 403, { error: "Spectators cannot submit gameplay answers." });
+      return;
+    }
+
+    const game = room.game && typeof room.game === "object" ? room.game : null;
+    const currentMatchId = String(game?.matchId || "").slice(0, 80);
+    const currentRound = clampServerNumber(game?.round, 0, 100, 0);
+    const payloadMatchId = String(body.matchId || "").slice(0, 80);
+    const payloadRound = clampServerNumber(body.round, 0, 100, 0);
+    if (room.status !== "in-progress" || !game || game.status === "starting" || game.status === "grading" || game.status === "ended") {
+      sendJson(res, 409, { error: "This round is not accepting answers." });
+      return;
+    }
+    if (!currentMatchId || !payloadMatchId || payloadMatchId !== currentMatchId) {
+      sendJson(res, 409, { error: "Answer belongs to a previous match." });
+      return;
+    }
+    if (!currentRound || !payloadRound || payloadRound !== currentRound) {
+      sendJson(res, 409, { error: "Answer belongs to a previous round." });
+      return;
+    }
+
+    const existingAnswers = normalizeRoomAnswerState(game.answers, currentMatchId, currentRound);
+    const existingAnswer = existingAnswers[participantId];
+    if (existingAnswer && existingAnswer.matchId === currentMatchId && Number(existingAnswer.round) === currentRound) {
+      const duplicateParticipant = {
+        ...participant,
+        status: "submitted",
+        answer: existingAnswer.answer,
+        submittedRound: currentRound,
+        submissionMatchId: currentMatchId,
+        remainingTime: existingAnswer.remainingTime
+      };
+      sendJson(res, 200, createRoomEventResponse(room, "answer_submitted", {
+        duplicate: true,
+        participantId,
+        participantName: participant.name || "A player",
+        role: normalizeParticipantRole(participant),
+        status: "submitted",
+        participant: sanitizeParticipantForClient(duplicateParticipant, { includeSubmittedAnswers: true }),
+        matchId: currentMatchId,
+        round: currentRound,
+        answer: existingAnswer.answer,
+        remainingTime: existingAnswer.remainingTime,
+        submissionStatus: existingAnswer.status,
+        autoSubmitted: existingAnswer.autoSubmitted
+      }));
+      return;
+    }
+
+    const answerStatus = body.timedOut || String(body.status || "").toLowerCase() === "timed_out"
+      ? "timed_out"
+      : "submitted";
+    const answer = String(body.answer || "").trim().slice(0, 500);
+    const remainingTime = clampServerNumber(body.remainingTime, 0, 600, 0);
+    const submittedAt = Date.now();
+    const answerState = {
+      participantId,
+      status: answerStatus,
+      answer,
+      submittedAt,
+      autoSubmitted: Boolean(body.autoSubmitted || answerStatus === "timed_out"),
+      remainingTime,
+      matchId: currentMatchId,
+      round: currentRound
+    };
+
+    room.game = normalizeRoomGame({
+      ...game,
+      answers: {
+        ...existingAnswers,
+        [participantId]: answerState
+      },
+      updatedAt: submittedAt
+    });
+    participant.status = "submitted";
+    participant.answer = answer;
+    participant.submittedRound = currentRound;
+    participant.submissionMatchId = currentMatchId;
+    participant.remainingTime = remainingTime;
+
+    const eventPayload = {
+      participantId,
+      participantName: participant.name || "A player",
+      role: normalizeParticipantRole(participant),
+      host: Boolean(participant.host),
+      spectator: false,
+      status: participant.status,
+      participant,
+      matchId: currentMatchId,
+      round: currentRound,
+      answer,
+      remainingTime,
+      submissionStatus: answerStatus,
+      autoSubmitted: answerState.autoSubmitted
+    };
+    stampRoomEvent(room, "answer_submitted", eventPayload);
+    finalizeRoom(room);
+    const storedRoom = await backendStore.upsertRoom(room);
+    const storedParticipant = storedRoom.participants.find((entry) => entry.id === participantId) || participant;
+    const response = createRoomEventResponse(storedRoom, "answer_submitted", {
+      ...eventPayload,
+      participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true }),
+      answer: String(storedParticipant.answer || answer).slice(0, 500),
+      remainingTime: clampServerNumber(storedParticipant.remainingTime, 0, 600, remainingTime),
+      submissionStatus: answerStatus,
+      autoSubmitted: answerState.autoSubmitted
+    });
+    if (body.includeRoom || body.includeRoomSnapshot) {
+      response.room = sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hasRoomHostAuth(req, storedRoom, body) });
+    }
+    sendJson(res, 200, response);
+  } catch (error) {
+    sendJson(res, 400, { error: error.message || "Room answer submission failed." });
   }
 }
 
@@ -3912,11 +4082,45 @@ function normalizeRoomGame(game) {
     setup,
     matchSettings,
     roundResult,
+    answers: normalizeRoomAnswerState(game.answers, game.matchId, game.round),
     powerState: normalizeRoomPowerState(game.powerState),
     setupStartedAt: clampServerNumber(game.setupStartedAt || game.preparingStartedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     roundStartedAt: clampServerNumber(game.roundStartedAt || game.startedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(game.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
   };
+}
+
+function normalizeRoomAnswerState(answers = {}, matchId = "", round = 0) {
+  const source = answers && typeof answers === "object" ? answers : {};
+  const normalizedMatchId = String(matchId || "").slice(0, 80);
+  const normalizedRound = clampServerNumber(round, 0, 100, 0);
+  return Object.fromEntries(
+    Object.entries(source)
+      .map(([participantId, answerState]) => {
+        const id = String(participantId || answerState?.participantId || "").slice(0, 80);
+        if (!id || !answerState || typeof answerState !== "object") {
+          return null;
+        }
+        const status = String(answerState.status || "submitted").toLowerCase() === "timed_out"
+          ? "timed_out"
+          : "submitted";
+        return [
+          id,
+          {
+            participantId: id,
+            status,
+            answer: String(answerState.answer || "").slice(0, 500),
+            submittedAt: clampServerNumber(answerState.submittedAt || answerState.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()),
+            autoSubmitted: Boolean(answerState.autoSubmitted || status === "timed_out"),
+            remainingTime: clampServerNumber(answerState.remainingTime, 0, 600, 0),
+            matchId: String(answerState.matchId || normalizedMatchId).slice(0, 80),
+            round: clampServerNumber(answerState.round || normalizedRound, 0, 100, normalizedRound)
+          }
+        ];
+      })
+      .filter(Boolean)
+      .slice(-20)
+  );
 }
 
 function normalizeRoomRoundResult(result) {

@@ -10623,64 +10623,50 @@ function resetRoomSubmissions() {
   renderSubmissionStatus();
 }
 
-function publishCurrentRoomSubmission(answer) {
-  if (!isRoomMode() || state.isSpectator) {
-    return Promise.resolve(null);
-  }
-  const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || buildRoomDirectoryPayload("in-progress");
-  return updateRoomPresence(room, {
-    active: true,
-    status: "submitted",
+function publishCurrentRoomSubmission(answer, options = {}) {
+  return publishRoomAnswerSubmissionForOwner(
+    state.currentOwner,
     answer,
-    submittedRound: state.round,
-    submissionMatchId: getCurrentRoomMatchId(),
-    remainingTime: state.answerRemainingTimes[state.currentOwner] || 0
-  });
+    state.answerRemainingTimes[state.currentOwner] || 0,
+    options
+  );
 }
 
-function broadcastRoomAnswerSubmission(answer) {
-  if (!isRoomMode() || state.isSpectator) {
-    return;
-  }
-  broadcastRoomAnswerSubmissionForOwner(state.currentOwner, answer);
-}
-
-function broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime = state.answerRemainingTimes[owner] || 0) {
-  if (!isRoomMode() || state.isSpectator) {
-    return;
+function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = state.answerRemainingTimes[owner] || 0, options = {}) {
+  if (!isRoomMode() || state.isSpectator || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return Promise.resolve(null);
   }
   const participantId = getRoomParticipantIdForOwner(owner);
   if (!participantId) {
-    return;
+    return Promise.resolve(null);
   }
-  const participant = state.roomParticipants.find((entry) => entry.id === participantId)
-    || (owner === state.currentOwner ? getCurrentParticipant({
-      host: isCurrentHost() && !state.joiningRoom,
-      spectator: state.isSpectator,
-      status: "submitted",
-      answer,
-      submittedRound: state.round,
-      submissionMatchId: getCurrentRoomMatchId(),
-      remainingTime
-    }) : null);
-  const submittedParticipant = participant
-    ? {
-        ...participant,
-        status: "submitted",
-        answer: cleanInput(answer || ""),
-        submittedRound: state.round,
-        submissionMatchId: getCurrentRoomMatchId(),
-        remainingTime: Math.max(0, Number(remainingTime) || 0)
-      }
-    : null;
-  broadcastRealtimeRoomChange("answer-submitted", state.roomSettings.code, {
+  const body = {
     participantId,
-    participant: submittedParticipant,
-    owner,
+    hostParticipantId: isCurrentHost() && !state.joiningRoom ? getCurrentRoomHostParticipantId() : undefined,
     round: state.round,
     matchId: getCurrentRoomMatchId(),
     answer: cleanInput(answer || ""),
-    remainingTime: Math.max(0, Number(remainingTime) || 0)
+    remainingTime: Math.max(0, Number(remainingTime) || 0),
+    timedOut: Boolean(options.timedOut),
+    autoSubmitted: Boolean(options.autoSubmitted || options.timedOut),
+    includeRoom: Boolean(options.includeRoomSnapshot)
+  };
+  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/answer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }, roomPresenceFetchTimeoutMs).then(async (response) => {
+    if (!response.ok) {
+      state.roomDirectoryOnline = false;
+      return null;
+    }
+    const data = await response.json().catch(() => ({}));
+    state.roomDirectoryOnline = true;
+    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || buildRoomDirectoryPayload("in-progress");
+    return applyRoomPresenceResponse(data, room, {}, "answer-response");
+  }).catch(() => {
+    state.roomDirectoryOnline = false;
+    return null;
   });
 }
 
@@ -21867,7 +21853,7 @@ function commitRoomBotAnswer(owner, options = {}) {
   }
   if (isRoomMode()) {
     updateRoomParticipantSubmission(getRoomParticipantIdForOwner(owner), answer, state.round, remainingTime);
-    broadcastRoomAnswerSubmissionForOwner(owner, answer, remainingTime);
+    void publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime, { autoSubmitted: true });
   }
   setRoomSubmission(owner, true);
   return true;
@@ -31632,7 +31618,10 @@ function submitRoomAnswer(rawInput, options = {}) {
 
   setRoomSubmission(owner, true);
   rememberLocalRoomSubmission(owner, lockedInput, state.answerRemainingTimes[owner]);
-  void publishCurrentRoomSubmission(lockedInput);
+  void publishCurrentRoomSubmission(lockedInput, {
+    timedOut: Boolean(options.timedOut),
+    autoSubmitted: Boolean(options.timedOut)
+  });
   maybeSubmitRoomBotsAfterRealPlayers();
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
