@@ -439,9 +439,9 @@ const powerDeck = [
   { id: "gamblers_dice", name: "Gambler's Dice", rarity: "purple", short: "2 random", description: "Instantly rolls and plays 2 random usable power-ups from the full deck. They do not need to be in your hand.", type: "gamblers_dice", immediate: true },
   { id: "arsonist", name: "Arsonist", rarity: "purple", short: "round streak", description: "Lasts the entire game. Immediately and at the start of every round, you and a random other player gain 1 streak.", type: "arsonist" },
   { id: "airdrop", name: "Airdrop", rarity: "purple", short: "+500 buff", description: "Pick any player. They gain 500 points and a random buff immediately.", type: "airdrop", targeted: true, immediate: true },
-  { id: "communism", name: "Communism", rarity: "gold", short: "share gains", description: "Pool all positive points gained this round, split them equally, and gain 500 extra.", type: "communism" },
+  { id: "communism", name: "Communism", rarity: "gold", short: "share gains", description: "Pool all positive points gained this round, split them equally, and gain 10% of the pooled total.", type: "communism" },
   { id: "execution", name: "Execution", rarity: "gold", short: "target wipe", description: "Pick an opponent. If you win, they lose 20% of their points, all remaining power-ups, and cannot gain points this round.", type: "execution", targeted: true },
-  { id: "monopoly", name: "Monopoly", rarity: "gold", short: "gold only", description: "Every non-gold power-up has no effect. Take 200 points from everyone who played a power-up.", type: "monopoly" },
+  { id: "monopoly", name: "Monopoly", rarity: "gold", short: "gold only", description: "Every non-gold power-up has no effect. Take 500 points from everyone who played a power-up that round.", type: "monopoly" },
   { id: "hoarder", name: "Hoarder", rarity: "gold", short: "refill rare+", description: "Refresh and refill all power-ups with blue rarity or higher, prevent point loss this round, then use another power.", type: "hoarder", immediate: true },
   { id: "soul_link", name: "Soul Link", rarity: "gold", short: "10% link", description: "Lasts the entire game. Pick a player; at the start of every round, you gain 10% of their score and they gain 10% of yours. No points are deducted.", type: "soul_link", targeted: true },
   { id: "law_mower", name: "Lawn Mower", rarity: "gold", short: "ahead -12%", description: "Lasts the entire game. Every round, players ahead of you lose points equal to 12% of your current total.", type: "law_mower" },
@@ -996,6 +996,8 @@ const savedTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiTimerS
 const savedPerformanceMode = normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey) || savedUserCache?.settings?.performanceMode);
 const savedBotRounds = clampNumber(localStorage.getItem("cardsAgainstAiBotRounds"), 5, 10, 5);
 const savedLocalRounds = clampNumber(localStorage.getItem("cardsAgainstAiLocalRounds"), 5, 10, 5);
+const savedBotTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiBotTimerSeconds"), 10, 60, 30);
+const savedLocalTimerSeconds = clampNumber(localStorage.getItem("cardsAgainstAiLocalTimerSeconds"), 10, 60, 30);
 const BOT_OWNER_IDS = Array.from({ length: 9 }, (_, index) => `bot${index + 1}`);
 const DEFAULT_OWNER_IDS = ["player", "opponent", ...BOT_OWNER_IDS];
 
@@ -2818,6 +2820,7 @@ const state = {
   botSettings: {
     botCount: 2,
     rounds: savedBotRounds,
+    timerSeconds: savedBotTimerSeconds,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -2829,6 +2832,7 @@ const state = {
   },
   localSettings: {
     rounds: savedLocalRounds,
+    timerSeconds: savedLocalTimerSeconds,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -3737,11 +3741,13 @@ const elements = {
   musicVolumeSlider: document.querySelector("#musicVolumeSlider"),
   timerSecondsSlider: document.querySelector("#timerSecondsSlider"),
   roundsSlider: document.querySelector("#roundsSlider"),
+  botTimerSlider: document.querySelector("#botTimerSlider"),
   performanceModeSelect: document.querySelector("#performanceModeSelect"),
   sfxVolumeValue: document.querySelector("#sfxVolumeValue"),
   musicVolumeValue: document.querySelector("#musicVolumeValue"),
   timerSecondsValue: document.querySelector("#timerSecondsValue"),
   roundsValue: document.querySelector("#roundsValue"),
+  botTimerValue: document.querySelector("#botTimerValue"),
   performanceModeValue: document.querySelector("#performanceModeValue"),
   modeLabel: document.querySelector("#modeLabel"),
   leaderboard: document.querySelector("#leaderboard"),
@@ -8664,6 +8670,18 @@ function getAchievementMilestoneFillPercent(unlockedCount = getUnlockedAchieveme
   return startPercent + (endPercent - startPercent) * Math.max(0, Math.min(1, segmentProgress));
 }
 
+function getAchievementMilestoneFillWidth(unlockedCount = getUnlockedAchievementCount()) {
+  const percent = getAchievementMilestoneFillPercent(unlockedCount);
+  if (percent <= 0 || percent >= 100) {
+    return `${percent}%`;
+  }
+
+  const reachedExactMilestone = achievementMilestones.some((milestone) => milestone.target === unlockedCount);
+  return reachedExactMilestone
+    ? `min(100%, calc(${percent}% + 0.95rem))`
+    : `${percent}%`;
+}
+
 function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
   const claimed = loadClaimedAchievementMilestones();
   const unlockedCount = getUnlockedAchievementCount(records);
@@ -8694,7 +8712,7 @@ function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
   track.className = "achievement-milestone-track";
   const fill = document.createElement("span");
   fill.className = "achievement-milestone-fill";
-  fill.style.width = `${getAchievementMilestoneFillPercent(unlockedCount)}%`;
+  fill.style.width = getAchievementMilestoneFillWidth(unlockedCount);
   track.appendChild(fill);
 
   achievementMilestones.forEach((milestone) => {
@@ -9120,10 +9138,19 @@ function getLocalRoundCount() {
   return clampNumber(state.localSettings?.rounds, 5, 10, 5);
 }
 
+function getBotTimerSeconds() {
+  return clampNumber(state.botSettings?.timerSeconds, 10, 60, 30);
+}
+
+function getLocalTimerSeconds() {
+  return clampNumber(state.localSettings?.timerSeconds, 10, 60, 30);
+}
+
 function getDefaultBotSettings() {
   return {
     botCount: 2,
     rounds: 5,
+    timerSeconds: 30,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -9138,6 +9165,7 @@ function getDefaultBotSettings() {
 function getDefaultLocalSettings() {
   return {
     rounds: 5,
+    timerSeconds: 30,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -9229,6 +9257,11 @@ function syncBotAdvancedControls() {
     elements.botRoundsSlider.value = rounds;
     elements.botRoundsValue.textContent = String(rounds);
   }
+  if (elements.botTimerSlider) {
+    const timerSeconds = isLocal ? getLocalTimerSeconds() : getBotTimerSeconds();
+    elements.botTimerSlider.value = timerSeconds;
+    elements.botTimerValue.textContent = `${timerSeconds}s`;
+  }
   elements.botRandomModeToggle.checked = Boolean(settings.randomModifiers);
   elements.botClassicModeToggle.checked = Boolean(settings.classicMode);
   elements.botHarshModeToggle.checked = Boolean(settings.harsh);
@@ -9275,6 +9308,11 @@ function updateBotSettingsFromControls() {
     localStorage.setItem(isLocal ? "cardsAgainstAiLocalRounds" : "cardsAgainstAiBotRounds", String(settings.rounds));
     elements.botRoundsValue.textContent = String(settings.rounds);
   }
+  if (elements.botTimerSlider) {
+    settings.timerSeconds = clampNumber(elements.botTimerSlider.value, 10, 60, 30);
+    localStorage.setItem(isLocal ? "cardsAgainstAiLocalTimerSeconds" : "cardsAgainstAiBotTimerSeconds", String(settings.timerSeconds));
+    elements.botTimerValue.textContent = `${settings.timerSeconds}s`;
+  }
   settings.classicMode = Boolean(elements.botClassicModeToggle.checked);
   if (settings.classicMode) {
     elements.botRandomModeToggle.checked = false;
@@ -9300,9 +9338,11 @@ function resetAdvancedSettings() {
   if (mode === "local") {
     state.localSettings = getDefaultLocalSettings();
     localStorage.setItem("cardsAgainstAiLocalRounds", String(state.localSettings.rounds));
+    localStorage.setItem("cardsAgainstAiLocalTimerSeconds", String(state.localSettings.timerSeconds));
   } else {
     state.botSettings = getDefaultBotSettings();
     localStorage.setItem("cardsAgainstAiBotRounds", String(state.botSettings.rounds));
+    localStorage.setItem("cardsAgainstAiBotTimerSeconds", String(state.botSettings.timerSeconds));
   }
   syncBotAdvancedControls();
   playSound("click");
@@ -21503,6 +21543,27 @@ function isAnswerInputLive() {
     && elements.endPanel.classList.contains("hidden");
 }
 
+function hasFocusedOwnerSubmittedAnswer() {
+  if (isRoomMode()) {
+    return Boolean(state.roomSubmissions[state.currentOwner]);
+  }
+  if (state.mode === "bots") {
+    return Boolean(state.roomSubmissions.player);
+  }
+  return false;
+}
+
+function shouldDisableAnswerInputNow() {
+  return Boolean(
+    state.isSpectator
+    || state.matchEnded
+    || !isAnswerInputLive()
+    || isMultipleChoiceRound()
+    || hasFocusedOwnerSubmittedAnswer()
+    || state.timerRemaining <= 0
+  );
+}
+
 function applyChaosDebuff(owner, source = "Chaos", options = {}) {
   if (owner !== getFocusedOwner() || !isAnswerInputLive()) {
     queueStatFlash("chaos", source, randomChaosText(16), { owners: [owner], durationMs: 3000, complex: true, sourceOwner: options.sourceOwner });
@@ -21512,8 +21573,6 @@ function applyChaosDebuff(owner, source = "Chaos", options = {}) {
   const lockId = `${owner}-${Date.now()}-${Math.random()}`;
   state.chaosInputLockId = lockId;
   const inputs = [elements.answerInput, elements.playerTwoInput].filter((input) => input && !input.classList.contains("hidden"));
-  const previousDisabled = new Map(inputs.map((input) => [input, input.disabled]));
-  const previousSubmitDisabled = elements.submitButton.disabled;
   const setChaosAnswerText = (text) => {
     if (state.chaosInputLockId !== lockId) {
       return;
@@ -21545,11 +21604,14 @@ function applyChaosDebuff(owner, source = "Chaos", options = {}) {
     }
     state.chaosInputLockId = "";
     if (isAnswerInputLive()) {
+      const shouldDisable = shouldDisableAnswerInputNow();
       inputs.forEach((input) => {
-        input.disabled = Boolean(previousDisabled.get(input));
+        input.disabled = shouldDisable;
       });
-      elements.submitButton.disabled = previousSubmitDisabled || state.timerRemaining <= 0;
-      elements.answerInput.focus();
+      elements.submitButton.disabled = shouldDisable;
+      if (!shouldDisable) {
+        focusAnswerControl();
+      }
     }
   }, 3000);
 }
@@ -28060,8 +28122,10 @@ function resetMatch(mode) {
       : clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds"), 1, 10, state.maxRounds || 5);
   state.timerSeconds = mode === "room"
     ? clampNumber(state.roomSettings.timerSeconds, 10, 60, 30)
-    : mode === "bots" || mode === "local"
-      ? 30
+    : mode === "bots"
+      ? getBotTimerSeconds()
+    : mode === "local"
+      ? getLocalTimerSeconds()
       : clampNumber(localStorage.getItem("cardsAgainstAiTimerSeconds"), 10, 60, state.timerSeconds || 30);
   state.timerRemaining = state.timerSeconds;
   state.timerWarned = false;
@@ -33878,13 +33942,14 @@ function applyMonopolyEntries(playedEntries, deltas, owners, events) {
   playedEntries
     .filter((entry) => entry.power.type === "monopoly")
     .forEach((entry) => {
+      const taxAmount = 500;
       owners
         .filter((participant) => participant !== entry.owner && hasPlayedPowerThisRound(participant))
         .forEach((participant) => {
-          deltas[participant] -= 200;
-          deltas[entry.owner] += 200;
+          deltas[participant] -= taxAmount;
+          deltas[entry.owner] += taxAmount;
         });
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} taxed every other power user for 200 points.`));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} taxed every other power user for ${taxAmount.toLocaleString()} points.`));
     });
 }
 
@@ -33933,12 +33998,13 @@ function applyCommunismEntries(playedEntries, deltas, owners, events) {
     .forEach((entry) => {
       const positivePool = owners.reduce((sum, participant) => sum + Math.max(0, deltas[participant]), 0);
       const share = Math.floor(positivePool / owners.length);
+      const ownerBonus = Math.floor(positivePool * 0.1);
       owners.forEach((participant) => {
         deltas[participant] -= Math.max(0, deltas[participant]);
         deltas[participant] += share;
       });
-      deltas[entry.owner] += 500;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} split ${positivePool.toLocaleString()} gained points and gave ${getOwnerLabel(entry.owner)} 500 extra.`));
+      deltas[entry.owner] += ownerBonus;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} split ${positivePool.toLocaleString()} gained points and gave ${getOwnerLabel(entry.owner)} ${ownerBonus.toLocaleString()} extra.`));
     });
 }
 
@@ -35549,6 +35615,7 @@ elements.localAdvancedToggle?.addEventListener("click", () => {
 });
 elements.botCountSlider?.addEventListener("input", updateBotSettingsFromControls);
 elements.botRoundsSlider?.addEventListener("input", updateBotSettingsFromControls);
+elements.botTimerSlider?.addEventListener("input", updateBotSettingsFromControls);
 [
   elements.botRandomModeToggle,
   elements.botClassicModeToggle,

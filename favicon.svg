@@ -1,6 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Trivia Against AI">
-  <rect width="64" height="64" rx="16" fill="#111827"/>
-  <circle cx="32" cy="32" r="23" fill="#f8fafc"/>
-  <path d="M23 21h18a8 8 0 0 1 0 16h-3v6h-8v-6h-7V21zm8 7v3h9a1.5 1.5 0 0 0 0-3h-9z" fill="#111827"/>
-  <path d="M39 42l5 9h-10l5-9z" fill="#ef4444"/>
+  <defs>
+    <linearGradient id="tile" x1="7" y1="5" x2="57" y2="59" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#191326"/>
+      <stop offset="0.48" stop-color="#08111d"/>
+      <stop offset="1" stop-color="#151827"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff4d7d"/>
+      <stop offset="0.55" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#facc15"/>
+    </linearGradient>
+    <linearGradient id="card" x1="19" y1="14" x2="45" y2="49" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#d9e8ff"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.13 0 0 0 0 0.83 0 0 0 0 0.93 0 0 0 0.72 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#tile)"/>
+  <rect x="4.5" y="4.5" width="55" height="55" rx="13" fill="none" stroke="url(#rim)" stroke-width="2.5"/>
+  <path d="M19.5 17.5 40 12.8a5 5 0 0 1 6 3.8l5.4 23.2a5 5 0 0 1-3.8 6l-20.5 4.8a5 5 0 0 1-6-3.8l-5.4-23.2a5 5 0 0 1 3.8-6z" fill="#182034" stroke="#263450" stroke-width="2"/>
+  <path d="M17 14h24a5 5 0 0 1 5 5v26a5 5 0 0 1-5 5H17a5 5 0 0 1-5-5V19a5 5 0 0 1 5-5z" fill="url(#card)" stroke="#ffffff" stroke-width="2.4"/>
+  <path d="M21 23h15.5a7.5 7.5 0 0 1 0 15H32v6h-8v-6h-3V23zm8 6v3h7.2a1.5 1.5 0 0 0 0-3H29z" fill="#0b1020"/>
+  <path d="M40.3 24.2 43 18l2.7 6.2 6.1 2.6-6.1 2.7L43 35.6l-2.7-6.1-6.1-2.7 6.1-2.6z" fill="#22d3ee" filter="url(#glow)"/>
+  <path d="M39.5 40.5h4.8l5 9.5h-4.1l-.75-1.65h-5.2L38.5 50h-4l5-9.5zm1.15 5h2.45l-1.2-2.75-1.25 2.75z" fill="#ff4d7d"/>
+  <path d="M51 40.5h4V50h-4v-9.5z" fill="#ff4d7d"/>
 </svg>
