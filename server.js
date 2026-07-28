@@ -3163,6 +3163,7 @@ async function handleRoomRoundAdvancing(req, res, code) {
       matchSettings,
       roundResult: null,
       powerState: currentMatchId === matchId ? currentGame?.powerState || null : null,
+      setupStartedAt: Date.now(),
       roundStartedAt: 0,
       updatedAt: Date.now()
     });
@@ -3806,6 +3807,7 @@ function normalizeRoomGame(game) {
     matchSettings,
     roundResult,
     powerState: normalizeRoomPowerState(game.powerState),
+    setupStartedAt: clampServerNumber(game.setupStartedAt || game.preparingStartedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     roundStartedAt: clampServerNumber(game.roundStartedAt || game.startedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(game.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())
   };

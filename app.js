@@ -63,6 +63,7 @@ const roomDirectoryFetchTimeoutMs = 4500;
 const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
+const roomPreparingSetupWaitMs = 90000;
 const profileLoadingSlowWarningMs = 20000;
 const profileHydrationVisibleBudgetMs = 1600;
 const profileHydrationRemoteTimeoutMs = 1800;
@@ -4892,6 +4893,21 @@ function isJoinedRoomWaitingForSyncedSetup(round = state.round) {
     || state.currentRoomStatus === "complete"
     || elements.gameStage.classList.contains("hidden")
     || (loadingVisible && (!state.questionId || Number(round) <= Number(state.round || 1)));
+}
+
+function isRoomGamePreparingRound(game = null, round = state.round) {
+  if (!game || typeof game !== "object" || game.setup) {
+    return false;
+  }
+  const status = String(game.status || "").trim().toLowerCase();
+  const gameRound = Number(game.round) || 0;
+  return ["starting", "preparing", "preparing_round"].includes(status)
+    && (!round || !gameRound || gameRound === Number(round));
+}
+
+function getPreparingRoomGameForRound(round = state.round) {
+  const game = state.roomGame || state.joiningRoom?.game || null;
+  return isRoomGamePreparingRound(game, round) ? game : null;
 }
 
 function canAdoptIncomingRoomGame(game = null, room = null, round = state.round) {
@@ -28425,6 +28441,7 @@ function publishRoomRoundSetup(setup) {
     setup: syncedSetup,
     matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
     powerState: getRoomPowerStatePayload(),
+    setupStartedAt: Number(state.roomGame?.setupStartedAt) || Date.now(),
     roundStartedAt: state.roomGame?.matchId === matchId && Number(state.roomGame?.round) === Number(state.round)
       ? Number(state.roomGame.roundStartedAt) || Date.now()
       : Date.now(),
@@ -28597,6 +28614,18 @@ function publishRoomRoundAdvancing(round = state.round) {
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
     rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
+    const serverGame = data.game && typeof data.game === "object"
+      ? data.game
+      : data.room?.game && typeof data.room.game === "object"
+        ? data.room.game
+        : null;
+    if (serverGame && canAdoptIncomingRoomGame(serverGame, data.room || state.joiningRoom || { status: "in-progress" }, serverGame.round || round)) {
+      state.roomGame = serverGame;
+      if (serverGame.matchId) {
+        setCurrentRoomMatchId(serverGame.matchId);
+      }
+      applyRoomGameMatchSettings(serverGame, { ...data, code: data.code || state.roomSettings.code }, { render: false, resetTimer: false });
+    }
     if (!data.duplicate) {
       broadcastRealtimeRoomChange("round-advancing", state.roomSettings.code, data);
     }
@@ -28682,11 +28711,34 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
   const matchToken = state.matchWorkToken;
   const startedAt = Date.now();
   let catchupRequested = false;
+  let snapshotCatchupRequested = false;
   const timeout = Math.max(3000, Number(timeoutMs) || 12000);
-  while (isCurrentMatchWork(matchToken) && Date.now() - startedAt < timeout) {
+  while (isCurrentMatchWork(matchToken)) {
+    const elapsedMs = Date.now() - startedAt;
+    const preparingGame = getPreparingRoomGameForRound(round);
+    const shouldKeepWaiting = elapsedMs < timeout
+      || Boolean(isRoomMode() && !isCurrentHost() && preparingGame && elapsedMs < Math.max(timeout, roomPreparingSetupWaitMs));
+    if (!shouldKeepWaiting) {
+      break;
+    }
     const setup = getSyncedRoomSetupForRound(round);
     if (setup) {
       return setup;
+    }
+    if (isRoomMode() && !isCurrentHost() && elapsedMs >= timeout) {
+      showWaitingForHostRoundSetup(round);
+      elements.loadingText.textContent = preparingGame
+        ? `The host is still dealing round ${round}. Hang tight...`
+        : isRoomRealtimeHealthy()
+          ? `Still waiting for the host to sync round ${round}...`
+          : "Realtime sync is reconnecting. Waiting for the room channel...";
+      if (!snapshotCatchupRequested) {
+        snapshotCatchupRequested = true;
+        await requestRoomRealtimeCatchup("round-setup-preparing-wait", { force: true, snapshot: true });
+        if (!isCurrentMatchWork(matchToken)) {
+          throw createAbortError();
+        }
+      }
     }
     if (!catchupRequested && isRoomRealtimeHealthy()) {
       catchupRequested = true;
@@ -28695,7 +28747,7 @@ async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 1
         throw createAbortError();
       }
     }
-    await sleep(180);
+    await sleep(elapsedMs >= timeout ? 400 : 180);
   }
   if (!isCurrentMatchWork(matchToken)) {
     throw createAbortError();
@@ -28720,7 +28772,7 @@ function shouldStartJoinedRoomMatch(room) {
       && !isCurrentHost()
       && canStartFromWaitingState
       && room.status === "in-progress"
-      && room.game?.setup
+      && (room.game?.setup || isRoomGamePreparingRound(room.game, room.game?.round || 1))
   );
 }
 
@@ -28792,21 +28844,29 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   if (incomingMatchId) {
     setCurrentRoomMatchId(incomingMatchId);
   }
+  const advancingGame = payload.game && typeof payload.game === "object"
+    ? payload.game
+    : payload.room?.game && typeof payload.room.game === "object"
+      ? payload.room.game
+      : null;
   if (canStartFromLobby) {
+    const adoptableAdvancingGame = advancingGame && canAdoptIncomingRoomGame(advancingGame, payload.room || state.joiningRoom, nextRound)
+      ? advancingGame
+      : null;
     if (state.joiningRoom) {
       state.joiningRoom = {
         ...state.joiningRoom,
         status: "in-progress",
-        game: null,
+        game: adoptableAdvancingGame,
         revision: Number(payload.revision) || state.joiningRoom.revision || 0,
         updatedAt: Number(payload.updatedAt) || Date.now()
       };
     }
-    state.roomGame = null;
+    state.roomGame = adoptableAdvancingGame;
     state.roomRoundResult = null;
     clearRoundSubmissionState();
     rememberRoomRevisionPayload(payload);
-    return startJoinedRoomMatchFromRealtime(payload, null);
+    return startJoinedRoomMatchFromRealtime(payload, adoptableAdvancingGame);
   }
   if (nextRound === Number(state.round) && elements.verdictPanel.classList.contains("hidden")) {
     rememberRoomRevisionPayload(payload);
@@ -28828,6 +28888,9 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   state.judge = null;
   state.multipleChoiceOptions = [];
   resetRoundUiForLoading({ resetBlackCardTheme: true });
+  if (!isCurrentHost()) {
+    showWaitingForHostRoundSetup(nextRound);
+  }
   rememberRoomRevisionPayload(payload);
   return true;
 }

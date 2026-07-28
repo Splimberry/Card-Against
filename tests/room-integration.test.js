@@ -1529,6 +1529,7 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(payload.round, 1);
   assert.equal(payload.game.status, "starting");
   assert.equal(payload.game.setup, null);
+  assert.ok(payload.game.setupStartedAt > 0);
   assert.equal(payload.matchSettings.chaos, true);
   assert.equal(payload.matchSettings.autoAdvance, false);
   assert.ok(payload.revision >= 2);
@@ -1539,6 +1540,7 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(stored.payload.room.game.matchId, matchId);
   assert.equal(stored.payload.room.game.round, 1);
   assert.equal(stored.payload.room.game.status, "starting");
+  assert.ok(stored.payload.room.game.setupStartedAt > 0);
   assert.equal(stored.payload.room.settings.chaos, true);
   assert.equal(stored.payload.room.settings.randomModifiers, false);
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
