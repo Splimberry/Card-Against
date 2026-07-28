@@ -13443,7 +13443,11 @@ function applyRealtimeRoomGrading(payload = {}) {
   if (!isRoomMode() || state.matchEnded) {
     return false;
   }
-  if (isRoomSubmissionResolveStale()) {
+  const wasGradingPhaseStarted = isRoomGradingPhaseStarted();
+  if (
+    isRoomSubmissionResolveStale()
+    || (isCurrentHost() && !state.joiningRoom && state.roomRoundResolving && !wasGradingPhaseStarted)
+  ) {
     state.roomRoundResolving = false;
   }
   const code = String(payload.code || "").trim().toUpperCase();
