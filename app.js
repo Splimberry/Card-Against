@@ -12660,11 +12660,14 @@ function maybeResolveRoomSubmissions() {
     state.roomRoundResolving = false;
   }
   const pendingSubmitters = getPendingSubmitters();
-  if (pendingSubmitters.length > 0 || state.roomSubmissionResolveId || state.roomRoundResolving) {
+  if (pendingSubmitters.length > 0 || state.roomSubmissionResolveId) {
     return;
   }
   if (!isRoomGradingPhaseStarted()) {
     requestRoomAllSubmittedGradingLock("submissions-complete-wait");
+    return;
+  }
+  if (state.roomRoundResolving) {
     return;
   }
   const matchToken = state.matchWorkToken;
@@ -13201,6 +13204,9 @@ function maybeWaitForRoomBotAnswerSubmissions(roundSyncKey = getCurrentRoomRound
 function applyRealtimeRoomGrading(payload = {}) {
   if (!isRoomMode() || state.matchEnded) {
     return false;
+  }
+  if (isRoomSubmissionResolveStale()) {
+    state.roomRoundResolving = false;
   }
   const code = String(payload.code || "").trim().toUpperCase();
   if (code && code !== state.roomSettings.code) {
@@ -14370,14 +14376,27 @@ const lobbyRealtimeEventTypes = new Set([
   "room-deleted"
 ]);
 
+const roomAndLobbyRealtimeEventTypes = new Set([
+  "room-settings",
+  "participant-joined",
+  "participant-updated",
+  "participant-left",
+  "participant-disconnected",
+  "participant-reconnected",
+  "participant-moderated",
+  "host-transferred",
+  "room-closed",
+  "room-deleted"
+]);
+
 function shouldSendRealtimeEventToRoom(eventType = "") {
   const type = normalizeRoomEventType(eventType);
-  return Boolean(type && (roomOnlyRealtimeEventTypes.has(type) || !lobbyRealtimeEventTypes.has(type)));
+  return Boolean(type && (roomAndLobbyRealtimeEventTypes.has(type) || roomOnlyRealtimeEventTypes.has(type) || !lobbyRealtimeEventTypes.has(type)));
 }
 
 function shouldSendRealtimeEventToLobby(eventType = "") {
   const type = normalizeRoomEventType(eventType);
-  return Boolean(type && (lobbyRealtimeEventTypes.has(type) || !roomOnlyRealtimeEventTypes.has(type)));
+  return Boolean(type && (roomAndLobbyRealtimeEventTypes.has(type) || lobbyRealtimeEventTypes.has(type) || !roomOnlyRealtimeEventTypes.has(type)));
 }
 
 function createRealtimeLobbySummaryPayload(payload = {}) {
