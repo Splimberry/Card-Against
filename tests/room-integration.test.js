@@ -11,6 +11,57 @@ process.env.SUPABASE_JWT_SECRET = "room-test-supabase-jwt-secret";
 
 const handleRequest = require("../server");
 const cookieJar = new Map();
+const testShopCatalog = new Map([
+  ["pattern:waves", { cost: 200 }],
+  ["pattern:geometric", { cost: 200 }],
+  ["pattern:scales", { cost: 200 }],
+  ["pattern:carbon", { cost: 300 }],
+  ["pattern:circuit", { cost: 200 }],
+  ["pattern:hearts", { cost: 200 }],
+  ["font:techno", { cost: 100 }],
+  ["font:pop", { cost: 100 }],
+  ["font:comic", { cost: 100 }],
+  ["font:cursive", { cost: 100 }],
+  ["font:minimalistic", { cost: 100 }],
+  ["font:neon", { cost: 100 }],
+  ["font:chunky", { cost: 100 }],
+  ["font:poofy", { cost: 100 }],
+  ["font:cutesy", { cost: 100 }],
+  ["font:bubble", { cost: 100 }],
+  ["font:gothic", { cost: 100 }]
+]);
+const testShopRotationIntervalMs = 3 * 60 * 60 * 1000;
+const testShopRotationSize = 3;
+
+function hashTestShopRotationValue(value = "", seed = 0) {
+  let hash = 2166136261 ^ (Number(seed) >>> 0);
+  String(value).split("").forEach((char) => {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  });
+  return hash >>> 0;
+}
+
+function getTestRotatingShopKeys(timeMs = Date.now()) {
+  const slot = Math.floor(Math.max(0, Number(timeMs) || 0) / testShopRotationIntervalMs);
+  return [...testShopCatalog.keys()]
+    .map((key) => ({ key, sort: hashTestShopRotationValue(key, slot) }))
+    .sort((a, b) => a.sort - b.sort || a.key.localeCompare(b.key))
+    .slice(0, testShopRotationSize)
+    .map((entry) => entry.key);
+}
+
+function getTestRotatingShopItem(preferredType = "") {
+  const keys = getTestRotatingShopKeys();
+  const key = keys.find((entry) => !preferredType || entry.startsWith(`${preferredType}:`)) || keys[0];
+  const [type, id] = key.split(":");
+  return {
+    key,
+    type,
+    id,
+    cost: testShopCatalog.get(key).cost
+  };
+}
 
 function makeCode(seed) {
   return `CAI-${String(seed).padStart(4, "0")}`;
@@ -2847,11 +2898,15 @@ async function testUserInventoryCoinReconcilePersistsExitBalance() {
 
 async function testUserInventoryPurchaseAndUnlockRowsPersist() {
   const userId = "inventory-user-purchase";
+  const shopItem = getTestRotatingShopItem();
+  const cardCustomization = shopItem.type === "font"
+    ? { fontId: shopItem.id, titleColourId: "rarity" }
+    : { patternId: shopItem.id, titleColourId: "rarity" };
   const { response, payload } = await request("POST", "/api/user/inventory/ops", {
     userId,
     ops: [
       { id: "purchase-seed-coins", type: "coin", delta: 300, reason: "seed" },
-      { id: "purchase-techno-font", type: "purchase-cosmetic", key: "font:techno", cost: 100 },
+      { id: "purchase-rotating-cosmetic", type: "purchase-cosmetic", key: shopItem.key, cost: 1, purchaseAt: Date.now() },
       { id: "unlock-first-blood", type: "achievement", achievementId: "first-blood", record: { source: "test" } },
       { id: "progress-room-regular", type: "achievement-progress", key: "publicMatchesFinished", value: 10, mode: "set" },
       { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 100 },
@@ -2860,47 +2915,50 @@ async function testUserInventoryPurchaseAndUnlockRowsPersist() {
         type: "profile",
         profile: {
           equippedAchievementId: "first-blood",
-          cardCustomization: { fontId: "techno", titleColourId: "rarity" }
+          cardCustomization
         }
       }
     ]
   });
   assert.equal(response.status, 200, payload.error);
-  assert.equal(payload.inventory.coins, 300);
-  assert.deepEqual(payload.inventory.cosmetics, ["font:techno"]);
+  assert.equal(payload.inventory.coins, 400 - shopItem.cost);
+  assert.deepEqual(payload.inventory.cosmetics, [shopItem.key]);
   assert.ok(payload.inventory.achievements["first-blood"]);
   assert.equal(payload.inventory.achievementProgress.publicMatchesFinished, 10);
   assert.deepEqual(payload.inventory.claimedMilestones, ["achievements-5"]);
   assert.equal(payload.inventory.profile.equippedAchievementId, "first-blood");
-  assert.equal(payload.inventory.profile.cardCustomization.fontId, "techno");
+  Object.entries(cardCustomization).forEach(([key, value]) => {
+    assert.equal(payload.inventory.profile.cardCustomization[key], value);
+  });
 
   const duplicate = await request("POST", "/api/user/inventory/ops", {
     userId,
     ops: [
-      { id: "purchase-techno-font", type: "purchase-cosmetic", key: "font:techno", cost: 100 },
+      { id: "purchase-rotating-cosmetic", type: "purchase-cosmetic", key: shopItem.key, cost: 1, purchaseAt: Date.now() },
       { id: "milestone-five", type: "milestone", milestoneId: "achievements-5", coinDelta: 50 }
     ]
   });
   assert.equal(duplicate.response.status, 200, duplicate.payload.error);
-  assert.equal(duplicate.payload.inventory.coins, 300);
-  assert.deepEqual(duplicate.payload.inventory.cosmetics, ["font:techno"]);
+  assert.equal(duplicate.payload.inventory.coins, 400 - shopItem.cost);
+  assert.deepEqual(duplicate.payload.inventory.cosmetics, [shopItem.key]);
 }
 
 async function testUserInventoryEconomyValuesUseServerCatalog() {
   const userId = "inventory-user-economy-catalog";
+  const shopItem = getTestRotatingShopItem();
   const { response, payload } = await request("POST", "/api/user/inventory/ops", {
     userId,
     ops: [
       { id: "catalog-seed-coins", type: "coin", delta: 300, reason: "seed" },
-      { id: "catalog-cheap-techno", type: "purchase-cosmetic", key: "font:techno", cost: 1 },
+      { id: "catalog-cheap-rotating", type: "purchase-cosmetic", key: shopItem.key, cost: 1, purchaseAt: Date.now() },
       { id: "catalog-free-unknown", type: "purchase-cosmetic", key: "font:not-real", cost: 0 },
       { id: "catalog-inflated-milestone", type: "milestone", milestoneId: "achievements-10", coinDelta: 999999 },
       { id: "catalog-unknown-milestone", type: "milestone", milestoneId: "achievements-999", coinDelta: 1000 }
     ]
   });
   assert.equal(response.status, 200, payload.error);
-  assert.equal(payload.inventory.coins, 400);
-  assert.deepEqual(payload.inventory.cosmetics, ["font:techno"]);
+  assert.equal(payload.inventory.coins, 500 - shopItem.cost);
+  assert.deepEqual(payload.inventory.cosmetics, [shopItem.key]);
   assert.deepEqual(payload.inventory.claimedMilestones, ["achievements-10"]);
   assert.equal(payload.skipped.some((entry) => entry.id === "catalog-free-unknown" && entry.reason === "invalid-shop-item"), true);
   assert.equal(payload.skipped.some((entry) => entry.id === "catalog-unknown-milestone" && entry.reason === "invalid-milestone"), true);
@@ -2908,31 +2966,35 @@ async function testUserInventoryEconomyValuesUseServerCatalog() {
 
 async function testUserInventoryPurchaseEndpointUsesServerCatalog() {
   const userId = "inventory-user-purchase-endpoint";
+  const shopItem = getTestRotatingShopItem();
+  const seedCoins = Math.max(500, shopItem.cost + 50);
   const seeded = await request("POST", "/api/user/inventory/ops", {
     userId,
-    ops: [{ id: "purchase-endpoint-seed", type: "coin", delta: 150, reason: "seed" }]
+    ops: [{ id: "purchase-endpoint-seed", type: "coin", delta: seedCoins, reason: "seed" }]
   });
   assert.equal(seeded.response.status, 200, seeded.payload.error);
 
   const purchased = await request("POST", "/api/user/inventory/purchase", {
     userId,
-    type: "font",
-    id: "techno",
-    cost: 1
+    type: shopItem.type,
+    id: shopItem.id,
+    cost: 1,
+    purchaseAt: Date.now()
   });
   assert.equal(purchased.response.status, 200, purchased.payload.error);
-  assert.equal(purchased.payload.purchase.key, "font:techno");
-  assert.equal(purchased.payload.purchase.cost, 100);
-  assert.equal(purchased.payload.inventory.coins, 50);
-  assert.deepEqual(purchased.payload.inventory.cosmetics, ["font:techno"]);
+  assert.equal(purchased.payload.purchase.key, shopItem.key);
+  assert.equal(purchased.payload.purchase.cost, shopItem.cost);
+  assert.equal(purchased.payload.inventory.coins, seedCoins - shopItem.cost);
+  assert.deepEqual(purchased.payload.inventory.cosmetics, [shopItem.key]);
 
   const duplicate = await request("POST", "/api/user/inventory/purchase", {
     userId,
-    type: "font",
-    id: "techno"
+    type: shopItem.type,
+    id: shopItem.id,
+    purchaseAt: Date.now()
   });
   assert.equal(duplicate.response.status, 200, duplicate.payload.error);
-  assert.equal(duplicate.payload.inventory.coins, 50);
+  assert.equal(duplicate.payload.inventory.coins, seedCoins - shopItem.cost);
 
   const invalid = await request("POST", "/api/user/inventory/purchase", {
     userId,
@@ -2941,10 +3003,22 @@ async function testUserInventoryPurchaseEndpointUsesServerCatalog() {
   });
   assert.equal(invalid.response.status, 400);
 
+  const hiddenKey = [...testShopCatalog.keys()].find((key) => !getTestRotatingShopKeys().includes(key));
+  const [hiddenType, hiddenId] = hiddenKey.split(":");
+  const hidden = await request("POST", "/api/user/inventory/purchase", {
+    userId,
+    type: hiddenType,
+    id: hiddenId,
+    purchaseAt: Date.now()
+  });
+  assert.equal(hidden.response.status, 409);
+  assert.equal(hidden.payload.purchase.reason, "shop-rotation-locked");
+
   const insufficient = await request("POST", "/api/user/inventory/purchase", {
     userId: "inventory-user-purchase-endpoint-empty",
-    type: "pattern",
-    id: "carbon"
+    type: shopItem.type,
+    id: shopItem.id,
+    purchaseAt: Date.now()
   });
   assert.equal(insufficient.response.status, 409);
   assert.equal(insufficient.payload.purchase.reason, "insufficient-coins");
@@ -3029,14 +3103,16 @@ async function testInventoryEnforceModeTightensLegacyEconomyOps() {
     assert.equal(legacy.payload.skipped.some((entry) => entry.id === "enforce-legacy-purchase" && entry.reason === "use-purchase-endpoint"), true);
     assert.equal(legacy.payload.skipped.some((entry) => entry.id === "enforce-legacy-milestone" && entry.reason === "use-milestone-endpoint"), true);
 
+    const shopItem = getTestRotatingShopItem();
     const purchase = await request("POST", "/api/user/inventory/purchase", {
       userId,
-      type: "font",
-      id: "techno"
+      type: shopItem.type,
+      id: shopItem.id,
+      purchaseAt: Date.now()
     }, authHeaders(userId));
     assert.equal(purchase.response.status, 200, purchase.payload.error);
-    assert.equal(purchase.payload.inventory.coins, 200);
-    assert.deepEqual(purchase.payload.inventory.cosmetics, ["font:techno"]);
+    assert.equal(purchase.payload.inventory.coins, 300 - shopItem.cost);
+    assert.deepEqual(purchase.payload.inventory.cosmetics, [shopItem.key]);
   } finally {
     if (previousMode === undefined) {
       delete process.env.INVENTORY_AUTH_MODE;

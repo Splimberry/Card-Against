@@ -38,6 +38,9 @@ const chatCooldownBuckets = new Map();
 const aiRoundCache = new Map();
 const aiRoundCacheTtlMs = 2 * 60 * 1000;
 const aiRoundCacheMaxEntries = 250;
+const profileShopRotationIntervalMs = 3 * 60 * 60 * 1000;
+const profileShopRotationSize = 3;
+const profileShopRotationPurchaseGraceMs = 12 * 60 * 60 * 1000;
 const inventoryShopCatalog = new Map([
   ["pattern:waves", { cost: 200 }],
   ["pattern:geometric", { cost: 200 }],
@@ -57,6 +60,7 @@ const inventoryShopCatalog = new Map([
   ["font:bubble", { cost: 100 }],
   ["font:gothic", { cost: 100 }]
 ]);
+const inventoryShopCatalogKeys = [...inventoryShopCatalog.keys()];
 const inventoryMilestoneRewards = new Map([
   ["achievements-5", 100],
   ["achievements-10", 200],
@@ -1029,13 +1033,27 @@ async function handleUserInventoryPurchase(req, res) {
       sendJson(res, 400, { error: "Invalid shop item." });
       return;
     }
+    const purchaseAt = Math.max(0, Number(body.purchaseAt) || Date.now());
+    if (!isInventoryShopPurchaseAvailable(key, purchaseAt)) {
+      sendJson(res, 409, {
+        error: "This item is not in the current rotating shop.",
+        purchase: {
+          key,
+          cost: catalogItem.cost,
+          purchased: false,
+          reason: "shop-rotation-locked"
+        }
+      });
+      return;
+    }
 
     const inventory = await getOrCreateUserInventory(authContext.userId);
     const opId = normalizeInventoryOpId(body.opId || createServerInventoryOpId("purchase-cosmetic", key));
     const result = applyUserInventoryOp(inventory, {
       id: opId,
       type: "purchase-cosmetic",
-      key
+      key,
+      purchaseAt
     });
     const shouldStore = result.applied;
     const storedInventory = shouldStore
@@ -1128,6 +1146,46 @@ function normalizeInventoryPurchaseKey(body = {}) {
   const type = normalizeInventoryKey(body.type);
   const id = normalizeInventoryKey(body.id);
   return type && id ? `${type}:${id}` : "";
+}
+
+function getProfileShopRotationSlot(timeMs = Date.now()) {
+  return Math.floor(Math.max(0, Number(timeMs) || 0) / profileShopRotationIntervalMs);
+}
+
+function hashProfileShopRotationValue(value = "", seed = 0) {
+  let hash = 2166136261 ^ (Number(seed) >>> 0);
+  String(value).split("").forEach((char) => {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  });
+  return hash >>> 0;
+}
+
+function getProfileShopRotationKeys(timeMs = Date.now()) {
+  const slot = getProfileShopRotationSlot(timeMs);
+  return inventoryShopCatalogKeys
+    .map((key) => ({
+      key,
+      sort: hashProfileShopRotationValue(key, slot)
+    }))
+    .sort((a, b) => a.sort - b.sort || a.key.localeCompare(b.key))
+    .slice(0, profileShopRotationSize)
+    .map((entry) => entry.key);
+}
+
+function isInventoryShopKeyInRotation(key, timeMs = Date.now()) {
+  return getProfileShopRotationKeys(timeMs).includes(key);
+}
+
+function isInventoryShopPurchaseAvailable(key, purchaseAt = Date.now(), now = Date.now()) {
+  if (!key || isInventoryShopKeyInRotation(key, now)) {
+    return Boolean(key);
+  }
+  const stampedAt = Math.max(0, Number(purchaseAt) || 0);
+  if (!stampedAt || stampedAt > now + 5 * 60 * 1000 || now - stampedAt > profileShopRotationPurchaseGraceMs) {
+    return false;
+  }
+  return isInventoryShopKeyInRotation(key, stampedAt);
 }
 
 function createServerInventoryOpId(type, key) {
@@ -1422,6 +1480,9 @@ function applyUserInventoryOp(inventory, rawOp) {
     }
     if (!catalogItem) {
       return { applied: false, id, reason: "invalid-shop-item" };
+    }
+    if (!isInventoryShopPurchaseAvailable(key, op.purchaseAt || op.createdAt || now, now)) {
+      return { applied: false, id, reason: "shop-rotation-locked" };
     }
     const cost = catalogItem.cost;
     if (inventory.cosmetics.includes(key)) {

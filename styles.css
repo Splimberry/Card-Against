@@ -3331,6 +3331,217 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   gap: 0.85rem;
 }
 
+.dev-victory-controls {
+  grid-template-columns: minmax(14rem, 1fr) auto auto;
+}
+
+.dev-victory-stage {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 77, 125, 0.13), transparent 30rem),
+    radial-gradient(circle at 82% 20%, rgba(34, 211, 238, 0.12), transparent 28rem),
+    rgba(8, 10, 16, 0.72);
+}
+
+.dev-victory-stage::before,
+.dev-victory-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 3;
+}
+
+.dev-victory-result-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.dev-victory-result-card::before {
+  content: "";
+  position: absolute;
+  inset: -20% auto -20% -42%;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.dev-victory-result-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dev-victory-result-card h2,
+.dev-victory-result-card p {
+  margin: 0;
+}
+
+.dev-victory-leaderboard {
+  margin-bottom: 0;
+}
+
+.dev-victory-row {
+  position: relative;
+  transform-origin: center;
+}
+
+.dev-victory-row[data-dev-winner="true"] {
+  z-index: 4;
+}
+
+.dev-victory-stage.victory-playing[data-victory-animation="spotlight"] .dev-victory-result-card::before {
+  animation: devVictorySpotlightSweep 1500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dev-victory-stage.victory-playing[data-victory-animation="spotlight"] .dev-victory-row[data-dev-winner="true"] {
+  animation: devVictoryWinnerGlow 1500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dev-victory-stage.victory-playing[data-victory-animation="lift"] .dev-victory-row[data-dev-winner="true"] {
+  animation: devVictoryChampionLift 1400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dev-victory-stage.victory-playing[data-victory-animation="coin-burst"]::before {
+  background:
+    radial-gradient(circle, rgba(255, 213, 93, 0.95) 0 0.18rem, transparent 0.2rem) 42% 42% / 4.5rem 4.5rem,
+    radial-gradient(circle, rgba(255, 244, 194, 0.95) 0 0.13rem, transparent 0.15rem) 56% 38% / 5.4rem 5.4rem,
+    radial-gradient(circle, rgba(255, 174, 66, 0.9) 0 0.16rem, transparent 0.18rem) 48% 55% / 3.8rem 3.8rem;
+  animation: devVictoryCoinBurst 1200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dev-victory-stage.victory-playing[data-victory-animation="coin-burst"] .dev-victory-row[data-dev-winner="true"] {
+  animation: devVictoryCoinWinnerPop 1200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dev-victory-stage.victory-playing[data-victory-animation="neon-chase"] .dev-victory-row[data-dev-winner="true"] {
+  animation: devVictoryNeonChase 1700ms linear both;
+}
+
+@keyframes devVictorySpotlightSweep {
+  0% {
+    opacity: 0;
+    transform: translateX(0) skewX(-18deg);
+  }
+
+  18%,
+  72% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(460%) skewX(-18deg);
+  }
+}
+
+@keyframes devVictoryWinnerGlow {
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 0 0 rgba(64, 222, 164, 0);
+  }
+
+  45% {
+    filter: brightness(1.24);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      0 0 2rem rgba(64, 222, 164, 0.34);
+  }
+}
+
+@keyframes devVictoryChampionLift {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+
+  42% {
+    transform: translateY(-0.55rem) scale(1.018);
+    filter: brightness(1.22);
+    box-shadow:
+      0 1.2rem 2.6rem rgba(0, 0, 0, 0.32),
+      0 0 1.8rem rgba(255, 77, 125, 0.24);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes devVictoryCoinBurst {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.78);
+    filter: blur(0.15rem);
+  }
+
+  24% {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-2.1rem) scale(1.2);
+  }
+}
+
+@keyframes devVictoryCoinWinnerPop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  38% {
+    transform: scale(1.018);
+    filter: brightness(1.18) saturate(1.1);
+  }
+}
+
+@keyframes devVictoryNeonChase {
+  0% {
+    box-shadow: 0 0 0 rgba(34, 211, 238, 0);
+    filter: brightness(1);
+  }
+
+  20% {
+    box-shadow:
+      0 0 0 1px rgba(34, 211, 238, 0.38),
+      0 0 1.4rem rgba(34, 211, 238, 0.28);
+  }
+
+  45% {
+    box-shadow:
+      0 0 0 1px rgba(255, 77, 125, 0.38),
+      0 0 1.5rem rgba(255, 77, 125, 0.3);
+    filter: brightness(1.2);
+  }
+
+  72% {
+    box-shadow:
+      0 0 0 1px rgba(255, 213, 93, 0.42),
+      0 0 1.5rem rgba(255, 213, 93, 0.26);
+  }
+
+  100% {
+    box-shadow: 0 0 0 rgba(34, 211, 238, 0);
+    filter: brightness(1);
+  }
+}
+
 .dev-tool-controls {
   display: grid;
   grid-template-columns: minmax(16rem, 1fr) minmax(12rem, 0.22fr) minmax(10rem, 0.18fr);
@@ -7758,7 +7969,7 @@ input:focus {
 }
 
 .room-results-list .trivia-result-row {
-  grid-template-columns: 1.55rem 1.7rem minmax(11rem, 2.1fr) minmax(4.6rem, auto) minmax(3.2rem, auto) minmax(4rem, auto);
+  grid-template-columns: 1.55rem 1.7rem minmax(12.5rem, 2.2fr) minmax(4.6rem, auto) minmax(3.2rem, auto) minmax(4rem, auto);
   gap: 0.32rem;
   min-height: 3rem;
   padding: 0.34rem 0.42rem;
@@ -7788,10 +7999,11 @@ input:focus {
 
 .result-name-power {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 0.34rem;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .result-name-power > strong {
@@ -7800,10 +8012,11 @@ input:focus {
 }
 
 .result-name-power > .result-power-list {
-  flex: 1 1 auto;
-  flex-wrap: nowrap;
-  min-width: 2.9rem;
-  overflow: hidden;
+  flex: 1 1 7rem;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: min(13rem, 100%);
+  overflow: visible;
 }
 
 .trivia-results-list .trivia-result-row .name-with-title {
@@ -7892,10 +8105,11 @@ input:focus {
 
 .room-results-list .result-power-list {
   gap: 0.18rem;
+  max-width: min(13rem, 100%);
 }
 
 .room-results-list .result-power-pill {
-  max-width: 5.9rem;
+  max-width: min(13rem, 100%);
   padding: 0.14rem 0.3rem;
 }
 
@@ -10690,6 +10904,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .profile-shop-balance,
+.profile-shop-rotation,
 .profile-shop-status {
   display: flex;
   align-items: center;
@@ -10708,11 +10923,24 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .profile-shop-balance small,
+.profile-shop-rotation span,
+.profile-shop-rotation strong,
 .profile-shop-status {
   color: rgba(255, 244, 194, 0.74);
   font-size: 0.78rem;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.profile-shop-rotation {
+  justify-content: space-between;
+  border-color: rgba(34, 211, 238, 0.22);
+  background: rgba(34, 211, 238, 0.075);
+  color: var(--accent-2);
+}
+
+.profile-shop-rotation strong {
+  color: var(--accent-2);
 }
 
 .profile-shop-status {

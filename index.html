@@ -547,7 +547,7 @@
           <div class="settings-header">
             <div>
               <p class="eyebrow">Settings</p>
-              <h2 id="settingsTitle">Audio & Match</h2>
+              <h2 id="settingsTitle">Audio & Performance</h2>
             </div>
             <button type="button" class="icon-button" id="closeSettingsButton">Close</button>
           </div>
@@ -562,18 +562,6 @@
             <span>Music Volume</span>
             <input id="musicVolumeSlider" type="range" min="0" max="100" step="1">
             <strong id="musicVolumeValue">50</strong>
-          </label>
-
-          <label class="slider-row" for="timerSecondsSlider">
-            <span>Answer Timer</span>
-            <input id="timerSecondsSlider" type="range" min="10" max="60" step="5">
-            <strong id="timerSecondsValue">30s</strong>
-          </label>
-
-          <label class="slider-row" for="roundsSlider">
-            <span>Rounds</span>
-            <input id="roundsSlider" type="range" min="1" max="10" step="1">
-            <strong id="roundsValue">5</strong>
           </label>
 
           <label class="slider-row settings-select-row" for="performanceModeSelect">
@@ -781,8 +769,12 @@
             <strong id="profileShopBalance">0</strong>
             <small>Coins available</small>
           </div>
+          <div class="profile-shop-rotation" aria-live="polite">
+            <span>Rotating stock</span>
+            <strong id="profileShopRotationTimer">Refreshes soon</strong>
+          </div>
           <div class="profile-shop-library" id="profileShopLibrary"></div>
-          <p class="profile-shop-status" id="profileShopStatus">Buy cosmetics here, then equip them in Customize Card.</p>
+          <p class="profile-shop-status" id="profileShopStatus">Three cosmetics are available at a time. Purchases stay owned forever.</p>
         </div>
       </section>
 

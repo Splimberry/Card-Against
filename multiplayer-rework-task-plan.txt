@@ -153,16 +153,6 @@ Expected fixes:
 - Old answer submissions do not affect new rounds.
 - Old power states do not overwrite newer refill or chaos refresh state.
 
-Progress:
-
-- Added revision-aware client room snapshot/event application.
-- Server-stamped answer submissions, round results, round skips, power-state
-  writes, game end, and round-advancing transitions.
-- Removed client-only fallback broadcasts for round results, round skips,
-  power state, round advancing, and game end.
-- Added stale match/round guards for participant submissions, round results,
-  round skips, power-state writes, round setup writes, and round advancing.
-
 
 PHASE 3: NORMALIZE PARTICIPANTS
 -------------------------------
@@ -222,21 +212,6 @@ Expected fixes:
 - Kicked players unable to rejoin.
 - Kicked bots remaining as ghost state.
 - Add bot / remove bot sync issues.
-
-Progress:
-
-- Added a normalized participant role field while preserving the existing
-  host, player, bot, and spectator booleans for compatibility.
-- Centralized active/gameplay/spectator participant checks on server and
-  client helpers.
-- Server now blocks spectator gameplay answer submissions and prevents active
-  match spectator rows from being converted into player rows by partial
-  presence updates.
-- Bans now include profile id as well as participant id/name, while kicks still
-  allow the same profile to rejoin.
-- Added regression tests for missing active defaults, spectator submissions,
-  kicked rejoin, profile bans, bot room-capacity enforcement, and existing bot
-  kick replacement behavior.
 
 
 PHASE 4: REWORK JOIN, LEAVE, KICK, BAN, ADD BOT, REMOVE BOT

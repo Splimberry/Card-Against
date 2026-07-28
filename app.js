@@ -32,6 +32,8 @@ const profileCustomizationDebugStorageKey = "cardsAgainstAiDebugProfileCustomiza
 const profileSpecialBadgeDebugStorageKey = "cardsAgainstAiDebugSpecialBadges";
 const creatorApprovedCountStorageKey = "cardsAgainstAiCreatorApprovedCount";
 const profileShopPurchasesStorageKey = "cardsAgainstAiProfileShopPurchases";
+const profileShopRotationIntervalMs = 3 * 60 * 60 * 1000;
+const profileShopRotationSize = 3;
 const questionUsageStorageKey = "cardsAgainstAiQuestionUsageStats";
 const currencyStorageKey = "cardsAgainstAiCurrency";
 const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
@@ -502,7 +504,7 @@ const chaosInfusedPowerOverrides = {
   ability_merchant: {
     name: "Black Market",
     short: "legendary shop",
-    description: "Open a shop and buy a random Common, Rare, Epic, or Legendary power-up. Legendary uses the same price as the Black Market table event."
+    description: "Open a shop and buy a random Common, Rare, Epic, or Legendary power-up, then use another power this round. Legendary uses the same price as the Black Market table event."
   },
   bribe: {
     name: "Share With Me",
@@ -1684,7 +1686,7 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
     type,
     id,
     opId: normalizeInventoryOpId(opId || createUserInventoryOpId("purchase-cosmetic", `${type}:${id}`)),
-    createdAt: Date.now()
+    createdAt: Math.max(0, Number(options.createdAt) || Date.now())
   };
   if (options.remember !== false) {
     rememberPendingInventoryMutation(mutation);
@@ -1703,7 +1705,7 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
         "Content-Type": "application/json",
         ...(await getInventoryAuthHeaders(options))
       },
-      body: JSON.stringify({ userId, type, id, opId: mutation.opId })
+      body: JSON.stringify({ userId, type, id, opId: mutation.opId, purchaseAt: mutation.createdAt })
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -1921,6 +1923,7 @@ async function flushPendingUserInventoryMutations(options = {}) {
       if (mutation.kind === "purchase") {
         await postUserInventoryPurchase(mutation.userId, mutation.type, mutation.id, mutation.opId, {
           ...options,
+          createdAt: mutation.createdAt,
           remember: false
         });
       } else if (mutation.kind === "milestone") {
@@ -2877,6 +2880,8 @@ const state = {
   achievementMilestoneScrollLeft: 0,
   justClaimedAchievementMilestoneId: "",
   justPurchasedProfileShopKey: "",
+  profileShopRefreshTimerId: null,
+  profileShopRenderedRotationSlot: -1,
   joiningRoom: null,
   roomSessionId: 0,
   roomExitLeaveSent: false,
@@ -3575,6 +3580,12 @@ const elements = {
   devOverlayGrid: null,
   devOverlayStatus: null,
   devOverlayClearButton: null,
+  devVictoryAnimationSelect: null,
+  devVictoryPlayButton: null,
+  devVictoryRefreshButton: null,
+  devVictoryStage: null,
+  devVictoryLeaderboard: null,
+  devVictoryStatus: null,
   devPowerOwnerSelect: null,
   devPowerSearchInput: null,
   devPowerSelect: null,
@@ -3678,6 +3689,7 @@ const elements = {
   profileShopModal: document.querySelector("#profileShopModal"),
   closeProfileShopButton: document.querySelector("#closeProfileShopButton"),
   profileShopBalance: document.querySelector("#profileShopBalance"),
+  profileShopRotationTimer: document.querySelector("#profileShopRotationTimer"),
   profileShopLibrary: document.querySelector("#profileShopLibrary"),
   profileShopStatus: document.querySelector("#profileShopStatus"),
   themeModal: document.querySelector("#themeModal"),
@@ -8508,10 +8520,42 @@ function renderAchievementLibraryPreservingScroll() {
   }
 }
 
+function getAchievementMilestoneMarkerPercent(index, total = achievementMilestones.length) {
+  if (total <= 0) {
+    return 0;
+  }
+  return Math.max(0, Math.min(100, ((index + 0.5) / total) * 100));
+}
+
+function getAchievementMilestoneFillPercent(unlockedCount = getUnlockedAchievementCount()) {
+  if (!achievementMilestones.length || unlockedCount <= 0) {
+    return 0;
+  }
+  const sortedMilestones = [...achievementMilestones].sort((a, b) => a.target - b.target);
+  const firstMilestone = sortedMilestones[0];
+  const lastMilestone = sortedMilestones[sortedMilestones.length - 1];
+  if (unlockedCount >= lastMilestone.target) {
+    return 100;
+  }
+  if (unlockedCount < firstMilestone.target) {
+    const progressToFirst = Math.max(0, unlockedCount) / Math.max(firstMilestone.target, 1);
+    return getAchievementMilestoneMarkerPercent(0, sortedMilestones.length) * progressToFirst;
+  }
+  const nextIndex = sortedMilestones.findIndex((milestone) => unlockedCount < milestone.target);
+  if (nextIndex <= 0) {
+    return getAchievementMilestoneMarkerPercent(0, sortedMilestones.length);
+  }
+  const previousMilestone = sortedMilestones[nextIndex - 1];
+  const nextMilestone = sortedMilestones[nextIndex];
+  const segmentProgress = (unlockedCount - previousMilestone.target) / Math.max(1, nextMilestone.target - previousMilestone.target);
+  const startPercent = getAchievementMilestoneMarkerPercent(nextIndex - 1, sortedMilestones.length);
+  const endPercent = getAchievementMilestoneMarkerPercent(nextIndex, sortedMilestones.length);
+  return startPercent + (endPercent - startPercent) * Math.max(0, Math.min(1, segmentProgress));
+}
+
 function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
   const claimed = loadClaimedAchievementMilestones();
   const unlockedCount = getUnlockedAchievementCount(records);
-  const maxTarget = Math.max(...achievementMilestones.map((milestone) => milestone.target), 1);
   const road = document.createElement("section");
   road.className = "achievement-milestones";
   road.setAttribute("aria-labelledby", "achievementMilestonesTitle");
@@ -8539,7 +8583,7 @@ function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
   track.className = "achievement-milestone-track";
   const fill = document.createElement("span");
   fill.className = "achievement-milestone-fill";
-  fill.style.width = `${Math.max(0, Math.min(100, (unlockedCount / maxTarget) * 100))}%`;
+  fill.style.width = `${getAchievementMilestoneFillPercent(unlockedCount)}%`;
   track.appendChild(fill);
 
   achievementMilestones.forEach((milestone) => {
@@ -8555,8 +8599,6 @@ function createAchievementMilestoneRoad(records = loadUnlockedAchievements()) {
         node.classList.remove("milestone-just-claimed");
       }, { once: true });
     }
-    node.style.setProperty("--milestone-position", `${Math.max(0, Math.min(100, (milestone.target / maxTarget) * 100))}%`);
-
     const marker = document.createElement("div");
     marker.className = "achievement-milestone-marker";
     marker.textContent = milestone.target;
@@ -17804,6 +17846,73 @@ function getProfileShopKey(type, id) {
   return `${type}:${id}`;
 }
 
+function getProfileShopRotationSlot(timeMs = Date.now()) {
+  return Math.floor(Math.max(0, Number(timeMs) || 0) / profileShopRotationIntervalMs);
+}
+
+function getProfileShopNextRefreshAt(timeMs = Date.now()) {
+  return (getProfileShopRotationSlot(timeMs) + 1) * profileShopRotationIntervalMs;
+}
+
+function hashProfileShopRotationValue(value = "", seed = 0) {
+  let hash = 2166136261 ^ (Number(seed) >>> 0);
+  String(value).split("").forEach((char) => {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  });
+  return hash >>> 0;
+}
+
+function getProfileShopRotationItems(timeMs = Date.now()) {
+  const slot = getProfileShopRotationSlot(timeMs);
+  return [...profileShopItems]
+    .map((item) => ({
+      item,
+      sort: hashProfileShopRotationValue(getProfileShopKey(item.type, item.id), slot)
+    }))
+    .sort((a, b) => a.sort - b.sort || a.item.type.localeCompare(b.item.type) || a.item.id.localeCompare(b.item.id))
+    .slice(0, profileShopRotationSize)
+    .map((entry) => entry.item);
+}
+
+function isProfileShopItemInCurrentRotation(type, id, timeMs = Date.now()) {
+  const key = getProfileShopKey(type, id);
+  return getProfileShopRotationItems(timeMs).some((item) => getProfileShopKey(item.type, item.id) === key);
+}
+
+function formatProfileShopRefreshCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.ceil((Number(ms) || 0) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function updateProfileShopRotationTimer() {
+  if (!elements.profileShopRotationTimer) {
+    return;
+  }
+  const currentSlot = getProfileShopRotationSlot();
+  const remaining = getProfileShopNextRefreshAt() - Date.now();
+  elements.profileShopRotationTimer.textContent = `Refreshes in ${formatProfileShopRefreshCountdown(remaining)}`;
+  if (isModalOpen(elements.profileShopModal) && state.profileShopRenderedRotationSlot >= 0 && currentSlot !== state.profileShopRenderedRotationSlot) {
+    renderProfileShop();
+  }
+}
+
+function startProfileShopRotationTimer() {
+  stopProfileShopRotationTimer();
+  updateProfileShopRotationTimer();
+  state.profileShopRefreshTimerId = window.setInterval(updateProfileShopRotationTimer, 1000);
+}
+
+function stopProfileShopRotationTimer() {
+  if (state.profileShopRefreshTimerId) {
+    window.clearInterval(state.profileShopRefreshTimerId);
+    state.profileShopRefreshTimerId = null;
+  }
+}
+
 function loadProfileShopPurchases() {
   try {
     const parsed = JSON.parse(localStorage.getItem(profileShopPurchasesStorageKey) || "[]");
@@ -18725,29 +18834,27 @@ function renderProfileShop() {
   if (elements.profileShopBalance) {
     elements.profileShopBalance.textContent = balance.toLocaleString();
   }
-  const groups = [...new Set(profileShopItems.map((item) => item.typeLabel))];
-  const sections = groups.map((group) => {
-    const items = profileShopItems
-      .filter((item) => item.typeLabel === group)
-      .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
-    const section = document.createElement("section");
-    section.className = "profile-shop-section";
-    const heading = document.createElement("div");
-    heading.className = "profile-shop-section-heading";
-    heading.innerHTML = `<p class="eyebrow">${group}</p><strong>${items.length} item${items.length === 1 ? "" : "s"}</strong>`;
-    const grid = document.createElement("div");
-    grid.className = "profile-shop-grid";
-    items.forEach((item) => grid.appendChild(createProfileShopItem(item, purchases)));
-    section.append(heading, grid);
-    return section;
-  });
-  elements.profileShopLibrary.replaceChildren(...sections);
+  state.profileShopRenderedRotationSlot = getProfileShopRotationSlot();
+  updateProfileShopRotationTimer();
+  const rotatingItems = getProfileShopRotationItems()
+    .sort((a, b) => a.cost - b.cost || a.typeLabel.localeCompare(b.typeLabel) || a.name.localeCompare(b.name));
+  const section = document.createElement("section");
+  section.className = "profile-shop-section";
+  const heading = document.createElement("div");
+  heading.className = "profile-shop-section-heading";
+  heading.innerHTML = `<p class="eyebrow">Current rotation</p><strong>${rotatingItems.length} item${rotatingItems.length === 1 ? "" : "s"} in stock</strong>`;
+  const grid = document.createElement("div");
+  grid.className = "profile-shop-grid";
+  rotatingItems.forEach((item) => grid.appendChild(createProfileShopItem(item, purchases)));
+  section.append(heading, grid);
+  elements.profileShopLibrary.replaceChildren(section);
 }
 
 function openProfileShop() {
   renderProfileShop();
+  startProfileShopRotationTimer();
   if (elements.profileShopStatus) {
-    elements.profileShopStatus.textContent = "Buy cosmetics here, then equip them in Customize Card.";
+    elements.profileShopStatus.textContent = "Three cosmetics are available at a time. Purchases stay owned forever.";
   }
   markModalOpening(elements.profileShopModal);
   setHidden(elements.profileShopModal, false);
@@ -18755,6 +18862,7 @@ function openProfileShop() {
 }
 
 function closeProfileShop() {
+  stopProfileShopRotationTimer();
   hideModalWithMotion(elements.profileShopModal);
   playSound("click");
 }
@@ -18763,6 +18871,14 @@ function buyProfileShopItem(type, id) {
   const item = getProfileShopItem(type, id);
   const purchases = loadProfileShopPurchases();
   if (!item) {
+    return;
+  }
+  if (!isProfileShopItemInCurrentRotation(type, id)) {
+    if (elements.profileShopStatus) {
+      elements.profileShopStatus.textContent = `${item.name} is not in the current rotation.`;
+    }
+    renderProfileShop();
+    playSound("error");
     return;
   }
   if (isProfileShopItemPurchased(type, id, purchases)) {
@@ -20643,10 +20759,14 @@ function consumeImmediatePower(owner, power, meta = {}) {
   if (power.type === "ability_merchant") {
     const rarity = meta.selectedRarity || "grey";
     const purchase = buyMerchantPower(owner, rarity);
+    if (isChaosInfusedPower(power) && purchase.power) {
+      state.extraPowerUses[owner] = (state.extraPowerUses[owner] || 0) + 1;
+    }
     updateLatestPlayedPowerMeta(owner, {
       selectedRarity: rarity,
       merchantCost: purchase.cost,
-      boughtPowerId: purchase.power?.id || ""
+      boughtPowerId: purchase.power?.id || "",
+      grantsExtraPower: Boolean(isChaosInfusedPower(power) && purchase.power)
     });
     renderScore();
   }
@@ -23089,6 +23209,7 @@ function buildDevToolScreen() {
       <button type="button" data-dev-tab="achievements">Achievement Debug</button>
       <button type="button" data-dev-tab="profile">Profile Debug</button>
       <button type="button" data-dev-tab="overlays">Overlay Debug</button>
+      <button type="button" data-dev-tab="victory">Victory Animations</button>
       <button type="button" data-dev-tab="powers">Power Debug</button>
     </div>
     <section class="dev-tool-panel" data-dev-panel="questions">
@@ -23213,6 +23334,35 @@ function buildDevToolScreen() {
           <p>Buttons trigger the same overlay queue, animation duration, and sound routing used during gameplay.</p>
         </aside>
       </div>
+    </section>
+    <section class="dev-tool-panel hidden" data-dev-panel="victory">
+      <div class="dev-panel-heading">
+        <div>
+          <p class="eyebrow">Result screen animation lab</p>
+          <h2>Victory Animations</h2>
+        </div>
+      </div>
+      <div class="dev-tool-controls dev-victory-controls">
+        <label>
+          <span>Animation</span>
+          <select id="devVictoryAnimationSelect">
+            <option value="spotlight">Spotlight sweep</option>
+            <option value="lift">Champion lift</option>
+            <option value="coin-burst">Coin burst</option>
+            <option value="neon-chase">Neon chase</option>
+          </select>
+        </label>
+        <button type="button" class="icon-button" id="devVictoryPlayButton">Play Animation</button>
+        <button type="button" class="icon-button" id="devVictoryRefreshButton">Refresh Preview</button>
+      </div>
+      <div class="dev-victory-stage" id="devVictoryStage" data-victory-animation="spotlight">
+        <section class="dev-victory-result-card" aria-label="Simulated match results">
+          <p class="eyebrow">Simulated results</p>
+          <h2>Match Complete</h2>
+          <div class="final-leaderboard dev-victory-leaderboard" id="devVictoryLeaderboard"></div>
+        </section>
+      </div>
+      <div class="debug-status" id="devVictoryStatus">Preview uses your current profile style for the winner row.</div>
     </section>
     <section class="dev-tool-panel hidden" data-dev-panel="achievements">
       <div class="achievement-debug-layout">
@@ -23388,6 +23538,12 @@ function buildDevToolScreen() {
   elements.devOverlayGrid = screen.querySelector("#devOverlayGrid");
   elements.devOverlayStatus = screen.querySelector("#devOverlayStatus");
   elements.devOverlayClearButton = screen.querySelector("#devOverlayClearButton");
+  elements.devVictoryAnimationSelect = screen.querySelector("#devVictoryAnimationSelect");
+  elements.devVictoryPlayButton = screen.querySelector("#devVictoryPlayButton");
+  elements.devVictoryRefreshButton = screen.querySelector("#devVictoryRefreshButton");
+  elements.devVictoryStage = screen.querySelector("#devVictoryStage");
+  elements.devVictoryLeaderboard = screen.querySelector("#devVictoryLeaderboard");
+  elements.devVictoryStatus = screen.querySelector("#devVictoryStatus");
   elements.devPowerOwnerSelect = screen.querySelector("#devPowerOwnerSelect");
   elements.devPowerSearchInput = screen.querySelector("#devPowerSearchInput");
   elements.devPowerSelect = screen.querySelector("#devPowerSelect");
@@ -23500,6 +23656,13 @@ function bindDevToolEvents() {
   elements.devOverlayClearButton.addEventListener("click", () => {
     clearStatFlashes();
     elements.devOverlayStatus.textContent = "Overlay queue cleared.";
+    playSound("click");
+  });
+  elements.devVictoryAnimationSelect.addEventListener("change", renderDevVictoryPreview);
+  elements.devVictoryPlayButton.addEventListener("click", playDevVictoryAnimation);
+  elements.devVictoryRefreshButton.addEventListener("click", () => {
+    renderDevVictoryPreview();
+    elements.devVictoryStatus.textContent = "Preview refreshed from your current profile.";
     playSound("click");
   });
   elements.devPowerOwnerSelect.addEventListener("change", () => renderPowerDebug("dev"));
@@ -24527,7 +24690,7 @@ async function requestDevToolTab(tab) {
 }
 
 function setDevToolTab(tab) {
-  const selectedTab = ["questions", "rooms", "submissions", "create", "achievements", "profile", "overlays", "powers"].includes(tab) ? tab : "questions";
+  const selectedTab = ["questions", "rooms", "submissions", "create", "achievements", "profile", "overlays", "victory", "powers"].includes(tab) ? tab : "questions";
   elements.devToolTabs.querySelectorAll("[data-dev-tab]").forEach((button) => {
     button.classList.toggle("selected", button.dataset.devTab === selectedTab);
   });
@@ -24548,6 +24711,9 @@ function setDevToolTab(tab) {
   }
   if (selectedTab === "profile") {
     renderProfileDebug();
+  }
+  if (selectedTab === "victory") {
+    renderDevVictoryPreview();
   }
   if (selectedTab === "powers") {
     renderPowerDebug();
@@ -26319,6 +26485,95 @@ function triggerOverlayDebug(type) {
   if (elements.devOverlayStatus) {
     elements.devOverlayStatus.textContent = `${debugType.charAt(0).toUpperCase()}${debugType.slice(1)} overlay triggered.`;
   }
+}
+
+function getDevVictoryPreviewRows() {
+  const selfName = getProfileDisplayName();
+  const selfPlayer = {
+    owner: "dev-victory-self",
+    label: selfName,
+    name: selfName,
+    avatar: state.profile.avatar,
+    equippedTitleId: state.profile.equippedTitleId,
+    specialBadges: state.profile.specialBadges || [],
+    cardCustomization: state.profile.cardCustomization || defaultProfileCustomization,
+    active: true
+  };
+  return [
+    { player: selfPlayer, score: 12840, streak: 6, winner: true },
+    { player: { owner: "dev-victory-rival", label: "Rival", name: "Rival", avatar: "", active: true, cardCustomization: defaultProfileCustomization }, score: 10950, streak: 4 },
+    { player: { owner: "dev-victory-guest", label: "Guest4021", name: "Guest4021", avatar: "", active: true, cardCustomization: defaultProfileCustomization }, score: 8740, streak: 2 },
+    { player: { owner: "dev-victory-bot", label: "Bot Alpha", name: "Bot Alpha", avatar: "", bot: true, type: "bot", active: true }, score: 6900, streak: 1 }
+  ];
+}
+
+function createDevVictoryLeaderboardRow(entry, index) {
+  const item = document.createElement("div");
+  item.className = "final-leaderboard-row dev-victory-row";
+  item.classList.toggle("winner", Boolean(entry.winner));
+  item.dataset.devWinner = String(Boolean(entry.winner));
+  item.dataset.owner = entry.player.owner || "";
+  if (entry.winner) {
+    applyProfileCustomizationSurface(item, entry.player.cardCustomization || defaultProfileCustomization, { preview: true });
+  } else if (!entry.player.bot && entry.player.cardCustomization) {
+    applyProfileCustomizationSurface(item, entry.player.cardCustomization, { preview: true });
+  }
+
+  const rank = document.createElement("span");
+  rank.textContent = `#${index + 1}`;
+  const avatar = document.createElement("span");
+  avatar.className = "final-leaderboard-avatar";
+  renderAvatar(avatar, entry.player);
+  const identity = document.createElement("div");
+  identity.className = "final-player-identity";
+  const name = document.createElement("strong");
+  renderPlayerNameWithTitle(name, entry.player, entry.player.label);
+  identity.appendChild(name);
+  if (entry.winner) {
+    const titleRow = document.createElement("div");
+    titleRow.className = "player-title-row";
+    const badge = document.createElement("span");
+    badge.className = "player-title-badge";
+    badge.dataset.rarity = "gold";
+    badge.textContent = "Winner";
+    titleRow.appendChild(badge);
+    identity.appendChild(titleRow);
+  }
+  const score = document.createElement("em");
+  score.textContent = `${entry.score.toLocaleString()} points`;
+  const streak = document.createElement("small");
+  streak.textContent = `${entry.streak}x streak`;
+  item.append(rank, avatar, identity, score, streak);
+  return item;
+}
+
+function renderDevVictoryPreview() {
+  if (!elements.devVictoryLeaderboard || !elements.devVictoryStage) {
+    return;
+  }
+  const animation = elements.devVictoryAnimationSelect?.value || "spotlight";
+  elements.devVictoryStage.dataset.victoryAnimation = animation;
+  elements.devVictoryStage.classList.remove("victory-playing");
+  elements.devVictoryLeaderboard.replaceChildren(
+    ...getDevVictoryPreviewRows().map(createDevVictoryLeaderboardRow)
+  );
+  if (elements.devVictoryStatus) {
+    elements.devVictoryStatus.textContent = "Preview uses your current profile style for the winner row.";
+  }
+}
+
+function playDevVictoryAnimation() {
+  if (!elements.devVictoryStage) {
+    return;
+  }
+  renderDevVictoryPreview();
+  void elements.devVictoryStage.offsetWidth;
+  elements.devVictoryStage.classList.add("victory-playing");
+  if (elements.devVictoryStatus) {
+    const label = elements.devVictoryAnimationSelect?.selectedOptions?.[0]?.textContent || "Victory animation";
+    elements.devVictoryStatus.textContent = `${label} playing.`;
+  }
+  playSound("reveal");
 }
 
 function prefetchNextSetup() {
@@ -31302,6 +31557,7 @@ function closeOverlayMenus() {
   }
   setHidden(elements.abilitiesModal, true);
   setHidden(elements.profileCustomModal, true);
+  stopProfileShopRotationTimer();
   setHidden(elements.profileShopModal, true);
   setHidden(elements.themeModal, true);
   setHidden(elements.settingsModal, true);
@@ -31310,15 +31566,23 @@ function closeOverlayMenus() {
 function syncSettingsControls() {
   elements.sfxVolumeSlider.value = Math.round(soundState.sfxVolume * 100);
   elements.musicVolumeSlider.value = Math.round(soundState.musicVolume * 100);
-  elements.timerSecondsSlider.value = state.timerSeconds;
-  elements.roundsSlider.value = state.maxRounds;
+  if (elements.timerSecondsSlider) {
+    elements.timerSecondsSlider.value = state.timerSeconds;
+  }
+  if (elements.roundsSlider) {
+    elements.roundsSlider.value = state.maxRounds;
+  }
   if (elements.performanceModeSelect) {
     elements.performanceModeSelect.value = state.performanceMode;
   }
   elements.sfxVolumeValue.textContent = `${elements.sfxVolumeSlider.value}`;
   elements.musicVolumeValue.textContent = `${elements.musicVolumeSlider.value}`;
-  elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
-  elements.roundsValue.textContent = `${state.maxRounds}`;
+  if (elements.timerSecondsValue) {
+    elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
+  }
+  if (elements.roundsValue) {
+    elements.roundsValue.textContent = `${state.maxRounds}`;
+  }
   if (elements.performanceModeValue) {
     elements.performanceModeValue.textContent = performanceModes[state.performanceMode]?.shortLabel || "Full";
   }
@@ -31347,7 +31611,9 @@ function updateTimerSetting(value) {
   localStorage.setItem("cardsAgainstAiTimerSeconds", String(state.timerSeconds));
   cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
-  elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
+  if (elements.timerSecondsValue) {
+    elements.timerSecondsValue.textContent = `${state.timerSeconds}s`;
+  }
   if (!elements.inputPanel.classList.contains("hidden")) {
     startTimer();
   } else {
@@ -31363,8 +31629,12 @@ function updateRoundsSetting(value) {
   localStorage.setItem("cardsAgainstAiMaxRounds", String(requestedRounds));
   cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
-  elements.roundsSlider.value = state.maxRounds;
-  elements.roundsValue.textContent = `${state.maxRounds}`;
+  if (elements.roundsSlider) {
+    elements.roundsSlider.value = state.maxRounds;
+  }
+  if (elements.roundsValue) {
+    elements.roundsValue.textContent = `${state.maxRounds}`;
+  }
   updateModeUi();
   renderScore();
 }
@@ -34475,8 +34745,8 @@ document.addEventListener("keydown", (event) => {
 elements.sfxVolumeSlider.addEventListener("input", (event) => updateSfxVolume(event.target.value));
 elements.musicVolumeSlider.addEventListener("input", (event) => updateMusicSetting(event.target.value));
 elements.performanceModeSelect?.addEventListener("change", (event) => updatePerformanceMode(event.target.value));
-elements.timerSecondsSlider.addEventListener("input", (event) => updateTimerSetting(event.target.value));
-elements.roundsSlider.addEventListener("input", (event) => updateRoundsSetting(event.target.value));
+elements.timerSecondsSlider?.addEventListener("input", (event) => updateTimerSetting(event.target.value));
+elements.roundsSlider?.addEventListener("input", (event) => updateRoundsSetting(event.target.value));
 elements.powerPanel.addEventListener("click", (event) => {
   const button = event.target.closest(".power-card");
   if (!button) {
