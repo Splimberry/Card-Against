@@ -2839,12 +2839,16 @@ async function handleRoomPresence(req, res, code) {
     const participantCookie = normalizeParticipantRole(participant) !== "bot" ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
     if (body.compact) {
       const storedParticipant = storedRoom.participants.find((entry) => entry.id === participant.id) || participant;
-      sendJson(res, 200, createRoomEventResponse(storedRoom, eventType, {
+      const compactResponse = createRoomEventResponse(storedRoom, eventType, {
         ...eventPayload,
         participant: sanitizeParticipantForClient(storedParticipant, { includeSubmittedAnswers: true }),
         answer: answerSubmitted ? String(storedParticipant.answer || "").slice(0, 500) : undefined,
         remainingTime: answerSubmitted ? clampServerNumber(storedParticipant.remainingTime, 0, 600, 0) : undefined
-      }), participantCookie ? { "Set-Cookie": participantCookie } : {});
+      });
+      if (body.includeRoom || body.includeRoomSnapshot) {
+        compactResponse.room = sanitizeRoomForClient(storedRoom, { includePrivateSecrets: hostAuthenticated });
+      }
+      sendJson(res, 200, compactResponse, participantCookie ? { "Set-Cookie": participantCookie } : {});
       return;
     }
     sendJson(res, 200, {
@@ -3496,8 +3500,9 @@ async function handleRoomModeration(req, res, code) {
     sendJson(res, 200, createRoomEventResponse(storedRoom, "participant_moderated", {
       action,
       participantId,
-      participant: storedParticipant,
-      banned: storedRoom.banned || []
+      participant: sanitizeParticipantForClient(storedParticipant),
+      banned: storedRoom.banned || [],
+      room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
     }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room moderation failed." });

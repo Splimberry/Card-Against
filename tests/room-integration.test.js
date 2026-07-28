@@ -983,6 +983,28 @@ async function testCompactRoomDeltasAvoidFullRoomPayloads() {
   assert.ok(presence.payload.revision >= 3);
 }
 
+async function testCompactPresenceCanIncludeAuthoritativeRoomSnapshot() {
+  const code = makeCode(8150);
+  await upsertRoom(makeRoom(code));
+
+  const presence = await request("POST", `/api/rooms/${code}/presence`, {
+    compact: true,
+    includeRoom: true,
+    participant: {
+      id: "snapshot-joiner",
+      profileUserId: "guest:snapshot-joiner",
+      name: "Snapshot",
+      active: true,
+      status: "joined"
+    }
+  });
+  assert.equal(presence.response.status, 200, presence.payload.error);
+  assert.equal(presence.payload.participant.id, "snapshot-joiner");
+  assert.equal(presence.payload.room.code, code);
+  assert.equal(presence.payload.room.participants.some((participant) => participant.id === "snapshot-joiner"), true);
+  assert.equal(presence.payload.room.activePlayers, 2);
+}
+
 async function testSpectatorPresenceDoesNotConsumePlayerSlot() {
   const code = makeCode(8111);
   await upsertRoom(makeRoom(code));
@@ -1000,6 +1022,46 @@ async function testSpectatorPresenceDoesNotConsumePlayerSlot() {
   assert.equal(payload.room.activePlayers, 1);
   assert.equal(payload.room.spectators, 1);
   assert.equal(payload.room.participants.some((participant) => participant.id === "spectator-client" && participant.spectator), true);
+}
+
+async function testSpectatorLeaveUpdatesAuthoritativeRoomSnapshot() {
+  const code = makeCode(8151);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "spectator-leaver",
+        profileUserId: "guest:spectator-leaver",
+        name: "Watcher",
+        host: false,
+        spectator: true,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "spectating"
+      }
+    ]
+  }));
+
+  const leave = await request("POST", `/api/rooms/${code}/leave`, {
+    participantId: "spectator-leaver",
+    reason: "manual"
+  });
+  assert.equal(leave.response.status, 200, leave.payload.error);
+  assert.equal(leave.payload.closed, false);
+  assert.equal(leave.payload.room.code, code);
+  assert.equal(leave.payload.room.spectators, 0);
+  assert.equal(leave.payload.room.activePlayers, 1);
+  assert.equal(leave.payload.room.participants.some((participant) => participant.id === "spectator-leaver"), false);
 }
 
 async function testParticipantWithoutActiveDefaultsActiveAndRole() {
@@ -2113,6 +2175,8 @@ async function testRoomModerationEndpointMutesAndBans() {
   });
   assert.equal(ban.response.status, 200, ban.payload.error);
   assert.equal(ban.payload.banned.includes("guest-client"), true);
+  assert.equal(ban.payload.room.code, code);
+  assert.equal(ban.payload.room.participants.some((participant) => participant.id === "guest-client"), false);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -2324,6 +2388,8 @@ async function testRoomModerationEndpointKicksBot() {
   assert.equal(response.status, 200, payload.error);
   assert.equal(payload.participant.active, false);
   assert.equal(payload.participant.bot, true);
+  assert.equal(payload.room.code, code);
+  assert.equal(payload.room.participants.some((participant) => participant.id === "bot-client"), false);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -2889,7 +2955,9 @@ async function main() {
   await testLateJoinerReceivesRoundState();
   await testRoomChatPreservesMessageIds();
   await testCompactRoomDeltasAvoidFullRoomPayloads();
+  await testCompactPresenceCanIncludeAuthoritativeRoomSnapshot();
   await testSpectatorPresenceDoesNotConsumePlayerSlot();
+  await testSpectatorLeaveUpdatesAuthoritativeRoomSnapshot();
   await testParticipantWithoutActiveDefaultsActiveAndRole();
   await testSpectatorCannotSubmitGameplayAnswer();
   await testDuplicateHostPresenceRemovesStaleHostRow();

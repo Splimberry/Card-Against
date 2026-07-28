@@ -2900,6 +2900,7 @@ const state = {
   roomBotSequence: 0,
   pendingRoomBotAdds: [],
   pendingRoomBotKicks: {},
+  pendingRoomModeration: {},
   roomAutoResolveId: null,
   roomAutoResolveKey: "",
   roomAutoResolveDueAt: 0,
@@ -13740,6 +13741,15 @@ const handledRoomEventTypes = [
   "game-ended"
 ];
 
+const roomMembershipSnapshotEventTypes = [
+  "participant-updated",
+  "participant-joined",
+  "participant-disconnected",
+  "participant-reconnected",
+  "participant-left",
+  "participant-moderated"
+];
+
 function normalizeRoomEventType(type = "") {
   const rawType = String(type || "").trim();
   return roomServerEventTypeMap[rawType] || rawType.replaceAll("_", "-");
@@ -13865,6 +13875,9 @@ function applyRoomEventPayload(payload = {}, source = {}) {
   }
   if (code === state.roomSettings.code && hasActiveRoomContext()) {
     let appliedDelta = false;
+    if (normalizedPayload.room && roomMembershipSnapshotEventTypes.includes(normalizedPayload.eventType) && normalizedPayload.eventType !== "participant-moderated" && normalizedPayload.eventType !== "participant-left") {
+      appliedDelta = applyRealtimeRoomPayload(normalizedPayload.room);
+    }
     if (normalizedPayload.eventType === "chat-message" && normalizedPayload.message) {
       appliedDelta = applyRealtimeRoomChatMessage(normalizedPayload.message);
     }
@@ -13877,10 +13890,10 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     if (normalizedPayload.eventType === "power-state") {
       appliedDelta = applyRoomPowerState(normalizedPayload);
     }
-    if ((normalizedPayload.eventType === "participant-updated" || normalizedPayload.eventType === "participant-joined") && normalizedPayload.participant) {
+    if (!appliedDelta && (normalizedPayload.eventType === "participant-updated" || normalizedPayload.eventType === "participant-joined") && normalizedPayload.participant) {
       appliedDelta = applyRoomParticipantDelta(normalizedPayload.participant, normalizedPayload);
     }
-    if ((normalizedPayload.eventType === "participant-disconnected" || normalizedPayload.eventType === "participant-reconnected") && normalizedPayload.participant) {
+    if (!appliedDelta && (normalizedPayload.eventType === "participant-disconnected" || normalizedPayload.eventType === "participant-reconnected") && normalizedPayload.participant) {
       appliedDelta = applyRoomParticipantConnectionDelta(normalizedPayload);
     }
     if (normalizedPayload.eventType === "participant-left" && normalizedPayload.participantId) {
@@ -14498,18 +14511,23 @@ function applyRealtimeParticipantLeft(payload = {}) {
     handleCurrentRoomClosed("The room was closed by the host or an admin.");
     return true;
   }
-  if (Array.isArray(payload.room?.participants)) {
-    state.roomParticipants = normalizeRoomParticipantsList(payload.room.participants);
+  let removed = false;
+  let removedPlayer = null;
+  if (payload.room) {
+    removed = applyRoomSnapshot(payload.room, { source: "participant-left-event", skipHeartbeat: true });
+  } else {
+    const removal = removeRoomParticipantLocally(participantId, {
+      status: "left",
+      revision: payload.revision,
+      updatedAt: payload.updatedAt
+    });
+    removed = removal.removed;
+    removedPlayer = removal.player;
+    if (!removed) {
+      return false;
+    }
   }
-  const removal = removeRoomParticipantLocally(participantId, {
-    status: "left",
-    revision: payload.revision,
-    updatedAt: payload.updatedAt
-  });
-  if (!removal.removed) {
-    return false;
-  }
-  const participantName = String(payload.participantName || participant?.name || removal.player?.label || "A player").trim();
+  const participantName = String(payload.participantName || participant?.name || removedPlayer?.label || "A player").trim();
   if (participantId !== state.clientId && participantName) {
     addSystemChat(`${participantName} left and was removed from the room.`, { sync: false });
   }
@@ -14559,18 +14577,25 @@ function applyRoomModerationDelta(payload = {}) {
         : "The host kicked you from this room. You can rejoin if there is space.");
       return true;
     }
-    const removal = removeRoomParticipantLocally(participantId, {
-      status: action === "ban" ? "banned" : "kicked",
-      revision: payload.revision,
-      updatedAt: payload.updatedAt,
-      banned: payload.banned
-    });
-    if (removal.removed && !payload.silent) {
-      const participantName = String(participant?.name || removal.participant?.name || removal.player?.label || "A player").trim();
+    const participantName = String(participant?.name || state.roomParticipants.find((entry) => entry.id === participantId)?.name || "A player").trim();
+    const appliedSnapshot = payload.room ? applyRoomSnapshot(payload.room, { source: "moderation-event", skipHeartbeat: true }) : false;
+    if (!appliedSnapshot) {
+      removeRoomParticipantLocally(participantId, {
+        status: action === "ban" ? "banned" : "kicked",
+        revision: payload.revision,
+        updatedAt: payload.updatedAt,
+        banned: payload.banned
+      });
+    }
+    if (!payload.silent) {
       addSystemChat(`${participantName} was ${action === "ban" ? "banned" : "kicked"} from the room.`, { sync: false });
     }
   } else if (participant) {
-    applyRoomParticipantDelta(participant, payload);
+    if (payload.room) {
+      applyRoomSnapshot(payload.room, { source: "moderation-event", skipHeartbeat: true });
+    } else {
+      applyRoomParticipantDelta(participant, payload);
+    }
   } else {
     const existingParticipant = state.roomParticipants.find((entry) => entry.id === participantId);
     if (existingParticipant) {
@@ -14583,6 +14608,8 @@ function applyRoomModerationDelta(payload = {}) {
       player.connectionStatus = player.muted ? "muted" : "ready";
     }
   }
+  setPendingRoomModeration(participantId, "");
+  setPendingRoomBotKick(participantId, false);
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code);
   if (hostedRoom) {
     hostedRoom.participants = [...state.roomParticipants];
@@ -26947,7 +26974,8 @@ async function reconnectCurrentRoomParticipant(reason = "reconnect") {
     host: isCurrentHost() && !state.joiningRoom,
     spectator: state.isSpectator,
     active: true,
-    status
+    status,
+    includeRoomSnapshot: true
   });
   if (updatedRoom) {
     applyRoomSnapshot(updatedRoom, {
@@ -27720,6 +27748,81 @@ async function fetchRoomByCode(code = state.roomSettings.code) {
   }
 }
 
+function getRoomResponseBroadcastParticipant(data = {}, eventType = "participant-updated", fallbackParticipant = null) {
+  const participant = data.participant && typeof data.participant === "object"
+    ? data.participant
+    : fallbackParticipant;
+  if (!participant || typeof participant !== "object") {
+    return undefined;
+  }
+  if (eventType === "answer-submitted") {
+    return participant;
+  }
+  return {
+    ...participant,
+    answer: ""
+  };
+}
+
+function applyRoomPresenceResponse(data = {}, fallbackRoom = {}, options = {}, source = "presence-response") {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+  const eventType = normalizeRoomEventType(data.eventType || "participant-updated");
+  const responseRoom = data.room && typeof data.room === "object" ? data.room : null;
+  if (responseRoom) {
+    applyRoomSnapshot(responseRoom, { source });
+    if (!options.skipRealtimeBroadcast) {
+      const fallbackParticipantId = String(data.participantId || state.clientId || "").slice(0, 80);
+      const fallbackParticipant = Array.isArray(responseRoom.participants)
+        ? responseRoom.participants.find((entry) => entry.id === fallbackParticipantId)
+        : null;
+      broadcastRealtimeRoomChange(eventType || "participant-updated", responseRoom, {
+        ...data,
+        eventType: eventType || data.eventType || "participant-updated",
+        code: data.code || responseRoom.code || fallbackRoom.code || state.roomSettings.code,
+        status: data.status || responseRoom.status || fallbackRoom.status || "",
+        revision: data.revision || responseRoom.revision || 0,
+        updatedAt: data.updatedAt || responseRoom.updatedAt || Date.now(),
+        participantId: data.participantId || data.participant?.id || fallbackParticipant?.id || "",
+        participant: getRoomResponseBroadcastParticipant(data, eventType, fallbackParticipant)
+      });
+    }
+    return responseRoom;
+  }
+  if (!data.participant) {
+    return null;
+  }
+  rememberRoomRevisionPayload({ ...data, code: data.code || fallbackRoom.code || state.roomSettings.code });
+  applyRoomParticipantDelta(data.participant, data);
+  if (!options.skipRealtimeBroadcast) {
+    const broadcastParticipant = getRoomResponseBroadcastParticipant(data, eventType);
+    broadcastRealtimeRoomChange(eventType || "participant-updated", data.code || fallbackRoom.code || state.roomSettings.code, {
+      ...data,
+      eventType: eventType || data.eventType || "participant-updated",
+      code: data.code || fallbackRoom.code || state.roomSettings.code,
+      status: data.status || fallbackRoom.status || "",
+      revision: data.revision || 0,
+      updatedAt: data.updatedAt || Date.now(),
+      participantId: data.participantId || broadcastParticipant?.id || "",
+      participant: broadcastParticipant,
+      matchId: data.matchId || broadcastParticipant?.submissionMatchId || "",
+      round: Number(data.round || broadcastParticipant?.submittedRound) || 0,
+      answer: eventType === "answer-submitted"
+        ? Object.hasOwn(data, "answer") ? data.answer : broadcastParticipant?.answer
+        : undefined,
+      remainingTime: eventType === "answer-submitted" ? Number(data.remainingTime ?? broadcastParticipant?.remainingTime) || 0 : undefined
+    });
+  }
+  return {
+    ...fallbackRoom,
+    status: data.status || fallbackRoom.status,
+    revision: Number(data.revision) || Number(fallbackRoom.revision) || 0,
+    updatedAt: Number(data.updatedAt) || Date.now(),
+    participants: state.roomParticipants
+  };
+}
+
 async function updateRoomPresence(room, options = {}) {
   let participant = null;
   try {
@@ -27759,6 +27862,7 @@ async function updateRoomPresence(room, options = {}) {
       body: JSON.stringify({
         participant,
         compact: options.compactResponse !== false,
+        includeRoom: options.includeRoomSnapshot === true,
         ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
       })
     }, roomPresenceFetchTimeoutMs);
@@ -27776,53 +27880,7 @@ async function updateRoomPresence(room, options = {}) {
       return null;
     }
     const data = await response.json();
-    if (data.participant) {
-      rememberRoomRevisionPayload({ ...data, code: data.code || room.code || state.roomSettings.code });
-      applyRoomParticipantDelta(data.participant, data);
-      if (!options.skipRealtimeBroadcast) {
-        const eventType = String(data.eventType || "participant_updated").replaceAll("_", "-");
-        const isAnswerSubmissionEvent = eventType === "answer-submitted";
-        const broadcastParticipant = data.participant && typeof data.participant === "object"
-          ? {
-            ...data.participant,
-            answer: isAnswerSubmissionEvent ? data.participant.answer : ""
-          }
-          : data.participant;
-        broadcastRealtimeRoomChange(eventType || "participant-updated", data.code || state.roomSettings.code, {
-          ...data,
-          eventType: eventType || data.eventType || "participant-updated",
-          code: data.code || state.roomSettings.code,
-          status: data.status || "",
-          revision: data.revision || 0,
-          updatedAt: data.updatedAt || Date.now(),
-          participantId: data.participantId || broadcastParticipant?.id || "",
-          participant: broadcastParticipant,
-          matchId: data.matchId || broadcastParticipant?.submissionMatchId || "",
-          round: Number(data.round || broadcastParticipant?.submittedRound) || 0,
-          answer: isAnswerSubmissionEvent
-            ? Object.hasOwn(data, "answer") ? data.answer : broadcastParticipant?.answer
-            : undefined,
-          remainingTime: isAnswerSubmissionEvent ? Number(data.remainingTime ?? broadcastParticipant?.remainingTime) || 0 : undefined
-        });
-      }
-    } else if (data.room) {
-      applyRoomSnapshot(data.room, { source: "presence-response" });
-      if (!options.skipRealtimeBroadcast) {
-        const currentParticipant = Array.isArray(data.room.participants)
-          ? data.room.participants.find((entry) => entry.id === state.clientId)
-          : null;
-        broadcastRealtimeRoomChange("participant-updated", data.room, {
-          participant: currentParticipant ? normalizeRoomParticipantDelta(currentParticipant) : undefined
-        });
-      }
-    }
-    return data.room || {
-      ...room,
-      status: data.status || room.status,
-      revision: Number(data.revision) || Number(room.revision) || 0,
-      updatedAt: Number(data.updatedAt) || Date.now(),
-      participants: state.roomParticipants
-    };
+    return applyRoomPresenceResponse(data, room, options, "presence-response");
   } catch {
     if (participant && options.optimisticRealtime && !options.skipRealtimeBroadcast) {
       broadcastRealtimeRoomChange("participant-left", room.code, {
@@ -27859,7 +27917,8 @@ async function publishRoomParticipantDelta(participant, options = {}) {
       },
       body: JSON.stringify({
         participant,
-        compact: true,
+        compact: options.compactResponse !== false,
+        includeRoom: options.includeRoomSnapshot === true,
         hostParticipantId: getCurrentRoomHostParticipantId(),
         ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
       })
@@ -27883,41 +27942,7 @@ async function publishRoomParticipantDelta(participant, options = {}) {
     }
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    if (data.participant) {
-      rememberRoomRevisionPayload({ ...data, code });
-      applyRoomParticipantDelta(data.participant, {
-        code,
-        status: data.status || "",
-        revision: data.revision || 0,
-        updatedAt: data.updatedAt || Date.now()
-      });
-      if (!options.skipRealtimeBroadcast) {
-        const eventType = String(data.eventType || "participant_updated").replaceAll("_", "-");
-        const isAnswerSubmissionEvent = eventType === "answer-submitted";
-        const broadcastParticipant = data.participant && typeof data.participant === "object"
-          ? {
-            ...data.participant,
-            answer: isAnswerSubmissionEvent ? data.participant.answer : ""
-          }
-          : data.participant;
-        broadcastRealtimeRoomChange(eventType || "participant-updated", code, {
-          ...data,
-          eventType: eventType || data.eventType || "participant-updated",
-          code,
-          status: data.status || "",
-          revision: data.revision || 0,
-          updatedAt: data.updatedAt || Date.now(),
-          participantId: data.participantId || broadcastParticipant?.id || "",
-          participant: broadcastParticipant,
-          matchId: data.matchId || broadcastParticipant?.submissionMatchId || "",
-          round: Number(data.round || broadcastParticipant?.submittedRound) || 0,
-          answer: isAnswerSubmissionEvent
-            ? Object.hasOwn(data, "answer") ? data.answer : broadcastParticipant?.answer
-            : undefined,
-          remainingTime: isAnswerSubmissionEvent ? Number(data.remainingTime ?? broadcastParticipant?.remainingTime) || 0 : undefined
-        });
-      }
-    }
+    applyRoomPresenceResponse(data, { code, status: state.currentRoomStatus || "" }, options, "participant-response");
     return { ...data, ok: true };
   } catch {
     state.roomDirectoryOnline = false;
@@ -29234,24 +29259,18 @@ function canKickRoomBot(owner = "", participantId = "") {
 
 async function confirmKickRoomBot(target) {
   setPendingRoomBotKick(target.participantId, true);
+  setPendingRoomModeration(target.participantId, "kick");
   renderRoomPlayers();
   playSound("click");
   const data = await publishRoomModeration("kick", target.participantId, { reason: "bot-kicked", includeError: true });
+  setPendingRoomModeration(target.participantId, "");
+  setPendingRoomBotKick(target.participantId, false);
   if (!data?.ok && !data?.closed) {
-    setPendingRoomBotKick(target.participantId, false);
     renderRoomPlayers();
     addSystemChat(`Could not kick ${target.name}: ${data?.error || "room sync failed."}`, { private: true });
     return;
   }
-  setPendingRoomBotKick(target.participantId, false);
-  if (target.owner === "opponent" || getPlayer("opponent")?.participantId === target.participantId) {
-    state.localAnswers.playerTwo = "";
-  }
   addSystemChat(`${target.name} was kicked from the room.`);
-  const opponent = getPlayer("opponent");
-  if (opponent?.active && state.roomSubmissions.opponent === undefined) {
-    state.roomSubmissions.opponent = false;
-  }
   renderScore();
   renderRoomPlayers();
   renderSubmissionStatus();
@@ -29522,7 +29541,8 @@ async function rejoinHostedRoomAsHost(room) {
   const updatedRoom = await updateRoomPresence(room, {
     host: true,
     status: "host",
-    compactResponse: true
+    compactResponse: true,
+    includeRoomSnapshot: true
   });
   const activeRoom = updatedRoom || room;
   applyRoomSnapshot(activeRoom, { source: "host-rejoin" });
@@ -29580,8 +29600,7 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined",
     compactResponse: !needsFullRoomState,
-    optimisticRealtime: !room.settings?.private,
-    optimisticEventType: "participant-joined",
+    includeRoomSnapshot: true,
     ...(Object.hasOwn(options, "roomPassword") ? { roomPassword: options.roomPassword } : {})
   });
   if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
@@ -29830,7 +29849,7 @@ async function processInitialRoomInvite() {
 }
 
 function getRoomOpenSlotCount() {
-  return Math.max(0, getRoomMaxPlayers() - getActiveRoomPlayerCount());
+  return Math.max(0, getRoomMaxPlayers() - getActiveRoomPlayerCount() - getPendingRoomBotAddCount());
 }
 
 function getPendingRoomBotAdds() {
@@ -29843,7 +29862,13 @@ function prunePendingRoomBotAdds() {
     return;
   }
   const participantIds = new Set(state.roomParticipants.map((participant) => participant.id));
-  state.pendingRoomBotAdds = pendingAdds.filter((bot) => !participantIds.has(bot.id));
+  const now = Date.now();
+  state.pendingRoomBotAdds = pendingAdds.filter((bot) => !participantIds.has(bot.id) && now - (Number(bot.createdAt) || now) < 12000);
+}
+
+function getPendingRoomBotAddCount() {
+  prunePendingRoomBotAdds();
+  return getPendingRoomBotAdds().length;
 }
 
 function rememberPendingRoomBotAdd(bot) {
@@ -29878,6 +29903,30 @@ function setPendingRoomBotKick(participantId, pending) {
   } else {
     delete state.pendingRoomBotKicks[id];
   }
+}
+
+function setPendingRoomModeration(participantId, action = "") {
+  const id = String(participantId || "");
+  if (!id) {
+    return;
+  }
+  if (!state.pendingRoomModeration || typeof state.pendingRoomModeration !== "object") {
+    state.pendingRoomModeration = {};
+  }
+  const normalizedAction = String(action || "").slice(0, 32);
+  if (normalizedAction) {
+    state.pendingRoomModeration[id] = normalizedAction;
+  } else {
+    delete state.pendingRoomModeration[id];
+  }
+}
+
+function getPendingRoomModerationAction(participantId = "") {
+  const id = String(participantId || "");
+  if (!id) {
+    return "";
+  }
+  return String(state.pendingRoomModeration?.[id] || (state.pendingRoomBotKicks?.[id] ? "kick" : "") || "");
 }
 
 function getRandomRoomBotName() {
@@ -29926,8 +29975,7 @@ async function addBotToRoom() {
   renderRoomLobby();
   const data = await publishRoomParticipantDelta(bot, {
     includeError: true,
-    optimisticRealtime: true,
-    optimisticEventType: "participant-joined"
+    includeRoomSnapshot: true
   });
   clearPendingRoomBotAdd(bot.id);
   if (!data?.participant) {
@@ -29985,7 +30033,7 @@ function renderRoomLobby() {
   setButtonHint(
     elements.lobbyAddBotButton,
     getRoomOpenSlotCount() <= 0
-      ? "This room is full."
+      ? getPendingRoomBotAddCount() > 0 ? "Waiting for the server to confirm the pending bot." : "This room is full."
       : "Add a bot to occupy an empty player slot for multiplayer testing."
   );
   setHidden(elements.lobbySettingsButton, !isCurrentHost());
@@ -30253,8 +30301,9 @@ function createRoomModerationControls(owner, context = "list", sourcePlayer = nu
   const player = sourcePlayer || getRoomPlayerForModeration(owner);
   const controls = document.createElement("div");
   controls.className = context === "chat" ? "chat-options" : "room-player-controls";
+  const pendingAction = getPendingRoomModerationAction(player?.participantId || "");
   if (player && player.active !== false && (player.bot || player.type === "bot") && canKickRoomBot(player.owner, player.participantId)) {
-    const kickPending = Boolean(state.pendingRoomBotKicks?.[player.participantId]);
+    const kickPending = Boolean(pendingAction);
     const kickButton = document.createElement("button");
     kickButton.type = "button";
     kickButton.className = "mini-button danger-button";
@@ -30277,21 +30326,24 @@ function createRoomModerationControls(owner, context = "list", sourcePlayer = nu
     muteButton.dataset.action = "mute";
     muteButton.dataset.owner = player.owner;
     muteButton.dataset.participantId = player.participantId || "";
-    muteButton.textContent = player.muted ? "Unmute" : "Mute";
+    muteButton.disabled = Boolean(pendingAction);
+    muteButton.textContent = pendingAction === "mute" ? "Muting" : pendingAction === "unmute" ? "Unmuting" : player.muted ? "Unmute" : "Mute";
     const kickButton = document.createElement("button");
     kickButton.type = "button";
     kickButton.className = "mini-button danger-button";
     kickButton.dataset.action = "kick-player";
     kickButton.dataset.owner = player.owner;
     kickButton.dataset.participantId = player.participantId || "";
-    kickButton.textContent = "Kick";
+    kickButton.disabled = Boolean(pendingAction);
+    kickButton.textContent = pendingAction === "kick" ? "Kicking" : "Kick";
     const banButton = document.createElement("button");
     banButton.type = "button";
     banButton.className = "mini-button danger-button";
     banButton.dataset.action = "ban";
     banButton.dataset.owner = player.owner;
     banButton.dataset.participantId = player.participantId || "";
-    banButton.textContent = "Ban";
+    banButton.disabled = Boolean(pendingAction);
+    banButton.textContent = pendingAction === "ban" ? "Banning" : "Ban";
     controls.append(muteButton, kickButton, banButton);
     return controls;
   }
@@ -30463,9 +30515,10 @@ function renderRoomPlayerList(target, options = {}) {
     card.dataset.roomPlayerKey = cardKey;
     card.classList.toggle("waiting-slot", player.active === false);
     const botIsJoining = player.connectionStatus === "joining";
-    const botIsKicking = Boolean(player.participantId && state.pendingRoomBotKicks?.[player.participantId]);
-    card.classList.toggle("room-player-card-pending", botIsJoining || botIsKicking);
-    card.classList.toggle("room-player-card-kicking", botIsKicking);
+    const pendingModerationAction = getPendingRoomModerationAction(player.participantId);
+    const removalIsPending = pendingModerationAction === "kick" || pendingModerationAction === "ban";
+    card.classList.toggle("room-player-card-pending", botIsJoining || Boolean(pendingModerationAction));
+    card.classList.toggle("room-player-card-kicking", removalIsPending);
     const isNewActiveParticipant = Boolean(
       (canAnimateNewRows || (isRoomSetupList && hadWaitingCopy))
       && isRoomGameplayParticipant(player)
@@ -30481,8 +30534,14 @@ function renderRoomPlayerList(target, options = {}) {
     const status = document.createElement("small");
     if (botIsJoining) {
       status.textContent = "JOINING";
-    } else if (botIsKicking) {
+    } else if (pendingModerationAction === "ban") {
+      status.textContent = "BANNING";
+    } else if (pendingModerationAction === "kick") {
       status.textContent = "KICKING";
+    } else if (pendingModerationAction === "mute") {
+      status.textContent = "MUTING";
+    } else if (pendingModerationAction === "unmute") {
+      status.textContent = "UNMUTING";
     } else if (player.bot || player.type === "bot") {
       status.textContent = "BOT";
     } else {
@@ -30536,8 +30595,13 @@ function publishRoomModeration(action, participantId, options = {}) {
       return { ...data, ok: true };
     }
     rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
-    applyRoomModerationDelta({ ...data, code: state.roomSettings.code, silent: true });
-    broadcastRealtimeRoomChange("participant-moderated", state.roomSettings.code, data);
+    if (data.room) {
+      applyRoomSnapshot(data.room, { source: "moderation-response" });
+      broadcastRealtimeRoomChange("participant-moderated", data.room, data);
+    } else {
+      applyRoomModerationDelta({ ...data, code: state.roomSettings.code, silent: true });
+      broadcastRealtimeRoomChange("participant-moderated", state.roomSettings.code, data);
+    }
     return { ...data, ok: true };
   }).catch(() => (options.includeError
     ? { ok: false, status: 0, error: "Room moderation failed." }
@@ -30552,7 +30616,7 @@ function canModerateCurrentRoom() {
     && (isRoomMode() || state.currentRoomStatus === "draft" || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "in-progress");
 }
 
-function muteRoomPlayer(owner, participantId = "") {
+async function muteRoomPlayer(owner, participantId = "") {
   if (!canModerateCurrentRoom()) {
     return;
   }
@@ -30562,16 +30626,25 @@ function muteRoomPlayer(owner, participantId = "") {
     return;
   }
 
-  player.muted = !player.muted;
-  player.connectionStatus = player.muted ? "muted" : "ready";
-  addSystemChat(`${player.label} was ${player.muted ? "muted" : "unmuted"} by the host.`);
-  if (player.participantId) {
-    publishRoomModeration(player.muted ? "mute" : "unmute", player.participantId, { muted: player.muted });
+  const resolvedParticipantId = participantId || player.participantId || "";
+  if (!resolvedParticipantId || getPendingRoomModerationAction(resolvedParticipantId)) {
+    return;
   }
+  const nextMuted = !player.muted;
+  setPendingRoomModeration(resolvedParticipantId, nextMuted ? "mute" : "unmute");
+  renderRoomPlayers();
+  const data = await publishRoomModeration(nextMuted ? "mute" : "unmute", resolvedParticipantId, { muted: nextMuted, includeError: true });
+  setPendingRoomModeration(resolvedParticipantId, "");
+  if (!data?.ok && !data?.closed) {
+    addSystemChat(`Could not ${nextMuted ? "mute" : "unmute"} ${player.label}: ${data?.error || "room sync failed."}`, { private: true });
+    renderRoomPlayers();
+    return;
+  }
+  addSystemChat(`${player.label} was ${nextMuted ? "muted" : "unmuted"} by the host.`);
   renderRoomPlayers();
 }
 
-function kickRoomPlayer(owner, participantId = "", reason = "kicked by the host") {
+async function kickRoomPlayer(owner, participantId = "", reason = "kicked by the host") {
   if (!canModerateCurrentRoom()) {
     return;
   }
@@ -30582,23 +30655,24 @@ function kickRoomPlayer(owner, participantId = "", reason = "kicked by the host"
   }
 
   const resolvedParticipantId = participantId || player.participantId || "";
-  removeRoomParticipantLocally(resolvedParticipantId, {
-    status: "kicked",
-    updatedAt: Date.now()
-  });
-  state.roomSubmissions[player.owner] = true;
-  addSystemChat(`${player.label} was kicked from the room. They can rejoin later.`);
-  if (resolvedParticipantId) {
-    void publishRoomModeration("kick", resolvedParticipantId, { reason });
-  } else {
-    upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  if (!resolvedParticipantId || getPendingRoomModerationAction(resolvedParticipantId)) {
+    return;
   }
+  setPendingRoomModeration(resolvedParticipantId, "kick");
   renderRoomPlayers();
+  const data = await publishRoomModeration("kick", resolvedParticipantId, { reason, includeError: true });
+  setPendingRoomModeration(resolvedParticipantId, "");
+  if (!data?.ok && !data?.closed) {
+    addSystemChat(`Could not kick ${player.label}: ${data?.error || "room sync failed."}`, { private: true });
+    renderRoomPlayers();
+    return;
+  }
+  addSystemChat(`${player.label} was kicked from the room. They can rejoin later.`);
   renderScore();
   renderSubmissionStatus();
 }
 
-function banRoomPlayer(owner, reason = "banned by the host", participantId = "") {
+async function banRoomPlayer(owner, reason = "banned by the host", participantId = "") {
   if (!canModerateCurrentRoom()) {
     return;
   }
@@ -30608,24 +30682,20 @@ function banRoomPlayer(owner, reason = "banned by the host", participantId = "")
     return;
   }
 
-  player.active = false;
-  player.connectionStatus = "banned";
-  const banList = getRoomBanList();
-  if (!banList.includes(owner)) {
-    banList.push(owner);
-  }
-  if (!banList.includes(player.label)) {
-    banList.push(player.label);
-  }
-  state.roomSubmissions[owner] = true;
-  addSystemChat(`${player.label} was kicked and cannot rejoin room ${state.roomSettings.code} (${reason}).`);
   const resolvedParticipantId = participantId || player.participantId || "";
-  if (resolvedParticipantId) {
-    publishRoomModeration("ban", resolvedParticipantId, { reason });
-  } else {
-    upsertHostedRoom(state.currentRoomStatus === "in-progress" ? "in-progress" : "lobby");
+  if (!resolvedParticipantId || getPendingRoomModerationAction(resolvedParticipantId)) {
+    return;
   }
+  setPendingRoomModeration(resolvedParticipantId, "ban");
   renderRoomPlayers();
+  const data = await publishRoomModeration("ban", resolvedParticipantId, { reason, includeError: true });
+  setPendingRoomModeration(resolvedParticipantId, "");
+  if (!data?.ok && !data?.closed) {
+    addSystemChat(`Could not ban ${player.label}: ${data?.error || "room sync failed."}`, { private: true });
+    renderRoomPlayers();
+    return;
+  }
+  addSystemChat(`${player.label} was kicked and cannot rejoin room ${state.roomSettings.code} (${reason}).`);
   renderScore();
   renderSubmissionStatus();
 }
@@ -33817,7 +33887,8 @@ async function startNextRoomMatchWithSpectatorMode(spectating) {
   if (room && state.joiningRoom) {
     const updatedRoom = await updateRoomPresence(room, {
       spectator: state.isSpectator,
-      status: state.isSpectator ? "spectating" : "joined"
+      status: state.isSpectator ? "spectating" : "joined",
+      includeRoomSnapshot: true
     });
     if (updatedRoom) {
       state.joiningRoom = updatedRoom;
@@ -33874,7 +33945,8 @@ function returnToRoomLobbyAfterMatch(options = {}) {
         status: state.isSpectator ? "spectating" : "joined",
         answer: "",
         submittedRound: 0,
-        remainingTime: 0
+        remainingTime: 0,
+        includeRoomSnapshot: true
       });
     }
   }
@@ -34159,10 +34231,18 @@ if (!soundState.muted) {
 }
 syncRoomControls();
 syncBotAdvancedControls();
-const menuBackgroundObserver = elements.modeScreen && elements.menuBackgroundVideo
+const menuBackgroundObservedScreens = [
+  elements.modeScreen,
+  elements.roomScreen,
+  elements.joinScreen,
+  elements.roomLobbyScreen
+].filter(Boolean);
+const menuBackgroundObserver = menuBackgroundObservedScreens.length && elements.menuBackgroundVideo
   ? new MutationObserver(syncMenuBackgroundVideo)
   : null;
-menuBackgroundObserver?.observe(elements.modeScreen, { attributes: true, attributeFilter: ["class"] });
+menuBackgroundObservedScreens.forEach((screen) => {
+  menuBackgroundObserver?.observe(screen, { attributes: true, attributeFilter: ["class"] });
+});
 const menuBackgroundMotionQuery = typeof window.matchMedia === "function"
   ? window.matchMedia("(prefers-reduced-motion: reduce)")
   : null;

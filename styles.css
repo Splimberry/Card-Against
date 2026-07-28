@@ -1536,18 +1536,20 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .room-player-list-resizing {
-  overflow: hidden !important;
+  overflow-x: visible !important;
+  overflow-y: hidden !important;
   transition: height 320ms cubic-bezier(0.16, 1, 0.3, 1);
   will-change: height;
 }
 
 .room-player-list-holding {
-  overflow: hidden !important;
+  overflow-x: visible !important;
+  overflow-y: hidden !important;
 }
 
 .room-preview > .room-player-list {
   --room-player-list-max-height: none;
-  --room-player-list-glow-gutter: 0.85rem;
+  --room-player-list-glow-gutter: 1.25rem;
   display: grid;
   align-content: start;
   align-self: stretch;
@@ -1582,6 +1584,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   min-height: 5.4rem;
   height: auto;
   width: 100%;
+  overflow: visible;
 }
 
 .room-player-card {
@@ -6171,6 +6174,8 @@ input:focus {
 
 :is(.room-host-profile, .room-player-card)[data-card-custom="true"] {
   position: relative;
+  isolation: isolate;
+  overflow: visible;
 }
 
 .black-card[data-card-custom="true"] {
