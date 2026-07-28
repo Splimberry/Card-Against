@@ -11516,6 +11516,12 @@ function broadcastRoomPowerState(owner, power, meta = {}) {
     return;
   }
   const updatedAt = Date.now();
+  const timerAction = power.type === "time_bender"
+    ? { type: "time_bender" }
+    : null;
+  if (timerAction) {
+    applyLocalRoomTimeBenderTimerEffect(owner, { now: updatedAt });
+  }
   if (state.roomGame) {
     state.roomGame.powerState = {
       ...getRoomPowerStatePayload(),
@@ -11541,6 +11547,7 @@ function broadcastRoomPowerState(owner, power, meta = {}) {
     targetParticipantId: meta.targetOwner ? getRoomParticipantIdForOwner(meta.targetOwner) : "",
     deletedPowerId: meta.deletedPowerId || state.playedPowerMeta[owner]?.deletedPowerId || "",
     stolenPowerId: meta.stolenPowerId || state.playedPowerMeta[owner]?.stolenPowerId || "",
+    timerAction,
     hands,
     played,
     players,
@@ -11604,6 +11611,7 @@ function publishRoomPowerState(payload = {}) {
         effects: data.effects || null
       });
     }
+    applyRoomTimerStatePayload(data);
     broadcastRealtimeRoomChange("power-state", state.roomSettings.code, {
       ...data,
       matchId: data.matchId || syncedPayload.matchId
@@ -11668,6 +11676,10 @@ function applyRoomPowerState(payload = {}) {
   const players = Array.isArray(payload.players) ? payload.players : [];
   const effects = payload.effects && typeof payload.effects === "object" ? payload.effects : null;
   let changed = false;
+  const timerStateApplied = applyRoomTimerStatePayload(payload);
+  if (timerStateApplied) {
+    changed = true;
+  }
   hands.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId);
     if (!owner || !getPlayer(owner)) {
@@ -12093,6 +12105,49 @@ function getOwnerTimerDrainIntervalMs(owner) {
   return isOwnerTimerSpedUpByTimeBender(owner) ? 500 : 1000;
 }
 
+function getRoomGameTimerState(game = state.roomGame) {
+  if (!game || typeof game !== "object") {
+    return null;
+  }
+  const participantTimers = game.participantTimers && typeof game.participantTimers === "object"
+    ? game.participantTimers
+    : {};
+  return {
+    roundStartedAt: Math.max(0, Number(game.roundStartedAt) || Number(game.startedAt) || 0),
+    baseDurationMs: Math.max(5000, Number(game.baseDurationMs) || (Number(state.timerSeconds) || 30) * 1000),
+    participantTimers,
+    gradingForceAt: Math.max(0, Number(game.gradingForceAt) || 0)
+  };
+}
+
+function getRoomParticipantTimerForOwner(owner, game = state.roomGame) {
+  const participantId = getRoomParticipantIdForOwner(owner);
+  const timerState = getRoomGameTimerState(game);
+  if (!participantId || !timerState?.participantTimers) {
+    return null;
+  }
+  const timer = timerState.participantTimers[participantId];
+  return timer && typeof timer === "object" ? timer : null;
+}
+
+function getRoomParticipantTimerRemainingMs(owner, game = state.roomGame, now = Date.now()) {
+  const timer = getRoomParticipantTimerForOwner(owner, game);
+  if (timer) {
+    if (String(timer.status || "").toLowerCase() === "ended") {
+      return 0;
+    }
+    return Math.max(0, Number(timer.endsAt) - now);
+  }
+  const timerState = getRoomGameTimerState(game);
+  const roundStartedAt = timerState?.roundStartedAt || getRoomGameRoundStartedAt(game);
+  const durationMs = timerState?.baseDurationMs || getOwnerAnswerTimerDuration(owner) * 1000;
+  return roundStartedAt ? Math.max(0, roundStartedAt + durationMs - now) : getOwnerAnswerTimerDuration(owner) * 1000;
+}
+
+function getRoomParticipantTimerRemainingSeconds(owner, game = state.roomGame, now = Date.now()) {
+  return Math.max(0, Math.ceil(getRoomParticipantTimerRemainingMs(owner, game, now) / 1000));
+}
+
 function getOwnerAnswerTimerDuration(owner) {
   const baseSeconds = Math.max(5, Number(state.timerSeconds) || 30);
   const penalty = isRoomMode() ? 0 : Math.max(0, Number(state.timerPenalties?.[owner]) || 0);
@@ -12101,7 +12156,150 @@ function getOwnerAnswerTimerDuration(owner) {
   return Math.max(5, baseSeconds - penalty + dilationBonus + roomBenderBonus);
 }
 
+function getRoomGradingForceAt(game = state.roomGame) {
+  const timerState = getRoomGameTimerState(game);
+  if (!timerState) {
+    return 0;
+  }
+  if (timerState.gradingForceAt > 0) {
+    return timerState.gradingForceAt;
+  }
+  const runningEndsAt = Object.values(timerState.participantTimers || {})
+    .filter((timer) => timer && String(timer.status || "").toLowerCase() !== "ended")
+    .map((timer) => Number(timer.endsAt) || 0)
+    .filter((endsAt) => endsAt > 0);
+  return runningEndsAt.length ? Math.max(...runningEndsAt) + 2000 : 0;
+}
+
+function createRoomParticipantTimerFallback(owner, game = state.roomGame, now = Date.now()) {
+  const timerState = getRoomGameTimerState(game);
+  const roundStartedAt = timerState?.roundStartedAt || getRoomGameRoundStartedAt(game) || now;
+  const baseDurationMs = timerState?.baseDurationMs || getOwnerAnswerTimerDuration(owner) * 1000;
+  return {
+    endsAt: Math.max(now, roundStartedAt + baseDurationMs),
+    speedMultiplier: 1,
+    status: "running"
+  };
+}
+
+function getRoomTimerForceAtFromTimers(participantTimers = {}, now = Date.now()) {
+  const runningEndsAt = Object.values(participantTimers || {})
+    .filter((timer) => timer && String(timer.status || "").toLowerCase() !== "ended")
+    .map((timer) => Number(timer.endsAt) || 0)
+    .filter((endsAt) => endsAt > now);
+  return runningEndsAt.length ? Math.max(...runningEndsAt) + 2000 : now;
+}
+
+function applyRoomTimerStatePayload(payload = {}) {
+  const timerState = payload.timerState && typeof payload.timerState === "object"
+    ? payload.timerState
+    : payload.game && typeof payload.game === "object"
+      ? payload.game
+      : null;
+  if (!timerState || !isRoomMode() || !hasActiveRoomContext()) {
+    return false;
+  }
+  const participantTimers = timerState.participantTimers && typeof timerState.participantTimers === "object"
+    ? timerState.participantTimers
+    : null;
+  if (!participantTimers) {
+    return false;
+  }
+  const nextTimerFields = {
+    roundStartedAt: Math.max(0, Number(timerState.roundStartedAt) || Number(state.roomGame?.roundStartedAt) || 0),
+    baseDurationMs: Math.max(5000, Number(timerState.baseDurationMs) || Number(state.roomGame?.baseDurationMs) || (Number(state.timerSeconds) || 30) * 1000),
+    participantTimers,
+    gradingForceAt: Math.max(0, Number(timerState.gradingForceAt) || getRoomTimerForceAtFromTimers(participantTimers))
+  };
+  state.roomGame = {
+    ...(state.roomGame || {}),
+    ...nextTimerFields,
+    updatedAt: Number(payload.updatedAt) || Number(timerState.updatedAt) || Date.now()
+  };
+  if (state.joiningRoom?.game) {
+    state.joiningRoom = {
+      ...state.joiningRoom,
+      game: {
+        ...state.joiningRoom.game,
+        ...nextTimerFields
+      }
+    };
+  }
+  if (!state.isSpectator && !elements.inputPanel.classList.contains("hidden") && elements.verdictPanel.classList.contains("hidden")) {
+    state.timerRemaining = getRoomParticipantTimerRemainingSeconds(getCurrentPowerOwner(), state.roomGame);
+    renderTimer();
+  }
+  if (isCurrentHost() && !state.joiningRoom && state.roomGame?.status === "playing") {
+    scheduleHostRoomSubmissionDeadline();
+  }
+  return true;
+}
+
+function applyLocalRoomTimeBenderTimerEffect(owner, options = {}) {
+  if (!isRoomMode() || !owner || !state.roomGame || state.roomGame.status !== "playing") {
+    return false;
+  }
+  const actorParticipantId = getRoomParticipantIdForOwner(owner);
+  if (!actorParticipantId) {
+    return false;
+  }
+  const now = Math.max(0, Number(options.now) || Date.now());
+  const timerState = getRoomGameTimerState(state.roomGame);
+  const participantTimers = { ...(timerState?.participantTimers || {}) };
+  getActiveOwners().forEach((activeOwner) => {
+    const participantId = getRoomParticipantIdForOwner(activeOwner);
+    if (!participantId) {
+      return;
+    }
+    const timer = participantTimers[participantId] || createRoomParticipantTimerFallback(activeOwner, state.roomGame, now);
+    const remainingMs = String(timer.status || "").toLowerCase() === "ended"
+      ? 0
+      : Math.max(0, Number(timer.endsAt) - now);
+    if (remainingMs <= 0) {
+      participantTimers[participantId] = {
+        ...timer,
+        endsAt: Math.min(Number(timer.endsAt) || now, now),
+        status: "ended"
+      };
+      return;
+    }
+    if (participantId === actorParticipantId) {
+      participantTimers[participantId] = {
+        ...timer,
+        endsAt: Math.min(now + 99000, now + remainingMs + 5000),
+        status: "running"
+      };
+      return;
+    }
+    if ((Number(timer.speedMultiplier) || 1) >= 2) {
+      participantTimers[participantId] = timer;
+      return;
+    }
+    participantTimers[participantId] = {
+      ...timer,
+      endsAt: now + Math.ceil(remainingMs / 2),
+      speedMultiplier: 2,
+      status: "running"
+    };
+  });
+  return applyRoomTimerStatePayload({
+    updatedAt: now,
+    timerState: {
+      roundStartedAt: timerState?.roundStartedAt || getRoomGameRoundStartedAt(state.roomGame),
+      baseDurationMs: timerState?.baseDurationMs || getOwnerAnswerTimerDuration(owner) * 1000,
+      participantTimers,
+      gradingForceAt: getRoomTimerForceAtFromTimers(participantTimers, now)
+    }
+  });
+}
+
 function getRoomSubmissionWaitTimeoutMs() {
+  if (isRoomMode()) {
+    const forceAt = getRoomGradingForceAt();
+    if (forceAt > 0) {
+      return Math.max(1200, forceAt - Date.now() + 250);
+    }
+  }
   const maxSeconds = Math.max(
     Number(state.timerSeconds) || 30,
     ...getActiveOwners().map((owner) => getOwnerAnswerTimerDuration(owner))
@@ -12137,16 +12335,21 @@ function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
     getCurrentRoomRoundSyncKey(),
     Number(state.round) || 0
   ].join("|");
-  if (state.roomAutoResolveId && state.roomAutoResolveKey === deadlineKey) {
+  const timeoutMs = getRoomSubmissionWaitTimeoutMs();
+  const dueAt = Date.now() + timeoutMs;
+  if (
+    state.roomAutoResolveId
+    && state.roomAutoResolveKey === deadlineKey
+    && Math.abs((Number(state.roomAutoResolveDueAt) || 0) - dueAt) < 500
+  ) {
     return true;
   }
   if (state.roomAutoResolveId) {
     window.clearTimeout(state.roomAutoResolveId);
     state.roomAutoResolveId = null;
   }
-  const timeoutMs = getRoomSubmissionWaitTimeoutMs();
   state.roomAutoResolveKey = deadlineKey;
-  state.roomAutoResolveDueAt = Date.now() + timeoutMs;
+  state.roomAutoResolveDueAt = dueAt;
   state.roomAutoResolveId = window.setTimeout(() => {
     state.roomAutoResolveId = null;
     state.roomAutoResolveKey = "";
@@ -12213,7 +12416,9 @@ function buildRoundSkipSubmissions() {
         participantId,
         owner,
         answer: cleanInput(answer || ""),
-        remainingTime: Math.max(0, Number(state.answerRemainingTimes[owner] ?? state.timerRemaining) || 0)
+        remainingTime: state.roomSubmissions[owner]
+          ? Math.max(0, Number(state.answerRemainingTimes[owner]) || 0)
+          : getRoomParticipantTimerRemainingSeconds(owner)
       };
     })
     .filter(Boolean);
@@ -21144,7 +21349,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "time_bender") {
-    if (owner === getCurrentPowerOwner() && state.timerId && isAnswerInputLive()) {
+    if (!isRoomMode() && owner === getCurrentPowerOwner() && state.timerId && isAnswerInputLive()) {
       state.timerRemaining = Math.min(99, state.timerRemaining + 5);
     }
     queueStatFlash("mixed", power.name, ["+5 Seconds", "Others Drain 2x"], { owners: [owner], complex: true });
@@ -21803,6 +22008,9 @@ function getPowerCommitRemainingTime(owner) {
   if (isRoomMode() && state.roomSubmissions[owner]) {
     return Math.max(0, Number(state.answerRemainingTimes[owner]) || 0);
   }
+  if (isRoomMode()) {
+    return getRoomParticipantTimerRemainingSeconds(owner);
+  }
   return Math.max(0, Number(state.timerRemaining) || 0);
 }
 
@@ -22349,7 +22557,9 @@ function startTimer(options = {}) {
   const owner = getCurrentPowerOwner();
   if (!options.resume) {
     state.powerDebugTimerPaused = false;
-    state.timerRemaining = getOwnerAnswerTimerDuration(owner);
+    state.timerRemaining = isRoomMode()
+      ? getRoomParticipantTimerRemainingSeconds(owner)
+      : getOwnerAnswerTimerDuration(owner);
     state.timerWarned = false;
   }
   renderTimer();
@@ -22368,6 +22578,28 @@ function startTimer(options = {}) {
     }
 
     const currentTimerOwner = getCurrentPowerOwner();
+    if (isRoomMode()) {
+      const previousRemaining = state.timerRemaining;
+      state.timerRemaining = getRoomParticipantTimerRemainingSeconds(currentTimerOwner);
+      renderTimer();
+      commitScheduledBotPowerUps();
+      commitScheduledRoomBotAnswers();
+      commitScheduledError404Effects();
+
+      const submittedCurrentPlayer = state.roomSubmissions[state.currentOwner];
+      if (previousRemaining > 10 && state.timerRemaining <= 10 && !state.timerWarned && !submittedCurrentPlayer) {
+        state.timerWarned = true;
+        playSound("timerWarning");
+      }
+
+      if (state.timerRemaining === 0) {
+        stopTimer();
+        playSound("error");
+        handleTimerExpired();
+      }
+      return;
+    }
+
     timerDrainElapsedMs += timerTickMs;
     const drainIntervalMs = getOwnerTimerDrainIntervalMs(currentTimerOwner);
     if (timerDrainElapsedMs < drainIntervalMs) {
@@ -28939,11 +29171,8 @@ function syncTimerFromRoomGame(game = state.roomGame) {
     renderTimer();
     return;
   }
-  const roundStartedAt = getRoomGameRoundStartedAt(game);
   const owner = getCurrentPowerOwner();
-  const duration = getOwnerAnswerTimerDuration(owner);
-  const elapsedSeconds = roundStartedAt ? Math.floor(Math.max(0, Date.now() - roundStartedAt) / 1000) : 0;
-  state.timerRemaining = Math.max(0, duration - elapsedSeconds);
+  state.timerRemaining = getRoomParticipantTimerRemainingSeconds(owner, game);
   state.timerWarned = state.timerRemaining <= 10;
   stopTimer();
   renderTimer();
@@ -29412,6 +29641,7 @@ function applyRealtimeRoundStarted(payload = {}) {
     state.roomGame = game;
     syncCurrentRoundSetupMetadata(setup);
     applyRoomGamePowerState(state.roomGame);
+    syncTimerFromRoomGame(game);
     rememberRoomRevisionPayload(payload);
     return true;
   }
@@ -31975,9 +32205,9 @@ function submitRoomAnswer(rawInput, options = {}) {
     return;
   }
   commitActivePowerUp(owner);
-  state.answerRemainingTimes[owner] = state.timerRemaining;
+  state.answerRemainingTimes[owner] = getRoomParticipantTimerRemainingSeconds(owner);
   if (!options.timedOut) {
-    markAchievementLateSubmission(owner, state.timerRemaining);
+    markAchievementLateSubmission(owner, state.answerRemainingTimes[owner]);
   }
   stopTimer();
   if (owner === "opponent") {

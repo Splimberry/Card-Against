@@ -1323,6 +1323,111 @@ async function testRoomPowerStateEndpointStampsEvents() {
   assert.equal(events.payload.events.some((event) => event.type === "power_state"), true);
 }
 
+async function testRoomPowerStateTimeBenderUpdatesSharedTimers() {
+  const code = makeCode(8171);
+  const matchId = `${code}-match`;
+  const roundStartedAt = Date.now() - 10000;
+  const hostEndsAt = roundStartedAt + 30000;
+  const guestEndsAt = roundStartedAt + 30000;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      },
+      {
+        id: "spectator-client",
+        name: "Spectator",
+        host: false,
+        spectator: true,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "spectating"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      roundStartedAt,
+      baseDurationMs: 30000,
+      participantTimers: {
+        "host-client": { endsAt: hostEndsAt, speedMultiplier: 1, status: "running" },
+        "guest-client": { endsAt: guestEndsAt, speedMultiplier: 1, status: "running" }
+      },
+      gradingForceAt: guestEndsAt + 2000,
+      powerState: {
+        matchId,
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["time_bender"], fresh: [] },
+          { participantId: "guest-client", owner: "opponent", updatedAt: 2000, hand: ["shuffle"], fresh: [] }
+        ],
+        played: [],
+        players: [],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+    matchId,
+    round: 1,
+    powerId: "time_bender",
+    actorParticipantId: "host-client",
+    timerAction: { type: "time_bender" },
+    hands: [
+      { participantId: "host-client", owner: "player", hand: [], fresh: [] }
+    ],
+    played: [
+      {
+        participantId: "host-client",
+        owner: "player",
+        stacks: [{ powerId: "time_bender", revealId: "test-time-bender", meta: {} }],
+        primaryPowerId: "time_bender"
+      }
+    ]
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.ok(payload.timerState);
+  assert.equal(payload.timerState.participantTimers["host-client"].status, "running");
+  assert.equal(payload.timerState.participantTimers["guest-client"].speedMultiplier, 2);
+  assert.equal(payload.timerState.participantTimers["spectator-client"], undefined);
+  assert.ok(payload.timerState.participantTimers["host-client"].endsAt >= hostEndsAt + 4000);
+  assert.ok(payload.timerState.participantTimers["guest-client"].endsAt <= guestEndsAt - 8000);
+  assert.ok(payload.timerState.gradingForceAt >= payload.timerState.participantTimers["host-client"].endsAt);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.deepEqual(stored.payload.room.game.participantTimers, payload.timerState.participantTimers);
+
+  const events = await request("GET", `/api/rooms/${code}/events?since=0`);
+  assert.equal(events.response.status, 200, events.payload.error);
+  const event = events.payload.events.find((entry) => entry.type === "power_state" && entry.payload.powerId === "time_bender");
+  assert.ok(event);
+  assert.equal(event.payload.timerState.participantTimers["guest-client"].speedMultiplier, 2);
+}
+
 async function testStaleRoomRoundResultCannotOverwriteRematch() {
   const code = makeCode(8116);
   await upsertRoom(makeRoom(code, {
@@ -1559,6 +1664,7 @@ async function testCurrentRoundSubmissionIsAnswerEvent() {
 async function testRoomAnswerEndpointStoresRoundScopedAnswer() {
   const code = makeCode(8162);
   const matchId = `${code}-match`;
+  const roundStartedAt = Date.now() - 5000;
   await upsertRoom(makeRoom(code, {
     status: "in-progress",
     participants: [
@@ -1589,6 +1695,13 @@ async function testRoomAnswerEndpointStoresRoundScopedAnswer() {
       round: 2,
       setup: makeSetup(2),
       answers: {},
+      roundStartedAt,
+      baseDurationMs: 30000,
+      participantTimers: {
+        "host-client": { endsAt: roundStartedAt + 30000, speedMultiplier: 1, status: "running" },
+        "guest-client": { endsAt: roundStartedAt + 30000, speedMultiplier: 1, status: "running" }
+      },
+      gradingForceAt: roundStartedAt + 32000,
       updatedAt: Date.now()
     }
   }));
@@ -1632,6 +1745,8 @@ async function testRoomAnswerEndpointStoresRoundScopedAnswer() {
   assert.equal(host.answer, "");
   assert.equal(stored.payload.room.game.answers["host-client"].answer, "");
   assert.equal(stored.payload.room.game.answers["host-client"].round, 2);
+  assert.equal(stored.payload.room.game.participantTimers["host-client"].status, "ended");
+  assert.equal(stored.payload.room.game.participantTimers["guest-client"].status, "running");
 
   const events = await request("GET", `/api/rooms/${code}/events?since=0`);
   assert.equal(events.response.status, 200, events.payload.error);
@@ -1799,6 +1914,47 @@ async function testRoomRoundSetupEndpointCreatesSharedSetup() {
   const setupStartedAt = Date.now() - 1500;
   await upsertRoom(makeRoom(code, {
     status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host",
+        answer: "",
+        submittedRound: 0,
+        remainingTime: 0
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined",
+        answer: "",
+        submittedRound: 0,
+        remainingTime: 0
+      },
+      {
+        id: "spectator-client",
+        name: "Spectator",
+        host: false,
+        spectator: true,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "spectating",
+        answer: "",
+        submittedRound: 0,
+        remainingTime: 0
+      }
+    ],
     game: {
       matchId,
       status: "starting",
@@ -1832,12 +1988,20 @@ async function testRoomRoundSetupEndpointCreatesSharedSetup() {
   assert.ok(payload.game.setup.blackCard);
   assert.equal(payload.game.setupStartedAt, setupStartedAt);
   assert.ok(payload.game.roundStartedAt >= setupStartedAt);
+  assert.equal(payload.game.baseDurationMs, 30000);
+  assert.ok(payload.game.participantTimers["host-client"].endsAt >= payload.game.roundStartedAt + 30000);
+  assert.ok(payload.game.participantTimers["guest-client"].endsAt >= payload.game.roundStartedAt + 30000);
+  assert.equal(payload.game.participantTimers["host-client"].speedMultiplier, 1);
+  assert.equal(payload.game.participantTimers["guest-client"].status, "running");
+  assert.equal(payload.game.participantTimers["spectator-client"], undefined);
+  assert.ok(payload.game.gradingForceAt >= payload.game.participantTimers["host-client"].endsAt);
   assert.equal(payload.room.game.setup.blackCard, payload.game.setup.blackCard);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
   assert.equal(stored.payload.room.game.status, "playing");
   assert.equal(stored.payload.room.game.setup.blackCard, payload.game.setup.blackCard);
+  assert.deepEqual(stored.payload.room.game.participantTimers, payload.game.participantTimers);
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_started"), true);
 }
 
@@ -3386,6 +3550,7 @@ async function main() {
   await testDuplicateHostPresenceRemovesStaleHostRow();
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomPowerStateEndpointStampsEvents();
+  await testRoomPowerStateTimeBenderUpdatesSharedTimers();
   await testStaleRoomRoundResultCannotOverwriteRematch();
   await testStaleRoomGameEndCannotCompleteRematch();
   await testStaleParticipantSubmissionCannotOverwriteRematch();

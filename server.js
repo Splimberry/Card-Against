@@ -3359,6 +3359,7 @@ async function handleRoomRoundSetup(req, res, code) {
     }
 
     const now = Date.now();
+    const timerState = createRoomTimerState(room, matchSettings, now);
     room.status = "in-progress";
     room.game = normalizeRoomGame({
       ...(currentMatchId === matchId ? currentGame : {}),
@@ -3372,6 +3373,9 @@ async function handleRoomRoundSetup(req, res, code) {
       powerState: body.powerState || currentGame.powerState || null,
       setupStartedAt: currentGame.setupStartedAt || now,
       roundStartedAt: now,
+      baseDurationMs: timerState.baseDurationMs,
+      participantTimers: timerState.participantTimers,
+      gradingForceAt: timerState.gradingForceAt,
       updatedAt: now
     });
     stampRoomEvent(room, "round_started", {
@@ -3484,14 +3488,14 @@ async function handleRoomAnswer(req, res, code) {
       round: currentRound
     };
 
-    room.game = normalizeRoomGame({
+    room.game = normalizeRoomGame(updateRoomParticipantTimerStatus({
       ...game,
       answers: {
         ...existingAnswers,
         [participantId]: answerState
       },
       updatedAt: submittedAt
-    });
+    }, participantId, { status: "ended", now: submittedAt }));
     participant.status = "submitted";
     participant.answer = answer;
     participant.submittedRound = currentRound;
@@ -3547,6 +3551,190 @@ async function handleRoomAnswer(req, res, code) {
 function getRoomGameplayParticipants(room = {}) {
   return (Array.isArray(room.participants) ? room.participants : [])
     .filter(isGameplayParticipant);
+}
+
+function getRoomBaseTimerDurationMs(matchSettings = {}, fallbackSettings = {}) {
+  const timerSeconds = clampServerNumber(
+    matchSettings?.timerSeconds || fallbackSettings?.timerSeconds,
+    10,
+    60,
+    30
+  );
+  return Math.max(5000, timerSeconds * 1000);
+}
+
+function normalizeRoomParticipantTimers(timers = {}) {
+  const source = timers && typeof timers === "object" ? timers : {};
+  return Object.fromEntries(
+    Object.entries(source)
+      .map(([participantId, timer]) => {
+        const id = String(participantId || "").slice(0, 80);
+        if (!id || !timer || typeof timer !== "object") {
+          return null;
+        }
+        return [
+          id,
+          {
+            endsAt: clampServerNumber(timer.endsAt, 0, Number.MAX_SAFE_INTEGER, 0),
+            speedMultiplier: clampServerNumber(timer.speedMultiplier, 0.1, 8, 1),
+            status: String(timer.status || "").toLowerCase() === "ended" ? "ended" : "running"
+          }
+        ];
+      })
+      .filter(Boolean)
+  );
+}
+
+function getRoomParticipantTimerRemainingMs(timer = {}, now = Date.now()) {
+  if (!timer || timer.status === "ended") {
+    return 0;
+  }
+  return Math.max(0, clampServerNumber(timer.endsAt, 0, Number.MAX_SAFE_INTEGER, 0) - now);
+}
+
+function getRoomTimerGradingForceAt(participantTimers = {}, fallbackAt = 0, now = Date.now()) {
+  const runningEndsAt = Object.values(normalizeRoomParticipantTimers(participantTimers))
+    .filter((timer) => timer.status !== "ended")
+    .map((timer) => clampServerNumber(timer.endsAt, 0, Number.MAX_SAFE_INTEGER, 0))
+    .filter((endsAt) => endsAt > now);
+  const latestEndsAt = runningEndsAt.length ? Math.max(...runningEndsAt) : 0;
+  return latestEndsAt > 0
+    ? latestEndsAt + 2000
+    : clampServerNumber(fallbackAt, 0, Number.MAX_SAFE_INTEGER, now);
+}
+
+function createRoomTimerState(room = {}, matchSettings = {}, roundStartedAt = Date.now()) {
+  const baseDurationMs = getRoomBaseTimerDurationMs(matchSettings, room.settings);
+  const participantTimers = Object.fromEntries(
+    getRoomGameplayParticipants(room)
+      .map((participant) => {
+        const participantId = String(participant.id || "").slice(0, 80);
+        return participantId
+          ? [participantId, {
+            endsAt: roundStartedAt + baseDurationMs,
+            speedMultiplier: 1,
+            status: "running"
+          }]
+          : null;
+      })
+      .filter(Boolean)
+  );
+  return {
+    baseDurationMs,
+    participantTimers,
+    gradingForceAt: getRoomTimerGradingForceAt(participantTimers, roundStartedAt + baseDurationMs + 2000, roundStartedAt)
+  };
+}
+
+function getRoomTimerStatePayload(game = {}) {
+  if (!game || typeof game !== "object") {
+    return null;
+  }
+  return {
+    roundStartedAt: clampServerNumber(game.roundStartedAt || game.startedAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    baseDurationMs: clampServerNumber(game.baseDurationMs, 5000, 60000, getRoomBaseTimerDurationMs(game.matchSettings || game.settings || {}, {})),
+    participantTimers: normalizeRoomParticipantTimers(game.participantTimers),
+    gradingForceAt: clampServerNumber(game.gradingForceAt, 0, Number.MAX_SAFE_INTEGER, 0)
+  };
+}
+
+function updateRoomParticipantTimerStatus(game = {}, participantId = "", options = {}) {
+  const id = String(participantId || "").slice(0, 80);
+  if (!game || typeof game !== "object" || !id) {
+    return game;
+  }
+  const now = clampServerNumber(options.now, 0, Number.MAX_SAFE_INTEGER, Date.now());
+  const participantTimers = normalizeRoomParticipantTimers(game.participantTimers);
+  const existingTimer = participantTimers[id] || {
+    endsAt: now,
+    speedMultiplier: 1,
+    status: "running"
+  };
+  participantTimers[id] = {
+    ...existingTimer,
+    endsAt: Math.min(
+      clampServerNumber(existingTimer.endsAt, 0, Number.MAX_SAFE_INTEGER, now),
+      now
+    ),
+    status: options.status === "running" ? "running" : "ended"
+  };
+  return {
+    ...game,
+    participantTimers,
+    gradingForceAt: getRoomTimerGradingForceAt(participantTimers, game.gradingForceAt, now)
+  };
+}
+
+function applyRoomTimerAction(room = {}, body = {}) {
+  const game = room.game && typeof room.game === "object" ? room.game : null;
+  if (!game || game.status !== "playing") {
+    return null;
+  }
+  const action = body.timerAction && typeof body.timerAction === "object" ? body.timerAction : null;
+  const actionType = String(action?.type || "").trim().toLowerCase();
+  const powerId = String(body.powerId || "").trim();
+  if (actionType !== "time_bender" && powerId !== "time_bender") {
+    return null;
+  }
+
+  const actorParticipantId = String(body.actorParticipantId || "").slice(0, 80);
+  const participants = getRoomGameplayParticipants(room);
+  if (!actorParticipantId || !participants.some((participant) => participant.id === actorParticipantId)) {
+    return null;
+  }
+
+  const now = Date.now();
+  const matchSettings = game.matchSettings || room.settings || {};
+  const baseDurationMs = clampServerNumber(game.baseDurationMs, 5000, 60000, getRoomBaseTimerDurationMs(matchSettings, room.settings));
+  const existingTimers = normalizeRoomParticipantTimers(game.participantTimers);
+  const participantTimers = Object.fromEntries(
+    participants
+      .map((participant) => {
+        const participantId = String(participant.id || "").slice(0, 80);
+        if (!participantId) {
+          return null;
+        }
+        const timer = existingTimers[participantId] || {
+          endsAt: now + baseDurationMs,
+          speedMultiplier: 1,
+          status: "running"
+        };
+        const remainingMs = getRoomParticipantTimerRemainingMs(timer, now);
+        if (timer.status === "ended" || remainingMs <= 0) {
+          return [participantId, {
+            ...timer,
+            endsAt: Math.min(clampServerNumber(timer.endsAt, 0, Number.MAX_SAFE_INTEGER, now), now),
+            status: "ended"
+          }];
+        }
+        if (participantId === actorParticipantId) {
+          return [participantId, {
+            ...timer,
+            endsAt: Math.min(now + 99000, now + remainingMs + 5000),
+            status: "running"
+          }];
+        }
+        if ((Number(timer.speedMultiplier) || 1) >= 2) {
+          return [participantId, timer];
+        }
+        return [participantId, {
+          ...timer,
+          endsAt: now + Math.ceil(remainingMs / 2),
+          speedMultiplier: 2,
+          status: "running"
+        }];
+      })
+      .filter(Boolean)
+  );
+
+  room.game = normalizeRoomGame({
+    ...game,
+    baseDurationMs,
+    participantTimers,
+    gradingForceAt: getRoomTimerGradingForceAt(participantTimers, game.gradingForceAt, now),
+    updatedAt: now
+  });
+  return getRoomTimerStatePayload(room.game);
 }
 
 function normalizeRoomGradingReason(reason = "") {
@@ -3706,7 +3894,7 @@ function startRoomGradingTransition(room, options = {}) {
     };
   }
 
-  room.game = normalizeRoomGame({
+  let lockedGame = {
     ...game,
     status: "grading",
     round,
@@ -3716,6 +3904,13 @@ function startRoomGradingTransition(room, options = {}) {
     gradingReason: reason,
     gradingForceAt: clampServerNumber(options.gradingForceAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: now
+  };
+  participants.forEach((participant) => {
+    lockedGame = updateRoomParticipantTimerStatus(lockedGame, participant.id, { status: "ended", now });
+  });
+  room.game = normalizeRoomGame({
+    ...lockedGame,
+    gradingForceAt: clampServerNumber(options.gradingForceAt, 0, Number.MAX_SAFE_INTEGER, lockedGame.gradingForceAt || now)
   });
   const payload = {
     round,
@@ -3847,6 +4042,7 @@ async function handleRoomPowerState(req, res, code) {
       room.game.powerState = mergedPowerState;
       room.game.updatedAt = Date.now();
     }
+    const timerState = applyRoomTimerAction(room, body);
     stampRoomEvent(room, "power_state", {
       round: clampServerNumber(body.round, 0, 100, room.game.round || 0),
       powerId: String(body.powerId || "").slice(0, 80),
@@ -3855,7 +4051,8 @@ async function handleRoomPowerState(req, res, code) {
       deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
       stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
       matchId: room.game?.matchId || powerState.matchId || "",
-      powerState
+      powerState,
+      timerState
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
@@ -3870,7 +4067,8 @@ async function handleRoomPowerState(req, res, code) {
       hands: powerState.hands,
       played: powerState.played,
       players: powerState.players,
-      effects: powerState.effects
+      effects: powerState.effects,
+      timerState: getRoomTimerStatePayload(storedRoom.game) || timerState
     }));
   } catch (error) {
     sendJson(res, 400, { error: error.message || "Room power update failed." });
@@ -4413,6 +4611,8 @@ function normalizeRoomGame(game) {
     powerState: normalizeRoomPowerState(game.powerState),
     setupStartedAt: clampServerNumber(game.setupStartedAt || game.preparingStartedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     roundStartedAt: clampServerNumber(game.roundStartedAt || game.startedAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    baseDurationMs: clampServerNumber(game.baseDurationMs, 5000, 60000, getRoomBaseTimerDurationMs(matchSettings || game.settings || {}, {})),
+    participantTimers: normalizeRoomParticipantTimers(game.participantTimers),
     gradingStartedAt: clampServerNumber(game.gradingStartedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     gradingReason: String(game.gradingReason || "").slice(0, 60),
     gradingForceAt: clampServerNumber(game.gradingForceAt, 0, Number.MAX_SAFE_INTEGER, 0),
