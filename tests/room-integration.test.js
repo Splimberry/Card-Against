@@ -1970,6 +1970,91 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_grading"), true);
 }
 
+async function testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound() {
+  const code = makeCode(8165);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Host answer",
+        submittedRound: 2,
+        submissionMatchId: matchId,
+        remainingTime: 12
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Guest answer",
+        submittedRound: 2,
+        submissionMatchId: matchId,
+        remainingTime: 9
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      answers: {
+        "host-client": {
+          participantId: "host-client",
+          matchId,
+          round: 2,
+          status: "submitted",
+          answer: "Host answer",
+          remainingTime: 12,
+          submittedAt: Date.now() - 2000
+        },
+        "guest-client": {
+          participantId: "guest-client",
+          matchId,
+          round: 2,
+          status: "submitted",
+          answer: "Guest answer",
+          remainingTime: 9,
+          submittedAt: Date.now() - 1000
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const duplicate = await request("POST", `/api/rooms/${code}/answer`, {
+    participantId: "guest-client",
+    hostParticipantId: "host-client",
+    matchId,
+    round: 2,
+    answer: "Different duplicate answer",
+    remainingTime: 1
+  });
+  assert.equal(duplicate.response.status, 200, duplicate.payload.error);
+  assert.equal(duplicate.payload.duplicate, true);
+  assert.equal(duplicate.payload.answer, "Guest answer");
+  assert.equal(duplicate.payload.grading.eventType, "round-grading");
+  assert.equal(duplicate.payload.grading.reason, "all-submitted");
+  assert.equal(duplicate.payload.grading.submissions.length, 2);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "grading");
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_grading"), true);
+}
+
 async function testRoomRoundAdvancingEndpointStampsEvent() {
   const code = makeCode(8140);
   const matchId = `${code}-match`;
@@ -2105,6 +2190,77 @@ async function testRoomRoundSetupEndpointCreatesSharedSetup() {
   assert.equal(stored.payload.room.game.status, "playing");
   assert.equal(stored.payload.room.game.setup.blackCard, payload.game.setup.blackCard);
   assert.deepEqual(stored.payload.room.game.participantTimers, payload.game.participantTimers);
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_started"), true);
+}
+
+async function testRoomRoundSetupRecoversMissingPreparationState() {
+  const code = makeCode(8166);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "lobby",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host",
+        answer: "",
+        submittedRound: 0,
+        remainingTime: 0
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined",
+        answer: "",
+        submittedRound: 0,
+        remainingTime: 0
+      }
+    ],
+    game: null
+  }));
+
+  const { response, payload } = await request("POST", `/api/rooms/${code}/round-setup`, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1,
+    totalRounds: 5,
+    enabledThemes: ["Science"],
+    matchSettings: {
+      rounds: 5,
+      timerSeconds: 30,
+      maxPlayers: 4,
+      autoAdvance: true,
+      enabledThemes: ["Science"]
+    },
+    setupSeed: `${code}-missing-prepare`
+  });
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.eventType, "round-started");
+  assert.equal(payload.matchId, matchId);
+  assert.equal(payload.round, 1);
+  assert.equal(payload.game.status, "playing");
+  assert.ok(payload.game.setup.blackCard);
+  assert.equal(payload.room.status, "in-progress");
+  assert.equal(payload.room.game.status, "playing");
+  assert.ok(payload.room.game.participantTimers["host-client"]);
+  assert.ok(payload.room.game.participantTimers["guest-client"]);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.status, "in-progress");
+  assert.equal(stored.payload.room.game.matchId, matchId);
+  assert.equal(stored.payload.room.game.status, "playing");
+  assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_started"), true);
 }
 
@@ -3792,8 +3948,10 @@ async function main() {
   await testRoomAnswerEndpointStoresRoundScopedAnswer();
   await testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState();
   await testRoomAnswerEndpointStartsGradingWhenAllSubmitted();
+  await testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound();
   await testRoomRoundAdvancingEndpointStampsEvent();
   await testRoomRoundSetupEndpointCreatesSharedSetup();
+  await testRoomRoundSetupRecoversMissingPreparationState();
   await testRoomRoundSetupCannotSkipPreparedRound();
   await testStaleRoomRoundAdvancingCannotOverwriteCurrentRound();
   await testDelayedRoomRoundAdvancingCannotClearStartedSetup();

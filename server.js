@@ -3276,6 +3276,53 @@ async function handleRoomReturnToLobby(req, res, code) {
   }
 }
 
+function applyRoomRoundPreparationState(room, options = {}) {
+  const normalizedCode = String(options.normalizedCode || room.code || "").trim().toUpperCase();
+  const currentGame = options.currentGame && typeof options.currentGame === "object"
+    ? options.currentGame
+    : room.game && typeof room.game === "object"
+      ? room.game
+      : null;
+  const currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
+  const matchId = String(options.matchId || currentMatchId || `${normalizedCode}-${Date.now()}`).slice(0, 80);
+  const round = clampServerNumber(options.round, 1, 100, 1);
+  const matchSettings = normalizeRoomGameSettings(options.matchSettings || currentGame?.matchSettings || room.settings);
+  const now = Date.now();
+
+  room.status = "in-progress";
+  room.settings = normalizeRoomSettings({
+    ...(room.settings || {}),
+    ...matchSettings,
+    randomModifiers: false,
+    code: normalizedCode
+  }, normalizedCode);
+  room.game = normalizeRoomGame({
+    ...(currentMatchId === matchId ? currentGame || {} : {}),
+    matchId,
+    status: "starting",
+    round,
+    setup: null,
+    answers: {},
+    matchSettings,
+    roundResult: null,
+    powerState: currentMatchId === matchId ? currentGame?.powerState || null : null,
+    setupStartedAt: now,
+    roundStartedAt: 0,
+    updatedAt: now
+  });
+
+  if (options.stampEvent !== false) {
+    stampRoomEvent(room, "round_advancing", {
+      round,
+      matchId,
+      hostParticipantId: String(options.hostParticipantId || "").slice(0, 80),
+      matchSettings,
+      game: room.game
+    });
+  }
+  return room.game;
+}
+
 async function handleRoomRoundAdvancing(req, res, code) {
   try {
     const normalizedCode = String(code || "").trim().toUpperCase();
@@ -3324,33 +3371,13 @@ async function handleRoomRoundAdvancing(req, res, code) {
     }
 
     const matchSettings = normalizeRoomGameSettings(body.matchSettings || body.settings || currentGame?.matchSettings || room.settings);
-    room.status = "in-progress";
-    room.settings = normalizeRoomSettings({
-      ...(room.settings || {}),
-      ...matchSettings,
-      randomModifiers: false,
-      code: normalizedCode
-    }, normalizedCode);
-    room.game = normalizeRoomGame({
-      ...(currentMatchId === matchId ? currentGame || {} : {}),
+    applyRoomRoundPreparationState(room, {
+      normalizedCode,
+      currentGame,
       matchId,
-      status: "starting",
       round,
-      setup: null,
-      answers: {},
       matchSettings,
-      roundResult: null,
-      powerState: currentMatchId === matchId ? currentGame?.powerState || null : null,
-      setupStartedAt: Date.now(),
-      roundStartedAt: 0,
-      updatedAt: Date.now()
-    });
-    stampRoomEvent(room, "round_advancing", {
-      round,
-      matchId,
-      hostParticipantId,
-      matchSettings,
-      game: room.game
+      hostParticipantId
     });
     finalizeRoom(room);
     const storedRoom = await backendStore.upsertRoom(room);
@@ -3380,30 +3407,32 @@ async function handleRoomRoundSetup(req, res, code) {
       return;
     }
 
-    const currentGame = room.game && typeof room.game === "object" ? room.game : null;
-    const currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
+    let currentGame = room.game && typeof room.game === "object" ? room.game : null;
+    let currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
     const payloadMatchId = String(body.matchId || body.game?.matchId || "").slice(0, 80);
     const matchId = payloadMatchId || currentMatchId || `${normalizedCode}-${Date.now()}`;
-    const currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
+    let currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
     const round = clampServerNumber(body.round || currentRound, 1, 100, currentRound || 1);
+    const matchSettings = normalizeRoomGameSettings(body.matchSettings || body.settings || currentGame?.matchSettings || room.settings);
+    const activeMatchInProgress = room.status === "in-progress" && currentGame && currentGame.status !== "ended";
 
-    if (room.status !== "in-progress" || !currentGame) {
-      sendJson(res, 409, { error: "Round setup needs a round preparation state first." });
-      return;
-    }
-    if (currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
+    if (activeMatchInProgress && currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
       sendJson(res, 409, { error: "Round setup belongs to a previous match." });
       return;
     }
-    if (currentRound && round < currentRound) {
+    if (activeMatchInProgress && currentRound && round < currentRound) {
       sendJson(res, 409, { error: "Round setup belongs to a previous round." });
       return;
     }
-    if (currentRound && round > currentRound) {
+    if (activeMatchInProgress && currentRound && round > currentRound) {
       sendJson(res, 409, { error: "Round setup cannot skip the prepared round." });
       return;
     }
-    if (currentGame.setup && currentGame.status !== "starting") {
+    if (activeMatchInProgress && (currentGame.status === "grading" || currentGame.roundResult)) {
+      sendJson(res, 409, { error: "Round setup cannot overwrite a locked round." });
+      return;
+    }
+    if (currentGame?.setup && currentGame.status !== "starting") {
       sendJson(res, 200, createRoomEventResponse(room, "round_started", {
         duplicate: true,
         round: currentRound || round,
@@ -3413,8 +3442,19 @@ async function handleRoomRoundSetup(req, res, code) {
       }));
       return;
     }
+    if (room.status !== "in-progress" || !currentGame || currentGame.status !== "starting") {
+      currentGame = applyRoomRoundPreparationState(room, {
+        normalizedCode,
+        currentGame,
+        matchId,
+        round,
+        matchSettings,
+        hostParticipantId: body.hostParticipantId || room.host?.id
+      });
+      currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
+      currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
+    }
 
-    const matchSettings = normalizeRoomGameSettings(body.matchSettings || body.settings || currentGame.matchSettings || room.settings);
     const enabledThemes = normalizeEnabledThemes(body.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
     const preferredTheme = normalizePreferredTheme(body.preferredTheme, enabledThemes);
     const recentBlackCards = Array.isArray(body.recentBlackCards) ? body.recentBlackCards.map(String).slice(-30) : [];
@@ -3529,7 +3569,16 @@ async function handleRoomAnswer(req, res, code) {
         submissionMatchId: currentMatchId,
         remainingTime: existingAnswer.remainingTime
       };
-      sendJson(res, 200, createRoomEventResponse(room, "answer_submitted", {
+      const gradingTransition = startRoomGradingTransition(room, {
+        reason: "all-submitted",
+        force: false
+      });
+      let responseRoom = room;
+      if (gradingTransition.started) {
+        finalizeRoom(room);
+        responseRoom = await backendStore.upsertRoom(room);
+      }
+      const response = createRoomEventResponse(responseRoom, "answer_submitted", {
         duplicate: true,
         participantId,
         participantName: participant.name || "A player",
@@ -3542,7 +3591,14 @@ async function handleRoomAnswer(req, res, code) {
         remainingTime: existingAnswer.remainingTime,
         submissionStatus: existingAnswer.status,
         autoSubmitted: existingAnswer.autoSubmitted
-      }));
+      });
+      if (gradingTransition.started) {
+        response.grading = createRoomEventResponse(responseRoom, "round_grading", {
+          ...gradingTransition.payload,
+          game: responseRoom.game || gradingTransition.payload.game
+        });
+      }
+      sendJson(res, 200, response);
       return;
     }
 
