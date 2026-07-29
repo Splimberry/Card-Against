@@ -4907,6 +4907,46 @@ async function testRequestedRoomBotIdCanBeKicked() {
   assert.equal(kicked.payload.room.participants.some((participant) => participant.id === botId), false);
 }
 
+async function testModerationCommandUsesTargetParticipantId() {
+  const code = makeCode(8193);
+  const botId = "bot-target-8193";
+  await upsertRoom(makeRoom(code));
+
+  const added = await roomCommand(code, "add_bot", {
+    participantId: "host-client",
+    botId,
+    name: "Target Bot",
+    participant: {
+      id: botId,
+      name: "Target Bot",
+      role: "bot",
+      bot: true,
+      active: true,
+      status: "bot"
+    }
+  });
+  assert.equal(added.response.status, 200, added.payload.error);
+
+  const kicked = await request("POST", `/api/rooms/${code}/commands`, {
+    type: "moderate_participant",
+    roomCode: code,
+    participantId: "host-client",
+    clientEventId: `${code}:target-kick`,
+    payload: {
+      participantId: "host-client",
+      hostParticipantId: "host-client",
+      targetParticipantId: botId,
+      action: "kick"
+    }
+  });
+  assert.equal(kicked.response.status, 200, kicked.payload.error);
+  assert.equal(kicked.payload.events.some((event) => event.type === "participant_moderated" && event.payload.participantId === botId), true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.participants.some((participant) => participant.id === botId), false);
+}
+
 async function testJoinedRoomParticipantIdCanBeModerated() {
   const code = makeCode(8192);
   await upsertRoom(makeRoom(code));
@@ -5566,6 +5606,7 @@ async function main() {
   await testRoomModerationEndpointKicksBot();
   await testRapidRoomBotAddsAreSerializedAndUnique();
   await testRequestedRoomBotIdCanBeKicked();
+  await testModerationCommandUsesTargetParticipantId();
   await testJoinedRoomParticipantIdCanBeModerated();
   await testHostCloseEndpointDeletesRoom();
   await testUserInventoryOpsAreIdempotent();

@@ -30798,7 +30798,8 @@ async function updateRoomPresence(room, options = {}) {
       || (options.active === false ? "disconnect_participant" : options.rejoin ? "rejoin_room" : "join_room");
     const optimisticEventType = normalizeRoomEventType(options.optimisticEventType || (commandType === "join_room" ? "participant-joined" : "participant-updated"));
     const shouldBroadcastOptimisticPresence = Boolean(
-      options.optimisticRealtime
+      options.allowOptimisticMembership === true
+      && options.optimisticRealtime
       && commandType === "join_room"
       && participant.active !== false
       && !state.isSpectator
@@ -33074,16 +33075,6 @@ async function addBotToRoom() {
   };
   rememberPendingRoomBotAdd({ id: botId, name: botName });
   renderRoomLobby();
-  broadcastRealtimeRoomChange("participant-joined", state.roomSettings.code, {
-    optimistic: true,
-    clientEventId,
-    status: state.currentRoomStatus || "lobby",
-    revision: getKnownRoomRevision(state.roomSettings.code),
-    updatedAt: Date.now(),
-    participantId: botId,
-    participant: optimisticBotParticipant,
-    bot: true
-  });
   const data = await roomSync.sendCommand("add_bot", {
     botId,
     name: botName,
@@ -33394,17 +33385,39 @@ function renderRoomPlayers() {
 }
 
 function getRoomPlayerForModeration(owner = "", participantId = "") {
-  const existing = getPlayer(owner)
-    || (participantId ? state.players.find((player) => player.participantId === participantId) : null);
+  const normalizedParticipantId = String(participantId || "").slice(0, 80);
+  if (normalizedParticipantId) {
+    const directPlayer = state.players.find((player) => player.participantId === normalizedParticipantId);
+    if (directPlayer) {
+      return directPlayer;
+    }
+    const directParticipantIndex = state.roomParticipants.findIndex((participant) => participant.id === normalizedParticipantId);
+    if (directParticipantIndex >= 0) {
+      const participant = state.roomParticipants[directParticipantIndex];
+      const role = normalizeRoomParticipantRole(participant);
+      return createPlayer(getRoomOwnerForParticipant(participant, directParticipantIndex), participant.name, {
+        avatar: participant.avatar,
+        equippedTitleId: participant.equippedTitleId || "",
+        specialBadges: normalizeSpecialBadges(participant.specialBadges || []),
+        cardCustomization: participant.cardCustomization || null,
+        participantId: participant.id,
+        profileUserId: participant.profileUserId || "",
+        connectionId: participant.connectionId || "",
+        host: isRoomParticipantHost(participant),
+        spectator: isRoomParticipantSpectator(participant),
+        bot: isRoomParticipantBot(participant),
+        type: role === "bot" ? "bot" : role === "spectator" ? "spectator" : "human",
+        active: isRoomParticipantActive(participant),
+        muted: Boolean(participant.muted),
+        connectionStatus: participant.status || getRoomParticipantDefaultStatus(role)
+      });
+    }
+  }
+  const existing = getPlayer(owner);
   if (existing) {
     return existing;
   }
-  const participantIndex = state.roomParticipants.findIndex((participant, index) => {
-    if (participantId && participant.id === participantId) {
-      return true;
-    }
-    return getRoomOwnerForParticipant(participant, index) === owner;
-  });
+  const participantIndex = state.roomParticipants.findIndex((participant, index) => getRoomOwnerForParticipant(participant, index) === owner);
   if (participantIndex < 0) {
     return null;
   }
@@ -33713,7 +33726,7 @@ function publishRoomModeration(action, participantId, options = {}) {
   return roomSync.sendCommand("moderate_participant", {
     clientEventId,
     action: normalizedAction,
-    participantId,
+    targetParticipantId: participantId,
     hostParticipantId: getCurrentRoomHostParticipantId(),
     muted,
     reason: options.reason || ""

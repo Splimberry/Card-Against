@@ -3274,7 +3274,7 @@ async function handleRoomCommandModerateParticipant(req, res, room, command, raw
   }
   const previousRevision = getRoomRevision(room);
   const action = String(command.payload.action || "").slice(0, 32);
-  const participantId = String(command.payload.participantId || "").slice(0, 80);
+  const participantId = String(command.payload.targetParticipantId || command.payload.participantId || "").slice(0, 80);
   const participant = room.participants.find((entry) => entry.id === participantId);
   if (!participant || normalizeParticipantRole(participant) === "host" || participant.id === room.host?.id) {
     sendJson(res, 404, { ok: false, error: "Participant not found." });
