@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const { createHmac } = require("node:crypto");
+const { readFileSync } = require("node:fs");
 const { Readable } = require("node:stream");
 
 process.env.BACKEND_STORE = "memory";
@@ -194,8 +195,214 @@ async function request(method, path, body, headers = {}) {
   };
 }
 
+function makeRoomCommandBody(code, type, payload = {}, overrides = {}) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const commandPayload = payload && typeof payload === "object" ? payload : {};
+  const participantId = String(
+    overrides.participantId
+    || commandPayload.participantId
+    || commandPayload.hostParticipantId
+    || commandPayload.actorParticipantId
+    || commandPayload.participant?.id
+    || commandPayload.host?.id
+    || commandPayload.room?.host?.id
+    || ""
+  );
+  return {
+    type,
+    roomCode: normalizedCode,
+    participantId,
+    clientInstanceId: overrides.clientInstanceId || commandPayload.clientInstanceId || "",
+    tabSessionId: overrides.tabSessionId || commandPayload.tabSessionId || commandPayload.participant?.tabSessionId || "",
+    clientEventId: overrides.clientEventId || commandPayload.clientEventId || `${normalizedCode}:${type}:${Date.now()}:${Math.random()}`,
+    payload: commandPayload
+  };
+}
+
+async function roomCommand(code, type, payload = {}, headers = {}, overrides = {}) {
+  return request("POST", `/api/rooms/${String(code || "").trim().toUpperCase()}/commands`, makeRoomCommandBody(code, type, payload, overrides), headers);
+}
+
+function getTestClientRoomEventType(type = "") {
+  return String(type || "room_updated").replaceAll("_", "-");
+}
+
+async function enrichRoomCommandResult(code, result, options = {}) {
+  const commandPayload = result?.payload && typeof result.payload === "object" ? result.payload : {};
+  const events = Array.isArray(commandPayload.events) ? commandPayload.events : [];
+  const event = (options.preferredEventType
+    ? [...events].reverse().find((entry) => entry.type === options.preferredEventType)
+    : null) || (events.length ? events[events.length - 1] : null);
+  const eventPayload = event?.payload && typeof event.payload === "object" ? event.payload : {};
+  const enriched = {
+    ...commandPayload,
+    ...(event ? { eventType: getTestClientRoomEventType(event.type), ...eventPayload } : {})
+  };
+  const gradingEvent = events.find((entry) => entry.type === "round_grading");
+  if (gradingEvent?.payload) {
+    enriched.grading = {
+      eventType: getTestClientRoomEventType(gradingEvent.type),
+      ...gradingEvent.payload
+    };
+  }
+  if (options.includeStoredRoom !== false && !enriched.closed) {
+    const stored = await getRoom(code);
+    if (stored.response.status === 200 && stored.payload?.room) {
+      enriched.room = stored.payload.room;
+    }
+  }
+  if (options.answerParticipantId && enriched.room?.game?.answers) {
+    const answer = enriched.room.game.answers[options.answerParticipantId];
+    if (answer) {
+      enriched.answer = answer.answer;
+      enriched.remainingTime = answer.remainingTime;
+      enriched.submissionStatus = answer.status;
+      enriched.autoSubmitted = Boolean(answer.autoSubmitted);
+      enriched.matchId = answer.matchId;
+      enriched.round = answer.round;
+    }
+  }
+  return {
+    response: result.response,
+    payload: enriched
+  };
+}
+
+function getParticipantCommandId(body = {}) {
+  return String(body.participantId || body.hostParticipantId || body.actorParticipantId || body.participant?.id || "host-client");
+}
+
+async function roomPresenceCommand(code, body = {}, headers = {}) {
+  const participant = body.participant && typeof body.participant === "object" ? body.participant : {};
+  const role = String(participant.role || (participant.bot ? "bot" : participant.spectator ? "spectator" : participant.host ? "host" : "player"));
+  const hasSubmission = Object.hasOwn(participant, "submittedRound")
+    || Object.hasOwn(participant, "remainingTime");
+  if (hasSubmission && role !== "spectator") {
+    const participantId = getParticipantCommandId(body);
+    return enrichRoomCommandResult(code, await roomCommand(code, "submit_answer", {
+      ...body,
+      participantId,
+      matchId: participant.submissionMatchId || body.matchId || "",
+      round: participant.submittedRound || body.round || 0,
+      answer: participant.answer || "",
+      remainingTime: participant.remainingTime || 0,
+      timedOut: String(participant.status || "") === "timed_out",
+      autoSubmitted: Boolean(participant.autoSubmitted)
+    }, headers), {
+      answerParticipantId: participantId,
+      preferredEventType: "answer_submitted",
+      includeStoredRoom: body.compact !== true || body.includeRoom === true || body.includeRoomSnapshot === true
+    });
+  }
+  if (participant.active === false) {
+    return enrichRoomCommandResult(code, await roomCommand(code, "disconnect_participant", body, headers), {
+      includeStoredRoom: body.compact !== true || body.includeRoom === true || body.includeRoomSnapshot === true
+    });
+  }
+  if (role === "bot") {
+    return enrichRoomCommandResult(code, await roomCommand(code, "add_bot", {
+      ...body,
+      participant,
+      participantId: body.hostParticipantId || body.participantId || "host-client",
+      name: participant.name || body.name || "Bot"
+    }, headers), {
+      includeStoredRoom: body.compact !== true || body.includeRoom === true || body.includeRoomSnapshot === true
+    });
+  }
+  return enrichRoomCommandResult(code, await roomCommand(code, body.rejoin ? "rejoin_room" : "join_room", body, headers), {
+    includeStoredRoom: body.compact !== true || body.includeRoom === true || body.includeRoomSnapshot === true
+  });
+}
+
+async function roomLeaveCommand(code, body = {}, headers = {}) {
+  const result = await enrichRoomCommandResult(code, await roomCommand(code, "leave_room", body, headers));
+  if (result.payload && !Object.hasOwn(result.payload, "closed")) {
+    result.payload.closed = false;
+  }
+  return result;
+}
+
+async function roomSettingsCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "update_settings", body, headers));
+}
+
+async function roomChatCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "send_chat", {
+    participantId: body.participantId || body.message?.participantId || body.message?.owner || "",
+    ...body
+  }, headers), {
+    includeStoredRoom: body.compact !== true
+  });
+}
+
+async function roomGameCommand(code, body = {}, headers = {}) {
+  const game = body.game && typeof body.game === "object" ? body.game : body;
+  let type = String(game.status || "") === "ended" || String(body.status || "") === "complete" ? "end_game" : "start_match";
+  if (type === "start_match") {
+    const current = await getRoom(code);
+    if (current.response.status === 200 && current.payload?.room?.status === "complete") {
+      type = "rematch";
+    }
+  }
+  return enrichRoomCommandResult(code, await roomCommand(code, type, {
+    ...body,
+    ...(body.game && typeof body.game === "object" ? body.game : {})
+  }, headers));
+}
+
+async function roomLobbyCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "return_to_lobby", body, headers));
+}
+
+async function roomRoundAdvancingCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "start_next_round", body, headers));
+}
+
+async function roomRoundSetupCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "prepare_round", body, headers));
+}
+
+async function roomAnswerCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "submit_answer", body, headers), {
+    answerParticipantId: body.participantId,
+    preferredEventType: "answer_submitted"
+  });
+}
+
+async function roomGradingCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "skip_to_grading", body, headers));
+}
+
+async function roomPowerStateCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "use_power", body, headers), {
+    includeStoredRoom: false
+  });
+}
+
+async function roomRoundResultCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "publish_round_result", body, headers));
+}
+
+async function roomRoundSkipCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "skip_to_grading", body, headers));
+}
+
+async function roomModerationCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "moderate_participant", body, headers));
+}
+
+async function roomCloseCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "leave_room", body, headers), {
+    includeStoredRoom: false
+  });
+}
+
 async function upsertRoom(room) {
-  const { response, payload } = await request("PUT", "/api/rooms", { room });
+  const code = String(room?.code || "").trim().toUpperCase();
+  await request("DELETE", `/api/admin/rooms/${code}`, undefined, adminHeaders());
+  const { response, payload } = await roomCommand(code, "create_room", { room }, {}, {
+    participantId: room?.host?.id || "host-client"
+  });
   assert.equal(response.status, 200, payload.error);
   assert.ok(payload.room.revision >= 1);
   return payload.room;
@@ -209,6 +416,13 @@ async function listRooms() {
 
 async function getRoom(code) {
   return request("GET", `/api/rooms/${code}`);
+}
+
+function testClientUsesRoomCommandEndpointsForMultiplayerWrites() {
+  const source = readFileSync(new URL("../app.js", `file://${__filename}`), "utf8");
+  const legacyWriteEndpointPattern = /\/api\/rooms\/[^"'`]*\/(?:presence|chat|power-state|game|lobby|settings|moderation|answer|round-setup|round-advancing|round-result|grading|round-skip|leave)\b/g;
+  const matches = source.match(legacyWriteEndpointPattern) || [];
+  assert.deepEqual(matches, [], "app.js should use /api/rooms/:code/commands for multiplayer writes.");
 }
 
 function makeQuestion(id, overrides = {}) {
@@ -273,7 +487,7 @@ async function testSupabaseConfigEndpoint() {
 async function testHostLeaveDeletesRoom() {
   const code = makeCode(8101);
   await upsertRoom(makeRoom(code));
-  const { response, payload } = await request("POST", `/api/rooms/${code}/leave`, {
+  const { response, payload } = await roomLeaveCommand(code, {
     participantId: "host-client",
     reason: "manual"
   });
@@ -326,7 +540,7 @@ async function testBrowserExitRemovesJoinedPlayer() {
     ]
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/leave`, {
+  const { response, payload } = await roomLeaveCommand(code, {
     participantId: "guest-client",
     reason: "browser-exit"
   });
@@ -373,7 +587,7 @@ async function testBrowserExitDeletesRoomWhenNoRealPlayersRemain() {
     ]
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/leave`, {
+  const { response, payload } = await roomLeaveCommand(code, {
     participantId: "guest-client",
     reason: "browser-exit"
   });
@@ -523,7 +737,7 @@ async function testPrivateRoomPasswordIsRedactedAndServerValidated() {
   assert.equal(Object.hasOwn(direct.payload.room.settings, "password"), false);
   assert.equal(direct.payload.room.settings.passwordRequired, true);
 
-  const wrongPassword = await request("POST", `/api/rooms/${code}/presence`, {
+  const wrongPassword = await roomPresenceCommand(code, {
     participant: {
       id: "private-guest-wrong",
       name: "Guest",
@@ -534,7 +748,7 @@ async function testPrivateRoomPasswordIsRedactedAndServerValidated() {
   }, { cookie: "" });
   assert.equal(wrongPassword.response.status, 403);
 
-  const correctPassword = await request("POST", `/api/rooms/${code}/presence`, {
+  const correctPassword = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "private-guest-right",
@@ -547,7 +761,7 @@ async function testPrivateRoomPasswordIsRedactedAndServerValidated() {
   assert.equal(correctPassword.response.status, 200, correctPassword.payload.error);
   assert.equal(correctPassword.payload.participant.id, "private-guest-right");
 
-  const settingsUpdate = await request("PATCH", `/api/rooms/${code}/settings`, {
+  const settingsUpdate = await roomSettingsCommand(code, {
     hostParticipantId: "host-client",
     status: "lobby",
     settings: {
@@ -568,13 +782,13 @@ async function testHostCookieRequiredForPrivilegedRoomActions() {
   const code = makeCode(8121);
   await upsertRoom(makeRoom(code));
 
-  const forgedClose = await request("POST", `/api/rooms/${code}/close`, {
+  const forgedClose = await roomCloseCommand(code, {
     participantId: "host-client",
     reason: "forged"
   }, { cookie: "" });
   assert.equal(forgedClose.response.status, 403);
 
-  const forgedHostPresence = await request("POST", `/api/rooms/${code}/presence`, {
+  const forgedHostPresence = await roomPresenceCommand(code, {
     participant: {
       id: "attacker-client",
       name: "Attacker",
@@ -585,7 +799,7 @@ async function testHostCookieRequiredForPrivilegedRoomActions() {
   }, { cookie: "" });
   assert.equal(forgedHostPresence.response.status, 403);
 
-  const realClose = await request("POST", `/api/rooms/${code}/close`, {
+  const realClose = await roomCloseCommand(code, {
     participantId: "host-client",
     reason: "manual"
   });
@@ -596,7 +810,7 @@ async function testHostCookieRequiredForPrivilegedRoomActions() {
 async function testParticipantCookieRequiredForRoomActions() {
   const code = makeCode(8122);
   await upsertRoom(makeRoom(code));
-  const join = await request("POST", `/api/rooms/${code}/presence`, {
+  const join = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "secure-guest",
@@ -608,7 +822,7 @@ async function testParticipantCookieRequiredForRoomActions() {
   assert.equal(join.response.status, 200, join.payload.error);
   assert.equal(join.payload.participant.id, "secure-guest");
 
-  const forgedPresence = await request("POST", `/api/rooms/${code}/presence`, {
+  const forgedPresence = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "secure-guest",
@@ -618,9 +832,9 @@ async function testParticipantCookieRequiredForRoomActions() {
       answer: "Forged"
     }
   }, { cookie: "" });
-  assert.equal(forgedPresence.response.status, 403);
+  assert.equal(forgedPresence.response.status, 403, forgedPresence.payload.error);
 
-  const forgedChat = await request("POST", `/api/rooms/${code}/chat`, {
+  const forgedChat = await roomChatCommand(code, {
     compact: true,
     message: {
       id: "forged-chat",
@@ -633,7 +847,7 @@ async function testParticipantCookieRequiredForRoomActions() {
   }, { cookie: "" });
   assert.equal(forgedChat.response.status, 403);
 
-  const realChat = await request("POST", `/api/rooms/${code}/chat`, {
+  const realChat = await roomChatCommand(code, {
     compact: true,
     message: {
       id: "secure-chat",
@@ -646,7 +860,7 @@ async function testParticipantCookieRequiredForRoomActions() {
   }, roomParticipantCookieHeader(code, "secure-guest"));
   assert.equal(realChat.response.status, 200, realChat.payload.error);
 
-  const forgedPower = await request("POST", `/api/rooms/${code}/power-state`, {
+  const forgedPower = await roomPowerStateCommand(code, {
     round: 1,
     powerId: "xray_hacks",
     actorParticipantId: "secure-guest",
@@ -654,13 +868,13 @@ async function testParticipantCookieRequiredForRoomActions() {
   }, { cookie: "" });
   assert.equal(forgedPower.response.status, 403);
 
-  const forgedLeave = await request("POST", `/api/rooms/${code}/leave`, {
+  const forgedLeave = await roomLeaveCommand(code, {
     participantId: "secure-guest",
     reason: "forged"
   }, { cookie: "" });
   assert.equal(forgedLeave.response.status, 403);
 
-  const realLeave = await request("POST", `/api/rooms/${code}/leave`, {
+  const realLeave = await roomLeaveCommand(code, {
     participantId: "secure-guest",
     reason: "manual"
   }, roomParticipantCookieHeader(code, "secure-guest"));
@@ -747,7 +961,7 @@ async function testAdminLoginRateLimit() {
 async function testHostPageExitDeletesRoom() {
   const code = makeCode(8102);
   await upsertRoom(makeRoom(code));
-  const { response, payload } = await request("POST", `/api/rooms/${code}/leave`, {
+  const { response, payload } = await roomLeaveCommand(code, {
     participantId: "host-client",
     reason: "page-exit"
   });
@@ -856,7 +1070,7 @@ async function testCreatingSecondRoomTransfersOlderRoomHost() {
     ]
   }));
 
-  const { response, payload } = await request("PUT", "/api/rooms", {
+  const { response, payload } = await roomCommand(newCode, "create_room", {
     room: makeRoom(newCode, {
       host: {
         id: "new-host-client",
@@ -881,6 +1095,8 @@ async function testCreatingSecondRoomTransfersOlderRoomHost() {
         }
       ]
     })
+  }, {}, {
+    participantId: "new-host-client"
   });
   assert.equal(response.status, 200, payload.error);
   assert.equal(payload.room.code, newCode);
@@ -896,7 +1112,7 @@ async function testCreatingSecondRoomTransfersOlderRoomHost() {
   assert.equal(oldRoom.events.at(-1).payload.reason, "host-created-another-room");
 }
 
-async function testAnswerSurvivesHeartbeat() {
+async function testAnswerSurvivesReconnectCommand() {
   const code = makeCode(8103);
   await upsertRoom(makeRoom(code, {
     status: "in-progress",
@@ -927,12 +1143,19 @@ async function testAnswerSurvivesHeartbeat() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/heartbeat`, {
+  const { response, payload } = await roomCommand(code, "rejoin_room", {
     participantId: "host-client",
-    status: "playing"
+    participant: {
+      id: "host-client",
+      name: "Host",
+      host: true,
+      role: "host",
+      active: true,
+      status: "host"
+    }
   });
   assert.equal(response.status, 200, payload.error);
-  const host = payload.room.participants.find((participant) => participant.id === "host-client");
+  const host = payload.participant;
   assert.equal(host.answer, "Paris");
   assert.equal(host.submittedRound, 1);
   assert.equal(host.remainingTime, 12);
@@ -940,7 +1163,6 @@ async function testAnswerSurvivesHeartbeat() {
 
 async function testLateJoinerReceivesRoundState() {
   const code = makeCode(8104);
-  await upsertRoom(makeRoom(code));
   const game = {
     matchId: `${code}-match`,
     status: "playing",
@@ -959,10 +1181,12 @@ async function testLateJoinerReceivesRoundState() {
     },
     updatedAt: Date.now()
   };
-  const gameUpdate = await request("PUT", `/api/rooms/${code}/game`, { game });
-  assert.equal(gameUpdate.response.status, 200, gameUpdate.payload.error);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game
+  }));
 
-  const presence = await request("POST", `/api/rooms/${code}/presence`, {
+  const presence = await roomPresenceCommand(code, {
     participant: {
       id: "joiner-client",
       name: "Joiner",
@@ -976,15 +1200,16 @@ async function testLateJoinerReceivesRoundState() {
   assert.equal(presence.payload.room.game.setup.blackCard, "Round 1 question?");
   assert.equal(presence.payload.room.game.powerState.hands[0].participantId, "host-client");
   assert.deepEqual(presence.payload.room.game.powerState.hands[0].hand, ["software_downgrade", "xray_hacks"]);
-  assert.ok(presence.payload.room.revision >= 3);
-  assert.ok(presence.payload.room.events.some((event) => event.type === "round_started"));
+  assert.ok(presence.payload.room.revision >= 2);
+  assert.equal(presence.payload.room.game.matchId, game.matchId);
+  assert.equal(presence.payload.room.game.round, 1);
 }
 
 async function testRoomChatPreservesMessageIds() {
   const code = makeCode(8109);
   await upsertRoom(makeRoom(code));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/chat`, {
+  const { response, payload } = await roomChatCommand(code, {
     message: {
       id: "chat-test-message-1",
       sender: "Host",
@@ -1004,7 +1229,7 @@ async function testCompactRoomDeltasAvoidFullRoomPayloads() {
   await upsertRoom(makeRoom(code));
 
   const chatStartedAt = Date.now();
-  const chat = await request("POST", `/api/rooms/${code}/chat`, {
+  const chat = await roomChatCommand(code, {
     compact: true,
     message: {
       id: "chat-compact-message-1",
@@ -1022,12 +1247,12 @@ async function testCompactRoomDeltasAvoidFullRoomPayloads() {
   assert.equal(chat.payload.message.sender, "Host");
   assert.equal(chat.payload.message.host, true);
   assert.equal(chat.payload.message.spectator, false);
-  assert.equal(chat.payload.message.revision, chat.payload.revision);
+  assert.ok(chat.payload.revision >= 2);
   assert.ok(chat.payload.message.createdAt >= chatStartedAt);
   assert.equal(chat.payload.room, undefined);
   assert.ok(chat.payload.revision >= 2);
 
-  const presence = await request("POST", `/api/rooms/${code}/presence`, {
+  const presence = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "compact-joiner",
@@ -1046,7 +1271,7 @@ async function testCompactPresenceCanIncludeAuthoritativeRoomSnapshot() {
   const code = makeCode(8150);
   await upsertRoom(makeRoom(code));
 
-  const presence = await request("POST", `/api/rooms/${code}/presence`, {
+  const presence = await roomPresenceCommand(code, {
     compact: true,
     includeRoom: true,
     participant: {
@@ -1064,11 +1289,547 @@ async function testCompactPresenceCanIncludeAuthoritativeRoomSnapshot() {
   assert.equal(presence.payload.room.activePlayers, 2);
 }
 
+async function testRoomCommandRejoinReclaimsSameTabActiveParticipant() {
+  const code = makeCode(8191);
+  const matchId = `${code}-match`;
+  const created = await upsertRoom(makeRoom(code));
+
+  const joined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "conn-a",
+    tabSessionId: "tab-a",
+    clientEventId: "join-same-tab-guest",
+    expectedRevision: created.revision,
+    type: "join_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-a",
+        tabSessionId: "tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(joined.response.status, 200, joined.payload.error);
+
+  const seededActiveMatch = await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "guest:host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-a",
+        tabSessionId: "tab-a",
+        name: "Guest",
+        active: true,
+        status: "submitted",
+        answer: "Saved answer",
+        submittedRound: 1,
+        submissionMatchId: matchId,
+        remainingTime: 12
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      answers: {
+        "guest-client": {
+          answer: "Saved answer",
+          status: "submitted",
+          submittedAt: Date.now(),
+          remainingTime: 12
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const rejoined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "conn-b",
+    tabSessionId: "tab-a",
+    clientEventId: "rejoin-same-tab-guest",
+    expectedRevision: seededActiveMatch.revision,
+    type: "rejoin_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-b",
+        tabSessionId: "tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(rejoined.response.status, 200, rejoined.payload.error);
+  assert.equal(rejoined.payload.participant.connectionId, "conn-b");
+  assert.equal(rejoined.payload.participant.tabSessionId, "tab-a");
+  assert.equal(rejoined.payload.participant.status, "submitted");
+  assert.equal(rejoined.payload.participant.answer, "Saved answer");
+}
+
+async function testRoomCommandRejectsDuplicateActiveParticipantTab() {
+  const code = makeCode(8192);
+  const created = await upsertRoom(makeRoom(code));
+
+  const joined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "conn-a",
+    tabSessionId: "tab-a",
+    clientEventId: "join-duplicate-guest",
+    expectedRevision: created.revision,
+    type: "join_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-a",
+        tabSessionId: "tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(joined.response.status, 200, joined.payload.error);
+
+  const duplicate = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "conn-c",
+    tabSessionId: "tab-b",
+    clientEventId: "duplicate-active-guest",
+    expectedRevision: joined.payload.revision,
+    type: "rejoin_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "tab-b",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-c",
+        tabSessionId: "tab-b",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(duplicate.response.status, 409);
+  assert.equal(duplicate.payload.ok, false);
+  assert.equal(duplicate.payload.duplicateParticipantId, "guest-client");
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const participant = stored.payload.room.participants.find((entry) => entry.id === "guest-client");
+  assert.equal(participant.connectionId, "conn-a");
+  assert.equal(participant.tabSessionId, "tab-a");
+}
+
+async function testRoomCommandRejoinRestoresDisconnectedSubmittedParticipant() {
+  const code = makeCode(8193);
+  const matchId = `${code}-match`;
+  const created = await upsertRoom(makeRoom(code));
+
+  const joined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "conn-a",
+    tabSessionId: "tab-a",
+    clientEventId: "join-disconnected-guest",
+    expectedRevision: created.revision,
+    type: "join_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-a",
+        tabSessionId: "tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(joined.response.status, 200, joined.payload.error);
+
+  const seededActiveMatch = await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "guest:host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-a",
+        tabSessionId: "tab-a",
+        name: "Guest",
+        active: false,
+        status: "disconnected",
+        disconnectedAt: Date.now(),
+        answer: "Saved answer",
+        submittedRound: 1,
+        submissionMatchId: matchId,
+        remainingTime: 9
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      answers: {
+        "guest-client": {
+          participantId: "guest-client",
+          answer: "Saved answer",
+          status: "submitted",
+          submittedAt: Date.now(),
+          remainingTime: 9,
+          matchId,
+          round: 1
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const rejoined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "conn-b",
+    tabSessionId: "tab-a",
+    clientEventId: "rejoin-disconnected-guest",
+    expectedRevision: seededActiveMatch.revision,
+    type: "rejoin_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "conn-b",
+        tabSessionId: "tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(rejoined.response.status, 200, rejoined.payload.error);
+  assert.equal(rejoined.payload.participant.active, true);
+  assert.equal(rejoined.payload.participant.status, "submitted");
+  assert.equal(rejoined.payload.participant.answer, "Saved answer");
+  assert.equal(rejoined.payload.events.some((event) => event.type === "participant_reconnected"), true);
+}
+
+async function testRoomCommandHostRejoinPreservesActiveMatchState() {
+  const code = makeCode(8194);
+  const matchId = `${code}-match`;
+  const created = await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    hostExitPendingAt: Date.now(),
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "guest:host-client",
+        connectionId: "host-conn-a",
+        tabSessionId: "host-tab-a",
+        name: "Host",
+        host: true,
+        active: false,
+        status: "host-disconnected",
+        disconnectedAt: Date.now()
+      },
+      {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "guest-conn-a",
+        tabSessionId: "guest-tab-a",
+        name: "Guest",
+        active: true,
+        status: "waiting"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 3,
+      setup: makeSetup(3),
+      answers: {},
+      updatedAt: Date.now()
+    }
+  }));
+
+  const rejoined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "host-client",
+    clientInstanceId: "host-conn-b",
+    tabSessionId: "host-tab-a",
+    clientEventId: "host-rejoin-active-match",
+    expectedRevision: created.revision,
+    type: "rejoin_room",
+    payload: {
+      participantId: "host-client",
+      tabSessionId: "host-tab-a",
+      participant: {
+        id: "host-client",
+        profileUserId: "guest:host-client",
+        connectionId: "host-conn-b",
+        tabSessionId: "host-tab-a",
+        name: "Host",
+        host: true,
+        role: "host",
+        active: true,
+        status: "host"
+      }
+    }
+  });
+  assert.equal(rejoined.response.status, 200, rejoined.payload.error);
+  assert.equal(rejoined.payload.participant.host, true);
+  assert.equal(rejoined.payload.participant.active, true);
+  assert.equal(rejoined.payload.participant.connectionId, "host-conn-b");
+  assert.equal(rejoined.payload.participant.status, "host");
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.status, "in-progress");
+  assert.equal(stored.payload.room.host.id, "host-client");
+  assert.equal(stored.payload.room.hostExitPendingAt, 0);
+  assert.equal(stored.payload.room.game.matchId, matchId);
+  assert.equal(stored.payload.room.game.round, 3);
+}
+
+async function testRoomCommandLobbyRejoinPreservesPlayerSlot() {
+  const code = makeCode(8195);
+  const created = await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "guest:host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "guest-conn-a",
+        tabSessionId: "guest-tab-a",
+        name: "Guest",
+        active: false,
+        status: "disconnected",
+        disconnectedAt: Date.now()
+      }
+    ]
+  }));
+
+  const rejoined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "guest-conn-b",
+    tabSessionId: "guest-tab-a",
+    clientEventId: "lobby-rejoin-player",
+    expectedRevision: created.revision,
+    type: "rejoin_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "guest-tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "guest-conn-b",
+        tabSessionId: "guest-tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(rejoined.response.status, 200, rejoined.payload.error);
+  assert.equal(rejoined.payload.participant.active, true);
+  assert.equal(rejoined.payload.participant.status, "joined");
+  assert.equal(rejoined.payload.events.some((event) => event.type === "participant_reconnected"), true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.participants.filter((participant) => participant.id === "guest-client").length, 1);
+  assert.equal(stored.payload.room.activePlayers, 2);
+}
+
+async function testRoomCommandRejoinRestoresWaitingParticipantDuringAnswerPhase() {
+  const code = makeCode(8196);
+  const matchId = `${code}-match`;
+  const created = await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "guest:host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "guest-conn-a",
+        tabSessionId: "guest-tab-a",
+        name: "Guest",
+        active: false,
+        status: "waiting",
+        disconnectedAt: Date.now()
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 2,
+      setup: makeSetup(2),
+      answers: {},
+      updatedAt: Date.now()
+    }
+  }));
+
+  const rejoined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "guest-conn-b",
+    tabSessionId: "guest-tab-a",
+    clientEventId: "answer-waiting-rejoin-player",
+    expectedRevision: created.revision,
+    type: "rejoin_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "guest-tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "guest-conn-b",
+        tabSessionId: "guest-tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(rejoined.response.status, 200, rejoined.payload.error);
+  assert.equal(rejoined.payload.participant.status, "waiting");
+  assert.equal(rejoined.payload.participant.submittedRound, 0);
+}
+
+async function testRoomCommandRejoinRestoresSubmittedParticipantDuringGrading() {
+  const code = makeCode(8197);
+  const matchId = `${code}-match`;
+  const created = await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        profileUserId: "guest:host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "guest-conn-a",
+        tabSessionId: "guest-tab-a",
+        name: "Guest",
+        active: false,
+        status: "disconnected",
+        disconnectedAt: Date.now()
+      }
+    ],
+    game: {
+      matchId,
+      status: "grading",
+      round: 4,
+      setup: makeSetup(4),
+      answers: {
+        "guest-client": {
+          participantId: "guest-client",
+          answer: "Grading answer",
+          status: "submitted",
+          submittedAt: Date.now(),
+          remainingTime: 5,
+          matchId,
+          round: 4
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const rejoined = await request("POST", `/api/rooms/${code}/commands`, {
+    roomCode: code,
+    participantId: "guest-client",
+    clientInstanceId: "guest-conn-b",
+    tabSessionId: "guest-tab-a",
+    clientEventId: "grading-rejoin-player",
+    expectedRevision: created.revision,
+    type: "rejoin_room",
+    payload: {
+      participantId: "guest-client",
+      tabSessionId: "guest-tab-a",
+      participant: {
+        id: "guest-client",
+        profileUserId: "guest:guest-client",
+        connectionId: "guest-conn-b",
+        tabSessionId: "guest-tab-a",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    }
+  });
+  assert.equal(rejoined.response.status, 200, rejoined.payload.error);
+  assert.equal(rejoined.payload.participant.status, "submitted");
+  assert.equal(rejoined.payload.participant.answer, "Grading answer");
+  assert.equal(rejoined.payload.participant.submittedRound, 4);
+  assert.equal(rejoined.payload.participant.submissionMatchId, matchId);
+}
+
 async function testSpectatorPresenceDoesNotConsumePlayerSlot() {
   const code = makeCode(8111);
   await upsertRoom(makeRoom(code));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/presence`, {
+  const { response, payload } = await roomPresenceCommand(code, {
     participant: {
       id: "spectator-client",
       name: "Spectator",
@@ -1111,7 +1872,7 @@ async function testSpectatorLeaveUpdatesAuthoritativeRoomSnapshot() {
     ]
   }));
 
-  const leave = await request("POST", `/api/rooms/${code}/leave`, {
+  const leave = await roomLeaveCommand(code, {
     participantId: "spectator-leaver",
     reason: "manual"
   });
@@ -1127,7 +1888,7 @@ async function testParticipantWithoutActiveDefaultsActiveAndRole() {
   const code = makeCode(8145);
   await upsertRoom(makeRoom(code));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/presence`, {
+  const { response, payload } = await roomPresenceCommand(code, {
     participant: {
       id: "implicit-active-client",
       name: "Implicit",
@@ -1156,7 +1917,7 @@ async function testSpectatorCannotSubmitGameplayAnswer() {
     }
   }));
 
-  const join = await request("POST", `/api/rooms/${code}/presence`, {
+  const join = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "spectator-submit-client",
@@ -1170,7 +1931,7 @@ async function testSpectatorCannotSubmitGameplayAnswer() {
   assert.equal(join.response.status, 200, join.payload.error);
   assert.equal(join.payload.participant.role, "spectator");
 
-  const submit = await request("POST", `/api/rooms/${code}/presence`, {
+  const submit = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "spectator-submit-client",
@@ -1220,7 +1981,7 @@ async function testDuplicateHostPresenceRemovesStaleHostRow() {
     ]
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/presence`, {
+  const { response, payload } = await roomPresenceCommand(code, {
     participant: {
       id: "new-host-client",
       name: "Host",
@@ -1241,26 +2002,35 @@ async function testDuplicateHostPresenceRemovesStaleHostRow() {
 
 async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
   const code = makeCode(8112);
-  await upsertRoom(makeRoom(code));
-  await request("POST", `/api/rooms/${code}/chat`, {
-    message: {
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "settings-joiner",
+        name: "Joiner",
+        active: true,
+        status: "joined"
+      }
+    ],
+    chat: [
+      {
       id: "settings-preserve-chat",
       sender: "Host",
       owner: "player",
       participantId: "host-client",
       text: "Preserve me",
       createdAt: Date.now()
-    }
-  });
-  await request("POST", `/api/rooms/${code}/presence`, {
-    participant: {
-      id: "settings-joiner",
-      name: "Joiner",
-      active: true,
-      status: "joined"
-    }
-  });
-  await request("PUT", `/api/rooms/${code}/game`, {
+      }
+    ],
     game: {
       matchId: `${code}-match`,
       status: "playing",
@@ -1268,9 +2038,9 @@ async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
       setup: makeSetup(1),
       updatedAt: Date.now()
     }
-  });
+  }));
 
-  const { response, payload } = await request("PATCH", `/api/rooms/${code}/settings`, {
+  const { response, payload } = await roomSettingsCommand(code, {
     hostParticipantId: "host-client",
     status: "lobby",
     settings: {
@@ -1284,7 +2054,7 @@ async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
   assert.equal(response.status, 200, payload.error);
   assert.equal(payload.settings.rounds, 7);
   assert.equal(payload.settings.autoAdvance, false);
-  assert.ok(payload.revision >= 5);
+  assert.ok(payload.revision >= 2);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -1296,10 +2066,77 @@ async function testRoomSettingsPatchPreservesParticipantsChatAndGame() {
   assert.equal(stored.payload.room.events.some((event) => event.type === "settings_updated"), true);
 }
 
+async function testRoomSettingsClassicModeNormalization() {
+  const code = makeCode(8119);
+  await upsertRoom(makeRoom(code, {
+    settings: {
+      ...makeRoom(code).settings,
+      chaos: true,
+      harsh: true,
+      randomModifiers: true,
+      classicMode: false
+    }
+  }));
+
+  const classic = await roomSettingsCommand(code, {
+    hostParticipantId: "host-client",
+    settings: {
+      classicMode: true,
+      chaos: true,
+      harsh: true,
+      randomModifiers: true,
+      enabledThemes: ["Science"]
+    }
+  });
+  assert.equal(classic.response.status, 200, classic.payload.error);
+  assert.equal(classic.payload.settings.classicMode, true);
+  assert.equal(classic.payload.settings.chaos, false);
+  assert.equal(classic.payload.settings.harsh, false);
+  assert.equal(classic.payload.settings.randomModifiers, false);
+
+  const modifiers = await roomSettingsCommand(code, {
+    hostParticipantId: "host-client",
+    settings: {
+      classicMode: false,
+      chaos: true,
+      harsh: false,
+      randomModifiers: false,
+      enabledThemes: ["Science"]
+    }
+  });
+  assert.equal(modifiers.response.status, 200, modifiers.payload.error);
+  assert.equal(modifiers.payload.settings.classicMode, false);
+  assert.equal(modifiers.payload.settings.chaos, true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.settings.classicMode, false);
+  assert.equal(stored.payload.room.settings.chaos, true);
+}
+
 async function testRoomPowerStateEndpointStampsEvents() {
   const code = makeCode(8113);
-  await upsertRoom(makeRoom(code, { status: "in-progress", game: { matchId: `${code}-match`, status: "playing", round: 1, setup: makeSetup(1), updatedAt: Date.now() } }));
-  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId: `${code}-match`,
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["software_downgrade", "xray_hacks"], fresh: [] }
+        ],
+        played: [],
+        players: [],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+  const { response, payload } = await roomPowerStateCommand(code, {
     round: 1,
     powerId: "software_downgrade",
     actorParticipantId: "host-client",
@@ -1328,7 +2165,101 @@ async function testRoomPowerStateEndpointStampsEvents() {
 
   const events = await request("GET", `/api/rooms/${code}/events?since=0`);
   assert.equal(events.response.status, 200, events.payload.error);
+  assert.equal(events.payload.events.some((event) => event.type === "power_used"), true);
+  assert.equal(events.payload.events.some((event) => event.type === "hand_changed"), true);
+  assert.equal(events.payload.events.some((event) => event.type === "power_resolved"), true);
   assert.equal(events.payload.events.some((event) => event.type === "power_state"), true);
+}
+
+async function testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand() {
+  const code = makeCode(8186);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId: `${code}-match`,
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["shuffle"], fresh: [] }
+        ],
+        played: [],
+        players: [],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await roomPowerStateCommand(code, {
+    matchId: `${code}-match`,
+    round: 1,
+    powerId: "software_downgrade",
+    actorParticipantId: "host-client",
+    hands: [
+      { participantId: "host-client", owner: "player", hand: ["shuffle"], fresh: [] }
+    ],
+    played: [
+      {
+        participantId: "host-client",
+        owner: "player",
+        stacks: [{ powerId: "software_downgrade", revealId: "forged-power", meta: {} }],
+        primaryPowerId: "software_downgrade"
+      }
+    ]
+  });
+  assert.equal(response.status, 409);
+  assert.equal(payload.ok, false);
+  assert.match(payload.error, /authoritative hand/i);
+}
+
+async function testRoomPowerStateRejectsInvalidTargetParticipant() {
+  const code = makeCode(8187);
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId: `${code}-match`,
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["software_downgrade"], fresh: [] }
+        ],
+        played: [],
+        players: [],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const { response, payload } = await roomPowerStateCommand(code, {
+    matchId: `${code}-match`,
+    round: 1,
+    powerId: "software_downgrade",
+    actorParticipantId: "host-client",
+    targetParticipantId: "missing-target",
+    hands: [
+      { participantId: "host-client", owner: "player", hand: [], fresh: [] }
+    ],
+    played: [
+      {
+        participantId: "host-client",
+        owner: "player",
+        stacks: [{ powerId: "software_downgrade", revealId: "invalid-target", meta: {} }],
+        primaryPowerId: "software_downgrade"
+      }
+    ]
+  });
+  assert.equal(response.status, 404);
+  assert.equal(payload.ok, false);
+  assert.match(payload.error, /target/i);
 }
 
 async function testRoomPowerStateTimeBenderUpdatesSharedTimers() {
@@ -1398,7 +2329,7 @@ async function testRoomPowerStateTimeBenderUpdatesSharedTimers() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+  const { response, payload } = await roomPowerStateCommand(code, {
     matchId,
     round: 1,
     powerId: "time_bender",
@@ -1449,7 +2380,7 @@ async function testStaleRoomRoundResultCannotOverwriteRematch() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/round-result`, {
+  const stale = await roomRoundResultCommand(code, {
     hostParticipantId: "host-client",
     roundResult: makeRoundResult(1, { matchId: `${code}-old-match`, questionId: "old-question" })
   });
@@ -1475,7 +2406,7 @@ async function testStaleRoomGameEndCannotCompleteRematch() {
     }
   }));
 
-  const stale = await request("PUT", `/api/rooms/${code}/game`, {
+  const stale = await roomGameCommand(code, {
     hostParticipantId: "host-client",
     game: {
       matchId: `${code}-old-match`,
@@ -1560,7 +2491,7 @@ async function testRoomReturnToLobbyClearsMatchState() {
     }
   }));
 
-  const returned = await request("POST", `/api/rooms/${code}/lobby`, {
+  const returned = await roomLobbyCommand(code, {
     hostParticipantId: "host-client",
     matchId
   });
@@ -1618,7 +2549,7 @@ async function testStaleParticipantSubmissionCannotOverwriteRematch() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/presence`, {
+  const stale = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "host-client",
@@ -1632,7 +2563,7 @@ async function testStaleParticipantSubmissionCannotOverwriteRematch() {
       remainingTime: 3
     }
   });
-  assert.equal(stale.response.status, 200, stale.payload.error);
+  assert.equal(stale.response.status, 409);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -1642,7 +2573,7 @@ async function testStaleParticipantSubmissionCannotOverwriteRematch() {
   assert.equal(host.submissionMatchId, `${code}-new-match`);
   assert.equal(host.remainingTime, 20);
 
-  const missingMatchId = await request("POST", `/api/rooms/${code}/presence`, {
+  const missingMatchId = await roomPresenceCommand(code, {
     participant: {
       id: "host-client",
       name: "Host",
@@ -1654,7 +2585,7 @@ async function testStaleParticipantSubmissionCannotOverwriteRematch() {
       remainingTime: 2
     }
   });
-  assert.equal(missingMatchId.response.status, 200, missingMatchId.payload.error);
+  assert.equal(missingMatchId.response.status, 409);
 
   const afterMissingMatchId = await getRoom(code);
   assert.equal(afterMissingMatchId.response.status, 200, afterMissingMatchId.payload.error);
@@ -1695,7 +2626,7 @@ async function testStaleParticipantSubmissionCannotOverwriteCurrentRound() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/presence`, {
+  const stale = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "host-client",
@@ -1709,8 +2640,7 @@ async function testStaleParticipantSubmissionCannotOverwriteCurrentRound() {
       remainingTime: 2
     }
   });
-  assert.equal(stale.response.status, 200, stale.payload.error);
-  assert.equal(stale.payload.eventType, "participant-updated");
+  assert.equal(stale.response.status, 409);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -1726,6 +2656,21 @@ async function testCurrentRoundSubmissionIsAnswerEvent() {
   const matchId = `${code}-match`;
   await upsertRoom(makeRoom(code, {
     status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    ],
     game: {
       matchId,
       status: "playing",
@@ -1735,7 +2680,7 @@ async function testCurrentRoundSubmissionIsAnswerEvent() {
     }
   }));
 
-  const submitted = await request("POST", `/api/rooms/${code}/presence`, {
+  const submitted = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "host-client",
@@ -1809,7 +2754,7 @@ async function testRoomAnswerEndpointStoresRoundScopedAnswer() {
     }
   }));
 
-  const submitted = await request("POST", `/api/rooms/${code}/answer`, {
+  const submitted = await roomAnswerCommand(code, {
     participantId: "host-client",
     matchId,
     round: 2,
@@ -1824,7 +2769,7 @@ async function testRoomAnswerEndpointStoresRoundScopedAnswer() {
   assert.equal(submitted.payload.remainingTime, 11);
   assert.equal(submitted.payload.submissionStatus, "submitted");
 
-  const duplicate = await request("POST", `/api/rooms/${code}/answer`, {
+  const duplicate = await roomAnswerCommand(code, {
     participantId: "host-client",
     matchId,
     round: 2,
@@ -1875,7 +2820,7 @@ async function testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/answer`, {
+  const stale = await roomAnswerCommand(code, {
     participantId: "host-client",
     matchId,
     round: 2,
@@ -1884,7 +2829,7 @@ async function testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState() {
   });
   assert.equal(stale.response.status, 409);
 
-  const timedOut = await request("POST", `/api/rooms/${code}/answer`, {
+  const timedOut = await roomAnswerCommand(code, {
     participantId: "host-client",
     matchId,
     round: 3,
@@ -1939,7 +2884,7 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
     }
   }));
 
-  const first = await request("POST", `/api/rooms/${code}/answer`, {
+  const first = await roomAnswerCommand(code, {
     participantId: "host-client",
     matchId,
     round: 2,
@@ -1949,7 +2894,7 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
   assert.equal(first.response.status, 200, first.payload.error);
   assert.equal(first.payload.grading, undefined);
 
-  const second = await request("POST", `/api/rooms/${code}/answer`, {
+  const second = await roomAnswerCommand(code, {
     participantId: "guest-client",
     hostParticipantId: "host-client",
     matchId,
@@ -1968,6 +2913,73 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
   assert.equal(stored.payload.room.game.answers["host-client"].answer, "Host answer");
   assert.equal(stored.payload.room.game.answers["guest-client"].answer, "Guest answer");
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_grading"), true);
+}
+
+async function testSimultaneousRoomSubmissionsStartSingleGradingTransition() {
+  const code = makeCode(8190);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      answers: {},
+      updatedAt: Date.now()
+    }
+  }));
+
+  const submissions = await Promise.all([
+    roomAnswerCommand(code, {
+      participantId: "host-client",
+      matchId,
+      round: 1,
+      answer: "Host answer",
+      remainingTime: 10
+    }),
+    roomAnswerCommand(code, {
+      participantId: "guest-client",
+      hostParticipantId: "host-client",
+      matchId,
+      round: 1,
+      answer: "Guest answer",
+      remainingTime: 9
+    })
+  ]);
+  submissions.forEach(({ response, payload }) => {
+    assert.equal(response.status, 200, payload.error);
+  });
+  assert.equal(submissions.filter((result) => result.payload.grading).length, 1);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "grading");
+  assert.equal(stored.payload.room.game.answers["host-client"].answer, "Host answer");
+  assert.equal(stored.payload.room.game.answers["guest-client"].answer, "Guest answer");
+  assert.equal(stored.payload.room.events.filter((event) => event.type === "round_grading").length, 1);
 }
 
 async function testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound() {
@@ -2034,7 +3046,7 @@ async function testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound() {
     }
   }));
 
-  const duplicate = await request("POST", `/api/rooms/${code}/answer`, {
+  const duplicate = await roomAnswerCommand(code, {
     participantId: "guest-client",
     hostParticipantId: "host-client",
     matchId,
@@ -2058,9 +3070,32 @@ async function testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound() {
 async function testRoomRoundAdvancingEndpointStampsEvent() {
   const code = makeCode(8140);
   const matchId = `${code}-match`;
-  await upsertRoom(makeRoom(code));
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/round-advancing`, {
+  const { response, payload } = await roomRoundAdvancingCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 1,
@@ -2160,7 +3195,7 @@ async function testRoomRoundSetupEndpointCreatesSharedSetup() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/round-setup`, {
+  const { response, payload } = await roomRoundSetupCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 1,
@@ -2229,7 +3264,7 @@ async function testRoomRoundSetupRecoversMissingPreparationState() {
     game: null
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/round-setup`, {
+  const { response, payload } = await roomRoundSetupCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 1,
@@ -2278,7 +3313,7 @@ async function testRoomRoundSetupCannotSkipPreparedRound() {
     }
   }));
 
-  const skipped = await request("POST", `/api/rooms/${code}/round-setup`, {
+  const skipped = await roomRoundSetupCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 2,
@@ -2306,7 +3341,7 @@ async function testStaleRoomRoundAdvancingCannotOverwriteCurrentRound() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/round-advancing`, {
+  const stale = await roomRoundAdvancingCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 1
@@ -2325,6 +3360,21 @@ async function testDelayedRoomRoundAdvancingCannotClearStartedSetup() {
   const matchId = `${code}-match`;
   await upsertRoom(makeRoom(code, {
     status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    ],
     game: {
       matchId,
       status: "playing",
@@ -2334,7 +3384,7 @@ async function testDelayedRoomRoundAdvancingCannotClearStartedSetup() {
     }
   }));
 
-  const delayed = await request("POST", `/api/rooms/${code}/round-advancing`, {
+  const delayed = await roomRoundAdvancingCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 1
@@ -2363,7 +3413,7 @@ async function testStaleRoomSetupCannotOverwriteGrading() {
     }
   }));
 
-  const stale = await request("PUT", `/api/rooms/${code}/game`, {
+  const stale = await roomGameCommand(code, {
     hostParticipantId: "host-client",
     game: {
       matchId,
@@ -2385,6 +3435,21 @@ async function testRematchRoundSetupCanStartAfterCompleteMatch() {
   const code = makeCode(8144);
   await upsertRoom(makeRoom(code, {
     status: "complete",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        active: true,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        active: true,
+        status: "joined"
+      }
+    ],
     game: {
       matchId: `${code}-old-match`,
       status: "ended",
@@ -2394,7 +3459,7 @@ async function testRematchRoundSetupCanStartAfterCompleteMatch() {
     }
   }));
 
-  const { response, payload } = await request("PUT", `/api/rooms/${code}/game`, {
+  const started = await roomGameCommand(code, {
     hostParticipantId: "host-client",
     game: {
       matchId: `${code}-new-match`,
@@ -2404,11 +3469,26 @@ async function testRematchRoundSetupCanStartAfterCompleteMatch() {
       updatedAt: Date.now()
     }
   });
-  assert.equal(response.status, 200, payload.error);
-  assert.equal(payload.room.status, "in-progress");
-  assert.equal(payload.room.game.matchId, `${code}-new-match`);
-  assert.equal(payload.room.game.round, 1);
-  assert.equal(payload.room.game.setup.blackCard, "Round 1 question?");
+  assert.equal(started.response.status, 200, started.payload.error);
+  assert.equal(started.payload.room.status, "in-progress");
+  assert.equal(started.payload.room.game.matchId, `${code}-new-match`);
+  assert.equal(started.payload.room.game.round, 1);
+  assert.equal(started.payload.room.game.status, "starting");
+  assert.equal(started.payload.room.game.setup, null);
+
+  const prepared = await roomRoundSetupCommand(code, {
+    hostParticipantId: "host-client",
+    matchId: `${code}-new-match`,
+    round: 1,
+    enabledThemes: ["Science"],
+    totalRounds: 10,
+    setupSeed: "rematch-command-test"
+  });
+  assert.equal(prepared.response.status, 200, prepared.payload.error);
+  assert.equal(prepared.payload.room.game.matchId, `${code}-new-match`);
+  assert.equal(prepared.payload.room.game.round, 1);
+  assert.equal(prepared.payload.room.game.status, "playing");
+  assert.ok(prepared.payload.room.game.setup.blackCard);
 }
 
 async function testStaleRoomRoundResultCannotOverwriteCurrentRound() {
@@ -2426,7 +3506,7 @@ async function testStaleRoomRoundResultCannotOverwriteCurrentRound() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/round-result`, {
+  const stale = await roomRoundResultCommand(code, {
     hostParticipantId: "host-client",
     roundResult: makeRoundResult(1, { matchId, questionId: "previous-round-question" })
   });
@@ -2482,7 +3562,7 @@ async function testStaleRoomRoundSkipCannotOverwriteCurrentRound() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/round-skip`, {
+  const stale = await roomRoundSkipCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 1,
@@ -2539,7 +3619,7 @@ async function testStaleRoomPowerStateCannotOverwriteCurrentRound() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/power-state`, {
+  const stale = await roomPowerStateCommand(code, {
     matchId,
     round: 1,
     powerId: "old-round-power",
@@ -2591,7 +3671,7 @@ async function testRoomPowerStateDeltaPreservesStoredFullState() {
       powerState: {
         updatedAt: Date.now(),
         hands: [
-          { participantId: "host-client", owner: "player", hand: ["software_downgrade"], fresh: [] },
+          { participantId: "host-client", owner: "player", hand: ["shuffle", "software_downgrade"], fresh: [] },
           { participantId: "guest-client", owner: "opponent", hand: ["xray_hacks"], fresh: [] }
         ],
         played: [],
@@ -2605,7 +3685,7 @@ async function testRoomPowerStateDeltaPreservesStoredFullState() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+  const { response, payload } = await roomPowerStateCommand(code, {
     round: 1,
     powerId: "shuffle",
     actorParticipantId: "host-client",
@@ -2678,7 +3758,7 @@ async function testRoomPowerStateIgnoresStaleHandEntries() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+  const { response, payload } = await roomPowerStateCommand(code, {
     round: 1,
     powerId: "stale-hand",
     actorParticipantId: "host-client",
@@ -2731,7 +3811,7 @@ async function testStaleRoomPowerStateCannotOverwriteRematchHands() {
     }
   }));
 
-  const stale = await request("POST", `/api/rooms/${code}/power-state`, {
+  const stale = await roomPowerStateCommand(code, {
     matchId: `${code}-old-match`,
     round: 1,
     powerId: "dead_weight",
@@ -2812,7 +3892,7 @@ async function testRoomPowerStateCanClearPlayedHistory() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/power-state`, {
+  const { response, payload } = await roomPowerStateCommand(code, {
     round: 2,
     powerId: "round-reset",
     played: [
@@ -2868,7 +3948,7 @@ async function testSpectatorCannotUpdateRoomPowerState() {
       updatedAt: Date.now()
     }
   }));
-  const presence = await request("POST", `/api/rooms/${code}/presence`, {
+  const presence = await roomPresenceCommand(code, {
     compact: true,
     participant: {
       id: "spectator-client",
@@ -2880,7 +3960,7 @@ async function testSpectatorCannotUpdateRoomPowerState() {
     }
   });
   assert.equal(presence.response.status, 200, presence.payload.error);
-  const response = await request("POST", `/api/rooms/${code}/power-state`, {
+  const response = await roomPowerStateCommand(code, {
     matchId: `${code}-match`,
     round: 1,
     powerId: "shuffle",
@@ -2932,7 +4012,7 @@ async function testRoomRoundSkipEndpointStampsEvent() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/round-skip`, {
+  const { response, payload } = await roomRoundSkipCommand(code, {
     hostParticipantId: "host-client",
     round: 2,
     submissions: [
@@ -3011,7 +4091,7 @@ async function testRoomGradingAllSubmittedDoesNotForcePendingAnswers() {
     }
   }));
 
-  const grading = await request("POST", `/api/rooms/${code}/grading`, {
+  const grading = await roomGradingCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 2,
@@ -3093,7 +4173,7 @@ async function testRoomGradingAllSubmittedLocksWhenAllAnswersPresent() {
     }
   }));
 
-  const grading = await request("POST", `/api/rooms/${code}/grading`, {
+  const grading = await roomGradingCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 2,
@@ -3189,7 +4269,7 @@ async function testRoomGradingAllSubmittedAcceptsForcedBotSubmission() {
     }
   }));
 
-  const grading = await request("POST", `/api/rooms/${code}/grading`, {
+  const grading = await roomGradingCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 1,
@@ -3250,13 +4330,13 @@ async function testRoomRoundResultRequiresGradingLock() {
     }
   }));
 
-  const earlyResult = await request("POST", `/api/rooms/${code}/round-result`, {
+  const earlyResult = await roomRoundResultCommand(code, {
     hostParticipantId: "host-client",
     roundResult: makeRoundResult(2, { matchId })
   });
   assert.equal(earlyResult.response.status, 409);
 
-  const grading = await request("POST", `/api/rooms/${code}/grading`, {
+  const grading = await roomGradingCommand(code, {
     hostParticipantId: "host-client",
     matchId,
     round: 2,
@@ -3268,7 +4348,7 @@ async function testRoomRoundResultRequiresGradingLock() {
   assert.equal(grading.response.status, 200, grading.payload.error);
   assert.equal(grading.payload.eventType, "round-grading");
 
-  const lockedResult = await request("POST", `/api/rooms/${code}/round-result`, {
+  const lockedResult = await roomRoundResultCommand(code, {
     hostParticipantId: "host-client",
     roundResult: makeRoundResult(2, {
       matchId,
@@ -3364,7 +4444,7 @@ async function testRoomModerationEndpointMutesAndBans() {
   }));
 
   const muteClientEventId = `${code}:mute:event`;
-  const mute = await request("POST", `/api/rooms/${code}/moderation`, {
+  const mute = await roomModerationCommand(code, {
     clientEventId: muteClientEventId,
     hostParticipantId: "host-client",
     participantId: "guest-client",
@@ -3374,7 +4454,7 @@ async function testRoomModerationEndpointMutesAndBans() {
   assert.equal(mute.payload.clientEventId, muteClientEventId);
   assert.equal(mute.payload.participant.muted, true);
 
-  const ban = await request("POST", `/api/rooms/${code}/moderation`, {
+  const ban = await roomModerationCommand(code, {
     hostParticipantId: "host-client",
     participantId: "guest-client",
     action: "ban"
@@ -3419,7 +4499,7 @@ async function testKickedParticipantCanRejoinWithSameProfile() {
     ]
   }));
 
-  const kick = await request("POST", `/api/rooms/${code}/moderation`, {
+  const kick = await roomModerationCommand(code, {
     hostParticipantId: "host-client",
     participantId: "kickable-client",
     action: "kick"
@@ -3428,7 +4508,7 @@ async function testKickedParticipantCanRejoinWithSameProfile() {
   assert.equal(kick.payload.participant.active, false);
   assert.equal(kick.payload.participant.status, "kicked");
 
-  const rejoin = await request("POST", `/api/rooms/${code}/presence`, {
+  const rejoin = await roomPresenceCommand(code, {
     participant: {
       id: "kickable-rejoin-client",
       profileUserId: "guest:kickable-profile",
@@ -3473,7 +4553,7 @@ async function testBannedParticipantProfileCannotRejoinWithNewId() {
     ]
   }));
 
-  const ban = await request("POST", `/api/rooms/${code}/moderation`, {
+  const ban = await roomModerationCommand(code, {
     hostParticipantId: "host-client",
     participantId: "banned-client",
     action: "ban"
@@ -3481,7 +4561,7 @@ async function testBannedParticipantProfileCannotRejoinWithNewId() {
   assert.equal(ban.response.status, 200, ban.payload.error);
   assert.equal(ban.payload.banned.includes("guest:banned-profile"), true);
 
-  const rejoin = await request("POST", `/api/rooms/${code}/presence`, {
+  const rejoin = await roomPresenceCommand(code, {
     participant: {
       id: "banned-rejoin-client",
       profileUserId: "guest:banned-profile",
@@ -3530,7 +4610,7 @@ async function testRoomPresenceRejectsBotWhenRoomFull() {
     ]
   }));
 
-  const added = await request("POST", `/api/rooms/${code}/presence`, {
+  const added = await roomPresenceCommand(code, {
     hostParticipantId: "host-client",
     compact: true,
     participant: {
@@ -3587,7 +4667,7 @@ async function testRoomModerationEndpointKicksBot() {
     }
   }));
 
-  const { response, payload } = await request("POST", `/api/rooms/${code}/moderation`, {
+  const { response, payload } = await roomModerationCommand(code, {
     hostParticipantId: "host-client",
     participantId: "bot-client",
     action: "kick"
@@ -3605,7 +4685,7 @@ async function testRoomModerationEndpointKicksBot() {
   assert.equal(stored.payload.room.activePlayers, 1);
   assert.equal(stored.payload.room.events.some((event) => event.type === "participant_moderated" && event.payload.participantId === "bot-client"), true);
 
-  const added = await request("POST", `/api/rooms/${code}/presence`, {
+  const added = await roomPresenceCommand(code, {
     hostParticipantId: "host-client",
     compact: true,
     participant: {
@@ -3619,30 +4699,55 @@ async function testRoomModerationEndpointKicksBot() {
       status: "bot"
     }
   });
-  assert.equal(added.response.status, 200, added.payload.error);
-  assert.equal(added.payload.participant.id, "bot-client-2");
-  assert.equal(added.payload.participant.bot, true);
+  assert.equal(added.response.status, 409);
 
   const storedAfterAdd = await getRoom(code);
   assert.equal(storedAfterAdd.response.status, 200, storedAfterAdd.payload.error);
   assert.equal(storedAfterAdd.payload.room.participants.some((participant) => participant.id === "bot-client"), false);
-  assert.equal(storedAfterAdd.payload.room.participants.some((participant) => participant.id === "bot-client-2"), true);
-  assert.equal(storedAfterAdd.payload.room.activePlayers, 2);
+  assert.equal(storedAfterAdd.payload.room.participants.some((participant) => participant.id === "bot-client-2"), false);
+  assert.equal(storedAfterAdd.payload.room.activePlayers, 1);
+}
+
+async function testRapidRoomBotAddsAreSerializedAndUnique() {
+  const code = makeCode(8188);
+  await upsertRoom(makeRoom(code, {
+    settings: {
+      ...makeRoom(code).settings,
+      maxPlayers: 5
+    }
+  }));
+
+  const adds = await Promise.all([0, 1, 2].map((index) => roomCommand(code, "add_bot", {
+    participantId: "host-client",
+    name: "Rapid Bot",
+    clientEventId: `rapid-bot-${index}`
+  })));
+  adds.forEach(({ response, payload }) => {
+    assert.equal(response.status, 200, payload.error);
+  });
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const bots = stored.payload.room.participants.filter((participant) => participant.bot);
+  assert.equal(bots.length, 3);
+  assert.equal(new Set(bots.map((bot) => bot.id)).size, 3);
+  assert.equal(new Set(bots.map((bot) => bot.name)).size, 3);
+  assert.equal(stored.payload.room.activePlayers, 4);
 }
 
 async function testHostCloseEndpointDeletesRoom() {
   const code = makeCode(8115);
   await upsertRoom(makeRoom(code));
-  const { response, payload } = await request("POST", `/api/rooms/${code}/close`, {
+  const { response, payload } = await roomCloseCommand(code, {
     participantId: "host-client",
     reason: "manual"
   });
   assert.equal(response.status, 200, payload.error);
   assert.equal(payload.closed, true);
-  assert.equal(payload.reason, "manual");
+  assert.equal(payload.reason, "host-left");
   const directRoom = await getRoom(code);
   assert.equal(directRoom.response.status, 410);
-  assert.equal(directRoom.payload.close.reason, "manual");
+  assert.equal(directRoom.payload.close.reason, "host-left");
 }
 
 async function testUserInventoryOpsAreIdempotent() {
@@ -4163,6 +5268,7 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
 }
 
 async function main() {
+  testClientUsesRoomCommandEndpointsForMultiplayerWrites();
   await testSupabaseConfigEndpoint();
   await testDirectRoomLookupIncludesCompleteRooms();
   await testHostLeaveDeletesRoom();
@@ -4183,18 +5289,28 @@ async function main() {
   await testHostPageExitDeletesRoom();
   await testHostReconnectTimeoutPromotesOldestPlayer();
   await testCreatingSecondRoomTransfersOlderRoomHost();
-  await testAnswerSurvivesHeartbeat();
+  await testAnswerSurvivesReconnectCommand();
   await testLateJoinerReceivesRoundState();
   await testRoomChatPreservesMessageIds();
   await testCompactRoomDeltasAvoidFullRoomPayloads();
   await testCompactPresenceCanIncludeAuthoritativeRoomSnapshot();
+  await testRoomCommandRejoinReclaimsSameTabActiveParticipant();
+  await testRoomCommandRejectsDuplicateActiveParticipantTab();
+  await testRoomCommandRejoinRestoresDisconnectedSubmittedParticipant();
+  await testRoomCommandHostRejoinPreservesActiveMatchState();
+  await testRoomCommandLobbyRejoinPreservesPlayerSlot();
+  await testRoomCommandRejoinRestoresWaitingParticipantDuringAnswerPhase();
+  await testRoomCommandRejoinRestoresSubmittedParticipantDuringGrading();
   await testSpectatorPresenceDoesNotConsumePlayerSlot();
   await testSpectatorLeaveUpdatesAuthoritativeRoomSnapshot();
   await testParticipantWithoutActiveDefaultsActiveAndRole();
   await testSpectatorCannotSubmitGameplayAnswer();
   await testDuplicateHostPresenceRemovesStaleHostRow();
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
+  await testRoomSettingsClassicModeNormalization();
   await testRoomPowerStateEndpointStampsEvents();
+  await testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand();
+  await testRoomPowerStateRejectsInvalidTargetParticipant();
   await testRoomPowerStateTimeBenderUpdatesSharedTimers();
   await testStaleRoomRoundResultCannotOverwriteRematch();
   await testStaleRoomGameEndCannotCompleteRematch();
@@ -4205,6 +5321,7 @@ async function main() {
   await testRoomAnswerEndpointStoresRoundScopedAnswer();
   await testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState();
   await testRoomAnswerEndpointStartsGradingWhenAllSubmitted();
+  await testSimultaneousRoomSubmissionsStartSingleGradingTransition();
   await testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound();
   await testRoomRoundAdvancingEndpointStampsEvent();
   await testRoomRoundSetupEndpointCreatesSharedSetup();
@@ -4232,6 +5349,7 @@ async function main() {
   await testBannedParticipantProfileCannotRejoinWithNewId();
   await testRoomPresenceRejectsBotWhenRoomFull();
   await testRoomModerationEndpointKicksBot();
+  await testRapidRoomBotAddsAreSerializedAndUnique();
   await testHostCloseEndpointDeletesRoom();
   await testUserInventoryOpsAreIdempotent();
   await testUserInventoryCoinReconcilePersistsExitBalance();

@@ -176,13 +176,82 @@ function createBrowserContext(label, ipSuffix) {
 }
 
 async function createRoom(hostContext, code, overrides = {}) {
-  const { response, payload } = await hostContext.request("PUT", "/api/rooms", {
-    room: makeRoom(code, overrides)
+  const room = makeRoom(code, overrides);
+  const { response, payload } = await roomCommand(hostContext, code, "create_room", {
+    room
+  }, {
+    participantId: room.host?.id || "host-client"
   });
   assert.equal(response.status, 200, payload.error);
   assert.ok(payload.room.revision >= 1);
   assert.ok(hostContext.getCookie(getRoomHostCookieName(code)));
   return payload.room;
+}
+
+function makeRoomCommandBody(code, type, payload = {}, overrides = {}) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  const commandPayload = payload && typeof payload === "object" ? payload : {};
+  const participantId = String(
+    overrides.participantId
+    || commandPayload.participantId
+    || commandPayload.hostParticipantId
+    || commandPayload.actorParticipantId
+    || commandPayload.participant?.id
+    || commandPayload.message?.participantId
+    || commandPayload.host?.id
+    || commandPayload.room?.host?.id
+    || ""
+  );
+  return {
+    type,
+    roomCode: normalizedCode,
+    participantId,
+    clientInstanceId: commandPayload.clientInstanceId || "",
+    tabSessionId: commandPayload.tabSessionId || commandPayload.participant?.tabSessionId || "",
+    clientEventId: commandPayload.clientEventId || `${normalizedCode}:${type}:${Date.now()}:${Math.random()}`,
+    payload: commandPayload
+  };
+}
+
+async function roomCommand(context, code, type, payload = {}, overrides = {}) {
+  return context.request("POST", `/api/rooms/${String(code || "").trim().toUpperCase()}/commands`, makeRoomCommandBody(code, type, payload, overrides));
+}
+
+function getEventPayload(commandPayload, type = "") {
+  const events = Array.isArray(commandPayload?.events) ? commandPayload.events : [];
+  const event = type
+    ? [...events].reverse().find((entry) => entry.type === type)
+    : events[events.length - 1];
+  return event?.payload || {};
+}
+
+function withCommandEventFields(payload = {}, preferredEventType = "") {
+  const eventPayload = getEventPayload(payload, preferredEventType);
+  const events = Array.isArray(payload.events) ? payload.events : [];
+  const event = preferredEventType
+    ? [...events].reverse().find((entry) => entry.type === preferredEventType)
+    : events[events.length - 1];
+  return {
+    ...payload,
+    ...(event ? { eventType: String(event.type || "").replaceAll("_", "-") } : {}),
+    ...eventPayload
+  };
+}
+
+async function roomCommandWithRoom(context, code, type, payload = {}, preferredEventType = "") {
+  const result = await roomCommand(context, code, type, payload);
+  const enriched = withCommandEventFields(result.payload, preferredEventType);
+  if (result.response.ok && !enriched.closed) {
+    try {
+      enriched.room = await getRoom(context, code);
+    } catch {
+      // Closed-room commands intentionally have no room snapshot to attach.
+    }
+  }
+  return {
+    response: result.response,
+    payload: enriched
+  };
 }
 
 async function getRoom(context, code) {
@@ -198,7 +267,7 @@ async function getEvents(context, code, since = 0) {
 }
 
 async function joinPlayer(context, code, participantId = "player-client", profileUserId = "guest:player-client") {
-  const { response, payload } = await context.request("POST", `/api/rooms/${code}/presence`, {
+  const { response, payload } = await roomCommand(context, code, "join_room", {
     compact: true,
     includeRoom: true,
     participant: {
@@ -213,11 +282,11 @@ async function joinPlayer(context, code, participantId = "player-client", profil
   assert.equal(payload.participant.id, participantId);
   assert.equal(payload.participant.role, "player");
   assert.ok(context.getCookie(getRoomParticipantCookieName(code, participantId)));
-  return payload;
+  return withCommandEventFields(payload);
 }
 
 async function joinSpectator(context, code, participantId = "spectator-client", profileUserId = "guest:spectator-client") {
-  const { response, payload } = await context.request("POST", `/api/rooms/${code}/presence`, {
+  const { response, payload } = await roomCommand(context, code, "join_room", {
     compact: true,
     includeRoom: true,
     participant: {
@@ -234,7 +303,7 @@ async function joinSpectator(context, code, participantId = "spectator-client", 
   assert.equal(payload.participant.id, participantId);
   assert.equal(payload.participant.role, "spectator");
   assert.ok(context.getCookie(getRoomParticipantCookieName(code, participantId)));
-  return payload;
+  return withCommandEventFields(payload);
 }
 
 function eventTypes(events) {
@@ -266,7 +335,7 @@ async function testMembershipEventsSyncAcrossBrowserContexts() {
   assert.equal(hostEvents[0].payload.participantId, "player-client");
   assert.equal(hostEvents[1].payload.participantId, "spectator-client");
 
-  const spectatorLeave = await spectator.request("POST", `/api/rooms/${code}/leave`, {
+  const spectatorLeave = await roomCommandWithRoom(spectator, code, "leave_room", {
     participantId: "spectator-client",
     reason: "browser-exit"
   });
@@ -292,11 +361,11 @@ async function testModerationRejoinBanAndBotSyncAcrossBrowserContexts() {
   await createRoom(host, code);
   const joined = await joinPlayer(player, code, "player-client", "guest:moderated-player");
 
-  const kick = await host.request("POST", `/api/rooms/${code}/moderation`, {
+  const kick = await roomCommandWithRoom(host, code, "moderate_participant", {
     hostParticipantId: "host-client",
     participantId: "player-client",
     action: "kick"
-  });
+  }, "participant_moderated");
   assert.equal(kick.response.status, 200, kick.payload.error);
   assert.equal(kick.payload.eventType, "participant-moderated");
   assert.equal(kick.payload.participant.status, "kicked");
@@ -309,16 +378,16 @@ async function testModerationRejoinBanAndBotSyncAcrossBrowserContexts() {
   assert.equal(rejoined.room.participants.some((participant) => participant.id === "player-rejoin-client" && participant.active), true);
   assert.equal(rejoined.room.activePlayers, 2);
 
-  const ban = await host.request("POST", `/api/rooms/${code}/moderation`, {
+  const ban = await roomCommandWithRoom(host, code, "moderate_participant", {
     hostParticipantId: "host-client",
     participantId: "player-rejoin-client",
     action: "ban"
-  });
+  }, "participant_moderated");
   assert.equal(ban.response.status, 200, ban.payload.error);
   assert.equal(ban.payload.banned.includes("guest:moderated-player"), true);
   assert.equal(ban.payload.room.participants.some((participant) => participant.id === "player-rejoin-client"), false);
 
-  const blocked = await bannedRetry.request("POST", `/api/rooms/${code}/presence`, {
+  const blocked = await roomCommand(bannedRetry, code, "join_room", {
     compact: true,
     participant: {
       id: "blocked-player-client",
@@ -330,7 +399,7 @@ async function testModerationRejoinBanAndBotSyncAcrossBrowserContexts() {
   });
   assert.equal(blocked.response.status, 403);
 
-  const botAdd = await host.request("POST", `/api/rooms/${code}/presence`, {
+  const botAdd = await roomCommandWithRoom(host, code, "add_bot", {
     hostParticipantId: "host-client",
     compact: true,
     includeRoom: true,
@@ -342,21 +411,21 @@ async function testModerationRejoinBanAndBotSyncAcrossBrowserContexts() {
       active: true,
       status: "bot"
     }
-  });
+  }, "participant_joined");
   assert.equal(botAdd.response.status, 200, botAdd.payload.error);
   assert.equal(botAdd.payload.participant.role, "bot");
   assert.equal(botAdd.payload.room.activePlayers, 2);
 
-  const botKick = await host.request("POST", `/api/rooms/${code}/moderation`, {
+  const botKick = await roomCommandWithRoom(host, code, "moderate_participant", {
     hostParticipantId: "host-client",
     participantId: "bot-client",
     action: "kick"
-  });
+  }, "participant_moderated");
   assert.equal(botKick.response.status, 200, botKick.payload.error);
   assert.equal(botKick.payload.room.participants.some((participant) => participant.id === "bot-client"), false);
   assert.equal(botKick.payload.room.activePlayers, 1);
 
-  const botReplacement = await host.request("POST", `/api/rooms/${code}/presence`, {
+  const botReplacement = await roomCommandWithRoom(host, code, "add_bot", {
     hostParticipantId: "host-client",
     compact: true,
     includeRoom: true,
@@ -389,7 +458,7 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
   await joinPlayer(player, code);
   await joinSpectator(spectator, code);
 
-  const advancing = await host.request("POST", `/api/rooms/${code}/round-advancing`, {
+  const advancing = await roomCommandWithRoom(host, code, "start_next_round", {
     hostParticipantId: "host-client",
     matchId,
     round: 1,
@@ -400,13 +469,13 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
       autoAdvance: true,
       enabledThemes: ["Science"]
     }
-  });
+  }, "round_advancing");
   assert.equal(advancing.response.status, 200, advancing.payload.error);
   assert.equal(advancing.payload.eventType, "round-advancing");
   assert.equal(advancing.payload.game.status, "starting");
   assert.equal(advancing.payload.game.setup, null);
 
-  const playerSetupAttempt = await player.request("POST", `/api/rooms/${code}/round-setup`, {
+  const playerSetupAttempt = await roomCommand(player, code, "prepare_round", {
     matchId,
     round: 1,
     totalRounds: 2,
@@ -414,7 +483,7 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
   });
   assert.equal(playerSetupAttempt.response.status, 403);
 
-  const spectatorSetupAttempt = await spectator.request("POST", `/api/rooms/${code}/round-setup`, {
+  const spectatorSetupAttempt = await roomCommand(spectator, code, "prepare_round", {
     matchId,
     round: 1,
     totalRounds: 2,
@@ -422,14 +491,14 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
   });
   assert.equal(spectatorSetupAttempt.response.status, 403);
 
-  const started = await host.request("POST", `/api/rooms/${code}/round-setup`, {
+  const started = await roomCommandWithRoom(host, code, "prepare_round", {
     hostParticipantId: "host-client",
     matchId,
     round: 1,
     totalRounds: 2,
     enabledThemes: ["Science"],
     setupSeed: `${code}-round-1`
-  });
+  }, "round_started");
   assert.equal(started.response.status, 200, started.payload.error);
   assert.equal(started.payload.eventType, "round-started");
   assert.equal(started.payload.game.status, "playing");
@@ -445,13 +514,13 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
   assert.deepEqual(playerRoom.game.setup.multipleChoiceOptions || [], started.payload.game.setup.multipleChoiceOptions || []);
   assert.deepEqual(spectatorRoom.game.setup.multipleChoiceOptions || [], started.payload.game.setup.multipleChoiceOptions || []);
 
-  const playerAnswer = await player.request("POST", `/api/rooms/${code}/answer`, {
+  const playerAnswer = await roomCommandWithRoom(player, code, "submit_answer", {
     participantId: "player-client",
     matchId,
     round: 1,
     answer: "Player answer",
     remainingTime: 12
-  });
+  }, "answer_submitted");
   assert.equal(playerAnswer.response.status, 200, playerAnswer.payload.error);
   assert.equal(playerAnswer.payload.eventType, "answer-submitted");
   assert.equal(playerAnswer.payload.grading, undefined);
@@ -459,13 +528,14 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
   const spectatorEvents = await getEvents(spectator, code, started.payload.revision);
   assert.equal(spectatorEvents.some((event) => event.type === "answer_submitted" && event.payload.participantId === "player-client"), true);
 
-  const hostAnswer = await host.request("POST", `/api/rooms/${code}/answer`, {
+  const hostAnswer = await roomCommandWithRoom(host, code, "submit_answer", {
     participantId: "host-client",
     matchId,
     round: 1,
     answer: "Host answer",
     remainingTime: 14
-  });
+  }, "answer_submitted");
+  hostAnswer.payload.grading = withCommandEventFields(hostAnswer.payload, "round_grading");
   assert.equal(hostAnswer.response.status, 200, hostAnswer.payload.error);
   assert.equal(hostAnswer.payload.grading.eventType, "round-grading");
   assert.equal(hostAnswer.payload.grading.reason, "all-submitted");
@@ -476,7 +546,7 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
   assert.equal(gradingRoom.game.answers["host-client"].answer, "Host answer");
   assert.equal(gradingRoom.game.answers["player-client"].answer, "Player answer");
 
-  const result = await host.request("POST", `/api/rooms/${code}/round-result`, {
+  const result = await roomCommandWithRoom(host, code, "publish_round_result", {
     hostParticipantId: "host-client",
     roundResult: makeRoundResult(1, {
       matchId,
@@ -484,12 +554,12 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
       questionId: started.payload.game.setup.id,
       nextRoundAt: Date.now() + 30000
     })
-  });
+  }, "round_result");
   assert.equal(result.response.status, 200, result.payload.error);
   assert.equal(result.payload.eventType, "round-result");
   assert.ok(result.payload.roundResult.nextRoundAt > Date.now());
 
-  const nextRound = await host.request("POST", `/api/rooms/${code}/round-advancing`, {
+  const nextRound = await roomCommandWithRoom(host, code, "start_next_round", {
     hostParticipantId: "host-client",
     matchId,
     round: 2,
@@ -500,7 +570,7 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
       autoAdvance: true,
       enabledThemes: ["Science"]
     }
-  });
+  }, "round_advancing");
   assert.equal(nextRound.response.status, 200, nextRound.payload.error);
   assert.equal(nextRound.payload.eventType, "round-advancing");
   assert.equal(nextRound.payload.game.status, "starting");
@@ -514,14 +584,14 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
   assert.equal(spectatorNextRoom.game.setup, null);
   assert.deepEqual(spectatorNextRoom.game.answers, {});
 
-  const nextStarted = await host.request("POST", `/api/rooms/${code}/round-setup`, {
+  const nextStarted = await roomCommandWithRoom(host, code, "prepare_round", {
     hostParticipantId: "host-client",
     matchId,
     round: 2,
     totalRounds: 2,
     enabledThemes: ["Science"],
     setupSeed: `${code}-round-2`
-  });
+  }, "round_started");
   assert.equal(nextStarted.response.status, 200, nextStarted.payload.error);
   assert.equal(nextStarted.payload.game.round, 2);
   assert.deepEqual(nextStarted.payload.game.answers, {});
@@ -539,37 +609,45 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
   await joinPlayer(player, code);
   await joinSpectator(spectator, code);
 
-  const started = await host.request("PUT", `/api/rooms/${code}/game`, {
+  const advancing = await roomCommandWithRoom(host, code, "start_next_round", {
     hostParticipantId: "host-client",
-    game: {
-      matchId,
-      status: "playing",
-      round: 1,
-      setup: makeSetup(1, {
-        questionStyle: "multiple-choice",
-        multipleChoiceOptions: ["Break point", "Set point", "Match point", "Game point"]
-      }),
-      answers: {},
-      powerState: {
-        matchId,
-        updatedAt: Date.now(),
-        hands: [
-          { participantId: "host-client", owner: "player", hand: ["shuffle"], fresh: [] },
-          { participantId: "player-client", owner: "opponent", hand: ["xray_hacks"], fresh: [] }
-        ],
-        played: [],
-        players: [
-          { participantId: "host-client", owner: "player", score: 0, streak: 0 },
-          { participantId: "player-client", owner: "opponent", score: 0, streak: 0 }
-        ],
-        effects: { maps: {}, arrays: {}, values: {} }
-      },
-      updatedAt: Date.now()
+    matchId,
+    round: 1,
+    matchSettings: {
+      rounds: 5,
+      timerSeconds: 30,
+      maxPlayers: 5,
+      autoAdvance: true,
+      enabledThemes: ["Science"]
     }
-  });
+  }, "round_advancing");
+  assert.equal(advancing.response.status, 200, advancing.payload.error);
+
+  const started = await roomCommandWithRoom(host, code, "prepare_round", {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1,
+    totalRounds: 5,
+    enabledThemes: ["Science"],
+    setupSeed: `${code}-power-round-1`,
+    powerState: {
+      matchId,
+      updatedAt: Date.now(),
+      hands: [
+        { participantId: "host-client", owner: "player", hand: ["shuffle"], fresh: [] },
+        { participantId: "player-client", owner: "opponent", hand: ["xray_hacks"], fresh: [] }
+      ],
+      played: [],
+      players: [
+        { participantId: "host-client", owner: "player", score: 0, streak: 0 },
+        { participantId: "player-client", owner: "opponent", score: 0, streak: 0 }
+      ],
+      effects: { maps: {}, arrays: {}, values: {} }
+    }
+  }, "round_started");
   assert.equal(started.response.status, 200, started.payload.error);
 
-  const power = await player.request("POST", `/api/rooms/${code}/power-state`, {
+  const power = await roomCommandWithRoom(player, code, "use_power", {
     matchId,
     round: 1,
     powerId: "xray_hacks",
@@ -589,7 +667,7 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
       { participantId: "player-client", owner: "opponent", score: 250, streak: 1 }
     ],
     effects: { maps: {}, arrays: {}, values: {} }
-  });
+  }, "power_state");
   assert.equal(power.response.status, 200, power.payload.error);
   assert.equal(power.payload.eventType, "power-state");
   assert.ok(power.payload.powerRevision >= 1);
@@ -607,7 +685,7 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
     assert.equal(event.payload.powerState.hands.some((entry) => entry.participantId === "player-client"), true);
   });
 
-  const ended = await host.request("PUT", `/api/rooms/${code}/game`, {
+  const ended = await roomCommandWithRoom(host, code, "end_game", {
     hostParticipantId: "host-client",
     game: {
       matchId,
@@ -628,14 +706,14 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
       }),
       updatedAt: Date.now()
     }
-  });
+  }, "game_ended");
   assert.equal(ended.response.status, 200, ended.payload.error);
   assert.equal(ended.payload.room.status, "complete");
 
-  const lobby = await host.request("POST", `/api/rooms/${code}/lobby`, {
+  const lobby = await roomCommandWithRoom(host, code, "return_to_lobby", {
     hostParticipantId: "host-client",
     matchId
-  });
+  }, "room_updated");
   assert.equal(lobby.response.status, 200, lobby.payload.error);
   assert.equal(lobby.payload.room.status, "lobby");
   assert.equal(lobby.payload.room.game, null);
@@ -650,7 +728,7 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
   assert.equal(spectatorLobby.game, null);
 
   const rematchId = `${code}-match-b`;
-  const rematch = await host.request("POST", `/api/rooms/${code}/round-advancing`, {
+  const rematch = await roomCommandWithRoom(host, code, "start_next_round", {
     hostParticipantId: "host-client",
     matchId: rematchId,
     round: 1,
@@ -661,7 +739,7 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
       autoAdvance: true,
       enabledThemes: ["Science"]
     }
-  });
+  }, "round_advancing");
   assert.equal(rematch.response.status, 200, rematch.payload.error);
   assert.equal(rematch.payload.game.matchId, rematchId);
   assert.equal(rematch.payload.game.round, 1);

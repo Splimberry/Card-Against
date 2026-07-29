@@ -19,6 +19,184 @@ Do not rewrite the whole app. Keep these systems intact:
 Burn down and replace only the multiplayer sync, verification, catchup, and room snapshot logic.
 
 
+Execution Phases
+----------------
+Phase 1: Command/event foundation and answer submission. Status: mostly implemented.
+
+- Add room command endpoint.
+- Add client roomSync command wrapper.
+- Move answer draft, answer submission, all-submitted grading trigger, and add bot onto commands.
+- Stop client-side all-submitted retry/verification from normal submit flow.
+
+Implemented command types:
+
+- update_answer_draft
+- submit_answer
+- add_bot
+
+Still to remove later:
+
+- old /answer endpoint once no legacy callers remain
+- old bot/presence fallback paths once join/reconnect are command-backed
+
+Phase 2: Match start and round setup. Status: mostly implemented.
+
+- Move Begin Match, next round preparation, and round started sync onto commands.
+- Server owns matchId, round number, round phase, question setup, timer deadlines, and initial per-round answer state.
+- Clients enter answering only from server round events.
+- Remove normal-path waiting/catchup loops for round setup.
+
+Implemented command types:
+
+- start_match
+- start_next_round
+- prepare_round
+
+Still to remove later:
+
+- old /round-advancing and /round-setup endpoints once no legacy callers remain
+- non-host round setup catchup/waiting loops after event delivery is proven stable
+
+Phase 3: Lobby membership and settings. Status: partial.
+
+- Move join, rejoin, leave, disconnect, kick, ban, host transfer, and settings updates onto commands.
+- Remove whole-room upsert from normal room membership.
+- Keep room list refresh only for the Join Room browser.
+
+Implemented command types:
+
+- join_room
+- rejoin_room
+- disconnect_participant
+- create_room
+- transfer_host
+- update_settings
+- moderate_participant
+- leave_room for normal clicked Leave
+
+Still to implement:
+
+- room close
+- replace/remove remaining browser lifecycle `/leave` fallback if a command beacon path fully covers it
+
+Recent phase progress:
+
+- Client `updateRoomPresence()` now uses room commands for join/rejoin/disconnect instead of `/presence`.
+- Common join path no longer fetches a full room snapshot before sending the join command when the room already exists in the directory.
+- Reconnect success path no longer performs a normal-path realtime catchup request after the server accepts the rejoin.
+- Page unload sends a `disconnect_participant` command envelope through `sendBeacon`; this is retained as a browser lifecycle special case.
+- Draft/create-room publication now uses `create_room` instead of whole-room `PUT /api/rooms`.
+- Host manual leave now lets the server transfer host to the oldest active player before closing the room.
+- Removed the unused legacy participant presence publisher from the client.
+- Host heartbeat now uses the participant command path instead of `/heartbeat`.
+
+Phase 4: Timer expiry, skip, next round, rematch, return to lobby. Status: implemented.
+
+- Server owns timer expiry and missing-answer auto-submit.
+- Server owns host skip/manual advance/auto advance.
+- Server emits complete phase transition events.
+
+Implemented command types:
+
+- skip_to_grading
+- resolve_timer_expired
+- publish_round_result
+- rematch
+- return_to_lobby
+- end_game
+- resolve_auto_advance
+
+Recent phase progress:
+
+- End-game now uses `end_game` instead of the legacy `/game` PUT path.
+- Return-to-lobby now uses `return_to_lobby` instead of the legacy `/lobby` endpoint.
+- Rematch now sends a dedicated `rematch` round-advance command so the server can validate it from `complete`.
+- Auto-advance countdown now sends `resolve_auto_advance`; the server validates the published `nextRoundAt` deadline before starting the next round.
+
+Phase 5: Power-up state. Status: partial.
+
+- Move power usage, point changes, active effects, hand changes, damage states, and chaos variants onto commands.
+- Clients render power animations from server result events only.
+
+Implemented command types:
+
+- use_power
+
+Recent phase progress:
+
+- Existing multiplayer power-state transport now uses `use_power` instead of the legacy `/power-state` endpoint.
+- Power-state updates now return through the room command/event revision flow.
+- Legacy host round setup publishing through `/game` is skipped; `prepare_round` owns `round_started`.
+- `use_power` now emits split realtime hooks in addition to the compatibility `power_state` event:
+  `power_used`, `hand_changed`, `active_effects_changed`, and `power_resolved`.
+- The client recognizes the split power events and applies resolved/partial power payloads through the existing power-state applier.
+
+Still to implement:
+
+- Move actual power rule resolution to the server instead of accepting a client-computed state patch.
+- Make point deltas, damage states, chaos upgrades, and hand replacements server-calculated.
+
+Phase 6: Reconnect and duplicate-tab hardening. Status: implemented.
+
+- Preserve participant slots across refresh/close/rejoin.
+- Block duplicate active slots from the same profile/guest.
+- Use snapshots only on first join, reconnect, direct invite load, or revision-gap recovery.
+
+Recent phase progress:
+
+- Client room session markers now include a stable per-room `tabSessionId` that survives refresh in the same tab.
+- Room command envelopes and participant payloads carry `tabSessionId`.
+- Server participant state stores `tabSessionId`.
+- `rejoin_room` can reclaim an already-active participant slot with a new connection id only when the stored tab session matches.
+- A second active tab with the same participant/profile but a different tab session is rejected with a duplicate-participant response.
+- Active same-tab reconnect preserves submitted/waiting gameplay status instead of resetting the participant to a generic joined state.
+- Disconnected player rejoin restores submitted gameplay status from the canonical round answer state.
+- Client keepalive leave now sends a `leave_room` command beacon instead of using the legacy `/leave` endpoint.
+- Added host refresh/rejoin and phase-specific reconnect tests for lobby, answering/waiting, grading, and active match preservation.
+
+Phase 7: Remove legacy sync. Status: implemented.
+
+- Delete normal-path polling, catchup, verification, and whole-room PUT flows after their replacements are live.
+- Keep diagnostics and manual debug recovery only.
+
+Recent phase progress:
+
+- Removed unused HTTP confirmation helper `confirmRoomHttpEvent()`.
+- Removed unused round-result snapshot recovery helpers.
+- Removed unused grading catchup wrapper.
+- Removed unused room event/snapshot polling interval helpers and the empty event polling starter.
+- Replaced round-result and round-setup waiting catchups with realtime event/change waits.
+- Replaced foreground visibility catchup with the existing `rejoin_room` command path.
+- Removed the dead fallback polling state/functions so they cannot be accidentally re-enabled.
+- Removed remaining unused fallback delay/critical polling helpers.
+- Removed automatic startup/subscription catchups; those paths now only start realtime, flush queued events, and use command/revision-gap recovery.
+- Added a regression test that fails if `app.js` reintroduces legacy multiplayer write endpoints instead of `/api/rooms/:code/commands`.
+- Migrated remaining room integration and multiplayer browser-context tests onto `/api/rooms/:code/commands`.
+- Removed normal legacy multiplayer write route registrations from the server:
+  `/api/rooms` PUT, `/presence`, `/settings`, `/heartbeat`, `/chat`, `/game`, `/lobby`,
+  `/round-advancing`, `/round-setup`, `/answer`, `/grading`, `/power-state`,
+  `/round-result`, `/round-skip`, `/moderation`, `/close`, and `/leave`.
+- Removed the now-unregistered legacy handler bodies for the same endpoints, leaving only the command
+  router and shared normalization/helper functions.
+- Kept room list GET, direct room GET, events GET, commands POST, admin/debug endpoints,
+  and recovery snapshots for allowed join/rejoin/revision-gap cases.
+- Removed dead client submission/grading retry helpers that were no longer called.
+- Renamed room presence maintenance away from misleading directory-polling names.
+- Removed no-op join directory polling shells and the participant realtime retry fan-out.
+- Added a per-room command queue inside the server process so rapid same-room commands serialize before
+  reading, mutating, and writing room state.
+- Added first-slice server power validation: active targets must exist, and once the server has an
+  authoritative hand for an actor, used powers must be present in that hand.
+- Added regressions for Classic-mode settings normalization, rapid bot add uniqueness, simultaneous
+  answer submission, and rejected forged/invalid power use.
+
+Still to implement:
+
+- Phase 5 server-authoritative power rule calculation remains partial. The transport is command-only,
+  and `use_power` now validates known hand ownership and targets, but scoring/effect math still comes
+  from the client-computed power-state patch until the full rule engine is migrated.
+
+
 Why This Rework Exists
 ----------------------
 The current multiplayer flow has become too dependent on fallback behavior:
@@ -73,7 +251,7 @@ These are the main current paths that should be removed or converted behind a ne
 - app.js state.roomDirectoryPollId
 - app.js state.roomAutoResolveId
 - app.js refreshCurrentRoomDirectory()
-- app.js startRoomDirectoryPolling()
+- app.js startRoomPresenceMaintenance()
 - app.js waitForRoomSubmissionsThenPlay()
 - app.js publishCurrentRoomSubmission()
 - app.js submitRoomAnswer() multiplayer branch that locally marks remote answers
@@ -285,7 +463,7 @@ Commands:
 - join_room
 - rejoin_room
 - leave_room
-- disconnect
+- disconnect_participant
 - transfer_host
 - update_settings
 - add_bot
@@ -301,6 +479,10 @@ Commands:
 - rematch
 - return_to_lobby
 - send_chat
+
+Recently implemented:
+
+- `send_chat` replaces the legacy `/chat` write path for normal room chat.
 
 
 Critical Flow: Answer Submission
@@ -552,7 +734,7 @@ Step 1: Add event/revision foundation
 Step 2: Replace lobby sync
 
 - Replace create/join/rejoin/leave/kick/ban/bot/settings with command events.
-- Remove room directory polling while inside a room.
+- Remove room directory polling while inside a room; keep only room presence maintenance/host heartbeat and join-screen room list refresh.
 - Keep room list refresh only on join screen.
 
 Step 3: Replace match start and phase sync
@@ -679,4 +861,3 @@ The rework is done only when:
 - clients apply events idempotently by revision/clientEventId
 - stale snapshots cannot overwrite newer event-applied state
 - all listed acceptance tests pass
-

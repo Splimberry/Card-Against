@@ -49,6 +49,7 @@ const setupCacheStorageKey = "cardsAgainstAiRecentQuestionCache:v1";
 const publicCatalogCacheStorageKey = "cardsAgainstAiPublicCatalog:v1";
 const helpSeenFlagsStorageKey = "cardsAgainstAiHelpSeenFlags:v1";
 const hostedRoomSessionStorageKey = "cardsAgainstAiHostedRoomSession:v1";
+const roomTabSessionIdPrefix = "room-tab-";
 const userStorageWriteDelayMs = 450;
 const setupCacheLimit = 30;
 const setupCacheMaxAgeMs = 24 * 60 * 60 * 1000;
@@ -2942,8 +2943,6 @@ const state = {
   hostedRoomsRenderSignature: "",
   devRooms: [],
   roomParticipants: [],
-  roomDirectoryPollId: null,
-  joinDirectoryPollId: null,
   roomPanelHeightSyncFrame: 0,
   roomDirectoryOnline: true,
   roomGame: null,
@@ -3427,14 +3426,15 @@ const state = {
   realtimeRoomReady: false,
   realtimeJoinRefreshTimerId: null,
   realtimeRoomRefreshTimerId: null,
-  roomFallbackStartTimerId: null,
-  roomFallbackActive: false,
   roomRealtimeStatus: "idle",
   roomRealtimeUnhealthySince: 0,
   roomLastCatchupAt: 0,
   pendingRoomRealtimePayloads: [],
   pendingRoomClientEventsById: {},
   pendingRoomClientEventOrder: [],
+  roomSyncCommandSeq: 0,
+  roomSyncChangeListeners: new Set(),
+  roomSyncEventListeners: new Set(),
   realtimeSourceId: `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   roomRealtimeEventSeq: 0,
   hostedRoomsRefreshPromise: null,
@@ -3457,7 +3457,6 @@ const state = {
     checked: false
   },
   roomHeartbeatTimerId: null,
-  roomEventPollId: null,
   roomHostReconnectTimerId: null,
   roomHostReconnectKey: "",
   roomLastReconnectPresenceAt: 0,
@@ -5184,7 +5183,7 @@ function cancelActiveMatchWork(options = {}) {
   state.setupStack = [];
   state.setupVersion += 1;
   if (options.stopRoomSync) {
-    stopRoomDirectoryPolling();
+    stopRoomPresenceMaintenance();
   }
 }
 
@@ -5323,83 +5322,57 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = options.preferredTheme || "";
   const setupSeed = String(options.setupSeed || `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 80);
-  const clientEventId = String(options.clientEventId || createRoomClientEventId("round-started", state.roomSettings.code)).slice(0, 160);
+  const clientEventId = String(options.clientEventId || createRoomSyncCommandId("prepare-round", state.roomSettings.code)).slice(0, 160);
 
   try {
-    const response = await fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/round-setup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal,
-      body: JSON.stringify({
-        clientEventId,
-        hostParticipantId: state.clientId,
-        matchId: getCurrentRoomMatchId(),
-        round: timingOptions.round,
-        totalRounds: timingOptions.totalRounds,
-        recentBlackCards: Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards,
-        enabledThemes,
-        preferredTheme,
-        setupSeed,
-        matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
-        powerState: getRoomPowerStatePayload()
-      })
+    if (signal?.aborted) {
+      throw createAbortError();
+    }
+    const data = await roomSync.sendCommand("prepare_round", {
+      clientEventId,
+      hostParticipantId: state.clientId,
+      matchId: getCurrentRoomMatchId(),
+      round: timingOptions.round,
+      totalRounds: timingOptions.totalRounds,
+      recentBlackCards: Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards,
+      enabledThemes,
+      preferredTheme,
+      setupSeed,
+      matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
+      powerState: getRoomPowerStatePayload()
+    }, {
+      roomCode: state.roomSettings.code,
+      participantId: state.clientId,
+      clientEventId,
+      timeoutMs: roomPresenceFetchTimeoutMs
     });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+    if (!data?.ok) {
       const requestError = createHttpRequestError(
-        error.error || `Room round setup failed with status ${response.status}.`,
-        response,
-        error
+        data?.error || "Room round setup failed.",
+        { status: data?.status || 400 },
+        data || {}
       );
       requestError.roomSyncStale = isStaleRoomSetupError(requestError);
       throw requestError;
     }
 
-    const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    if (data.room) {
-      const game = data.room.game && typeof data.room.game === "object" ? data.room.game : null;
-      const confirmedPayload = confirmRoomHttpEvent(data, {
-        code: state.roomSettings.code,
-        eventType: "round-started",
-        clientEventId,
-        source: "room-round-setup-response"
-      });
-      if (game) {
-        state.roomGame = game;
-        if (game.matchId) {
-          setCurrentRoomMatchId(game.matchId);
-        }
-      }
-      if (!data.duplicate) {
-        broadcastRealtimeRoomChange("round-started", data.room.code || state.roomSettings.code, {
-          ...confirmedPayload,
-          status: data.room.status || data.status || "in-progress",
-          matchId: game?.matchId || confirmedPayload.matchId,
-          round: Number(game?.round || confirmedPayload.round) || timingOptions.round,
-          game
-        });
-      }
-    } else {
-      const confirmedPayload = confirmRoomHttpEvent(data, {
-        code: state.roomSettings.code,
-        eventType: "round-started",
-        clientEventId,
-        source: "room-round-setup-response"
-      });
-      if (data.game && typeof data.game === "object") {
-        state.roomGame = data.game;
-        if (data.game.matchId) {
-          setCurrentRoomMatchId(data.game.matchId);
-        }
-      }
-      if (!data.duplicate) {
-        broadcastRealtimeRoomChange("round-started", state.roomSettings.code, confirmedPayload);
+    const events = Array.isArray(data.events) ? data.events : [];
+    const roundStartedEvent = [...events].reverse()
+      .find((event) => normalizeRoomEventType(event.type || event.payload?.eventType || "") === "round-started");
+    const eventGame = roundStartedEvent?.payload?.game && typeof roundStartedEvent.payload.game === "object"
+      ? roundStartedEvent.payload.game
+      : null;
+    const game = data.game && typeof data.game === "object" ? data.game : eventGame;
+    if (game) {
+      state.roomGame = game;
+      if (game.matchId) {
+        setCurrentRoomMatchId(game.matchId);
       }
     }
 
     const setup = getSyncedRoomSetupForRound(timingOptions.round)
-      || normalizeSetupPayload(data.room?.game?.setup || data.game?.setup || {});
+      || normalizeSetupPayload(game?.setup || {});
     return setup;
   } catch (error) {
     if (!isStaleRoomSetupError(error)) {
@@ -10599,6 +10572,7 @@ function getCurrentParticipant(options = {}) {
     userId: getRoomParticipantProfileUserId(),
     profileUserId: getRoomParticipantProfileUserId(),
     connectionId: state.connectionId,
+    tabSessionId: getCurrentRoomTabSessionId(),
     name: state.profile.name || "Guest",
     avatar: getRoomSyncAvatar(state.profile.avatar),
     equippedTitleId: state.profile.equippedTitleId || "",
@@ -10654,6 +10628,7 @@ function getRoomParticipantsFromPlayers(status = state.currentRoomStatus) {
         userId: player.profileUserId || existingParticipant?.profileUserId || (id === state.clientId ? getRoomParticipantProfileUserId() : `participant:${id}`),
         profileUserId: player.profileUserId || existingParticipant?.profileUserId || (id === state.clientId ? getRoomParticipantProfileUserId() : `participant:${id}`),
         connectionId: player.connectionId || existingParticipant?.connectionId || (id === state.clientId ? state.connectionId : ""),
+        tabSessionId: player.tabSessionId || existingParticipant?.tabSessionId || (id === state.clientId ? getCurrentRoomTabSessionId() : ""),
         name: player.label,
         avatar: getRoomSyncAvatar(player.avatar),
         equippedTitleId: player.equippedTitleId || "",
@@ -10966,44 +10941,29 @@ function publishRoomChat(message = state.roomChat.at(-1), input = elements.chatI
   if (!message) {
     return Promise.resolve(null);
   }
-  const clientEventId = createRoomClientEventId("chat-message", code);
+  const clientEventId = createRoomSyncCommandId("send-chat", code);
   const optimisticMessage = getRoomSyncChatMessage(message);
-  broadcastRealtimeRoomChange("chat-message", code, {
+  return roomSync.sendCommand("send_chat", {
     clientEventId,
-    optimistic: true,
+    participantId: state.clientId,
     message: optimisticMessage,
-    updatedAt: optimisticMessage.createdAt
-  });
-  return fetch(`/api/rooms/${encodeURIComponent(code)}/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ clientEventId, message: optimisticMessage, compact: true })
-  }).then(async (response) => {
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
+    compact: true
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       state.roomDirectoryOnline = false;
       removeRoomChatMessage(message);
-      if (response.status === 429) {
-        applyServerChatCooldown(data.retryAfterMs, input);
+      if (data?.status === 429) {
+        applyServerChatCooldown(data.data?.retryAfterMs, input);
       } else {
-        addSystemChat(data.error || "Chat message could not be sent.", { private: true, sync: false });
+        addSystemChat(data?.error || "Chat message could not be sent.", { private: true, sync: false });
       }
       return null;
     }
     state.roomDirectoryOnline = true;
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "chat-message",
-      clientEventId,
-      source: "chat-response"
-    });
-    if (data.message) {
-      broadcastRealtimeRoomChange("chat-message", state.roomSettings.code, {
-        ...confirmedPayload,
-        clientEventId,
-        message: getRoomSyncChatMessage(data.message)
-      });
-    }
     return data || null;
   }).catch(() => {
     state.roomDirectoryOnline = false;
@@ -11170,10 +11130,9 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
   }
   const code = state.roomSettings.code;
   const cleanAnswer = cleanInput(answer || "");
-  const clientEventId = String(options.clientEventId || createRoomClientEventId("answer-submitted", code)).slice(0, 160);
+  const clientEventId = String(options.clientEventId || createRoomSyncCommandId("submit-answer", code)).slice(0, 160);
   const submittedAt = Date.now();
-  const participant = state.roomParticipants.find((entry) => entry.id === participantId) || null;
-  const body = {
+  return roomSync.sendCommand("submit_answer", {
     clientEventId,
     participantId,
     hostParticipantId: isCurrentHost() && !state.joiningRoom ? getCurrentRoomHostParticipantId() : undefined,
@@ -11183,72 +11142,21 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
     remainingTime: Math.max(0, Number(remainingTime) || 0),
     timedOut: Boolean(options.timedOut),
     autoSubmitted: Boolean(options.autoSubmitted || options.timedOut),
-    includeRoom: Boolean(options.includeRoomSnapshot),
     updatedAt: submittedAt
-  };
-  if (options.optimisticRealtime !== false) {
-    broadcastRealtimeRoomChange("answer-submitted", code, {
-      clientEventId,
-      optimistic: true,
-      participantId,
-      participantName: participant?.name || getOwnerLabel(owner) || "A player",
-      role: participant ? normalizeRoomParticipantRole(participant) : isBotOwner(owner) ? "bot" : owner === "player" ? "host" : "player",
-      host: Boolean(participant?.host || owner === "player"),
-      spectator: false,
-      status: "submitted",
-      participant: participant
-        ? {
-            ...participant,
-            status: "submitted",
-            answer: cleanAnswer,
-            submittedRound: state.round,
-            submissionMatchId: body.matchId,
-            remainingTime: body.remainingTime
-          }
-        : undefined,
-      matchId: body.matchId,
-      round: body.round,
-      answer: cleanAnswer,
-      remainingTime: body.remainingTime,
-      submissionStatus: body.timedOut ? "timed_out" : "submitted",
-      autoSubmitted: body.autoSubmitted,
-      updatedAt: submittedAt
-    });
-  }
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/answer`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  }, roomPresenceFetchTimeoutMs).then(async (response) => {
-    if (!response.ok) {
-      if (response.status === 409 && isRoomGradingPhaseStarted()) {
-        return null;
-      }
+  }, {
+    roomCode: code,
+    participantId,
+    clientEventId
+  }).then((result) => {
+    if (!result?.ok) {
       state.roomDirectoryOnline = false;
-      requestRoomRealtimeCatchup("answer-rejected", { force: true, snapshot: false });
-      return null;
+      if (!isRoomGradingPhaseStarted()) {
+        addSystemChat(result?.error || "Answer submission was rejected by the room server.", { private: true, sync: false });
+      }
+    } else {
+      state.roomDirectoryOnline = true;
     }
-    const data = await response.json().catch(() => ({}));
-    state.roomDirectoryOnline = true;
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "answer-submitted",
-      clientEventId,
-      source: "answer-response"
-    });
-    broadcastRealtimeRoomChange("answer-submitted", code, confirmedPayload);
-    if (data.grading && typeof data.grading === "object") {
-      const gradingPayload = {
-        ...data.grading,
-        clientEventId: data.grading.clientEventId || clientEventId
-      };
-      applyRealtimeRoomGrading(gradingPayload);
-      broadcastRealtimeRoomChange(gradingPayload.eventType || "round-grading", state.roomSettings.code, gradingPayload);
-    }
-    return data;
-  }).catch(() => {
-    state.roomDirectoryOnline = false;
-    return null;
+    return result;
   });
 }
 
@@ -12322,7 +12230,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
-  const clientEventId = String(options.clientEventId || createRoomClientEventId("round-result", code)).slice(0, 160);
+  const clientEventId = String(options.clientEventId || createRoomSyncCommandId("publish-round-result", code)).slice(0, 160);
   state.roomRoundResult = result;
   state.roomGame = {
     ...(state.roomGame || {}),
@@ -12333,45 +12241,20 @@ function publishRoomRoundResult(roundResult, options = {}) {
     powerState: result.powerState || getRoomPowerStatePayload(),
     updatedAt: result.updatedAt
   };
-  const optimisticPayload = {
-    code,
-    eventType: "round-result",
+  return roomSync.sendCommand("publish_round_result", {
     clientEventId,
-    optimistic: true,
-    matchId: result.matchId || getCurrentRoomMatchId(),
-    round: result.round || state.round,
-    roundResult: result,
-    game: state.roomGame,
-    updatedAt: result.updatedAt || Date.now()
-  };
-  broadcastRealtimeRoomChange("round-result", code, optimisticPayload);
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/round-result`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      clientEventId,
-      hostParticipantId: state.clientId,
-      roundResult: result
-    })
-  }, roomPresenceFetchTimeoutMs).then(async (response) => {
-    if (!response.ok) {
+    hostParticipantId: state.clientId,
+    roundResult: result
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       state.roomDirectoryOnline = false;
       return null;
     }
-    const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "round-result",
-      clientEventId,
-      source: "round-result-response"
-    });
-    if (data.roundResult) {
-      broadcastRealtimeRoomChange("round-result", code, {
-        ...confirmedPayload,
-        roundResult: data.roundResult
-      });
-    }
     return data;
   }).catch(() => {
     state.roomDirectoryOnline = false;
@@ -12483,7 +12366,7 @@ function publishRoomPowerState(payload = {}) {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
-  const clientEventId = String(payload.clientEventId || createRoomClientEventId("power-state", code)).slice(0, 160);
+  const clientEventId = String(payload.clientEventId || createRoomSyncCommandId("use-power", code)).slice(0, 160);
   const updatedAt = Number(payload.updatedAt) || Date.now();
   const syncedPayload = {
     ...payload,
@@ -12491,27 +12374,17 @@ function publishRoomPowerState(payload = {}) {
     updatedAt,
     matchId: payload.matchId || getCurrentRoomMatchId()
   };
-  if (payload.optimisticRealtime !== false) {
-    broadcastRealtimeRoomChange("power-state", code, {
-      ...syncedPayload,
-      optimistic: true
-    });
-  }
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/power-state`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(syncedPayload)
-  }, roomPresenceFetchTimeoutMs).then(async (response) => {
-    if (!response.ok) {
+  return roomSync.sendCommand("use_power", {
+    ...syncedPayload,
+    actorParticipantId: syncedPayload.actorParticipantId || getRoomParticipantIdForOwner(state.currentOwner) || state.clientId
+  }, {
+    roomCode: code,
+    participantId: syncedPayload.actorParticipantId || getRoomParticipantIdForOwner(state.currentOwner) || state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       return null;
     }
-    const data = await response.json();
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "power-state",
-      clientEventId,
-      source: "power-state-response"
-    });
     if (payload.optimisticRealtime === false && state.roomGame) {
       const responsePowerState = data.powerState && typeof data.powerState === "object"
         ? data.powerState
@@ -12527,11 +12400,6 @@ function publishRoomPowerState(payload = {}) {
       state.roomGame.powerState = mergeLocalRoomPowerState(state.roomGame.powerState, responsePowerState);
       applyRoomTimerStatePayload(data);
     }
-    broadcastRealtimeRoomChange("power-state", code, {
-      ...confirmedPayload,
-      clientEventId,
-      matchId: data.matchId || syncedPayload.matchId
-    });
     return data;
   }).catch(() => null);
 }
@@ -12852,54 +12720,6 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   return true;
 }
 
-async function refreshActiveRoomSnapshotForSync(matchToken = state.matchWorkToken) {
-  const lookup = await fetchRoomByCode(state.roomSettings.code);
-  if (!isCurrentMatchWork(matchToken)) {
-    state.roomRoundResolving = false;
-    return "stale";
-  }
-  if (lookup.status === "found" && lookup.room) {
-    applyRoomSnapshot(lookup.room, { source: "round-result-snapshot" });
-    return "found";
-  }
-  if (lookup.status === "closed") {
-    handleCurrentRoomClosed("The room was closed by the host or an admin.");
-    state.roomRoundResolving = false;
-    return "closed";
-  }
-  return lookup.status || "unknown";
-}
-
-async function refreshRoomRoundResultSnapshot(localFallback = "", matchToken = state.matchWorkToken) {
-  const existingResult = getRoomRoundResultForCurrentRound();
-  if (existingResult) {
-    playSyncedRoomRoundResult(existingResult, localFallback);
-    return true;
-  }
-  await refreshRoomEventsSinceLastRevision({ refreshRoom: true });
-  if (!isCurrentMatchWork(matchToken)) {
-    state.roomRoundResolving = false;
-    return true;
-  }
-  const eventResult = getRoomRoundResultForCurrentRound();
-  if (eventResult) {
-    playSyncedRoomRoundResult(eventResult, localFallback);
-    return true;
-  }
-  const snapshotStatus = await refreshActiveRoomSnapshotForSync(matchToken);
-  if (snapshotStatus === "stale" || snapshotStatus === "closed") {
-    return true;
-  }
-  if (snapshotStatus === "found") {
-    const roomResult = getRoomRoundResultForCurrentRound();
-    if (roomResult) {
-      playSyncedRoomRoundResult(roomResult, localFallback);
-      return true;
-    }
-  }
-  return false;
-}
-
 async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = state.matchWorkToken, timeoutMs = null) {
   const playSyncedResultIfReady = () => {
     const result = getRoomRoundResultForCurrentRound();
@@ -12917,12 +12737,20 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     return;
   }
   showWaitingForRoomRoundResult();
-  void requestRoomRealtimeCatchup("round-result-wait", { force: true, snapshot: false }).then(() => {
+  const waitTimeout = Math.max(5000, Number(timeoutMs) || getRoomRoundResultWaitTimeoutMs());
+  void waitForRoomSyncCondition(() => {
     if (!isCurrentMatchWork(matchToken) || !isRoomMode() || state.matchEnded) {
-      state.roomRoundResolving = false;
-      return;
+      return "stale";
     }
-    playSyncedResultIfReady();
+    return playSyncedResultIfReady() ? "played" : "";
+  }, {
+    timeoutMs: waitTimeout,
+    eventTypes: ["round-result", "game-ended", "room-updated"],
+    reason: "round-result-wait"
+  }).then((result) => {
+    if (result === "stale") {
+      state.roomRoundResolving = false;
+    }
   });
 }
 
@@ -12985,30 +12813,6 @@ function maybeResolveBotSubmissions() {
     state.roomRoundResolving = true;
     playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
   }, 40);
-}
-
-async function waitForRoomSubmissionsThenPlay(localFallback = "") {
-  const matchToken = state.matchWorkToken;
-  if (!isCurrentMatchWork(matchToken)) {
-    state.roomRoundResolving = false;
-    return;
-  }
-  const syncedResult = getRoomRoundResultForCurrentRound();
-  if (syncedResult && (!isCurrentHost() || state.joiningRoom)) {
-    playSyncedRoomRoundResult(syncedResult, localFallback);
-    return;
-  }
-  if (getPendingSubmitters().length === 0) {
-    if (!isRoomGradingPhaseStarted()) {
-      requestRoomAllSubmittedGradingLock("submissions-complete-wait");
-      return;
-    }
-    if (state.roomSubmissionResolveId) {
-      window.clearTimeout(state.roomSubmissionResolveId);
-      state.roomSubmissionResolveId = null;
-    }
-    resolveRoomSubmissionsNow(localFallback, matchToken);
-  }
 }
 
 function getPendingSubmitters() {
@@ -13258,58 +13062,18 @@ function isRoomGradingPhaseStarted() {
   );
 }
 
-function requestRoomGradingCatchup(reason = "grading-wait") {
-  if (!isRoomMode() || !hasActiveRoomContext()) {
-    return;
-  }
-  void requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
-}
-
-function shouldRetryRoomGradingRequest(requestKey = "") {
-  if (!state.roomGradingRequestKey) {
-    return true;
-  }
-  if (state.roomGradingRequestKey !== requestKey) {
-    return true;
-  }
-  if (isRoomGradingPhaseStarted()) {
-    return false;
-  }
-  const startedAt = Number(state.roomGradingRequestStartedAt) || 0;
-  return !startedAt || Date.now() - startedAt > 1200;
-}
-
 function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
-  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
-    return false;
-  }
-  maybeSubmitRoomBotsAfterRealPlayers();
-  if (getPendingSubmitters().length > 0) {
-    return false;
-  }
-  const requestKey = `${getCurrentRoomRoundSyncKey()}|all-submitted`;
-  if (!shouldRetryRoomGradingRequest(requestKey)) {
-    return true;
-  }
-  state.roomGradingRequestKey = requestKey;
-  state.roomGradingRequestStartedAt = Date.now();
-  void publishRoomRoundSkip({
-    reason: "all-submitted",
-    force: false,
-    submissions: buildRoundSkipSubmissions()
-  }).then((data) => {
-    if (isRoomGradingPhaseStarted()) {
-      return;
-    }
-    window.setTimeout(() => {
-      if (state.roomGradingRequestKey === requestKey && !isRoomGradingPhaseStarted()) {
-        state.roomGradingRequestKey = "";
-        state.roomGradingRequestStartedAt = 0;
-      }
-    }, 1000);
-    requestRoomGradingCatchup(`${reason}-grading-lock`);
+  recordRoomDiagnosticEvent("client-grading-lock-skipped", {
+    code: state.roomSettings.code,
+    eventType: "round-grading",
+    round: state.round,
+    matchId: getCurrentRoomMatchId()
+  }, {
+    source: "client",
+    eventType: "round-grading",
+    reason: `Skipped client-side all-submitted grading lock (${reason}); submit_answer command owns this transition.`
   });
-  return true;
+  return false;
 }
 
 function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
@@ -13624,67 +13388,30 @@ function publishRoomRoundSkip(payload = {}) {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
-  const clientEventId = String(payload.clientEventId || createRoomClientEventId("round-grading", code)).slice(0, 160);
+  const commandType = String(payload.reason || "") === "timer-expired" ? "resolve_timer_expired" : "skip_to_grading";
+  const clientEventId = String(payload.clientEventId || createRoomSyncCommandId(commandType, code)).slice(0, 160);
   const updatedAt = Number(payload.updatedAt) || Date.now();
-  const body = {
-    ...payload,
+  return roomSync.sendCommand(commandType, {
     clientEventId,
     round: state.round,
     matchId: getCurrentRoomMatchId(),
     hostParticipantId: state.clientId,
     reason: payload.reason || "host-skip",
     submissions: payload.submissions || buildRoundSkipSubmissions(),
+    gradingForceAt: payload.gradingForceAt,
+    force: payload.force,
     updatedAt
-  };
-  if (payload.optimisticRealtime !== false) {
-    const optimisticGame = createOptimisticRoomGradingGame(body.submissions, body);
-    const optimisticPayload = {
-      ...body,
-      code,
-      eventType: "round-grading",
-      clientEventId,
-      optimistic: true,
-      game: optimisticGame,
-      updatedAt
-    };
-    const appliedOptimistic = applyRealtimeRoomGrading(optimisticPayload);
-    if (!appliedOptimistic) {
-      recordRoomDiagnosticEvent("not-applied", optimisticPayload, {
-        source: "client",
-        eventType: "round-grading",
-        reason: "Local grading event could not be applied before server confirmation."
-      });
-    }
-    broadcastRealtimeRoomChange("round-grading", code, optimisticPayload);
-  }
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/grading`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  }, roomPresenceFetchTimeoutMs).then(async (response) => {
-    if (!response.ok) {
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       state.roomGradingRequestKey = "";
       state.roomGradingRequestStartedAt = 0;
-      requestRoomRealtimeCatchup("grading-rejected", { force: true, snapshot: false });
+      addSystemChat(data?.error || "Could not move the round to grading yet.", { private: true, sync: false });
       return null;
     }
-    const data = await response.json();
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "round-grading",
-      clientEventId,
-      source: "grading-response"
-    });
-    if (payload.optimisticRealtime === false || !isRoomGradingPhaseStarted()) {
-      applyRealtimeRoomGrading({
-        ...confirmedPayload,
-        clientEventId
-      });
-    }
-    broadcastRealtimeRoomChange(confirmedPayload.eventType || "round-grading", code, {
-      ...confirmedPayload,
-      clientEventId
-    });
     return data;
   }).catch(() => {
     state.roomGradingRequestKey = "";
@@ -14557,12 +14284,11 @@ function startSupabaseRealtime() {
   channel.subscribe((status) => {
     state.realtimeLobbyReady = status === "SUBSCRIBED";
     if (state.realtimeLobbyReady) {
-      stopJoinDirectoryPolling();
       if (!elements.joinScreen.classList.contains("hidden") && !state.roomInvite.active) {
         void refreshHostedRoomsAndRender({ force: true });
       }
       if (hasActiveRoomContext()) {
-        startRoomDirectoryPolling();
+        startRoomPresenceMaintenance();
       }
       syncUserQuestionSubmissionPolling();
     }
@@ -14620,7 +14346,7 @@ function stopRoomRealtime() {
       reason: "Room realtime channel was stopped."
     });
   }
-  stopRoomFallbackPolling();
+  stopRoomRealtimeMaintenance();
   if (state.realtimeRoomRefreshTimerId) {
     window.clearTimeout(state.realtimeRoomRefreshTimerId);
     state.realtimeRoomRefreshTimerId = null;
@@ -14679,6 +14405,10 @@ function getRealtimeRoomPayload(room = {}, options = {}) {
 const roomOnlyRealtimeEventTypes = new Set([
   "answer-submitted",
   "answer-draft",
+  "active-effects-changed",
+  "hand-changed",
+  "power-resolved",
+  "power-used",
   "power-state",
   "round-grading",
   "round-result",
@@ -14753,24 +14483,6 @@ function createRealtimeLobbySummaryPayload(payload = {}) {
   return summary;
 }
 
-function isParticipantRealtimeEvent(eventType = "") {
-  return [
-    "answer-submitted",
-    "answer-draft",
-    "round-grading",
-    "round-result",
-    "round-skipped",
-    "round-started",
-    "power-state",
-    "participant-updated",
-    "participant-joined",
-    "participant-disconnected",
-    "participant-reconnected",
-    "participant-left",
-    "participant-moderated"
-  ].includes(String(eventType || ""));
-}
-
 function isCriticalRoomRealtimeEvent(eventType = "") {
   return [
     "chat-message",
@@ -14781,6 +14493,10 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
     "round-skipped",
     "round-started",
     "round-advancing",
+    "active-effects-changed",
+    "hand-changed",
+    "power-resolved",
+    "power-used",
     "power-state",
     "room-settings",
     "game-ended",
@@ -14829,19 +14545,6 @@ function sendRealtimeRoomPayload(channel, payload, options = {}) {
   return true;
 }
 
-function retryRoomParticipantBroadcastWhenReady(payload, code = "") {
-  if (!isParticipantRealtimeEvent(payload?.eventType) || !state.realtimeRoomChannel || state.realtimeRoomCode !== code || state.realtimeRoomReady) {
-    return;
-  }
-  [300, 900, 1600].forEach((delay) => {
-    window.setTimeout(() => {
-      if (state.realtimeRoomChannel && state.realtimeRoomCode === code) {
-        sendRealtimeRoomPayload(state.realtimeRoomChannel, payload, { source: "room-retry" });
-      }
-    }, delay);
-  });
-}
-
 function getCriticalRoomRealtimeQueueKey(payload = {}) {
   const eventType = String(payload.eventType || "");
   const code = String(payload.code || "");
@@ -14886,7 +14589,7 @@ function getRoomClientEventAffectedFields(payload = {}) {
   if (eventType === "answer-draft") {
     return [participantId ? `draft:${participantId}` : "drafts"];
   }
-  if (eventType === "power-state") {
+  if (["active-effects-changed", "hand-changed", "power-resolved", "power-used", "power-state"].includes(eventType)) {
     return ["power-state", "timer", "participants"];
   }
   if (["round-started", "round-advancing", "round-grading", "round-result", "round-skipped", "game-ended"].includes(eventType)) {
@@ -14974,23 +14677,6 @@ function markRoomClientEventConfirmed(payload = {}, details = {}) {
     reason: "Server confirmed an optimistic room event."
   });
   return true;
-}
-
-function confirmRoomHttpEvent(data = {}, fallback = {}) {
-  const payload = normalizeRoomEventPayload({
-    ...(data && typeof data === "object" ? data : {}),
-    eventType: data?.eventType || fallback.eventType || "",
-    code: data?.code || data?.room?.code || fallback.code || state.roomSettings.code,
-    clientEventId: data?.clientEventId || fallback.clientEventId || "",
-    revision: Number(data?.revision || data?.room?.revision || 0) || 0,
-    updatedAt: Number(data?.updatedAt || data?.room?.updatedAt || Date.now()) || Date.now()
-  });
-  rememberRoomRevisionPayload(payload);
-  markRoomClientEventConfirmed(payload, { source: fallback.source || "http-response" });
-  if (fallback.includeRoom !== true) {
-    delete payload.room;
-  }
-  return payload;
 }
 
 function getPendingRoomClientEventsForSnapshot(room = {}) {
@@ -15099,9 +14785,6 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
   if (!sentToLobby && !sentToRoom) {
     return;
   }
-  if (sendToRoom) {
-    retryRoomParticipantBroadcastWhenReady(payload, code);
-  }
 }
 
 function broadcastRealtimeAppEvent(eventType, details = {}) {
@@ -15155,6 +14838,7 @@ function readHostedRoomSessionMarker() {
     return {
       code,
       participantId,
+      tabSessionId: String(marker.tabSessionId || "").slice(0, 120),
       updatedAt: Number(marker.updatedAt) || 0
     };
   } catch {
@@ -15162,15 +14846,24 @@ function readHostedRoomSessionMarker() {
   }
 }
 
+function createRoomTabSessionId() {
+  const randomPart = window.crypto?.randomUUID
+    ? window.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${roomTabSessionIdPrefix}${randomPart}`.slice(0, 120);
+}
+
 function rememberHostedRoomSession(code = state.roomSettings.code) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!/^CAI-\d{4}$/.test(normalizedCode)) {
     return;
   }
+  const existing = readHostedRoomSessionMarker();
   try {
     sessionStorage.setItem(hostedRoomSessionStorageKey, JSON.stringify({
       code: normalizedCode,
       participantId: state.clientId,
+      tabSessionId: existing?.code === normalizedCode && existing.tabSessionId ? existing.tabSessionId : createRoomTabSessionId(),
       updatedAt: Date.now()
     }));
   } catch {}
@@ -15193,28 +14886,13 @@ function hasCurrentTabHostedRoomSession(code = state.roomSettings.code) {
   return Boolean(marker && normalizedCode && marker.code === normalizedCode);
 }
 
-function closeHostedRoomByCode(code, options = {}) {
+function getCurrentRoomTabSessionId(code = state.roomSettings.code) {
   const normalizedCode = String(code || "").trim().toUpperCase();
-  if (!/^CAI-\d{4}$/.test(normalizedCode)) {
-    return Promise.resolve(null);
+  const marker = readHostedRoomSessionMarker();
+  if (marker && normalizedCode && marker.code === normalizedCode && marker.tabSessionId) {
+    return marker.tabSessionId;
   }
-  markRoomLocallyClosed(normalizedCode);
-  removeHostedRoom(normalizedCode);
-  const payload = JSON.stringify({
-    participantId: options.participantId || state.clientId,
-    reason: options.reason || "host-left"
-  });
-  const url = `/api/rooms/${encodeURIComponent(normalizedCode)}/close`;
-  if (options.keepalive && navigator.sendBeacon) {
-    navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
-    return Promise.resolve(null);
-  }
-  return fetchWithTimeout(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: payload,
-    keepalive: Boolean(options.keepalive)
-  }, roomLeaveFetchTimeoutMs).catch(() => null);
+  return "";
 }
 
 function cleanupReloadedHostedRoomSession() {
@@ -15533,6 +15211,7 @@ function applyRoomGameMatchSettings(game = null, payload = {}, options = {}) {
 }
 
 const roomServerEventTypeMap = {
+  answer_draft_updated: "answer-draft",
   answer_submitted: "answer-submitted",
   chat_message: "chat-message",
   game_ended: "game-ended",
@@ -15543,7 +15222,11 @@ const roomServerEventTypeMap = {
   participant_moderated: "participant-moderated",
   participant_reconnected: "participant-reconnected",
   participant_updated: "participant-updated",
+  active_effects_changed: "active-effects-changed",
+  hand_changed: "hand-changed",
+  power_resolved: "power-resolved",
   power_state: "power-state",
+  power_used: "power-used",
   room_closed: "room-closed",
   room_created: "room-created",
   room_deleted: "room-deleted",
@@ -16049,7 +15732,7 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     if (normalizedPayload.eventType === "answer-draft") {
       appliedDelta = applySpectatorAnswerDraft(normalizedPayload);
     }
-    if (normalizedPayload.eventType === "power-state") {
+    if (["active-effects-changed", "hand-changed", "power-resolved", "power-state"].includes(normalizedPayload.eventType)) {
       appliedDelta = applyRoomPowerState(normalizedPayload);
     }
     if (!appliedDelta && (normalizedPayload.eventType === "participant-updated" || normalizedPayload.eventType === "participant-joined") && normalizedPayload.participant) {
@@ -17115,7 +16798,250 @@ function handleRealtimeRoomChange(payload = {}) {
     source: "realtime",
     reason: "Received realtime room broadcast."
   });
-  applyRoomEvent(payload, { source: "realtime" });
+  roomSync.applyEvent(payload, { source: "realtime" });
+}
+
+function getRoomSyncLocalRoom(code = state.roomSettings.code) {
+  const roomCode = String(code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!roomCode || roomCode === "CAI-0000") {
+    return null;
+  }
+  const hostedRoom = state.hostedRooms.find((entry) => entry.code === roomCode);
+  if (hostedRoom) {
+    return hostedRoom;
+  }
+  if (state.joiningRoom && String(state.joiningRoom.code || "").trim().toUpperCase() === roomCode) {
+    return state.joiningRoom;
+  }
+  if (state.roomSettings.code === roomCode) {
+    return buildRoomDirectoryPayload(state.currentRoomStatus === "draft" ? "lobby" : state.currentRoomStatus);
+  }
+  return null;
+}
+
+function notifyRoomSyncChange(room = null, details = {}) {
+  if (!(state.roomSyncChangeListeners instanceof Set)) {
+    state.roomSyncChangeListeners = new Set();
+  }
+  state.roomSyncChangeListeners.forEach((listener) => {
+    try {
+      listener(room, details);
+    } catch (error) {
+      console.warn("Room sync change listener failed:", error);
+    }
+  });
+}
+
+function notifyRoomSyncEvent(event = {}, details = {}) {
+  if (!(state.roomSyncEventListeners instanceof Set)) {
+    state.roomSyncEventListeners = new Set();
+  }
+  state.roomSyncEventListeners.forEach((listener) => {
+    try {
+      listener(event, details);
+    } catch (error) {
+      console.warn("Room sync event listener failed:", error);
+    }
+  });
+}
+
+function getRoomSyncCommandEventsForBroadcast(events = [], clientEventId = "") {
+  const normalizedClientEventId = String(clientEventId || "").trim();
+  const normalizedEvents = Array.isArray(events) ? events.filter((event) => event && typeof event === "object") : [];
+  if (!normalizedClientEventId) {
+    return normalizedEvents;
+  }
+  const commandEvents = normalizedEvents.filter((event) => {
+    const eventClientEventId = String(event.clientEventId || event.payload?.clientEventId || "").trim();
+    return eventClientEventId === normalizedClientEventId;
+  });
+  return commandEvents.length ? commandEvents : normalizedEvents.slice(-1);
+}
+
+function broadcastRoomSyncServerEvent(event = {}, code = state.roomSettings.code) {
+  const roomCode = String(event.roomCode || event.payload?.roomCode || event.payload?.code || code || "").trim().toUpperCase();
+  if (!roomCode || roomCode === "CAI-0000" || !state.supabaseClient || state.realtimeRoomCode !== roomCode) {
+    return false;
+  }
+  const payload = {
+    ...event,
+    sourceId: state.realtimeSourceId
+  };
+  return sendRealtimeRoomPayload(state.realtimeRoomChannel, payload, {
+    source: "room-sync-command",
+    code: roomCode
+  });
+}
+
+function createRoomSyncCommandId(type = "command", code = state.roomSettings.code) {
+  state.roomSyncCommandSeq = (Number(state.roomSyncCommandSeq) || 0) + 1;
+  return createRoomClientEventId(`cmd-${type || "command"}`, code);
+}
+
+const roomSync = {
+  connect(code = state.roomSettings.code) {
+    const roomCode = String(code || "").trim().toUpperCase();
+    if (!roomCode || roomCode === "CAI-0000") {
+      return false;
+    }
+    startRoomRealtime(roomCode);
+    return true;
+  },
+  disconnect() {
+    stopRoomRealtime();
+  },
+  getLocalRoom(code = state.roomSettings.code) {
+    return getRoomSyncLocalRoom(code);
+  },
+  onChange(listener) {
+    if (typeof listener !== "function") {
+      return () => {};
+    }
+    state.roomSyncChangeListeners.add(listener);
+    return () => state.roomSyncChangeListeners.delete(listener);
+  },
+  onEvent(listener) {
+    if (typeof listener !== "function") {
+      return () => {};
+    }
+    state.roomSyncEventListeners.add(listener);
+    return () => state.roomSyncEventListeners.delete(listener);
+  },
+  applyEvent(event = {}, options = {}) {
+    const applied = applyRoomEvent(event, options);
+    if (applied) {
+      notifyRoomSyncEvent(event, options);
+      notifyRoomSyncChange(roomSync.getLocalRoom(), {
+        source: options.source || "event",
+        event
+      });
+    }
+    return applied;
+  },
+  applySnapshot(room = {}, options = {}) {
+    const applied = applyRoomSnapshot(room, options);
+    if (applied) {
+      notifyRoomSyncChange(roomSync.getLocalRoom(room?.code), {
+        source: options.source || "snapshot",
+        room
+      });
+    }
+    return applied;
+  },
+  async sendCommand(type = "", payload = {}, options = {}) {
+    const roomCode = String(options.roomCode || payload.roomCode || payload.code || state.roomSettings.code || "").trim().toUpperCase();
+    const commandType = String(type || options.type || "").trim();
+    if (!roomCode || roomCode === "CAI-0000" || !commandType) {
+      return { ok: false, error: "Missing room code or command type." };
+    }
+    const participantId = String(options.participantId || payload.participantId || state.clientId || "").slice(0, 80);
+    const clientEventId = String(options.clientEventId || payload.clientEventId || createRoomSyncCommandId(commandType, roomCode)).slice(0, 160);
+    const expectedRevision = Number(options.expectedRevision ?? getKnownRoomRevision(roomCode) ?? state.roomEventRevision) || 0;
+    const commandPayload = {
+      ...(payload && typeof payload === "object" ? payload : {}),
+      roomCode,
+      participantId,
+      tabSessionId: payload?.tabSessionId || getCurrentRoomTabSessionId(roomCode),
+      clientEventId
+    };
+    recordRoomDiagnosticEvent("command-sent", {
+      code: roomCode,
+      eventType: commandType,
+      clientEventId,
+      revision: expectedRevision
+    }, {
+      source: "room-sync",
+      commandType,
+      clientEventId,
+      expectedRevision,
+      reason: "Room command sent to the server."
+    });
+    try {
+      const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(roomCode)}/commands`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          roomCode,
+          participantId,
+          clientInstanceId: state.connectionId || state.realtimeSourceId,
+          tabSessionId: getCurrentRoomTabSessionId(roomCode),
+          clientEventId,
+          expectedRevision,
+          type: commandType,
+          payload: commandPayload
+        })
+      }, options.timeoutMs || roomPresenceFetchTimeoutMs);
+      const data = await response.json().catch(() => ({}));
+      recordRoomDiagnosticEvent(response.ok ? "command-response" : "command-error", {
+        ...data,
+        code: data.roomCode || roomCode,
+        eventType: commandType,
+        clientEventId,
+        revision: data.revision || expectedRevision
+      }, {
+        source: "room-sync",
+        commandType,
+        clientEventId,
+        expectedRevision,
+        result: response.ok ? `Returned revision ${data.revision || 0}.` : (data.error || `HTTP ${response.status}`)
+      });
+      if (!response.ok || data.ok === false) {
+        return {
+          ok: false,
+          status: response.status,
+          error: data.error || `Room command failed with HTTP ${response.status}.`,
+          data
+        };
+      }
+      const events = Array.isArray(data.events) ? data.events : [];
+      events.forEach((event) => {
+        roomSync.applyEvent(event, { source: "command-response" });
+      });
+      if (options.broadcast !== false) {
+        getRoomSyncCommandEventsForBroadcast(events, clientEventId).forEach((event) => {
+          broadcastRoomSyncServerEvent(event, roomCode);
+        });
+      }
+      rememberRoomRevisionPayload({
+        code: data.roomCode || roomCode,
+        revision: data.revision,
+        updatedAt: data.updatedAt || Date.now()
+      });
+      notifyRoomSyncChange(roomSync.getLocalRoom(roomCode), {
+        source: "command-response",
+        commandType,
+        clientEventId,
+        events
+      });
+      return {
+        ok: true,
+        ...data,
+        clientEventId
+      };
+    } catch (error) {
+      recordRoomDiagnosticEvent("command-error", {
+        code: roomCode,
+        eventType: commandType,
+        clientEventId,
+        revision: expectedRevision
+      }, {
+        source: "room-sync",
+        commandType,
+        clientEventId,
+        expectedRevision,
+        reason: error?.message || "Room command request failed."
+      });
+      return {
+        ok: false,
+        error: error?.message || "Room command request failed."
+      };
+    }
+  }
+};
+
+if (typeof window !== "undefined") {
+  window.roomSync = roomSync;
 }
 
 function isIncompleteRoomRealtimePayload(payload = {}) {
@@ -29327,7 +29253,7 @@ async function startGame(mode) {
   startMusic();
   playSound("click");
   clearRoomAutoResolve();
-  stopRoomDirectoryPolling();
+  stopRoomPresenceMaintenance();
   if (mode === "room") {
     ensureRoomCurrentOwner();
     const appliedSyncedSettings = applyRoomGameMatchSettings(state.roomGame || state.joiningRoom?.game, { code: state.roomSettings.code }, { render: false, resetTimer: true });
@@ -29354,7 +29280,7 @@ async function startGame(mode) {
   if (mode === "room") {
     await ensureSupabaseAuthReady({ realtime: true });
     startRoomRealtime(state.roomSettings.code);
-    startRoomDirectoryPolling();
+    startRoomPresenceMaintenance();
   }
   resetRoundUiForLoading();
   const roomSetupContext = mode === "room" ? createRoundSetupWorkContext({ matchToken }) : null;
@@ -29601,7 +29527,6 @@ function syncRoomControls() {
 }
 
 function openRoomScreen() {
-  stopJoinDirectoryPolling();
   void ensureSupabaseAuthReady({ realtime: true });
   state.roomSessionId += 1;
   state.mode = null;
@@ -29631,7 +29556,7 @@ function openRoomScreen() {
   startRoomRealtime(state.roomSettings.code);
   syncRoomControls();
   publishDraftRoom();
-  startRoomDirectoryPolling();
+  startRoomPresenceMaintenance();
   setHidden(elements.modeScreen, true);
   setHidden(elements.joinScreen, true);
   setHidden(elements.gameStage, true);
@@ -29645,7 +29570,7 @@ function closeRoomScreen() {
   if (state.currentRoomStatus === "draft" && state.publishedDraftRoomCode === state.roomSettings.code) {
     leavePublishedRoom({ keepalive: true });
     clearLocalRoomState();
-    stopRoomDirectoryPolling();
+    stopRoomPresenceMaintenance();
     clearRoomInviteUrlPath();
   }
   setHidden(elements.roomScreen, true);
@@ -29717,32 +29642,68 @@ function leavePublishedRoom(options = {}) {
     reason
   };
   if (isHostLeaving) {
-    markRoomLocallyClosed(code);
-    removeHostedRoom(code);
-    broadcastRealtimeRoomChange("room-closed", code, {
-      reason: reason === "page-exit" ? "host-left" : reason
-    });
+    const clientEventId = createRoomSyncCommandId("leave-room", code);
     if (!options.keepalive || reason !== "page-exit") {
       clearHostedRoomSession(code);
     }
-    return closeHostedRoomByCode(code, {
-      keepalive: Boolean(options.keepalive),
+    return roomSync.sendCommand("leave_room", {
+      clientEventId,
+      participantId: state.clientId,
       reason: reason === "page-exit" ? "host-left" : reason
-    }).then(async (response) => {
-      if (!response || typeof response.json !== "function") {
-        return { closed: true, code, reason };
+    }, {
+      roomCode: code,
+      participantId: state.clientId,
+      clientEventId,
+      broadcast: !options.keepalive
+    }).then((result) => {
+      if (result?.closed) {
+        markRoomLocallyClosed(code);
+        removeHostedRoom(code);
+        broadcastRealtimeRoomChange("room-closed", code, {
+          reason: result.reason || reason
+        });
+      } else {
+        removeHostedRoom(code);
       }
-      const result = await response.json().catch(() => ({}));
-      return result?.closed ? result : { closed: true, code, reason };
-    });
+      return result;
+    }).catch(() => null);
   } else if (options.keepalive) {
     broadcastRealtimeRoomChange("participant-left", code, leaveDetails);
   }
+  if (!options.keepalive) {
+    const clientEventId = createRoomSyncCommandId("leave-room", code);
+    return roomSync.sendCommand("leave_room", {
+      clientEventId,
+      participantId: state.clientId,
+      reason
+    }, {
+      roomCode: code,
+      participantId: state.clientId,
+      clientEventId
+    }).then((result) => {
+      if (result?.closed) {
+        broadcastRealtimeRoomChange("room-closed", code, { reason: result.reason || reason });
+      }
+      return result;
+    }).catch(() => null);
+  }
+  const clientEventId = createRoomSyncCommandId("leave-room", code);
   const payload = JSON.stringify({
+    roomCode: code,
     participantId: state.clientId,
-    reason
+    clientInstanceId: state.connectionId || state.realtimeSourceId,
+    tabSessionId: getCurrentRoomTabSessionId(code),
+    clientEventId,
+    expectedRevision: getKnownRoomRevision(code) || state.roomEventRevision || 0,
+    type: "leave_room",
+    payload: {
+      participantId: state.clientId,
+      reason,
+      tabSessionId: getCurrentRoomTabSessionId(code),
+      clientEventId
+    }
   });
-  const url = `/api/rooms/${encodeURIComponent(code)}/leave`;
+  const url = `/api/rooms/${encodeURIComponent(code)}/commands`;
   if (options.keepalive && navigator.sendBeacon) {
     navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
     return Promise.resolve(null);
@@ -29788,30 +29749,45 @@ function markCurrentRoomParticipantDisconnected(options = {}) {
     active: false,
     status: isHost ? "host-disconnected" : isSpectator ? "spectator-disconnected" : "disconnected"
   });
+  const clientEventId = createRoomSyncCommandId("disconnect-participant", code);
   const payload = JSON.stringify({
-    participant,
-    compact: true,
-    hostParticipantId: isHost ? state.clientId : ""
-  });
-  broadcastRealtimeRoomChange("participant-disconnected", code, {
+    roomCode: code,
     participantId: participant.id,
-    participantName: participant.name,
-    host: participant.host,
-    spectator: participant.spectator,
-    status: participant.status,
-    participant
+    clientInstanceId: state.connectionId || state.realtimeSourceId,
+    tabSessionId: getCurrentRoomTabSessionId(code),
+    clientEventId,
+    expectedRevision: getKnownRoomRevision(code) || state.roomEventRevision || 0,
+    type: "disconnect_participant",
+    payload: {
+      participantId: participant.id,
+      participant,
+      reason: options.reason || "disconnect",
+      compact: true,
+      hostParticipantId: isHost ? state.clientId : ""
+    }
   });
-  const url = `/api/rooms/${encodeURIComponent(code)}/presence`;
   if (options.keepalive && navigator.sendBeacon) {
+    broadcastRealtimeRoomChange("participant-disconnected", code, {
+      clientEventId,
+      participantId: participant.id,
+      participantName: participant.name,
+      host: participant.host,
+      spectator: participant.spectator,
+      status: participant.status,
+      participant
+    });
+    const url = `/api/rooms/${encodeURIComponent(code)}/commands`;
     navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
     return Promise.resolve(null);
   }
-  return fetchWithTimeout(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: payload,
-    keepalive: Boolean(options.keepalive)
-  }, roomLeaveFetchTimeoutMs).catch(() => null);
+  return updateRoomPresence({ code, status: state.currentRoomStatus || "" }, {
+    host: isHost,
+    spectator: isSpectator,
+    active: false,
+    status: participant.status,
+    commandType: "disconnect_participant",
+    clientEventId
+  });
 }
 
 async function reconnectCurrentRoomParticipant(reason = "reconnect") {
@@ -29825,7 +29801,6 @@ async function reconnectCurrentRoomParticipant(reason = "reconnect") {
   }
   const now = Date.now();
   if (now - (Number(state.roomLastReconnectPresenceAt) || 0) < 1500) {
-    requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
     return null;
   }
   state.roomLastReconnectPresenceAt = now;
@@ -29845,6 +29820,7 @@ async function reconnectCurrentRoomParticipant(reason = "reconnect") {
     spectator: state.isSpectator,
     active: true,
     status,
+    rejoin: true,
     includeRoomSnapshot: true
   });
   if (updatedRoom) {
@@ -29853,7 +29829,6 @@ async function reconnectCurrentRoomParticipant(reason = "reconnect") {
       skipHeartbeat: true
     });
   }
-  requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
   return updatedRoom;
 }
 
@@ -29892,7 +29867,6 @@ function clearLocalRoomState(options = {}) {
   resetChatCooldown();
   clearHostReconnectHandoffCheck();
   stopRoomHeartbeat();
-  stopRoomEventPolling();
   stopRoomRealtime();
   renderSpectatorCountIndicator();
   if (options.resetCode !== false) {
@@ -30072,9 +30046,6 @@ function openJoinScreen(options = {}) {
   }
   if (!state.roomInvite.active) {
     renderHostedRooms();
-    startJoinDirectoryPolling();
-  } else {
-    stopJoinDirectoryPolling();
   }
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
@@ -30106,7 +30077,6 @@ async function refreshJoinRooms() {
 }
 
 function closeJoinScreen() {
-  stopJoinDirectoryPolling();
   if (state.roomInvite.active) {
     clearRoomInviteUrlPath();
   }
@@ -30114,17 +30084,6 @@ function closeJoinScreen() {
   setHidden(elements.joinScreen, true);
   setHidden(elements.modeScreen, false);
   playSound("click");
-}
-
-function startJoinDirectoryPolling() {
-  stopJoinDirectoryPolling();
-}
-
-function stopJoinDirectoryPolling() {
-  if (state.joinDirectoryPollId) {
-    window.clearInterval(state.joinDirectoryPollId);
-    state.joinDirectoryPollId = null;
-  }
 }
 
 function scheduleRoomSettingsPublish(kind = state.currentRoomStatus, delay = 300) {
@@ -30379,36 +30338,36 @@ function buildRoomDirectoryPayload(status = "lobby") {
 
 async function publishRoomDirectory(room) {
   const code = String(room?.code || room?.settings?.code || state.roomSettings.code || "").trim().toUpperCase();
-  const clientEventId = createRoomClientEventId("room-updated", code);
+  const clientEventId = createRoomSyncCommandId("create-room", code);
   const optimisticRoom = {
     ...(room || {}),
     code,
     updatedAt: Number(room?.updatedAt) || Date.now()
   };
-  if (code && code !== "CAI-0000") {
-    broadcastRealtimeRoomChange("room-updated", optimisticRoom, {
-      clientEventId,
-      optimistic: true
-    });
+  if (!code || code === "CAI-0000") {
+    return null;
+  }
+  if (getKnownRoomRevision(code) > 0) {
+    return publishRoomSettings(optimisticRoom.status || state.currentRoomStatus || "lobby");
   }
   try {
-    const response = await fetch("/api/rooms", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ room: optimisticRoom, clientEventId })
+    const data = await roomSync.sendCommand("create_room", {
+      clientEventId,
+      hostParticipantId: state.clientId,
+      room: optimisticRoom
+    }, {
+      roomCode: code,
+      participantId: state.clientId,
+      clientEventId
     });
-    if (!response.ok) {
+    if (!data?.ok) {
       state.roomDirectoryOnline = false;
-      const errorPayload = await response.json().catch(() => ({}));
-      console.warn("Room directory update failed:", response.status, errorPayload.error || errorPayload);
+      console.warn("Room creation failed:", data?.status || 0, data?.error || data);
       return null;
     }
-    const data = await response.json();
     state.roomDirectoryOnline = true;
     if (data.room) {
-      broadcastRealtimeRoomChange("room-updated", data.room, { clientEventId });
+      applyRoomSnapshot(data.room, { source: "room-create-response" });
     }
     if (Array.isArray(data.transferredRooms)) {
       data.transferredRooms.forEach((transferredRoom) => {
@@ -30424,7 +30383,7 @@ async function publishRoomDirectory(room) {
     return data.room || optimisticRoom;
   } catch {
     state.roomDirectoryOnline = false;
-    console.warn("Room directory update failed.");
+    console.warn("Room creation failed.");
     return null;
   }
 }
@@ -30436,9 +30395,8 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
   }
   const publishSeq = getRoomSettingsEditSeq(code);
   const settingsSnapshot = { ...state.roomSettings };
-  const settingsRealtimeSnapshot = getRealtimeRoomSettingsPayload(settingsSnapshot);
   const serverStatus = status === "draft" ? "lobby" : status;
-  const clientEventId = createRoomClientEventId("room-settings", code);
+  const clientEventId = createRoomSyncCommandId("update-settings", code);
   const updatedAt = Date.now();
   const host = (!state.joiningRoom && isCurrentHost())
     ? {
@@ -30459,55 +30417,31 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
     }
     hostedRoom.updatedAt = updatedAt;
   }
-  broadcastRealtimeRoomChange("room-settings", code, {
+  return roomSync.sendCommand("update_settings", {
     clientEventId,
     status: serverStatus,
-    settings: settingsRealtimeSnapshot,
-    host,
+    settings: settingsSnapshot,
     settingsEditSeq: publishSeq,
-    optimistic: true,
-    updatedAt
-  });
-  try {
-    const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/settings`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        clientEventId,
-        status: serverStatus,
-        settings: settingsSnapshot,
-        settingsEditSeq: publishSeq,
-        hostParticipantId: state.clientId,
-        host
-      })
-    }, roomPresenceFetchTimeoutMs);
-    if (!response.ok) {
+    hostParticipantId: state.clientId,
+    host
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       state.roomDirectoryOnline = false;
-      if (response.status === 404 && !state.joiningRoom && isCurrentHost()) {
+      if (data?.status === 404 && !state.joiningRoom && isCurrentHost()) {
         return publishRoomDirectory(buildRoomDirectoryPayload(serverStatus));
       }
       return null;
     }
-    const data = await response.json();
     state.roomDirectoryOnline = true;
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "room-settings",
-      clientEventId,
-      source: "settings-response"
-    });
-    const latestSeq = getRoomSettingsEditSeq(code);
-    if (state.roomSettings.code === code && latestSeq === publishSeq) {
-      broadcastRealtimeRoomChange("room-settings", code, {
-        ...confirmedPayload,
-        settingsEditSeq: publishSeq
-      });
-    }
     return data;
-  } catch {
+  }).catch(() => {
     state.roomDirectoryOnline = false;
     return null;
-  }
+  });
 }
 
 function upsertHostedRoom(status = "lobby") {
@@ -30776,155 +30710,56 @@ async function updateRoomPresence(room, options = {}) {
     if (!Object.hasOwn(options, "remainingTime")) {
       delete participant.remainingTime;
     }
-    if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
-      broadcastRealtimeRoomChange(options.optimisticEventType || "participant-updated", room.code, {
-        clientEventId,
-        status: room.status || state.currentRoomStatus || "",
-        participant,
-        optimistic: true,
-        updatedAt: Date.now()
-      });
-    }
-    const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(room.code)}/presence`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        clientEventId,
-        participant,
-        compact: options.compactResponse !== false,
-        includeRoom: options.includeRoomSnapshot === true,
-        ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
-      })
-    }, roomPresenceFetchTimeoutMs);
-    if (!response.ok) {
-      if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
-        broadcastRealtimeRoomChange("participant-left", room.code, {
-          participantId: participant.id,
-          participantName: participant.name,
-          participant,
-          reason: "presence-rejected",
-          optimisticRollback: true,
-          updatedAt: Date.now()
-        });
+    const commandType = options.commandType
+      || (options.active === false ? "disconnect_participant" : options.rejoin ? "rejoin_room" : "join_room");
+    const data = await roomSync.sendCommand(commandType, {
+      clientEventId,
+      participantId: participant.id,
+      participant,
+      compact: options.compactResponse !== false,
+      includeRoom: options.includeRoomSnapshot === true,
+      includeRoomSnapshot: options.includeRoomSnapshot === true,
+      ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
+    }, {
+      roomCode: room.code,
+      participantId: participant.id,
+      clientEventId,
+      broadcast: options.skipRealtimeBroadcast ? false : undefined
+    });
+    if (!data?.ok) {
+      state.roomDirectoryOnline = false;
+      if (options.includeError) {
+        return {
+          ok: false,
+          status: data?.status || 0,
+          error: data?.error || "Room participant update failed.",
+          duplicateParticipantId: data?.data?.duplicateParticipantId || data?.duplicateParticipantId || ""
+        };
       }
       return null;
     }
-    const data = await response.json();
-    return applyRoomPresenceResponse(data, room, options, "presence-response");
-  } catch {
-    if (participant && options.optimisticRealtime && !options.skipRealtimeBroadcast) {
-      broadcastRealtimeRoomChange("participant-left", room.code, {
-        participantId: participant.id,
-        participantName: participant.name,
-        participant,
-        reason: "presence-failed",
-        optimisticRollback: true,
-        updatedAt: Date.now()
-      });
-    }
-    return null;
-  }
-}
-
-async function publishRoomParticipantDelta(participant, options = {}) {
-  const code = String(options.code || state.roomSettings.code || "").trim().toUpperCase();
-  if (!code || code === "CAI-0000" || !participant?.id) {
-    return null;
-  }
-  const clientEventId = String(options.clientEventId || createRoomClientEventId(options.optimisticEventType || "participant-joined", code)).slice(0, 160);
-  try {
-    if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
-      if (options.applyOptimisticLocal !== false && normalizeRoomEventType(options.optimisticEventType || "participant-joined") === "participant-joined") {
-        applyRoomParticipantDelta(participant, {
-          code,
-          clientEventId,
-          status: state.currentRoomStatus || "",
-          optimistic: true,
-          updatedAt: Date.now()
-        });
-      }
-      broadcastRealtimeRoomChange(options.optimisticEventType || "participant-joined", code, {
-        clientEventId,
-        status: state.currentRoomStatus || "",
-        participant,
-        optimistic: true,
-        updatedAt: Date.now()
-      });
-    }
-    const response = await fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/presence`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        clientEventId,
-        participant,
-        compact: options.compactResponse !== false,
-        includeRoom: options.includeRoomSnapshot === true,
-        hostParticipantId: getCurrentRoomHostParticipantId(),
-        ...(Object.hasOwn(options, "roomPassword") ? { password: options.roomPassword } : {})
-      })
-    }, roomPresenceFetchTimeoutMs);
-    if (!response.ok) {
-      state.roomDirectoryOnline = false;
-      if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
-        if (options.applyOptimisticLocal !== false && normalizeRoomEventType(options.optimisticEventType || "participant-joined") === "participant-joined") {
-          applyRealtimeParticipantLeft({
-            code,
-            participantId: participant.id,
-            participantName: participant.name || "A player",
-            participant,
-            reason: "presence-rejected",
-            optimisticRollback: true,
-            updatedAt: Date.now()
-          });
-        }
-        broadcastRealtimeRoomChange("participant-left", code, {
-          participantId: participant.id,
-          participantName: participant.name || "A player",
-          participant,
-          reason: "presence-rejected",
-          optimisticRollback: true,
-          updatedAt: Date.now()
-        });
-      }
-      const errorPayload = await response.json().catch(() => ({}));
-      return options.includeError
-        ? { ok: false, status: response.status, error: errorPayload.error || "Room participant update failed." }
-        : null;
-    }
-    const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    applyRoomPresenceResponse(data, { code, status: state.currentRoomStatus || "" }, options, "participant-response");
-    return { ...data, ok: true };
+    if (data.room) {
+      applyRoomSnapshot(data.room, { source: "presence-command-response" });
+      return data.room;
+    }
+    if (data.participant) {
+      applyRoomParticipantDelta(data.participant, {
+        ...data,
+        code: data.roomCode || room.code,
+        eventType: normalizeRoomEventType(data.eventType || options.optimisticEventType || "participant-updated")
+      });
+    }
+    return {
+      ...room,
+      status: data.status || room.status,
+      revision: Number(data.revision) || Number(room.revision) || 0,
+      updatedAt: Number(data.updatedAt) || Date.now(),
+      participants: state.roomParticipants
+    };
   } catch {
     state.roomDirectoryOnline = false;
-    if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
-      if (options.applyOptimisticLocal !== false && normalizeRoomEventType(options.optimisticEventType || "participant-joined") === "participant-joined") {
-        applyRealtimeParticipantLeft({
-          code,
-          participantId: participant.id,
-          participantName: participant.name || "A player",
-          participant,
-          reason: "presence-failed",
-          optimisticRollback: true,
-          updatedAt: Date.now()
-        });
-      }
-      broadcastRealtimeRoomChange("participant-left", code, {
-        participantId: participant.id,
-        participantName: participant.name || "A player",
-        participant,
-        reason: "presence-failed",
-        optimisticRollback: true,
-        updatedAt: Date.now()
-      });
-    }
-    return options.includeError
-      ? { ok: false, status: 0, error: "Room participant update failed." }
-      : null;
+    return null;
   }
 }
 
@@ -30940,6 +30775,7 @@ function normalizeRoomParticipantDelta(participant = {}) {
     userId: String(source.userId || source.profileUserId || `participant:${id}`).slice(0, 140),
     profileUserId: String(source.profileUserId || source.userId || `participant:${id}`).slice(0, 140),
     connectionId: String(source.connectionId || "").slice(0, 120),
+    tabSessionId: String(source.tabSessionId || "").slice(0, 120),
     name: String(source.name || "Guest").slice(0, 32),
     avatar: getRoomSyncAvatar(source.avatar),
     equippedTitleId: String(source.equippedTitleId || "").slice(0, 80),
@@ -31370,75 +31206,40 @@ function publishRoomRoundSetup(setup) {
   const code = state.roomSettings.code;
   const syncedSetup = normalizeSetupPayload(setup);
   const matchId = setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId());
-  const clientEventId = createRoomClientEventId("round-started", code);
   const updatedAt = Date.now();
-  state.roomGame = {
-    matchId,
-    status: "playing",
-    round: state.round,
-    setup: syncedSetup,
-    matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
-    powerState: getRoomPowerStatePayload(),
-    setupStartedAt: Number(state.roomGame?.setupStartedAt) || updatedAt,
-    roundStartedAt: state.roomGame?.matchId === matchId && Number(state.roomGame?.round) === Number(state.round)
-      ? Number(state.roomGame.roundStartedAt) || updatedAt
-      : updatedAt,
-    updatedAt
-  };
+  state.roomGame = state.roomGame?.matchId === matchId && Number(state.roomGame?.round) === Number(state.round)
+    ? {
+      ...state.roomGame,
+      status: state.roomGame.status === "starting" ? "playing" : state.roomGame.status || "playing",
+      setup: state.roomGame.setup || syncedSetup,
+      updatedAt: state.roomGame.updatedAt || updatedAt
+    }
+    : {
+      matchId,
+      status: "playing",
+      round: state.round,
+      setup: syncedSetup,
+      matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
+      powerState: getRoomPowerStatePayload(),
+      setupStartedAt: updatedAt,
+      roundStartedAt: updatedAt,
+      updatedAt
+    };
   const hostedRoom = state.hostedRooms.find((entry) => entry.code === code);
   if (hostedRoom) {
     hostedRoom.status = "in-progress";
     hostedRoom.game = state.roomGame;
     hostedRoom.updatedAt = updatedAt;
   }
-  broadcastRealtimeRoomChange("round-started", code, {
-    clientEventId,
-    optimistic: true,
-    status: "in-progress",
+  recordRoomDiagnosticEvent("legacy-publish-skipped", {
+    code,
+    eventType: "round-started",
     matchId,
-    round: state.round,
-    game: state.roomGame,
-    updatedAt
-  });
-  fetch(`/api/rooms/${encodeURIComponent(code)}/game`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ clientEventId, game: state.roomGame })
-  }).then(async (response) => {
-    if (!response.ok) {
-      state.roomDirectoryOnline = false;
-      return;
-    }
-    const data = await response.json();
-    state.roomDirectoryOnline = true;
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "round-started",
-      clientEventId,
-      source: "round-started-response"
-    });
-    const serverGame = data.game && typeof data.game === "object"
-      ? data.game
-      : data.room?.game && typeof data.room.game === "object"
-        ? data.room.game
-        : null;
-    if (serverGame) {
-      state.roomGame = serverGame;
-      if (serverGame.matchId) {
-        setCurrentRoomMatchId(serverGame.matchId);
-      }
-    }
-    if (!data.duplicate) {
-      broadcastRealtimeRoomChange("round-started", code, {
-        ...confirmedPayload,
-        status: data.status || data.room?.status || "in-progress",
-        matchId: serverGame?.matchId || confirmedPayload.matchId || matchId,
-        round: Number(serverGame?.round || confirmedPayload.round) || state.round,
-        game: serverGame || state.roomGame
-      });
-    }
-  }).catch(() => {
-    state.roomDirectoryOnline = false;
+    round: state.round
+  }, {
+    source: "client",
+    eventType: "round-started",
+    reason: "Skipped legacy /game round setup publish; prepare_round command owns this event."
   });
 }
 
@@ -31498,8 +31299,7 @@ function resumeSyncedRoomGame(room, options = {}) {
   initAudio();
   startMusic();
   clearRoomAutoResolve();
-  stopJoinDirectoryPolling();
-  stopRoomDirectoryPolling();
+  stopRoomPresenceMaintenance();
   cancelActiveMatchWork();
 
   const host = Boolean(options.host);
@@ -31533,7 +31333,7 @@ function resumeSyncedRoomGame(room, options = {}) {
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, false);
   startRoomRealtime(state.roomSettings.code);
-  startRoomDirectoryPolling();
+  startRoomPresenceMaintenance();
 
   applyRoundSetup(setup, { skipPublish: true, resumeSyncedRoom: true });
   state.roomGame = game;
@@ -31575,78 +31375,67 @@ function resumeSyncedRoomGame(room, options = {}) {
   return true;
 }
 
-function publishRoomRoundAdvancing(round = state.round) {
+function publishRoomRoundAdvancing(round = state.round, options = {}) {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
-  const clientEventId = createRoomClientEventId("round-advancing", code);
+  const commandType = options.autoAdvance
+    ? "resolve_auto_advance"
+    : Number(round) <= 1 && !state.roomGame
+    ? state.matchEnded || state.currentRoomStatus === "complete"
+      ? "rematch"
+      : "start_match"
+    : "start_next_round";
+  const clientEventId = createRoomSyncCommandId(commandType, code);
   const matchId = setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId());
   const matchSettings = getRoomMatchSettingsPayload(state.roomSettings);
-  const updatedAt = Date.now();
-  const game = {
-    ...(state.roomGame || {}),
-    matchId,
-    status: "starting",
-    round: Number(round) || state.round,
-    setup: null,
-    answers: {},
-    matchSettings,
-    roundResult: null,
-    powerState: state.roomGame?.powerState || getRoomPowerStatePayload(),
-    setupStartedAt: updatedAt,
-    roundStartedAt: 0,
-    updatedAt
-  };
-  state.roomGame = game;
-  const body = {
+  return roomSync.sendCommand(commandType, {
     clientEventId,
     hostParticipantId: state.clientId,
     round: Number(round) || state.round,
+    nextRound: Number(round) || state.round,
+    fromRound: Number(state.round) || 0,
+    reason: options.autoAdvance ? "auto-advance" : "",
+    nextRoundAt: options.autoAdvance ? Math.max(0, Number(getRoomRoundResultForCurrentRound()?.nextRoundAt) || 0) : 0,
     matchId,
     matchSettings
-  };
-  broadcastRealtimeRoomChange("round-advancing", code, {
-    clientEventId,
-    optimistic: true,
-    status: "in-progress",
-    round: body.round,
-    matchId,
-    hostParticipantId: state.clientId,
-    matchSettings,
-    game,
-    updatedAt
-  });
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/round-advancing`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  }, roomPresenceFetchTimeoutMs).then(async (response) => {
-    if (!response.ok) {
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       state.roomDirectoryOnline = false;
+      addSystemChat(data?.error || "Could not sync the next round yet. Try again in a moment.", { private: true, sync: false });
       return null;
     }
-    const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    rememberRoomRevisionPayload({ ...data, code: data.code || code });
-    const serverGame = data.game && typeof data.game === "object"
-      ? data.game
-      : data.room?.game && typeof data.room.game === "object"
-        ? data.room.game
-        : null;
+    const events = Array.isArray(data.events) ? data.events : [];
+    const roundEvent = [...events].reverse().find((event) => normalizeRoomEventType(event.type || event.payload?.eventType || "") === "round-advancing");
+    const payload = roundEvent?.payload && typeof roundEvent.payload === "object" ? roundEvent.payload : {};
+    const serverGame = payload.game && typeof payload.game === "object" ? payload.game : null;
     if (serverGame && canAdoptIncomingRoomGame(serverGame, data.room || state.joiningRoom || { status: "in-progress" }, serverGame.round || round)) {
       state.roomGame = serverGame;
       if (serverGame.matchId) {
         setCurrentRoomMatchId(serverGame.matchId);
       }
-      applyRoomGameMatchSettings(serverGame, { ...data, code: data.code || state.roomSettings.code }, { render: false, resetTimer: false });
-    }
-    if (!data.duplicate) {
-      broadcastRealtimeRoomChange("round-advancing", code, { ...data, clientEventId });
+      applyRoomGameMatchSettings(serverGame, { ...payload, code }, { render: false, resetTimer: false });
     }
     return data;
-  }).catch(() => {
+  }).catch((error) => {
     state.roomDirectoryOnline = false;
+    recordRoomDiagnosticEvent("command-error", {
+      code,
+      eventType: "round-advancing",
+      clientEventId,
+      round: Number(round) || state.round,
+      matchId
+    }, {
+      source: "room-sync",
+      eventType: "round-advancing",
+      reason: error?.message || "Round advance command failed."
+    });
     return null;
   });
 }
@@ -31656,7 +31445,7 @@ function publishRoomGameEnded() {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
-  const clientEventId = createRoomClientEventId("game-ended", code);
+  const clientEventId = createRoomSyncCommandId("end-game", code);
   const game = {
     ...(state.roomGame || {}),
     matchId: setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId()),
@@ -31667,37 +31456,20 @@ function publishRoomGameEnded() {
     updatedAt: Date.now()
   };
   state.roomGame = game;
-  broadcastRealtimeRoomChange("game-ended", code, {
+  return roomSync.sendCommand("end_game", {
     clientEventId,
-    optimistic: true,
-    status: "complete",
-    matchId: game.matchId,
-    game,
-    updatedAt: game.updatedAt
-  });
-  return fetch(`/api/rooms/${encodeURIComponent(code)}/game`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ clientEventId, game })
-  }).then(async (response) => {
-    if (!response.ok) {
+    hostParticipantId: state.clientId,
+    game
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       state.roomDirectoryOnline = false;
       return null;
     }
-    const data = await response.json();
     state.roomDirectoryOnline = true;
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "game-ended",
-      clientEventId,
-      source: "game-ended-response"
-    });
-    broadcastRealtimeRoomChange("game-ended", code, {
-      ...confirmedPayload,
-      status: "complete",
-      matchId: game.matchId,
-      game: data.game || data.room?.game || game
-    });
     return data || null;
   }).catch(() => {
     state.roomDirectoryOnline = false;
@@ -31710,7 +31482,7 @@ function publishRoomReturnToLobby() {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
-  const clientEventId = createRoomClientEventId("room-updated", code);
+  const clientEventId = createRoomSyncCommandId("return-to-lobby", code);
   const updatedAt = Date.now();
   const existingRoom = state.hostedRooms.find((entry) => entry.code === code) || state.joiningRoom || buildRoomDirectoryPayload("lobby");
   const participants = normalizeRoomParticipantsList(state.roomParticipants.length ? state.roomParticipants : existingRoom.participants || [])
@@ -31741,36 +31513,21 @@ function publishRoomReturnToLobby() {
   if (hostedRoom) {
     Object.assign(hostedRoom, optimisticRoom);
   }
-  broadcastRealtimeRoomChange("room-updated", optimisticRoom, {
+  return roomSync.sendCommand("return_to_lobby", {
     clientEventId,
-    optimistic: true,
-    status: "lobby",
-    game: null,
-    forceRoomChannel: true
-  });
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/lobby`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      clientEventId,
-      hostParticipantId: state.clientId,
-      matchId: getCurrentRoomMatchId()
-    })
-  }, roomPresenceFetchTimeoutMs).then(async (response) => {
-    if (!response.ok) {
+    hostParticipantId: state.clientId,
+    matchId: getCurrentRoomMatchId()
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       state.roomDirectoryOnline = false;
       return null;
     }
-    const data = await response.json().catch(() => ({}));
     const room = data.room && typeof data.room === "object" ? data.room : null;
     state.roomDirectoryOnline = true;
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "room-updated",
-      clientEventId,
-      source: "return-lobby-response",
-      includeRoom: true
-    });
     const confirmedRoom = room
       ? {
         ...optimisticRoom,
@@ -31778,13 +31535,6 @@ function publishRoomReturnToLobby() {
         updatedAt: Number(room.updatedAt) || updatedAt
       }
       : optimisticRoom;
-    broadcastRealtimeRoomChange("room-updated", confirmedRoom, {
-      ...confirmedPayload,
-      clientEventId,
-      status: "lobby",
-      game: null,
-      forceRoomChannel: true
-    });
     return { room: confirmedRoom, applied: true };
   }).catch(() => {
     state.roomDirectoryOnline = false;
@@ -31796,71 +31546,113 @@ function publishRoomHeartbeat(status = "host") {
   if (!state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
   }
-  return fetch(`/api/rooms/${encodeURIComponent(state.roomSettings.code)}/heartbeat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      participantId: state.clientId,
-      status
-    })
-  }).then(async (response) => {
-    if (!response.ok) {
-      return null;
-    }
-    const data = await response.json();
-    return data.room || null;
-  }).catch(() => null);
+  const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || { code: state.roomSettings.code };
+  return updateRoomPresence(room, {
+    host: isCurrentHost() && !state.joiningRoom,
+    spectator: state.isSpectator,
+    status,
+    rejoin: true,
+    compactResponse: true,
+    skipRealtimeBroadcast: true
+  });
+}
+
+function waitForRoomSyncCondition(checkFn, options = {}) {
+  if (typeof checkFn !== "function") {
+    return Promise.resolve(null);
+  }
+  const immediate = checkFn();
+  if (immediate) {
+    return Promise.resolve(immediate);
+  }
+  const eventTypes = new Set((Array.isArray(options.eventTypes) ? options.eventTypes : [])
+    .map((eventType) => String(eventType || "").trim())
+    .filter(Boolean));
+  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 12000);
+  const reason = String(options.reason || "room-sync-wait").slice(0, 80);
+  return new Promise((resolve) => {
+    let settled = false;
+    let cleanupEvent = null;
+    let cleanupChange = null;
+    let timeoutId = 0;
+    const finish = (value) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (cleanupEvent) {
+        cleanupEvent();
+      }
+      if (cleanupChange) {
+        cleanupChange();
+      }
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      resolve(value || null);
+    };
+    const runCheck = () => {
+      const value = checkFn();
+      if (value) {
+        finish(value);
+      }
+    };
+    cleanupEvent = roomSync.onEvent((event = {}) => {
+      const eventType = normalizeRoomEventType(event.type || event.eventType || event.payload?.eventType || "");
+      if (eventTypes.size && !eventTypes.has(eventType)) {
+        return;
+      }
+      runCheck();
+    });
+    cleanupChange = roomSync.onChange(() => {
+      runCheck();
+    });
+    timeoutId = window.setTimeout(() => {
+      recordRoomDiagnosticEvent("sync-wait-timeout", { code: state.roomSettings.code }, {
+        source: "client",
+        eventType: "room-sync-wait",
+        reason: `Timed out waiting for ${reason} without requesting a snapshot.`
+      });
+      finish(null);
+    }, timeoutMs);
+  });
 }
 
 async function waitForSyncedRoomSetupForRound(round = state.round, timeoutMs = 12000) {
   const matchToken = state.matchWorkToken;
-  const startedAt = Date.now();
-  let catchupRequested = false;
-  let snapshotCatchupRequested = false;
   const timeout = Math.max(3000, Number(timeoutMs) || 12000);
-  while (isCurrentMatchWork(matchToken)) {
-    const elapsedMs = Date.now() - startedAt;
-    const preparingGame = getPreparingRoomGameForRound(round);
-    const shouldKeepWaiting = elapsedMs < timeout
-      || Boolean(isRoomMode() && !isCurrentHost() && preparingGame && elapsedMs < Math.max(timeout, roomPreparingSetupWaitMs));
-    if (!shouldKeepWaiting) {
-      break;
+  const setup = getSyncedRoomSetupForRound(round);
+  if (setup) {
+    return setup;
+  }
+  if (isRoomMode() && !isCurrentHost()) {
+    showWaitingForHostRoundSetup(round);
+    elements.loadingText.textContent = "Waiting for the host to deal the round...";
+  }
+  const syncedSetup = await waitForRoomSyncCondition(() => {
+    if (!isCurrentMatchWork(matchToken)) {
+      return "stale";
     }
     const setup = getSyncedRoomSetupForRound(round);
     if (setup) {
       return setup;
     }
-    if (isRoomMode() && !isCurrentHost() && elapsedMs >= timeout) {
-      showWaitingForHostRoundSetup(round);
-      elements.loadingText.textContent = preparingGame
-        ? `The host is still dealing round ${round}. Hang tight...`
-        : isRoomRealtimeHealthy()
-          ? `Still waiting for the host to sync round ${round}...`
-          : "Realtime sync is reconnecting. Waiting for the room channel...";
-      if (!snapshotCatchupRequested) {
-        snapshotCatchupRequested = true;
-        await requestRoomRealtimeCatchup("round-setup-preparing-wait", { force: true, snapshot: true });
-        if (!isCurrentMatchWork(matchToken)) {
-          throw createAbortError();
-        }
-      }
-    }
-    if (!catchupRequested && isRoomRealtimeHealthy()) {
-      catchupRequested = true;
-      await requestRoomRealtimeCatchup("round-setup-wait", { force: true, snapshot: false });
-      if (!isCurrentMatchWork(matchToken)) {
-        throw createAbortError();
-      }
-    }
-    await sleep(elapsedMs >= timeout ? 400 : 180);
-  }
-  if (!isCurrentMatchWork(matchToken)) {
+    return "";
+  }, {
+    timeoutMs: getPreparingRoomGameForRound(round) ? Math.max(timeout, roomPreparingSetupWaitMs) : timeout,
+    eventTypes: ["round-started", "round-advancing", "room-updated"],
+    reason: `round-${round}-setup`
+  });
+  if (syncedSetup === "stale" || !isCurrentMatchWork(matchToken)) {
     throw createAbortError();
+  }
+  if (syncedSetup) {
+    return syncedSetup;
   }
   if (isRoomMode() && !isCurrentHost()) {
     showWaitingForHostRoundSetup(round);
     elements.loadingText.textContent = isRoomRealtimeHealthy()
-      ? `Still waiting for the host to sync round ${round}...`
+      ? `Still waiting for the host to deal round ${round}...`
       : "Realtime sync is reconnecting. Waiting for the room channel...";
   }
   return null;
@@ -32268,7 +32060,7 @@ function handleRoomVisibilityChange() {
     return;
   }
   state.roomMissingSince = 0;
-  requestRoomRealtimeCatchup("visible", { force: true, snapshot: false });
+  void reconnectCurrentRoomParticipant("visible");
 }
 
 function startRoomHeartbeat() {
@@ -32285,17 +32077,6 @@ function startRoomHeartbeat() {
   }, 60000);
 }
 
-function startRoomEventPolling() {
-  stopRoomEventPolling();
-}
-
-function stopRoomEventPolling() {
-  if (state.roomEventPollId) {
-    window.clearInterval(state.roomEventPollId);
-    state.roomEventPollId = null;
-  }
-}
-
 function stopRoomHeartbeat() {
   if (state.roomHeartbeatTimerId) {
     window.clearInterval(state.roomHeartbeatTimerId);
@@ -32307,37 +32088,11 @@ function isRoomRealtimeHealthy() {
   return Boolean(state.supabaseEnabled && state.realtimeRoomChannel && state.realtimeRoomReady);
 }
 
-function hasLocalRoomRealtimeState() {
-  const code = String(state.roomSettings.code || state.realtimeRoomCode || "").trim().toUpperCase();
-  return Boolean(
-    code
-    && code !== "CAI-0000"
-    && (
-      state.roomParticipants.length
-      || state.roomGame
-      || state.hostedRooms.some((room) => room.code === code)
-    )
-  );
-}
-
-function shouldRunRoomStartCatchup(reason = "start") {
-  if (!hasActiveRoomContext()) {
-    return false;
-  }
-  if (!hasLocalRoomRealtimeState()) {
-    return true;
-  }
-  if (state.roomInvite.active && !state.roomInvite.checked) {
-    return true;
-  }
-  return false;
-}
-
 function recordRoomCatchupSkipped(reason = "start") {
   recordRoomDiagnosticEvent("catchup-skipped", { code: state.roomSettings.code || state.realtimeRoomCode }, {
     source: "client",
     eventType: "event-catchup",
-    reason: `Skipped automatic ${reason} catchup because local realtime state is already present.`
+    reason: `Skipped automatic ${reason} catchup; realtime events, commands, and revision-gap recovery own sync.`
   });
 }
 
@@ -32352,26 +32107,15 @@ function handleRoomRealtimeStatus(status = "") {
   });
   if (state.realtimeRoomReady) {
     state.roomRealtimeUnhealthySince = 0;
-    stopRoomFallbackPolling({ keepHeartbeat: true });
+    stopRoomRealtimeMaintenance({ keepHeartbeat: true });
     startRoomHeartbeat();
     flushPendingRoomRealtimePayloads(state.realtimeRoomCode);
-    if (shouldRunRoomStartCatchup("subscribed")) {
-      requestRoomRealtimeCatchup("subscribed", { force: true, snapshot: !isRoomInWaitingSyncState() ? false : true });
-    } else {
-      recordRoomCatchupSkipped("subscribed");
-    }
+    recordRoomCatchupSkipped("subscribed");
     return;
   }
   if (!state.roomRealtimeUnhealthySince) {
     state.roomRealtimeUnhealthySince = Date.now();
   }
-}
-
-function getRoomFallbackDelayMs() {
-  if (!state.supabaseEnabled || !state.realtimeRoomChannel) {
-    return 3500;
-  }
-  return isRoomTabBackgrounded() ? 15000 : 9000;
 }
 
 function requestRoomRealtimeCatchup(reason = "sync", options = {}) {
@@ -32409,26 +32153,7 @@ function requestRoomRealtimeCatchup(reason = "sync", options = {}) {
   });
 }
 
-function scheduleRoomFallbackPolling(reason = "realtime-unhealthy") {
-  startRoomHeartbeat();
-}
-
-function startRoomFallbackPolling(reason = "realtime-unhealthy") {
-  startRoomHeartbeat();
-  requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
-}
-
-function stopRoomFallbackPolling(options = {}) {
-  if (state.roomFallbackStartTimerId) {
-    window.clearTimeout(state.roomFallbackStartTimerId);
-    state.roomFallbackStartTimerId = null;
-  }
-  if (state.roomDirectoryPollId) {
-    window.clearInterval(state.roomDirectoryPollId);
-    state.roomDirectoryPollId = null;
-  }
-  stopRoomEventPolling();
-  state.roomFallbackActive = false;
+function stopRoomRealtimeMaintenance(options = {}) {
   if (!options.keepHeartbeat) {
     stopRoomHeartbeat();
   }
@@ -32441,49 +32166,14 @@ function isRoomInWaitingSyncState() {
     || !elements.endPanel.classList.contains("hidden");
 }
 
-function isRoomCriticalSyncState() {
-  return Boolean(
-    isRoomMode()
-    && hasActiveRoomContext()
-    && state.currentRoomStatus === "in-progress"
-    && !state.matchEnded
-    && (
-      !elements.inputPanel.classList.contains("hidden")
-      || !elements.loadingPanel.classList.contains("hidden")
-      || state.roomRoundResolving
-    )
-  );
-}
-
-function getRoomEventPollIntervalMs() {
-  if (isRoomTabBackgrounded()) {
-    return isRoomInWaitingSyncState() ? 12000 : 20000;
-  }
-  return isRoomInWaitingSyncState() ? 1500 : 3000;
-}
-
-function getRoomSnapshotPollIntervalMs() {
-  if (isRoomTabBackgrounded()) {
-    return 45000;
-  }
-  if (isRoomInWaitingSyncState()) {
-    return 20000;
-  }
-  return state.supabaseEnabled ? 20000 : 15000;
-}
-
-function startRoomDirectoryPolling() {
-  stopRoomFallbackPolling({ keepHeartbeat: true });
+function startRoomPresenceMaintenance() {
+  stopRoomRealtimeMaintenance({ keepHeartbeat: true });
   startRoomHeartbeat();
-  if (shouldRunRoomStartCatchup("start")) {
-    requestRoomRealtimeCatchup("start", { force: true, snapshot: !isRoomInWaitingSyncState() ? false : true });
-    return;
-  }
   recordRoomCatchupSkipped(isRoomRealtimeHealthy() ? "start" : "start-without-room-realtime");
 }
 
-function stopRoomDirectoryPolling() {
-  stopRoomFallbackPolling();
+function stopRoomPresenceMaintenance() {
+  stopRoomRealtimeMaintenance();
 }
 
 function getKickableRoomBotTarget(owner = "", participantId = "") {
@@ -32536,7 +32226,6 @@ async function confirmKickRoomBot(target) {
     addSystemChat(`Could not kick ${target.name}: ${data?.error || "room sync failed."}`, { private: true });
     return;
   }
-  addSystemChat(`${target.name} was kicked from the room.`);
   renderScore();
   renderRoomPlayers();
   renderSubmissionStatus();
@@ -32786,6 +32475,16 @@ function canReconnectCurrentProfileAsRoomPlayer(room = null) {
   );
 }
 
+function doesCurrentTabOwnRoomParticipant(room = null, participant = null) {
+  const code = String(room?.code || state.roomSettings.code || "").trim().toUpperCase();
+  const marker = readHostedRoomSessionMarker();
+  if (!marker || !participant || marker.code !== code || marker.participantId !== state.clientId) {
+    return false;
+  }
+  const participantTabSessionId = String(participant.tabSessionId || "").slice(0, 120);
+  return Boolean(marker.tabSessionId && participantTabSessionId && marker.tabSessionId === participantTabSessionId);
+}
+
 async function rejoinHostedRoomAsHost(room) {
   state.roomSettings = { ...room.settings };
   syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
@@ -32807,6 +32506,7 @@ async function rejoinHostedRoomAsHost(room) {
   const updatedRoom = await updateRoomPresence(room, {
     host: true,
     status: "host",
+    rejoin: true,
     compactResponse: true,
     includeRoomSnapshot: true
   });
@@ -32818,7 +32518,6 @@ async function rejoinHostedRoomAsHost(room) {
     mergeRoomChatMessages(activeRoom.chat);
   }
   addSystemChat("Host rejoined.", { sync: false });
-  stopJoinDirectoryPolling();
   setJoinInviteMode(false);
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
@@ -32827,7 +32526,7 @@ async function rejoinHostedRoomAsHost(room) {
   if (state.currentRoomStatus === "lobby") {
     setPlayersForMode("room");
     renderRoomLobby();
-    startRoomDirectoryPolling();
+    startRoomPresenceMaintenance();
     setHidden(elements.roomLobbyScreen, false);
   } else if (!resumeSyncedRoomGame(activeRoom, { host: true })) {
     startGame("room");
@@ -32865,13 +32564,29 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
   let serverRoom = await updateRoomPresence(room, {
     spectator: state.isSpectator,
     status: state.isSpectator ? "spectating" : "joined",
+    rejoin: Boolean(options.rejoin),
     compactResponse: !needsFullRoomState,
     includeRoomSnapshot: true,
+    includeError: true,
     optimisticRealtime: !room.settings?.private,
     optimisticEventType: "participant-joined",
     ...(Object.hasOwn(options, "roomPassword") ? { roomPassword: options.roomPassword } : {})
   });
   if (expectedSessionId !== state.roomSessionId || state.roomSettings.code !== room.code) {
+    return null;
+  }
+  if (serverRoom?.ok === false) {
+    if (serverRoom.duplicateParticipantId) {
+      addSystemChat("This profile is already active in that room. Use the existing tab, or wait for it to disconnect before rejoining.", { private: true, sync: false });
+      return null;
+    }
+    if (room.settings?.private) {
+      elements.joinRoomPasswordInput.focus();
+      setJoinInviteStatus("That password did not work. Try again or return to the main menu.", "error");
+      addSystemChat("Room password did not match.", { private: true, sync: false });
+      return null;
+    }
+    addSystemChat(serverRoom.error || "Could not join that room.", { private: true, sync: false });
     return null;
   }
   if (!serverRoom) {
@@ -32914,11 +32629,9 @@ async function joinHostedRoom(code, options = {}) {
   }
   setJoinRoomBusy(true, normalizedCode);
   let room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
-  let fetchedRoomDirectly = false;
   try {
     if (!room) {
       const lookup = await fetchRoomByCode(normalizedCode);
-      fetchedRoomDirectly = true;
       if (lookup.status === "closed") {
         addSystemChat(`Room ${normalizedCode || "code"} was closed.`, { private: true });
         return;
@@ -32927,24 +32640,6 @@ async function joinHostedRoom(code, options = {}) {
         room = lookup.room;
         applyRoomSnapshot(room, {
           source: "join-room-lookup",
-          syncActive: false
-        });
-      }
-    }
-    if (room && !fetchedRoomDirectly) {
-      const lookup = await fetchRoomByCode(normalizedCode);
-      if (lookup.status === "closed") {
-        addSystemChat(`Room ${normalizedCode || "code"} was closed.`, { private: true });
-        return;
-      }
-      if (lookup.status === "missing") {
-        addSystemChat(`Room ${normalizedCode || "code"} was not found.`, { private: true });
-        return;
-      }
-      if (lookup.status === "found" && lookup.room) {
-        room = lookup.room;
-        applyRoomSnapshot(room, {
-          source: "join-room-refresh",
           syncActive: false
         });
       }
@@ -32962,7 +32657,10 @@ async function joinHostedRoom(code, options = {}) {
       sameProfileParticipant
       && sameProfileParticipant.active !== false
       && !sameProfileParticipant.host
-      && hasCurrentTabHostedRoomSession(normalizedCode)
+      && (
+        doesCurrentTabOwnRoomParticipant(room, sameProfileParticipant)
+        || (!sameProfileParticipant.tabSessionId && hasCurrentTabHostedRoomSession(normalizedCode))
+      )
     );
     const canReclaimCurrentTabPlayer = Boolean(canReclaimCurrentTabParticipant && !sameProfileParticipant.spectator);
     const reconnectAsPlayer = canReconnectCurrentProfileAsRoomPlayer(room) || canReclaimCurrentTabPlayer;
@@ -33015,7 +32713,8 @@ async function joinHostedRoom(code, options = {}) {
     state.roomParticipants = normalizeRoomParticipantsList(room.participants);
     const joinedRoom = await syncJoinedRoomPresence(room, state.roomSessionId, {
       roomPassword: typedPassword,
-      fullRoomState: state.isSpectator || room.status !== "lobby"
+      fullRoomState: state.isSpectator || room.status !== "lobby",
+      rejoin: reconnectAsPlayer || canReclaimCurrentTabParticipant
     });
     if (!joinedRoom) {
       clearLocalRoomState();
@@ -33045,7 +32744,6 @@ async function joinHostedRoom(code, options = {}) {
     addSystemChat(reconnectAsPlayer
       ? `${state.profile.name || "Guest"} reconnected to the match.`
       : `${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
-    stopJoinDirectoryPolling();
     setJoinInviteMode(false);
     setRoomInviteUrlPath(normalizedCode);
     setHidden(elements.modeScreen, true);
@@ -33059,7 +32757,7 @@ async function joinHostedRoom(code, options = {}) {
         source: "joined-lobby-entry"
       });
       renderRoomLobby();
-      startRoomDirectoryPolling();
+      startRoomPresenceMaintenance();
       setHidden(elements.roomLobbyScreen, false);
       playSound("click");
       return;
@@ -33219,50 +32917,22 @@ async function addBotToRoom() {
   if (!state.randomUsernames.length) {
     await loadRandomUsernames();
   }
-  const participants = state.roomParticipants.length
-    ? normalizeRoomParticipantsList(state.roomParticipants).filter((participant) => isRoomParticipantActive(participant) || isRoomParticipantSpectator(participant))
-    : getRoomParticipantsFromPlayers("lobby");
-  const botCount = participants.filter(isRoomParticipantBot).length + 1;
   const botName = getRandomRoomBotName();
-  state.roomBotSequence += 1;
-  const bot = {
-    id: `room-bot-${Date.now()}-${state.roomBotSequence}-${String(state.clientId).slice(-10)}`,
-    name: botName,
-    avatar: "",
-    equippedTitleId: "",
-    cardCustomization: null,
-    role: "bot",
-    host: false,
-    spectator: false,
-    bot: true,
-    active: true,
-    muted: false,
-    status: "bot"
-  };
-  rememberPendingRoomBotAdd(bot);
+  const clientEventId = createRoomSyncCommandId("add-bot", state.roomSettings.code);
+  rememberPendingRoomBotAdd({ id: clientEventId, name: botName });
   renderRoomLobby();
-  const data = await publishRoomParticipantDelta(bot, {
-    includeError: true,
-    includeRoomSnapshot: false,
-    optimisticRealtime: true,
-    optimisticEventType: "participant-joined"
+  const data = await roomSync.sendCommand("add_bot", {
+    name: botName,
+    hostParticipantId: state.clientId
+  }, {
+    clientEventId
   });
-  clearPendingRoomBotAdd(bot.id);
-  if (!data?.participant) {
+  clearPendingRoomBotAdd(clientEventId);
+  if (!data?.ok) {
     addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
-    if (data?.status === 409 || /full/i.test(data?.error || "")) {
-      const lookup = await fetchRoomByCode(state.roomSettings.code);
-      if (lookup.status === "found" && lookup.room) {
-        applyRoomSnapshot(lookup.room, {
-          source: "bot-add-conflict-snapshot",
-          skipHeartbeat: true
-        });
-      }
-    }
     renderRoomLobby();
     return;
   }
-  addSystemChat(`${data.participant.name || botName} joined as a bot.`);
   renderRoomLobby();
   playSound("click");
 }
@@ -33317,7 +32987,7 @@ function openRoomLobby() {
   state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
   setRoomInviteUrlPath(state.roomSettings.code);
   renderRoomLobby();
-  startRoomDirectoryPolling();
+  startRoomPresenceMaintenance();
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
   setHidden(elements.joinScreen, true);
@@ -33338,7 +33008,6 @@ async function beginRoomMatch() {
     return;
   }
 
-  await refreshCurrentRoomDirectory();
   if (getActiveRoomPlayerCount() < 2) {
     addSystemChat("Need at least 2 players before starting the match.", { private: true });
     renderRoomLobby();
@@ -33353,7 +33022,14 @@ async function beginRoomMatch() {
   clearRoundSubmissionState();
   applyRandomRoomModifiersForMatch();
   addSystemChat("The host started the match.");
-  await publishRoomRoundAdvancing(1);
+  const startResult = await publishRoomRoundAdvancing(1);
+  if (!startResult?.ok) {
+    state.currentRoomStatus = "lobby";
+    state.roomMatchStartGuardUntil = 0;
+    state.roomGame = null;
+    renderRoomLobby();
+    return;
+  }
   startGame("room");
 }
 
@@ -33369,7 +33045,7 @@ async function leaveCurrentRoom() {
     addSystemChat(`${leavingLabel} left and was removed from the room.`, { sync: false });
   }
   clearRoomAutoResolve();
-  stopRoomDirectoryPolling();
+  stopRoomPresenceMaintenance();
   stopNextRoundCountdown();
   resetTimerDisplay();
   stopLoadingMessages();
@@ -33843,88 +33519,32 @@ function publishRoomModeration(action, participantId, options = {}) {
   if (!isCurrentHost() || !code || code === "CAI-0000" || !participantId) {
     return Promise.resolve(null);
   }
-  const clientEventId = String(options.clientEventId || createRoomClientEventId("participant-moderated", code)).slice(0, 160);
-  const targetParticipant = state.roomParticipants.find((entry) => entry.id === participantId) || null;
+  const clientEventId = String(options.clientEventId || createRoomSyncCommandId("moderate-participant", code)).slice(0, 160);
   const normalizedAction = String(action || "").slice(0, 32);
   const muted = normalizedAction === "mute" ? true : normalizedAction === "unmute" ? false : Boolean(options.muted);
-  const currentBanned = state.joiningRoom?.banned || state.hostedRooms.find((room) => room.code === code)?.banned || [];
-  const optimisticParticipant = targetParticipant
-    ? {
-        ...targetParticipant,
-        muted,
-        active: normalizedAction === "kick" || normalizedAction === "ban" ? false : targetParticipant.active !== false,
-        status: normalizedAction === "ban"
-          ? "banned"
-          : normalizedAction === "kick"
-            ? "kicked"
-            : muted
-              ? "muted"
-              : "joined"
-      }
-    : null;
-  if (options.optimisticRealtime !== false) {
-    const optimisticPayload = {
-      clientEventId,
-      action: normalizedAction,
-      participantId,
-      participant: optimisticParticipant,
-      muted,
-      reason: options.reason || "",
-      optimistic: true,
-      updatedAt: Date.now(),
-      ...(normalizedAction === "ban"
-        ? { banned: [...new Set([...currentBanned, participantId, targetParticipant?.name, targetParticipant?.profileUserId].filter(Boolean))] }
-        : {})
-    };
-    applyRoomModerationDelta({ ...optimisticPayload, code, silent: true });
-    broadcastRealtimeRoomChange("participant-moderated", code, optimisticPayload);
-  }
-  return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/moderation`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      clientEventId,
-      action,
-      participantId,
-      hostParticipantId: getCurrentRoomHostParticipantId(),
-      muted: options.muted,
-      reason: options.reason || ""
-    })
-  }, roomPresenceFetchTimeoutMs).then(async (response) => {
-    if (!response.ok) {
-      const errorPayload = await response.json().catch(() => ({}));
-      requestRoomRealtimeCatchup("moderation-rejected", { force: true, snapshot: false });
+  return roomSync.sendCommand("moderate_participant", {
+    clientEventId,
+    action: normalizedAction,
+    participantId,
+    hostParticipantId: getCurrentRoomHostParticipantId(),
+    muted,
+    reason: options.reason || ""
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId
+  }).then((data) => {
+    if (!data?.ok) {
       return options.includeError
-        ? { ok: false, status: response.status, error: errorPayload.error || "Room moderation failed." }
+        ? { ok: false, status: data?.status || 0, error: data?.error || "Room moderation failed." }
         : null;
     }
-    const data = await response.json();
     if (data.closed) {
       broadcastRealtimeRoomChange("room-closed", state.roomSettings.code, { reason: data.reason || action });
       return { ...data, ok: true };
     }
-    const confirmedPayload = confirmRoomHttpEvent(data, {
-      code,
-      eventType: "participant-moderated",
-      clientEventId,
-      source: "moderation-response"
-    });
-    const moderatedPayload = {
-      ...confirmedPayload,
-      code,
-      clientEventId,
-      action: data.action || normalizedAction,
-      participantId: data.participantId || participantId,
-      participant: data.participant || optimisticParticipant || undefined,
-      muted: Object.hasOwn(data, "muted") ? Boolean(data.muted) : muted,
-      banned: Array.isArray(data.banned) ? data.banned : confirmedPayload.banned,
-      silent: true
-    };
-    applyRoomModerationDelta(moderatedPayload);
-    broadcastRealtimeRoomChange("participant-moderated", code, moderatedPayload);
     return { ...data, ok: true };
   }).catch(() => {
-    requestRoomRealtimeCatchup("moderation-failed", { force: true, snapshot: false });
     return options.includeError
       ? { ok: false, status: 0, error: "Room moderation failed." }
       : null;
@@ -33963,7 +33583,6 @@ async function muteRoomPlayer(owner, participantId = "") {
     renderRoomPlayers();
     return;
   }
-  addSystemChat(`${player.label} was ${nextMuted ? "muted" : "unmuted"} by the host.`);
   renderRoomPlayers();
 }
 
@@ -33990,7 +33609,6 @@ async function kickRoomPlayer(owner, participantId = "", reason = "kicked by the
     renderRoomPlayers();
     return;
   }
-  addSystemChat(`${player.label} was kicked from the room. They can rejoin later.`);
   renderScore();
   renderSubmissionStatus();
 }
@@ -34018,7 +33636,6 @@ async function banRoomPlayer(owner, reason = "banned by the host", participantId
     renderRoomPlayers();
     return;
   }
-  addSystemChat(`${player.label} was kicked and cannot rejoin room ${state.roomSettings.code} (${reason}).`);
   renderScore();
   renderSubmissionStatus();
 }
@@ -34475,13 +34092,13 @@ function startNextRoundCountdown() {
     if (state.nextRoundCountdown <= 0) {
       stopNextRoundCountdown();
       if (canAdvanceVerdict()) {
-        void advanceAfterVerdict();
+        void advanceAfterVerdict({ autoAdvance: true });
       }
     }
   }, 1000);
 }
 
-async function advanceAfterVerdict() {
+async function advanceAfterVerdict(options = {}) {
   if (!canAdvanceVerdict()) {
     updateNextRoundButtonLabel();
     return;
@@ -34495,7 +34112,9 @@ async function advanceAfterVerdict() {
 
   const nextRound = state.round + 1;
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
-    const advance = await publishRoomRoundAdvancing(nextRound);
+    const advance = await publishRoomRoundAdvancing(nextRound, {
+      autoAdvance: Boolean(options.autoAdvance)
+    });
     if (!advance) {
       addSystemChat("Could not sync the next round yet. Try again in a moment.", { private: true });
       updateNextRoundButtonLabel();
@@ -34804,7 +34423,6 @@ function submitRoomAnswer(rawInput, options = {}) {
   } else {
     clearRoomSubmissionResolve();
   }
-  void waitForRoomSubmissionsThenPlay(lockedInput);
 }
 
 function submitBotModeAnswer(rawInput, options = {}) {
@@ -36973,7 +36591,7 @@ function endMatch(wasExited = false, options = {}) {
     const keepRoomSyncAfterEnd = () => {
       if (state.matchEnded && state.roomSettings.code && state.roomSettings.code !== "CAI-0000") {
         startRoomRealtime(state.roomSettings.code);
-        startRoomDirectoryPolling();
+        startRoomPresenceMaintenance();
       }
     };
     if (roomEndPublish && typeof roomEndPublish.finally === "function") {
@@ -37334,7 +36952,7 @@ function returnToRoomLobbyAfterMatch(options = {}) {
   renderRoomLobby();
   setRoomInviteUrlPath(state.roomSettings.code);
   startRoomRealtime(state.roomSettings.code);
-  startRoomDirectoryPolling();
+  startRoomPresenceMaintenance();
   setHidden(elements.roomLobbyScreen, false);
 }
 
