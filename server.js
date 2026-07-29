@@ -2204,6 +2204,7 @@ function hasRoomHostAuth(req, room, body = {}) {
     return true;
   }
   const hostParticipantId = body.hostParticipantId
+    || body.actorParticipantId
     || body.participantId
     || body.participant?.id
     || body.host?.id

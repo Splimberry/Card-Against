@@ -29342,15 +29342,20 @@ async function startGame(mode) {
       syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
     }
   }
-  resetMatch(mode);
-  const syncedRoomGame = mode === "room" && !isCurrentHost()
+  const syncedRoomGameBeforeReset = mode === "room"
     ? state.roomGame || state.joiningRoom?.game || null
     : null;
+  resetMatch(mode);
+  const syncedRoomGame = syncedRoomGameBeforeReset && syncedRoomGameBeforeReset.status !== "ended"
+    ? syncedRoomGameBeforeReset
+    : null;
   if (syncedRoomGame && Number(syncedRoomGame.round) > 0) {
+    state.roomGame = syncedRoomGame;
     state.round = clampNumber(syncedRoomGame.round, 1, Math.max(state.maxRounds, Number(syncedRoomGame.round) || 1), 1);
     if (syncedRoomGame.matchId) {
       setCurrentRoomMatchId(syncedRoomGame.matchId);
     }
+    applyRoomGamePowerState(syncedRoomGame);
   }
   const matchToken = state.matchWorkToken;
   setHidden(elements.modeScreen, true);
@@ -31519,6 +31524,9 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     round: Number(round) || state.round,
     totalRounds: state.maxRounds
   });
+  const powerState = options.powerState && typeof options.powerState === "object"
+    ? options.powerState
+    : getRoomPowerStatePayload();
   return roomSync.sendCommand(commandType, {
     clientEventId,
     hostParticipantId: state.clientId,
@@ -31534,7 +31542,7 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     enabledThemes: getEnabledTriviaThemes(),
     preferredTheme: "",
     setupSeed: createRoomClientEventId("round-setup-seed", code),
-    powerState: getRoomPowerStatePayload()
+    powerState
   }, {
     roomCode: code,
     participantId: state.clientId,
@@ -33197,8 +33205,11 @@ async function beginRoomMatch() {
   resetRoomPowerSyncClocks();
   clearRoundSubmissionState();
   applyRandomRoomModifiersForMatch();
+  setPlayersForMode("room");
+  setupPowerHands();
+  const initialPowerState = getRoomPowerStatePayload();
   addSystemChat("The host started the match.");
-  const startResult = await publishRoomRoundAdvancing(1);
+  const startResult = await publishRoomRoundAdvancing(1, { powerState: initialPowerState });
   if (!startResult?.ok) {
     state.currentRoomStatus = "lobby";
     state.roomMatchStartGuardUntil = 0;

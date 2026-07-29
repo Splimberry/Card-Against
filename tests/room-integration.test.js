@@ -2979,6 +2979,83 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_grading"), true);
 }
 
+async function testHostSubmittedBotAnswerCanStartGrading() {
+  const code = makeCode(8174);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "submitted",
+        answer: "Host answer",
+        submittedRound: 1,
+        submissionMatchId: matchId,
+        remainingTime: 12
+      },
+      {
+        id: "bot-client",
+        name: "Bot",
+        host: false,
+        spectator: false,
+        bot: true,
+        role: "bot",
+        active: true,
+        muted: false,
+        status: "bot"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      answers: {
+        "host-client": {
+          participantId: "host-client",
+          matchId,
+          round: 1,
+          status: "submitted",
+          answer: "Host answer",
+          remainingTime: 12,
+          submittedAt: Date.now() - 1000
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const botAnswer = await request("POST", `/api/rooms/${code}/commands`, {
+    type: "submit_answer",
+    roomCode: code,
+    participantId: "bot-client",
+    clientEventId: `${code}:bot-submit`,
+    payload: {
+      participantId: "bot-client",
+      hostParticipantId: "host-client",
+      matchId,
+      round: 1,
+      answer: "Bot answer",
+      remainingTime: 8,
+      autoSubmitted: true
+    }
+  });
+  assert.equal(botAnswer.response.status, 200, botAnswer.payload.error);
+  assert.equal(botAnswer.payload.events.some((event) => event.type === "answer_submitted" && event.payload.participantId === "bot-client"), true);
+  assert.equal(botAnswer.payload.events.some((event) => event.type === "round_grading"), true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "grading");
+  assert.equal(stored.payload.room.game.answers["bot-client"].answer, "Bot answer");
+}
+
 async function testDisconnectedParticipantStatusDoesNotBlockGrading() {
   const code = makeCode(8165);
   const matchId = `${code}-match`;
@@ -3267,6 +3344,64 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(stored.payload.room.settings.chaos, true);
   assert.equal(stored.payload.room.settings.randomModifiers, false);
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
+}
+
+async function testRoomStartMatchPreservesInitialPowerState() {
+  const code = makeCode(8142);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  }));
+
+  const initialPowerState = {
+    matchId,
+    updatedAt: Date.now(),
+    hands: [
+      { participantId: "host-client", owner: "player", hand: ["shuffle", "shield", "time_bender"], fresh: ["shuffle", "shield", "time_bender"] },
+      { participantId: "guest-client", owner: "opponent", hand: ["xray_hacks", "dead_weight", "bounty"], fresh: ["xray_hacks", "dead_weight", "bounty"] }
+    ],
+    played: [
+      { participantId: "host-client", owner: "player", stacks: [], primaryPowerId: "", meta: null },
+      { participantId: "guest-client", owner: "opponent", stacks: [], primaryPowerId: "", meta: null }
+    ],
+    players: [
+      { participantId: "host-client", owner: "player", score: 0, streak: 0 },
+      { participantId: "guest-client", owner: "opponent", score: 0, streak: 0 }
+    ],
+    effects: {}
+  };
+  const started = await roomRoundAdvancingCommand(code, {
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1,
+    matchSettings: { ...makeRoom(code).settings, rounds: 5 },
+    powerState: initialPowerState
+  });
+  assert.equal(started.response.status, 200, started.payload.error);
+  assert.equal(started.payload.eventType, "round-started");
+  assert.deepEqual(started.payload.game.powerState.hands.find((entry) => entry.participantId === "host-client").hand, ["shuffle", "shield", "time_bender"]);
+  assert.deepEqual(started.payload.game.powerState.hands.find((entry) => entry.participantId === "guest-client").hand, ["xray_hacks", "dead_weight", "bounty"]);
 }
 
 async function testRoomRoundSetupEndpointCreatesSharedSetup() {
@@ -5575,10 +5710,12 @@ async function main() {
   await testRoomAnswerEndpointStoresRoundScopedAnswer();
   await testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState();
   await testRoomAnswerEndpointStartsGradingWhenAllSubmitted();
+  await testHostSubmittedBotAnswerCanStartGrading();
   await testDisconnectedParticipantStatusDoesNotBlockGrading();
   await testSimultaneousRoomSubmissionsStartSingleGradingTransition();
   await testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound();
   await testRoomRoundAdvancingEndpointStampsEvent();
+  await testRoomStartMatchPreservesInitialPowerState();
   await testRoomRoundSetupEndpointCreatesSharedSetup();
   await testRoomRoundSetupRecoversMissingPreparationState();
   await testRoomRoundSetupCannotSkipPreparedRound();
