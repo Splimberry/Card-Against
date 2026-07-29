@@ -3012,6 +3012,7 @@ const state = {
   roomSubmissionResolveId: null,
   roomSubmissionResolveKey: "",
   roomGradingRequestKey: "",
+  roomGradingRequestStartedAt: 0,
   roomRoundResolving: false,
   matchWorkToken: 0,
   roundRequestAbortController: null,
@@ -4544,6 +4545,7 @@ function clearRoundSubmissionState(options = {}) {
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
   state.roomGradingRequestKey = "";
+  state.roomGradingRequestStartedAt = 0;
   state.roomBotAnswerSubmissions = {};
   state.roomBotAnswerWaitKey = "";
   state.roomSubmissions = {};
@@ -5356,12 +5358,35 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
     if (data.room) {
-      applyRoomSnapshot(data.room, { source: "room-round-setup-response" });
+      const game = data.room.game && typeof data.room.game === "object" ? data.room.game : null;
+      const confirmedPayload = confirmRoomHttpEvent(data, {
+        code: state.roomSettings.code,
+        eventType: "round-started",
+        clientEventId,
+        source: "room-round-setup-response"
+      });
+      if (game) {
+        state.roomGame = game;
+        if (game.matchId) {
+          setCurrentRoomMatchId(game.matchId);
+        }
+      }
       if (!data.duplicate) {
-        broadcastRealtimeRoomChange("round-started", data.room, { clientEventId });
+        broadcastRealtimeRoomChange("round-started", data.room.code || state.roomSettings.code, {
+          ...confirmedPayload,
+          status: data.room.status || data.status || "in-progress",
+          matchId: game?.matchId || confirmedPayload.matchId,
+          round: Number(game?.round || confirmedPayload.round) || timingOptions.round,
+          game
+        });
       }
     } else {
-      rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
+      const confirmedPayload = confirmRoomHttpEvent(data, {
+        code: state.roomSettings.code,
+        eventType: "round-started",
+        clientEventId,
+        source: "room-round-setup-response"
+      });
       if (data.game && typeof data.game === "object") {
         state.roomGame = data.game;
         if (data.game.matchId) {
@@ -5369,7 +5394,7 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
         }
       }
       if (!data.duplicate) {
-        broadcastRealtimeRoomChange("round-started", state.roomSettings.code, { ...data, clientEventId });
+        broadcastRealtimeRoomChange("round-started", state.roomSettings.code, confirmedPayload);
       }
     }
 
@@ -10966,18 +10991,20 @@ function publishRoomChat(message = state.roomChat.at(-1), input = elements.chatI
       return null;
     }
     state.roomDirectoryOnline = true;
-    rememberRoomRevisionPayload({ ...data, code: data.code || code });
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "chat-message",
+      clientEventId,
+      source: "chat-response"
+    });
     if (data.message) {
-      applyRealtimeRoomChatMessage(data.message);
       broadcastRealtimeRoomChange("chat-message", state.roomSettings.code, {
-        ...data,
+        ...confirmedPayload,
         clientEventId,
         message: getRoomSyncChatMessage(data.message)
       });
-    } else if (data.room) {
-      applyRoomSnapshot(data.room, { source: "chat-response" });
     }
-    return data.room || null;
+    return data || null;
   }).catch(() => {
     state.roomDirectoryOnline = false;
     removeRoomChatMessage(message);
@@ -11203,8 +11230,13 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
     }
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    const room = state.hostedRooms.find((entry) => entry.code === state.roomSettings.code) || state.joiningRoom || buildRoomDirectoryPayload("in-progress");
-    const appliedRoom = applyRoomPresenceResponse(data, room, {}, "answer-response");
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "answer-submitted",
+      clientEventId,
+      source: "answer-response"
+    });
+    broadcastRealtimeRoomChange("answer-submitted", code, confirmedPayload);
     if (data.grading && typeof data.grading === "object") {
       const gradingPayload = {
         ...data.grading,
@@ -11213,7 +11245,7 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
       applyRealtimeRoomGrading(gradingPayload);
       broadcastRealtimeRoomChange(gradingPayload.eventType || "round-grading", state.roomSettings.code, gradingPayload);
     }
-    return appliedRoom;
+    return data;
   }).catch(() => {
     state.roomDirectoryOnline = false;
     return null;
@@ -12328,15 +12360,17 @@ function publishRoomRoundResult(roundResult, options = {}) {
     }
     const data = await response.json().catch(() => ({}));
     state.roomDirectoryOnline = true;
-    rememberRoomRevisionPayload({ ...data, code: data.code || code });
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "round-result",
+      clientEventId,
+      source: "round-result-response"
+    });
     if (data.roundResult) {
-      applyRealtimeRoomRoundResult({
-        ...data,
-        code,
-        clientEventId,
+      broadcastRealtimeRoomChange("round-result", code, {
+        ...confirmedPayload,
         roundResult: data.roundResult
       });
-      broadcastRealtimeRoomChange("round-result", code, { ...data, clientEventId });
     }
     return data;
   }).catch(() => {
@@ -12472,8 +12506,13 @@ function publishRoomPowerState(payload = {}) {
       return null;
     }
     const data = await response.json();
-    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
-    if (state.roomGame) {
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "power-state",
+      clientEventId,
+      source: "power-state-response"
+    });
+    if (payload.optimisticRealtime === false && state.roomGame) {
       const responsePowerState = data.powerState && typeof data.powerState === "object"
         ? data.powerState
         : {
@@ -12486,10 +12525,10 @@ function publishRoomPowerState(payload = {}) {
             effects: data.effects || null
           };
       state.roomGame.powerState = mergeLocalRoomPowerState(state.roomGame.powerState, responsePowerState);
+      applyRoomTimerStatePayload(data);
     }
-    applyRoomTimerStatePayload(data);
     broadcastRealtimeRoomChange("power-state", code, {
-      ...data,
+      ...confirmedPayload,
       clientEventId,
       matchId: data.matchId || syncedPayload.matchId
     });
@@ -12897,6 +12936,9 @@ function maybeResolveRoomSubmissions() {
   if (isRoomSubmissionResolveStale()) {
     state.roomRoundResolving = false;
   }
+  if (isCurrentHost() && !state.joiningRoom) {
+    maybeSubmitRoomBotsAfterRealPlayers();
+  }
   const pendingSubmitters = getPendingSubmitters();
   if (pendingSubmitters.length > 0 || state.roomSubmissionResolveId) {
     return;
@@ -13223,18 +13265,34 @@ function requestRoomGradingCatchup(reason = "grading-wait") {
   void requestRoomRealtimeCatchup(reason, { force: true, snapshot: false });
 }
 
+function shouldRetryRoomGradingRequest(requestKey = "") {
+  if (!state.roomGradingRequestKey) {
+    return true;
+  }
+  if (state.roomGradingRequestKey !== requestKey) {
+    return true;
+  }
+  if (isRoomGradingPhaseStarted()) {
+    return false;
+  }
+  const startedAt = Number(state.roomGradingRequestStartedAt) || 0;
+  return !startedAt || Date.now() - startedAt > 1200;
+}
+
 function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
     return false;
   }
+  maybeSubmitRoomBotsAfterRealPlayers();
   if (getPendingSubmitters().length > 0) {
     return false;
   }
   const requestKey = `${getCurrentRoomRoundSyncKey()}|all-submitted`;
-  if (state.roomGradingRequestKey === requestKey) {
+  if (!shouldRetryRoomGradingRequest(requestKey)) {
     return true;
   }
   state.roomGradingRequestKey = requestKey;
+  state.roomGradingRequestStartedAt = Date.now();
   void publishRoomRoundSkip({
     reason: "all-submitted",
     force: false,
@@ -13246,6 +13304,7 @@ function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
     window.setTimeout(() => {
       if (state.roomGradingRequestKey === requestKey && !isRoomGradingPhaseStarted()) {
         state.roomGradingRequestKey = "";
+        state.roomGradingRequestStartedAt = 0;
       }
     }, 1000);
     requestRoomGradingCatchup(`${reason}-grading-lock`);
@@ -13489,6 +13548,7 @@ function applyRealtimeRoomGrading(payload = {}) {
   }
 
   state.roomGradingRequestKey = "";
+  state.roomGradingRequestStartedAt = 0;
   const submissions = Array.isArray(payload.submissions) ? payload.submissions : [];
   submissions.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId) || String(entry?.owner || "");
@@ -13587,7 +13647,14 @@ function publishRoomRoundSkip(payload = {}) {
       game: optimisticGame,
       updatedAt
     };
-    applyRealtimeRoomGrading(optimisticPayload);
+    const appliedOptimistic = applyRealtimeRoomGrading(optimisticPayload);
+    if (!appliedOptimistic) {
+      recordRoomDiagnosticEvent("not-applied", optimisticPayload, {
+        source: "client",
+        eventType: "round-grading",
+        reason: "Local grading event could not be applied before server confirmation."
+      });
+    }
     broadcastRealtimeRoomChange("round-grading", code, optimisticPayload);
   }
   return fetchWithTimeout(`/api/rooms/${encodeURIComponent(code)}/grading`, {
@@ -13596,15 +13663,34 @@ function publishRoomRoundSkip(payload = {}) {
     body: JSON.stringify(body)
   }, roomPresenceFetchTimeoutMs).then(async (response) => {
     if (!response.ok) {
+      state.roomGradingRequestKey = "";
+      state.roomGradingRequestStartedAt = 0;
       requestRoomRealtimeCatchup("grading-rejected", { force: true, snapshot: false });
       return null;
     }
     const data = await response.json();
-    rememberRoomRevisionPayload({ ...data, code: data.code || code });
-    applyRealtimeRoomGrading(data);
-    broadcastRealtimeRoomChange(data.eventType || "round-grading", code, { ...data, clientEventId });
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "round-grading",
+      clientEventId,
+      source: "grading-response"
+    });
+    if (payload.optimisticRealtime === false || !isRoomGradingPhaseStarted()) {
+      applyRealtimeRoomGrading({
+        ...confirmedPayload,
+        clientEventId
+      });
+    }
+    broadcastRealtimeRoomChange(confirmedPayload.eventType || "round-grading", code, {
+      ...confirmedPayload,
+      clientEventId
+    });
     return data;
-  }).catch(() => null);
+  }).catch(() => {
+    state.roomGradingRequestKey = "";
+    state.roomGradingRequestStartedAt = 0;
+    return null;
+  });
 }
 
 function skipRoomRoundToGrading() {
@@ -14888,6 +14974,23 @@ function markRoomClientEventConfirmed(payload = {}, details = {}) {
     reason: "Server confirmed an optimistic room event."
   });
   return true;
+}
+
+function confirmRoomHttpEvent(data = {}, fallback = {}) {
+  const payload = normalizeRoomEventPayload({
+    ...(data && typeof data === "object" ? data : {}),
+    eventType: data?.eventType || fallback.eventType || "",
+    code: data?.code || data?.room?.code || fallback.code || state.roomSettings.code,
+    clientEventId: data?.clientEventId || fallback.clientEventId || "",
+    revision: Number(data?.revision || data?.room?.revision || 0) || 0,
+    updatedAt: Number(data?.updatedAt || data?.room?.updatedAt || Date.now()) || Date.now()
+  });
+  rememberRoomRevisionPayload(payload);
+  markRoomClientEventConfirmed(payload, { source: fallback.source || "http-response" });
+  if (fallback.includeRoom !== true) {
+    delete payload.room;
+  }
+  return payload;
 }
 
 function getPendingRoomClientEventsForSnapshot(room = {}) {
@@ -29654,10 +29757,14 @@ function leavePublishedRoom(options = {}) {
     if (result?.closed) {
       broadcastRealtimeRoomChange("room-closed", code, { reason: result.reason || reason });
     } else if (result?.room) {
-      broadcastRealtimeRoomChange("participant-left", result.room, {
+      const leftParticipant = result.participant || leaveDetails.participant;
+      broadcastRealtimeRoomChange("participant-left", result.room.code || code, {
         ...leaveDetails,
+        revision: result.revision || result.room.revision || 0,
+        updatedAt: result.updatedAt || result.room.updatedAt || Date.now(),
         participantName: result.participant?.name || leaveDetails.participantName,
-        participant: result.participant || leaveDetails.participant
+        participant: leftParticipant,
+        participantId: result.participantId || leftParticipant?.id || leaveDetails.participantId
       });
     }
     return result;
@@ -29770,6 +29877,8 @@ function clearLocalRoomState(options = {}) {
   state.roomSubmissions = {};
   state.roomBotAnswerSubmissions = {};
   state.roomBotAnswerWaitKey = "";
+  state.roomGradingRequestKey = "";
+  state.roomGradingRequestStartedAt = 0;
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
@@ -30381,11 +30490,18 @@ async function publishRoomSettings(status = state.currentRoomStatus) {
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
-    rememberRoomRevisionPayload({ ...data, code });
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "room-settings",
+      clientEventId,
+      source: "settings-response"
+    });
     const latestSeq = getRoomSettingsEditSeq(code);
     if (state.roomSettings.code === code && latestSeq === publishSeq) {
-      applyRealtimeRoomSettings({ ...data, code, localSettingsEcho: true, settingsEditSeq: publishSeq });
-      broadcastRealtimeRoomChange("room-settings", code, { ...data, clientEventId, settingsEditSeq: publishSeq });
+      broadcastRealtimeRoomChange("room-settings", code, {
+        ...confirmedPayload,
+        settingsEditSeq: publishSeq
+      });
     }
     return data;
   } catch {
@@ -30572,14 +30688,26 @@ function applyRoomPresenceResponse(data = {}, fallbackRoom = {}, options = {}, s
   const eventType = normalizeRoomEventType(data.eventType || "participant-updated");
   const responseRoom = data.room && typeof data.room === "object" ? data.room : null;
   if (responseRoom) {
-    applyRoomSnapshot(responseRoom, { source });
+    const shouldApplyResponseSnapshot = options.includeRoomSnapshot === true
+      || options.allowSnapshotApply === true
+      || !isActiveGameplaySnapshotGuarded(responseRoom);
+    if (shouldApplyResponseSnapshot) {
+      applyRoomSnapshot(responseRoom, { source });
+    } else {
+      recordRoomDiagnosticEvent("snapshot-blocked", responseRoom, {
+        source,
+        eventType: "room-snapshot",
+        reason: "Presence response snapshot ignored during active gameplay; compact realtime participant event is the live path."
+      });
+    }
     if (!options.skipRealtimeBroadcast) {
       const fallbackParticipantId = String(data.participantId || state.clientId || "").slice(0, 80);
       const fallbackParticipant = Array.isArray(responseRoom.participants)
         ? responseRoom.participants.find((entry) => entry.id === fallbackParticipantId)
         : null;
-      broadcastRealtimeRoomChange(eventType || "participant-updated", responseRoom, {
+      broadcastRealtimeRoomChange(eventType || "participant-updated", data.code || responseRoom.code || fallbackRoom.code || state.roomSettings.code, {
         ...data,
+        room: undefined,
         eventType: eventType || data.eventType || "participant-updated",
         code: data.code || responseRoom.code || fallbackRoom.code || state.roomSettings.code,
         status: data.status || responseRoom.status || fallbackRoom.status || "",
@@ -30708,6 +30836,15 @@ async function publishRoomParticipantDelta(participant, options = {}) {
   const clientEventId = String(options.clientEventId || createRoomClientEventId(options.optimisticEventType || "participant-joined", code)).slice(0, 160);
   try {
     if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+      if (options.applyOptimisticLocal !== false && normalizeRoomEventType(options.optimisticEventType || "participant-joined") === "participant-joined") {
+        applyRoomParticipantDelta(participant, {
+          code,
+          clientEventId,
+          status: state.currentRoomStatus || "",
+          optimistic: true,
+          updatedAt: Date.now()
+        });
+      }
       broadcastRealtimeRoomChange(options.optimisticEventType || "participant-joined", code, {
         clientEventId,
         status: state.currentRoomStatus || "",
@@ -30733,6 +30870,17 @@ async function publishRoomParticipantDelta(participant, options = {}) {
     if (!response.ok) {
       state.roomDirectoryOnline = false;
       if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+        if (options.applyOptimisticLocal !== false && normalizeRoomEventType(options.optimisticEventType || "participant-joined") === "participant-joined") {
+          applyRealtimeParticipantLeft({
+            code,
+            participantId: participant.id,
+            participantName: participant.name || "A player",
+            participant,
+            reason: "presence-rejected",
+            optimisticRollback: true,
+            updatedAt: Date.now()
+          });
+        }
         broadcastRealtimeRoomChange("participant-left", code, {
           participantId: participant.id,
           participantName: participant.name || "A player",
@@ -30754,6 +30902,17 @@ async function publishRoomParticipantDelta(participant, options = {}) {
   } catch {
     state.roomDirectoryOnline = false;
     if (options.optimisticRealtime && !options.skipRealtimeBroadcast) {
+      if (options.applyOptimisticLocal !== false && normalizeRoomEventType(options.optimisticEventType || "participant-joined") === "participant-joined") {
+        applyRealtimeParticipantLeft({
+          code,
+          participantId: participant.id,
+          participantName: participant.name || "A player",
+          participant,
+          reason: "presence-failed",
+          optimisticRollback: true,
+          updatedAt: Date.now()
+        });
+      }
       broadcastRealtimeRoomChange("participant-left", code, {
         participantId: participant.id,
         participantName: participant.name || "A player",
@@ -31252,9 +31411,31 @@ function publishRoomRoundSetup(setup) {
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
-    if (data.room) {
-      applyRoomSnapshot(data.room, { source: "round-started-response" });
-      broadcastRealtimeRoomChange("round-started", data.room, { clientEventId });
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "round-started",
+      clientEventId,
+      source: "round-started-response"
+    });
+    const serverGame = data.game && typeof data.game === "object"
+      ? data.game
+      : data.room?.game && typeof data.room.game === "object"
+        ? data.room.game
+        : null;
+    if (serverGame) {
+      state.roomGame = serverGame;
+      if (serverGame.matchId) {
+        setCurrentRoomMatchId(serverGame.matchId);
+      }
+    }
+    if (!data.duplicate) {
+      broadcastRealtimeRoomChange("round-started", code, {
+        ...confirmedPayload,
+        status: data.status || data.room?.status || "in-progress",
+        matchId: serverGame?.matchId || confirmedPayload.matchId || matchId,
+        round: Number(serverGame?.round || confirmedPayload.round) || state.round,
+        game: serverGame || state.roomGame
+      });
     }
   }).catch(() => {
     state.roomDirectoryOnline = false;
@@ -31505,21 +31686,19 @@ function publishRoomGameEnded() {
     }
     const data = await response.json();
     state.roomDirectoryOnline = true;
-    if (data.room) {
-      applyRoomSnapshot(data.room, {
-        source: "game-ended-response",
-        syncActive: false
-      });
-      broadcastRealtimeRoomChange("game-ended", data.room.code || state.roomSettings.code, {
-        clientEventId,
-        status: "complete",
-        matchId: game.matchId,
-        revision: data.room.revision || 0,
-        updatedAt: data.room.updatedAt || game.updatedAt,
-        game: data.room.game || game
-      });
-    }
-    return data.room || null;
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "game-ended",
+      clientEventId,
+      source: "game-ended-response"
+    });
+    broadcastRealtimeRoomChange("game-ended", code, {
+      ...confirmedPayload,
+      status: "complete",
+      matchId: game.matchId,
+      game: data.game || data.room?.game || game
+    });
+    return data || null;
   }).catch(() => {
     state.roomDirectoryOnline = false;
     return null;
@@ -31585,17 +31764,28 @@ function publishRoomReturnToLobby() {
     const data = await response.json().catch(() => ({}));
     const room = data.room && typeof data.room === "object" ? data.room : null;
     state.roomDirectoryOnline = true;
-    rememberRoomRevisionPayload({ ...data, code });
-    const applied = room
-      ? applyRoomSnapshot(room, { source: "return-lobby-response" })
-      : false;
-    if (room) {
-      broadcastRealtimeRoomChange("room-updated", room, {
-        clientEventId,
-        forceRoomChannel: true
-      });
-    }
-    return { room, applied };
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "room-updated",
+      clientEventId,
+      source: "return-lobby-response",
+      includeRoom: true
+    });
+    const confirmedRoom = room
+      ? {
+        ...optimisticRoom,
+        revision: Number(room.revision) || Number(optimisticRoom.revision) || 0,
+        updatedAt: Number(room.updatedAt) || updatedAt
+      }
+      : optimisticRoom;
+    broadcastRealtimeRoomChange("room-updated", confirmedRoom, {
+      ...confirmedPayload,
+      clientEventId,
+      status: "lobby",
+      game: null,
+      forceRoomChannel: true
+    });
+    return { room: confirmedRoom, applied: true };
   }).catch(() => {
     state.roomDirectoryOnline = false;
     return null;
@@ -31618,12 +31808,6 @@ function publishRoomHeartbeat(status = "host") {
       return null;
     }
     const data = await response.json();
-    if (data.room) {
-      applyRoomSnapshot(data.room, {
-        source: "heartbeat-response",
-        skipHeartbeat: true
-      });
-    }
     return data.room || null;
   }).catch(() => null);
 }
@@ -33719,14 +33903,25 @@ function publishRoomModeration(action, participantId, options = {}) {
       broadcastRealtimeRoomChange("room-closed", state.roomSettings.code, { reason: data.reason || action });
       return { ...data, ok: true };
     }
-    rememberRoomRevisionPayload({ ...data, code: data.code || code });
-    if (data.room) {
-      applyRoomSnapshot(data.room, { source: "moderation-response" });
-      broadcastRealtimeRoomChange("participant-moderated", data.room, { ...data, clientEventId });
-    } else {
-      applyRoomModerationDelta({ ...data, code, silent: true });
-      broadcastRealtimeRoomChange("participant-moderated", code, { ...data, clientEventId });
-    }
+    const confirmedPayload = confirmRoomHttpEvent(data, {
+      code,
+      eventType: "participant-moderated",
+      clientEventId,
+      source: "moderation-response"
+    });
+    const moderatedPayload = {
+      ...confirmedPayload,
+      code,
+      clientEventId,
+      action: data.action || normalizedAction,
+      participantId: data.participantId || participantId,
+      participant: data.participant || optimisticParticipant || undefined,
+      muted: Object.hasOwn(data, "muted") ? Boolean(data.muted) : muted,
+      banned: Array.isArray(data.banned) ? data.banned : confirmedPayload.banned,
+      silent: true
+    };
+    applyRoomModerationDelta(moderatedPayload);
+    broadcastRealtimeRoomChange("participant-moderated", code, moderatedPayload);
     return { ...data, ok: true };
   }).catch(() => {
     requestRoomRealtimeCatchup("moderation-failed", { force: true, snapshot: false });
