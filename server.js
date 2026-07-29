@@ -3097,6 +3097,27 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
 
   const now = Date.now();
   const timerState = createRoomTimerState(room, matchSettings, now);
+  room.participants = room.participants.map((participant) => {
+    if (!isGameplayParticipant(participant)) {
+      return participant;
+    }
+    const role = normalizeParticipantRole(participant);
+    return {
+      ...participant,
+      status: "playing",
+      answer: "",
+      answerDraft: "",
+      currentAnswer: "",
+      submittedRound: 0,
+      submissionMatchId: "",
+      remainingTime: 0,
+      submittedAt: 0,
+      role,
+      host: role === "host",
+      bot: role === "bot",
+      spectator: false
+    };
+  });
   room.status = "in-progress";
   room.game = normalizeRoomGame({
     ...(currentMatchId === matchId ? currentGame : {}),
@@ -4839,7 +4860,10 @@ function normalizeParticipantRole(participant = {}) {
 }
 
 function isGameplayParticipant(participant = {}) {
-  return participant?.active !== false && normalizeParticipantRole(participant) !== "spectator";
+  const status = String(participant?.status || "").trim().toLowerCase();
+  return participant?.active !== false
+    && normalizeParticipantRole(participant) !== "spectator"
+    && !["banned", "kicked", "left", "disconnected", "host-disconnected", "spectator-disconnected"].includes(status);
 }
 
 function isSpectatorParticipant(participant = {}) {

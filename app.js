@@ -5056,6 +5056,14 @@ function createRoomMatchId(code = state.roomSettings.code) {
   return `${normalizedCode}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function createRoomBotParticipantId(code = state.roomSettings.code) {
+  const roomCode = String(code || state.roomSettings.code || "room").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  const randomPart = window.crypto?.randomUUID
+    ? window.crypto.randomUUID().replace(/-/g, "").slice(0, 12)
+    : `${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+  return `bot-${roomCode}-${randomPart}`.slice(0, 80);
+}
+
 function getRoomMatchIdFromPayload(payload = {}) {
   return String(
     payload.matchId
@@ -9661,7 +9669,10 @@ function isRoomParticipantSpectator(participant = {}) {
 }
 
 function isRoomGameplayParticipant(participant = {}) {
-  return isRoomParticipantActive(participant) && !isRoomParticipantSpectator(participant);
+  const status = String(participant?.status || "").trim().toLowerCase();
+  return isRoomParticipantActive(participant)
+    && !isRoomParticipantSpectator(participant)
+    && !["banned", "kicked", "left", "disconnected", "host-disconnected", "spectator-disconnected"].includes(status);
 }
 
 function getRoomOwnerForParticipant(participant, fallbackIndex = 0) {
@@ -32918,16 +32929,26 @@ async function addBotToRoom() {
     await loadRandomUsernames();
   }
   const botName = getRandomRoomBotName();
+  const botId = createRoomBotParticipantId(state.roomSettings.code);
   const clientEventId = createRoomSyncCommandId("add-bot", state.roomSettings.code);
-  rememberPendingRoomBotAdd({ id: clientEventId, name: botName });
+  rememberPendingRoomBotAdd({ id: botId, name: botName });
   renderRoomLobby();
   const data = await roomSync.sendCommand("add_bot", {
+    botId,
     name: botName,
+    participant: {
+      id: botId,
+      name: botName,
+      role: "bot",
+      bot: true,
+      active: true,
+      status: "bot"
+    },
     hostParticipantId: state.clientId
   }, {
     clientEventId
   });
-  clearPendingRoomBotAdd(clientEventId);
+  clearPendingRoomBotAdd(botId);
   if (!data?.ok) {
     addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
     renderRoomLobby();
@@ -32983,8 +33004,10 @@ function renderRoomLobby() {
 
 function openRoomLobby() {
   state.mode = "room";
+  if (!state.roomParticipants.length) {
+    state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
+  }
   setPlayersForMode("room");
-  state.roomParticipants = normalizeRoomParticipantsList(getRoomParticipantsFromPlayers("lobby"));
   setRoomInviteUrlPath(state.roomSettings.code);
   renderRoomLobby();
   startRoomPresenceMaintenance();
