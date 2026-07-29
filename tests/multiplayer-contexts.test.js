@@ -469,11 +469,11 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
       autoAdvance: true,
       enabledThemes: ["Science"]
     }
-  }, "round_advancing");
+  }, "round_started");
   assert.equal(advancing.response.status, 200, advancing.payload.error);
-  assert.equal(advancing.payload.eventType, "round-advancing");
-  assert.equal(advancing.payload.game.status, "starting");
-  assert.equal(advancing.payload.game.setup, null);
+  assert.equal(advancing.payload.eventType, "round-started");
+  assert.equal(advancing.payload.game.status, "playing");
+  assert.ok(advancing.payload.game.setup.blackCard);
 
   const playerSetupAttempt = await roomCommand(player, code, "prepare_round", {
     matchId,
@@ -500,7 +500,6 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
     setupSeed: `${code}-round-1`
   }, "round_started");
   assert.equal(started.response.status, 200, started.payload.error);
-  assert.equal(started.payload.eventType, "round-started");
   assert.equal(started.payload.game.status, "playing");
   assert.ok(started.payload.game.setup.blackCard);
   assert.equal(started.payload.game.participantTimers["host-client"].status, "running");
@@ -570,18 +569,18 @@ async function testRoundLifecycleSyncsAcrossBrowserContexts() {
       autoAdvance: true,
       enabledThemes: ["Science"]
     }
-  }, "round_advancing");
+  }, "round_started");
   assert.equal(nextRound.response.status, 200, nextRound.payload.error);
-  assert.equal(nextRound.payload.eventType, "round-advancing");
-  assert.equal(nextRound.payload.game.status, "starting");
+  assert.equal(nextRound.payload.eventType, "round-started");
+  assert.equal(nextRound.payload.game.status, "playing");
   assert.equal(nextRound.payload.game.round, 2);
-  assert.equal(nextRound.payload.game.setup, null);
+  assert.ok(nextRound.payload.game.setup.blackCard);
   assert.deepEqual(nextRound.payload.game.answers, {});
   assert.equal(nextRound.payload.game.roundResult, null);
 
   const spectatorNextRoom = await getRoom(spectator, code);
   assert.equal(spectatorNextRoom.game.round, 2);
-  assert.equal(spectatorNextRoom.game.setup, null);
+  assert.equal(spectatorNextRoom.game.setup.id, nextRound.payload.game.setup.id);
   assert.deepEqual(spectatorNextRoom.game.answers, {});
 
   const nextStarted = await roomCommandWithRoom(host, code, "prepare_round", {
@@ -609,6 +608,21 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
   await joinPlayer(player, code);
   await joinSpectator(spectator, code);
 
+  const initialPowerState = {
+    matchId,
+    updatedAt: Date.now(),
+    hands: [
+      { participantId: "host-client", owner: "player", hand: ["shuffle"], fresh: [] },
+      { participantId: "player-client", owner: "opponent", hand: ["xray_hacks"], fresh: [] }
+    ],
+    played: [],
+    players: [
+      { participantId: "host-client", owner: "player", score: 0, streak: 0 },
+      { participantId: "player-client", owner: "opponent", score: 0, streak: 0 }
+    ],
+    effects: { maps: {}, arrays: {}, values: {} }
+  };
+
   const advancing = await roomCommandWithRoom(host, code, "start_next_round", {
     hostParticipantId: "host-client",
     matchId,
@@ -619,8 +633,9 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
       maxPlayers: 5,
       autoAdvance: true,
       enabledThemes: ["Science"]
-    }
-  }, "round_advancing");
+    },
+    powerState: initialPowerState
+  }, "round_started");
   assert.equal(advancing.response.status, 200, advancing.payload.error);
 
   const started = await roomCommandWithRoom(host, code, "prepare_round", {
@@ -630,20 +645,7 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
     totalRounds: 5,
     enabledThemes: ["Science"],
     setupSeed: `${code}-power-round-1`,
-    powerState: {
-      matchId,
-      updatedAt: Date.now(),
-      hands: [
-        { participantId: "host-client", owner: "player", hand: ["shuffle"], fresh: [] },
-        { participantId: "player-client", owner: "opponent", hand: ["xray_hacks"], fresh: [] }
-      ],
-      played: [],
-      players: [
-        { participantId: "host-client", owner: "player", score: 0, streak: 0 },
-        { participantId: "player-client", owner: "opponent", score: 0, streak: 0 }
-      ],
-      effects: { maps: {}, arrays: {}, values: {} }
-    }
+    powerState: initialPowerState
   }, "round_started");
   assert.equal(started.response.status, 200, started.payload.error);
 
@@ -739,18 +741,19 @@ async function testPowerStateRematchAndLobbySyncAcrossBrowserContexts() {
       autoAdvance: true,
       enabledThemes: ["Science"]
     }
-  }, "round_advancing");
+  }, "round_started");
   assert.equal(rematch.response.status, 200, rematch.payload.error);
+  assert.equal(rematch.payload.eventType, "round-started");
   assert.equal(rematch.payload.game.matchId, rematchId);
   assert.equal(rematch.payload.game.round, 1);
-  assert.equal(rematch.payload.game.status, "starting");
-  assert.equal(rematch.payload.game.setup, null);
+  assert.equal(rematch.payload.game.status, "playing");
+  assert.ok(rematch.payload.game.setup.blackCard);
   assert.deepEqual(rematch.payload.game.answers, {});
   assert.equal(rematch.payload.game.roundResult, null);
 
   const playerRematchRoom = await getRoom(player, code);
   assert.equal(playerRematchRoom.game.matchId, rematchId);
-  assert.equal(playerRematchRoom.game.setup, null);
+  assert.equal(playerRematchRoom.game.setup.id, rematch.payload.game.setup.id);
   assert.deepEqual(playerRematchRoom.game.answers, {});
   assert.equal(playerRematchRoom.game.roundResult, null);
 }

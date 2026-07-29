@@ -3244,14 +3244,15 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
     }
   });
   assert.equal(response.status, 200, payload.error);
-  assert.equal(payload.eventType, "round-advancing");
+  assert.equal(payload.eventType, "round-started");
   assert.equal(payload.matchId, matchId);
   assert.equal(payload.round, 1);
-  assert.equal(payload.game.status, "starting");
-  assert.equal(payload.game.setup, null);
+  assert.equal(payload.game.status, "playing");
+  assert.ok(payload.game.setup);
   assert.ok(payload.game.setupStartedAt > 0);
-  assert.equal(payload.matchSettings.chaos, true);
-  assert.equal(payload.matchSettings.autoAdvance, false);
+  assert.ok(payload.game.roundStartedAt > 0);
+  assert.equal(payload.game.matchSettings.chaos, true);
+  assert.equal(payload.game.matchSettings.autoAdvance, false);
   assert.ok(payload.revision >= 2);
 
   const stored = await getRoom(code);
@@ -3259,8 +3260,10 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(stored.payload.room.status, "in-progress");
   assert.equal(stored.payload.room.game.matchId, matchId);
   assert.equal(stored.payload.room.game.round, 1);
-  assert.equal(stored.payload.room.game.status, "starting");
+  assert.equal(stored.payload.room.game.status, "playing");
+  assert.ok(stored.payload.room.game.setup);
   assert.ok(stored.payload.room.game.setupStartedAt > 0);
+  assert.ok(stored.payload.room.game.roundStartedAt > 0);
   assert.equal(stored.payload.room.settings.chaos, true);
   assert.equal(stored.payload.room.settings.randomModifiers, false);
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
@@ -3608,8 +3611,8 @@ async function testRematchRoundSetupCanStartAfterCompleteMatch() {
   assert.equal(started.payload.room.status, "in-progress");
   assert.equal(started.payload.room.game.matchId, `${code}-new-match`);
   assert.equal(started.payload.room.game.round, 1);
-  assert.equal(started.payload.room.game.status, "starting");
-  assert.equal(started.payload.room.game.setup, null);
+  assert.equal(started.payload.room.game.status, "playing");
+  assert.ok(started.payload.room.game.setup.blackCard);
 
   const prepared = await roomRoundSetupCommand(code, {
     hostParticipantId: "host-client",

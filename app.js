@@ -14543,6 +14543,28 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
   ].includes(String(eventType || ""));
 }
 
+function shouldBroadcastServerEventToLobby(event = {}) {
+  const eventType = normalizeRoomEventType(event.type || event.eventType || event.payload?.eventType || "");
+  return [
+    "round-advancing",
+    "round-started",
+    "round-grading",
+    "round-result",
+    "round-skipped",
+    "game-ended",
+    "host-transferred",
+    "participant-joined",
+    "participant-updated",
+    "participant-left",
+    "participant-disconnected",
+    "participant-reconnected",
+    "participant-moderated",
+    "room-settings",
+    "room-closed",
+    "room-deleted"
+  ].includes(eventType);
+}
+
 function sendRealtimeRoomPayload(channel, payload, options = {}) {
   if (!channel) {
     return false;
@@ -16906,17 +16928,30 @@ function getRoomSyncCommandEventsForBroadcast(events = [], clientEventId = "") {
 
 function broadcastRoomSyncServerEvent(event = {}, code = state.roomSettings.code) {
   const roomCode = String(event.roomCode || event.payload?.roomCode || event.payload?.code || code || "").trim().toUpperCase();
-  if (!roomCode || roomCode === "CAI-0000" || !state.supabaseClient || state.realtimeRoomCode !== roomCode) {
+  if (!roomCode || roomCode === "CAI-0000" || !state.supabaseClient) {
     return false;
   }
   const payload = {
     ...event,
     sourceId: state.realtimeSourceId
   };
-  return sendRealtimeRoomPayload(state.realtimeRoomChannel, payload, {
-    source: "room-sync-command",
-    code: roomCode
-  });
+  const sentRoom = state.realtimeRoomCode === roomCode
+    ? sendRealtimeRoomPayload(state.realtimeRoomChannel, payload, {
+      source: "room-sync-command",
+      code: roomCode,
+      queueOnFailure: isCriticalRoomRealtimeEvent(normalizeRoomEventType(event.type || event.payload?.eventType || ""))
+    })
+    : false;
+  const sentLobby = shouldBroadcastServerEventToLobby(event)
+    ? sendRealtimeRoomPayload(state.realtimeLobbyChannel, payload, {
+      source: "room-sync-command-lobby",
+      code: roomCode
+    })
+    : false;
+  if (!sentRoom && isCriticalRoomRealtimeEvent(normalizeRoomEventType(event.type || event.payload?.eventType || ""))) {
+    queueCriticalRoomRealtimePayload(payload, roomCode);
+  }
+  return Boolean(sentRoom || sentLobby);
 }
 
 function createRoomSyncCommandId(type = "command", code = state.roomSettings.code) {
@@ -29337,7 +29372,10 @@ async function startGame(mode) {
     let firstSetup = null;
     let setupAlreadyPublished = false;
     if (mode === "room" && isCurrentHost() && !state.joiningRoom) {
-      firstSetup = await requestAuthoritativeRoomRoundSetup(firstRoundSetupOptions);
+      firstSetup = getSyncedRoomSetupForRound(state.round);
+      if (!firstSetup) {
+        firstSetup = await requestAuthoritativeRoomRoundSetup(firstRoundSetupOptions);
+      }
       setupAlreadyPublished = true;
     } else if (mode === "room" && !isCurrentHost()) {
       syncedSetup = getSyncedRoomSetupForRound(state.round);
@@ -31476,6 +31514,10 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
   const clientEventId = createRoomSyncCommandId(commandType, code);
   const matchId = setCurrentRoomMatchId(getCurrentRoomMatchId() || createRoomMatchId());
   const matchSettings = getRoomMatchSettingsPayload(state.roomSettings);
+  const setupOptions = getRoundSetupTimingOptions({
+    round: Number(round) || state.round,
+    totalRounds: state.maxRounds
+  });
   return roomSync.sendCommand(commandType, {
     clientEventId,
     hostParticipantId: state.clientId,
@@ -31485,7 +31527,13 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     reason: options.autoAdvance ? "auto-advance" : "",
     nextRoundAt: options.autoAdvance ? Math.max(0, Number(getRoomRoundResultForCurrentRound()?.nextRoundAt) || 0) : 0,
     matchId,
-    matchSettings
+    matchSettings,
+    totalRounds: setupOptions.totalRounds,
+    recentBlackCards: state.recentBlackCards,
+    enabledThemes: getEnabledTriviaThemes(),
+    preferredTheme: "",
+    setupSeed: createRoomClientEventId("round-setup-seed", code),
+    powerState: getRoomPowerStatePayload()
   }, {
     roomCode: code,
     participantId: state.clientId,
@@ -31498,9 +31546,16 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     }
     state.roomDirectoryOnline = true;
     const events = Array.isArray(data.events) ? data.events : [];
-    const roundEvent = [...events].reverse().find((event) => normalizeRoomEventType(event.type || event.payload?.eventType || "") === "round-advancing");
+    const roundEvent = [...events].reverse().find((event) => {
+      const eventType = normalizeRoomEventType(event.type || event.payload?.eventType || "");
+      return eventType === "round-started" || eventType === "round-advancing";
+    });
     const payload = roundEvent?.payload && typeof roundEvent.payload === "object" ? roundEvent.payload : {};
-    const serverGame = payload.game && typeof payload.game === "object" ? payload.game : null;
+    const serverGame = data.game && typeof data.game === "object"
+      ? data.game
+      : payload.game && typeof payload.game === "object"
+        ? payload.game
+        : null;
     if (serverGame && canAdoptIncomingRoomGame(serverGame, data.room || state.joiningRoom || { status: "in-progress" }, serverGame.round || round)) {
       state.roomGame = serverGame;
       if (serverGame.matchId) {

@@ -3015,9 +3015,77 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     hostParticipantId: command.participantId,
     clientEventId: command.clientEventId
   });
+
+  const enabledThemes = normalizeEnabledThemes(command.payload.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
+  const preferredTheme = normalizePreferredTheme(command.payload.preferredTheme, enabledThemes);
+  const recentBlackCards = Array.isArray(command.payload.recentBlackCards) ? command.payload.recentBlackCards.map(String).slice(-30) : [];
+  const totalRounds = clampServerNumber(command.payload.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
+  const setupSeed = String(command.payload.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
+  const setup = await getSeedQuestionSetup({
+    recentBlackCards,
+    enabledThemes,
+    preferredTheme,
+    setupSeed,
+    backgroundMode: false,
+    round,
+    totalRounds
+  });
+  if (!setup) {
+    throw new Error("No seed questions are available for the selected themes.");
+  }
+
+  const now = Date.now();
+  const timerState = createRoomTimerState(room, matchSettings, now);
+  room.participants = room.participants.map((participant) => {
+    if (!isGameplayParticipant(participant)) {
+      return participant;
+    }
+    const role = normalizeParticipantRole(participant);
+    return {
+      ...participant,
+      status: "playing",
+      answer: "",
+      answerDraft: "",
+      currentAnswer: "",
+      submittedRound: 0,
+      submissionMatchId: "",
+      remainingTime: 0,
+      submittedAt: 0,
+      role,
+      host: role === "host",
+      bot: role === "bot",
+      spectator: false
+    };
+  });
+  room.game = normalizeRoomGame({
+    ...(room.game || {}),
+    matchId,
+    status: "playing",
+    round,
+    setup,
+    answers: {},
+    matchSettings,
+    roundResult: null,
+    powerState: command.payload.powerState || room.game?.powerState || null,
+    setupStartedAt: room.game?.setupStartedAt || now,
+    roundStartedAt: now,
+    baseDurationMs: timerState.baseDurationMs,
+    participantTimers: timerState.participantTimers,
+    gradingForceAt: timerState.gradingForceAt,
+    updatedAt: now
+  });
+  stampRoomEvent(room, "round_started", {
+    clientEventId: command.clientEventId,
+    round,
+    matchId,
+    game: room.game
+  });
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision));
+  sendJson(res, 200, {
+    ...createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+    game: storedRoom.game || room.game
+  });
 }
 
 async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = {}) {
