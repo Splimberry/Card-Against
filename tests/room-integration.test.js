@@ -972,6 +972,70 @@ async function testHostPageExitDeletesRoom() {
   assert.equal(rooms.some((entry) => entry.code === code), false);
 }
 
+async function testManualHostLeaveTransfersOwnershipAndAuthority() {
+  const code = makeCode(8183);
+  await upsertRoom(makeRoom(code));
+
+  const oldest = await roomPresenceCommand(code, {
+    participantId: "oldest-player",
+    compact: true,
+    participant: {
+      id: "oldest-player",
+      profileUserId: "user:oldest-player",
+      name: "Oldest",
+      host: false,
+      spectator: false,
+      bot: false,
+      active: true,
+      muted: false,
+      status: "joined",
+      joinedAt: 2
+    }
+  });
+  assert.equal(oldest.response.status, 200, oldest.payload.error);
+
+  const target = await roomPresenceCommand(code, {
+    participantId: "target-player",
+    compact: true,
+    participant: {
+      id: "target-player",
+      profileUserId: "user:target-player",
+      name: "Target",
+      host: false,
+      spectator: false,
+      bot: false,
+      active: true,
+      muted: false,
+      status: "joined",
+      joinedAt: 3
+    }
+  });
+  assert.equal(target.response.status, 200, target.payload.error);
+
+  const left = await roomLeaveCommand(code, {
+    participantId: "host-client",
+    reason: "manual"
+  });
+  assert.equal(left.response.status, 200, left.payload.error);
+  assert.equal(left.payload.closed, false);
+  assert.equal(left.payload.eventType, "host-transferred");
+  assert.equal(left.payload.newHostId, "oldest-player");
+
+  const muted = await roomModerationCommand(code, {
+    hostParticipantId: "oldest-player",
+    participantId: "target-player",
+    action: "mute"
+  });
+  assert.equal(muted.response.status, 200, muted.payload.error);
+  assert.equal(muted.payload.participant.id, "target-player");
+  assert.equal(muted.payload.participant.muted, true);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.host.id, "oldest-player");
+  assert.equal(stored.payload.room.participants.find((participant) => participant.id === "host-client").active, false);
+}
+
 async function testHostReconnectTimeoutPromotesOldestPlayer() {
   const code = makeCode(8184);
   const expiredAt = Date.now() - 61_000;
@@ -5433,6 +5497,7 @@ async function main() {
   await testSecurityHeadersAreApplied();
   await testAdminLoginRateLimit();
   await testHostPageExitDeletesRoom();
+  await testManualHostLeaveTransfersOwnershipAndAuthority();
   await testHostReconnectTimeoutPromotesOldestPlayer();
   await testCreatingSecondRoomTransfersOlderRoomHost();
   await testAnswerSurvivesReconnectCommand();

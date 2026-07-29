@@ -9675,6 +9675,14 @@ function isRoomGameplayParticipant(participant = {}) {
     && !["banned", "kicked", "left", "disconnected", "host-disconnected", "spectator-disconnected"].includes(status);
 }
 
+function isRoomParticipantJoining(participant = {}) {
+  return String(participant?.status || participant?.connectionStatus || "").trim().toLowerCase() === "joining";
+}
+
+function isConfirmedRoomGameplayParticipant(participant = {}) {
+  return isRoomGameplayParticipant(participant) && !isRoomParticipantJoining(participant);
+}
+
 function getRoomOwnerForParticipant(participant, fallbackIndex = 0) {
   if (participant?.id === state.clientId && !state.isSpectator) {
     return state.joiningRoom ? "opponent" : "player";
@@ -9857,7 +9865,17 @@ function isRoomLobbyActive() {
 }
 
 function isCurrentHost() {
-  return !isRoomMode() || (state.currentOwner === "player" && !state.joiningRoom);
+  if (!isRoomMode()) {
+    return true;
+  }
+  return Boolean(
+    state.roomParticipants.some((participant) => (
+      participant.id === state.clientId
+      && isRoomParticipantHost(participant)
+      && isRoomParticipantActive(participant)
+    ))
+    || (state.currentOwner === "player" && !state.joiningRoom)
+  );
 }
 
 function getExpectedRoomCurrentOwner() {
@@ -10388,9 +10406,9 @@ function getActiveMatchModifierNames() {
 
 function getActiveRoomPlayerCount(players = state.players) {
   if ((isRoomMode() || state.currentRoomStatus === "lobby") && state.roomParticipants.length) {
-    return state.roomParticipants.filter(isRoomGameplayParticipant).length;
+    return state.roomParticipants.filter(isConfirmedRoomGameplayParticipant).length;
   }
-  return players.filter(isRoomGameplayParticipant).length;
+  return players.filter(isConfirmedRoomGameplayParticipant).length;
 }
 
 function getActiveRoomSpectatorCount() {
@@ -15722,7 +15740,15 @@ function applyRoomEventPayload(payload = {}, source = {}) {
       scheduleRealtimeJoinRefresh();
     }
   }
-  if (code === state.roomSettings.code && hasActiveRoomContext()) {
+  if (
+    code === state.roomSettings.code
+    && (
+      hasActiveRoomContext()
+      || state.realtimeRoomCode === code
+      || state.joiningRoom?.code === code
+      || state.hostedRooms.some((entry) => entry.code === code)
+    )
+  ) {
     let appliedDelta = false;
     if (
       normalizedPayload.room
@@ -16267,7 +16293,15 @@ function applyRealtimeHostTransferred(payload = {}) {
     applied = true;
   }
 
-  if (code === state.roomSettings.code && hasActiveRoomContext()) {
+  if (
+    code === state.roomSettings.code
+    && (
+      hasActiveRoomContext()
+      || state.realtimeRoomCode === code
+      || state.joiningRoom?.code === code
+      || state.hostedRooms.some((entry) => entry.code === code)
+    )
+  ) {
     if (!room && newHostId) {
       state.roomParticipants = normalizeRoomParticipantsList([
         ...state.roomParticipants.map((participant) => ({
@@ -16282,6 +16316,7 @@ function applyRealtimeHostTransferred(payload = {}) {
       setPlayersForMode("room");
     }
     if (newHostId === state.clientId) {
+      state.mode = "room";
       state.joiningRoom = null;
       state.isSpectator = false;
       state.currentOwner = "player";
@@ -18027,7 +18062,7 @@ function getActiveOwners() {
   if (isRoomMode()) {
     const playersByParticipant = new Map();
     state.players
-      .filter(isRoomGameplayParticipant)
+      .filter(isConfirmedRoomGameplayParticipant)
       .forEach((player) => {
         const key = String(player.participantId || player.owner || "");
         if (!key) {
@@ -30723,6 +30758,29 @@ async function updateRoomPresence(room, options = {}) {
     }
     const commandType = options.commandType
       || (options.active === false ? "disconnect_participant" : options.rejoin ? "rejoin_room" : "join_room");
+    const optimisticEventType = normalizeRoomEventType(options.optimisticEventType || (commandType === "join_room" ? "participant-joined" : "participant-updated"));
+    const shouldBroadcastOptimisticPresence = Boolean(
+      options.optimisticRealtime
+      && commandType === "join_room"
+      && participant.active !== false
+      && !state.isSpectator
+      && !Object.hasOwn(options, "roomPassword")
+      && !room.settings?.private
+    );
+    if (shouldBroadcastOptimisticPresence) {
+      broadcastRealtimeRoomChange(optimisticEventType, room.code, {
+        optimistic: true,
+        status: room.status || state.currentRoomStatus || "lobby",
+        revision: getKnownRoomRevision(room.code),
+        updatedAt: Date.now(),
+        participantId: participant.id,
+        participant: {
+          ...participant,
+          status: "joining",
+          answer: ""
+        }
+      });
+    }
     const data = await roomSync.sendCommand(commandType, {
       clientEventId,
       participantId: participant.id,
@@ -30739,6 +30797,23 @@ async function updateRoomPresence(room, options = {}) {
     });
     if (!data?.ok) {
       state.roomDirectoryOnline = false;
+      if (shouldBroadcastOptimisticPresence) {
+        broadcastRealtimeRoomChange("participant-left", room.code, {
+          clientEventId,
+          status: room.status || state.currentRoomStatus || "lobby",
+          revision: getKnownRoomRevision(room.code),
+          updatedAt: Date.now(),
+          participantId: participant.id,
+          participantName: participant.name || "A player",
+          participant: {
+            ...participant,
+            active: false,
+            status: "left",
+            answer: ""
+          },
+          reason: "join-rejected"
+        });
+      }
       if (options.includeError) {
         return {
           ok: false,
@@ -32203,6 +32278,9 @@ function getKickableRoomBotTarget(owner = "", participantId = "") {
   const targetPlayer = player?.bot
     ? player
     : state.players.find((entry) => targetParticipant && entry.participantId === targetParticipant.id) || null;
+  if (isRoomParticipantJoining(targetParticipant) || isRoomParticipantJoining(targetPlayer)) {
+    return null;
+  }
   const isBot = Boolean((targetParticipant && isRoomParticipantBot(targetParticipant)) || targetPlayer?.bot || targetPlayer?.type === "bot");
   const isActive = targetParticipant
     ? isRoomGameplayParticipant(targetParticipant)
@@ -32931,16 +33009,31 @@ async function addBotToRoom() {
   const botName = getRandomRoomBotName();
   const botId = createRoomBotParticipantId(state.roomSettings.code);
   const clientEventId = createRoomSyncCommandId("add-bot", state.roomSettings.code);
+  const optimisticBotParticipant = {
+    id: botId,
+    name: botName,
+    role: "bot",
+    bot: true,
+    active: true,
+    status: "joining"
+  };
   rememberPendingRoomBotAdd({ id: botId, name: botName });
   renderRoomLobby();
+  broadcastRealtimeRoomChange("participant-joined", state.roomSettings.code, {
+    optimistic: true,
+    clientEventId,
+    status: state.currentRoomStatus || "lobby",
+    revision: getKnownRoomRevision(state.roomSettings.code),
+    updatedAt: Date.now(),
+    participantId: botId,
+    participant: optimisticBotParticipant,
+    bot: true
+  });
   const data = await roomSync.sendCommand("add_bot", {
     botId,
     name: botName,
     participant: {
-      id: botId,
-      name: botName,
-      role: "bot",
-      bot: true,
+      ...optimisticBotParticipant,
       active: true,
       status: "bot"
     },
@@ -32950,6 +33043,20 @@ async function addBotToRoom() {
   });
   clearPendingRoomBotAdd(botId);
   if (!data?.ok) {
+    broadcastRealtimeRoomChange("participant-left", state.roomSettings.code, {
+      clientEventId,
+      status: state.currentRoomStatus || "lobby",
+      revision: getKnownRoomRevision(state.roomSettings.code),
+      updatedAt: Date.now(),
+      participantId: botId,
+      participantName: botName,
+      participant: {
+        ...optimisticBotParticipant,
+        active: false,
+        status: "left"
+      },
+      reason: "bot-add-rejected"
+    });
     addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
     renderRoomLobby();
     return;
@@ -33080,7 +33187,7 @@ async function leaveCurrentRoom() {
     ? leavePublishedRoom({ reason: "manual" })
     : Promise.resolve(null);
   if (isLeavingRoom) {
-    leavePromise.catch(() => null);
+    await leavePromise.catch(() => null);
   }
   clearLocalRoomState({ clearHostedSession: true });
   clearRoomInviteUrlPath();
@@ -33270,6 +33377,9 @@ function createRoomModerationControls(owner, context = "list", sourcePlayer = nu
   const player = sourcePlayer || getRoomPlayerForModeration(owner);
   const controls = document.createElement("div");
   controls.className = context === "chat" ? "chat-options" : "room-player-controls";
+  if (player && isRoomParticipantJoining(player)) {
+    return controls;
+  }
   const pendingAction = getPendingRoomModerationAction(player?.participantId || "");
   if (player && player.active !== false && (player.bot || player.type === "bot") && canKickRoomBot(player.owner, player.participantId)) {
     const kickPending = Boolean(pendingAction);
