@@ -1583,8 +1583,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   display: grid;
   align-content: start;
   align-self: stretch;
-  grid-template-columns: repeat(auto-fit, minmax(min(6.2rem, 100%), 7.2rem));
-  grid-auto-rows: minmax(7.4rem, auto);
+  grid-template-columns: repeat(auto-fit, minmax(min(8.2rem, 100%), 9.4rem));
+  grid-auto-rows: minmax(7.65rem, auto);
   justify-content: center;
   justify-items: stretch;
   overflow-x: hidden;
@@ -1614,7 +1614,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .room-preview > .room-player-list .room-player-card {
   align-self: start;
   flex: initial;
-  min-height: 7.4rem;
+  min-height: 7.65rem;
   height: auto;
   width: 100%;
   overflow: visible;
@@ -1642,7 +1642,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   justify-items: center;
   align-content: start;
   gap: 0.28rem;
-  padding: 0.52rem 0.42rem;
+  padding: 0.56rem 0.5rem;
   text-align: center;
 }
 
@@ -1717,6 +1717,12 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   border-radius: 8px;
   color: var(--muted);
   font-weight: 850;
+}
+
+.room-preview > .room-player-list .room-waiting-copy {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  text-align: center;
 }
 
 .room-player-avatar {
