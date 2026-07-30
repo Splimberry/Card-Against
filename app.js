@@ -11531,7 +11531,8 @@ function normalizeRoomRoundResultSummaryPayload(summary = null, cards = []) {
 }
 
 function normalizeRoomRoundResultPayload(payload = {}) {
-  const source = payload.roundResult && typeof payload.roundResult === "object" ? payload.roundResult : payload;
+  const payloadSource = payload && typeof payload === "object" ? payload : {};
+  const source = payloadSource.roundResult && typeof payloadSource.roundResult === "object" ? payloadSource.roundResult : payloadSource;
   if (!source || typeof source !== "object") {
     return null;
   }
@@ -11555,8 +11556,8 @@ function normalizeRoomRoundResultPayload(payload = {}) {
     ? clampNumber(source.revealAnswerIndex, 0, Math.max(cards.length - 1, 0), winnerIndex)
     : getBestAnswerIndexForReveal(cards, correctIndexes, winnerIndex);
   return {
-    matchId: String(source.matchId || payload.matchId || payload.game?.matchId || "").trim(),
-    round: Number(source.round || payload.round || state.round) || state.round,
+    matchId: String(source.matchId || payloadSource.matchId || payloadSource.game?.matchId || "").trim(),
+    round: Number(source.round || payloadSource.round || state.round) || state.round,
     questionId: String(source.questionId || state.questionId || "").trim(),
     cards,
     winner: { index: winnerIndex },
@@ -14344,7 +14345,13 @@ function scheduleInitialSupabaseAuth() {
 }
 
 function startSupabaseRealtime() {
-  if (!state.supabaseClient || state.realtimeLobbyChannel) {
+  if (!state.supabaseClient) {
+    return;
+  }
+  if (state.realtimeLobbyChannel) {
+    if (hasActiveRoomContext()) {
+      startRoomRealtime(state.roomSettings.code);
+    }
     return;
   }
   const channel = state.supabaseClient.channel("trivia-against-ai:rooms", {
@@ -14360,6 +14367,7 @@ function startSupabaseRealtime() {
         void refreshHostedRoomsAndRender({ force: true });
       }
       if (hasActiveRoomContext()) {
+        startRoomRealtime(state.roomSettings.code);
         startRoomPresenceMaintenance();
       }
       syncUserQuestionSubmissionPolling();
@@ -17060,7 +17068,7 @@ const roomSync = {
     }
     const participantId = String(options.participantId || payload.participantId || state.clientId || "").slice(0, 80);
     const clientEventId = String(options.clientEventId || payload.clientEventId || createRoomSyncCommandId(commandType, roomCode)).slice(0, 160);
-    const expectedRevision = Number(options.expectedRevision ?? getKnownRoomRevision(roomCode) ?? state.roomEventRevision) || 0;
+    const expectedRevision = Number(options.expectedRevision ?? payload.expectedRevision ?? 0) || 0;
     const commandPayload = {
       ...(payload && typeof payload === "object" ? payload : {}),
       roomCode,
@@ -17122,11 +17130,28 @@ const roomSync = {
       }
       const events = Array.isArray(data.events) ? data.events : [];
       events.forEach((event) => {
-        roomSync.applyEvent(event, { source: "command-response" });
+        try {
+          roomSync.applyEvent(event, { source: "command-response" });
+        } catch (error) {
+          recordRoomDiagnosticEvent("event-apply-error", event.payload || event, {
+            source: "command-response",
+            eventType: normalizeRoomEventType(event.type || event.payload?.eventType || ""),
+            reason: error?.message || "Command response event handler failed."
+          });
+          console.warn("Room command response event failed:", error);
+        }
       });
       if (options.broadcast !== false) {
         getRoomSyncCommandEventsForBroadcast(events, clientEventId).forEach((event) => {
-          broadcastRoomSyncServerEvent(event, roomCode);
+          try {
+            broadcastRoomSyncServerEvent(event, roomCode);
+          } catch (error) {
+            recordRoomDiagnosticEvent("send-failed", event.payload || event, {
+              source: "command-response",
+              eventType: normalizeRoomEventType(event.type || event.payload?.eventType || ""),
+              reason: error?.message || "Command response broadcast failed."
+            });
+          }
         });
       }
       rememberRoomRevisionPayload({
@@ -31084,7 +31109,10 @@ function applyRoomParticipantDelta(participant, payload = {}) {
   }
   rememberRoomRevisionPayload({ ...payload, code });
   if (state.currentRoomStatus === "draft" && !state.joiningRoom && isCurrentHost()) {
-    scheduleRoomSettingsPublish("draft", 120);
+    const eventType = normalizeRoomEventType(payload.eventType || payload.type || "");
+    if (!["participant-joined", "participant-updated", "participant-reconnected"].includes(eventType)) {
+      scheduleRoomSettingsPublish("draft", 120);
+    }
   }
   return true;
 }
