@@ -4226,6 +4226,69 @@ async function testStaleRoomPowerStateCannotOverwriteCurrentRound() {
   assert.deepEqual(hand.hand, ["shuffle"]);
 }
 
+async function testFutureRoomPowerStateCannotOverwriteCurrentRound() {
+  const code = makeCode(8136);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId,
+        updatedAt: 2000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["shuffle"], fresh: ["shuffle"] }
+        ],
+        played: [
+          {
+            participantId: "host-client",
+            owner: "player",
+            updatedAt: 2000,
+            stacks: [{ powerId: "shuffle", revealId: "round-1-shuffle", meta: {} }],
+            primaryPowerId: "shuffle",
+            meta: {}
+          }
+        ],
+        players: [],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const futureReset = await roomPowerStateCommand(code, {
+    matchId,
+    round: 2,
+    powerId: "round-reset",
+    played: [
+      { participantId: "host-client", owner: "player", updatedAt: 3000, stacks: [], primaryPowerId: "", meta: null }
+    ]
+  });
+  assert.equal(futureReset.response.status, 409);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  const played = stored.payload.room.game.powerState.played.find((entry) => entry.participantId === "host-client");
+  assert.equal(stored.payload.room.game.round, 1);
+  assert.equal(played.primaryPowerId, "shuffle");
+  assert.deepEqual(played.stacks.map((entry) => entry.powerId), ["shuffle"]);
+}
+
 async function testRoomPowerStateDeltaPreservesStoredFullState() {
   const code = makeCode(8115);
   await upsertRoom(makeRoom(code, {
@@ -4482,7 +4545,7 @@ async function testRoomPowerStateCanClearPlayedHistory() {
   }));
 
   const { response, payload } = await roomPowerStateCommand(code, {
-    round: 2,
+    round: 1,
     powerId: "round-reset",
     played: [
       { participantId: "host-client", owner: "player", stacks: [], primaryPowerId: "", meta: null },
@@ -6074,6 +6137,7 @@ async function main() {
   await testStaleRoomRoundResultCannotOverwriteCurrentRound();
   await testStaleRoomRoundSkipCannotOverwriteCurrentRound();
   await testStaleRoomPowerStateCannotOverwriteCurrentRound();
+  await testFutureRoomPowerStateCannotOverwriteCurrentRound();
   await testRoomPowerStateDeltaPreservesStoredFullState();
   await testRoomPowerStateIgnoresStaleHandEntries();
   await testStaleRoomPowerStateCannotOverwriteRematchHands();

@@ -2956,7 +2956,6 @@ const state = {
   roomPowerPlayedUpdatedAt: {},
   roomPowerPlayerRevision: {},
   roomPowerPlayerUpdatedAt: {},
-  roomPlayedResetSyncedRound: null,
   roomDiagnostics: {
     timeline: [],
     nextId: 0,
@@ -4572,7 +4571,6 @@ function clearRoomMatchScopedStateForLobby(options = {}) {
   setCurrentRoomMatchId("");
   state.roomRoundResult = null;
   state.roomRoundResolving = false;
-  state.roomPlayedResetSyncedRound = null;
   resetRoomPowerSyncClocks();
   clearRoundSubmissionState({ clearParticipants: options.clearParticipants !== false });
   state.round = 1;
@@ -12093,6 +12091,15 @@ function getRoomPowerStatePayload(owners = getActiveOwners()) {
   };
 }
 
+function getRoomRoundStartPowerStatePayload(owners = getActiveOwners()) {
+  const uniqueOwners = [...new Set(owners)].filter((owner) => getPlayer(owner));
+  return {
+    ...getRoomPowerStatePayload(uniqueOwners),
+    updatedAt: Date.now(),
+    played: getRoomPlayedPowerResetEntries(uniqueOwners)
+  };
+}
+
 function publishRoomScoreState(reason = "score") {
   if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator) {
     return Promise.resolve(null);
@@ -12484,36 +12491,6 @@ function publishRoomPowerState(payload = {}) {
     }
     return data;
   }).catch(() => null);
-}
-
-function publishRoomPowerRoundReset(round = state.round) {
-  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator) {
-    return Promise.resolve(null);
-  }
-  const roundNumber = Number(round) || Number(state.round) || 0;
-  if (state.roomPlayedResetSyncedRound === roundNumber) {
-    return Promise.resolve(null);
-  }
-  const played = getRoomPlayedPowerResetEntries();
-  if (!played.length) {
-    return Promise.resolve(null);
-  }
-  state.roomPlayedResetSyncedRound = roundNumber;
-  const updatedAt = Date.now();
-  if (state.roomGame) {
-    state.roomGame.powerState = {
-      ...(state.roomGame.powerState || {}),
-      updatedAt,
-      played
-    };
-  }
-  state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt);
-  return publishRoomPowerState({
-    round: roundNumber,
-    updatedAt,
-    powerId: "round-reset",
-    played
-  });
 }
 
 function applyRoomPowerState(payload = {}) {
@@ -18833,7 +18810,6 @@ function resetPlayedPowersForRound() {
   state.roomBotAnswerSchedule = {};
   state.roomBotAnswerSubmissions = {};
   state.roomBotAnswerWaitKey = "";
-  publishRoomPowerRoundReset(state.round);
 }
 
 function recordPlayedPower(owner, powerId, meta = {}) {
@@ -29388,7 +29364,6 @@ function resetMatch(mode) {
   clearBackgroundSetupPrefetch();
   state.mode = mode;
   resetRoomPowerSyncClocks();
-  state.roomPlayedResetSyncedRound = null;
   state.roomRoundResult = null;
   state.matchModifiers = rollMatchModifiers(mode);
   setPlayersForMode(mode);
@@ -29839,7 +29814,6 @@ function openRoomScreen() {
   state.roomMatchId = "";
   state.roomRoundResult = null;
   resetRoomPowerSyncClocks();
-  state.roomPlayedResetSyncedRound = null;
   state.roomEventRevision = 0;
   clearLocalRoomSubmission();
   state.roomSubmissions = {};
@@ -30144,7 +30118,6 @@ function clearLocalRoomState(options = {}) {
   state.roomMatchId = "";
   state.roomRoundResult = null;
   resetRoomPowerSyncClocks();
-  state.roomPlayedResetSyncedRound = null;
   state.players = [];
   state.roomParticipants = [];
   clearLocalRoomSubmission();
@@ -31739,7 +31712,7 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
   });
   const powerState = options.powerState && typeof options.powerState === "object"
     ? options.powerState
-    : getRoomPowerStatePayload();
+    : getRoomRoundStartPowerStatePayload();
   return roomSync.sendCommand(commandType, {
     clientEventId,
     hostParticipantId: state.clientId,

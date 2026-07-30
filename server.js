@@ -3846,8 +3846,8 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
   }
   const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
   const payloadRound = clampServerNumber(body.round || body.powerState?.round, 0, 100, 0);
-  if (payloadRound && currentRound && payloadRound < currentRound) {
-    sendJson(res, 409, { ok: false, error: "Power state belongs to a previous round." });
+  if (payloadRound && currentRound && payloadRound !== currentRound) {
+    sendJson(res, 409, { ok: false, error: "Power state belongs to a different round." });
     return;
   }
 
