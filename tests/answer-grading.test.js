@@ -93,6 +93,8 @@ assertNoAiReview("", ["Vincent van Gogh"], "blank answer");
 assertNoAiReview("zzzzzz", ["Vincent van Gogh"], "repeated-character gibberish");
 assertNoAiReview("idk", ["Vincent van Gogh"], "filler answer");
 assertNoAiReview("qwrtypsdf", ["Vincent van Gogh"], "vowelless keyboard mash");
+assertNoAiReview("jffnjeksjenfskjeksnf", ["Beethoven"], "long keyboard mash");
+assertNoAiReview("jffnjeksjenfskjeksn f", ["Beethoven"], "split keyboard mash");
 assertNoContextAiReview("cat", ["vicent"], {
   question: "Who drew Sunflowers?",
   theme: "Art"
@@ -101,6 +103,10 @@ assertNoContextAiReview("zzzzzz", ["vicent"], {
   question: "Who drew Sunflowers?",
   theme: "Art"
 }, "context gate still rejects gibberish");
+assertNoContextAiReview("jffnjeksjenfskjeksn f", ["beethoven"], {
+  question: "Which composer wrote Fur Elise?",
+  theme: "Art and Music"
+}, "context gate rejects long keyboard mash");
 
 assertStrictnessCorrect("Jackle", ["Jackal"], "forgiving", true, "forgiving accepts obvious typo");
 assertStrictnessCorrect("Jackle", ["Jackal"], "normal", true, "normal accepts obvious typo");

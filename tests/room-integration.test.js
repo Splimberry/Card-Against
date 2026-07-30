@@ -6176,6 +6176,23 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     assert.deepEqual(gibberish.payload.aiReviewedIndexes, []);
     assert.deepEqual(gibberish.payload.aiSecondOpinionIndexes, []);
 
+    const keyboardMash = await request("POST", "/api/round", {
+      answer: "jffnjeksjenfskjeksn f",
+      blackCard: "Which composer wrote Fur Elise?",
+      triviaTheme: "Art and Music",
+      canonicalAnswer: "Beethoven",
+      acceptedAnswers: ["Beethoven"],
+      botCards: ["cat"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      roundSeed: "ai-second-opinion-keyboard-mash"
+    });
+    assert.equal(keyboardMash.response.status, 200, keyboardMash.payload.error);
+    assert.equal(fetchCalls, 2);
+    assert.deepEqual(keyboardMash.payload.correctIndexes, []);
+    assert.deepEqual(keyboardMash.payload.aiReviewedIndexes, []);
+    assert.deepEqual(keyboardMash.payload.aiSecondOpinionIndexes, []);
+
     const rejected = await request("POST", "/api/round", {
       answer: "Unicorn",
       blackCard: "Which glowing weapon does a Jedi usually use?",

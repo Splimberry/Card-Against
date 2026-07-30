@@ -7713,7 +7713,7 @@ function hasUsefulAnswerSignal(normalizedAnswer) {
     return false;
   }
   const compact = normalizedAnswer.replace(/\s+/g, "");
-  if (compact.length < 3 || /(.)\1{3,}/.test(compact)) {
+  if (compact.length < 3 || /(.)\1{3,}/.test(compact) || isLikelyKeyboardMashAnswer(normalizedAnswer)) {
     return false;
   }
   const fillerAnswers = new Set([
@@ -7740,6 +7740,34 @@ function hasUsefulAnswerSignal(normalizedAnswer) {
     return false;
   }
   return /[a-z0-9]/.test(compact);
+}
+
+function isLikelyKeyboardMashAnswer(normalizedAnswer) {
+  const compact = String(normalizedAnswer || "").replace(/\s+/g, "");
+  const letters = compact.replace(/[^a-z]/g, "");
+  if (letters.length < 8) {
+    return false;
+  }
+  if (/(?:qwerty|asdf|zxcv|hjkl|dfgh|jkl)/.test(letters)) {
+    return true;
+  }
+  const vowels = (letters.match(/[aeiouy]/g) || []).length;
+  const vowelRatio = vowels / Math.max(letters.length, 1);
+  const consonantRuns = letters.split(/[aeiouy]+/).map((chunk) => chunk.length);
+  const longestConsonantRun = Math.max(0, ...consonantRuns);
+  const rareLetters = (letters.match(/[fjkqxz]/g) || []).length;
+  const rareRatio = rareLetters / Math.max(letters.length, 1);
+
+  if (letters.length >= 10 && vowelRatio < 0.18 && longestConsonantRun >= 5) {
+    return true;
+  }
+  if (letters.length >= 12 && rareRatio >= 0.38 && vowelRatio < 0.25) {
+    return true;
+  }
+  if (letters.length >= 14 && longestConsonantRun >= 5 && rareRatio >= 0.3) {
+    return true;
+  }
+  return false;
 }
 
 function scoreAnswerAgainstBank(answer, acceptedAnswers) {
