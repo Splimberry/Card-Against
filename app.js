@@ -17219,7 +17219,7 @@ const roomSync = {
         };
       }
       const events = Array.isArray(data.events) ? data.events : [];
-      if (options.broadcast !== false && data.serverBroadcast !== true) {
+      if (options.broadcast !== false) {
         getRoomSyncCommandEventsForBroadcast(events, clientEventId).forEach((event) => {
           try {
             broadcastRoomSyncServerEvent(event, roomCode);
@@ -34786,7 +34786,6 @@ function submitRoomAnswer(rawInput, options = {}) {
   if (!options.timedOut) {
     markAchievementLateSubmission(owner, state.answerRemainingTimes[owner]);
   }
-  stopTimer();
   if (owner === "opponent") {
     state.localAnswers.playerTwo = lockedInput;
     state.localAnswers.playerOne = shouldAutoGenerateRoomAnswer("player")
@@ -34815,6 +34814,7 @@ function submitRoomAnswer(rawInput, options = {}) {
   playSound("lock");
   if (getPendingSubmitters().length === 0) {
     clearRoomAutoResolve();
+    scheduleRoomSubmissionResolveCheck("local-submit-complete", { source: "local-submit" });
   } else {
     clearRoomSubmissionResolve();
   }
