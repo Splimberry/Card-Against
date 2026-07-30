@@ -5050,6 +5050,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   --power-card-rest-filter: brightness(1);
   --power-card-refill-mid-filter: brightness(1.08);
   --power-card-refresh-mid-filter: saturate(1.08) brightness(1.1);
+  --power-rarity-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  --power-rarity-inset-shadow: inset 0 0 0 rgba(0, 0, 0, 0);
   min-height: clamp(4.25rem, 10vh, 5.4rem);
   padding: 0.62rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -5062,6 +5064,15 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   text-align: left;
   position: relative;
   overflow: visible;
+  isolation: isolate;
+  box-shadow:
+    var(--power-rarity-shadow),
+    var(--power-rarity-inset-shadow);
+}
+
+.power-card > * {
+  position: relative;
+  z-index: 2;
 }
 
 .power-card span {
@@ -5092,6 +5103,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .power-card[data-rarity="blue"] {
+  --power-rarity-shadow:
+    0 0 0.72rem rgba(34, 211, 238, 0.18),
+    0 0.42rem 1.15rem rgba(34, 211, 238, 0.12);
+  --power-rarity-inset-shadow: inset 0 0 0.95rem rgba(34, 211, 238, 0.08);
   border-color: rgba(34, 211, 238, 0.5);
   background: rgba(34, 211, 238, 0.08);
 }
@@ -5101,6 +5116,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .power-card[data-rarity="purple"] {
+  --power-rarity-shadow:
+    0 0 0.95rem rgba(168, 85, 247, 0.3),
+    0 0 1.85rem rgba(168, 85, 247, 0.18);
+  --power-rarity-inset-shadow: inset 0 0 1.05rem rgba(168, 85, 247, 0.1);
   border-color: rgba(168, 85, 247, 0.58);
   background: rgba(168, 85, 247, 0.1);
 }
@@ -5110,12 +5129,32 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .power-card[data-rarity="gold"] {
+  --power-rarity-shadow:
+    0 0 0.95rem rgba(251, 191, 36, 0.3),
+    0 0 1.85rem rgba(251, 191, 36, 0.18);
+  --power-rarity-inset-shadow: inset 0 0 1.05rem rgba(251, 191, 36, 0.1);
   border-color: rgba(251, 191, 36, 0.72);
   background: rgba(251, 191, 36, 0.12);
 }
 
 .power-card[data-rarity="gold"] strong {
   color: #facc15;
+}
+
+.power-card[data-rarity="gold"]:not(.chaos-infused)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(112deg, transparent 0 31%, rgba(255, 255, 255, 0.08) 39%, rgba(255, 248, 210, 0.56) 48%, rgba(255, 255, 255, 0.14) 57%, transparent 68%);
+  background-size: 235% 100%;
+  background-position: 135% 0;
+  mix-blend-mode: screen;
+  opacity: 0.68;
+  animation: powerGoldSheen 3400ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
 .power-card.selected {
@@ -5126,7 +5165,9 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   box-shadow:
     0 0 0 0.2rem rgba(64, 222, 164, 0.34),
     0 0 1.6rem rgba(64, 222, 164, 0.34),
-    inset 0 0 1.1rem rgba(255, 255, 255, 0.09);
+    var(--power-rarity-shadow),
+    inset 0 0 1.1rem rgba(255, 255, 255, 0.09),
+    var(--power-rarity-inset-shadow);
   transform: translateY(-0.08rem) scale(1.02);
 }
 
@@ -5229,7 +5270,9 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     0 0 1.5rem rgba(64, 222, 164, 0.3),
     -0.22rem 0 1.2rem rgba(255, 77, 125, 0.16),
     0.22rem 0 1.2rem rgba(34, 211, 238, 0.14),
-    inset 0 0 1.1rem rgb(255 255 255 / 0.08);
+    var(--power-rarity-shadow),
+    inset 0 0 1.1rem rgb(255 255 255 / 0.08),
+    var(--power-rarity-inset-shadow);
   animation:
     cardChaosBgDrift 3600ms linear infinite,
     cardChaosGlitch 2300ms steps(2, end) infinite;
@@ -5272,6 +5315,25 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .power-card.chaos-infuse-pending::after {
   content: none;
+}
+
+.power-card.chaos-infused[data-rarity="gold"]::after {
+  background:
+    linear-gradient(112deg, transparent 0 30%, rgba(255, 255, 255, 0.06) 38%, rgba(255, 248, 210, 0.46) 48%, rgba(255, 255, 255, 0.12) 58%, transparent 70%),
+    linear-gradient(180deg, transparent 0 37%, rgba(64, 222, 164, 0.18) 47%, rgba(34, 211, 238, 0.13) 52%, transparent 63%),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 9px);
+  background-size:
+    235% 100%,
+    100% 190%,
+    100% 10px;
+  background-position:
+    135% 0,
+    0 -80%,
+    0 0;
+  opacity: 0.42;
+  animation:
+    powerChaosGoldSheenScan 3200ms ease-in-out infinite,
+    cardChaosLines 1900ms steps(4, end) infinite;
 }
 
 .power-card.chaos-engulfing {
@@ -5320,6 +5382,24 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   filter: none;
   animation:
     powerChaosInfuseScan 800ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    cardChaosLines 1900ms steps(4, end) infinite;
+}
+
+.power-card.chaos-infused[data-rarity="gold"].chaos-infuse-upgrading::after {
+  background:
+    linear-gradient(112deg, transparent 0 30%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 248, 210, 0.5) 48%, rgba(255, 255, 255, 0.13) 58%, transparent 70%),
+    linear-gradient(180deg, transparent 0 37%, rgba(64, 222, 164, 0.18) 47%, rgba(34, 211, 238, 0.13) 52%, transparent 63%),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 9px);
+  background-size:
+    235% 100%,
+    100% 190%,
+    100% 10px;
+  background-position:
+    135% 0,
+    0 -80%,
+    0 0;
+  animation:
+    powerChaosGoldInfuseScan 800ms cubic-bezier(0.16, 1, 0.3, 1) both,
     cardChaosLines 1900ms steps(4, end) infinite;
 }
 
@@ -5500,6 +5580,69 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   100% {
     opacity: 0.34;
     background-position:
+      0 -14%,
+      0 0;
+  }
+}
+
+@keyframes powerGoldSheen {
+  0%,
+  18% {
+    background-position: 135% 0;
+    opacity: 0.38;
+  }
+
+  48% {
+    background-position: 36% 0;
+    opacity: 0.74;
+  }
+
+  100% {
+    background-position: -72% 0;
+    opacity: 0.34;
+  }
+}
+
+@keyframes powerChaosGoldSheenScan {
+  0% {
+    background-position:
+      135% 0,
+      0 -95%,
+      0 0;
+  }
+
+  54% {
+    background-position:
+      28% 0,
+      0 25%,
+      0 4px;
+  }
+
+  100% {
+    background-position:
+      -72% 0,
+      0 95%,
+      0 10px;
+  }
+}
+
+@keyframes powerChaosGoldInfuseScan {
+  0% {
+    opacity: 0;
+    background-position:
+      135% 0,
+      0 -120%,
+      0 0;
+  }
+
+  28% {
+    opacity: 0.88;
+  }
+
+  100% {
+    opacity: 0.42;
+    background-position:
+      22% 0,
       0 -14%,
       0 0;
   }
@@ -12632,6 +12775,7 @@ body[data-performance-mode="balanced"][data-game-active]
 body[data-performance-mode="balanced"][data-game-active]
   :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="burning"][data-card-custom="true"]::before,
 body[data-performance-mode="balanced"][data-game-active] .power-card.chaos-infused:not(.fresh-power):not(.power-selected-pop):not(.power-use-ghost):not(.power-remove-exit-ghost):not(.chaos-engulfing):not(.chaos-infuse-upgrading),
+body[data-performance-mode="balanced"][data-game-active] .power-card[data-rarity="gold"]::after,
 body[data-performance-mode="balanced"][data-game-active] :is(.leaderboard-power-pill, .power-play, .result-power-pill, .effect-badge).chaos-infused,
 body[data-performance-mode="balanced"][data-game-active] .wild-fire-glow-layer,
 body[data-performance-mode="balanced"][data-game-active] .danger-flash,
@@ -12818,7 +12962,8 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.power-use-ghost,
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.power-remove-exit-ghost,
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.chaos-engulfing,
-  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.chaos-infused.chaos-infuse-upgrading {
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card.chaos-infused.chaos-infuse-upgrading,
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .power-card[data-rarity="gold"]::after {
     animation: none;
   }
 
