@@ -13350,15 +13350,52 @@ function applyRealtimeRoomGrading(payload = {}) {
   if (code && code !== state.roomSettings.code) {
     return false;
   }
-  if (!roomPayloadMatchesCurrentMatch(payload)) {
+  const incomingGame = payload.game && typeof payload.game === "object"
+    ? payload.game
+    : payload.room?.game && typeof payload.room.game === "object"
+      ? payload.room.game
+      : null;
+  const round = Number(payload.round || incomingGame?.round) || state.round;
+  const incomingGameMatches = incomingGame
+    ? roomPayloadMatchesCurrentMatch({ ...payload, game: incomingGame })
+    : roomPayloadMatchesCurrentMatch(payload);
+  const canAdoptIncomingGradingGame = Boolean(
+    incomingGame
+    && Number(round || 0) >= Number(state.round || 0)
+    && canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, round)
+  );
+  if (!incomingGameMatches && !canAdoptIncomingGradingGame) {
     return false;
   }
-  const round = Number(payload.round) || state.round;
   if (round !== Number(state.round)) {
-    return false;
+    if (!canAdoptIncomingGradingGame) {
+      return false;
+    }
+    state.currentRoomStatus = "in-progress";
+    state.round = round;
+    if (incomingGame?.matchId) {
+      setCurrentRoomMatchId(incomingGame.matchId);
+    }
+    if (incomingGame?.matchSettings || payload.matchSettings || payload.settings) {
+      applyRoomGameMatchSettings(incomingGame, payload, { render: false, resetTimer: false });
+    }
+    if (incomingGame?.setup) {
+      try {
+        const setup = normalizeSetupPayload(incomingGame.setup);
+        if (!state.questionId || state.questionId !== setup.id) {
+          applyRoundSetup(setup, { skipPublish: true, resumeSyncedRoom: true });
+        } else {
+          syncCurrentRoundSetupMetadata(setup);
+        }
+      } catch {
+        return false;
+      }
+    }
   }
-  const incomingGame = payload.game && typeof payload.game === "object" ? payload.game : null;
   if (incomingGame) {
+    if (incomingGame.matchId) {
+      setCurrentRoomMatchId(incomingGame.matchId);
+    }
     state.roomGame = {
       ...(state.roomGame || {}),
       ...incomingGame,
@@ -14633,6 +14670,9 @@ function sendRealtimeRoomPayload(channel, payload, options = {}) {
           source: options.source || "supabase",
           reason: `Realtime send returned ${status}.`
         });
+        if (options.queueOnFailure && options.code) {
+          queueCriticalRoomRealtimePayload(payload, options.code);
+        }
       }
     }).catch((error) => {
       recordRoomDiagnosticEvent("send-failed", payload, {
@@ -14648,9 +14688,9 @@ function sendRealtimeRoomPayload(channel, payload, options = {}) {
 }
 
 function getCriticalRoomRealtimeQueueKey(payload = {}) {
-  const eventType = String(payload.eventType || "");
-  const code = String(payload.code || "");
-  const clientEventId = String(payload.clientEventId || "").trim();
+  const eventType = normalizeRoomEventType(payload.eventType || payload.type || payload.payload?.eventType || "");
+  const code = String(payload.code || payload.roomCode || payload.payload?.code || payload.payload?.roomCode || "").trim().toUpperCase();
+  const clientEventId = String(payload.clientEventId || payload.payload?.clientEventId || "").trim();
   if (clientEventId) {
     return [eventType, code, clientEventId].join("|");
   }
@@ -14801,7 +14841,8 @@ function getPendingRoomClientEventsForSnapshot(room = {}) {
 }
 
 function queueCriticalRoomRealtimePayload(payload = {}, code = "") {
-  if (!isCriticalRoomRealtimeEvent(payload.eventType) || !code) {
+  const eventType = normalizeRoomEventType(payload.eventType || payload.type || payload.payload?.eventType || "");
+  if (!isCriticalRoomRealtimeEvent(eventType) || !code) {
     return false;
   }
   const queueKey = getCriticalRoomRealtimeQueueKey(payload);
@@ -16982,24 +17023,28 @@ function broadcastRoomSyncServerEvent(event = {}, code = state.roomSettings.code
   if (!roomCode || roomCode === "CAI-0000" || !state.supabaseClient) {
     return false;
   }
+  const eventType = normalizeRoomEventType(event.type || event.payload?.eventType || "");
   const payload = {
     ...event,
     sourceId: state.realtimeSourceId
   };
-  const sentRoom = state.realtimeRoomCode === roomCode
+  if (state.realtimeRoomCode !== roomCode || !state.realtimeRoomChannel) {
+    startRoomRealtime(roomCode);
+  }
+  const sentRoom = state.realtimeRoomCode === roomCode && state.realtimeRoomReady
     ? sendRealtimeRoomPayload(state.realtimeRoomChannel, payload, {
       source: "room-sync-command",
       code: roomCode,
-      queueOnFailure: isCriticalRoomRealtimeEvent(normalizeRoomEventType(event.type || event.payload?.eventType || ""))
+      queueOnFailure: isCriticalRoomRealtimeEvent(eventType)
     })
     : false;
-  const sentLobby = shouldBroadcastServerEventToLobby(event)
+  const sentLobby = shouldBroadcastServerEventToLobby(event) && state.realtimeLobbyReady
     ? sendRealtimeRoomPayload(state.realtimeLobbyChannel, payload, {
       source: "room-sync-command-lobby",
       code: roomCode
     })
     : false;
-  if (!sentRoom && isCriticalRoomRealtimeEvent(normalizeRoomEventType(event.type || event.payload?.eventType || ""))) {
+  if (!sentRoom && isCriticalRoomRealtimeEvent(eventType)) {
     queueCriticalRoomRealtimePayload(payload, roomCode);
   }
   return Boolean(sentRoom || sentLobby);
