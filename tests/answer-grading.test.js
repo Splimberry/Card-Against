@@ -26,6 +26,17 @@ function assertAiReviewCandidate(answer, acceptedAnswers, message) {
   assert.equal(shouldAskAiForSecondOpinion(answer, acceptedAnswers, score), true, `${message} should get AI review`);
 }
 
+function assertContextAiReviewCandidate(answer, acceptedAnswers, context, message) {
+  const score = scoreAnswerAgainstBank(answer, acceptedAnswers);
+  assert.ok(score < 0.82, `${message} should start as a local miss, got score ${score}`);
+  assert.equal(shouldAskAiForSecondOpinion(answer, acceptedAnswers, score, "normal", context), true, `${message} should get context-aware AI review`);
+}
+
+function assertNoContextAiReview(answer, acceptedAnswers, context, message) {
+  const score = scoreAnswerAgainstBank(answer, acceptedAnswers);
+  assert.equal(shouldAskAiForSecondOpinion(answer, acceptedAnswers, score, "normal", context), false, `${message} should not spend context-aware AI review`);
+}
+
 function assertNoAiReview(answer, acceptedAnswers, message) {
   const score = scoreAnswerAgainstBank(answer, acceptedAnswers);
   assert.equal(shouldAskAiForSecondOpinion(answer, acceptedAnswers, score), false, `${message} should not spend AI review`);
@@ -64,6 +75,14 @@ assertAccepted("ig", ["Instagram"], "common Instagram abbreviation");
 assertAccepted("js", ["JavaScript"], "common JavaScript abbreviation");
 assertAccepted("usa", ["United States of America"], "common country abbreviation");
 realNearMissCases.forEach(([answer, acceptedAnswers, label]) => assertAiReviewCandidate(answer, acceptedAnswers, label));
+assertContextAiReviewCandidate("van gogh", ["vicent"], {
+  question: "Who drew Sunflowers?",
+  theme: "Art"
+}, "context should review answer that satisfies the question even when preset is incomplete");
+assertContextAiReviewCandidate("new york", ["usa"], {
+  question: "Which city is known as the Big Apple?",
+  theme: "Geography"
+}, "context should review a meaningful city answer even when preset examples are wrong or incomplete");
 
 assertRejected("cat", ["Jackal"], "unrelated animal");
 assertRejected("yt", ["TikTok"], "wrong platform abbreviation");
@@ -74,6 +93,14 @@ assertNoAiReview("", ["Vincent van Gogh"], "blank answer");
 assertNoAiReview("zzzzzz", ["Vincent van Gogh"], "repeated-character gibberish");
 assertNoAiReview("idk", ["Vincent van Gogh"], "filler answer");
 assertNoAiReview("qwrtypsdf", ["Vincent van Gogh"], "vowelless keyboard mash");
+assertNoContextAiReview("cat", ["vicent"], {
+  question: "Who drew Sunflowers?",
+  theme: "Art"
+}, "short generic answer with no useful signal");
+assertNoContextAiReview("zzzzzz", ["vicent"], {
+  question: "Who drew Sunflowers?",
+  theme: "Art"
+}, "context gate still rejects gibberish");
 
 assertStrictnessCorrect("Jackle", ["Jackal"], "forgiving", true, "forgiving accepts obvious typo");
 assertStrictnessCorrect("Jackle", ["Jackal"], "normal", true, "normal accepts obvious typo");
