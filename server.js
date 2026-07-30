@@ -2845,6 +2845,11 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
     submissionStatus: answerStatus,
     autoSubmitted: answerState.autoSubmitted
   });
+  autoSubmitRoomBotsWhenOnlyBotsPending(room, {
+    matchId: currentMatchId,
+    round: currentRound,
+    clientEventId: command.clientEventId
+  });
   startRoomGradingTransition(room, {
     reason: "all-submitted",
     force: false,
@@ -4674,6 +4679,96 @@ function createRoomAnswerStateFromSubmission(participant = {}, submission = {}, 
     matchId: String(options.matchId || "").slice(0, 80),
     round: clampServerNumber(options.round, 0, 100, 0)
   };
+}
+
+function pickRoomBotAutoAnswer(room = {}, participant = {}, slot = 0) {
+  const game = room.game && typeof room.game === "object" ? room.game : {};
+  const setup = game.setup && typeof game.setup === "object" ? game.setup : {};
+  const seed = `${game.matchId || room.code || "room"}-${game.round || 0}-${participant.id || slot}`;
+  const pool = uniqueAnswers([
+    ...(Array.isArray(setup.botCards) ? setup.botCards : []),
+    ...(Array.isArray(setup.botAnswerPool) ? setup.botAnswerPool : []),
+    ...(Array.isArray(setup.botWrongPool) ? setup.botWrongPool : []),
+    ...(Array.isArray(setup.multipleChoiceOptions) ? setup.multipleChoiceOptions : []),
+    setup.canonicalAnswer,
+    ...(Array.isArray(setup.acceptedAnswers) ? setup.acceptedAnswers : [])
+  ]);
+  return pickFromPool(pool, seed) || "Not sure";
+}
+
+function autoSubmitRoomBotsWhenOnlyBotsPending(room, options = {}) {
+  const game = room.game && typeof room.game === "object" ? room.game : null;
+  if (!game || room.status !== "in-progress" || game.status !== "playing") {
+    return [];
+  }
+  const matchId = String(options.matchId || game.matchId || "").slice(0, 80);
+  const round = clampServerNumber(options.round || game.round, 0, 100, 0);
+  if (!matchId || !round) {
+    return [];
+  }
+  const participants = getRoomGameplayParticipants(room);
+  const answers = normalizeRoomAnswerState(game.answers, matchId, round);
+  const pendingParticipants = participants.filter((participant) => !getParticipantAnswerStateForRound(participant, answers, matchId, round));
+  if (!pendingParticipants.length || pendingParticipants.some((participant) => normalizeParticipantRole(participant) !== "bot")) {
+    return [];
+  }
+  const now = Date.now();
+  let nextGame = game;
+  const submittedBots = [];
+  pendingParticipants.forEach((bot, index) => {
+    const participantId = String(bot.id || "").slice(0, 80);
+    if (!participantId) {
+      return;
+    }
+    const timer = nextGame.participantTimers?.[participantId];
+    const remainingTime = timer && String(timer.status || "").toLowerCase() !== "ended"
+      ? Math.max(0, Math.ceil(((Number(timer.endsAt) || now) - now) / 1000))
+      : 0;
+    const answerState = {
+      participantId,
+      status: "submitted",
+      answer: pickRoomBotAutoAnswer(room, bot, index),
+      submittedAt: now,
+      autoSubmitted: true,
+      remainingTime,
+      matchId,
+      round
+    };
+    answers[participantId] = answerState;
+    applyAnswerStateToParticipant(bot, answerState);
+    nextGame = updateRoomParticipantTimerStatus({
+      ...nextGame,
+      answers: {
+        ...(nextGame.answers || {}),
+        [participantId]: answerState
+      },
+      updatedAt: now
+    }, participantId, { status: "ended", now });
+    stampRoomEvent(room, "answer_submitted", {
+      clientEventId: options.clientEventId,
+      actorId: participantId,
+      participantId,
+      participantName: bot.name || "Bot",
+      role: "bot",
+      host: false,
+      spectator: false,
+      status: bot.status,
+      participant: sanitizeParticipantForClient(bot, { includeSubmittedAnswers: true }),
+      matchId,
+      round,
+      answer: answerState.answer,
+      remainingTime,
+      submissionStatus: "submitted",
+      autoSubmitted: true
+    });
+    submittedBots.push(answerState);
+  });
+  room.game = normalizeRoomGame({
+    ...nextGame,
+    answers,
+    updatedAt: now
+  });
+  return submittedBots;
 }
 
 function applyAnswerStateToParticipant(participant = {}, answerState = {}) {

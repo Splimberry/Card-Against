@@ -3056,6 +3056,68 @@ async function testHostSubmittedBotAnswerCanStartGrading() {
   assert.equal(stored.payload.room.game.answers["bot-client"].answer, "Bot answer");
 }
 
+async function testHostSubmissionAutoSubmitsBotsAndStartsGrading() {
+  const code = makeCode(8175);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "playing"
+      },
+      {
+        id: "bot-client",
+        name: "Bot",
+        host: false,
+        spectator: false,
+        bot: true,
+        role: "bot",
+        active: true,
+        muted: false,
+        status: "bot"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: {
+        ...makeSetup(1),
+        botAnswerPool: ["Bot auto answer", "Wrong"],
+        botWrongPool: ["Wrong"]
+      },
+      answers: {},
+      updatedAt: Date.now()
+    }
+  }));
+
+  const hostAnswer = await roomAnswerCommand(code, {
+    participantId: "host-client",
+    matchId,
+    round: 1,
+    answer: "Host answer",
+    remainingTime: 15
+  });
+  assert.equal(hostAnswer.response.status, 200, hostAnswer.payload.error);
+  assert.equal(hostAnswer.payload.events.some((event) => event.type === "answer_submitted" && event.payload.participantId === "host-client"), true);
+  assert.equal(hostAnswer.payload.events.some((event) => event.type === "answer_submitted" && event.payload.participantId === "bot-client" && event.payload.autoSubmitted === true), true);
+  assert.equal(hostAnswer.payload.grading.eventType, "round-grading");
+  assert.equal(hostAnswer.payload.grading.submissions.length, 2);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "grading");
+  assert.equal(stored.payload.room.game.answers["host-client"].answer, "Host answer");
+  assert.equal(stored.payload.room.game.answers["bot-client"].autoSubmitted, true);
+}
+
 async function testDisconnectedParticipantStatusDoesNotBlockGrading() {
   const code = makeCode(8165);
   const matchId = `${code}-match`;
@@ -5711,6 +5773,7 @@ async function main() {
   await testRoomAnswerEndpointRejectsStaleRoundAndTimedOutState();
   await testRoomAnswerEndpointStartsGradingWhenAllSubmitted();
   await testHostSubmittedBotAnswerCanStartGrading();
+  await testHostSubmissionAutoSubmitsBotsAndStartsGrading();
   await testDisconnectedParticipantStatusDoesNotBlockGrading();
   await testSimultaneousRoomSubmissionsStartSingleGradingTransition();
   await testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound();
