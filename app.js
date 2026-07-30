@@ -3010,6 +3010,8 @@ const state = {
   roomAutoResolveDueAt: 0,
   roomSubmissionResolveId: null,
   roomSubmissionResolveKey: "",
+  roomSubmissionResolveCheckId: null,
+  roomSubmissionResolveCheckKey: "",
   roomGradingRequestKey: "",
   roomGradingRequestStartedAt: 0,
   roomRoundResolving: false,
@@ -11060,6 +11062,11 @@ function clearRoomSubmissionResolve() {
     state.roomSubmissionResolveId = null;
   }
   state.roomSubmissionResolveKey = "";
+  if (state.roomSubmissionResolveCheckId) {
+    clearTimeout(state.roomSubmissionResolveCheckId);
+    state.roomSubmissionResolveCheckId = null;
+  }
+  state.roomSubmissionResolveCheckKey = "";
 }
 
 function getRoomBanList() {
@@ -11336,7 +11343,7 @@ function updateRoomParticipantSubmission(participantId, answer, round, remaining
   participant.remainingTime = Math.max(0, Number(remainingTime) || 0);
 }
 
-function applyRoomAnswerSubmission(payload = {}) {
+function applyRoomAnswerSubmission(payload = {}, source = {}) {
   if (!isRoomMode() || !hasActiveRoomContext()) {
     return false;
   }
@@ -11381,7 +11388,7 @@ function applyRoomAnswerSubmission(payload = {}) {
   setRoomSubmission(owner, true);
   renderSpectatorAnswerCards();
   maybeSubmitRoomBotsAfterRealPlayers();
-  maybeResolveRoomSubmissions();
+  scheduleRoomSubmissionResolveCheck("answer-submitted", source);
   return true;
 }
 
@@ -12825,6 +12832,39 @@ function maybeResolveRoomSubmissions() {
   }, 40);
 }
 
+function scheduleRoomSubmissionResolveCheck(reason = "answer-submitted", source = {}) {
+  if (!isRoomMode() || state.isSpectator) {
+    return false;
+  }
+  const roundSyncKey = getCurrentRoomRoundSyncKey();
+  if (!roundSyncKey) {
+    return false;
+  }
+  if (state.roomSubmissionResolveCheckId) {
+    window.clearTimeout(state.roomSubmissionResolveCheckId);
+  }
+  state.roomSubmissionResolveCheckKey = roundSyncKey;
+  state.roomSubmissionResolveCheckId = window.setTimeout(() => {
+    state.roomSubmissionResolveCheckId = null;
+    state.roomSubmissionResolveCheckKey = "";
+    if (!isCurrentRoomRoundSyncKey(roundSyncKey) || isRoomGradingPhaseStarted()) {
+      return;
+    }
+    recordRoomDiagnosticEvent("resolve-check", {
+      code: state.roomSettings.code,
+      eventType: "answer-submitted",
+      round: state.round,
+      matchId: getCurrentRoomMatchId()
+    }, {
+      source: source?.source || "client",
+      eventType: "answer-submitted",
+      reason: `Coalesced ${reason}; resolving only after matching grading event had a chance to arrive.`
+    });
+    maybeResolveRoomSubmissions();
+  }, 90);
+  return true;
+}
+
 function maybeResolveBotSubmissions() {
   if (state.mode !== "bots" || !state.roomSubmissions.player || state.roomRoundResolving) {
     return;
@@ -13423,6 +13463,11 @@ function applyRealtimeRoomGrading(payload = {}) {
 
   state.roomGradingRequestKey = "";
   state.roomGradingRequestStartedAt = 0;
+  if (state.roomSubmissionResolveCheckId) {
+    window.clearTimeout(state.roomSubmissionResolveCheckId);
+    state.roomSubmissionResolveCheckId = null;
+  }
+  state.roomSubmissionResolveCheckKey = "";
   const submissions = Array.isArray(payload.submissions) ? payload.submissions : [];
   submissions.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId) || String(entry?.owner || "");
@@ -15878,7 +15923,7 @@ function applyRoomEventPayload(payload = {}, source = {}) {
       appliedDelta = applyRealtimeRoomChatMessage(normalizedPayload.message);
     }
     if (normalizedPayload.eventType === "answer-submitted") {
-      appliedDelta = applyRoomAnswerSubmission(normalizedPayload);
+      appliedDelta = applyRoomAnswerSubmission(normalizedPayload, options);
     }
     if (normalizedPayload.eventType === "answer-draft") {
       appliedDelta = applySpectatorAnswerDraft(normalizedPayload);
@@ -17174,7 +17219,7 @@ const roomSync = {
         };
       }
       const events = Array.isArray(data.events) ? data.events : [];
-      if (options.broadcast !== false) {
+      if (options.broadcast !== false && data.serverBroadcast !== true) {
         getRoomSyncCommandEventsForBroadcast(events, clientEventId).forEach((event) => {
           try {
             broadcastRoomSyncServerEvent(event, roomCode);
