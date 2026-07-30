@@ -534,12 +534,16 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .room-player-card.room-player-card-new {
   transform-origin: center top;
-  will-change: opacity, transform;
-  animation: motionPolishRowIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --motion-polish-x: 1.15rem;
+  --motion-polish-y: 0.18rem;
+  --motion-polish-blur: 3px;
+  --motion-polish-scale: 0.985;
+  will-change: opacity, filter, transform;
+  animation: motionPolishRowIn 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .room-player-card.room-player-card-exiting {
-  animation: motionPolishRowOut 280ms cubic-bezier(0.5, 0, 0.75, 0) both;
+  animation: motionPolishRowOut 320ms cubic-bezier(0.5, 0, 0.75, 0) both;
   pointer-events: none;
 }
 
@@ -1579,7 +1583,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   display: grid;
   align-content: start;
   align-self: stretch;
-  grid-auto-rows: max-content;
+  grid-template-columns: repeat(auto-fit, minmax(min(6.2rem, 100%), 7.2rem));
+  grid-auto-rows: minmax(7.4rem, auto);
+  justify-content: center;
+  justify-items: stretch;
   overflow-x: hidden;
   overflow-y: auto;
   height: auto;
@@ -1607,7 +1614,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .room-preview > .room-player-list .room-player-card {
   align-self: start;
   flex: initial;
-  min-height: 5.4rem;
+  min-height: 7.4rem;
   height: auto;
   width: 100%;
   overflow: visible;
@@ -1627,6 +1634,16 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   background: rgba(255, 255, 255, 0.06);
   text-align: left;
   scroll-snap-align: start;
+}
+
+.room-preview > .room-player-list .room-player-card {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto auto;
+  justify-items: center;
+  align-content: start;
+  gap: 0.28rem;
+  padding: 0.52rem 0.42rem;
+  text-align: center;
 }
 
 .room-player-card.waiting-slot {
@@ -1708,6 +1725,12 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   aspect-ratio: 1;
 }
 
+.room-preview > .room-player-list .room-player-avatar {
+  grid-column: 1;
+  grid-row: auto;
+  width: 2.55rem;
+}
+
 .room-player-card strong {
   grid-column: 2;
   width: max-content;
@@ -1717,12 +1740,30 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   white-space: nowrap;
 }
 
+.room-preview > .room-player-list .room-player-card strong {
+  grid-column: 1;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+  overflow: visible;
+  font-size: 0.76rem;
+  line-height: 1.1;
+  text-align: center;
+  white-space: normal;
+}
+
 .room-player-card small {
   grid-column: 2;
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.room-preview > .room-player-list .room-player-card small {
+  grid-column: 1;
+  font-size: 0.55rem;
+  line-height: 1;
 }
 
 .room-player-controls {
@@ -1734,6 +1775,22 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   gap: 0.3rem;
   width: max-content;
   max-width: 11rem;
+}
+
+.room-preview > .room-player-list .room-player-controls {
+  grid-column: 1;
+  grid-row: auto;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  gap: 0.22rem;
+}
+
+.room-preview > .room-player-list .mini-button {
+  min-height: 1.35rem;
+  padding: 0 0.24rem;
+  font-size: 0.52rem;
+  line-height: 1;
 }
 
 .mini-button {
@@ -2308,6 +2365,28 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   max-width: none;
   overflow: visible;
   text-overflow: clip;
+}
+
+.room-preview > .room-player-list .room-player-card .name-with-title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 0.12rem;
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.room-preview > .room-player-list .room-player-card .name-with-title-text {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-preview > .room-player-list .room-player-card .equipped-title-pill {
+  max-width: 100%;
+  font-size: 0.54rem;
 }
 
 .scoreboard .name-with-title-text,
@@ -12721,16 +12800,18 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
 @keyframes motionPolishRowIn {
   0% {
     opacity: 0;
-    transform: translate3d(0.8rem, 0.15rem, 0) scale(0.985);
+    filter: blur(var(--motion-polish-blur, 3px));
+    transform: translate3d(var(--motion-polish-x, 1.1rem), var(--motion-polish-y, 0.18rem), 0) scale(var(--motion-polish-scale, 0.985));
   }
 
-  72% {
+  62% {
     opacity: 1;
-    transform: translate3d(0.04rem, 0, 0) scale(1);
+    filter: blur(0);
   }
 
   100% {
     opacity: 1;
+    filter: blur(0);
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
@@ -12738,12 +12819,14 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
 @keyframes motionPolishRowOut {
   0% {
     opacity: 1;
+    filter: blur(0);
     transform: translate3d(0, 0, 0) scale(1);
   }
 
   100% {
     opacity: 0;
-    transform: translate3d(-0.55rem, -0.06rem, 0) scale(0.985);
+    filter: blur(2px);
+    transform: translate3d(-0.5rem, -0.06rem, 0) scale(0.985);
   }
 }
 
