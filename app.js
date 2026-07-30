@@ -31361,7 +31361,7 @@ async function updateRoomPresence(room, options = {}) {
         participantId: participant.id,
         participant: {
           ...participant,
-          status: "joining",
+          status: options.spectator ? "spectating" : "joined",
           answer: ""
         }
       });
@@ -33633,7 +33633,7 @@ async function addBotToRoom() {
     role: "bot",
     bot: true,
     active: true,
-    status: "joining"
+    status: "bot"
   };
   rememberPendingRoomBotAdd({ id: botId, name: botName });
   renderRoomLobby();
@@ -33820,6 +33820,9 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
   const reduceMotion = shouldReduceMotion();
   const panelIsVisible = target.isConnected && !target.closest(".hidden");
   const previousHeight = target.getBoundingClientRect().height;
+  const panel = target.closest(".room-preview");
+  const shouldAnimatePanel = Boolean(panel && panel !== target && target !== elements.roomPlayerList && panelIsVisible);
+  const previousPanelHeight = shouldAnimatePanel ? panel.getBoundingClientRect().height : 0;
   if (reduceMotion || !panelIsVisible || (previousHeight <= 0 && !options.animateFromZero)) {
     renderList();
     return false;
@@ -33827,6 +33830,10 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
 
   target.classList.add("room-player-list-resizing");
   target.style.height = `${previousHeight}px`;
+  if (shouldAnimatePanel && previousPanelHeight > 0) {
+    panel.classList.add("room-preview-resizing");
+    panel.style.height = `${previousPanelHeight}px`;
+  }
   const renderResult = renderList();
   if (renderResult === false) {
     target.classList.remove("room-player-list-resizing");
@@ -33836,24 +33843,53 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
     return true;
   }
   const previousInlineTransition = target.style.transition;
+  const previousPanelInlineTransition = shouldAnimatePanel ? panel.style.transition : "";
   target.style.transition = "none";
   target.style.height = "auto";
+  if (shouldAnimatePanel) {
+    panel.style.transition = "none";
+    panel.style.height = "auto";
+  }
   const nextHeight = target.getBoundingClientRect().height;
+  const nextPanelHeight = shouldAnimatePanel ? panel.getBoundingClientRect().height : 0;
   target.style.height = `${previousHeight}px`;
+  if (shouldAnimatePanel && previousPanelHeight > 0) {
+    panel.style.height = `${previousPanelHeight}px`;
+  }
   target.offsetHeight;
   target.style.transition = previousInlineTransition;
-  if (Math.abs(nextHeight - previousHeight) < 2) {
+  if (shouldAnimatePanel) {
+    panel.style.transition = previousPanelInlineTransition;
+  }
+  const listHeightChanged = Math.abs(nextHeight - previousHeight) >= 2;
+  const panelHeightChanged = shouldAnimatePanel && Math.abs(nextPanelHeight - previousPanelHeight) >= 2;
+  if (!listHeightChanged && !panelHeightChanged) {
     target.classList.remove("room-player-list-resizing");
     target.style.height = "";
+    if (shouldAnimatePanel) {
+      panel.classList.remove("room-preview-resizing");
+      panel.style.height = "";
+    }
     return false;
   }
 
   const resizeToken = `${Date.now()}-${Math.random()}`;
   target.dataset.resizingRoomList = resizeToken;
+  if (shouldAnimatePanel) {
+    panel.dataset.resizingRoomPreview = resizeToken;
+  }
   window.requestAnimationFrame(() => {
     target.style.height = `${previousHeight}px`;
+    if (shouldAnimatePanel && previousPanelHeight > 0) {
+      panel.style.height = `${previousPanelHeight}px`;
+    }
     window.requestAnimationFrame(() => {
-      target.style.height = `${nextHeight}px`;
+      if (listHeightChanged) {
+        target.style.height = `${nextHeight}px`;
+      }
+      if (panelHeightChanged) {
+        panel.style.height = `${nextPanelHeight}px`;
+      }
     });
   });
 
@@ -33868,12 +33904,17 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
     delete target.dataset.resizingRoomList;
     target.classList.remove("room-player-list-resizing");
     target.style.height = "";
+    if (shouldAnimatePanel && panel.dataset.resizingRoomPreview === resizeToken) {
+      delete panel.dataset.resizingRoomPreview;
+      panel.classList.remove("room-preview-resizing");
+      panel.style.height = "";
+    }
     if (typeof options.onComplete === "function") {
       options.onComplete();
     }
   };
   target.addEventListener("transitionend", cleanup);
-  window.setTimeout(() => cleanup({ propertyName: "height" }), 420);
+  window.setTimeout(() => cleanup({ propertyName: "height" }), 540);
   return true;
 }
 
@@ -33900,6 +33941,9 @@ function syncRoomPanelHeights() {
   const settingsPanel = elements.roomScreen?.querySelector(".room-settings-panel");
   const previewPanel = elements.roomScreen?.querySelector(".room-preview");
   const playerList = elements.roomPlayerList;
+  if (previewPanel?.classList.contains("room-preview-resizing") || playerList?.classList.contains("room-player-list-resizing")) {
+    return;
+  }
   if (!roomScreenVisible || !settingsPanel || !previewPanel || !playerList) {
     if (previewPanel) {
       previewPanel.style.height = "";
@@ -34259,7 +34303,7 @@ function renderRoomPlayerList(target, options = {}) {
         type: "bot",
         bot: true,
         active: true,
-        connectionStatus: "joining"
+        connectionStatus: "bot"
       }))
     : [];
   const displayedPlayers = [...visiblePlayers, ...pendingBotPlayers];
@@ -34284,8 +34328,14 @@ function renderRoomPlayerList(target, options = {}) {
     : [];
   if (exitingCards.length) {
     const previousHeight = target.getBoundingClientRect().height;
+    const panel = target === elements.roomPlayerList ? null : target.closest(".room-preview");
+    const previousPanelHeight = panel ? panel.getBoundingClientRect().height : 0;
     if (previousHeight > 0) {
       target.style.height = `${previousHeight}px`;
+    }
+    if (panel && previousPanelHeight > 0) {
+      panel.classList.add("room-preview-resizing");
+      panel.style.height = `${previousPanelHeight}px`;
     }
     target.classList.add("room-player-list-holding");
     exitingCards.forEach((card) => {
@@ -34302,26 +34352,51 @@ function renderRoomPlayerList(target, options = {}) {
       const lockedHeight = previousHeight;
       target.classList.remove("room-player-list-holding");
       target.style.height = "auto";
+      if (panel) {
+        panel.style.height = "auto";
+      }
       renderRoomPlayerList(target, { skipExitAnimation: true });
       const nextHeight = target.getBoundingClientRect().height;
+      const nextPanelHeight = panel ? panel.getBoundingClientRect().height : 0;
       if (lockedHeight > 0 && Math.abs(nextHeight - lockedHeight) >= 2) {
         const previousInlineTransition = target.style.transition;
+        const previousPanelInlineTransition = panel ? panel.style.transition : "";
         target.classList.add("room-player-list-resizing");
         target.style.transition = "none";
         target.style.height = `${lockedHeight}px`;
+        if (panel && previousPanelHeight > 0) {
+          panel.classList.add("room-preview-resizing");
+          panel.style.transition = "none";
+          panel.style.height = `${previousPanelHeight}px`;
+        }
         target.offsetHeight;
         target.style.transition = previousInlineTransition;
+        if (panel) {
+          panel.style.transition = previousPanelInlineTransition;
+        }
         window.requestAnimationFrame(() => {
           target.style.height = `${nextHeight}px`;
+          if (panel && Math.abs(nextPanelHeight - previousPanelHeight) >= 2) {
+            panel.style.height = `${nextPanelHeight}px`;
+          }
         });
         window.setTimeout(() => {
           target.classList.remove("room-player-list-resizing");
           target.style.height = "";
-        }, 340);
+          if (panel) {
+            panel.classList.remove("room-preview-resizing");
+            panel.style.height = "";
+          }
+          scheduleRoomPanelHeightSync();
+        }, 540);
       } else {
         target.style.height = "";
+        if (panel) {
+          panel.classList.remove("room-preview-resizing");
+          panel.style.height = "";
+        }
+        scheduleRoomPanelHeightSync();
       }
-      scheduleRoomPanelHeightSync();
     }, 300);
     return false;
   }
@@ -34341,10 +34416,9 @@ function renderRoomPlayerList(target, options = {}) {
     card.className = "room-player-card";
     card.dataset.roomPlayerKey = cardKey;
     card.classList.toggle("waiting-slot", player.active === false);
-    const botIsJoining = player.connectionStatus === "joining" && !(player.bot || player.type === "bot");
     const pendingModerationAction = getPendingRoomModerationAction(player.participantId);
     const removalIsPending = pendingModerationAction === "kick" || pendingModerationAction === "ban";
-    card.classList.toggle("room-player-card-pending", botIsJoining || Boolean(pendingModerationAction));
+    card.classList.toggle("room-player-card-pending", Boolean(pendingModerationAction));
     card.classList.toggle("room-player-card-kicking", removalIsPending);
     const isNewActiveParticipant = Boolean(
       (canAnimateNewRows || (isRoomSetupList && hadWaitingCopy))
@@ -34359,9 +34433,7 @@ function renderRoomPlayerList(target, options = {}) {
     const name = document.createElement("strong");
     renderPlayerNameWithTitle(name, player, player.label);
     const status = document.createElement("small");
-    if (botIsJoining) {
-      status.textContent = "JOINING";
-    } else if (pendingModerationAction === "ban") {
+    if (pendingModerationAction === "ban") {
       status.textContent = "BANNING";
     } else if (pendingModerationAction === "kick") {
       status.textContent = "KICKING";
@@ -34371,8 +34443,10 @@ function renderRoomPlayerList(target, options = {}) {
       status.textContent = "UNMUTING";
     } else if (player.bot || player.type === "bot") {
       status.textContent = "BOT";
+    } else if (player.host) {
+      status.textContent = "HOST";
     } else {
-      status.textContent = player.muted ? "muted" : player.connectionStatus || "ready";
+      status.textContent = player.muted ? "MUTED" : "PLAYER";
     }
     card.dataset.owner = player.owner;
     card.dataset.participantId = player.participantId || "";
