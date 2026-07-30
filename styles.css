@@ -401,6 +401,20 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   --menu-enter-delay: 580ms;
 }
 
+.app-version-label {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  z-index: 3;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(77, 224, 255, 0.35);
+  pointer-events: none;
+}
+
 /* In-game side motion. Remove this block to revert right-side/panel entrance polish. */
 .game-stage:not(.hidden) :is(
   .scoreboard,

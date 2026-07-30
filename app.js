@@ -3491,6 +3491,7 @@ window.addEventListener("focus", () => {
 
 const elements = {
   modeScreen: document.querySelector("#modeScreen"),
+  appVersionLabel: document.querySelector("#appVersionLabel"),
   menuBackgroundVideo: document.querySelector("#menuBackgroundVideo"),
   devToolScreen: null,
   adminAuthModal: null,
@@ -17045,6 +17046,8 @@ const roomSync = {
         body: JSON.stringify({
           roomCode,
           participantId,
+          hostParticipantId: commandPayload.hostParticipantId,
+          actorParticipantId: commandPayload.actorParticipantId,
           clientInstanceId: state.connectionId || state.realtimeSourceId,
           tabSessionId: getCurrentRoomTabSessionId(roomCode),
           clientEventId,
@@ -34584,6 +34587,26 @@ async function revealBlackCardAnswer(completedText) {
   }
 }
 
+async function loadAppVersionLabel() {
+  if (!elements.appVersionLabel) {
+    return;
+  }
+  try {
+    const response = await fetch("/api/version", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    const version = String(data.version || "").trim();
+    const commit = String(data.commit || "").trim();
+    elements.appVersionLabel.textContent = commit
+      ? `v${version || "0.1.0"} ${commit.slice(0, 7)}`
+      : `v${version || "0.1.0"} dev`;
+  } catch (error) {
+    // Keep the static fallback if the deployed metadata endpoint is unavailable.
+  }
+}
+
 function submitRoomAnswer(rawInput, options = {}) {
   if (!isRoomMode() || state.isSpectator || state.roomSubmissions[state.currentOwner]) {
     return;
@@ -37427,6 +37450,7 @@ window.addEventListener("beforeunload", handleWindowBeforeUnload);
 window.addEventListener("resize", scheduleRoomPanelHeightSync);
 
 cleanupReloadedHostedRoomSession();
+void loadAppVersionLabel();
 writePublicCatalogCache();
 updateSoundButton();
 syncSettingsControls();

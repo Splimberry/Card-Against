@@ -7,6 +7,7 @@ const { lookup } = require("node:dns/promises");
 const { isIP } = require("node:net");
 const { createGzip } = require("node:zlib");
 const { createBackendStore } = require("./lib/backend-store");
+const packageInfo = require("./package.json");
 
 const root = __dirname;
 loadEnv();
@@ -159,6 +160,11 @@ async function handleRequest(req, res) {
 
     if (req.method === "GET" && url.pathname === "/api/image") {
       await handleImageProxy(url, res);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/version") {
+      handleAppVersion(res);
       return;
     }
 
@@ -801,6 +807,16 @@ function sanitizeQuestionSubmissionForCreator(submission) {
     updatedAt: submission.updatedAt || 0,
     review: submission.review || null
   };
+}
+
+function handleAppVersion(res) {
+  const commit = String(process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "").trim();
+  sendJson(res, 200, {
+    version: String(packageInfo.version || "0.1.0"),
+    commit: commit ? commit.slice(0, 40) : "",
+    branch: String(process.env.VERCEL_GIT_COMMIT_REF || "").trim(),
+    deployedAt: String(process.env.VERCEL_DEPLOYMENT_ID || "").trim()
+  });
 }
 
 function handleAuthSession(req, res) {
