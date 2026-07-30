@@ -33713,6 +33713,31 @@ function createRoomModerationControls(owner, context = "list", sourcePlayer = nu
   return controls;
 }
 
+function animateRoomPlayerListHeight(target, previousHeight = 0) {
+  if (!target || shouldReduceMotion()) {
+    return;
+  }
+  const lockedHeight = Math.max(0, Number(previousHeight) || 0);
+  const nextHeight = target.getBoundingClientRect().height;
+  if (lockedHeight <= 0 || nextHeight <= 0 || Math.abs(nextHeight - lockedHeight) < 2) {
+    return;
+  }
+  const previousInlineTransition = target.style.transition;
+  target.classList.add("room-player-list-resizing");
+  target.style.transition = "none";
+  target.style.height = `${lockedHeight}px`;
+  target.offsetHeight;
+  target.style.transition = previousInlineTransition;
+  window.requestAnimationFrame(() => {
+    target.style.height = `${nextHeight}px`;
+  });
+  window.setTimeout(() => {
+    target.classList.remove("room-player-list-resizing");
+    target.style.height = "";
+    scheduleRoomPanelHeightSync();
+  }, 420);
+}
+
 function renderRoomPlayerList(target, options = {}) {
   if (!target) {
     return true;
@@ -33725,6 +33750,9 @@ function renderRoomPlayerList(target, options = {}) {
   const renderKey = `${state.roomSettings.code || "draft"}:${target.id || "room-player-list"}:${state.currentRoomStatus || "draft"}`;
   const canAnimateNewRows = target.dataset.roomPlayerListRenderKey === renderKey;
   const hadWaitingCopy = Boolean(target.querySelector(".room-waiting-copy"));
+  const previousListHeight = canAnimateNewRows && !shouldReduceMotion()
+    ? target.getBoundingClientRect().height
+    : 0;
   const previousCardKeys = new Set(
     [...target.querySelectorAll(".room-player-card[data-room-player-key]")]
       .map((card) => card.dataset.roomPlayerKey)
@@ -33862,6 +33890,7 @@ function renderRoomPlayerList(target, options = {}) {
     target.appendChild(empty);
     return;
   }
+  let addedNewActiveParticipant = false;
   nextPlayers.forEach((player) => {
     const cardKey = String(player.participantId || player.owner || player.label || "").trim();
     const card = document.createElement("div");
@@ -33879,6 +33908,9 @@ function renderRoomPlayerList(target, options = {}) {
       && cardKey
       && !previousCardKeys.has(cardKey)
     );
+    if (isNewActiveParticipant) {
+      addedNewActiveParticipant = true;
+    }
     card.classList.toggle("room-player-card-new", isNewActiveParticipant);
     const avatar = document.createElement("span");
     avatar.className = "room-player-avatar";
@@ -33919,6 +33951,9 @@ function renderRoomPlayerList(target, options = {}) {
     }
     target.appendChild(card);
   });
+  if (addedNewActiveParticipant) {
+    animateRoomPlayerListHeight(target, previousListHeight);
+  }
   return true;
 }
 
