@@ -534,8 +534,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .room-player-card.room-player-card-new {
   transform-origin: center top;
-  will-change: opacity, filter, transform;
-  animation: motionPolishRowIn 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+  animation: motionPolishRowIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .room-player-card.room-player-card-exiting {
@@ -1117,12 +1117,6 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   transition: height 460ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.room-preview-resizing {
-  overflow: hidden;
-  transition: height 460ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: height;
-}
-
 .room-lobby-screen .room-setup-grid {
   grid-template-columns: minmax(26rem, 1fr) minmax(20rem, 0.58fr);
   align-items: stretch;
@@ -1130,20 +1124,20 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .room-lobby-screen .lobby-panel,
 .room-lobby-screen .lobby-chat {
-  min-height: min(34rem, calc(100vh - 10rem));
-  transition: min-height 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 0;
+  height: clamp(32rem, calc(100vh - 10rem), 44rem);
+  max-height: clamp(32rem, calc(100vh - 10rem), 44rem);
+  overflow: hidden;
 }
 
 .room-lobby-screen .lobby-chat {
   align-self: stretch;
-  height: min(34rem, calc(100vh - 10rem));
-  max-height: min(34rem, calc(100vh - 10rem));
-  overflow: hidden;
 }
 
 .lobby-panel {
   display: grid;
-  align-content: start;
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+  align-content: stretch;
   gap: 0.8rem;
 }
 
@@ -1603,11 +1597,11 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 #roomLobbyPlayerList {
-  --room-player-list-max-height: 24rem;
+  --room-player-list-max-height: none;
 }
 
 .room-lobby-screen .room-preview > .room-player-list {
-  --room-player-list-max-height: 18.7rem;
+  --room-player-list-max-height: none;
 }
 
 .room-preview > .room-player-list .room-player-card {
@@ -12599,7 +12593,6 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   }
 
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-submit-status,
-  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-preview-resizing,
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-player-list-resizing {
     transition: none;
   }
@@ -12728,19 +12721,16 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
 @keyframes motionPolishRowIn {
   0% {
     opacity: 0;
-    filter: blur(8px);
-    transform: translate3d(1.1rem, 0.26rem, 0) scale(0.94, 0.82);
+    transform: translate3d(0.8rem, 0.15rem, 0) scale(0.985);
   }
 
-  58% {
-    opacity: 0.92;
-    filter: blur(2px);
-    transform: translate3d(0.12rem, 0.02rem, 0) scale(0.995, 0.975);
+  72% {
+    opacity: 1;
+    transform: translate3d(0.04rem, 0, 0) scale(1);
   }
 
   100% {
     opacity: 1;
-    filter: blur(0);
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
@@ -12748,14 +12738,12 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
 @keyframes motionPolishRowOut {
   0% {
     opacity: 1;
-    filter: blur(0);
     transform: translate3d(0, 0, 0) scale(1);
   }
 
   100% {
     opacity: 0;
-    filter: blur(5px);
-    transform: translate3d(-0.65rem, -0.12rem, 0) scale(0.965);
+    transform: translate3d(-0.55rem, -0.06rem, 0) scale(0.985);
   }
 }
 
