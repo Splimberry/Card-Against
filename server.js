@@ -97,6 +97,22 @@ const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
 const gradingStrictnessSet = new Set(gradingStrictnessOptions);
 const roundGradingModeOptions = ["mixed", "local", "force-ai"];
 const roundGradingModeSet = new Set(roundGradingModeOptions);
+const lowSignalFillerAnswers = new Set([
+  "idk",
+  "i dont know",
+  "dont know",
+  "no idea",
+  "unknown",
+  "none",
+  "nothing",
+  "n a",
+  "na",
+  "test",
+  "asdf",
+  "blah",
+  "random",
+  "guess"
+]);
 const commonTriviaAbbreviationAliases = new Map([
   ["youtube", ["yt", "u tube"]],
   ["instagram", ["ig", "insta"]],
@@ -227,6 +243,14 @@ async function handleRequest(req, res) {
         return;
       }
       await handleDebugQuestions(res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/debug/ai-shield") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
+      await handleDebugAiShield(req, res);
       return;
     }
 
@@ -6852,6 +6876,27 @@ async function handleRound(req, res) {
   }
 }
 
+async function handleDebugAiShield(req, res) {
+  try {
+    const body = await readRequestJson(req);
+    const payload = normalizeRoundPayload({
+      ...body,
+      mode: "bots",
+      gradingMode: "mixed",
+      roundSeed: body.roundSeed || `debug-ai-shield-${Date.now()}`
+    });
+    const localResult = createLocalRoundResult(payload);
+    const result = createAiSecondOpinionShieldResult(payload, localResult, {
+      targetIndex: 0,
+      treatAsBot: Boolean(body.treatAsBot)
+    });
+    sendJson(res, 200, result);
+  } catch (error) {
+    console.error(error);
+    sendJson(res, 400, { error: error.message || "AI shield test failed." });
+  }
+}
+
 function readRequestJson(req, options = {}) {
   const maxBytes = Number(options.maxBytes || 20_000);
   return new Promise((resolve, reject) => {
@@ -7612,34 +7657,149 @@ function getAiSecondOpinionCandidates(payload, localResult) {
     .slice(0, 4);
 }
 
+function createAiSecondOpinionShieldResult(payload, localResult, options = {}) {
+  const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
+  const entries = getRoundAnswerEntries(payload, localResult.cards);
+  const targetIndex = clampServerNumber(options.targetIndex, 0, Math.max(entries.length - 1, 0), 0);
+  const baseEntry = entries[targetIndex] || {
+    index: 0,
+    label: "Player",
+    answer: payload.answer || "",
+    bot: false
+  };
+  const entry = {
+    ...baseEntry,
+    bot: Boolean(options.treatAsBot || baseEntry.bot)
+  };
+  const localScore = scoreAnswerAgainstBank(entry.answer, answerBank);
+  const localThreshold = getLocalGradingThreshold(payload.gradingStrictness);
+  const alreadyCorrect = Array.isArray(localResult.correctIndexes) && localResult.correctIndexes.includes(entry.index);
+  const explicitlyRejected = isExplicitlyRejectedAnswer(entry.answer, payload.rejectedAnswers);
+  let decision = null;
+
+  if (!answerBank.length) {
+    decision = {
+      askAi: false,
+      reasonCode: "missing-answer-bank",
+      reason: "There is no saved answer to compare against, so mixed grading will not spend AI here."
+    };
+  } else if (entry.bot) {
+    decision = {
+      askAi: false,
+      reasonCode: "bot-answer",
+      reason: "Bot answers are skipped so AI tokens stay focused on real player answers."
+    };
+  } else if (alreadyCorrect) {
+    decision = {
+      askAi: false,
+      reasonCode: "local-accepted",
+      reason: "Local marking already accepts this answer, so no AI second look is needed."
+    };
+  } else if (explicitlyRejected) {
+    decision = {
+      askAi: false,
+      reasonCode: "rejected-answer",
+      reason: "This matches a saved rejected answer, so the AI shield blocks review."
+    };
+  } else {
+    decision = getAiSecondOpinionShieldDecision(entry.answer, answerBank, localScore, payload.gradingStrictness, {
+      question: payload.blackCard,
+      theme: payload.triviaTheme,
+      image: payload.image,
+      mode: payload.mode
+    });
+  }
+
+  return {
+    gradingMode: "mixed",
+    answer: entry.answer,
+    answerIndex: entry.index,
+    label: entry.label,
+    normalizedAnswer: normalizeTriviaAnswer(entry.answer),
+    strictness: normalizeGradingStrictness(payload.gradingStrictness),
+    localScore: Number(localScore.toFixed(4)),
+    localThreshold,
+    localCorrect: alreadyCorrect,
+    explicitlyRejected,
+    treatAsBot: entry.bot,
+    answerBank,
+    aiConfigured: Boolean(getApiKey()),
+    wouldAskAi: Boolean(decision.askAi),
+    shield: decision.askAi ? "allows-ai-review" : "blocks-ai-review",
+    reasonCode: decision.reasonCode,
+    reason: decision.reason,
+    details: decision.details || {}
+  };
+}
+
 function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore, strictness = "normal", context = {}) {
+  return getAiSecondOpinionShieldDecision(answer, acceptedAnswers, localScore, strictness, context).askAi;
+}
+
+function getAiSecondOpinionShieldDecision(answer, acceptedAnswers, localScore, strictness = "normal", context = {}) {
   const normalizedStrictness = normalizeGradingStrictness(strictness);
   if (normalizedStrictness === "exact") {
-    return false;
+    return {
+      askAi: false,
+      reasonCode: "exact-strictness",
+      reason: "This question is set to Exact, so AI rescue is disabled."
+    };
   }
   const normalized = normalizeTriviaAnswer(answer);
-  if (!hasUsefulAnswerSignal(normalized)) {
-    return false;
+  const lowSignalReason = getLowSignalAnswerReason(normalized);
+  if (lowSignalReason) {
+    return {
+      askAi: false,
+      ...lowSignalReason
+    };
   }
   const localThreshold = getLocalGradingThreshold(normalizedStrictness);
   if (localScore >= localThreshold) {
-    return false;
+    return {
+      askAi: false,
+      reasonCode: "local-accepted",
+      reason: "Local marking already accepts this answer, so no AI second look is needed.",
+      details: {
+        localScore,
+        localThreshold
+      }
+    };
   }
   const scoreGate = normalizedStrictness === "forgiving" ? 0.34 : normalizedStrictness === "strict" ? 0.62 : 0.42;
   if (localScore >= scoreGate) {
-    return true;
+    return {
+      askAi: true,
+      reasonCode: "near-local-match",
+      reason: "This looks close enough to the saved answer for AI to take a second look.",
+      details: {
+        localScore,
+        scoreGate
+      }
+    };
   }
   if (hasContextualAnswerReviewSignal(normalized, context, normalizedStrictness)) {
-    return true;
+    return {
+      askAi: true,
+      reasonCode: "context-signal",
+      reason: "This has enough real answer signal for AI to compare it against the question.",
+      details: {
+        localScore,
+        scoreGate
+      }
+    };
   }
   const answerWords = normalized.split(" ").filter(Boolean);
-  const normalizedAccepted = acceptedAnswers
+  const normalizedAccepted = (Array.isArray(acceptedAnswers) ? acceptedAnswers : [])
     .map(normalizeTriviaAnswer)
     .filter(Boolean);
   const acceptedWords = normalizedAccepted
     .flatMap((entry) => entry.split(" ").filter((word) => word.length >= 4));
   if (!answerWords.length || !acceptedWords.length) {
-    return false;
+    return {
+      askAi: false,
+      reasonCode: "too-little-signal",
+      reason: "There is not enough useful answer text for AI review."
+    };
   }
   const compactAnswer = normalized.replace(/\s+/g, "");
   const bestCompactScore = Math.max(0, ...normalizedAccepted.map((entry) => (
@@ -7647,14 +7807,48 @@ function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore, strict
   )));
   const compactGate = normalizedStrictness === "forgiving" ? 0.55 : normalizedStrictness === "strict" ? 0.78 : 0.62;
   if (bestCompactScore >= compactGate) {
-    return true;
+    return {
+      askAi: true,
+      reasonCode: "spacing-near-match",
+      reason: "The spacing or joined wording is close enough for AI to review.",
+      details: {
+        bestCompactScore,
+        compactGate
+      }
+    };
   }
   const bestTokenScore = Math.max(0, ...answerWords.flatMap((answerWord) => (
     acceptedWords.map((acceptedWord) => scoreTriviaToken(answerWord, acceptedWord))
   )));
   const hasSharedDistinctiveWord = answerWords.some((word) => word.length >= 4 && acceptedWords.includes(word));
   const tokenGate = normalizedStrictness === "forgiving" ? 0.48 : normalizedStrictness === "strict" ? 0.72 : 0.55;
-  return hasSharedDistinctiveWord || bestTokenScore >= tokenGate;
+  if (hasSharedDistinctiveWord || bestTokenScore >= tokenGate) {
+    return {
+      askAi: true,
+      reasonCode: hasSharedDistinctiveWord ? "shared-distinctive-word" : "token-near-match",
+      reason: hasSharedDistinctiveWord
+        ? "This shares a distinctive saved-answer word, so AI can review it."
+        : "One important word is close enough for AI to review.",
+      details: {
+        bestTokenScore,
+        tokenGate,
+        hasSharedDistinctiveWord
+      }
+    };
+  }
+  return {
+    askAi: false,
+    reasonCode: "too-far-from-answer",
+    reason: "This is too far from the saved answers and question context to spend AI.",
+    details: {
+      localScore,
+      scoreGate,
+      bestCompactScore,
+      compactGate,
+      bestTokenScore,
+      tokenGate
+    }
+  };
 }
 
 function hasContextualAnswerReviewSignal(normalizedAnswer, context = {}, strictness = "normal") {
@@ -7709,37 +7903,51 @@ function hasContextualAnswerReviewSignal(normalizedAnswer, context = {}, strictn
 }
 
 function hasUsefulAnswerSignal(normalizedAnswer) {
+  return !getLowSignalAnswerReason(normalizedAnswer);
+}
+
+function getLowSignalAnswerReason(normalizedAnswer) {
   if (!normalizedAnswer || normalizedAnswer.length < 3 || normalizedAnswer.length > 80) {
-    return false;
+    return {
+      reasonCode: !normalizedAnswer ? "blank-answer" : normalizedAnswer.length < 3 ? "too-short" : "too-long",
+      reason: !normalizedAnswer
+        ? "Blank answers never use AI."
+        : normalizedAnswer.length < 3
+          ? "This answer is too short for AI review."
+          : "This answer is too long for the short-answer AI review path."
+    };
   }
   const compact = normalizedAnswer.replace(/\s+/g, "");
   if (compact.length < 3 || /(.)\1{3,}/.test(compact) || isLikelyLowSignalNonsenseAnswer(normalizedAnswer)) {
-    return false;
+    return {
+      reasonCode: compact.length < 3 ? "too-short" : /(.)\1{3,}/.test(compact) ? "repeated-junk" : "keyboard-mash",
+      reason: compact.length < 3
+        ? "This answer is too short for AI review."
+        : /(.)\1{3,}/.test(compact)
+          ? "This looks like repeated junk, so the AI shield blocks review."
+          : "This looks like keyboard mashing or low-signal nonsense, so the AI shield blocks review."
+    };
   }
-  const fillerAnswers = new Set([
-    "idk",
-    "i dont know",
-    "dont know",
-    "no idea",
-    "unknown",
-    "none",
-    "nothing",
-    "n a",
-    "na",
-    "test",
-    "asdf",
-    "blah",
-    "random",
-    "guess"
-  ]);
-  if (fillerAnswers.has(normalizedAnswer)) {
-    return false;
+  if (lowSignalFillerAnswers.has(normalizedAnswer)) {
+    return {
+      reasonCode: "filler-answer",
+      reason: "This is a filler answer, so the AI shield blocks review."
+    };
   }
   const letters = compact.replace(/[^a-z]/g, "");
   if (letters.length >= 4 && !/[aeiouy]/.test(letters)) {
-    return false;
+    return {
+      reasonCode: "vowelless-junk",
+      reason: "This does not look like a meaningful written answer, so the AI shield blocks review."
+    };
   }
-  return /[a-z0-9]/.test(compact);
+  if (!/[a-z0-9]/.test(compact)) {
+    return {
+      reasonCode: "no-answer-signal",
+      reason: "This does not contain useful answer text for AI review."
+    };
+  }
+  return null;
 }
 
 function isLikelyLowSignalNonsenseAnswer(normalizedAnswer) {

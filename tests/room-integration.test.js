@@ -6286,6 +6286,93 @@ async function testRoundDebugLocalModeSkipsAiOverride() {
   }
 }
 
+async function testDebugAiShieldExplainsMixedGradingGate() {
+  const previousFetch = global.fetch;
+  const previousAiKey = process.env.AI_API_KEY;
+  process.env.AI_API_KEY = "test-ai-key";
+  let fetchCalls = 0;
+  global.fetch = async () => {
+    fetchCalls += 1;
+    throw new Error("AI shield tests must not call AI");
+  };
+
+  const basePayload = {
+    blackCard: "Who drew Sunflowers?",
+    triviaTheme: "Art",
+    canonicalAnswer: "vicent",
+    acceptedAnswers: ["vicent"],
+    rejectedAnswers: [],
+    botCards: ["cat"],
+    botLabels: ["Bot"],
+    mode: "bots",
+    gradingStrictness: "normal"
+  };
+
+  try {
+    const unauthenticated = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      answer: "van gogh"
+    });
+    assert.equal(unauthenticated.response.status, 401, unauthenticated.payload.error);
+
+    const contextAllowed = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      answer: "van gogh"
+    }, adminHeaders());
+    assert.equal(contextAllowed.response.status, 200, contextAllowed.payload.error);
+    assert.equal(contextAllowed.payload.wouldAskAi, true);
+    assert.equal(contextAllowed.payload.shield, "allows-ai-review");
+    assert.equal(contextAllowed.payload.reasonCode, "context-signal");
+    assert.equal(contextAllowed.payload.aiConfigured, true);
+
+    const keyboardBlocked = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      answer: "qwrtypsdf"
+    }, adminHeaders());
+    assert.equal(keyboardBlocked.response.status, 200, keyboardBlocked.payload.error);
+    assert.equal(keyboardBlocked.payload.wouldAskAi, false);
+    assert.equal(keyboardBlocked.payload.reasonCode, "keyboard-mash");
+
+    const rejectedBlocked = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      canonicalAnswer: "Lightsaber",
+      acceptedAnswers: ["Lightsaber"],
+      rejectedAnswers: ["Unicorn"],
+      answer: "Unicorn"
+    }, adminHeaders());
+    assert.equal(rejectedBlocked.response.status, 200, rejectedBlocked.payload.error);
+    assert.equal(rejectedBlocked.payload.wouldAskAi, false);
+    assert.equal(rejectedBlocked.payload.reasonCode, "rejected-answer");
+    assert.equal(rejectedBlocked.payload.explicitlyRejected, true);
+
+    const botBlocked = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      answer: "van gogh",
+      treatAsBot: true
+    }, adminHeaders());
+    assert.equal(botBlocked.response.status, 200, botBlocked.payload.error);
+    assert.equal(botBlocked.payload.wouldAskAi, false);
+    assert.equal(botBlocked.payload.reasonCode, "bot-answer");
+    assert.equal(botBlocked.payload.treatAsBot, true);
+
+    const localBlocked = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      canonicalAnswer: "Vincent van Gogh",
+      acceptedAnswers: ["van Gogh"],
+      answer: "Vincent van Gogh"
+    }, adminHeaders());
+    assert.equal(localBlocked.response.status, 200, localBlocked.payload.error);
+    assert.equal(localBlocked.payload.wouldAskAi, false);
+    assert.equal(localBlocked.payload.reasonCode, "local-accepted");
+    assert.equal(localBlocked.payload.localCorrect, true);
+    assert.equal(fetchCalls, 0);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousAiKey === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = previousAiKey;
+  }
+}
+
 async function testRoundDebugForceAiUsesModelOverride() {
   const previousFetch = global.fetch;
   const previousAiKey = process.env.AI_API_KEY;
@@ -6500,6 +6587,7 @@ async function main() {
   await testRoundUsesLocalGraderWithoutApiKey();
   await testRoundAiSecondOpinionReviewsNearMissesTogether();
   await testRoundDebugLocalModeSkipsAiOverride();
+  await testDebugAiShieldExplainsMixedGradingGate();
   await testRoundDebugForceAiUsesModelOverride();
   await testRoundDebugForceAiRequiresAdmin();
   console.log("Room integration tests passed.");

@@ -3400,6 +3400,7 @@ const state = {
   questionDebugImageIssues: [],
   questionDebugToolMode: "duplicates",
   questionDebugGradeRequestId: 0,
+  questionDebugShieldRequestId: 0,
   questionEditOriginalId: "",
   questionEditReturnId: "",
   userQuestionSubmissions: [],
@@ -25865,6 +25866,21 @@ function buildDevToolScreen() {
             </div>
             <div class="debug-status" id="devQuestionGradeStatus">Pick a question, enter an answer, then run marking.</div>
             <div class="dev-question-grade-results" id="devQuestionGradeResults"></div>
+            <section class="dev-question-ai-shield" aria-label="AI shield simulator">
+              <div class="dev-question-shield-header">
+                <div>
+                  <p class="eyebrow">AI Shield</p>
+                  <h3>Review Gate</h3>
+                </div>
+                <button type="button" class="icon-button" id="devQuestionShieldSubmitButton">Check Shield</button>
+              </div>
+              <label class="dev-question-shield-toggle">
+                <input id="devQuestionShieldBotToggle" type="checkbox">
+                <span>Treat as bot answer</span>
+              </label>
+              <div class="debug-status" id="devQuestionShieldStatus">Pick a question, enter an answer, then check the shield.</div>
+              <div class="dev-question-shield-results" id="devQuestionShieldResults"></div>
+            </section>
           </section>
         </aside>
       </div>
@@ -26146,6 +26162,10 @@ function buildDevToolScreen() {
   elements.devQuestionGradeStatus = screen.querySelector("#devQuestionGradeStatus");
   elements.devQuestionGradeResults = screen.querySelector("#devQuestionGradeResults");
   elements.devQuestionGradeOptions = screen.querySelector("#devQuestionGradeOptions");
+  elements.devQuestionShieldSubmitButton = screen.querySelector("#devQuestionShieldSubmitButton");
+  elements.devQuestionShieldBotToggle = screen.querySelector("#devQuestionShieldBotToggle");
+  elements.devQuestionShieldStatus = screen.querySelector("#devQuestionShieldStatus");
+  elements.devQuestionShieldResults = screen.querySelector("#devQuestionShieldResults");
   elements.devRoomStatus = screen.querySelector("#devRoomStatus");
   elements.devRoomList = screen.querySelector("#devRoomList");
   elements.devRoomRefreshButton = screen.querySelector("#devRoomRefreshButton");
@@ -26267,6 +26287,7 @@ function bindDevToolEvents() {
   elements.devQuestionGradeClearButton.addEventListener("click", () => {
     elements.devQuestionGradeAnswer.value = "";
     resetDevQuestionGradingTester();
+    resetDevQuestionAiShield();
     elements.devQuestionGradeAnswer.focus();
     playSound("click");
   });
@@ -26276,9 +26297,13 @@ function bindDevToolEvents() {
       submitDevQuestionGradingTest();
     }
   });
+  elements.devQuestionGradeAnswer.addEventListener("input", () => {
+    resetDevQuestionAiShield("Answer changed. Check the shield again when ready.");
+  });
   elements.devQuestionGradeMode.addEventListener("change", () => {
     resetDevQuestionGradingTester();
     renderDevQuestionGradingTester(getSelectedDebugQuestion());
+    resetDevQuestionAiShield();
   });
   elements.devQuestionGradeOptions.addEventListener("click", (event) => {
     const button = event.target.closest("[data-dev-grade-option]");
@@ -26286,7 +26311,12 @@ function bindDevToolEvents() {
       return;
     }
     elements.devQuestionGradeAnswer.value = button.dataset.devGradeOption || "";
+    resetDevQuestionAiShield();
     submitDevQuestionGradingTest();
+  });
+  elements.devQuestionShieldSubmitButton.addEventListener("click", submitDevQuestionAiShieldTest);
+  elements.devQuestionShieldBotToggle.addEventListener("change", () => {
+    resetDevQuestionAiShield("Shield input changed. Run the check again.");
   });
   elements.devRoomRefreshButton.addEventListener("click", loadDevRooms);
   elements.devRoomList.addEventListener("click", handleDevRoomClick);
@@ -28382,6 +28412,7 @@ function renderQuestionDebugPreview() {
     elements.devQuestionPlaceholder.textContent = "Select a question.";
     elements.devQuestionCredit.textContent = "";
     resetDevQuestionGradingTester("No question selected.");
+    resetDevQuestionAiShield("No question selected.");
     renderDevQuestionGradingTester(null);
     return;
   }
@@ -28416,6 +28447,10 @@ function renderQuestionDebugPreview() {
   resetDevQuestionGradingTester(question.questionStyle === MULTIPLE_CHOICE_STYLE
     ? "Multiple choice uses exact option marking. Type or click an option to test it."
     : "Enter a player answer, then run marking."
+  );
+  resetDevQuestionAiShield(question.questionStyle === MULTIPLE_CHOICE_STYLE
+    ? "Multiple choice uses exact option marking, so the shield should block AI review."
+    : "Enter a player answer, then check the AI shield."
   );
   renderDevQuestionGradingTester(question);
 }
@@ -28555,6 +28590,158 @@ function renderDevQuestionGradingTester(question) {
     button.textContent = option;
     elements.devQuestionGradeOptions.appendChild(button);
   });
+}
+
+function resetDevQuestionAiShield(message = "Pick a question, enter an answer, then check the shield.") {
+  state.questionDebugShieldRequestId += 1;
+  if (!elements.devQuestionShieldStatus || !elements.devQuestionShieldResults || !elements.devQuestionShieldSubmitButton) {
+    return;
+  }
+  elements.devQuestionShieldStatus.textContent = message;
+  elements.devQuestionShieldResults.replaceChildren();
+  elements.devQuestionShieldSubmitButton.disabled = !getSelectedDebugQuestion();
+}
+
+function buildDevQuestionAiShieldPayload(question, answer) {
+  return {
+    ...buildDevQuestionGradingPayload(question, answer, "mixed"),
+    treatAsBot: Boolean(elements.devQuestionShieldBotToggle?.checked),
+    roundSeed: `dev-ai-shield-${question.id || "question"}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  };
+}
+
+function renderDevQuestionAiShieldResult(result, question) {
+  if (!elements.devQuestionShieldResults || !elements.devQuestionShieldStatus) {
+    return;
+  }
+  const allowed = Boolean(result.wouldAskAi);
+  const card = document.createElement("article");
+  card.className = "dev-question-shield-result";
+  card.dataset.shield = allowed ? "allow" : "block";
+
+  const heading = document.createElement("h4");
+  heading.textContent = allowed ? "AI Review Allowed" : "AI Review Blocked";
+  const summary = document.createElement("p");
+  summary.textContent = result.reason || (allowed
+    ? "Mixed grading would send this answer for AI review."
+    : "Mixed grading would keep this answer away from AI.");
+
+  const pills = document.createElement("div");
+  pills.className = "dev-question-grade-pills";
+  pills.append(
+    createDevQuestionGradePill(allowed ? "AI can review" : "No AI token", allowed ? "ai" : "local"),
+    createDevQuestionGradePill(`${Math.round(Number(result.localScore || 0) * 100)}% local`, "mode"),
+    createDevQuestionGradePill(getGradingStrictnessLabel(result.strictness || question.gradingStrictness), "strictness")
+  );
+  if (result.localCorrect) {
+    pills.append(createDevQuestionGradePill("Local already correct", "local"));
+  }
+  if (result.explicitlyRejected) {
+    pills.append(createDevQuestionGradePill("Rejected preset", "local"));
+  }
+  if (result.treatAsBot) {
+    pills.append(createDevQuestionGradePill("Bot skipped", "local"));
+  }
+  if (!result.aiConfigured && allowed) {
+    pills.append(createDevQuestionGradePill(
+      "AI key missing",
+      "local",
+      "The shield allows review, but the server does not currently have a usable AI key."
+    ));
+  }
+
+  const tested = document.createElement("p");
+  tested.className = "dev-question-grade-line";
+  tested.textContent = `Tested answer: ${result.answer || "(blank)"}`;
+  const normalized = document.createElement("p");
+  normalized.className = "dev-question-grade-line";
+  normalized.textContent = `Normalized answer: ${result.normalizedAnswer || "(blank)"}`;
+  const expected = document.createElement("p");
+  expected.className = "dev-question-grade-line";
+  expected.textContent = `Saved answer: ${question.canonicalAnswer || "-"}`;
+  card.append(heading, summary, pills, tested, normalized, expected);
+
+  if (!result.aiConfigured && allowed) {
+    const warning = document.createElement("p");
+    warning.className = "dev-question-grade-warning";
+    warning.textContent = "This would only call AI after the provider key is configured.";
+    card.appendChild(warning);
+  }
+
+  const details = document.createElement("details");
+  const detailsSummary = document.createElement("summary");
+  detailsSummary.textContent = "Raw shield result";
+  const raw = document.createElement("pre");
+  raw.textContent = JSON.stringify({
+    shield: result.shield,
+    reasonCode: result.reasonCode,
+    localScore: result.localScore,
+    localThreshold: result.localThreshold,
+    localCorrect: result.localCorrect,
+    explicitlyRejected: result.explicitlyRejected,
+    treatAsBot: result.treatAsBot,
+    wouldAskAi: result.wouldAskAi,
+    aiConfigured: result.aiConfigured,
+    details: result.details || {}
+  }, null, 2);
+  details.append(detailsSummary, raw);
+  card.appendChild(details);
+
+  elements.devQuestionShieldResults.replaceChildren(card);
+  elements.devQuestionShieldStatus.textContent = allowed
+    ? "Mixed grading would ask AI for this player answer."
+    : "Mixed grading would not spend AI on this answer.";
+}
+
+async function submitDevQuestionAiShieldTest() {
+  const question = getSelectedDebugQuestion();
+  if (!question) {
+    resetDevQuestionAiShield("Select a question before checking the shield.");
+    playSound("error");
+    return;
+  }
+  const answer = String(elements.devQuestionGradeAnswer.value || "").trim();
+  const requestId = state.questionDebugShieldRequestId + 1;
+  state.questionDebugShieldRequestId = requestId;
+  elements.devQuestionShieldSubmitButton.disabled = true;
+  elements.devQuestionShieldStatus.textContent = "Checking AI shield...";
+  elements.devQuestionShieldResults.replaceChildren();
+
+  try {
+    ensureServerMode();
+    const response = await fetch("/api/debug/ai-shield", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildDevQuestionAiShieldPayload(question, answer))
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (requestId !== state.questionDebugShieldRequestId) {
+      return;
+    }
+    if (!response.ok) {
+      if (response.status === 401) {
+        state.adminAuthenticated = false;
+        state.adminUser = null;
+        updateAdminControls();
+        openAdminAuthModal("Your admin session expired. Sign in again to test the AI shield.");
+      }
+      throw new Error(payload.error || `AI shield test failed with status ${response.status}.`);
+    }
+    renderDevQuestionAiShieldResult(payload, question);
+    playSound("click");
+  } catch (error) {
+    console.warn(error);
+    if (requestId === state.questionDebugShieldRequestId) {
+      elements.devQuestionShieldStatus.textContent = error.message || "Could not check the AI shield.";
+      elements.devQuestionShieldResults.replaceChildren();
+      playSound("error");
+    }
+  } finally {
+    if (requestId === state.questionDebugShieldRequestId) {
+      elements.devQuestionShieldSubmitButton.disabled = !getSelectedDebugQuestion();
+    }
+  }
 }
 
 function pickDevQuestionControlAnswer(question, testedAnswer = "") {
