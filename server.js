@@ -2429,13 +2429,108 @@ function getRoomEventsAfterRevision(room, revision = 0, options = {}) {
     .map((event) => sanitizeRoomEventForClient(event, options));
 }
 
+function getSupabaseRealtimeBroadcastUrl() {
+  const url = getSupabaseUrl().replace(/\/+$/g, "");
+  return url ? `${url}/realtime/v1/api/broadcast` : "";
+}
+
+function getSupabaseRealtimeBroadcastToken() {
+  return String(
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+    || process.env.SUPABASE_ANON_KEY
+    || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    || ""
+  ).trim();
+}
+
+function isServerRealtimeBroadcastEnabled() {
+  const mode = String(process.env.SERVER_REALTIME_BROADCAST || "").trim().toLowerCase();
+  if (["0", "false", "off", "disabled"].includes(mode)) {
+    return false;
+  }
+  if (["1", "true", "on", "enabled"].includes(mode)) {
+    return true;
+  }
+  return process.env.BACKEND_STORE !== "memory";
+}
+
+function shouldBroadcastRoomServerEventToLobby(event = {}) {
+  const eventType = getClientRoomEventType(event.type || event.payload?.eventType || "");
+  return [
+    "round-advancing",
+    "round-started",
+    "round-grading",
+    "round-result",
+    "round-skipped",
+    "game-ended",
+    "host-transferred",
+    "participant-joined",
+    "participant-updated",
+    "participant-left",
+    "participant-disconnected",
+    "participant-reconnected",
+    "participant-moderated",
+    "room-settings",
+    "room-closed",
+    "room-deleted"
+  ].includes(eventType);
+}
+
+function createRealtimeBroadcastMessage(topic, event) {
+  return {
+    topic,
+    event: "room-change",
+    payload: {
+      ...event,
+      sourceId: "server"
+    }
+  };
+}
+
+function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], options = {}) {
+  const code = String(roomCode || "").trim().toUpperCase();
+  const broadcastEvents = Array.isArray(events) ? events.filter((event) => event && typeof event === "object") : [];
+  const url = getSupabaseRealtimeBroadcastUrl();
+  const token = getSupabaseRealtimeBroadcastToken();
+  if (!code || !broadcastEvents.length || !isServerRealtimeBroadcastEnabled() || !url || !token || typeof fetch !== "function") {
+    return false;
+  }
+  const roomTopic = `trivia-against-ai:room:${code}`;
+  const messages = [];
+  broadcastEvents.forEach((event) => {
+    messages.push(createRealtimeBroadcastMessage(roomTopic, event));
+    if (shouldBroadcastRoomServerEventToLobby(event)) {
+      const lobbyEvent = sanitizeRoomEventForClient(event, { ...options, includeSubmittedAnswers: false });
+      messages.push(createRealtimeBroadcastMessage("trivia-against-ai:rooms", lobbyEvent));
+    }
+  });
+  if (!messages.length) {
+    return false;
+  }
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: token,
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ messages })
+  }).catch((error) => {
+    console.warn("Server realtime broadcast failed:", error?.message || error);
+  });
+  return true;
+}
+
 function createRoomCommandResponse(room, previousRevision = 0, options = {}) {
+  const events = getRoomEventsAfterRevision(room, previousRevision, options);
+  const serverBroadcast = scheduleServerRoomRealtimeBroadcast(room.code, events, options);
   return {
     ok: true,
     roomCode: room.code,
     revision: getRoomRevision(room),
     updatedAt: room.updatedAt,
-    events: getRoomEventsAfterRevision(room, previousRevision, options)
+    events,
+    serverBroadcast
   };
 }
 
