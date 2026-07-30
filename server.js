@@ -7713,7 +7713,7 @@ function hasUsefulAnswerSignal(normalizedAnswer) {
     return false;
   }
   const compact = normalizedAnswer.replace(/\s+/g, "");
-  if (compact.length < 3 || /(.)\1{3,}/.test(compact) || isLikelyKeyboardMashAnswer(normalizedAnswer)) {
+  if (compact.length < 3 || /(.)\1{3,}/.test(compact) || isLikelyLowSignalNonsenseAnswer(normalizedAnswer)) {
     return false;
   }
   const fillerAnswers = new Set([
@@ -7742,22 +7742,97 @@ function hasUsefulAnswerSignal(normalizedAnswer) {
   return /[a-z0-9]/.test(compact);
 }
 
-function isLikelyKeyboardMashAnswer(normalizedAnswer) {
+function isLikelyLowSignalNonsenseAnswer(normalizedAnswer) {
   const compact = String(normalizedAnswer || "").replace(/\s+/g, "");
   const letters = compact.replace(/[^a-z]/g, "");
   if (letters.length < 8) {
     return false;
   }
-  if (/(?:qwerty|asdf|zxcv|hjkl|dfgh|jkl)/.test(letters)) {
+  if (hasRepeatedNonsenseChunk(letters)) {
     return true;
   }
+  if (hasKeyboardRowSequence(letters) || hasKeyboardWalkPattern(letters)) {
+    return true;
+  }
+  return hasUnnaturalLetterDistribution(letters);
+}
+
+function hasRepeatedNonsenseChunk(letters) {
+  for (let size = 2; size <= 4; size += 1) {
+    if (letters.length >= size * 3 && letters.length % size === 0) {
+      const chunk = letters.slice(0, size);
+      if (chunk.repeat(letters.length / size) === letters) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function hasKeyboardRowSequence(letters) {
+  return ["qwertyuiop", "asdfghjkl", "zxcvbnm"].some((row) => (
+    hasKeyboardSlice(letters, row) || hasKeyboardSlice(letters, row.split("").reverse().join(""))
+  ));
+}
+
+function hasKeyboardSlice(letters, row) {
+  const minimumRun = 5;
+  for (let size = minimumRun; size <= row.length; size += 1) {
+    for (let index = 0; index <= row.length - size; index += 1) {
+      if (letters.includes(row.slice(index, index + size))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function hasKeyboardWalkPattern(letters) {
+  if (letters.length < 8) {
+    return false;
+  }
+  let keyboardPairs = 0;
+  let longestWalk = 0;
+  let currentWalk = 0;
+  for (let index = 1; index < letters.length; index += 1) {
+    if (isLooseKeyboardNeighbor(letters[index - 1], letters[index])) {
+      keyboardPairs += 1;
+      currentWalk += 1;
+      longestWalk = Math.max(longestWalk, currentWalk);
+    } else {
+      currentWalk = 0;
+    }
+  }
+  const ratio = keyboardPairs / Math.max(letters.length - 1, 1);
+  const vowels = (letters.match(/[aeiouy]/g) || []).length;
+  const vowelRatio = vowels / Math.max(letters.length, 1);
+  return ratio >= 0.72 || (ratio >= 0.62 && longestWalk >= 4) || (ratio >= 0.58 && vowelRatio < 0.2);
+}
+
+function isLooseKeyboardNeighbor(left, right) {
+  if (!left || !right || left === right) {
+    return false;
+  }
+  const rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+  return rows.some((row) => {
+    const leftIndex = row.indexOf(left);
+    const rightIndex = row.indexOf(right);
+    return leftIndex >= 0 && rightIndex >= 0 && Math.abs(leftIndex - rightIndex) <= 2;
+  });
+}
+
+function hasUnnaturalLetterDistribution(letters) {
   const vowels = (letters.match(/[aeiouy]/g) || []).length;
   const vowelRatio = vowels / Math.max(letters.length, 1);
   const consonantRuns = letters.split(/[aeiouy]+/).map((chunk) => chunk.length);
   const longestConsonantRun = Math.max(0, ...consonantRuns);
+  const longConsonantChunks = consonantRuns.filter((length) => length >= 4).length;
   const rareLetters = (letters.match(/[fjkqxz]/g) || []).length;
   const rareRatio = rareLetters / Math.max(letters.length, 1);
 
+  if (letters.length >= 8 && vowelRatio <= 0.13 && longConsonantChunks >= 2) {
+    return true;
+  }
   if (letters.length >= 10 && vowelRatio < 0.18 && longestConsonantRun >= 5) {
     return true;
   }

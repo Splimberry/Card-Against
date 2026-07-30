@@ -60,6 +60,78 @@ const realNearMissCases = [
   ["albert e", ["Albert Einstein"], "initialed surname shorthand"]
 ];
 
+const nonsenseAnswerCases = [
+  {
+    answer: "qwertyuiop",
+    acceptedAnswers: ["Eiffel Tower"],
+    context: { question: "Which Paris landmark was built for the 1889 World's Fair?", theme: "Geography" },
+    label: "top-row keyboard run"
+  },
+  {
+    answer: "lkjhgfdsa",
+    acceptedAnswers: ["Mercury"],
+    context: { question: "Which planet is closest to the Sun?", theme: "Science" },
+    label: "reversed home-row keyboard run"
+  },
+  {
+    answer: "poiu ytrewq",
+    acceptedAnswers: ["Mitochondria"],
+    context: { question: "Which organelle is often called the powerhouse of the cell?", theme: "Science" },
+    label: "split reversed keyboard walk"
+  },
+  {
+    answer: "qwrtypsdf",
+    acceptedAnswers: ["Vincent van Gogh"],
+    context: { question: "Who painted Sunflowers?", theme: "Art" },
+    label: "skipped-letter keyboard walk"
+  },
+  {
+    answer: "ababababab",
+    acceptedAnswers: ["Photosynthesis"],
+    context: { question: "What process lets plants convert sunlight into chemical energy?", theme: "Science" },
+    label: "repeated nonsense chunk"
+  },
+  {
+    answer: "fjkjqxfskj",
+    acceptedAnswers: ["Mount Everest"],
+    context: { question: "What is the highest mountain above sea level?", theme: "Geography" },
+    label: "rare-letter consonant mash"
+  },
+  {
+    answer: "jffnjeksjenfskjeksn f",
+    acceptedAnswers: ["Beethoven"],
+    context: { question: "Which composer wrote Fur Elise?", theme: "Art and Music" },
+    label: "long mixed keyboard mash"
+  }
+];
+
+const meaningfulContextCases = [
+  {
+    answer: "van gogh",
+    acceptedAnswers: ["vicent"],
+    context: { question: "Who drew Sunflowers?", theme: "Art" },
+    label: "question-context alias despite incomplete preset"
+  },
+  {
+    answer: "li saber",
+    acceptedAnswers: ["force sword"],
+    context: { question: "Which glowing weapon does a Jedi usually use?", theme: "Film and TV" },
+    label: "broken-spacing meaningful phrase"
+  },
+  {
+    answer: "new york",
+    acceptedAnswers: ["usa"],
+    context: { question: "Which city is known as the Big Apple?", theme: "Geography" },
+    label: "specific place answer despite weak preset"
+  },
+  {
+    answer: "krzysztof",
+    acceptedAnswers: ["director"],
+    context: { question: "What is the first name of filmmaker Kieslowski?", theme: "Film and TV" },
+    label: "rare-letter real name"
+  }
+];
+
 assertAccepted("Jackle", ["Jackal"], "obvious Jackal misspelling");
 assertAccepted("lui 14th", ["Louis XIV"], "Louis XIV numeric/phonetic alias");
 assertAccepted("vicent", ["Vincent van Gogh"], "distinctive typo partial");
@@ -75,14 +147,9 @@ assertAccepted("ig", ["Instagram"], "common Instagram abbreviation");
 assertAccepted("js", ["JavaScript"], "common JavaScript abbreviation");
 assertAccepted("usa", ["United States of America"], "common country abbreviation");
 realNearMissCases.forEach(([answer, acceptedAnswers, label]) => assertAiReviewCandidate(answer, acceptedAnswers, label));
-assertContextAiReviewCandidate("van gogh", ["vicent"], {
-  question: "Who drew Sunflowers?",
-  theme: "Art"
-}, "context should review answer that satisfies the question even when preset is incomplete");
-assertContextAiReviewCandidate("new york", ["usa"], {
-  question: "Which city is known as the Big Apple?",
-  theme: "Geography"
-}, "context should review a meaningful city answer even when preset examples are wrong or incomplete");
+meaningfulContextCases.forEach(({ answer, acceptedAnswers, context, label }) => {
+  assertContextAiReviewCandidate(answer, acceptedAnswers, context, `context should review ${label}`);
+});
 
 assertRejected("cat", ["Jackal"], "unrelated animal");
 assertRejected("yt", ["TikTok"], "wrong platform abbreviation");
@@ -92,9 +159,10 @@ assertRejected("marinara", ["Margherita"], "different pizza variety");
 assertNoAiReview("", ["Vincent van Gogh"], "blank answer");
 assertNoAiReview("zzzzzz", ["Vincent van Gogh"], "repeated-character gibberish");
 assertNoAiReview("idk", ["Vincent van Gogh"], "filler answer");
-assertNoAiReview("qwrtypsdf", ["Vincent van Gogh"], "vowelless keyboard mash");
-assertNoAiReview("jffnjeksjenfskjeksnf", ["Beethoven"], "long keyboard mash");
-assertNoAiReview("jffnjeksjenfskjeksn f", ["Beethoven"], "split keyboard mash");
+nonsenseAnswerCases.forEach(({ answer, acceptedAnswers, context, label }) => {
+  assertNoAiReview(answer, acceptedAnswers, label);
+  assertNoContextAiReview(answer, acceptedAnswers, context, `context gate rejects ${label}`);
+});
 assertNoContextAiReview("cat", ["vicent"], {
   question: "Who drew Sunflowers?",
   theme: "Art"
@@ -103,10 +171,6 @@ assertNoContextAiReview("zzzzzz", ["vicent"], {
   question: "Who drew Sunflowers?",
   theme: "Art"
 }, "context gate still rejects gibberish");
-assertNoContextAiReview("jffnjeksjenfskjeksn f", ["beethoven"], {
-  question: "Which composer wrote Fur Elise?",
-  theme: "Art and Music"
-}, "context gate rejects long keyboard mash");
 
 assertStrictnessCorrect("Jackle", ["Jackal"], "forgiving", true, "forgiving accepts obvious typo");
 assertStrictnessCorrect("Jackle", ["Jackal"], "normal", true, "normal accepts obvious typo");

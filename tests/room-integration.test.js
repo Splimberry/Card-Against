@@ -6159,39 +6159,61 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     assert.deepEqual(contextRescued.payload.aiSecondOpinionIndexes, [0]);
     assert.equal(contextRescued.payload.source, "local-with-ai-second-opinion");
 
-    const gibberish = await request("POST", "/api/round", {
-      answer: "zzzzzz",
-      blackCard: "Which artist painted The Starry Night?",
-      triviaTheme: "Art",
-      canonicalAnswer: "Vincent van Gogh",
-      acceptedAnswers: ["van Gogh"],
-      botCards: ["cat"],
-      botLabels: ["Bot"],
-      mode: "bots",
-      roundSeed: "ai-second-opinion-gibberish"
-    });
-    assert.equal(gibberish.response.status, 200, gibberish.payload.error);
-    assert.equal(fetchCalls, 2);
-    assert.deepEqual(gibberish.payload.correctIndexes, []);
-    assert.deepEqual(gibberish.payload.aiReviewedIndexes, []);
-    assert.deepEqual(gibberish.payload.aiSecondOpinionIndexes, []);
-
-    const keyboardMash = await request("POST", "/api/round", {
-      answer: "jffnjeksjenfskjeksn f",
-      blackCard: "Which composer wrote Fur Elise?",
-      triviaTheme: "Art and Music",
-      canonicalAnswer: "Beethoven",
-      acceptedAnswers: ["Beethoven"],
-      botCards: ["cat"],
-      botLabels: ["Bot"],
-      mode: "bots",
-      roundSeed: "ai-second-opinion-keyboard-mash"
-    });
-    assert.equal(keyboardMash.response.status, 200, keyboardMash.payload.error);
-    assert.equal(fetchCalls, 2);
-    assert.deepEqual(keyboardMash.payload.correctIndexes, []);
-    assert.deepEqual(keyboardMash.payload.aiReviewedIndexes, []);
-    assert.deepEqual(keyboardMash.payload.aiSecondOpinionIndexes, []);
+    const lowSignalCases = [
+      {
+        answer: "zzzzzz",
+        blackCard: "Which artist painted The Starry Night?",
+        triviaTheme: "Art",
+        canonicalAnswer: "Vincent van Gogh",
+        acceptedAnswers: ["van Gogh"],
+        roundSeed: "ai-second-opinion-repeated-gibberish"
+      },
+      {
+        answer: "qwrtypsdf",
+        blackCard: "Who painted Sunflowers?",
+        triviaTheme: "Art",
+        canonicalAnswer: "Vincent van Gogh",
+        acceptedAnswers: ["van Gogh"],
+        roundSeed: "ai-second-opinion-skipped-keyboard-walk"
+      },
+      {
+        answer: "poiu ytrewq",
+        blackCard: "Which organelle is often called the powerhouse of the cell?",
+        triviaTheme: "Science",
+        canonicalAnswer: "Mitochondria",
+        acceptedAnswers: ["Mitochondria"],
+        roundSeed: "ai-second-opinion-reversed-keyboard-walk"
+      },
+      {
+        answer: "ababababab",
+        blackCard: "What process lets plants convert sunlight into chemical energy?",
+        triviaTheme: "Science",
+        canonicalAnswer: "Photosynthesis",
+        acceptedAnswers: ["Photosynthesis"],
+        roundSeed: "ai-second-opinion-repeated-nonsense-chunk"
+      },
+      {
+        answer: "fjkjqxfskj",
+        blackCard: "What is the highest mountain above sea level?",
+        triviaTheme: "Geography",
+        canonicalAnswer: "Mount Everest",
+        acceptedAnswers: ["Everest"],
+        roundSeed: "ai-second-opinion-rare-letter-mash"
+      }
+    ];
+    for (const lowSignalCase of lowSignalCases) {
+      const lowSignal = await request("POST", "/api/round", {
+        ...lowSignalCase,
+        botCards: ["cat"],
+        botLabels: ["Bot"],
+        mode: "bots"
+      });
+      assert.equal(lowSignal.response.status, 200, lowSignal.payload.error);
+      assert.equal(fetchCalls, 2);
+      assert.deepEqual(lowSignal.payload.correctIndexes, []);
+      assert.deepEqual(lowSignal.payload.aiReviewedIndexes, []);
+      assert.deepEqual(lowSignal.payload.aiSecondOpinionIndexes, []);
+    }
 
     const rejected = await request("POST", "/api/round", {
       answer: "Unicorn",
