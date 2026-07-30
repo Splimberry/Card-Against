@@ -34069,6 +34069,53 @@ function renderRoomPlayers() {
   }
 }
 
+function getRoomPlayerCardRects(target) {
+  if (!target || shouldReduceMotion()) {
+    return new Map();
+  }
+  return new Map(
+    [...target.querySelectorAll(".room-player-card[data-room-player-key]")]
+      .filter((card) => !card.classList.contains("room-player-card-exiting"))
+      .map((card) => [card.dataset.roomPlayerKey || "", card.getBoundingClientRect()])
+      .filter(([key]) => Boolean(key))
+  );
+}
+
+function animateRoomPlayerCardMoves(target, previousRects = new Map()) {
+  if (!target || shouldReduceMotion() || !(previousRects instanceof Map) || !previousRects.size) {
+    return;
+  }
+  const cards = [...target.querySelectorAll(".room-player-card[data-room-player-key]")]
+    .filter((card) => !card.classList.contains("room-player-card-new"));
+  cards.forEach((card) => {
+    const previousRect = previousRects.get(card.dataset.roomPlayerKey || "");
+    if (!previousRect) {
+      return;
+    }
+    const nextRect = card.getBoundingClientRect();
+    const deltaX = previousRect.left - nextRect.left;
+    const deltaY = previousRect.top - nextRect.top;
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
+      return;
+    }
+    card.classList.add("room-player-card-moving");
+    card.style.transition = "none";
+    card.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
+    card.style.willChange = "transform";
+    card.offsetHeight;
+    window.requestAnimationFrame(() => {
+      card.style.transition = "transform 680ms cubic-bezier(0.16, 1, 0.3, 1)";
+      card.style.transform = "";
+    });
+    window.setTimeout(() => {
+      card.classList.remove("room-player-card-moving");
+      card.style.transition = "";
+      card.style.transform = "";
+      card.style.willChange = "";
+    }, 760);
+  });
+}
+
 let activeRoomPlayerTooltipAnchor = null;
 let roomPlayerTooltipElement = null;
 let roomPlayerTooltipFrame = 0;
@@ -34314,6 +34361,8 @@ function renderRoomPlayerList(target, options = {}) {
       .map((card) => card.dataset.roomPlayerKey)
       .filter(Boolean)
   );
+  const canAnimateCardReflow = target === elements.roomPlayerList && canAnimateNewRows;
+  const previousCardRects = canAnimateCardReflow ? getRoomPlayerCardRects(target) : new Map();
   const maxPlayers = getRoomMaxPlayers();
   const isRoomSetupList = isSharedRoomPlayerList(target);
   const hideFeaturedHost = isRoomSetupList && isRoomPlayerListHostProfileVisible(target);
@@ -34503,6 +34552,7 @@ function renderRoomPlayerList(target, options = {}) {
     }
     target.appendChild(card);
   });
+  animateRoomPlayerCardMoves(target, previousCardRects);
   return true;
 }
 
