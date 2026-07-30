@@ -7918,14 +7918,15 @@ function getLowSignalAnswerReason(normalizedAnswer) {
     };
   }
   const compact = normalizedAnswer.replace(/\s+/g, "");
-  if (compact.length < 3 || /(.)\1{3,}/.test(compact) || isLikelyLowSignalNonsenseAnswer(normalizedAnswer)) {
+  const nonsenseReason = getLikelyLowSignalNonsenseReason(normalizedAnswer);
+  if (compact.length < 3 || /(.)\1{3,}/.test(compact) || nonsenseReason) {
     return {
-      reasonCode: compact.length < 3 ? "too-short" : /(.)\1{3,}/.test(compact) ? "repeated-junk" : "keyboard-mash",
+      reasonCode: compact.length < 3 ? "too-short" : /(.)\1{3,}/.test(compact) ? "repeated-junk" : nonsenseReason.reasonCode,
       reason: compact.length < 3
         ? "This answer is too short for AI review."
         : /(.)\1{3,}/.test(compact)
           ? "This looks like repeated junk, so the AI shield blocks review."
-          : "This looks like keyboard mashing or low-signal nonsense, so the AI shield blocks review."
+          : nonsenseReason.reason
     };
   }
   if (lowSignalFillerAnswers.has(normalizedAnswer)) {
@@ -7951,18 +7952,34 @@ function getLowSignalAnswerReason(normalizedAnswer) {
 }
 
 function isLikelyLowSignalNonsenseAnswer(normalizedAnswer) {
+  return Boolean(getLikelyLowSignalNonsenseReason(normalizedAnswer));
+}
+
+function getLikelyLowSignalNonsenseReason(normalizedAnswer) {
   const compact = String(normalizedAnswer || "").replace(/\s+/g, "");
   const letters = compact.replace(/[^a-z]/g, "");
   if (letters.length < 8) {
-    return false;
+    return null;
   }
-  if (hasRepeatedNonsenseChunk(letters)) {
-    return true;
+  if (hasRepeatedNonsenseChunk(letters) || hasNearRepeatedNonsenseChunk(letters) || hasRepetitiveFakeWordPattern(letters)) {
+    return {
+      reasonCode: "repetitive-nonsense",
+      reason: "This looks like repeated fake syllables, so the AI shield blocks review."
+    };
   }
   if (hasKeyboardRowSequence(letters) || hasKeyboardWalkPattern(letters)) {
-    return true;
+    return {
+      reasonCode: "keyboard-mash",
+      reason: "This looks like keyboard mashing, so the AI shield blocks review."
+    };
   }
-  return hasUnnaturalLetterDistribution(letters);
+  if (hasUnnaturalLetterDistribution(letters)) {
+    return {
+      reasonCode: "low-signal-nonsense",
+      reason: "This does not look like a meaningful written answer, so the AI shield blocks review."
+    };
+  }
+  return null;
 }
 
 function hasRepeatedNonsenseChunk(letters) {
@@ -7975,6 +7992,48 @@ function hasRepeatedNonsenseChunk(letters) {
     }
   }
   return false;
+}
+
+function hasNearRepeatedNonsenseChunk(letters) {
+  if (letters.length < 10) {
+    return false;
+  }
+  const uniqueRatio = new Set(letters).size / Math.max(letters.length, 1);
+  if (uniqueRatio > 0.58) {
+    return false;
+  }
+  for (let size = 2; size <= 5; size += 1) {
+    const chunk = letters.slice(0, size);
+    if (new Set(chunk).size <= 1) {
+      continue;
+    }
+    const repeated = chunk.repeat(Math.ceil(letters.length / size)).slice(0, letters.length);
+    const similarity = 1 - (levenshteinDistance(letters, repeated) / Math.max(letters.length, 1));
+    if (similarity >= 0.84) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasRepetitiveFakeWordPattern(letters) {
+  if (letters.length < 12) {
+    return false;
+  }
+  const uniqueRatio = new Set(letters).size / Math.max(letters.length, 1);
+  const vowels = (letters.match(/[aeiouy]/g) || []).length;
+  const vowelRatio = vowels / Math.max(letters.length, 1);
+  const consonants = letters.replace(/[aeiouy]/g, "");
+  if (uniqueRatio > 0.48 || vowelRatio < 0.58 || consonants.length < 3) {
+    return false;
+  }
+  const consonantCounts = new Map();
+  consonants.split("").forEach((letter) => {
+    consonantCounts.set(letter, (consonantCounts.get(letter) || 0) + 1);
+  });
+  const dominantConsonantRatio = Math.max(0, ...consonantCounts.values()) / Math.max(consonants.length, 1);
+  const repeatedVowelPairs = (letters.match(/[aeiouy]{2,}/g) || []).length;
+  return dominantConsonantRatio >= 0.65 && repeatedVowelPairs >= 2;
 }
 
 function hasKeyboardRowSequence(letters) {

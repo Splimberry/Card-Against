@@ -6199,6 +6199,22 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
         canonicalAnswer: "Mount Everest",
         acceptedAnswers: ["Everest"],
         roundSeed: "ai-second-opinion-rare-letter-mash"
+      },
+      {
+        answer: "yegeygayegayfe",
+        blackCard: "Which glowing weapon does a Jedi usually use?",
+        triviaTheme: "Film and TV",
+        canonicalAnswer: "Lightsaber",
+        acceptedAnswers: ["Lightsaber"],
+        roundSeed: "ai-second-opinion-fake-syllable-mash"
+      },
+      {
+        answer: "blorblorblorf",
+        blackCard: "Which organelle is often called the powerhouse of the cell?",
+        triviaTheme: "Science",
+        canonicalAnswer: "Mitochondria",
+        acceptedAnswers: ["Mitochondria"],
+        roundSeed: "ai-second-opinion-near-repeated-fake-word"
       }
     ];
     for (const lowSignalCase of lowSignalCases) {
@@ -6332,6 +6348,16 @@ async function testDebugAiShieldExplainsMixedGradingGate() {
     assert.equal(keyboardBlocked.response.status, 200, keyboardBlocked.payload.error);
     assert.equal(keyboardBlocked.payload.wouldAskAi, false);
     assert.equal(keyboardBlocked.payload.reasonCode, "keyboard-mash");
+
+    const fakeSyllableBlocked = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      canonicalAnswer: "Lightsaber",
+      acceptedAnswers: ["Lightsaber"],
+      answer: "yegeygayegayfe"
+    }, adminHeaders());
+    assert.equal(fakeSyllableBlocked.response.status, 200, fakeSyllableBlocked.payload.error);
+    assert.equal(fakeSyllableBlocked.payload.wouldAskAi, false);
+    assert.equal(fakeSyllableBlocked.payload.reasonCode, "repetitive-nonsense");
 
     const rejectedBlocked = await request("POST", "/api/debug/ai-shield", {
       ...basePayload,

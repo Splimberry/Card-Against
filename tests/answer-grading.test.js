@@ -98,6 +98,30 @@ const nonsenseAnswerCases = [
     label: "rare-letter consonant mash"
   },
   {
+    answer: "yegeygayegayfe",
+    acceptedAnswers: ["Lightsaber"],
+    context: { question: "Which glowing weapon does a Jedi usually use?", theme: "Film and TV" },
+    label: "vowel-heavy fake syllable mash"
+  },
+  {
+    answer: "yeg eyga yegayfe",
+    acceptedAnswers: ["Lightsaber"],
+    context: { question: "Which glowing weapon does a Jedi usually use?", theme: "Film and TV" },
+    label: "split fake syllable mash"
+  },
+  {
+    answer: "blorblorblorf",
+    acceptedAnswers: ["Mitochondria"],
+    context: { question: "Which organelle is often called the powerhouse of the cell?", theme: "Science" },
+    label: "near-repeated fake word"
+  },
+  {
+    answer: "lumalumalume",
+    acceptedAnswers: ["Mars"],
+    context: { question: "Which planet is known as the Red Planet?", theme: "Science" },
+    label: "almost repeated fake syllables"
+  },
+  {
     answer: "jffnjeksjenfskjeksn f",
     acceptedAnswers: ["Beethoven"],
     context: { question: "Which composer wrote Fur Elise?", theme: "Art and Music" },
@@ -129,6 +153,18 @@ const meaningfulContextCases = [
     acceptedAnswers: ["director"],
     context: { question: "What is the first name of filmmaker Kieslowski?", theme: "Film and TV" },
     label: "rare-letter real name"
+  },
+  {
+    answer: "onomatopoeia",
+    acceptedAnswers: ["sound word"],
+    context: { question: "What literary term describes words like buzz or hiss?", theme: "Art and Music" },
+    label: "vowel-heavy real term"
+  },
+  {
+    answer: "mississippi",
+    acceptedAnswers: ["river"],
+    context: { question: "Which major US river flows past Memphis?", theme: "Geo and History" },
+    label: "repetitive real place name"
   }
 ];
 
