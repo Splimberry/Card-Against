@@ -6097,7 +6097,9 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     const prompt = JSON.parse(body.messages[1].content);
     if (fetchCalls === 1) {
       assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0, 1]);
-      assert.equal(prompt.task.includes("context-aware second opinion"), true);
+      assert.equal(prompt.task.includes("same context-aware acceptance standard"), true);
+      assert.equal(prompt.rules.some((rule) => rule.includes("same acceptance standard as the full AI grader")), true);
+      assert.equal(prompt.rules.some((rule) => rule.includes("Do not be stricter just because the local preset grader rejected")), true);
     } else {
       assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0]);
       assert.equal(prompt.trivia.question, "Who drew Sunflowers?");

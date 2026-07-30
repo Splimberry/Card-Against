@@ -6652,7 +6652,7 @@ function updateRatingBadge(badge, rating, reason = "") {
 }
 
 function shouldShowInlineGradingReason(reason = "") {
-  return /^AI took a second look/i.test(String(reason || ""));
+  return /^(?:AI reviewed|AI took a second look)/i.test(String(reason || ""));
 }
 
 function updateInlineGradingReason(element, reason = "") {
@@ -28537,14 +28537,37 @@ function buildDevQuestionGradingPayload(question, answer, gradingMode) {
   };
 }
 
-function createDevQuestionGradePill(text, variant = "") {
+function createDevQuestionGradePill(text, variant = "", description = "") {
   const pill = document.createElement("span");
   pill.className = "dev-question-grade-pill";
   if (variant) {
     pill.dataset.variant = variant;
   }
+  if (description) {
+    pill.dataset.description = description;
+    pill.tabIndex = 0;
+    pill.setAttribute("aria-label", `${text}. ${description}`);
+    attachFloatingDescriptionTooltip(pill);
+  }
   pill.textContent = text;
   return pill;
+}
+
+function getDevQuestionAiPillDescription(source, mode) {
+  switch (source) {
+    case "model":
+      return "AI reviewed this answer directly using the question context.";
+    case "local-with-ai-second-opinion":
+      return "Local marking rejected this answer first, then AI reviewed it and accepted it.";
+    case "local-with-ai-review":
+      return "Local marking rejected this answer first, then AI reviewed it and kept it incorrect.";
+    case "local-ai-unavailable":
+      return "AI grading was requested, but the server could not reach a usable AI model.";
+    case "local-ai-failed":
+      return "AI grading was requested, but the provider returned an error.";
+    default:
+      return mode === "force-ai" ? "AI was requested for this answer." : "";
+  }
 }
 
 function renderDevQuestionGradingResult(result, question, answer, mode) {
@@ -28568,16 +28591,29 @@ function renderDevQuestionGradingResult(result, question, answer, mode) {
 
   const pills = document.createElement("div");
   pills.className = "dev-question-grade-pills";
+  const sourceDescription = getDevQuestionAiPillDescription(displaySource, mode);
   pills.append(
     createDevQuestionGradePill(getDevQuestionGradeModeLabel(mode), "mode"),
-    createDevQuestionGradePill(getDevQuestionGradeSourceLabel(displaySource), displaySource?.includes("ai") || displaySource === "model" ? "ai" : "local"),
+    createDevQuestionGradePill(
+      getDevQuestionGradeSourceLabel(displaySource),
+      displaySource?.includes("ai") || displaySource === "model" ? "ai" : "local",
+      sourceDescription
+    ),
     createDevQuestionGradePill(question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Exact option" : getGradingStrictnessLabel(question.gradingStrictness), "strictness")
   );
   if (reviewedIndexes.includes(0) || result.source === "model") {
-    pills.append(createDevQuestionGradePill("Player answer reviewed by AI", "ai"));
+    pills.append(createDevQuestionGradePill(
+      "Player answer reviewed by AI",
+      "ai",
+      "AI reviewed this player answer using the trivia question context."
+    ));
   }
   if (Array.isArray(result.aiSecondOpinionIndexes) && result.aiSecondOpinionIndexes.includes(0)) {
-    pills.append(createDevQuestionGradePill("AI rescued player answer", "ai"));
+    pills.append(createDevQuestionGradePill(
+      "AI rescued player answer",
+      "ai",
+      "AI overruled the local preset grader and counted this answer as correct."
+    ));
   }
 
   const tested = document.createElement("p");
@@ -35160,7 +35196,10 @@ function getAnswerGradingReason(answer, rating = {}, roundResult = {}, index = -
   }
   if (rating.correct) {
     if (aiRescued) {
-      return "A second look counted this as what you meant.";
+      return "AI reviewed this answer and counted it as what you meant.";
+    }
+    if (aiReviewed) {
+      return "AI reviewed this answer using the question context and accepted it.";
     }
     if (details.kind === "exact") {
       return "That matches the answer.";
@@ -35183,7 +35222,7 @@ function getAnswerGradingReason(answer, rating = {}, roundResult = {}, index = -
     return "Close enough: it points to the right answer.";
   }
   if (aiReviewed) {
-    return "A second look still could not tie it clearly to the answer.";
+    return "AI reviewed this answer, but still could not tie it clearly to the answer.";
   }
   if (details.score >= 0.72) {
     return "Close, but not clear enough to count.";

@@ -7336,22 +7336,25 @@ async function generateRoundSecondOpinionWithModel(payload, apiKey, candidates =
 
 function buildRoundSecondOpinionPrompt(payload, candidates = []) {
   return JSON.stringify({
-    task: "Give a context-aware second opinion for short trivia answers that the preset grader marked incorrect but are meaningful enough to review.",
+    task: "Grade candidate short trivia answers with the same context-aware acceptance standard as the full AI grader. The preset grader marked these incorrect, but that local result is only a cheap first pass and should not make you stricter.",
     outputShape: {
       correctIndexes: "array of candidate indexes that should be accepted as correct"
     },
     rules: [
       "Return only valid JSON. Do not wrap the JSON in markdown.",
       "Only evaluate candidateAnswers. Do not include any index that is not listed in candidateAnswers.",
-      "Judge whether each candidate actually answers the trivia question. Do not rely only on string similarity to canonicalAnswer or acceptedAnswers.",
+      "Grade each candidate directly against the trivia question and the intended meaning of canonicalAnswer. Do not rely only on string similarity to canonicalAnswer or acceptedAnswers.",
       "Treat canonicalAnswer and acceptedAnswers as examples of the intended answer, not a complete list of every valid wording.",
+      "Use the same acceptance standard as the full AI grader. If this answer would be accepted by a direct AI grading pass, include its index here.",
+      "Do not be stricter just because the local preset grader rejected the answer. Your job is to correct local misses, not to defend them.",
       getGradingStrictnessInstruction(payload.gradingStrictness),
       "Accept an answer only when it clearly identifies the canonical answer despite misspelling, missing accents, phonetic spelling, abbreviation, alias, swapped word order, translation, or a distinctive partial answer.",
+      "Be generous with broken spacing, extra articles, small filler words, typo-like splits or merges, and phonetic multi-word attempts when the intended answer is obvious from the question.",
       "If the stored answer is only part of a name or concept, accept a different identifying part, fuller name, common surname, title, alias, or equivalent phrase when the question context makes it clearly the same answer.",
       "A distinctive first name, surname, nickname, team name, title fragment, or object/place/company name can be correct when the question context makes the intended answer clear.",
-      "Reject broad categories, random related words, guesses that point to a different answer, generic adjectives, jokes, filler, and ambiguous fragments.",
+      "Reject only when the answer is blank, nonsense, a broad category, a random related word, a guess that points to a different answer, generic filler, or too ambiguous to identify the intended answer.",
       "Blank, empty, nonsense, and gibberish answers are already filtered out and must not be accepted if present.",
-      "If unsure, leave the index out.",
+      "If a meaningful answer points clearly to the right thing, accept it. Leave it out only when it could reasonably be a different answer or does not identify the answer.",
       "Do not include explanations, commentary, or rewritten answers."
     ],
     trivia: {
@@ -7380,12 +7383,12 @@ async function generateRoundSecondOpinionWithResponses(payload, apiKey, candidat
     },
     body: JSON.stringify({
       model: getModel(),
-      temperature: 0.1,
+      temperature: 0.25,
       input: [
         {
           role: "system",
           content:
-            "You are a strict but forgiving second-opinion trivia grader. Accept only candidate answers that clearly mean the canonical answer despite spelling mistakes, aliases, abbreviations, or distinctive partial answers. Return only compact valid JSON."
+            "You grade short-answer trivia with the same acceptance standard as the full AI grader. The local preset grader is only a cheap first pass; overrule it when the question context makes the intended answer clear. Accept clear semantic equivalents, aliases, abbreviations, distinctive partial answers, broken spacing, and spelling or phonetic mistakes. Return only compact valid JSON."
         },
         {
           role: "user",
@@ -7437,12 +7440,12 @@ async function generateRoundSecondOpinionWithChatCompletions(payload, apiKey, ca
     },
     body: JSON.stringify({
       model: getModel(),
-      temperature: 0.1,
+      temperature: 0.25,
       messages: [
         {
           role: "system",
           content:
-            "You are a strict but forgiving second-opinion trivia grader. Accept only candidate answers that clearly mean the canonical answer despite spelling mistakes, aliases, abbreviations, or distinctive partial answers. Return only valid JSON with key correctIndexes."
+            "You grade short-answer trivia with the same acceptance standard as the full AI grader. The local preset grader is only a cheap first pass; overrule it when the question context makes the intended answer clear. Accept clear semantic equivalents, aliases, abbreviations, distinctive partial answers, broken spacing, and spelling or phonetic mistakes. Return only valid JSON with key correctIndexes."
         },
         {
           role: "user",
