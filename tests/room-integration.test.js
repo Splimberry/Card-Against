@@ -604,9 +604,11 @@ async function testBrowserExitDeletesRoomWhenNoRealPlayersRemain() {
   assert.equal(directRoom.payload.close.reason, "empty-room");
 }
 
-async function testRoomListShowsStoredRoomsWithoutActivePlayers() {
+async function testRoomListClosesStoredRoomsWithoutActivePlayersAfterGrace() {
   const code = makeCode(8107);
+  const staleAt = Date.now() - (3 * 60 * 1000 + 1000);
   await upsertRoom(makeRoom(code, {
+    updatedAt: staleAt,
     participants: [
       {
         id: "host-client",
@@ -616,7 +618,9 @@ async function testRoomListShowsStoredRoomsWithoutActivePlayers() {
         bot: false,
         active: false,
         muted: false,
-        status: "left"
+        status: "left",
+        disconnectedAt: staleAt,
+        lastSeenAt: staleAt
       },
       {
         id: "bot-client",
@@ -632,10 +636,50 @@ async function testRoomListShowsStoredRoomsWithoutActivePlayers() {
   }));
 
   const rooms = await listRooms();
-  assert.equal(rooms.some((room) => room.code === code), true);
+  assert.equal(rooms.some((room) => room.code === code), false);
   const { response, payload } = await getRoom(code);
-  assert.equal(response.status, 200, payload.error);
-  assert.equal(payload.room.code, code);
+  assert.equal(response.status, 410);
+  assert.equal(payload.closed, true);
+  assert.equal(payload.close.reason, "empty-room");
+}
+
+async function testRoomListClosesStaleSinglePlayerRoomAfterGrace() {
+  const code = makeCode(8205);
+  const staleAt = Date.now() - (3 * 60 * 1000 + 1000);
+  await upsertRoom(makeRoom(code, {
+    host: {
+      id: "guest-client",
+      profileUserId: "guest:stale",
+      name: "Guest",
+      avatar: "",
+      equippedTitleId: "",
+      cardCustomization: null
+    },
+    updatedAt: staleAt,
+    participants: [
+      {
+        id: "guest-client",
+        profileUserId: "guest:stale",
+        name: "Guest",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host",
+        joinedAt: staleAt,
+        lastConnectedAt: staleAt,
+        lastSeenAt: staleAt
+      }
+    ]
+  }));
+
+  const rooms = await listRooms();
+  assert.equal(rooms.some((room) => room.code === code), false);
+  const directRoom = await getRoom(code);
+  assert.equal(directRoom.response.status, 410);
+  assert.equal(directRoom.payload.closed, true);
+  assert.equal(directRoom.payload.close.reason, "empty-room");
 }
 
 async function testRoomListUsesParticipantsWhenActiveCountIsMissing() {
@@ -1038,6 +1082,58 @@ async function testManualHostLeaveTransfersOwnershipAndAuthority() {
   assert.equal(stored.response.status, 200, stored.payload.error);
   assert.equal(stored.payload.room.host.id, "oldest-player");
   assert.equal(stored.payload.room.participants.find((participant) => participant.id === "host-client").active, false);
+}
+
+async function testPromotedHostLeavingClosesRoomWhenNoPlayersRemain() {
+  const code = makeCode(8189);
+  await upsertRoom(makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host",
+        joinedAt: 1
+      },
+      {
+        id: "oldest-player",
+        profileUserId: "user:oldest-player",
+        name: "Oldest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined",
+        joinedAt: 2
+      }
+    ]
+  }));
+
+  const hostLeft = await roomLeaveCommand(code, {
+    participantId: "host-client",
+    reason: "manual"
+  });
+  assert.equal(hostLeft.response.status, 200, hostLeft.payload.error);
+  assert.equal(hostLeft.payload.eventType, "host-transferred");
+  assert.equal(hostLeft.payload.newHostId, "oldest-player");
+
+  const promotedLeft = await roomLeaveCommand(code, {
+    participantId: "oldest-player",
+    reason: "manual"
+  });
+  assert.equal(promotedLeft.response.status, 200, promotedLeft.payload.error);
+  assert.equal(promotedLeft.payload.closed, true);
+  assert.equal(promotedLeft.payload.reason, "host-left");
+
+  const directRoom = await getRoom(code);
+  assert.equal(directRoom.response.status, 410);
+  assert.equal(directRoom.payload.closed, true);
+  assert.equal(directRoom.payload.close.reason, "host-left");
 }
 
 async function testHostReconnectTimeoutPromotesOldestPlayer() {
@@ -5999,7 +6095,14 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     assert.equal(url, "https://ai.test/v1/chat/completions");
     const body = JSON.parse(options.body || "{}");
     const prompt = JSON.parse(body.messages[1].content);
-    assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0, 1]);
+    if (fetchCalls === 1) {
+      assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0, 1]);
+      assert.equal(prompt.task.includes("context-aware second opinion"), true);
+    } else {
+      assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0]);
+      assert.equal(prompt.trivia.question, "Who drew Sunflowers?");
+      assert.equal(prompt.candidateAnswers[0].answer, "van gogh");
+    }
     return {
       ok: true,
       async json() {
@@ -6007,7 +6110,7 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
           choices: [
             {
               message: {
-                content: JSON.stringify({ correctIndexes: [0, 1] })
+                content: JSON.stringify({ correctIndexes: fetchCalls === 1 ? [0, 1] : [0] })
               }
             }
           ]
@@ -6035,19 +6138,37 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     assert.deepEqual(rescued.payload.aiSecondOpinionIndexes, [0, 1]);
     assert.equal(rescued.payload.source, "local-with-ai-second-opinion");
 
+    const contextRescued = await request("POST", "/api/round", {
+      answer: "van gogh",
+      blackCard: "Who drew Sunflowers?",
+      triviaTheme: "Art",
+      canonicalAnswer: "vicent",
+      acceptedAnswers: ["vicent"],
+      botCards: ["cat"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      roundSeed: "ai-second-opinion-context"
+    });
+    assert.equal(contextRescued.response.status, 200, contextRescued.payload.error);
+    assert.equal(fetchCalls, 2);
+    assert.deepEqual(contextRescued.payload.correctIndexes, [0]);
+    assert.deepEqual(contextRescued.payload.aiReviewedIndexes, [0]);
+    assert.deepEqual(contextRescued.payload.aiSecondOpinionIndexes, [0]);
+    assert.equal(contextRescued.payload.source, "local-with-ai-second-opinion");
+
     const gibberish = await request("POST", "/api/round", {
       answer: "zzzzzz",
       blackCard: "Which artist painted The Starry Night?",
       triviaTheme: "Art",
       canonicalAnswer: "Vincent van Gogh",
       acceptedAnswers: ["van Gogh"],
-      botCards: ["Claude Monet"],
+      botCards: ["cat"],
       botLabels: ["Bot"],
       mode: "bots",
       roundSeed: "ai-second-opinion-gibberish"
     });
     assert.equal(gibberish.response.status, 200, gibberish.payload.error);
-    assert.equal(fetchCalls, 1);
+    assert.equal(fetchCalls, 2);
     assert.deepEqual(gibberish.payload.correctIndexes, []);
     assert.deepEqual(gibberish.payload.aiReviewedIndexes, []);
     assert.deepEqual(gibberish.payload.aiSecondOpinionIndexes, []);
@@ -6069,7 +6190,8 @@ async function main() {
   await testHostLeaveDeletesRoom();
   await testBrowserExitRemovesJoinedPlayer();
   await testBrowserExitDeletesRoomWhenNoRealPlayersRemain();
-  await testRoomListShowsStoredRoomsWithoutActivePlayers();
+  await testRoomListClosesStoredRoomsWithoutActivePlayersAfterGrace();
+  await testRoomListClosesStaleSinglePlayerRoomAfterGrace();
   await testRoomListUsesParticipantsWhenActiveCountIsMissing();
   await testRoomDirectoryAcceptsProfileImagePayload();
   await testRoomDirectoryPreservesProfileStyleFields();
@@ -6083,6 +6205,7 @@ async function main() {
   await testAdminLoginRateLimit();
   await testHostPageExitDeletesRoom();
   await testManualHostLeaveTransfersOwnershipAndAuthority();
+  await testPromotedHostLeavingClosesRoomWhenNoPlayersRemain();
   await testHostReconnectTimeoutPromotesOldestPlayer();
   await testCreatingSecondRoomTransfersOlderRoomHost();
   await testAnswerSurvivesReconnectCommand();

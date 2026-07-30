@@ -35,6 +35,8 @@ const maxRoomEvents = 100;
 const roomRequestMaxBytes = 750_000;
 const hostReconnectGraceMs = 60 * 1000;
 const participantReconnectGraceMs = 60 * 1000;
+const participantActiveStaleMs = 3 * 60 * 1000;
+const emptyRoomCloseGraceMs = 3 * 60 * 1000;
 const rateLimitBuckets = new Map();
 const chatCooldownBuckets = new Map();
 const aiRoundCache = new Map();
@@ -512,7 +514,8 @@ async function handleGetRoom(reqOrRes, resOrCode, maybeCode) {
   }
   const activeRoom = await ensureRoomReconnectGrace(room);
   if (!activeRoom) {
-    sendJson(res, 410, { closed: true, close: createRoomClosePayload(normalizedCode, "host-disconnected") });
+    const close = await backendStore.getRoomClose(normalizedCode);
+    sendJson(res, 410, { closed: true, close: close || createRoomClosePayload(normalizedCode, "host-disconnected") });
     return;
   }
   sendJson(res, 200, {
@@ -4025,11 +4028,12 @@ async function handleRoomCommandLeaveRoom(req, res, room, command, rawBody = {})
 async function handleRoomCommandParticipantPresence(req, res, room, command, rawBody = {}, options = {}) {
   const activeRoom = await ensureRoomReconnectGrace(room);
   if (!activeRoom) {
+    const close = await backendStore.getRoomClose(room.code);
     sendJson(res, 410, {
       ok: false,
       closed: true,
       roomCode: room.code,
-      close: createRoomClosePayload(room.code, "host-disconnected"),
+      close: close || createRoomClosePayload(room.code, "host-disconnected"),
       events: []
     });
     return;
@@ -4247,6 +4251,7 @@ async function handleRoomCommandParticipantPresence(req, res, room, command, raw
       joinedAt: existingParticipant.joinedAt || participant.joinedAt || existingParticipant.lastConnectedAt || Date.now(),
       disconnectedAt: isNowActive ? 0 : Date.now(),
       lastConnectedAt: isNowActive ? Date.now() : existingParticipant.lastConnectedAt || 0,
+      lastSeenAt: isNowActive ? Date.now() : existingParticipant.lastSeenAt || 0,
       status: preserveReconnectGameplayStatus
         ? reconnectStatus
         : hasSubmissionUpdate && !acceptsSubmissionUpdate ? existingParticipant.status : participant.status,
@@ -4276,6 +4281,7 @@ async function handleRoomCommandParticipantPresence(req, res, room, command, raw
     }
     participant.disconnectedAt = participant.active === false ? Date.now() : 0;
     participant.lastConnectedAt = participant.active === false ? 0 : Date.now();
+    participant.lastSeenAt = participant.active === false ? 0 : Date.now();
     participant.joinedAt = participant.joinedAt || Date.now();
     activeRoom.participants.push(participant);
   }
@@ -4535,6 +4541,54 @@ function isRoomHostReconnectGraceExpired(room, now = Date.now()) {
   return Boolean(hostInactive && pendingAt && now - pendingAt >= hostReconnectGraceMs);
 }
 
+function getParticipantPresenceTimestamp(room = {}, participant = {}) {
+  const joinedAt = normalizeServerTimestamp(participant.joinedAt, 0);
+  const participantTimestamp = Math.max(
+    normalizeServerTimestamp(participant.lastSeenAt, 0),
+    normalizeServerTimestamp(participant.lastConnectedAt, 0),
+    joinedAt > 1_000_000_000_000 ? joinedAt : 0
+  );
+  return participantTimestamp || normalizeServerTimestamp(room.updatedAt, 0);
+}
+
+function pruneStaleActiveParticipants(room, now = Date.now()) {
+  if (!room || room.status === "complete" || !Array.isArray(room.participants)) {
+    return [];
+  }
+  const disconnected = [];
+  room.participants.forEach((participant) => {
+    const role = normalizeParticipantRole(participant);
+    if (
+      role === "bot"
+      || participant.active === false
+      || participant.disconnectedAt
+    ) {
+      return;
+    }
+    const lastSeenAt = getParticipantPresenceTimestamp(room, participant);
+    if (!lastSeenAt || now - lastSeenAt < participantActiveStaleMs) {
+      return;
+    }
+    participant.active = false;
+    participant.disconnectedAt = lastSeenAt;
+    participant.status = role === "host"
+      ? "host-disconnected"
+      : role === "spectator"
+        ? "spectator-disconnected"
+        : "disconnected";
+    disconnected.push(participant);
+  });
+  disconnected.forEach((participant) => {
+    stampRoomEvent(room, "participant_disconnected", {
+      participantId: participant.id,
+      participantName: participant.name || "A player",
+      participant,
+      reason: "stale-presence"
+    });
+  });
+  return disconnected;
+}
+
 function pruneExpiredDisconnectedParticipants(room, now = Date.now()) {
   if (!room || room.status === "complete" || !Array.isArray(room.participants)) {
     return [];
@@ -4564,11 +4618,37 @@ function pruneExpiredDisconnectedParticipants(room, now = Date.now()) {
   return removed;
 }
 
+function isEmptyRoomCloseGraceExpired(room, now = Date.now()) {
+  if (!room || room.status === "complete" || hasActiveRealPlayers(room)) {
+    return false;
+  }
+  const presenceTimes = (Array.isArray(room.participants) ? room.participants : [])
+    .filter((participant) => normalizeParticipantRole(participant) !== "bot")
+    .map((participant) => Math.max(
+      normalizeServerTimestamp(participant.disconnectedAt, 0),
+      getParticipantPresenceTimestamp(room, participant)
+    ))
+    .filter(Boolean);
+  const lastPresenceAt = presenceTimes.length
+    ? Math.max(...presenceTimes)
+    : normalizeServerTimestamp(room.updatedAt, 0);
+  return Boolean(lastPresenceAt && now - lastPresenceAt >= emptyRoomCloseGraceMs);
+}
+
 async function ensureRoomReconnectGrace(room, options = {}) {
+  const staleParticipants = pruneStaleActiveParticipants(room);
+  if (isEmptyRoomCloseGraceExpired(room)) {
+    await closeStoredRoom(room.code, "empty-room");
+    return null;
+  }
   if (!isRoomHostReconnectGraceExpired(room)) {
     const removed = pruneExpiredDisconnectedParticipants(room);
-    if (removed.length) {
+    if (staleParticipants.length || removed.length) {
       finalizeRoom(room);
+      if (isEmptyRoomCloseGraceExpired(room)) {
+        await closeStoredRoom(room.code, "empty-room");
+        return null;
+      }
       return backendStore.upsertRoom(room);
     }
     return room;
@@ -5339,6 +5419,7 @@ function normalizeParticipant(participant) {
     remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0),
     disconnectedAt: clampServerNumber(participant.disconnectedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     lastConnectedAt: clampServerNumber(participant.lastConnectedAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    lastSeenAt: normalizeServerTimestamp(participant.lastSeenAt, 0),
     joinedAt: clampServerNumber(participant.joinedAt, 0, Number.MAX_SAFE_INTEGER, 0)
   };
 }
@@ -6070,7 +6151,15 @@ function finalizeRoom(room) {
     const staleHostIds = new Set(activeHosts.filter((participant) => participant.id !== preferredHost.id).map((participant) => participant.id));
     room.participants = room.participants.filter((participant) => !staleHostIds.has(participant.id));
   }
-  if (!room.participants.some((participant) => normalizeParticipantRole(participant) === "host")) {
+  const canRepairMissingHost = Boolean(
+    room.status !== "complete"
+    && room.host?.id
+    && (!room.participants.length || room.participants.some((participant) => {
+      const role = normalizeParticipantRole(participant);
+      return participant.active !== false && role !== "bot" && role !== "spectator";
+    }))
+  );
+  if (!room.participants.some((participant) => normalizeParticipantRole(participant) === "host") && canRepairMissingHost) {
     const repairedHost = {
       id: room.host.id,
       userId: room.host.profileUserId || room.host.id,
@@ -6116,6 +6205,14 @@ function clampServerNumber(value, min, max, fallback) {
     return fallback;
   }
   return Math.min(max, Math.max(min, number));
+}
+
+function normalizeServerTimestamp(value, fallback = 0) {
+  if (Number.isFinite(Number(value))) {
+    return clampServerNumber(value, 0, Number.MAX_SAFE_INTEGER, fallback);
+  }
+  const parsed = Date.parse(String(value || ""));
+  return Number.isFinite(parsed) ? clampServerNumber(parsed, 0, Number.MAX_SAFE_INTEGER, fallback) : fallback;
 }
 
 async function serveStatic(pathname, res, isHead, req) {
@@ -7170,15 +7267,18 @@ async function generateRoundSecondOpinionWithModel(payload, apiKey, candidates =
 
 function buildRoundSecondOpinionPrompt(payload, candidates = []) {
   return JSON.stringify({
-    task: "Give a second opinion only for short trivia answers that the preset grader marked incorrect but close enough to review.",
+    task: "Give a context-aware second opinion for short trivia answers that the preset grader marked incorrect but are meaningful enough to review.",
     outputShape: {
       correctIndexes: "array of candidate indexes that should be accepted as correct"
     },
     rules: [
       "Return only valid JSON. Do not wrap the JSON in markdown.",
       "Only evaluate candidateAnswers. Do not include any index that is not listed in candidateAnswers.",
+      "Judge whether each candidate actually answers the trivia question. Do not rely only on string similarity to canonicalAnswer or acceptedAnswers.",
+      "Treat canonicalAnswer and acceptedAnswers as examples of the intended answer, not a complete list of every valid wording.",
       getGradingStrictnessInstruction(payload.gradingStrictness),
       "Accept an answer only when it clearly identifies the canonical answer despite misspelling, missing accents, phonetic spelling, abbreviation, alias, swapped word order, translation, or a distinctive partial answer.",
+      "If the stored answer is only part of a name or concept, accept a different identifying part, fuller name, common surname, title, alias, or equivalent phrase when the question context makes it clearly the same answer.",
       "A distinctive first name, surname, nickname, team name, title fragment, or object/place/company name can be correct when the question context makes the intended answer clear.",
       "Reject broad categories, random related words, guesses that point to a different answer, generic adjectives, jokes, filler, and ambiguous fragments.",
       "Blank, empty, nonsense, and gibberish answers are already filtered out and must not be accepted if present.",
@@ -7399,11 +7499,16 @@ function getAiSecondOpinionCandidates(payload, localResult) {
       ...entry,
       score: scoreAnswerAgainstBank(entry.answer, answerBank)
     }))
-    .filter((entry) => !alreadyCorrect.has(entry.index) && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score, payload.gradingStrictness))
+    .filter((entry) => !alreadyCorrect.has(entry.index) && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score, payload.gradingStrictness, {
+      question: payload.blackCard,
+      theme: payload.triviaTheme,
+      image: payload.image,
+      mode: payload.mode
+    }))
     .slice(0, 4);
 }
 
-function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore, strictness = "normal") {
+function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore, strictness = "normal", context = {}) {
   const normalizedStrictness = normalizeGradingStrictness(strictness);
   if (normalizedStrictness === "exact") {
     return false;
@@ -7418,6 +7523,9 @@ function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore, strict
   }
   const scoreGate = normalizedStrictness === "forgiving" ? 0.34 : normalizedStrictness === "strict" ? 0.62 : 0.42;
   if (localScore >= scoreGate) {
+    return true;
+  }
+  if (hasContextualAnswerReviewSignal(normalized, context, normalizedStrictness)) {
     return true;
   }
   const answerWords = normalized.split(" ").filter(Boolean);
@@ -7443,6 +7551,57 @@ function shouldAskAiForSecondOpinion(answer, acceptedAnswers, localScore, strict
   const hasSharedDistinctiveWord = answerWords.some((word) => word.length >= 4 && acceptedWords.includes(word));
   const tokenGate = normalizedStrictness === "forgiving" ? 0.48 : normalizedStrictness === "strict" ? 0.72 : 0.55;
   return hasSharedDistinctiveWord || bestTokenScore >= tokenGate;
+}
+
+function hasContextualAnswerReviewSignal(normalizedAnswer, context = {}, strictness = "normal") {
+  if (!normalizedAnswer || normalizeGradingStrictness(strictness) === "exact") {
+    return false;
+  }
+  const question = normalizeTriviaAnswer(context?.question || context?.blackCard || "");
+  if (!question || question.length < 8) {
+    return false;
+  }
+  const words = normalizedAnswer.split(" ").filter(Boolean);
+  if (!words.length || words.length > 8) {
+    return false;
+  }
+  const weakWords = new Set([
+    "thing",
+    "stuff",
+    "someone",
+    "somebody",
+    "person",
+    "people",
+    "place",
+    "artist",
+    "painter",
+    "singer",
+    "actor",
+    "movie",
+    "song",
+    "game",
+    "book",
+    "food",
+    "animal",
+    "country",
+    "city",
+    "maybe",
+    "probably",
+    "answer",
+    "correct",
+    "wrong"
+  ]);
+  const strongWords = words.filter((word) => (
+    word.length >= 4
+    && !weakWords.has(word)
+    && !/^\d+$/.test(word)
+  ));
+  const hasNumber = words.some((word) => /^\d{1,4}$/.test(word));
+  const hasMeaningfulPhrase = words.length >= 2 && words.some((word) => word.length >= 3);
+  if (normalizeGradingStrictness(strictness) === "strict") {
+    return strongWords.length >= 2 || (hasNumber && hasMeaningfulPhrase);
+  }
+  return strongWords.length >= 1 || hasNumber || hasMeaningfulPhrase;
 }
 
 function hasUsefulAnswerSignal(normalizedAnswer) {

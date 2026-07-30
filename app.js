@@ -32329,9 +32329,9 @@ function syncActiveRoomFromDirectory(room, options = {}) {
   if (isRoomLobbyActive()) {
     renderRoomLobby();
   }
-  if (!options.skipHeartbeat && isCurrentHost() && !state.joiningRoom) {
+  if (!options.skipHeartbeat && hasActiveRoomContext()) {
     state.roomExitLeaveSent = false;
-    publishRoomHeartbeat(state.currentRoomStatus === "in-progress" ? "playing" : "host");
+    publishRoomHeartbeat(getRoomHeartbeatStatus());
   }
   return false;
 }
@@ -32399,17 +32399,27 @@ function handleRoomVisibilityChange() {
   void reconnectCurrentRoomParticipant("visible");
 }
 
+function getRoomHeartbeatStatus() {
+  if (state.isSpectator) {
+    return "spectating";
+  }
+  if (isCurrentHost() && !state.joiningRoom) {
+    return state.currentRoomStatus === "in-progress" ? "playing" : "host";
+  }
+  return state.currentRoomStatus === "in-progress" ? "playing" : "joined";
+}
+
 function startRoomHeartbeat() {
   stopRoomHeartbeat();
-  if (!isCurrentHost() || state.joiningRoom || !hasActiveRoomContext()) {
+  if (!hasActiveRoomContext()) {
     return;
   }
   state.roomHeartbeatTimerId = window.setInterval(() => {
-    if (!isCurrentHost() || state.joiningRoom || !hasActiveRoomContext()) {
+    if (!hasActiveRoomContext()) {
       stopRoomHeartbeat();
       return;
     }
-    publishRoomHeartbeat(state.currentRoomStatus === "in-progress" ? "playing" : "host");
+    publishRoomHeartbeat(getRoomHeartbeatStatus());
   }, 60000);
 }
 
