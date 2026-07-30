@@ -13093,17 +13093,59 @@ function isRoomGradingPhaseStarted() {
 }
 
 function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
-  recordRoomDiagnosticEvent("client-grading-lock-skipped", {
+  if (!isRoomMode() || state.isSpectator || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+    return false;
+  }
+  const roundSyncKey = getCurrentRoomRoundSyncKey();
+  if (!roundSyncKey || state.roomGradingRequestKey === roundSyncKey) {
+    return true;
+  }
+  state.roomGradingRequestKey = roundSyncKey;
+  state.roomGradingRequestStartedAt = Date.now();
+  const code = state.roomSettings.code;
+  const participantId = getRoomParticipantIdForOwner(state.currentOwner) || state.clientId;
+  const clientEventId = createRoomSyncCommandId("resolve-all-submitted", code);
+  recordRoomDiagnosticEvent("command-sent", {
     code: state.roomSettings.code,
-    eventType: "round-grading",
+    eventType: "resolve-all-submitted",
     round: state.round,
     matchId: getCurrentRoomMatchId()
   }, {
     source: "client",
-    eventType: "round-grading",
-    reason: `Skipped client-side all-submitted grading lock (${reason}); submit_answer command owns this transition.`
+    eventType: "resolve-all-submitted",
+    reason: `Requesting server grading because local room state has no pending submitters (${reason}).`
   });
-  return false;
+  void roomSync.sendCommand("resolve_all_submitted", {
+    clientEventId,
+    participantId,
+    round: state.round,
+    matchId: getCurrentRoomMatchId(),
+    reason
+  }, {
+    roomCode: code,
+    participantId,
+    clientEventId
+  }).then((result) => {
+    if (result?.ok) {
+      return;
+    }
+    if (state.roomGradingRequestKey === roundSyncKey) {
+      state.roomGradingRequestKey = "";
+      state.roomGradingRequestStartedAt = 0;
+    }
+    recordRoomDiagnosticEvent("command-error", {
+      code,
+      eventType: "resolve-all-submitted",
+      round: state.round,
+      matchId: getCurrentRoomMatchId(),
+      pendingParticipantIds: result?.data?.pendingParticipantIds || result?.pendingParticipantIds || []
+    }, {
+      source: "server",
+      eventType: "resolve-all-submitted",
+      reason: result?.error || "Server did not resolve all-submitted grading."
+    });
+  });
+  return true;
 }
 
 function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {

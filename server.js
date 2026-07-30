@@ -2629,6 +2629,10 @@ async function handleRoomCommandParsed(req, res, normalizedCode, command, body) 
       await handleRoomCommandStartRound(req, res, room, command, body);
       return;
     }
+    if (command.type === "resolve_all_submitted") {
+      await handleRoomCommandResolveAllSubmitted(req, res, room, command, body);
+      return;
+    }
     if (command.type === "prepare_round") {
       await handleRoomCommandPrepareRound(req, res, room, command, body);
       return;
@@ -3108,6 +3112,86 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     ...createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
     game: storedRoom.game || room.game
   });
+}
+
+function createSyntheticRoomEvent(room, type, payload = {}) {
+  const revision = getRoomRevision(room);
+  const createdAt = Date.now();
+  return sanitizeRoomEventForClient({
+    id: `${room.code}-${revision}-${type}`,
+    roomCode: room.code,
+    revision,
+    type,
+    actorId: String(payload.actorId || payload.participantId || payload.hostParticipantId || "").slice(0, 120),
+    clientEventId: String(payload.clientEventId || "").slice(0, 160),
+    payload: {
+      ...payload,
+      code: payload.code || room.code,
+      roomCode: payload.roomCode || room.code,
+      revision,
+      updatedAt: room.updatedAt || createdAt
+    },
+    createdAt
+  }, { includeSubmittedAnswers: true });
+}
+
+async function handleRoomCommandResolveAllSubmitted(req, res, room, command, rawBody = {}) {
+  if (!requireRoomParticipantAuth(req, res, room, command.participantId, rawBody, "Only a room participant can resolve submitted answers.")) {
+    return;
+  }
+
+  const game = room.game && typeof room.game === "object" ? room.game : null;
+  const currentMatchId = String(game?.matchId || "").slice(0, 80);
+  const currentRound = clampServerNumber(game?.round, 0, 100, 0);
+  const payloadMatchId = String(command.payload.matchId || "").slice(0, 80);
+  const payloadRound = clampServerNumber(command.payload.round, 0, 100, 0);
+  if (room.status !== "in-progress" || !game || game.status === "starting" || game.status === "ended") {
+    sendJson(res, 409, { ok: false, error: "This round cannot move to grading." });
+    return;
+  }
+  if (!currentMatchId || !payloadMatchId || payloadMatchId !== currentMatchId) {
+    sendJson(res, 409, { ok: false, error: "Resolve request belongs to a previous match." });
+    return;
+  }
+  if (!currentRound || !payloadRound || payloadRound !== currentRound) {
+    sendJson(res, 409, { ok: false, error: "Resolve request belongs to a previous round." });
+    return;
+  }
+
+  const previousRevision = getRoomRevision(room);
+  autoSubmitRoomBotsWhenOnlyBotsPending(room, {
+    matchId: currentMatchId,
+    round: currentRound,
+    clientEventId: command.clientEventId
+  });
+  const transition = startRoomGradingTransition(room, {
+    reason: "all-submitted",
+    force: false,
+    matchId: currentMatchId,
+    round: currentRound,
+    clientEventId: command.clientEventId
+  });
+  if (!transition.started && !transition.duplicate) {
+    sendJson(res, 409, {
+      ok: false,
+      error: "Round still has pending answers.",
+      roomCode: room.code,
+      revision: getRoomRevision(room),
+      pendingParticipantIds: transition.pendingParticipantIds,
+      events: []
+    });
+    return;
+  }
+
+  finalizeRoom(room);
+  const storedRoom = await backendStore.upsertRoom(room);
+  const response = createRoomCommandResponse(storedRoom, previousRevision, {
+    includeSubmittedAnswers: true
+  });
+  if (transition.duplicate && !response.events.length && transition.payload) {
+    response.events = [createSyntheticRoomEvent(storedRoom, "round_grading", transition.payload)];
+  }
+  sendJson(res, 200, response);
 }
 
 async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = {}) {
@@ -4140,6 +4224,18 @@ async function handleRoomCommandParticipantPresence(req, res, room, command, raw
     eventPayload.remainingTime = clampServerNumber(finalParticipant.remainingTime, 0, 600, 0);
   }
   stampRoomEvent(activeRoom, eventType, eventPayload);
+  if (answerSubmitted) {
+    autoSubmitRoomBotsWhenOnlyBotsPending(activeRoom, {
+      matchId: eventPayload.matchId,
+      round: eventPayload.round,
+      clientEventId: command.clientEventId
+    });
+    startRoomGradingTransition(activeRoom, {
+      reason: "all-submitted",
+      force: false,
+      clientEventId: command.clientEventId
+    });
+  }
   const storedRoom = await backendStore.upsertRoom(activeRoom);
   const participantCookie = normalizeParticipantRole(participant) !== "bot" ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
   const response = {
