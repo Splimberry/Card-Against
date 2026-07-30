@@ -2997,6 +2997,7 @@ const state = {
   lastBroadcastAnswerDraft: "",
   spectatorRoundResultPlaybackKey: "",
   roomRoundResultPlaybackKey: "",
+  roomRoundResultPublishKey: "",
   roomConnectionNoticeKeys: new Set(),
   renderingSyncedRoomResume: false,
   roomBotSequence: 0,
@@ -4546,6 +4547,7 @@ function clearRoundSubmissionState(options = {}) {
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
+  state.roomRoundResultPublishKey = "";
   state.roomGradingRequestKey = "";
   state.roomGradingRequestStartedAt = 0;
   state.roomBotAnswerSubmissions = {};
@@ -11659,6 +11661,7 @@ function applyRealtimeRoomRoundResult(payload = {}) {
     };
   }
   rememberRoomRevisionPayload(payload);
+  applyAuthoritativeRoomResultState(result);
   playSyncedRoomRoundResult(result);
   maybePlaySpectatorRoomRoundResult(result);
   return true;
@@ -11679,6 +11682,36 @@ function getRoomRoundResultPlaybackKey(result = {}) {
     Number(result.round) || Number(state.round) || 0,
     result.questionId || state.questionId || ""
   ].join("|");
+}
+
+function applyAuthoritativeRoomResultState(result = null, options = {}) {
+  const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
+  if (!syncedResult || !isRoomMode()) {
+    return false;
+  }
+  const syncedPowerState = syncedResult.powerState || (syncedResult.scoreState.length ? {
+    updatedAt: syncedResult.updatedAt,
+    players: syncedResult.scoreState
+  } : null);
+  if (syncedPowerState) {
+    applyRoomPowerState({
+      code: state.roomSettings.code,
+      round: syncedResult.round || state.round,
+      matchId: syncedResult.matchId || getCurrentRoomMatchId(),
+      updatedAt: syncedPowerState.updatedAt || syncedResult.updatedAt,
+      force: true,
+      hands: syncedPowerState.hands,
+      played: syncedPowerState.played,
+      players: syncedPowerState.players,
+      effects: syncedPowerState.effects
+    });
+  }
+  if (options.render !== false) {
+    renderScore();
+    renderPowerUps();
+    renderRoomPlayers();
+  }
+  return true;
 }
 
 function showWaitingForRoomRoundResult() {
@@ -12267,6 +12300,11 @@ function publishRoomRoundResult(roundResult, options = {}) {
   if (!result) {
     return Promise.resolve(null);
   }
+  const publishKey = getRoomRoundResultPlaybackKey(result);
+  if (state.roomRoundResultPublishKey === publishKey || getRoomRoundResultForCurrentRound(result.round)) {
+    return Promise.resolve({ ok: true, duplicate: true, roundResult: state.roomRoundResult || result });
+  }
+  state.roomRoundResultPublishKey = publishKey;
   const code = state.roomSettings.code;
   const clientEventId = String(options.clientEventId || createRoomSyncCommandId("publish-round-result", code)).slice(0, 160);
   state.roomRoundResult = result;
@@ -12289,12 +12327,18 @@ function publishRoomRoundResult(roundResult, options = {}) {
     clientEventId
   }).then((data) => {
     if (!data?.ok) {
+      if (state.roomRoundResultPublishKey === publishKey) {
+        state.roomRoundResultPublishKey = "";
+      }
       state.roomDirectoryOnline = false;
       return null;
     }
     state.roomDirectoryOnline = true;
     return data;
   }).catch(() => {
+    if (state.roomRoundResultPublishKey === publishKey) {
+      state.roomRoundResultPublishKey = "";
+    }
     state.roomDirectoryOnline = false;
     return null;
   });
@@ -12488,11 +12532,12 @@ function applyRoomPowerState(payload = {}) {
     return false;
   }
   const revision = Number(payload.revision) || 0;
-  if (revision && revision < (state.roomEventRevision || 0)) {
+  const forceAuthoritative = Boolean(payload.force);
+  if (!forceAuthoritative && revision && revision < (state.roomEventRevision || 0)) {
     return false;
   }
   const powerRevision = Math.max(0, Number(payload.powerRevision || payload.powerState?.revision) || 0);
-  if (powerRevision && powerRevision < (state.roomPowerStateRevision || 0)) {
+  if (!forceAuthoritative && powerRevision && powerRevision < (state.roomPowerStateRevision || 0)) {
     return false;
   }
   const updatedAt = Number(payload.updatedAt) || 0;
@@ -12515,7 +12560,7 @@ function applyRoomPowerState(payload = {}) {
     }
     const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
     const entryRevision = Math.max(0, Number(entry.revision) || powerRevision || 0);
-    if (isStaleRoomPowerEntry("hands", owner, entryRevision, entryUpdatedAt)) {
+    if (!forceAuthoritative && isStaleRoomPowerEntry("hands", owner, entryRevision, entryUpdatedAt)) {
       return;
     }
     const previousHand = [...(state.powerHands[owner] || [])];
@@ -12563,7 +12608,7 @@ function applyRoomPowerState(payload = {}) {
     }
     const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
     const entryRevision = Math.max(0, Number(entry.revision) || powerRevision || 0);
-    if (isStaleRoomPowerEntry("played", owner, entryRevision, entryUpdatedAt)) {
+    if (!forceAuthoritative && isStaleRoomPowerEntry("played", owner, entryRevision, entryUpdatedAt)) {
       return;
     }
     const nextStacks = (Array.isArray(entry.stacks) ? entry.stacks : [])
@@ -12600,7 +12645,7 @@ function applyRoomPowerState(payload = {}) {
     }
     const entryUpdatedAt = Math.max(0, Number(entry.updatedAt) || updatedAt || 0);
     const entryRevision = Math.max(0, Number(entry.revision) || powerRevision || 0);
-    if (isStaleRoomPowerEntry("players", owner, entryRevision, entryUpdatedAt)) {
+    if (!forceAuthoritative && isStaleRoomPowerEntry("players", owner, entryRevision, entryUpdatedAt)) {
       return;
     }
     setScore(owner, Number(entry.score) || 0);
@@ -12609,7 +12654,7 @@ function applyRoomPowerState(payload = {}) {
     rememberRoomPowerEntryRevision("players", owner, entryRevision);
     changed = true;
   });
-  const effectsApplied = !payloadIsOlderThanKnownPowerState && applyRoomAbilityEffectStatePayload(effects);
+  const effectsApplied = (forceAuthoritative || !payloadIsOlderThanKnownPowerState) && applyRoomAbilityEffectStatePayload(effects);
   if (effectsApplied) {
     changed = true;
   }
@@ -13517,6 +13562,11 @@ function applyRealtimeRoomGrading(payload = {}) {
   }
   renderSubmissionStatus();
   rememberRoomRevisionPayload(payload);
+  const existingResult = getRoomRoundResultForCurrentRound(round);
+  if (existingResult) {
+    applyAuthoritativeRoomResultState(existingResult);
+    return true;
+  }
   if (state.isSpectator) {
     clearSpectatorAnswerDraftState();
     renderSpectatorAnswerCards();
@@ -35053,21 +35103,7 @@ async function playRound(rawInput, options = {}) {
   let awarded;
   if (syncedRoundResult?.awarded) {
     awarded = syncedRoundResult.awarded;
-    const syncedPowerState = syncedRoundResult.powerState || (syncedRoundResult.scoreState.length ? {
-      updatedAt: syncedRoundResult.updatedAt,
-      players: syncedRoundResult.scoreState
-    } : null);
-    if (syncedPowerState) {
-      applyRoomPowerState({
-        code: state.roomSettings.code,
-        round: state.round,
-        updatedAt: syncedPowerState.updatedAt || syncedRoundResult.updatedAt,
-        hands: syncedPowerState.hands,
-        played: syncedPowerState.played,
-        players: syncedPowerState.players,
-        effects: syncedPowerState.effects
-      });
-    }
+    applyAuthoritativeRoomResultState(syncedRoundResult, { render: false });
   } else {
     awarded = hasCorrectAnswer
       ? awardPoints(winnerOwner, winningRating, winningOwners, ratingsByOwner)

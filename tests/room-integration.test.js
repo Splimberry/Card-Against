@@ -4997,10 +4997,38 @@ async function testRoomRoundResultRequiresGradingLock() {
   assert.equal(lockedResult.payload.roundResult.resultSummary.scoreDeltas[0].delta, 1200);
   assert.equal(lockedResult.payload.roundResult.resultSummary.leaderboard[0].rank, 1);
 
+  const duplicateResult = await roomRoundResultCommand(code, {
+    hostParticipantId: "host-client",
+    roundResult: makeRoundResult(2, {
+      matchId,
+      resultSummary: {
+        scoreDeltas: [
+          {
+            participantId: "host-client",
+            owner: "player",
+            label: "Host",
+            delta: 9999,
+            scoreBefore: 0,
+            scoreAfter: 9999,
+            streakBefore: 0,
+            streakAfter: 9,
+            streakDelta: 9,
+            correct: true,
+            tag: "Duplicate"
+          }
+        ]
+      }
+    })
+  });
+  assert.equal(duplicateResult.response.status, 200, duplicateResult.payload.error);
+  assert.equal(duplicateResult.payload.duplicate, true);
+  assert.equal(duplicateResult.payload.roundResult.resultSummary.scoreDeltas[0].delta, 1200);
+
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
   assert.equal(stored.payload.room.game.status, "grading");
   assert.equal(stored.payload.room.game.roundResult.questionId, "test-question-2");
+  assert.equal(stored.payload.room.game.roundResult.resultSummary.scoreDeltas[0].delta, 1200);
   assert.equal(stored.payload.room.game.roundResult.resultSummary.powerEvents[0].text, "Pocket Bounty paid out.");
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_result" && event.payload?.roundResult?.resultSummary?.activeEffects?.[0]?.name === "Pocket Shield"), true);
 }

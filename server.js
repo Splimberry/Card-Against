@@ -3638,6 +3638,20 @@ async function handleRoomCommandPublishRoundResult(req, res, room, command, rawB
   }
 
   const previousRevision = getRoomRevision(room);
+  const existingResult = normalizeRoomRoundResult(room.game?.roundResult || null);
+  if (
+    existingResult
+    && (!existingResult.matchId || !roundResult.matchId || existingResult.matchId === roundResult.matchId)
+    && Number(existingResult.round) === Number(roundResult.round || currentRound)
+  ) {
+    sendJson(res, 200, {
+      ...createRoomCommandResponse(room, previousRevision, { includeSubmittedAnswers: true }),
+      duplicate: true,
+      roundResult: existingResult,
+      game: room.game
+    });
+    return;
+  }
   room.status = "in-progress";
   room.game = normalizeRoomGame({
     ...(room.game || {}),
