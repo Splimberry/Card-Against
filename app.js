@@ -11690,6 +11690,41 @@ function getRoomRoundResultPlaybackKey(result = {}) {
   ].join("|");
 }
 
+function isRoomCurrentRoundGradingLocked(round = state.round, matchId = getCurrentRoomMatchId()) {
+  if (!isRoomMode()) {
+    return false;
+  }
+  const targetRound = Number(round) || Number(state.round) || 0;
+  const targetMatchId = String(matchId || getCurrentRoomMatchId() || "").trim();
+  const game = state.roomGame || state.joiningRoom?.game || null;
+  const gameRound = Number(game?.round) || 0;
+  const gameMatchId = String(game?.matchId || "").trim();
+  const sameGameRound = Boolean(
+    game
+    && targetRound
+    && gameRound === targetRound
+    && (!targetMatchId || !gameMatchId || gameMatchId === targetMatchId)
+  );
+  const result = normalizeRoomRoundResultPayload(state.roomRoundResult || game?.roundResult || null);
+  const resultRound = Number(result?.round) || 0;
+  const resultMatchId = String(result?.matchId || "").trim();
+  const sameResultRound = Boolean(
+    result
+    && targetRound
+    && resultRound === targetRound
+    && (!targetMatchId || !resultMatchId || resultMatchId === targetMatchId)
+  );
+  return Boolean(
+    (sameGameRound && (game.status === "grading" || game.roundResult))
+    || sameResultRound
+    || (
+      state.roomRoundResolving
+      && sameGameRound
+      && (game.status === "grading" || !elements.loadingPanel.classList.contains("hidden") || !elements.cardsArea.classList.contains("hidden"))
+    )
+  );
+}
+
 function applyAuthoritativeRoomResultState(result = null, options = {}) {
   const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
   if (!syncedResult || !isRoomMode()) {
@@ -12771,6 +12806,14 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   if (!isRoomMode() || state.isSpectator || !isCurrentMatchWork(matchToken) || getPendingSubmitters().length > 0) {
     return false;
   }
+  const existingResult = getRoomRoundResultForCurrentRound();
+  if (existingResult) {
+    if (!isCurrentHost() || state.joiningRoom) {
+      playSyncedRoomRoundResult(existingResult, localFallback);
+    }
+    state.roomRoundResolving = false;
+    return true;
+  }
   if (isRoomSubmissionResolveStale()) {
     state.roomRoundResolving = false;
   }
@@ -12837,6 +12880,11 @@ function maybeResolveRoomSubmissions() {
   }
   const pendingSubmitters = getPendingSubmitters();
   if (pendingSubmitters.length > 0 || state.roomSubmissionResolveId) {
+    return;
+  }
+  if (getRoomRoundResultForCurrentRound()) {
+    state.roomGradingRequestKey = "";
+    state.roomGradingRequestStartedAt = 0;
     return;
   }
   if (!isRoomGradingPhaseStarted()) {
@@ -32471,6 +32519,10 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   if (incomingMatchId) {
     setCurrentRoomMatchId(incomingMatchId);
   }
+  if (isRoomCurrentRoundGradingLocked(nextRound, incomingMatchId)) {
+    rememberRoomRevisionPayload(payload);
+    return true;
+  }
   const advancingGame = payload.game && typeof payload.game === "object"
     ? payload.game
     : payload.room?.game && typeof payload.room.game === "object"
@@ -32553,6 +32605,10 @@ function applyRealtimeRoundStarted(payload = {}) {
   }
   if (game.matchId) {
     setCurrentRoomMatchId(game.matchId);
+  }
+  if (isRoomCurrentRoundGradingLocked(nextRound, game.matchId)) {
+    rememberRoomRevisionPayload(payload);
+    return true;
   }
   applyRoomGameMatchSettings(game, payload, { render: false, resetTimer: true });
   let setup;
