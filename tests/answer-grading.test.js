@@ -122,6 +122,18 @@ const nonsenseAnswerCases = [
     label: "almost repeated fake syllables"
   },
   {
+    answer: "efabhebahbaehebahebahbeahbeahbeahbeahbeahbeahbeahbeaheabhaehbea",
+    acceptedAnswers: ["Lightsaber"],
+    context: { question: "Which glowing weapon does a Jedi usually use?", theme: "Film and TV" },
+    label: "long low-variety repeated chunk nonsense"
+  },
+  {
+    answer: "abracadabraabracadabra",
+    acceptedAnswers: ["Mitochondria"],
+    context: { question: "Which organelle is often called the powerhouse of the cell?", theme: "Science" },
+    label: "duplicated word loop"
+  },
+  {
     answer: "jffnjeksjenfskjeksn f",
     acceptedAnswers: ["Beethoven"],
     context: { question: "Which composer wrote Fur Elise?", theme: "Art and Music" },
@@ -165,6 +177,18 @@ const meaningfulContextCases = [
     acceptedAnswers: ["river"],
     context: { question: "Which major US river flows past Memphis?", theme: "Geo and History" },
     label: "repetitive real place name"
+  },
+  {
+    answer: "pneumonoultramicroscopicsilicovolcanoconiosis",
+    acceptedAnswers: ["lung disease"],
+    context: { question: "What long word names a lung disease caused by fine silica dust?", theme: "Science" },
+    label: "very long real science term"
+  },
+  {
+    answer: "internationalization",
+    acceptedAnswers: ["i18n"],
+    context: { question: "What software term is often abbreviated i18n?", theme: "Gaming and Geek Culture" },
+    label: "long repeated-ending real term"
   }
 ];
 

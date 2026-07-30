@@ -6215,6 +6215,14 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
         canonicalAnswer: "Mitochondria",
         acceptedAnswers: ["Mitochondria"],
         roundSeed: "ai-second-opinion-near-repeated-fake-word"
+      },
+      {
+        answer: "efabhebahbaehebahebahbeahbeahbeahbeahbeahbeahbeahbeaheabhaehbea",
+        blackCard: "Which glowing weapon does a Jedi usually use?",
+        triviaTheme: "Film and TV",
+        canonicalAnswer: "Lightsaber",
+        acceptedAnswers: ["Lightsaber"],
+        roundSeed: "ai-second-opinion-long-repeated-low-variety"
       }
     ];
     for (const lowSignalCase of lowSignalCases) {
@@ -6358,6 +6366,16 @@ async function testDebugAiShieldExplainsMixedGradingGate() {
     assert.equal(fakeSyllableBlocked.response.status, 200, fakeSyllableBlocked.payload.error);
     assert.equal(fakeSyllableBlocked.payload.wouldAskAi, false);
     assert.equal(fakeSyllableBlocked.payload.reasonCode, "repetitive-nonsense");
+
+    const longLoopBlocked = await request("POST", "/api/debug/ai-shield", {
+      ...basePayload,
+      canonicalAnswer: "Lightsaber",
+      acceptedAnswers: ["Lightsaber"],
+      answer: "efabhebahbaehebahebahbeahbeahbeahbeahbeahbeahbeahbeaheabhaehbea"
+    }, adminHeaders());
+    assert.equal(longLoopBlocked.response.status, 200, longLoopBlocked.payload.error);
+    assert.equal(longLoopBlocked.payload.wouldAskAi, false);
+    assert.equal(longLoopBlocked.payload.reasonCode, "repetitive-nonsense");
 
     const rejectedBlocked = await request("POST", "/api/debug/ai-shield", {
       ...basePayload,

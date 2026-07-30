@@ -7961,7 +7961,12 @@ function getLikelyLowSignalNonsenseReason(normalizedAnswer) {
   if (letters.length < 8) {
     return null;
   }
-  if (hasRepeatedNonsenseChunk(letters) || hasNearRepeatedNonsenseChunk(letters) || hasRepetitiveFakeWordPattern(letters)) {
+  if (
+    hasRepeatedNonsenseChunk(letters)
+    || hasNearRepeatedNonsenseChunk(letters)
+    || hasDominantRepeatedNgramPattern(letters)
+    || hasRepetitiveFakeWordPattern(letters)
+  ) {
     return {
       reasonCode: "repetitive-nonsense",
       reason: "This looks like repeated fake syllables, so the AI shield blocks review."
@@ -8010,6 +8015,29 @@ function hasNearRepeatedNonsenseChunk(letters) {
     const repeated = chunk.repeat(Math.ceil(letters.length / size)).slice(0, letters.length);
     const similarity = 1 - (levenshteinDistance(letters, repeated) / Math.max(letters.length, 1));
     if (similarity >= 0.84) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasDominantRepeatedNgramPattern(letters) {
+  if (letters.length < 18) {
+    return false;
+  }
+  const uniqueRatio = new Set(letters).size / Math.max(letters.length, 1);
+  if (uniqueRatio > 0.38) {
+    return false;
+  }
+  for (let size = 3; size <= 6; size += 1) {
+    const counts = new Map();
+    for (let index = 0; index <= letters.length - size; index += 1) {
+      const gram = letters.slice(index, index + size);
+      counts.set(gram, (counts.get(gram) || 0) + 1);
+    }
+    const highestCount = Math.max(0, ...counts.values());
+    const coverage = (highestCount * size) / Math.max(letters.length, 1);
+    if (highestCount >= 4 && coverage >= 0.52) {
       return true;
     }
   }
