@@ -28552,12 +28552,17 @@ function renderDevQuestionGradingResult(result, question, answer, mode) {
   const reviewedIndexes = Array.isArray(result.aiReviewedIndexes) ? result.aiReviewedIndexes.map(Number) : [];
   const isCorrect = correctIndexes.includes(0);
   const displaySource = question.questionStyle === MULTIPLE_CHOICE_STYLE ? "multiple-choice" : result.source;
+  const aiFailed = Boolean(result.aiUnavailable)
+    || result.source === "local-ai-unavailable"
+    || result.source === "local-ai-failed";
   const card = document.createElement("article");
   card.className = "dev-question-grade-result";
   card.dataset.result = isCorrect ? "correct" : "incorrect";
 
   const heading = document.createElement("h4");
-  heading.textContent = isCorrect ? "Accepted" : "Rejected";
+  heading.textContent = aiFailed
+    ? `AI Failed - Local ${isCorrect ? "Accepted" : "Rejected"}`
+    : isCorrect ? "Accepted" : "Rejected";
   const summary = document.createElement("p");
   summary.textContent = getDevQuestionGradeSummary({ ...result, source: displaySource }, isCorrect);
 
@@ -28589,6 +28594,12 @@ function renderDevQuestionGradingResult(result, question, answer, mode) {
     warning.textContent = result.aiError;
     card.appendChild(warning);
   }
+  if (aiFailed && mode === "force-ai") {
+    const warning = document.createElement("p");
+    warning.className = "dev-question-grade-warning";
+    warning.textContent = "Mixed grading will also rely on local marking until the AI token/provider configuration is fixed.";
+    card.appendChild(warning);
+  }
 
   const details = document.createElement("details");
   const detailsSummary = document.createElement("summary");
@@ -28607,8 +28618,8 @@ function renderDevQuestionGradingResult(result, question, answer, mode) {
 
   elements.devQuestionGradeResults.replaceChildren(card);
   elements.devQuestionGradeStatus.textContent = isCorrect
-    ? "Marked correct for the player answer."
-    : "Marked incorrect for the player answer.";
+    ? aiFailed ? "AI failed. Local fallback marked the player answer correct." : "Marked correct for the player answer."
+    : aiFailed ? "AI failed. Local fallback marked the player answer incorrect." : "Marked incorrect for the player answer.";
 }
 
 async function submitDevQuestionGradingTest() {

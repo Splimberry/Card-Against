@@ -3345,6 +3345,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .dev-question-grade-warning {
   color: #ffd8e1 !important;
+  overflow-wrap: anywhere;
 }
 
 .dev-question-grade-pill {
