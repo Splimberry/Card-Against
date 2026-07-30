@@ -95,6 +95,8 @@ const triviaThemes = [
 ];
 const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
 const gradingStrictnessSet = new Set(gradingStrictnessOptions);
+const roundGradingModeOptions = ["mixed", "local", "force-ai"];
+const roundGradingModeSet = new Set(roundGradingModeOptions);
 const commonTriviaAbbreviationAliases = new Map([
   ["youtube", ["yt", "u tube"]],
   ["instagram", ["ig", "insta"]],
@@ -2007,6 +2009,17 @@ function normalizeAnswerList(value, limit) {
 function normalizeGradingStrictness(value) {
   const normalized = String(value || "").trim().toLowerCase();
   return gradingStrictnessSet.has(normalized) ? normalized : "normal";
+}
+
+function normalizeRoundGradingMode(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "local-only" || normalized === "non-ai" || normalized === "no-ai") {
+    return "local";
+  }
+  if (normalized === "ai" || normalized === "ai-only" || normalized === "force_ai") {
+    return "force-ai";
+  }
+  return roundGradingModeSet.has(normalized) ? normalized : "mixed";
 }
 
 function getLocalGradingThreshold(strictness) {
@@ -6749,6 +6762,10 @@ async function handleRound(req, res) {
       sendJson(res, roomAuth.status, { error: roomAuth.error });
       return;
     }
+    if (payload.gradingMode !== "mixed" && !hasAdminAuth(req)) {
+      sendJson(res, 403, { error: "Admin authentication is required for grading debug modes." });
+      return;
+    }
     const cacheKey = createAiRoundCacheKey(payload);
     const cached = await getAiRoundCache(cacheKey);
     if (cached) {
@@ -6757,23 +6774,71 @@ async function handleRound(req, res) {
     }
 
     const localResult = createLocalRoundResult(payload);
-    const secondOpinionCandidates = getAiSecondOpinionCandidates(payload, localResult);
-    const apiKey = getApiKey();
-    if (!secondOpinionCandidates.length) {
-      setAiRoundCache(cacheKey, localResult);
-      sendJson(res, 200, localResult);
-      return;
-    }
-    if (!apiKey) {
-      sendJson(res, 200, localResult);
+    if (payload.gradingMode === "local") {
+      const result = { ...localResult, gradingMode: "local" };
+      setAiRoundCache(cacheKey, result);
+      sendJson(res, 200, result);
       return;
     }
 
-    let result = localResult;
+    if (payload.gradingMode === "force-ai") {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        sendJson(res, 200, {
+          ...localResult,
+          gradingMode: "force-ai",
+          source: "local-ai-unavailable",
+          aiUnavailable: true
+        });
+        return;
+      }
+
+      try {
+        const result = await rememberAiRoundResult(cacheKey, async () => {
+          const modelResult = await generateRoundWithModel(payload, apiKey);
+          return {
+            ...modelResult,
+            gradingMode: "force-ai",
+            aiReviewedIndexes: getRoundAnswerEntries(payload, modelResult.cards).map((entry) => entry.index),
+            aiSecondOpinionIndexes: []
+          };
+        });
+        sendJson(res, 200, result);
+        return;
+      } catch (error) {
+        console.warn("Forced AI grading failed, using local trivia grader:", error.message || error);
+        sendJson(res, 200, {
+          ...localResult,
+          gradingMode: "force-ai",
+          source: "local-ai-failed",
+          aiUnavailable: true,
+          aiError: error.message || "AI grading failed."
+        });
+        return;
+      }
+    }
+
+    const secondOpinionCandidates = getAiSecondOpinionCandidates(payload, localResult);
+    const apiKey = getApiKey();
+    if (!secondOpinionCandidates.length) {
+      const result = { ...localResult, gradingMode: "mixed" };
+      setAiRoundCache(cacheKey, result);
+      sendJson(res, 200, result);
+      return;
+    }
+    if (!apiKey) {
+      sendJson(res, 200, { ...localResult, gradingMode: "mixed" });
+      return;
+    }
+
+    let result = { ...localResult, gradingMode: "mixed" };
     try {
       result = await rememberAiRoundResult(cacheKey, async () => {
         const secondOpinion = await generateRoundSecondOpinionWithModel(payload, apiKey, secondOpinionCandidates);
-        return mergeSecondOpinionRoundResult(localResult, secondOpinion, secondOpinionCandidates);
+        return {
+          ...mergeSecondOpinionRoundResult(localResult, secondOpinion, secondOpinionCandidates),
+          gradingMode: "mixed"
+        };
       });
     } catch (error) {
       console.warn("AI grading second opinion failed, using local trivia grader:", error.message || error);
@@ -6838,6 +6903,7 @@ function normalizeRoundPayload(body) {
   const roomCode = String(body.roomCode || body.code || "").trim().toUpperCase().slice(0, 12);
   const participantId = String(body.participantId || "").trim().slice(0, 80);
   const gradingStrictness = normalizeGradingStrictness(body.gradingStrictness);
+  const gradingMode = normalizeRoundGradingMode(body.gradingMode || body.debugGradingMode);
 
   if (!blackCard) {
     throw new Error("Missing trivia question.");
@@ -6858,6 +6924,7 @@ function normalizeRoundPayload(body) {
     mode,
     roomCode,
     participantId,
+    gradingMode,
     botCards,
     botLabels,
     answerCards,
@@ -6906,6 +6973,7 @@ async function validateRoundRequestAuth(req, payload, body = {}) {
 function createAiRoundCacheKey(payload) {
   const stablePayload = {
     mode: payload.mode,
+    gradingMode: payload.gradingMode,
     roomCode: payload.roomCode,
     blackCard: payload.blackCard,
     triviaTheme: payload.triviaTheme,
@@ -6916,6 +6984,7 @@ function createAiRoundCacheKey(payload) {
     answer: payload.answer,
     opponentAnswer: payload.opponentAnswer,
     botCards: payload.botCards,
+    debugRoundSeed: payload.gradingMode === "mixed" ? "" : payload.roundSeed,
     answerCards: payload.answerCards
       .map((card) => ({
         owner: card.owner,
@@ -8290,8 +8359,20 @@ function normalizeBotCards(cards, count = 2) {
   return normalized;
 }
 
-function requireAdmin(req, res) {
+function hasAdminAuth(req) {
   if (getAdminSession(req)) {
+    return true;
+  }
+
+  const configuredToken = getAdminToken();
+  const authorization = String(req.headers.authorization || "");
+  const bearerToken = authorization.replace(/^Bearer\s+/i, "").trim();
+  const headerToken = String(req.headers["x-admin-token"] || "").trim();
+  return secureEqual(bearerToken, configuredToken) || secureEqual(headerToken, configuredToken);
+}
+
+function requireAdmin(req, res) {
+  if (hasAdminAuth(req)) {
     return true;
   }
 

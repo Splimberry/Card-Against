@@ -6183,6 +6183,149 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
   }
 }
 
+async function testRoundDebugLocalModeSkipsAiOverride() {
+  const previousFetch = global.fetch;
+  const previousAiKey = process.env.AI_API_KEY;
+  const previousAiBaseUrl = process.env.AI_BASE_URL;
+  const previousAiStyle = process.env.AI_API_STYLE;
+  process.env.AI_API_KEY = "test-ai-key";
+  process.env.AI_BASE_URL = "https://ai.test/v1";
+  process.env.AI_API_STYLE = "chat";
+  let fetchCalls = 0;
+  global.fetch = async () => {
+    fetchCalls += 1;
+    throw new Error("local debug grading should not call AI");
+  };
+
+  try {
+    const { response, payload } = await request("POST", "/api/round", {
+      answer: "van gogh",
+      blackCard: "Who drew Sunflowers?",
+      triviaTheme: "Art",
+      canonicalAnswer: "vicent",
+      acceptedAnswers: ["vicent"],
+      botCards: ["cat"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      gradingMode: "local",
+      roundSeed: "debug-local-only"
+    }, adminHeaders());
+    assert.equal(response.status, 200, payload.error);
+    assert.equal(fetchCalls, 0);
+    assert.deepEqual(payload.correctIndexes, []);
+    assert.equal(payload.source, "local-fallback");
+    assert.equal(payload.gradingMode, "local");
+  } finally {
+    global.fetch = previousFetch;
+    if (previousAiKey === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = previousAiKey;
+    if (previousAiBaseUrl === undefined) delete process.env.AI_BASE_URL;
+    else process.env.AI_BASE_URL = previousAiBaseUrl;
+    if (previousAiStyle === undefined) delete process.env.AI_API_STYLE;
+    else process.env.AI_API_STYLE = previousAiStyle;
+  }
+}
+
+async function testRoundDebugForceAiUsesModelOverride() {
+  const previousFetch = global.fetch;
+  const previousAiKey = process.env.AI_API_KEY;
+  const previousAiBaseUrl = process.env.AI_BASE_URL;
+  const previousAiStyle = process.env.AI_API_STYLE;
+  process.env.AI_API_KEY = "test-ai-key";
+  process.env.AI_BASE_URL = "https://ai.test/v1";
+  process.env.AI_API_STYLE = "chat";
+  let fetchCalls = 0;
+  global.fetch = async (url, options = {}) => {
+    fetchCalls += 1;
+    assert.equal(url, "https://ai.test/v1/chat/completions");
+    const body = JSON.parse(options.body || "{}");
+    const prompt = JSON.parse(body.messages[1].content);
+    assert.equal(prompt.trivia.question, "Who drew Debug Sunflowers?");
+    assert.equal(prompt.submittedAnswers[0].answer, "van gogh");
+    return {
+      ok: true,
+      async json() {
+        return {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  cards: ["van gogh", "cat"],
+                  winnerIndex: 0,
+                  correctIndexes: [0]
+                })
+              }
+            }
+          ]
+        };
+      }
+    };
+  };
+
+  try {
+    const { response, payload } = await request("POST", "/api/round", {
+      answer: "van gogh",
+      blackCard: "Who drew Debug Sunflowers?",
+      triviaTheme: "Art",
+      canonicalAnswer: "vicent",
+      acceptedAnswers: ["vicent"],
+      botCards: ["cat"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      gradingMode: "force-ai",
+      roundSeed: "debug-force-ai"
+    }, adminHeaders());
+    assert.equal(response.status, 200, payload.error);
+    assert.equal(fetchCalls, 1);
+    assert.deepEqual(payload.correctIndexes, [0]);
+    assert.deepEqual(payload.aiReviewedIndexes, [0, 1]);
+    assert.deepEqual(payload.aiSecondOpinionIndexes, []);
+    assert.equal(payload.source, "model");
+    assert.equal(payload.gradingMode, "force-ai");
+  } finally {
+    global.fetch = previousFetch;
+    if (previousAiKey === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = previousAiKey;
+    if (previousAiBaseUrl === undefined) delete process.env.AI_BASE_URL;
+    else process.env.AI_BASE_URL = previousAiBaseUrl;
+    if (previousAiStyle === undefined) delete process.env.AI_API_STYLE;
+    else process.env.AI_API_STYLE = previousAiStyle;
+  }
+}
+
+async function testRoundDebugForceAiRequiresAdmin() {
+  const previousFetch = global.fetch;
+  const previousAiKey = process.env.AI_API_KEY;
+  process.env.AI_API_KEY = "test-ai-key";
+  let fetchCalls = 0;
+  global.fetch = async () => {
+    fetchCalls += 1;
+    throw new Error("unauthenticated force AI should not call AI");
+  };
+
+  try {
+    const { response, payload } = await request("POST", "/api/round", {
+      answer: "van gogh",
+      blackCard: "Who drew Locked Debug Sunflowers?",
+      triviaTheme: "Art",
+      canonicalAnswer: "vicent",
+      acceptedAnswers: ["vicent"],
+      botCards: ["cat"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      gradingMode: "force-ai",
+      roundSeed: "debug-force-ai-no-admin"
+    });
+    assert.equal(response.status, 403, payload.error);
+    assert.equal(payload.error, "Admin authentication is required for grading debug modes.");
+    assert.equal(fetchCalls, 0);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousAiKey === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = previousAiKey;
+  }
+}
+
 async function main() {
   testClientUsesRoomCommandEndpointsForMultiplayerWrites();
   await testSupabaseConfigEndpoint();
@@ -6296,6 +6439,9 @@ async function main() {
   await testDebugQuestionDeleteUsesBackendStorage();
   await testRoundUsesLocalGraderWithoutApiKey();
   await testRoundAiSecondOpinionReviewsNearMissesTogether();
+  await testRoundDebugLocalModeSkipsAiOverride();
+  await testRoundDebugForceAiUsesModelOverride();
+  await testRoundDebugForceAiRequiresAdmin();
   console.log("Room integration tests passed.");
 }
 

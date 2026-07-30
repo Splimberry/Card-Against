@@ -3398,6 +3398,7 @@ const state = {
   questionDebugThemes: [...triviaThemes],
   questionDebugImageIssues: [],
   questionDebugToolMode: "duplicates",
+  questionDebugGradeRequestId: 0,
   questionEditOriginalId: "",
   questionEditReturnId: "",
   userQuestionSubmissions: [],
@@ -3682,6 +3683,13 @@ const elements = {
   devQuestionCheckImagesButton: null,
   devQuestionLeastSeenButton: null,
   devQuestionMostRepeatedButton: null,
+  devQuestionGradeAnswer: null,
+  devQuestionGradeMode: null,
+  devQuestionGradeSubmitButton: null,
+  devQuestionGradeClearButton: null,
+  devQuestionGradeStatus: null,
+  devQuestionGradeResults: null,
+  devQuestionGradeOptions: null,
   devSubmissionRefreshButton: null,
   devOverlayGrid: null,
   devOverlayStatus: null,
@@ -25774,6 +25782,31 @@ function buildDevToolScreen() {
           <p id="devQuestionAccepted">Accepted answers appear here.</p>
           <p id="devQuestionRejected">Rejected answers appear here.</p>
           <div class="debug-status" id="devQuestionStatus">Loading question bank...</div>
+          <section class="dev-question-grading-tester" aria-label="Answer grading simulator">
+            <div>
+              <p class="eyebrow">Marking simulator</p>
+              <h3>Test an Answer</h3>
+            </div>
+            <label>
+              <span>Answer to test</span>
+              <textarea id="devQuestionGradeAnswer" rows="2" placeholder="Type an answer exactly like a player would"></textarea>
+            </label>
+            <label>
+              <span>Grading mode</span>
+              <select id="devQuestionGradeMode">
+                <option value="mixed">Mixed: local first, AI if needed</option>
+                <option value="local">Non-AI only</option>
+                <option value="force-ai">Force AI grading</option>
+              </select>
+            </label>
+            <div class="dev-question-grade-options" id="devQuestionGradeOptions"></div>
+            <div class="dev-question-grade-actions">
+              <button type="button" class="icon-button" id="devQuestionGradeSubmitButton">Run Marking</button>
+              <button type="button" class="icon-button" id="devQuestionGradeClearButton">Clear</button>
+            </div>
+            <div class="debug-status" id="devQuestionGradeStatus">Pick a question, enter an answer, then run marking.</div>
+            <div class="dev-question-grade-results" id="devQuestionGradeResults"></div>
+          </section>
         </aside>
       </div>
     </section>
@@ -26047,6 +26080,13 @@ function buildDevToolScreen() {
   elements.devQuestionCheckImagesButton = screen.querySelector("#devQuestionCheckImagesButton");
   elements.devQuestionLeastSeenButton = screen.querySelector("#devQuestionLeastSeenButton");
   elements.devQuestionMostRepeatedButton = screen.querySelector("#devQuestionMostRepeatedButton");
+  elements.devQuestionGradeAnswer = screen.querySelector("#devQuestionGradeAnswer");
+  elements.devQuestionGradeMode = screen.querySelector("#devQuestionGradeMode");
+  elements.devQuestionGradeSubmitButton = screen.querySelector("#devQuestionGradeSubmitButton");
+  elements.devQuestionGradeClearButton = screen.querySelector("#devQuestionGradeClearButton");
+  elements.devQuestionGradeStatus = screen.querySelector("#devQuestionGradeStatus");
+  elements.devQuestionGradeResults = screen.querySelector("#devQuestionGradeResults");
+  elements.devQuestionGradeOptions = screen.querySelector("#devQuestionGradeOptions");
   elements.devRoomStatus = screen.querySelector("#devRoomStatus");
   elements.devRoomList = screen.querySelector("#devRoomList");
   elements.devRoomRefreshButton = screen.querySelector("#devRoomRefreshButton");
@@ -26163,6 +26203,31 @@ function bindDevToolEvents() {
     if (button) {
       focusQuestionDebugById(button.dataset.questionToolFocus);
     }
+  });
+  elements.devQuestionGradeSubmitButton.addEventListener("click", submitDevQuestionGradingTest);
+  elements.devQuestionGradeClearButton.addEventListener("click", () => {
+    elements.devQuestionGradeAnswer.value = "";
+    resetDevQuestionGradingTester();
+    elements.devQuestionGradeAnswer.focus();
+    playSound("click");
+  });
+  elements.devQuestionGradeAnswer.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      submitDevQuestionGradingTest();
+    }
+  });
+  elements.devQuestionGradeMode.addEventListener("change", () => {
+    resetDevQuestionGradingTester();
+    renderDevQuestionGradingTester(getSelectedDebugQuestion());
+  });
+  elements.devQuestionGradeOptions.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-dev-grade-option]");
+    if (!button) {
+      return;
+    }
+    elements.devQuestionGradeAnswer.value = button.dataset.devGradeOption || "";
+    submitDevQuestionGradingTest();
   });
   elements.devRoomRefreshButton.addEventListener("click", loadDevRooms);
   elements.devRoomList.addEventListener("click", handleDevRoomClick);
@@ -28257,6 +28322,8 @@ function renderQuestionDebugPreview() {
     setHidden(elements.devQuestionPlaceholder, false);
     elements.devQuestionPlaceholder.textContent = "Select a question.";
     elements.devQuestionCredit.textContent = "";
+    resetDevQuestionGradingTester("No question selected.");
+    renderDevQuestionGradingTester(null);
     return;
   }
 
@@ -28287,6 +28354,11 @@ function renderQuestionDebugPreview() {
   }
   elements.devQuestionStatus.textContent = `Seed id: ${question.id}`;
   renderDevQuestionImage(question);
+  resetDevQuestionGradingTester(question.questionStyle === MULTIPLE_CHOICE_STYLE
+    ? "Multiple choice uses exact option marking. Type or click an option to test it."
+    : "Enter a player answer, then run marking."
+  );
+  renderDevQuestionGradingTester(question);
 }
 
 function renderDevQuestionImage(question) {
@@ -28314,6 +28386,281 @@ function renderDevQuestionImage(question) {
     elements.devQuestionPlaceholder.textContent = "Text-only question.";
     setHidden(elements.devQuestionImage, true);
     setHidden(elements.devQuestionPlaceholder, false);
+  }
+}
+
+function getDevQuestionGradeMode(question) {
+  if (question?.questionStyle === MULTIPLE_CHOICE_STYLE) {
+    return "local";
+  }
+  const mode = elements.devQuestionGradeMode?.value || "mixed";
+  return ["mixed", "local", "force-ai"].includes(mode) ? mode : "mixed";
+}
+
+function getDevQuestionGradeModeLabel(mode) {
+  switch (mode) {
+    case "local":
+      return "Non-AI only";
+    case "force-ai":
+      return "Force AI";
+    case "mixed":
+    default:
+      return "Mixed";
+  }
+}
+
+function getDevQuestionGradeSourceLabel(source) {
+  switch (source) {
+    case "model":
+      return "AI grader";
+    case "local-with-ai-second-opinion":
+      return "AI accepted after second look";
+    case "local-with-ai-review":
+      return "AI reviewed";
+    case "local-ai-unavailable":
+      return "AI unavailable";
+    case "local-ai-failed":
+      return "AI failed";
+    case "multiple-choice":
+      return "Exact option";
+    case "local-fallback":
+    default:
+      return "Local preset grader";
+  }
+}
+
+function getDevQuestionGradeSummary(result, isCorrect) {
+  switch (result?.source) {
+    case "model":
+      return isCorrect
+        ? "AI accepted this answer using the question context."
+        : "AI rejected this answer using the question context.";
+    case "local-with-ai-second-opinion":
+      return "The saved answers missed it at first, but AI took a second look and accepted it.";
+    case "local-with-ai-review":
+      return "AI took a second look and kept it incorrect.";
+    case "local-ai-unavailable":
+      return "AI grading was requested, but no AI key is available here, so this shows the local result.";
+    case "local-ai-failed":
+      return "AI grading was requested but failed, so this shows the local result.";
+    case "multiple-choice":
+      return isCorrect ? "This exactly matches the correct option." : "This does not match the correct option.";
+    case "local-fallback":
+    default:
+      return isCorrect
+        ? "This matched the saved answer or accepted aliases."
+        : "This did not match the saved answer closely enough.";
+  }
+}
+
+function resetDevQuestionGradingTester(message = "Pick a question, enter an answer, then run marking.") {
+  state.questionDebugGradeRequestId += 1;
+  if (!elements.devQuestionGradeStatus || !elements.devQuestionGradeResults) {
+    return;
+  }
+  elements.devQuestionGradeStatus.textContent = message;
+  elements.devQuestionGradeResults.replaceChildren();
+  if (elements.devQuestionGradeSubmitButton) {
+    elements.devQuestionGradeSubmitButton.disabled = !getSelectedDebugQuestion();
+  }
+}
+
+function renderDevQuestionGradingTester(question) {
+  if (!elements.devQuestionGradeMode || !elements.devQuestionGradeOptions || !elements.devQuestionGradeSubmitButton) {
+    return;
+  }
+  const isMultipleChoice = question?.questionStyle === MULTIPLE_CHOICE_STYLE;
+  elements.devQuestionGradeMode.disabled = !question || isMultipleChoice;
+  if (isMultipleChoice) {
+    elements.devQuestionGradeMode.value = "local";
+  } else if (!["mixed", "local", "force-ai"].includes(elements.devQuestionGradeMode.value)) {
+    elements.devQuestionGradeMode.value = "mixed";
+  }
+  elements.devQuestionGradeSubmitButton.disabled = !question;
+  elements.devQuestionGradeOptions.replaceChildren();
+  if (!question) {
+    elements.devQuestionGradeAnswer.placeholder = "Select a question first";
+    return;
+  }
+  elements.devQuestionGradeAnswer.placeholder = isMultipleChoice
+    ? "Type or click one of the options"
+    : "Type an answer exactly like a player would";
+  if (!isMultipleChoice) {
+    return;
+  }
+  (question.multipleChoiceOptions || []).forEach((option) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "dev-question-grade-option";
+    button.dataset.devGradeOption = option;
+    button.textContent = option;
+    elements.devQuestionGradeOptions.appendChild(button);
+  });
+}
+
+function pickDevQuestionControlAnswer(question, testedAnswer = "") {
+  const blocked = new Set([
+    testedAnswer,
+    question?.canonicalAnswer,
+    ...(question?.acceptedAnswers || [])
+  ].map(normalizeTriviaAnswer).filter(Boolean));
+  const candidates = [
+    ...(question?.rejectedAnswers || []),
+    ...(question?.botCards || []),
+    ...(question?.multipleChoiceOptions || []),
+    "Clearly wrong answer",
+    "I don't know"
+  ];
+  return candidates.find((candidate) => {
+    const normalized = normalizeTriviaAnswer(candidate);
+    return normalized && !blocked.has(normalized);
+  }) || "Clearly wrong answer";
+}
+
+function buildDevQuestionGradingPayload(question, answer, gradingMode) {
+  const isMultipleChoice = question.questionStyle === MULTIPLE_CHOICE_STYLE;
+  return {
+    answer,
+    blackCard: question.question,
+    triviaTheme: question.theme,
+    canonicalAnswer: question.canonicalAnswer,
+    acceptedAnswers: isMultipleChoice
+      ? [question.canonicalAnswer].filter(Boolean)
+      : (question.acceptedAnswers || []),
+    gradingStrictness: isMultipleChoice ? "exact" : normalizeGradingStrictness(question.gradingStrictness),
+    image: question.image || null,
+    botCards: [pickDevQuestionControlAnswer(question, answer)],
+    botLabels: ["Control"],
+    mode: "bots",
+    gradingMode: isMultipleChoice ? "local" : gradingMode,
+    roundSeed: `dev-grade-${question.id || "question"}-${gradingMode}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  };
+}
+
+function createDevQuestionGradePill(text, variant = "") {
+  const pill = document.createElement("span");
+  pill.className = "dev-question-grade-pill";
+  if (variant) {
+    pill.dataset.variant = variant;
+  }
+  pill.textContent = text;
+  return pill;
+}
+
+function renderDevQuestionGradingResult(result, question, answer, mode) {
+  const correctIndexes = Array.isArray(result.correctIndexes) ? result.correctIndexes.map(Number) : [];
+  const reviewedIndexes = Array.isArray(result.aiReviewedIndexes) ? result.aiReviewedIndexes.map(Number) : [];
+  const isCorrect = correctIndexes.includes(0);
+  const displaySource = question.questionStyle === MULTIPLE_CHOICE_STYLE ? "multiple-choice" : result.source;
+  const card = document.createElement("article");
+  card.className = "dev-question-grade-result";
+  card.dataset.result = isCorrect ? "correct" : "incorrect";
+
+  const heading = document.createElement("h4");
+  heading.textContent = isCorrect ? "Accepted" : "Rejected";
+  const summary = document.createElement("p");
+  summary.textContent = getDevQuestionGradeSummary({ ...result, source: displaySource }, isCorrect);
+
+  const pills = document.createElement("div");
+  pills.className = "dev-question-grade-pills";
+  pills.append(
+    createDevQuestionGradePill(getDevQuestionGradeModeLabel(mode), "mode"),
+    createDevQuestionGradePill(getDevQuestionGradeSourceLabel(displaySource), displaySource?.includes("ai") || displaySource === "model" ? "ai" : "local"),
+    createDevQuestionGradePill(question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Exact option" : getGradingStrictnessLabel(question.gradingStrictness), "strictness")
+  );
+  if (reviewedIndexes.includes(0) || result.source === "model") {
+    pills.append(createDevQuestionGradePill("Player answer reviewed by AI", "ai"));
+  }
+  if (Array.isArray(result.aiSecondOpinionIndexes) && result.aiSecondOpinionIndexes.includes(0)) {
+    pills.append(createDevQuestionGradePill("AI rescued player answer", "ai"));
+  }
+
+  const tested = document.createElement("p");
+  tested.className = "dev-question-grade-line";
+  tested.textContent = `Tested answer: ${answer}`;
+  const expected = document.createElement("p");
+  expected.className = "dev-question-grade-line";
+  expected.textContent = `Saved answer: ${question.canonicalAnswer || "-"}`;
+  card.append(heading, summary, pills, tested, expected);
+
+  if (result.aiError) {
+    const warning = document.createElement("p");
+    warning.className = "dev-question-grade-warning";
+    warning.textContent = result.aiError;
+    card.appendChild(warning);
+  }
+
+  const details = document.createElement("details");
+  const detailsSummary = document.createElement("summary");
+  detailsSummary.textContent = "Raw result";
+  const raw = document.createElement("pre");
+  raw.textContent = JSON.stringify({
+    source: result.source,
+    gradingMode: result.gradingMode || mode,
+    correctIndexes: result.correctIndexes || [],
+    aiReviewedIndexes: result.aiReviewedIndexes || [],
+    aiSecondOpinionIndexes: result.aiSecondOpinionIndexes || [],
+    cards: result.cards || []
+  }, null, 2);
+  details.append(detailsSummary, raw);
+  card.appendChild(details);
+
+  elements.devQuestionGradeResults.replaceChildren(card);
+  elements.devQuestionGradeStatus.textContent = isCorrect
+    ? "Marked correct for the player answer."
+    : "Marked incorrect for the player answer.";
+}
+
+async function submitDevQuestionGradingTest() {
+  const question = getSelectedDebugQuestion();
+  if (!question) {
+    resetDevQuestionGradingTester("Select a question before running a marking test.");
+    playSound("error");
+    return;
+  }
+  const answer = String(elements.devQuestionGradeAnswer.value || "").trim();
+  if (!answer) {
+    elements.devQuestionGradeStatus.textContent = "Type an answer first.";
+    elements.devQuestionGradeResults.replaceChildren();
+    playSound("error");
+    return;
+  }
+
+  const mode = getDevQuestionGradeMode(question);
+  const requestId = state.questionDebugGradeRequestId + 1;
+  state.questionDebugGradeRequestId = requestId;
+  elements.devQuestionGradeSubmitButton.disabled = true;
+  elements.devQuestionGradeStatus.textContent = `Checking with ${getDevQuestionGradeModeLabel(mode).toLowerCase()}...`;
+  elements.devQuestionGradeResults.replaceChildren();
+
+  try {
+    ensureServerMode();
+    const response = await fetch("/api/round", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildDevQuestionGradingPayload(question, answer, mode))
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (requestId !== state.questionDebugGradeRequestId) {
+      return;
+    }
+    if (!response.ok) {
+      throw new Error(payload.error || `Marking test failed with status ${response.status}.`);
+    }
+    renderDevQuestionGradingResult(payload, question, answer, mode);
+    playSound("submit");
+  } catch (error) {
+    console.warn(error);
+    if (requestId === state.questionDebugGradeRequestId) {
+      elements.devQuestionGradeStatus.textContent = error.message || "Could not run marking test.";
+      elements.devQuestionGradeResults.replaceChildren();
+      playSound("error");
+    }
+  } finally {
+    if (requestId === state.questionDebugGradeRequestId) {
+      elements.devQuestionGradeSubmitButton.disabled = !getSelectedDebugQuestion();
+    }
   }
 }
 
