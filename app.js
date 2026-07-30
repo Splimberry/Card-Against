@@ -1018,6 +1018,19 @@ function readTimerSecondsSetting(storageKey, fallback = defaultMatchTimerSeconds
 }
 
 const savedUserCache = loadUserStorageCache();
+
+function readStoredAudioVolume(storageKey, cachedValue, fallback = 50) {
+  const storedValue = localStorage.getItem(storageKey);
+  const rawValue = storedValue === null || storedValue === "" ? cachedValue : storedValue;
+  const volume = clampNumber(rawValue, 0, 100, fallback);
+  return Number.isFinite(volume) ? volume : fallback;
+}
+
+function readStoredMutedSetting() {
+  const storedValue = localStorage.getItem("cardsAgainstAiMuted");
+  return storedValue === "true";
+}
+
 const savedEnabledThemes = normalizeCachedThemes(savedUserCache?.settings?.lastSelectedThemes);
 const savedMaxRounds = clampNumber(localStorage.getItem("cardsAgainstAiMaxRounds") || savedUserCache?.settings?.maxRounds, 1, 10, 5);
 const savedTimerSeconds = readTimerSecondsSetting("cardsAgainstAiTimerSeconds", savedUserCache?.settings?.timerSeconds || defaultMatchTimerSeconds, {
@@ -2871,15 +2884,15 @@ const soundState = {
   musicUnlocked: false,
   musicAutoStartAttempted: false,
   musicPreloadStarted: false,
-  muted: false,
+  muted: readStoredMutedSetting(),
   lastSfxAt: 0,
   activeAudioNodes: new Set(),
   sfxBuffers: new Map(),
   sfxBufferPromises: new Map(),
   sfxPreloadStarted: false,
   sfxPreloadIdleId: null,
-  sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume") || savedUserCache?.settings?.sfx, 0, 100, 50) / 100,
-  musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume") || savedUserCache?.settings?.music, 0, 100, 50) / 100
+  sfxVolume: readStoredAudioVolume("cardsAgainstAiSfxVolume", savedUserCache?.settings?.sfx) / 100,
+  musicVolume: readStoredAudioVolume("cardsAgainstAiMusicVolume", savedUserCache?.settings?.music) / 100
 };
 
 const state = {
@@ -3941,6 +3954,16 @@ function initAudio() {
 function setMuted(isMuted) {
   soundState.muted = isMuted;
   localStorage.setItem("cardsAgainstAiMuted", String(isMuted));
+  if (!isMuted && soundState.musicVolume <= 0) {
+    soundState.musicVolume = 0.5;
+    localStorage.setItem("cardsAgainstAiMusicVolume", "50");
+    if (elements.musicVolumeSlider) {
+      elements.musicVolumeSlider.value = "50";
+    }
+    if (elements.musicVolumeValue) {
+      elements.musicVolumeValue.textContent = "50";
+    }
+  }
   updateSoundButton();
   if (!isMuted) {
     initAudio();
@@ -4236,6 +4259,7 @@ function getScaledMusicVolume(volume = soundState.musicVolume) {
 function setMusicElementVolume(volume) {
   if (soundState.musicAudio) {
     soundState.musicAudio.volume = getScaledMusicVolume(volume);
+    soundState.musicAudio.muted = soundState.muted || soundState.musicVolume <= 0;
   }
 }
 
@@ -4418,10 +4442,12 @@ function playFallbackClickIfSilent(event) {
 
 function startMusic() {
   if (soundState.muted || soundState.musicVolume <= 0) {
+    soundState.musicUnlocked = false;
     return;
   }
 
   ensureMusicAudio("auto");
+  soundState.musicAudio.muted = false;
 
   setMusicElementVolume(soundState.musicVolume);
   soundState.musicAudio.play()
@@ -4449,6 +4475,7 @@ function stopMusic() {
   if (soundState.musicAudio) {
     soundState.musicAudio.pause();
   }
+  soundState.musicUnlocked = false;
 }
 
 function updateMusicVolume() {
@@ -35245,11 +35272,12 @@ function updateSfxVolume(value) {
 }
 
 function updateMusicSetting(value) {
-  soundState.musicVolume = Number(value) / 100;
-  localStorage.setItem("cardsAgainstAiMusicVolume", String(value));
+  const nextVolume = clampNumber(value, 0, 100, 50);
+  soundState.musicVolume = nextVolume / 100;
+  localStorage.setItem("cardsAgainstAiMusicVolume", String(nextVolume));
   cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
-  elements.musicVolumeValue.textContent = `${value}`;
+  elements.musicVolumeValue.textContent = `${nextVolume}`;
   updateMusicVolume();
 }
 
