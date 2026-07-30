@@ -33804,14 +33804,14 @@ async function leaveCurrentRoom() {
 
 function animateRoomPlayerListChange(target, renderList, options = {}) {
   if (!target || typeof renderList !== "function") {
-    return;
+    return false;
   }
   const reduceMotion = shouldReduceMotion();
   const panelIsVisible = target.isConnected && !target.closest(".hidden");
   const previousHeight = target.getBoundingClientRect().height;
   if (reduceMotion || !panelIsVisible || (previousHeight <= 0 && !options.animateFromZero)) {
     renderList();
-    return;
+    return false;
   }
 
   target.classList.add("room-player-list-resizing");
@@ -33822,7 +33822,7 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
     if (!target.classList.contains("room-player-list-holding")) {
       target.style.height = "";
     }
-    return;
+    return true;
   }
   const previousInlineTransition = target.style.transition;
   target.style.transition = "none";
@@ -33834,7 +33834,7 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
   if (Math.abs(nextHeight - previousHeight) < 2) {
     target.classList.remove("room-player-list-resizing");
     target.style.height = "";
-    return;
+    return false;
   }
 
   const resizeToken = `${Date.now()}-${Math.random()}`;
@@ -33857,9 +33857,13 @@ function animateRoomPlayerListChange(target, renderList, options = {}) {
     delete target.dataset.resizingRoomList;
     target.classList.remove("room-player-list-resizing");
     target.style.height = "";
+    if (typeof options.onComplete === "function") {
+      options.onComplete();
+    }
   };
   target.addEventListener("transitionend", cleanup);
   window.setTimeout(() => cleanup({ propertyName: "height" }), 420);
+  return true;
 }
 
 function getSharedRoomPlayerLists() {
@@ -33930,13 +33934,124 @@ function scheduleRoomPanelHeightSync() {
 
 function renderRoomPlayers() {
   const playerLists = getSharedRoomPlayerLists();
+  let hasAnimatedListChange = false;
   playerLists.forEach((target) => {
-    animateRoomPlayerListChange(target, () => renderRoomPlayerList(target), { animateFromZero: true });
+    const animated = animateRoomPlayerListChange(target, () => renderRoomPlayerList(target), {
+      animateFromZero: true,
+      onComplete: scheduleRoomPanelHeightSync
+    });
+    hasAnimatedListChange = hasAnimatedListChange || animated;
   });
-  if (!playerLists.some((target) => target.dataset.roomPlayerExitAnimating)) {
+  if (!hasAnimatedListChange && !playerLists.some((target) => target.dataset.roomPlayerExitAnimating)) {
     scheduleRoomPanelHeightSync();
   }
 }
+
+let activeRoomPlayerTooltipAnchor = null;
+let roomPlayerTooltipElement = null;
+let roomPlayerTooltipFrame = 0;
+
+function getRoomPlayerTooltipAnchor(target) {
+  return target?.closest?.(".room-player-card[data-tooltip]") || null;
+}
+
+function ensureRoomPlayerTooltipElement() {
+  if (roomPlayerTooltipElement) {
+    return roomPlayerTooltipElement;
+  }
+  roomPlayerTooltipElement = document.createElement("div");
+  roomPlayerTooltipElement.className = "floating-room-tooltip";
+  roomPlayerTooltipElement.setAttribute("role", "tooltip");
+  document.body.appendChild(roomPlayerTooltipElement);
+  return roomPlayerTooltipElement;
+}
+
+function positionRoomPlayerTooltip() {
+  if (!activeRoomPlayerTooltipAnchor || !roomPlayerTooltipElement) {
+    return;
+  }
+  const anchorRect = activeRoomPlayerTooltipAnchor.getBoundingClientRect();
+  const tooltipRect = roomPlayerTooltipElement.getBoundingClientRect();
+  const viewportPadding = 12;
+  const preferredTop = anchorRect.top - tooltipRect.height - 8;
+  const fallbackTop = anchorRect.bottom + 8;
+  const top = preferredTop >= viewportPadding
+    ? preferredTop
+    : Math.min(fallbackTop, window.innerHeight - tooltipRect.height - viewportPadding);
+  const left = Math.min(
+    Math.max(anchorRect.left + (anchorRect.width / 2) - (tooltipRect.width / 2), viewportPadding),
+    window.innerWidth - tooltipRect.width - viewportPadding
+  );
+  roomPlayerTooltipElement.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(Math.max(viewportPadding, top))}px, 0)`;
+}
+
+function scheduleRoomPlayerTooltipPosition() {
+  if (roomPlayerTooltipFrame) {
+    window.cancelAnimationFrame(roomPlayerTooltipFrame);
+  }
+  roomPlayerTooltipFrame = window.requestAnimationFrame(() => {
+    roomPlayerTooltipFrame = 0;
+    positionRoomPlayerTooltip();
+  });
+}
+
+function showRoomPlayerTooltip(anchor) {
+  const tooltipText = String(anchor?.dataset?.tooltip || "").trim();
+  if (!anchor || !tooltipText) {
+    return;
+  }
+  activeRoomPlayerTooltipAnchor = anchor;
+  const tooltip = ensureRoomPlayerTooltipElement();
+  tooltip.textContent = tooltipText;
+  tooltip.classList.add("visible");
+  scheduleRoomPlayerTooltipPosition();
+}
+
+function hideRoomPlayerTooltip(anchor = null) {
+  if (anchor && activeRoomPlayerTooltipAnchor !== anchor) {
+    return;
+  }
+  activeRoomPlayerTooltipAnchor = null;
+  if (roomPlayerTooltipFrame) {
+    window.cancelAnimationFrame(roomPlayerTooltipFrame);
+    roomPlayerTooltipFrame = 0;
+  }
+  if (roomPlayerTooltipElement) {
+    roomPlayerTooltipElement.classList.remove("visible");
+  }
+}
+
+document.addEventListener("pointerover", (event) => {
+  const anchor = getRoomPlayerTooltipAnchor(event.target);
+  if (anchor) {
+    showRoomPlayerTooltip(anchor);
+  }
+});
+
+document.addEventListener("pointerout", (event) => {
+  const anchor = getRoomPlayerTooltipAnchor(event.target);
+  if (!anchor || (event.relatedTarget && anchor.contains(event.relatedTarget))) {
+    return;
+  }
+  hideRoomPlayerTooltip(anchor);
+});
+
+document.addEventListener("focusin", (event) => {
+  const anchor = getRoomPlayerTooltipAnchor(event.target);
+  if (anchor) {
+    showRoomPlayerTooltip(anchor);
+  }
+});
+
+document.addEventListener("focusout", (event) => {
+  const anchor = getRoomPlayerTooltipAnchor(event.target);
+  if (anchor) {
+    hideRoomPlayerTooltip(anchor);
+  }
+});
+
+window.addEventListener("scroll", scheduleRoomPlayerTooltipPosition, true);
+window.addEventListener("resize", scheduleRoomPlayerTooltipPosition);
 
 function getRoomPlayerForModeration(owner = "", participantId = "") {
   const normalizedParticipantId = String(participantId || "").slice(0, 80);
@@ -34060,31 +34175,6 @@ function createRoomModerationControls(owner, context = "list", sourcePlayer = nu
   return controls;
 }
 
-function animateRoomPlayerListHeight(target, previousHeight = 0) {
-  if (!target || shouldReduceMotion()) {
-    return;
-  }
-  const lockedHeight = Math.max(0, Number(previousHeight) || 0);
-  const nextHeight = target.getBoundingClientRect().height;
-  if (lockedHeight <= 0 || nextHeight <= 0 || Math.abs(nextHeight - lockedHeight) < 2) {
-    return;
-  }
-  const previousInlineTransition = target.style.transition;
-  target.classList.add("room-player-list-resizing");
-  target.style.transition = "none";
-  target.style.height = `${lockedHeight}px`;
-  target.offsetHeight;
-  target.style.transition = previousInlineTransition;
-  window.requestAnimationFrame(() => {
-    target.style.height = `${nextHeight}px`;
-  });
-  window.setTimeout(() => {
-    target.classList.remove("room-player-list-resizing");
-    target.style.height = "";
-    scheduleRoomPanelHeightSync();
-  }, 420);
-}
-
 function renderRoomPlayerList(target, options = {}) {
   if (!target) {
     return true;
@@ -34097,9 +34187,6 @@ function renderRoomPlayerList(target, options = {}) {
   const renderKey = `${state.roomSettings.code || "draft"}:${target.id || "room-player-list"}:${state.currentRoomStatus || "draft"}`;
   const canAnimateNewRows = target.dataset.roomPlayerListRenderKey === renderKey;
   const hadWaitingCopy = Boolean(target.querySelector(".room-waiting-copy"));
-  const previousListHeight = canAnimateNewRows && !shouldReduceMotion()
-    ? target.getBoundingClientRect().height
-    : 0;
   const previousCardKeys = new Set(
     [...target.querySelectorAll(".room-player-card[data-room-player-key]")]
       .map((card) => card.dataset.roomPlayerKey)
@@ -34237,14 +34324,13 @@ function renderRoomPlayerList(target, options = {}) {
     target.appendChild(empty);
     return;
   }
-  let addedNewActiveParticipant = false;
   nextPlayers.forEach((player) => {
     const cardKey = String(player.participantId || player.owner || player.label || "").trim();
     const card = document.createElement("div");
     card.className = "room-player-card";
     card.dataset.roomPlayerKey = cardKey;
     card.classList.toggle("waiting-slot", player.active === false);
-    const botIsJoining = player.connectionStatus === "joining";
+    const botIsJoining = player.connectionStatus === "joining" && !(player.bot || player.type === "bot");
     const pendingModerationAction = getPendingRoomModerationAction(player.participantId);
     const removalIsPending = pendingModerationAction === "kick" || pendingModerationAction === "ban";
     card.classList.toggle("room-player-card-pending", botIsJoining || Boolean(pendingModerationAction));
@@ -34255,9 +34341,6 @@ function renderRoomPlayerList(target, options = {}) {
       && cardKey
       && !previousCardKeys.has(cardKey)
     );
-    if (isNewActiveParticipant) {
-      addedNewActiveParticipant = true;
-    }
     card.classList.toggle("room-player-card-new", isNewActiveParticipant);
     const avatar = document.createElement("span");
     avatar.className = "room-player-avatar";
@@ -34298,9 +34381,6 @@ function renderRoomPlayerList(target, options = {}) {
     }
     target.appendChild(card);
   });
-  if (addedNewActiveParticipant) {
-    animateRoomPlayerListHeight(target, previousListHeight);
-  }
   return true;
 }
 
