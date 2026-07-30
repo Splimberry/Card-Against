@@ -1581,15 +1581,18 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   overflow-y: hidden !important;
 }
 
-#roomPlayerList.room-player-list {
+#roomPlayerList.room-player-list,
+#roomLobbyPlayerList.room-player-list {
   --room-player-list-max-height: none;
   --room-player-list-glow-gutter: 1.25rem;
-  --room-player-list-tile-gap: clamp(1.15rem, 3vw, 2.15rem);
-  display: flex;
-  flex-wrap: wrap;
+  --room-player-list-tile-gap: clamp(0.8rem, 1.65vw, 1.25rem);
+  --room-player-list-tile-max: 20rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, min(var(--room-player-list-tile-max), calc((100% - (var(--room-player-list-tile-gap) * 2)) / 3))));
   align-content: start;
   align-self: stretch;
   justify-content: center;
+  justify-items: stretch;
   gap: var(--room-player-list-tile-gap);
   overflow-x: hidden;
   overflow-y: auto;
@@ -1615,12 +1618,14 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   --room-player-list-max-height: none;
 }
 
-#roomPlayerList.room-player-list .room-player-card {
+#roomPlayerList.room-player-list .room-player-card,
+#roomLobbyPlayerList.room-player-list .room-player-card {
   align-self: start;
-  flex: 0 1 clamp(11.2rem, calc((100% - (var(--room-player-list-tile-gap) * 2)) / 3), 14.35rem);
+  flex: initial;
+  min-width: 0;
   min-height: 7.65rem;
   height: auto;
-  width: clamp(11.2rem, calc((100% - (var(--room-player-list-tile-gap) * 2)) / 3), 14.35rem);
+  width: 100%;
   overflow: visible;
 }
 
@@ -1723,14 +1728,29 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   font-weight: 850;
 }
 
-#roomPlayerList.room-player-list .room-waiting-copy {
-  flex: 1 0 100%;
+#roomPlayerList.room-player-list .room-waiting-copy,
+#roomLobbyPlayerList.room-player-list .room-waiting-copy {
+  grid-column: 1 / -1;
   width: 100%;
   min-height: 4.4rem;
   display: grid;
   place-items: center;
   padding: 1rem;
   text-align: center;
+}
+
+@media (max-width: 58rem) {
+  #roomPlayerList.room-player-list,
+  #roomLobbyPlayerList.room-player-list {
+    grid-template-columns: repeat(2, minmax(0, min(var(--room-player-list-tile-max), calc((100% - var(--room-player-list-tile-gap)) / 2))));
+  }
+}
+
+@media (max-width: 36rem) {
+  #roomPlayerList.room-player-list,
+  #roomLobbyPlayerList.room-player-list {
+    grid-template-columns: minmax(0, min(var(--room-player-list-tile-max), 100%));
+  }
 }
 
 .room-player-avatar {

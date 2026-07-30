@@ -34548,7 +34548,7 @@ function renderRoomPlayerList(target, options = {}) {
       .map((card) => card.dataset.roomPlayerKey)
       .filter(Boolean)
   );
-  const canAnimateCardReflow = target === elements.roomPlayerList && canAnimateNewRows;
+  const canAnimateCardReflow = (target === elements.roomPlayerList || target === elements.roomLobbyPlayerList) && canAnimateNewRows;
   const previousCardRects = canAnimateCardReflow ? getRoomPlayerCardRects(target) : new Map();
   const maxPlayers = getRoomMaxPlayers();
   const isRoomSetupList = isSharedRoomPlayerList(target);
