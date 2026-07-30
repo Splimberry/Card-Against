@@ -17174,18 +17174,6 @@ const roomSync = {
         };
       }
       const events = Array.isArray(data.events) ? data.events : [];
-      events.forEach((event) => {
-        try {
-          roomSync.applyEvent(event, { source: "command-response" });
-        } catch (error) {
-          recordRoomDiagnosticEvent("event-apply-error", event.payload || event, {
-            source: "command-response",
-            eventType: normalizeRoomEventType(event.type || event.payload?.eventType || ""),
-            reason: error?.message || "Command response event handler failed."
-          });
-          console.warn("Room command response event failed:", error);
-        }
-      });
       if (options.broadcast !== false) {
         getRoomSyncCommandEventsForBroadcast(events, clientEventId).forEach((event) => {
           try {
@@ -17199,6 +17187,18 @@ const roomSync = {
           }
         });
       }
+      events.forEach((event) => {
+        try {
+          roomSync.applyEvent(event, { source: "command-response" });
+        } catch (error) {
+          recordRoomDiagnosticEvent("event-apply-error", event.payload || event, {
+            source: "command-response",
+            eventType: normalizeRoomEventType(event.type || event.payload?.eventType || ""),
+            reason: error?.message || "Command response event handler failed."
+          });
+          console.warn("Room command response event failed:", error);
+        }
+      });
       rememberRoomRevisionPayload({
         code: data.roomCode || roomCode,
         revision: data.revision,
