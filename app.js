@@ -3313,6 +3313,7 @@ const state = {
   recentBlackCards: [],
   recentTriviaThemes: [],
   botCards: [],
+  rejectedAnswers: [],
   multipleChoiceOptions: [],
   activePowerUp: null,
   selectedPowerUps: {
@@ -4595,6 +4596,7 @@ function clearRoomMatchScopedStateForLobby(options = {}) {
   state.acceptedAnswers = [];
   state.judge = null;
   state.botCards = [];
+  state.rejectedAnswers = [];
   state.multipleChoiceOptions = [];
   state.currentRoundCards = [];
   state.currentRoundCardRatings = [];
@@ -5252,6 +5254,9 @@ function normalizeSetupPayload(setup) {
       missingReason: String(image.missingReason || "").trim()
     },
     botCards: Array.isArray(setup.botCards) ? setup.botCards.map((card) => String(card).trim()).filter(Boolean).slice(0, 9) : [],
+    rejectedAnswers: Array.isArray(setup.rejectedAnswers)
+      ? setup.rejectedAnswers.map((answer) => String(answer).trim()).filter(Boolean).slice(0, 12)
+      : [],
     multipleChoiceOptions: Array.isArray(setup.multipleChoiceOptions)
       ? setup.multipleChoiceOptions.map((answer) => cleanInput(String(answer || ""))).filter(Boolean).slice(0, 4)
       : [],
@@ -5562,11 +5567,15 @@ async function requestAiRound(rawInput, options = {}) {
   const botLabels = botOwners.map(getOwnerLabel);
   const playerAnswer = getLockedRoundAnswer("player", rawInput);
   const opponentAnswer = duelMode ? getLockedRoundAnswer("opponent", state.localAnswers.playerTwo) : "";
-  const answerCards = cardOwners.map((owner) => ({
-    owner,
-    label: getOwnerLabel(owner),
-    answer: getRoundAnswerForOwner(owner)
-  }));
+  const answerCards = cardOwners.map((owner) => {
+    const player = getPlayer(owner);
+    return {
+      owner,
+      label: getOwnerLabel(owner),
+      answer: getRoundAnswerForOwner(owner),
+      bot: Boolean(player?.bot || player?.type === "bot")
+    };
+  });
   const response = await fetch("/api/round", {
     method: "POST",
     headers: {
@@ -5580,6 +5589,7 @@ async function requestAiRound(rawInput, options = {}) {
       triviaTheme: state.triviaTheme,
       canonicalAnswer: state.canonicalAnswer,
       acceptedAnswers: state.acceptedAnswers,
+      rejectedAnswers: state.rejectedAnswers || [],
       gradingStrictness: state.gradingStrictness,
       image: state.questionImage,
       mode: apiMode,
@@ -25719,6 +25729,7 @@ function applyRoundSetup(setup, options = {}) {
   state.acceptedAnswers = setup.acceptedAnswers || [];
   state.judge = setup.judge;
   state.botCards = setup.botCards || [];
+  state.rejectedAnswers = setup.rejectedAnswers || [];
   state.multipleChoiceOptions = Array.isArray(setup.multipleChoiceOptions) ? setup.multipleChoiceOptions.slice(0, 4) : [];
   state.recentJudgeNames = [...state.recentJudgeNames, state.judge.name].slice(-5);
   state.recentBlackCards = [...state.recentBlackCards, state.blackCard].slice(-20);
@@ -28575,6 +28586,7 @@ function buildDevQuestionGradingPayload(question, answer, gradingMode) {
     acceptedAnswers: isMultipleChoice
       ? [question.canonicalAnswer].filter(Boolean)
       : (question.acceptedAnswers || []),
+    rejectedAnswers: question.rejectedAnswers || [],
     gradingStrictness: isMultipleChoice ? "exact" : normalizeGradingStrictness(question.gradingStrictness),
     image: question.image || null,
     botCards: [pickDevQuestionControlAnswer(question, answer)],
@@ -29658,6 +29670,7 @@ async function newRound() {
   state.acceptedAnswers = [];
   state.judge = null;
   state.botCards = [];
+  state.rejectedAnswers = [];
   state.multipleChoiceOptions = [];
   resetPlayedPowersForRound();
   const preferredTheme = state.nextPreferredTheme;
@@ -29934,6 +29947,7 @@ function resetMatch(mode) {
   state.recentBlackCards = [];
   state.recentTriviaThemes = [];
   state.botCards = [];
+  state.rejectedAnswers = [];
   state.multipleChoiceOptions = [];
   state.nextSetup = null;
   state.nextSetupPromise = null;
@@ -32565,6 +32579,7 @@ function applyRealtimeRoundAdvancing(payload = {}) {
   state.canonicalAnswer = "";
   state.acceptedAnswers = [];
   state.judge = null;
+  state.rejectedAnswers = [];
   state.multipleChoiceOptions = [];
   resetRoundUiForLoading({ resetBlackCardTheme: true });
   if (!isCurrentHost()) {

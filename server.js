@@ -6704,6 +6704,7 @@ async function getSeedQuestionSetup(options = {}) {
     image: picked.image ? { ...picked.image } : { url: "", alt: "", credit: "" },
     canonicalAnswer: picked.canonicalAnswer,
     acceptedAnswers: picked.acceptedAnswers,
+    rejectedAnswers: picked.rejectedAnswers || [],
     judge: getGenericJudge(),
     botCards: pickBotAnswersForSetup(picked, options.setupSeed),
     multipleChoiceOptions: isMultipleChoiceQuestion(picked)
@@ -6882,6 +6883,9 @@ function normalizeRoundPayload(body) {
   const acceptedAnswers = Array.isArray(body.acceptedAnswers)
     ? body.acceptedAnswers.map((entry) => String(entry).trim().slice(0, 120)).filter(Boolean).slice(0, 10)
     : [];
+  const rejectedAnswers = Array.isArray(body.rejectedAnswers)
+    ? body.rejectedAnswers.map((entry) => String(entry).trim().slice(0, 120)).filter(Boolean).slice(0, 12)
+    : [];
   const image = normalizeQuestionImage(body.image);
   const botCards = Array.isArray(body.botCards) ? body.botCards.map((card) => String(card).trim().slice(0, 140)).filter(Boolean).slice(0, 9) : [];
   const botLabels = Array.isArray(body.botLabels)
@@ -6893,7 +6897,8 @@ function normalizeRoundPayload(body) {
         index,
         owner: String(card?.owner || "").trim().slice(0, 40),
         label: String(card?.label || `Player ${index + 1}`).trim().slice(0, 60),
-        answer: String(card?.answer || "").trim().slice(0, 140)
+        answer: String(card?.answer || "").trim().slice(0, 140),
+        bot: Boolean(card?.bot)
       }))
       .slice(0, 10)
     : [];
@@ -6919,6 +6924,7 @@ function normalizeRoundPayload(body) {
     triviaTheme,
     canonicalAnswer,
     acceptedAnswers: acceptedAnswers.length ? acceptedAnswers : canonicalAnswer ? [canonicalAnswer] : [],
+    rejectedAnswers,
     gradingStrictness,
     image,
     mode,
@@ -6979,6 +6985,7 @@ function createAiRoundCacheKey(payload) {
     triviaTheme: payload.triviaTheme,
     canonicalAnswer: payload.canonicalAnswer,
     acceptedAnswers: payload.acceptedAnswers,
+    rejectedAnswers: payload.rejectedAnswers,
     gradingStrictness: payload.gradingStrictness,
     imageUrl: payload.image?.url || "",
     answer: payload.answer,
@@ -6989,7 +6996,8 @@ function createAiRoundCacheKey(payload) {
       .map((card) => ({
         owner: card.owner,
         label: card.label,
-        answer: card.answer
+        answer: card.answer,
+        bot: card.bot
       }))
       .sort((a, b) => `${a.owner}:${a.label}`.localeCompare(`${b.owner}:${b.label}`))
   };
@@ -7520,9 +7528,13 @@ function createLocalRoundResult(payload) {
     ? [payload.answer, payload.opponentAnswer]
     : [payload.answer, ...normalizeBotCards(payload.botCards, expectedCards - 1)];
   const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
+  const rejectedAnswers = Array.isArray(payload.rejectedAnswers) ? payload.rejectedAnswers : [];
   const correctIndexes = cards
     .map((card, index) => ({ index, score: scoreAnswerAgainstBank(card, answerBank) }))
-    .filter((entry) => isAnswerCorrectByStrictness(cards[entry.index], answerBank, payload.gradingStrictness))
+    .filter((entry) => (
+      !isExplicitlyRejectedAnswer(cards[entry.index], rejectedAnswers)
+      && isAnswerCorrectByStrictness(cards[entry.index], answerBank, payload.gradingStrictness)
+    ))
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.index)
     .filter((index) => index >= 0 && index < expectedCards);
@@ -7543,21 +7555,35 @@ function getRoundAnswerEntries(payload, cards = []) {
     return payload.answerCards.map((card, index) => ({
       index,
       label: card.label || `Player ${index + 1}`,
-      answer: cards[index] || card.answer || ""
+      answer: cards[index] || card.answer || "",
+      bot: Boolean(card.bot || /^bot\d*$/i.test(card.owner || ""))
     }));
   }
   if (payload.mode === "local") {
     return [
-      { index: 0, label: "Player 1", answer: cards[0] || payload.answer || "" },
-      { index: 1, label: "Player 2", answer: cards[1] || payload.opponentAnswer || "" }
+      { index: 0, label: "Player 1", answer: cards[0] || payload.answer || "", bot: false },
+      { index: 1, label: "Player 2", answer: cards[1] || payload.opponentAnswer || "", bot: false }
     ];
   }
   const botLabels = Array.isArray(payload.botLabels) ? payload.botLabels : [];
   return cards.map((answer, index) => ({
     index,
     label: index === 0 ? "Player" : botLabels[index - 1] || `Bot ${index}`,
-    answer
+    answer,
+    bot: index > 0
   }));
+}
+
+function isExplicitlyRejectedAnswer(answer, rejectedAnswers = []) {
+  const normalized = normalizeTriviaAnswer(answer);
+  if (!normalized || !Array.isArray(rejectedAnswers) || !rejectedAnswers.length) {
+    return false;
+  }
+  const compact = normalized.replace(/\s+/g, "");
+  return rejectedAnswers
+    .map(normalizeTriviaAnswer)
+    .filter(Boolean)
+    .some((rejected) => normalized === rejected || compact === rejected.replace(/\s+/g, ""));
 }
 
 function getAiSecondOpinionCandidates(payload, localResult) {
@@ -7566,17 +7592,23 @@ function getAiSecondOpinionCandidates(payload, localResult) {
     return [];
   }
   const alreadyCorrect = new Set(localResult.correctIndexes || []);
+  const rejectedAnswers = Array.isArray(payload.rejectedAnswers) ? payload.rejectedAnswers : [];
   return getRoundAnswerEntries(payload, localResult.cards)
     .map((entry) => ({
       ...entry,
       score: scoreAnswerAgainstBank(entry.answer, answerBank)
     }))
-    .filter((entry) => !alreadyCorrect.has(entry.index) && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score, payload.gradingStrictness, {
-      question: payload.blackCard,
-      theme: payload.triviaTheme,
-      image: payload.image,
-      mode: payload.mode
-    }))
+    .filter((entry) => (
+      !entry.bot
+      && !alreadyCorrect.has(entry.index)
+      && !isExplicitlyRejectedAnswer(entry.answer, rejectedAnswers)
+      && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score, payload.gradingStrictness, {
+        question: payload.blackCard,
+        theme: payload.triviaTheme,
+        image: payload.image,
+        mode: payload.mode
+      })
+    ))
     .slice(0, 4);
 }
 

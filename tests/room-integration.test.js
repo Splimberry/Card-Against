@@ -6096,7 +6096,8 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     const body = JSON.parse(options.body || "{}");
     const prompt = JSON.parse(body.messages[1].content);
     if (fetchCalls === 1) {
-      assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0, 1]);
+      assert.deepEqual(prompt.candidateAnswers.map((entry) => entry.index), [0]);
+      assert.equal(prompt.candidateAnswers[0].answer, "vinsnt");
       assert.equal(prompt.task.includes("same context-aware acceptance standard"), true);
       assert.equal(prompt.rules.some((rule) => rule.includes("same acceptance standard as the full AI grader")), true);
       assert.equal(prompt.rules.some((rule) => rule.includes("Do not be stricter just because the local preset grader rejected")), true);
@@ -6112,7 +6113,7 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
           choices: [
             {
               message: {
-                content: JSON.stringify({ correctIndexes: fetchCalls === 1 ? [0, 1] : [0] })
+                content: JSON.stringify({ correctIndexes: [0] })
               }
             }
           ]
@@ -6135,9 +6136,9 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     });
     assert.equal(rescued.response.status, 200, rescued.payload.error);
     assert.equal(fetchCalls, 1);
-    assert.deepEqual(rescued.payload.correctIndexes, [0, 1]);
-    assert.deepEqual(rescued.payload.aiReviewedIndexes, [0, 1]);
-    assert.deepEqual(rescued.payload.aiSecondOpinionIndexes, [0, 1]);
+    assert.deepEqual(rescued.payload.correctIndexes, [0]);
+    assert.deepEqual(rescued.payload.aiReviewedIndexes, [0]);
+    assert.deepEqual(rescued.payload.aiSecondOpinionIndexes, [0]);
     assert.equal(rescued.payload.source, "local-with-ai-second-opinion");
 
     const contextRescued = await request("POST", "/api/round", {
@@ -6174,6 +6175,24 @@ async function testRoundAiSecondOpinionReviewsNearMissesTogether() {
     assert.deepEqual(gibberish.payload.correctIndexes, []);
     assert.deepEqual(gibberish.payload.aiReviewedIndexes, []);
     assert.deepEqual(gibberish.payload.aiSecondOpinionIndexes, []);
+
+    const rejected = await request("POST", "/api/round", {
+      answer: "Unicorn",
+      blackCard: "Which glowing weapon does a Jedi usually use?",
+      triviaTheme: "Film and TV",
+      canonicalAnswer: "Lightsaber",
+      acceptedAnswers: ["Lightsaber"],
+      rejectedAnswers: ["Unicorn"],
+      botCards: ["cat"],
+      botLabels: ["Bot"],
+      mode: "bots",
+      roundSeed: "ai-second-opinion-rejected-preset"
+    });
+    assert.equal(rejected.response.status, 200, rejected.payload.error);
+    assert.equal(fetchCalls, 2);
+    assert.deepEqual(rejected.payload.correctIndexes, []);
+    assert.deepEqual(rejected.payload.aiReviewedIndexes, []);
+    assert.deepEqual(rejected.payload.aiSecondOpinionIndexes, []);
   } finally {
     global.fetch = previousFetch;
     if (previousAiKey === undefined) delete process.env.AI_API_KEY;
