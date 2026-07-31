@@ -5545,14 +5545,14 @@ button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-
 }
 
 .power-card[data-suggestion-edge="left"] .power-suggestion-bubble {
-  --power-suggestion-x: 0;
-  left: 0;
+  --power-suggestion-x: -50%;
+  left: 50%;
 }
 
 .power-card[data-suggestion-edge="right"] .power-suggestion-bubble {
-  --power-suggestion-x: 0;
-  right: 0;
-  left: auto;
+  --power-suggestion-x: -50%;
+  right: auto;
+  left: 50%;
 }
 
 .power-suggestion-bubble::after {
