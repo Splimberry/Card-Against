@@ -41,6 +41,7 @@ const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
 const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
 const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
 const performanceModeStorageKey = "cardsAgainstAiPerformanceMode";
+const powerSuggestionStorageKey = "cardsAgainstAiPowerSuggestionsEnabled";
 const userStorageVersion = 1;
 const userCacheStorageKey = "cardsAgainstAiUserCache:v1";
 const userInventoryQueueStorageKey = "cardsAgainstAiUserInventoryQueue:v1";
@@ -865,6 +866,210 @@ const chaosInfusedPowerOverrides = {
   }
 };
 
+const powerSuggestionTextById = {
+  small_bounty: "If you think you'll win, cash in harder.",
+  small_bounty__chaos: "Confidence pays bigger in chaos.",
+  basic_bounty: "A solid bonus when you trust your answer.",
+  heavy_bounty: "Strong answer? Make the win heavier.",
+  ultimate_bounty: "This is best when your score is already worth multiplying.",
+  double_jeopardy: "Feeling confident? Double the reward, accept the bite.",
+  double_jeopardy__chaos: "Huge upside, huge punishment. Use only if you believe.",
+  streak_retainer: "Your streak is valuable. Keep it alive.",
+  streak_retainer__chaos: "Link to a stronger streak and ride their momentum.",
+  streak_bonus: "Someone has streak to steal. Take their rhythm.",
+  streak_bonus__chaos: "Everyone else has streak value. Pull it all toward you.",
+  basic_sabotage: "Tag the likely winner before they cash out.",
+  basic_sabotage__chaos: "A winner is about to get paid. Infect that payout.",
+  big_sabotage: "Slow down someone who looks ready to win this round.",
+  big_sabotage__chaos: "Stop their payout and freeze their momentum.",
+  bribe: "Someone is about to score big. Take a slice.",
+  bribe__chaos: "The biggest payout can become yours too.",
+  no_one_wins: "Nobody deserves points this round.",
+  ai_answer: "Blanking out? Let the machine take a swing.",
+  ai_answer__chaos: "This is your panic button. Very good when your answer box is empty.",
+  speed_answer: "Answer fast, then get paid for the time left.",
+  speed_answer__chaos: "Reset the clock and turn speed into money.",
+  next_question: "Set up a theme you actually want next.",
+  ability_merchant: "Buy a better option if your hand feels weak.",
+  ability_merchant__chaos: "Shop for something dangerous.",
+  freeze_ray: "Stop their streak from growing while you catch up.",
+  freeze_ray__chaos: "Freeze them and shave off their momentum.",
+  power_heist: "Someone has useful cards. Steal one.",
+  power_heist__chaos: "Take their best card, not just any card.",
+  all_out: "You have multiple plays. Use them all.",
+  last_chance: "Last place, last round. This is your comeback script.",
+  last_chance__chaos: "You are down to the final throw. Make it dramatic.",
+  small_insurance: "If this round goes badly, at least get paid.",
+  small_insurance__chaos: "Free safety net. Great before a risky round.",
+  big_insurance: "Protect your score, streak, and refill plan.",
+  big_insurance__chaos: "Lose safely, refill, and keep moving.",
+  robin_hood: "First place is looking too comfortable.",
+  robin_hood__chaos: "The leader has enough. Take your share.",
+  tax_collector: "Tax the top before the gap gets ugly.",
+  reverse: "Let someone else do the work, then take the payout.",
+  time_bender: "The clock is becoming a problem. Bend it before it bends you.",
+  bribe_judge: "Sometimes skill is optional.",
+  bribe_judge__chaos: "Force the result when this round matters too much.",
+  shuffle: "Bad hand? Throw it away.",
+  shuffle__chaos: "Refresh and refill in one clean move.",
+  world_burn: "First place should start paying rent.",
+  loose_cannon: "You need damage, and you need it now.",
+  loose_cannon__chaos: "Choose one player and delete a serious chunk.",
+  blessing: "Take clean points now.",
+  blessing__chaos: "Start a long-term point engine.",
+  heaven_hell: "Big reward if you win, painful curse if you miss.",
+  shield: "You are worth protecting.",
+  shield__chaos: "Keep this up when attacks are likely.",
+  deep_freeze: "Point loss is coming. Turn it off.",
+  deep_freeze__chaos: "Incoming damage can become your score instead.",
+  permafrost: "Lock in safety for the rest of the game.",
+  lightning_strike: "Big streaks are worth punishing. This is built for that.",
+  lightning_strike__chaos: "The table has tall streaks. Bring them down.",
+  hot_potato: "The final round needs a little sabotage.",
+  hot_potato__chaos: "Make the final hit someone else's problem.",
+  gamblers_dream: "No streak yet? Start one instantly.",
+  gamblers_dream__chaos: "Buy yourself a streak out of nowhere.",
+  hard_reset: "Too many streaks on the board. Clear the fire.",
+  hard_reset__chaos: "Pick the hottest streak and put it out.",
+  rocket: "Build streak pressure for the next round.",
+  rocket__chaos: "Start streaking now and double future gains.",
+  participation: "If you lose, lose gracefully and gain something.",
+  participation__chaos: "A bad round can become a comeback.",
+  bottom_feeder: "Falling behind? Start farming your losses.",
+  bottom_feeder__chaos: "Every rough round makes the next one better.",
+  overachiever: "A great answer can set up next round.",
+  overachiever__chaos: "Exact answers deserve legendary rewards.",
+  eternal_flame: "Your streak is valuable. Keep it alive.",
+  loser_tax: "Someone is about to lose. Make it cost extra.",
+  loser_tax__chaos: "Every loser pays you for three rounds.",
+  sin_envy: "If you are behind, drag the table down with you.",
+  sin_envy__chaos: "Your wrong answers can become everyone's problem.",
+  reign_chaos: "You need the table to stop making sense.",
+  reign_chaos__chaos: "Your next hand can become much scarier.",
+  hitman: "First place has a streak bounty on them.",
+  hitman__chaos: "The leader is exposed. This is a brutal opener.",
+  red_herring: "Hide your real score before the table reacts.",
+  penalty_cloud: "Make losing hurt before answers are judged.",
+  zap_strike: "A streak is forming. Zap it before it becomes a problem.",
+  zap_strike__chaos: "Higher streaks are exposed. Punish the climb.",
+  sin_gluttony: "Your streak can be converted into points.",
+  sin_gluttony__chaos: "Big streak, big meal.",
+  sin_pride: "You are first. Act like it.",
+  sin_pride__chaos: "First place with streak? Become worse to deal with.",
+  sin_wrath: "If this round goes badly, make someone else suffer too.",
+  sin_wrath__chaos: "Every future loss can throw a bomb at the table.",
+  sin_sloth: "Cap the room at your pace.",
+  sin_sloth__chaos: "No one gets to streak higher than you anymore.",
+  lawsuit: "Active effects are stacking. Sue the problem.",
+  lawsuit__chaos: "Everyone else with effects is vulnerable.",
+  crawler_virus: "Let random chaos haunt the whole match.",
+  virus_deployment: "Give one player chaos immediately.",
+  virus_deployment__chaos: "Chaos for everyone except you.",
+  antivirus: "Debuffs are flying. Put up protection.",
+  antivirus__chaos: "Block debuffs for several rounds. Very calm, very annoying.",
+  curse: "Send a random problem to someone else.",
+  curse__chaos: "Spread random problems across the table.",
+  get_good: "Punish someone who keeps missing answers.",
+  get_good__chaos: "One target is ready for sudden death.",
+  time_bomb: "Players ahead of you are future targets.",
+  time_bomb__chaos: "Mark one player so every loss hurts more.",
+  mirror: "Copy your best rarity and build the hand.",
+  mirror__chaos: "Upgrade your hand by copying above your best.",
+  dead_weight: "Pass the problem to someone else.",
+  dead_weight__chaos: "Turn their whole hand into junk.",
+  recycle_bin: "That last power was useful. Bring it back.",
+  shameless: "Pick a rich target and make it personal.",
+  shameless__chaos: "A clean steal is available. Take a chunk now.",
+  magic_8: "Your score has an 8. Cash the omen.",
+  magic_8__chaos: "Every 8 in your score is worth serious money.",
+  premium_shuffle: "Reroll, then keep playing.",
+  premium_shuffle__chaos: "Refresh and force a high-rarity upgrade.",
+  vending_machine: "Empty slots are wasted slots. Refill them.",
+  cocktail_mix: "Mostly good, sometimes cursed.",
+  afterparty: "You won last round. Claim the encore.",
+  cheat_sheet: "Someone might already know it. Borrow their homework.",
+  xray_hacks: "Peek before you decide who is dangerous.",
+  software_downgrade: "Delete their strongest option before they use it.",
+  virus_factory: "Make every round riskier for everyone.",
+  lucky_side: "You lost last round. Tilt luck back toward you.",
+  lucky_side__chaos: "For several rounds, luck is only allowed to help you.",
+  nail_coffin: "This round's losers are about to feel it.",
+  nail_coffin__chaos: "Trigger sudden death across the table.",
+  haha_you_lose: "Mark someone who looks likely to fail.",
+  haha_you_lose__chaos: "Punish their next bad rounds and steal momentum.",
+  shock_bomb: "The table is relying on powers. Shut them down.",
+  shock_bomb__chaos: "Disable everyone else and keep your own turn alive.",
+  multiple_choice: "Turn uncertainty into options.",
+  typhoon_season: "Streaks will start attracting lightning.",
+  typhoon_season__chaos: "Let the storm punish higher streaks.",
+  blue_pill: "Stack buffs now.",
+  blue_pill__chaos: "Trigger every buff and become a problem.",
+  thorns: "Make point loss hurt everyone else too.",
+  thorns__chaos: "If you bleed points, the table bleeds harder.",
+  vulture: "Past losses can still become points.",
+  vulture__chaos: "Every lost round becomes a repeat payout.",
+  insurance_fraud: "Secretly prepare a payout if things go badly.",
+  void_bomb: "Pick someone and make their round miserable.",
+  void_bomb__chaos: "Everyone else loses options, effects, and scoring freedom.",
+  gamblers_dice: "Roll the deck and accept whatever happens.",
+  gamblers_dice__chaos: "Three chaos powers. No subtlety.",
+  arsonist: "Start building streak pressure every round.",
+  airdrop: "Give a boost where it helps most.",
+  airdrop__chaos: "Turn one player into a supply drop jackpot.",
+  communism: "Big payouts are easier to catch when shared.",
+  execution: "Mark an opponent before you go for the win.",
+  execution__chaos: "Wrong answers can become death bombs.",
+  monopoly: "Gold cards only. Punish cheap tricks.",
+  hoarder: "Refill with quality and keep your turn going.",
+  soul_link: "Link with someone valuable before scores grow.",
+  law_mower: "Anyone ahead of you is standing too tall.",
+  law_mower__chaos: "Trim the leaders every round and limit their recovery.",
+  bartender: "Automate your buff rolls for the whole match.",
+  bartender__chaos: "Turn every round start into a Blue Pill trigger.",
+  hot_in_here: "Your streak can start burning everyone else.",
+  red_button: "A player above you can be hit hard right now.",
+  ultimatum: "You are hard to kill for the next few rounds.",
+  secret_agent: "Scramble the room before stealing a comeback.",
+  thermal_scythe: "Harvest streaks and carve down one target."
+};
+
+const powerSuggestionFallbackText = {
+  emergency: "Low time. This can help before the round closes.",
+  final: "Final round. This can still swing the match.",
+  streak: "Someone is building a dangerous streak. Use this before they snowball.",
+  protect: "You have something worth protecting. This can keep your lead safer.",
+  comeback: "The leader is ahead. This helps close the gap.",
+  disrupt: "Someone is stacking power. This can break their setup.",
+  confidence: "Use this when you feel good about your answer.",
+  investment: "Early rounds give this more time to pay off.",
+  hand: "Your hand can improve. This is a good setup play.",
+  chaos: "You need a shake-up. This can change the table fast."
+};
+
+const powerSuggestionPriorities = {
+  emergency: 100,
+  final: 90,
+  streak: 80,
+  protect: 70,
+  comeback: 60,
+  disrupt: 50,
+  confidence: 40,
+  investment: 30,
+  hand: 20,
+  chaos: 10
+};
+
+const emergencySuggestionTypes = new Set(["ai_answer", "time_bender", "cheat_sheet", "multiple_choice"]);
+const finalSwingSuggestionTypes = new Set(["last_chance", "bribe_judge", "reverse", "no_one_wins", "execution", "hitman", "red_button", "secret_agent"]);
+const streakCounterSuggestionTypes = new Set(["zap_strike", "lightning_strike", "freeze_ray", "hard_reset", "streak_bonus", "sin_sloth", "hitman", "thermal_scythe"]);
+const protectionSuggestionTypes = new Set(["shield", "deep_freeze", "permafrost", "insurance", "antivirus", "streak_retainer", "eternal_flame", "ultimatum", "red_herring", "participation"]);
+const comebackSuggestionTypes = new Set(["robin_hood", "tax_collector", "shameless", "loose_cannon", "law_mower", "world_burn", "communism", "soul_link", "hitman", "red_button"]);
+const disruptionSuggestionTypes = new Set(["lawsuit", "power_heist", "software_downgrade", "dead_weight", "xray_hacks", "void_bomb", "monopoly", "shock_bomb", "execution"]);
+const confidenceSuggestionTypes = new Set(["bounty", "double_jeopardy", "speed_answer", "bribe", "blessing", "heaven_hell", "magic_8", "overachiever", "sin_pride", "sin_gluttony", "rocket"]);
+const investmentSuggestionTypes = new Set(["blessing", "rocket", "bartender", "arsonist", "red_herring", "bottom_feeder", "insurance_fraud", "virus_factory", "typhoon_season", "crawler_virus", "thorns", "vulture"]);
+const handFixSuggestionTypes = new Set(["shuffle", "premium_shuffle", "vending_machine", "mirror", "ability_merchant", "hoarder", "all_out", "recycle_bin", "power_heist"]);
+const chaosSwingSuggestionTypes = new Set(["reign_chaos", "gamblers_dice", "cocktail_mix", "curse", "virus_deployment", "crawler_virus", "loose_cannon", "sin_envy"]);
+
 function getPowerRule(powerOrId) {
   const power = typeof powerOrId === "string" ? powerMap[powerOrId] : powerOrId;
   if (!power) {
@@ -996,6 +1201,17 @@ function getStoredPerformanceMode() {
   return normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey));
 }
 
+function readPowerSuggestionSetting(fallback = true) {
+  const stored = localStorage.getItem(powerSuggestionStorageKey);
+  if (stored === "true") {
+    return true;
+  }
+  if (stored === "false") {
+    return false;
+  }
+  return fallback !== false;
+}
+
 const defaultMatchTimerSeconds = 30;
 const timerSettingMinSeconds = 10;
 const timerSettingMaxSeconds = 60;
@@ -1030,6 +1246,7 @@ const savedTimerSeconds = readTimerSecondsSetting("cardsAgainstAiTimerSeconds", 
   migrationKey: "cardsAgainstAiGlobalTimerDefaultMigratedV2"
 });
 const savedPerformanceMode = normalizePerformanceMode(localStorage.getItem(performanceModeStorageKey) || savedUserCache?.settings?.performanceMode);
+const savedPowerSuggestionsEnabled = readPowerSuggestionSetting(savedUserCache?.settings?.powerSuggestions !== false);
 const savedBotRounds = clampNumber(localStorage.getItem("cardsAgainstAiBotRounds"), 5, 10, 5);
 const savedLocalRounds = clampNumber(localStorage.getItem("cardsAgainstAiLocalRounds"), 5, 10, 5);
 const savedBotTimerSeconds = readTimerSecondsSetting("cardsAgainstAiBotTimerSeconds", defaultMatchTimerSeconds, {
@@ -1258,6 +1475,7 @@ function getUserStorageSnapshot() {
       timerSeconds: state.timerSeconds,
       maxRounds: state.maxRounds,
       performanceMode: state.performanceMode,
+      powerSuggestions: state.powerSuggestionsEnabled !== false,
       lastSelectedThemes: getEnabledTriviaThemes()
     },
     currencyDisplayCache: {
@@ -1367,6 +1585,7 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
     const maxRounds = clampNumber(settings.maxRounds, 1, 10, 5);
     const timerSeconds = clampNumber(settings.timerSeconds, 10, 60, 30);
     const performanceMode = normalizePerformanceMode(settings.performanceMode || getStoredPerformanceMode());
+    const powerSuggestionsEnabled = readPowerSuggestionSetting(settings.powerSuggestions !== false);
 
     localStorage.setItem("cardsAgainstAiProfileName", username);
     if (avatar) {
@@ -1401,6 +1620,7 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
     localStorage.setItem("cardsAgainstAiMaxRounds", String(maxRounds));
     localStorage.setItem("cardsAgainstAiTimerSeconds", String(timerSeconds));
     localStorage.setItem(performanceModeStorageKey, performanceMode);
+    localStorage.setItem(powerSuggestionStorageKey, String(powerSuggestionsEnabled));
     writeJsonStorage(helpSeenFlagsStorageKey, source.tutorialHelpSeenFlags || {});
 
     state.profile.name = username;
@@ -1413,6 +1633,7 @@ function applyUserStorageSnapshot(snapshot = {}, options = {}) {
     state.maxRounds = maxRounds;
     state.timerSeconds = timerSeconds;
     state.performanceMode = performanceMode;
+    state.powerSuggestionsEnabled = powerSuggestionsEnabled;
     if (!state.timerId) {
       state.timerRemaining = timerSeconds;
     }
@@ -2433,6 +2654,7 @@ function resetSignedOutAccountState() {
       timerSeconds: 30,
       maxRounds: 5,
       performanceMode: "full",
+      powerSuggestions: true,
       lastSelectedThemes: [...triviaThemes]
     },
     currencyDisplayCache: { coins: 0 },
@@ -3288,6 +3510,7 @@ const state = {
   profileCustomizationHistoryIndex: 0,
   roundProgress: [],
   performanceMode: savedPerformanceMode,
+  powerSuggestionsEnabled: savedPowerSuggestionsEnabled,
   matchEnded: false,
   timerId: null,
   timerSessionId: 0,
@@ -3844,12 +4067,14 @@ const elements = {
   roundsSlider: document.querySelector("#roundsSlider"),
   botTimerSlider: document.querySelector("#botTimerSlider"),
   performanceModeSelect: document.querySelector("#performanceModeSelect"),
+  powerSuggestionsToggle: document.querySelector("#powerSuggestionsToggle"),
   sfxVolumeValue: document.querySelector("#sfxVolumeValue"),
   musicVolumeValue: document.querySelector("#musicVolumeValue"),
   timerSecondsValue: document.querySelector("#timerSecondsValue"),
   roundsValue: document.querySelector("#roundsValue"),
   botTimerValue: document.querySelector("#botTimerValue"),
   performanceModeValue: document.querySelector("#performanceModeValue"),
+  powerSuggestionsValue: document.querySelector("#powerSuggestionsValue"),
   modeLabel: document.querySelector("#modeLabel"),
   leaderboard: document.querySelector("#leaderboard"),
   roundScoreBox: document.querySelector("#roundScoreBox"),
@@ -6109,15 +6334,18 @@ function attachFloatingDescriptionTooltip(element) {
   const show = () => {
     if (!element.dataset.description) {
       setHidden(ensureFloatingDescriptionTooltip(), true);
+      document.body?.removeAttribute("data-floating-tooltip-active");
       return;
     }
     const tooltip = ensureFloatingDescriptionTooltip();
     tooltip.textContent = element.dataset.description;
     setHidden(tooltip, false);
+    document.body?.setAttribute("data-floating-tooltip-active", "true");
     positionFloatingDescriptionTooltip(element, tooltip);
   };
   const hide = () => {
     setHidden(ensureFloatingDescriptionTooltip(), true);
+    document.body?.removeAttribute("data-floating-tooltip-active");
   };
   element.addEventListener("mouseenter", show);
   element.addEventListener("focus", show);
@@ -24445,6 +24673,295 @@ function applyRoomRoundStartModifiers() {
   });
 }
 
+function getOwnerDraftAnswerForSuggestion(owner) {
+  const locked = cleanInput(getLockedRoundAnswer(owner, ""));
+  if (locked) {
+    return locked;
+  }
+  if (owner === getCurrentPowerOwner()) {
+    return cleanInput(elements.answerInput?.value || "");
+  }
+  return "";
+}
+
+function hasOwnerSubmittedForSuggestion(owner) {
+  if (isRoomMode()) {
+    return Boolean(state.roomSubmissions[owner]);
+  }
+  if (state.mode === "bots") {
+    return owner === "player" ? Boolean(state.roomSubmissions.player) : Boolean(state.roomSubmissions[owner]);
+  }
+  return Boolean(state.roomSubmissions[owner]);
+}
+
+function getBestOtherStreakThreat(owner, owners = getActiveOwners()) {
+  return owners
+    .filter((participant) => participant !== owner)
+    .map((participant) => ({
+      owner: participant,
+      streak: getOwnerStreak(participant),
+      score: getScore(participant)
+    }))
+    .sort((a, b) => b.streak - a.streak || b.score - a.score)[0] || { owner: "", streak: 0, score: 0 };
+}
+
+function getPowerSuggestionContext(owner, hand = state.powerHands[owner] || []) {
+  const owners = getActiveOwners();
+  const otherOwners = owners.filter((participant) => participant !== owner);
+  const ownerScore = getScore(owner);
+  const leaderScore = Math.max(0, ...owners.map((participant) => getScore(participant)));
+  const leaderOwner = getLeaders().find((participant) => participant !== owner) || getLeaders()[0] || "";
+  const behindBy = Math.max(0, leaderScore - ownerScore);
+  const comebackGap = Math.max(900, Math.round(Math.max(leaderScore, 1000) * 0.1));
+  const ownerStreak = getOwnerStreak(owner);
+  const streakThreat = getBestOtherStreakThreat(owner, owners);
+  const activeEffectCounts = Object.fromEntries(owners.map((participant) => [
+    participant,
+    getRemovableActiveEffects(participant).length
+  ]));
+  const playablePowers = hand
+    .map((powerId) => getPowerById(powerId))
+    .filter((power) => power && isPowerUsable(power, owner));
+  const handLimit = getPowerHandLimit(owner);
+  const emptySlots = Math.max(0, handLimit - hand.length);
+  const unusableCount = hand
+    .map((powerId) => getPowerById(powerId))
+    .filter((power) => power && !isPowerUsable(power, owner)).length;
+  const lowRankCount = hand
+    .map((powerId) => getPowerById(powerId))
+    .filter((power) => power && getRarityRank(power.rarity) <= getRarityRank("grey")).length;
+  const submitted = hasOwnerSubmittedForSuggestion(owner);
+  const draftAnswer = getOwnerDraftAnswerForSuggestion(owner);
+  const answerInputIsLive = isAnswerInputLive() && owner === getCurrentPowerOwner();
+  const lowTimer = answerInputIsLive && !submitted && state.timerRemaining <= Math.max(5, Math.ceil((state.timerSeconds || 30) * 0.25));
+  const threateningMarks = Boolean(
+    (state.deathMarks || []).some((mark) => mark.targetOwner === owner)
+    || (state.deathBombMarks || []).some((bomb) => bomb.targetOwner === owner)
+    || (state.wrathBombs || []).some((bomb) => bomb.targetOwner === owner)
+    || hasImpendingDoom(owner)
+    || state.heavenHellCurses[owner]
+    || state.cocktailPenaltyRounds[owner] > 0
+  );
+  const opponentActiveEffectCount = Math.max(0, ...otherOwners.map((participant) => activeEffectCounts[participant] || 0));
+  const opponentHandThreat = Math.max(0, ...otherOwners.map((participant) => getPowerHandThreatScore(participant)));
+  const opponentPlayedPower = otherOwners.some((participant) => hasPlayedPowerThisRound(participant));
+  const finalRound = state.round >= state.maxRounds;
+  const earlyRound = state.round <= Math.max(2, Math.floor((state.maxRounds || 5) * 0.45));
+
+  return {
+    owners,
+    otherOwners,
+    ownerScore,
+    leaderScore,
+    leaderOwner,
+    leaderLabel: leaderOwner ? getOwnerLabel(leaderOwner) : "First place",
+    behindBy,
+    comebackGap,
+    isBehind: behindBy > 0,
+    isLeader: isFirstPlace(owner),
+    isLast: isLastPlace(owner),
+    ownerStreak,
+    streakThreatOwner: streakThreat.owner,
+    streakThreatLabel: streakThreat.owner ? getOwnerLabel(streakThreat.owner) : "Someone",
+    highestOtherStreak: streakThreat.streak || 0,
+    activeEffectCounts,
+    opponentActiveEffectCount,
+    opponentHandThreat,
+    opponentPlayedPower,
+    submitted,
+    draftAnswer,
+    answerMissing: !submitted && !draftAnswer,
+    lowTimer,
+    finalRound,
+    earlyRound,
+    threateningMarks,
+    handLimit,
+    emptySlots,
+    unusableCount,
+    lowRankCount,
+    playableCount: playablePowers.length,
+    needsHandFix: emptySlots > 0 || unusableCount > 0 || lowRankCount >= Math.max(2, Math.ceil(hand.length * 0.66)),
+    confident: submitted || Boolean(draftAnswer) || ownerStreak > 0 || state.timerRemaining >= Math.max(12, Math.ceil((state.timerSeconds || 30) * 0.5))
+  };
+}
+
+function getPowerSuggestionCategory(power, context) {
+  if (!power || !context) {
+    return "";
+  }
+  const type = power.type;
+  const highStreakThreat = context.highestOtherStreak >= 3 || context.highestOtherStreak > context.ownerStreak + 1;
+  const meaningfulComebackGap = context.behindBy >= context.comebackGap;
+  const stackedOpponentPower = context.opponentActiveEffectCount >= 2
+    || context.opponentPlayedPower
+    || context.opponentHandThreat >= 3.2;
+
+  if (context.lowTimer && context.answerMissing && emergencySuggestionTypes.has(type)) {
+    return "emergency";
+  }
+  if (context.finalRound && (context.isBehind || context.isLast) && finalSwingSuggestionTypes.has(type)) {
+    return "final";
+  }
+  if (highStreakThreat && streakCounterSuggestionTypes.has(type)) {
+    return "streak";
+  }
+  if ((context.isLeader || context.ownerStreak >= 2 || context.threateningMarks) && protectionSuggestionTypes.has(type)) {
+    return "protect";
+  }
+  if (meaningfulComebackGap && comebackSuggestionTypes.has(type)) {
+    return "comeback";
+  }
+  if (stackedOpponentPower && disruptionSuggestionTypes.has(type)) {
+    return "disrupt";
+  }
+  if (context.confident && confidenceSuggestionTypes.has(type)) {
+    return "confidence";
+  }
+  if (context.earlyRound && investmentSuggestionTypes.has(type)) {
+    return "investment";
+  }
+  if (handFixSuggestionTypes.has(type)
+    && (context.needsHandFix || (type === "all_out" && context.playableCount > 1) || type === "recycle_bin")) {
+    return "hand";
+  }
+  if ((meaningfulComebackGap || context.isLast) && chaosSwingSuggestionTypes.has(type)) {
+    return "chaos";
+  }
+  if (isChaosInfusedPower(power) && (context.isBehind || context.finalRound)) {
+    return "chaos";
+  }
+  return "";
+}
+
+function getPowerSuggestionScore(power, category, context) {
+  const rarityRank = Math.max(0, getRarityRank(power.rarity));
+  let score = rarityRank * 4 + (power.immediate ? 2 : 0) + (isChaosInfusedPower(power) ? 8 : 0);
+  if (category === "emergency") {
+    score += Math.max(0, 10 - state.timerRemaining) * 6 + (context.answerMissing ? 12 : 0);
+  } else if (category === "final") {
+    score += (context.isLast ? 20 : 0) + Math.min(40, context.behindBy / 140);
+  } else if (category === "streak") {
+    score += context.highestOtherStreak * 12 + Math.max(0, context.highestOtherStreak - context.ownerStreak) * 5;
+  } else if (category === "protect") {
+    score += (context.threateningMarks ? 24 : 0) + context.ownerStreak * 6 + (context.isLeader ? 12 : 0);
+  } else if (category === "comeback") {
+    score += Math.min(45, context.behindBy / 120);
+  } else if (category === "disrupt") {
+    score += context.opponentActiveEffectCount * 10 + (context.opponentPlayedPower ? 12 : 0) + context.opponentHandThreat * 2;
+  } else if (category === "confidence") {
+    score += (context.submitted ? 12 : 0) + context.ownerStreak * 4 + Math.max(0, state.timerRemaining - 10) / 3;
+  } else if (category === "investment") {
+    score += Math.max(0, (state.maxRounds || 5) - state.round) * 3;
+  } else if (category === "hand") {
+    score += context.emptySlots * 12 + context.unusableCount * 10 + context.lowRankCount * 4;
+  } else if (category === "chaos") {
+    score += Math.min(28, context.behindBy / 180) + (context.isLast ? 8 : 0);
+  }
+  if (power.type === "last_chance" && context.finalRound && context.isLast) {
+    score += 40;
+  }
+  if ((power.type === "zap_strike" || power.type === "lightning_strike") && context.highestOtherStreak <= 0) {
+    score -= 30;
+  }
+  if (power.type === "vending_machine" && context.emptySlots <= 0) {
+    score -= 35;
+  }
+  if (power.type === "all_out" && context.playableCount <= 1) {
+    score -= 35;
+  }
+  return score;
+}
+
+function formatPowerSuggestionPoints(points) {
+  const amount = Math.max(0, Math.round(Number(points) || 0));
+  return amount >= 1000 ? `${(amount / 1000).toFixed(amount >= 10000 ? 0 : 1)}k` : amount.toLocaleString();
+}
+
+function getPowerSuggestionText(power, category, context) {
+  const baseId = getBasePowerId(power.id);
+  const text = powerSuggestionTextById[power.id]
+    || powerSuggestionTextById[baseId]
+    || powerSuggestionFallbackText[category]
+    || "This is a strong moment to use this.";
+  if (category === "streak" && context.streakThreatOwner && context.highestOtherStreak > 0) {
+    return `${context.streakThreatLabel} has a ${context.highestOtherStreak}x streak. ${text}`;
+  }
+  if (category === "comeback" && context.leaderOwner && context.behindBy > 0) {
+    return `${context.leaderLabel} is ahead by ${formatPowerSuggestionPoints(context.behindBy)}. ${text}`;
+  }
+  if (category === "final") {
+    return `Final round. ${text}`;
+  }
+  if (category === "emergency") {
+    return `Low time. ${text}`;
+  }
+  if (category === "protect" && context.ownerStreak >= 2) {
+    return `${context.ownerStreak}x streak is worth protecting. ${text}`;
+  }
+  return text;
+}
+
+function getActivePowerSuggestion(owner, hand = state.powerHands[owner] || []) {
+  if (state.powerSuggestionsEnabled === false
+    || state.isSpectator
+    || !owner
+    || getPlayer(owner)?.type === "bot"
+    || isClassicModeEnabled()
+    || isTableEventActive("power_outage")
+    || state.matchEnded
+    || elements.gameStage.classList.contains("hidden")
+    || !elements.verdictPanel.classList.contains("hidden")
+    || !elements.endPanel.classList.contains("hidden")
+    || !canPlayPower(owner)) {
+    return null;
+  }
+
+  const context = getPowerSuggestionContext(owner, hand);
+  const candidates = hand
+    .map((powerId, index) => ({ powerId, index, power: getPowerById(powerId) }))
+    .filter((entry) => entry.power && isPowerUsable(entry.power, owner) && !isPowerSelected(owner, entry.power.id))
+    .map((entry) => {
+      const category = getPowerSuggestionCategory(entry.power, context);
+      if (!category) {
+        return null;
+      }
+      const priority = powerSuggestionPriorities[category] || 0;
+      const score = getPowerSuggestionScore(entry.power, category, context);
+      return priority > 0 && score > 0
+        ? {
+          powerId: entry.power.id,
+          category,
+          priority,
+          score,
+          index: entry.index,
+          text: getPowerSuggestionText(entry.power, category, context)
+        }
+        : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.priority - a.priority || b.score - a.score || a.index - b.index);
+
+  return candidates[0] || null;
+}
+
+function appendPowerSuggestionBubble(button, suggestion) {
+  if (!button || !suggestion?.text) {
+    return;
+  }
+  const glow = document.createElement("i");
+  glow.className = "power-suggestion-glow";
+  glow.setAttribute("aria-hidden", "true");
+  const bubble = document.createElement("span");
+  bubble.className = "power-suggestion-bubble";
+  bubble.setAttribute("aria-hidden", "true");
+  const label = document.createElement("strong");
+  label.textContent = "Try this";
+  const copy = document.createElement("span");
+  copy.textContent = suggestion.text;
+  bubble.append(label, copy);
+  button.append(glow, bubble);
+}
+
 function renderPowerUps() {
   const owner = getCurrentPowerOwner();
   const hand = state.powerHands[owner] || [];
@@ -24486,7 +25003,9 @@ function renderPowerUps() {
   }
 
   const getPowerCardMarkup = (displayPower) => `<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
+  const activeSuggestion = getActivePowerSuggestion(owner, hand);
   let animatedFreshCount = 0;
+  let renderedCardIndex = 0;
   renderEntries.forEach(({ powerId, exiting }) => {
     if (exiting) {
       const placeholder = document.createElement("span");
@@ -24529,6 +25048,16 @@ function renderPowerUps() {
     button.setAttribute("aria-label", `${power.name}. ${button.dataset.description}`);
     button.classList.toggle("selected", selected);
     button.classList.toggle("unusable", !usable);
+    const suggested = activeSuggestion?.powerId === power.id;
+    if (suggested) {
+      const edge = renderedCardIndex % 3 === 0
+        ? "left"
+        : renderedCardIndex % 3 === 2 ? "right" : "center";
+      button.classList.add("power-suggestion");
+      button.dataset.suggestionCategory = activeSuggestion.category;
+      button.dataset.suggestionEdge = edge;
+      button.setAttribute("aria-label", `${power.name}. Suggested: ${activeSuggestion.text}. ${button.dataset.description}`);
+    }
     let enterDelayMs = 0;
     let enterDurationMs = 0;
     if (freshIndex >= 0) {
@@ -24546,8 +25075,12 @@ function renderPowerUps() {
       button.classList.add("power-selected-pop");
     }
     button.innerHTML = getPowerCardMarkup(visualPower);
+    if (suggested) {
+      appendPowerSuggestionBubble(button, activeSuggestion);
+    }
     attachFloatingDescriptionTooltip(button);
     elements.powerPanel.appendChild(button);
+    renderedCardIndex += 1;
     if (animateChaosInfusion) {
       const chaosInfusionDelayMs = visualPower.rarity === "gold"
         ? enterDelayMs + enterDurationMs + legendaryPowerSheenCycleMs
@@ -24566,6 +25099,9 @@ function renderPowerUps() {
           button.dataset.rarity = power.rarity;
           button.classList.add("chaos-infused", "chaos-infuse-upgrading");
           button.innerHTML = getPowerCardMarkup(power);
+          if (suggested) {
+            appendPowerSuggestionBubble(button, activeSuggestion);
+          }
           window.setTimeout(() => button.classList.remove("chaos-engulfing", "chaos-infuse-upgrading"), 820);
         }, 520);
       }, chaosInfusionDelayMs);
@@ -35680,6 +36216,9 @@ function syncSettingsControls() {
   if (elements.performanceModeSelect) {
     elements.performanceModeSelect.value = state.performanceMode;
   }
+  if (elements.powerSuggestionsToggle) {
+    elements.powerSuggestionsToggle.checked = state.powerSuggestionsEnabled !== false;
+  }
   elements.sfxVolumeValue.textContent = `${elements.sfxVolumeSlider.value}`;
   elements.musicVolumeValue.textContent = `${elements.musicVolumeSlider.value}`;
   if (elements.timerSecondsValue) {
@@ -35690,6 +36229,9 @@ function syncSettingsControls() {
   }
   if (elements.performanceModeValue) {
     elements.performanceModeValue.textContent = performanceModes[state.performanceMode]?.shortLabel || "Full";
+  }
+  if (elements.powerSuggestionsValue) {
+    elements.powerSuggestionsValue.textContent = state.powerSuggestionsEnabled === false ? "Off" : "On";
   }
 }
 
@@ -35722,6 +36264,16 @@ function updateMusicSetting(value) {
   cacheUserStorageSnapshotNow();
   scheduleUserStorageSnapshot();
   updateMusicVolume();
+}
+
+function updatePowerSuggestionSetting(enabled) {
+  state.powerSuggestionsEnabled = enabled !== false;
+  localStorage.setItem(powerSuggestionStorageKey, String(state.powerSuggestionsEnabled));
+  cacheUserStorageSnapshotNow();
+  scheduleUserStorageSnapshot();
+  syncSettingsControls();
+  renderPowerUps();
+  playSound("click");
 }
 
 function updateTimerSetting(value) {
@@ -38940,6 +39492,7 @@ elements.musicVolumeSlider.addEventListener("input", (event) => updateMusicSetti
 elements.sfxVolumeSlider.addEventListener("change", (event) => updateSfxVolume(event.target.value));
 elements.musicVolumeSlider.addEventListener("change", (event) => updateMusicSetting(event.target.value));
 elements.performanceModeSelect?.addEventListener("change", (event) => updatePerformanceMode(event.target.value));
+elements.powerSuggestionsToggle?.addEventListener("change", (event) => updatePowerSuggestionSetting(event.target.checked));
 elements.timerSecondsSlider?.addEventListener("input", (event) => updateTimerSetting(event.target.value));
 elements.roundsSlider?.addEventListener("input", (event) => updateRoundsSetting(event.target.value));
 elements.powerPanel.addEventListener("click", (event) => {
