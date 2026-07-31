@@ -1696,6 +1696,7 @@ async function handleDebugQuestions(res) {
       id: question.id,
       type: question.type,
       questionStyle: question.questionStyle || "standard",
+      language: normalizeQuestionLanguage(question.language),
       gradingStrictness: normalizeGradingStrictness(question.gradingStrictness),
       theme: question.theme,
       difficulty: question.difficulty,
@@ -1952,6 +1953,7 @@ function normalizeCreatedQuestion(body) {
   const questionStyle = source.questionStyle === "multiple-choice" || source.style === "multiple-choice" || source.type === "multiple-choice"
     ? "multiple-choice"
     : "standard";
+  const language = normalizeQuestionLanguage(source.language || source.questionLanguage);
   const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
   const question = String(source.question || "").trim().replace(/\s+/g, " ").slice(0, 260);
   const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
@@ -1987,6 +1989,7 @@ function normalizeCreatedQuestion(body) {
     id,
     type,
     questionStyle,
+    language,
     gradingStrictness,
     theme,
     difficulty,
@@ -3179,6 +3182,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
 
   const enabledThemes = normalizeEnabledThemes(command.payload.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
   const preferredTheme = normalizePreferredTheme(command.payload.preferredTheme, enabledThemes);
+  const questionLanguage = normalizeQuestionLanguage(command.payload.questionLanguage || command.payload.language);
   const recentBlackCards = Array.isArray(command.payload.recentBlackCards) ? command.payload.recentBlackCards.map(String).slice(-30) : [];
   const totalRounds = clampServerNumber(command.payload.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
   const setupSeed = String(command.payload.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
@@ -3186,6 +3190,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     recentBlackCards,
     enabledThemes,
     preferredTheme,
+    questionLanguage,
     setupSeed,
     backgroundMode: false,
     round,
@@ -3388,6 +3393,7 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
 
   const enabledThemes = normalizeEnabledThemes(command.payload.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
   const preferredTheme = normalizePreferredTheme(command.payload.preferredTheme, enabledThemes);
+  const questionLanguage = normalizeQuestionLanguage(command.payload.questionLanguage || command.payload.language);
   const recentBlackCards = Array.isArray(command.payload.recentBlackCards) ? command.payload.recentBlackCards.map(String).slice(-30) : [];
   const totalRounds = clampServerNumber(command.payload.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
   const setupSeed = String(command.payload.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
@@ -3395,6 +3401,7 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
     recentBlackCards,
     enabledThemes,
     preferredTheme,
+    questionLanguage,
     setupSeed,
     backgroundMode: false,
     round,
@@ -6415,6 +6422,7 @@ async function handleSetup(req, res) {
     const recentBlackCards = Array.isArray(body.recentBlackCards) ? body.recentBlackCards.map(String).slice(-30) : [];
     const enabledThemes = normalizeEnabledThemes(body.enabledThemes);
     const preferredTheme = normalizePreferredTheme(body.preferredTheme, enabledThemes);
+    const questionLanguage = normalizeQuestionLanguage(body.questionLanguage || body.language);
     const baseSeed = String(body.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
     const backgroundMode = Boolean(body.backgroundMode);
     const round = clampServerNumber(body.round, 1, 100, 1);
@@ -6423,6 +6431,7 @@ async function handleSetup(req, res) {
       recentBlackCards,
       enabledThemes,
       preferredTheme,
+      questionLanguage,
       setupSeed: baseSeed,
       backgroundMode,
       round,
@@ -6448,6 +6457,14 @@ function normalizeEnabledThemes(themes) {
 function normalizePreferredTheme(theme, enabledThemes) {
   const preferred = String(theme || "").trim();
   return enabledThemes.includes(preferred) ? preferred : "";
+}
+
+function normalizeQuestionLanguage(language) {
+  const value = String(language || "").trim();
+  if (value === "zh-Hans" || value === "zh" || value === "zh-CN" || value === "chinese") {
+    return "zh-Hans";
+  }
+  return "en";
 }
 
 function loadQuestionBank() {
@@ -6517,6 +6534,7 @@ function normalizeSeedQuestion(question) {
   const questionStyle = source.questionStyle === "multiple-choice" || source.style === "multiple-choice" || source.type === "multiple-choice"
     ? "multiple-choice"
     : "standard";
+  const language = normalizeQuestionLanguage(source.language || source.questionLanguage);
   const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
   const theme = triviaThemes.includes(source.theme) ? source.theme : "Pop Culture";
   const blackCard = String(source.question || source.blackCard || "").trim().replace(/\s+/g, " ").slice(0, 220);
@@ -6564,6 +6582,7 @@ function normalizeSeedQuestion(question) {
     id: String(source.id || `${theme}-${canonicalAnswer}`).trim().slice(0, 120),
     type,
     questionStyle,
+    language,
     gradingStrictness,
     theme,
     difficulty: String(source.difficulty || "medium").trim().slice(0, 30),
@@ -6695,13 +6714,20 @@ async function getSeedQuestionSetup(options = {}) {
   const preferredTheme = normalizePreferredTheme(options.preferredTheme, enabledThemes);
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : [];
   const seed = String(options.setupSeed || `${Date.now()}-${Math.random()}`);
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || options.language);
   const multipleChoiceChancePercent = getMultipleChoiceChancePercent(options.round, options.totalRounds);
   const runtimeQuestionBank = await getRuntimeQuestionBank();
+  const languagePool = runtimeQuestionBank.filter((question) => {
+    const language = normalizeQuestionLanguage(question.language);
+    return isMultipleChoiceQuestion(question)
+      ? language === questionLanguage
+      : language === "en";
+  });
   const preferredPool = preferredTheme
-    ? runtimeQuestionBank.filter((question) => question.theme === preferredTheme && !isRepeatedQuestion(question.blackCard, recentBlackCards))
+    ? languagePool.filter((question) => question.theme === preferredTheme && !isRepeatedQuestion(question.blackCard, recentBlackCards))
     : [];
-  const broadPool = runtimeQuestionBank.filter((question) => enabledThemes.includes(question.theme) && !isRepeatedQuestion(question.blackCard, recentBlackCards));
-  const fallbackPool = runtimeQuestionBank.filter((question) => enabledThemes.includes(question.theme));
+  const broadPool = languagePool.filter((question) => enabledThemes.includes(question.theme) && !isRepeatedQuestion(question.blackCard, recentBlackCards));
+  const fallbackPool = languagePool.filter((question) => enabledThemes.includes(question.theme));
   const pool = preferredPool.length ? preferredPool : broadPool.length ? broadPool : fallbackPool;
   if (!pool.length) {
     return null;
@@ -6721,6 +6747,7 @@ async function getSeedQuestionSetup(options = {}) {
   const setup = {
     type: picked.type,
     questionStyle: picked.questionStyle || "standard",
+    language: normalizeQuestionLanguage(picked.language),
     gradingStrictness: normalizeGradingStrictness(picked.gradingStrictness),
     theme: picked.theme,
     difficulty: picked.difficulty,

@@ -1108,6 +1108,10 @@ const triviaThemes = [
   "Mythology",
   "Art and Music"
 ];
+const questionLanguages = {
+  en: { label: "English", shortLabel: "EN", idPrefix: "" },
+  "zh-Hans": { label: "Simplified Chinese", shortLabel: "中文", idPrefix: "chinese" }
+};
 const loadingMessages = {
   setup: [
     "Loading the next trivia card...",
@@ -3608,6 +3612,7 @@ const state = {
   questionId: "",
   questionType: "image",
   questionStyle: "standard",
+  questionLanguage: "en",
   gradingStrictness: "normal",
   questionDifficulty: "medium",
   triviaTheme: "",
@@ -3726,6 +3731,16 @@ window.addEventListener("focus", () => {
     void initSupabaseAuth();
   }
   void reconnectCurrentRoomParticipant("focus");
+});
+window.addEventListener("cards-ai-language-change", () => {
+  const questionLanguage = getCurrentQuestionLanguage();
+  state.questionReserve = state.questionReserve.filter((setup) => setupMatchesQuestionLanguage(setup, questionLanguage));
+  state.setupStack = state.setupStack.filter((setup) => setupMatchesQuestionLanguage(setup, questionLanguage));
+  state.nextSetup = null;
+  state.nextSetupPromise = null;
+  state.nextSetupStatus = "idle";
+  state.setupVersion += 1;
+  clearWarmSetup();
 });
 
 const elements = {
@@ -3895,6 +3910,7 @@ const elements = {
   devQuestionSearchInput: null,
   devQuestionThemeFilter: null,
   devQuestionTypeFilter: null,
+  devQuestionLanguageFilter: null,
   devQuestionCounts: null,
   devQuestionResults: null,
   devQuestionCounter: null,
@@ -3977,6 +3993,7 @@ const elements = {
   devCreateDifficulty: null,
   devCreateType: null,
   devCreateQuestionStyle: null,
+  devCreateLanguage: null,
   devCreateStrictness: null,
   devCreateId: null,
   devCreateQuestion: null,
@@ -4825,6 +4842,7 @@ function clearRoomMatchScopedStateForLobby(options = {}) {
   state.blackCard = "";
   state.questionType = "image";
   state.questionStyle = "standard";
+  state.questionLanguage = "en";
   state.gradingStrictness = "normal";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
@@ -4880,10 +4898,34 @@ function getEnabledTriviaThemes() {
   return enabled.length ? enabled : [...triviaThemes];
 }
 
-function getThemeSignature(themes = getEnabledTriviaThemes()) {
+function normalizeQuestionLanguage(language) {
+  const value = String(language || "").trim();
+  if (value === "zh-Hans" || value === "zh" || value === "zh-CN" || value === "chinese") {
+    return "zh-Hans";
+  }
+  return "en";
+}
+
+function getCurrentQuestionLanguage() {
+  return normalizeQuestionLanguage(window.CardsAgainstAiI18n?.getLanguage?.() || "en");
+}
+
+function getQuestionLanguageLabel(language) {
+  return questionLanguages[normalizeQuestionLanguage(language)]?.label || questionLanguages.en.label;
+}
+
+function setupMatchesQuestionLanguage(setup, questionLanguage = getCurrentQuestionLanguage()) {
+  const setupLanguage = normalizeQuestionLanguage(setup?.language);
+  if (setup?.questionStyle === MULTIPLE_CHOICE_STYLE) {
+    return setupLanguage === normalizeQuestionLanguage(questionLanguage);
+  }
+  return setupLanguage === "en";
+}
+
+function getThemeSignature(themes = getEnabledTriviaThemes(), questionLanguage = getCurrentQuestionLanguage()) {
   return [...new Set(themes.filter((theme) => triviaThemes.includes(theme)))]
     .sort()
-    .join("|");
+    .join("|") + `::${normalizeQuestionLanguage(questionLanguage)}`;
 }
 
 function normalizeDifficulty(difficulty) {
@@ -4941,7 +4983,8 @@ function getThemeSetupOptions(theme = "") {
   const preferredTheme = enabledThemes.includes(theme) ? theme : "";
   return {
     enabledThemes: preferredTheme ? [preferredTheme] : enabledThemes,
-    preferredTheme
+    preferredTheme,
+    questionLanguage: getCurrentQuestionLanguage()
   };
 }
 
@@ -5053,11 +5096,13 @@ function preloadQuestionImageInBackground(setup) {
 
 function takeReservedSetup(enabledThemes = getEnabledTriviaThemes(), previousBlackCard = "", options = {}) {
   const previousKey = normalizePromptText(previousBlackCard);
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
   const index = state.questionReserve.findIndex((setup) => {
     const key = normalizePromptText(setup?.blackCard);
     return key
       && key !== previousKey
       && setupMatchesThemes(setup, enabledThemes)
+      && setupMatchesQuestionLanguage(setup, questionLanguage)
       && setupMatchesRoundMultipleChoiceChance(setup, options);
   });
   if (index < 0) {
@@ -5080,7 +5125,10 @@ function stashUnusedQuestionSetups() {
 }
 
 function hasReservedSetupForThemes(enabledThemes = getEnabledTriviaThemes(), options = {}) {
-  return state.questionReserve.some((setup) => setupMatchesThemes(setup, enabledThemes) && setupMatchesRoundMultipleChoiceChance(setup, options));
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
+  return state.questionReserve.some((setup) => setupMatchesThemes(setup, enabledThemes)
+    && setupMatchesQuestionLanguage(setup, questionLanguage)
+    && setupMatchesRoundMultipleChoiceChance(setup, options));
 }
 
 function clearWarmSetup() {
@@ -5122,9 +5170,12 @@ function startWarmSetupPreload(options = {}) {
 
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const timingOptions = getRoundSetupTimingOptions(options);
-  const signature = getThemeSignature(enabledThemes);
-  if (hasReservedSetupForThemes(enabledThemes, timingOptions)) {
-    return Promise.resolve(state.questionReserve.find((setup) => setupMatchesThemes(setup, enabledThemes) && setupMatchesRoundMultipleChoiceChance(setup, timingOptions)));
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
+  const signature = getThemeSignature(enabledThemes, questionLanguage);
+  if (hasReservedSetupForThemes(enabledThemes, { ...timingOptions, questionLanguage })) {
+    return Promise.resolve(state.questionReserve.find((setup) => setupMatchesThemes(setup, enabledThemes)
+      && setupMatchesQuestionLanguage(setup, questionLanguage)
+      && setupMatchesRoundMultipleChoiceChance(setup, timingOptions)));
   }
   if (state.warmSetup && state.warmSetupSignature === signature) {
     if (setupMatchesRoundMultipleChoiceChance(state.warmSetup, timingOptions)) {
@@ -5144,6 +5195,7 @@ function startWarmSetupPreload(options = {}) {
     recentBlackCards: state.recentBlackCards,
     enabledThemes,
     preferredTheme: options.preferredTheme || "",
+    questionLanguage,
     backgroundMode: true,
     ...timingOptions
   });
@@ -5176,14 +5228,16 @@ function startWarmSetupPreload(options = {}) {
 function ensureQuestionReserve(options = {}) {
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const timingOptions = getRoundSetupTimingOptions(options);
-  if (hasReservedSetupForThemes(enabledThemes, timingOptions)) {
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
+  if (hasReservedSetupForThemes(enabledThemes, { ...timingOptions, questionLanguage })) {
     return null;
   }
-  return startWarmSetupPreload({ ...options, enabledThemes, ...timingOptions });
+  return startWarmSetupPreload({ ...options, enabledThemes, ...timingOptions, questionLanguage });
 }
 
 function takeWarmSetup(enabledThemes = getEnabledTriviaThemes(), options = {}) {
-  const signature = getThemeSignature(enabledThemes);
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
+  const signature = getThemeSignature(enabledThemes, questionLanguage);
   if (!state.warmSetup || state.warmSetupSignature !== signature) {
     return null;
   }
@@ -5200,7 +5254,8 @@ function takeWarmSetup(enabledThemes = getEnabledTriviaThemes(), options = {}) {
 }
 
 function getWarmSetupPromise(enabledThemes = getEnabledTriviaThemes(), options = {}) {
-  const signature = getThemeSignature(enabledThemes);
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
+  const signature = getThemeSignature(enabledThemes, questionLanguage);
   return state.warmSetupPromise && state.warmSetupSignature === signature && getMultipleChoiceChancePercent(options.round, options.totalRounds) > 0
     ? state.warmSetupPromise
     : null;
@@ -5473,6 +5528,7 @@ function normalizeSetupPayload(setup) {
     blackCard: String(setup.blackCard || "").trim(),
     type: setup.type === "text" ? "text" : "image",
     questionStyle: setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
+    language: normalizeQuestionLanguage(setup.language),
     gradingStrictness: normalizeGradingStrictness(setup.gradingStrictness),
     difficulty: ["easy", "medium", "hard"].includes(String(setup.difficulty || "").toLowerCase())
       ? String(setup.difficulty).toLowerCase()
@@ -5523,7 +5579,8 @@ async function requestRoundSetup(options = {}) {
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards;
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = options.preferredTheme || "";
-  const cachedSetup = takeCachedRoundSetup({ recentBlackCards, enabledThemes, preferredTheme, ...timingOptions, questionStylePreference });
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
+  const cachedSetup = takeCachedRoundSetup({ recentBlackCards, enabledThemes, preferredTheme, questionLanguage, ...timingOptions, questionStylePreference });
   if (cachedSetup) {
     return cachedSetup;
   }
@@ -5543,6 +5600,7 @@ async function requestRoundSetup(options = {}) {
         recentBlackCards,
         enabledThemes,
         preferredTheme,
+        questionLanguage,
         backgroundMode: Boolean(options.backgroundMode),
         setupSeed,
         ...timingOptions
@@ -5555,7 +5613,7 @@ async function requestRoundSetup(options = {}) {
     }
 
     const setup = normalizeSetupPayload(await response.json());
-    cacheRoundSetup(setup, enabledThemes);
+    cacheRoundSetup(setup, enabledThemes, questionLanguage);
     return setup;
   } finally {
     if (controller) {
@@ -5582,6 +5640,7 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
   const timingOptions = getRoundSetupTimingOptions(options);
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = options.preferredTheme || "";
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
   const setupSeed = String(options.setupSeed || `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 80);
   const clientEventId = String(options.clientEventId || createRoomSyncCommandId("prepare-round", state.roomSettings.code)).slice(0, 160);
 
@@ -5598,6 +5657,7 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
       recentBlackCards: Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards,
       enabledThemes,
       preferredTheme,
+      questionLanguage,
       setupSeed,
       matchSettings: getRoomMatchSettingsPayload(state.roomSettings),
       powerState: getRoomPowerStatePayload()
@@ -5691,11 +5751,13 @@ function getRecentPromptSet(recentBlackCards = state.recentBlackCards, previousB
 function isSetupUsableFromCache(setup, options = {}) {
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = String(options.preferredTheme || "").trim();
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
   const prompt = normalizePromptText(setup?.blackCard);
   if (
     !prompt
     || getRecentPromptSet(options.recentBlackCards).has(prompt)
     || !setupMatchesThemes(setup, enabledThemes)
+    || !setupMatchesQuestionLanguage(setup, questionLanguage)
     || !setupMatchesRoundMultipleChoiceChance(setup, options)
   ) {
     return false;
@@ -5723,7 +5785,7 @@ function takeCachedRoundSetup(options = {}) {
   }
 }
 
-function cacheRoundSetup(setup, enabledThemes = getEnabledTriviaThemes()) {
+function cacheRoundSetup(setup, enabledThemes = getEnabledTriviaThemes(), questionLanguage = getCurrentQuestionLanguage()) {
   if (!setup?.blackCard) {
     return;
   }
@@ -5732,7 +5794,7 @@ function cacheRoundSetup(setup, enabledThemes = getEnabledTriviaThemes()) {
   const cache = loadRecentSetupCache()
     .filter((entry) => normalizePromptText(entry.setup?.blackCard) !== prompt);
   cache.push({
-    signature: getThemeSignature(enabledThemes),
+    signature: getThemeSignature(enabledThemes, questionLanguage),
     cachedAt: Date.now(),
     setup: normalized
   });
@@ -27105,6 +27167,7 @@ function applyRoundSetup(setup, options = {}) {
   removeCachedRoundSetup(setup);
   state.questionType = setup.type === "text" ? "text" : "image";
   state.questionStyle = setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
+  state.questionLanguage = normalizeQuestionLanguage(setup.language);
   state.gradingStrictness = normalizeGradingStrictness(setup.gradingStrictness);
   state.questionDifficulty = normalizeDifficulty(setup.difficulty);
   state.triviaTheme = setup.triviaTheme || "Mixed Trivia";
@@ -27183,6 +27246,14 @@ function buildDevToolScreen() {
             <option value="image">Image only</option>
             <option value="text">Text only</option>
             <option value="multiple-choice">Multiple choice</option>
+          </select>
+        </label>
+        <label>
+          <span>Card language</span>
+          <select id="devQuestionLanguageFilter">
+            <option value="all">All languages</option>
+            <option value="en">English cards</option>
+            <option value="zh-Hans">Chinese cards</option>
           </select>
         </label>
       </div>
@@ -27465,6 +27536,7 @@ function buildDevToolScreen() {
             <label><span>Difficulty</span><select id="devCreateDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
             <label><span>Question type</span><select id="devCreateType"><option value="text">Text</option><option value="image">Image</option></select></label>
             <label><span>Question style</span><select id="devCreateQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
+            <label><span>Card language</span><select id="devCreateLanguage"><option value="en">English cards</option><option value="zh-Hans">Chinese cards</option></select></label>
             <label><span>Strictness</span><select id="devCreateStrictness"><option value="normal">Normal</option><option value="forgiving">Forgiving</option><option value="strict">Strict</option><option value="exact">Exact</option></select></label>
             <label><span>ID</span><input id="devCreateId" required placeholder="popculture-short-unique-id"></label>
           </div>
@@ -27519,6 +27591,7 @@ function buildDevToolScreen() {
   elements.devQuestionSearchInput = screen.querySelector("#devQuestionSearchInput");
   elements.devQuestionThemeFilter = screen.querySelector("#devQuestionThemeFilter");
   elements.devQuestionTypeFilter = screen.querySelector("#devQuestionTypeFilter");
+  elements.devQuestionLanguageFilter = screen.querySelector("#devQuestionLanguageFilter");
   elements.devQuestionCounts = screen.querySelector("#devQuestionCounts");
   elements.devQuestionResults = screen.querySelector("#devQuestionResults");
   elements.devQuestionCounter = screen.querySelector("#devQuestionCounter");
@@ -27601,6 +27674,7 @@ function buildDevToolScreen() {
   elements.devCreateDifficulty = screen.querySelector("#devCreateDifficulty");
   elements.devCreateType = screen.querySelector("#devCreateType");
   elements.devCreateQuestionStyle = screen.querySelector("#devCreateQuestionStyle");
+  elements.devCreateLanguage = screen.querySelector("#devCreateLanguage");
   elements.devCreateStrictness = screen.querySelector("#devCreateStrictness");
   elements.devCreateId = screen.querySelector("#devCreateId");
   elements.devCreateQuestion = screen.querySelector("#devCreateQuestion");
@@ -27651,6 +27725,7 @@ function bindDevToolEvents() {
   elements.devQuestionSearchInput.addEventListener("input", filterQuestionDebugBank);
   elements.devQuestionThemeFilter.addEventListener("change", filterQuestionDebugBank);
   elements.devQuestionTypeFilter.addEventListener("change", filterQuestionDebugBank);
+  elements.devQuestionLanguageFilter.addEventListener("change", filterQuestionDebugBank);
   elements.devQuestionPrevButton.addEventListener("click", () => selectQuestionDebugIndex(state.questionDebugIndex - 1));
   elements.devQuestionNextButton.addEventListener("click", () => selectQuestionDebugIndex(state.questionDebugIndex + 1));
   elements.devQuestionResults.addEventListener("click", (event) => {
@@ -27761,6 +27836,10 @@ function bindDevToolEvents() {
   elements.devProfileResetButton.addEventListener("click", () => setAllProfileDebugStates("reset"));
   elements.devCreateType.addEventListener("change", updateDevCreateImageFields);
   elements.devCreateQuestionStyle.addEventListener("change", updateDevCreateImageFields);
+  elements.devCreateLanguage.addEventListener("change", () => {
+    syncDevCreateIdPrefix();
+    updateDevCreatePreview();
+  });
   elements.devCreateStrictness.addEventListener("change", updateDevCreatePreview);
   elements.devCreateTheme.addEventListener("change", () => {
     syncDevCreateIdPrefix();
@@ -29685,8 +29764,27 @@ async function loadQuestionDebugBank(force = false) {
 function renderQuestionDebugCounts(counts = {}) {
   elements.devQuestionCounts.replaceChildren();
   const selectedTheme = elements.devQuestionThemeFilter?.value || "all";
+  const selectedLanguage = elements.devQuestionLanguageFilter?.value || "all";
+  const liveCounts = {};
+  state.questionDebugBank.forEach((question) => {
+    const language = normalizeQuestionLanguage(question.language);
+    if (selectedLanguage !== "all" && language !== selectedLanguage) {
+      return;
+    }
+    const bucket = liveCounts[question.theme] || (liveCounts[question.theme] = {
+      total: 0,
+      image: 0,
+      text: 0,
+      multipleChoice: 0
+    });
+    bucket.total += 1;
+    bucket[question.type] = (bucket[question.type] || 0) + 1;
+    if (question.questionStyle === MULTIPLE_CHOICE_STYLE) {
+      bucket.multipleChoice += 1;
+    }
+  });
   state.questionDebugThemes.forEach((theme) => {
-    const count = counts[theme] || {};
+    const count = liveCounts[theme] || counts[theme] || {};
     const item = document.createElement("button");
     item.type = "button";
     item.className = "dev-count-chip";
@@ -29705,11 +29803,17 @@ function filterQuestionDebugBank() {
   const query = normalizeTriviaAnswer(elements.devQuestionSearchInput.value);
   const theme = elements.devQuestionThemeFilter.value;
   const type = elements.devQuestionTypeFilter.value;
+  const language = elements.devQuestionLanguageFilter?.value || "all";
+  renderQuestionDebugCounts();
   elements.devQuestionCounts.querySelectorAll(".dev-count-chip").forEach((button) => {
     button.classList.toggle("selected", button.dataset.theme === theme);
   });
   state.questionDebugFiltered = state.questionDebugBank.filter((question) => {
+    const questionLanguage = normalizeQuestionLanguage(question.language);
     if (theme !== "all" && question.theme !== theme) {
+      return false;
+    }
+    if (language !== "all" && questionLanguage !== language) {
       return false;
     }
     if (type === "multiple-choice" && question.questionStyle !== MULTIPLE_CHOICE_STYLE) {
@@ -29727,6 +29831,7 @@ function filterQuestionDebugBank() {
       question.difficulty,
       question.type,
       question.questionStyle,
+      questionLanguage,
       question.gradingStrictness,
       question.question,
       question.canonicalAnswer,
@@ -29761,7 +29866,7 @@ function renderQuestionDebugResults() {
     button.dataset.questionDebugIndex = String(index);
     const answer = document.createElement("span");
     answer.textContent = question.canonicalAnswer || "-";
-    button.dataset.tooltip = `${question.id} - ${question.theme} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ` - ${getGradingStrictnessLabel(question.gradingStrictness)}`}`;
+    button.dataset.tooltip = `${question.id} - ${question.theme} - ${getQuestionLanguageLabel(question.language)} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ` - ${getGradingStrictnessLabel(question.gradingStrictness)}`}`;
     button.append(answer);
     elements.devQuestionResults.appendChild(button);
   });
@@ -29808,6 +29913,7 @@ function renderQuestionDebugPreview() {
   elements.devQuestionPreview?.classList.toggle("text-only", question.type !== "image");
   [
     question.theme,
+    getQuestionLanguageLabel(question.language),
     question.type === "image" ? "Image" : "Text",
     question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "",
     question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Exact option" : getGradingStrictnessLabel(question.gradingStrictness),
@@ -30531,6 +30637,15 @@ function getKnownThemeIdPrefixes() {
   return new Set(triviaThemes.map(getThemeIdPrefix));
 }
 
+function getQuestionLanguageIdPrefix(language) {
+  return questionLanguages[normalizeQuestionLanguage(language)]?.idPrefix || "";
+}
+
+function getDevQuestionIdPrefix(theme, language = elements.devCreateLanguage?.value || "en") {
+  const languagePrefix = getQuestionLanguageIdPrefix(language);
+  return [languagePrefix, getThemeIdPrefix(theme)].filter(Boolean).join("-");
+}
+
 function formatDevQuestionId(value, options = {}) {
   const keepTrailingDash = Boolean(options.keepTrailingDash);
   const formatted = String(value || "")
@@ -30566,13 +30681,15 @@ function normalizeDevCreateIdInput() {
 }
 
 function syncDevCreateIdPrefix() {
-  const prefix = getThemeIdPrefix(elements.devCreateTheme.value);
+  const prefix = getDevQuestionIdPrefix(elements.devCreateTheme.value, elements.devCreateLanguage?.value);
   const current = formatDevQuestionId(elements.devCreateId.value);
   const parts = current.split("-");
   const knownPrefixes = getKnownThemeIdPrefixes();
+  const knownLanguagePrefixes = new Set(Object.values(questionLanguages).map((entry) => entry.idPrefix).filter(Boolean));
   let suffix = "";
   if (current && parts.length > 1) {
-    suffix = knownPrefixes.has(parts[0]) ? parts.slice(1).join("-") : current;
+    const withoutLanguage = knownLanguagePrefixes.has(parts[0]) ? parts.slice(1) : parts;
+    suffix = knownPrefixes.has(withoutLanguage[0]) ? withoutLanguage.slice(1).join("-") : withoutLanguage.join("-");
   } else if (current && !knownPrefixes.has(current)) {
     suffix = current;
   }
@@ -30580,7 +30697,7 @@ function syncDevCreateIdPrefix() {
 }
 
 function getCurrentDevCreateIdPrefixValue() {
-  return `${getThemeIdPrefix(elements.devCreateTheme.value)}-`;
+  return `${getDevQuestionIdPrefix(elements.devCreateTheme.value, elements.devCreateLanguage?.value)}-`;
 }
 
 function isDevCreateIdOnlyThemePrefix() {
@@ -30635,6 +30752,7 @@ function updateDevCreatePreview() {
   }
   const type = elements.devCreateType.value === "image" ? "image" : "text";
   const style = elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
+  const language = normalizeQuestionLanguage(elements.devCreateLanguage?.value);
   const theme = elements.devCreateTheme.value || "Theme";
   const difficulty = normalizeDifficulty(elements.devCreateDifficulty.value);
   const question = elements.devCreateQuestion.value.trim() || "Question preview";
@@ -30644,7 +30762,7 @@ function updateDevCreatePreview() {
 
   elements.devCreatePreview.classList.toggle("text-only", type !== "image");
   elements.devCreatePreviewMeta.replaceChildren();
-  [theme, type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : getGradingStrictnessLabel(elements.devCreateStrictness?.value), difficulty].filter(Boolean).forEach((text) => {
+  [theme, getQuestionLanguageLabel(language), type === "image" ? "Image" : "Text", style === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : getGradingStrictnessLabel(elements.devCreateStrictness?.value), difficulty].filter(Boolean).forEach((text) => {
     const badge = document.createElement("span");
     badge.textContent = text;
     elements.devCreatePreviewMeta.appendChild(badge);
@@ -30688,6 +30806,9 @@ function focusQuestionDebugById(id) {
   if (question) {
     elements.devQuestionThemeFilter.value = question.theme || "all";
     elements.devQuestionTypeFilter.value = "all";
+    if (elements.devQuestionLanguageFilter) {
+      elements.devQuestionLanguageFilter.value = normalizeQuestionLanguage(question.language);
+    }
   }
   filterQuestionDebugBank();
   let index = state.questionDebugFiltered.findIndex((entry) => entry.id === id);
@@ -30749,6 +30870,7 @@ function startEditingDebugQuestion() {
   elements.devCreateDifficulty.value = normalizeDifficulty(question.difficulty);
   elements.devCreateType.value = question.type === "image" ? "image" : "text";
   elements.devCreateQuestionStyle.value = question.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard";
+  elements.devCreateLanguage.value = normalizeQuestionLanguage(question.language);
   elements.devCreateStrictness.value = normalizeGradingStrictness(question.gradingStrictness);
   elements.devCreateId.value = question.id || "";
   elements.devCreateQuestion.value = question.question || "";
@@ -30888,7 +31010,7 @@ function validateMultipleChoiceDraft(correctAnswer, wrongAnswers, input, statusE
 }
 
 function validateDevCreateId(payload) {
-  const prefix = `${getThemeIdPrefix(payload.theme)}-`;
+  const prefix = `${getDevQuestionIdPrefix(payload.theme, payload.language)}-`;
   const id = formatDevQuestionId(payload.id, { keepTrailingDash: true });
   const valid = id.startsWith(prefix) && id.length > prefix.length;
   elements.devCreateId.setCustomValidity(valid ? "" : `Add a short unique ID after ${prefix}.`);
@@ -30901,8 +31023,8 @@ function validateDevCreateId(payload) {
   return valid;
 }
 
-function validateQuestionEditorId(input, theme, statusElement) {
-  const prefix = `${getThemeIdPrefix(theme)}-`;
+function validateQuestionEditorId(input, theme, statusElement, language = "en") {
+  const prefix = `${getDevQuestionIdPrefix(theme, language)}-`;
   const id = formatDevQuestionId(input?.value || "", { keepTrailingDash: true });
   const valid = id.startsWith(prefix) && id.length > prefix.length;
   input?.setCustomValidity(valid ? "" : `Add a short unique ID after ${prefix}.`);
@@ -30926,6 +31048,7 @@ function getDevQuestionCreatePayload() {
     id: formatDevQuestionId(elements.devCreateId.value),
     type: elements.devCreateType.value,
     questionStyle: elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
+    language: normalizeQuestionLanguage(elements.devCreateLanguage?.value),
     gradingStrictness: elements.devCreateQuestionStyle?.value === MULTIPLE_CHOICE_STYLE
       ? "exact"
       : normalizeGradingStrictness(elements.devCreateStrictness?.value),
@@ -31189,12 +31312,18 @@ function prefetchNextSetup() {
 
   const setupVersion = state.setupVersion;
   const matchToken = state.matchWorkToken;
-  const promise = requestRoundSetup({ round: state.round + 1, totalRounds: state.maxRounds });
+  const questionLanguage = getCurrentQuestionLanguage();
+  const promise = requestRoundSetup({ round: state.round + 1, totalRounds: state.maxRounds, questionLanguage });
   state.nextSetupPromise = promise;
   state.nextSetupStatus = "loading";
   promise
     .then((setup) => {
-      if (state.setupVersion === setupVersion && isCurrentMatchWork(matchToken) && !isRepeatedBlackCard(setup)) {
+      if (
+        state.setupVersion === setupVersion
+        && isCurrentMatchWork(matchToken)
+        && setupMatchesQuestionLanguage(setup, questionLanguage)
+        && !isRepeatedBlackCard(setup)
+      ) {
         state.nextSetup = setup;
         state.nextSetupStatus = "ready";
         preloadQuestionImageInBackground(setup);
@@ -31242,6 +31371,7 @@ async function newRound() {
   state.blackCard = "";
   state.questionType = "image";
   state.questionStyle = "standard";
+  state.questionLanguage = getCurrentQuestionLanguage();
   state.gradingStrictness = "normal";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
@@ -31347,6 +31477,7 @@ async function newRound() {
   if (
     cachedSetup
     && !isRepeatedBlackCard(cachedSetup, previousBlackCard)
+    && setupMatchesQuestionLanguage(cachedSetup, getCurrentQuestionLanguage())
     && setupMatchesRoundMultipleChoiceChance(cachedSetup, { round: state.round, totalRounds: state.maxRounds })
   ) {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
@@ -31368,6 +31499,7 @@ async function newRound() {
         : await requestRoundSetup();
     if (
       isRepeatedBlackCard(setup, previousBlackCard)
+      || !setupMatchesQuestionLanguage(setup, getCurrentQuestionLanguage())
       || !setupMatchesRoundMultipleChoiceChance(setup, { round: state.round, totalRounds: state.maxRounds })
     ) {
       setup = state.setupStack.length ? state.setupStack.shift() : await requestRoundSetup();
@@ -31545,6 +31677,7 @@ function resetMatch(mode) {
   state.blackCard = "";
   state.questionType = "image";
   state.questionStyle = "standard";
+  state.questionLanguage = getCurrentQuestionLanguage();
   state.gradingStrictness = "normal";
   state.questionDifficulty = "medium";
   state.triviaTheme = "";
