@@ -12305,9 +12305,13 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .settings-toggle-row span {
+  display: flex;
+  align-items: center;
+  min-height: 1.7rem;
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 900;
+  line-height: 1.08;
   text-transform: uppercase;
 }
 
@@ -12343,13 +12347,20 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .settings-toggle-row input[type="checkbox"]:checked {
-  border-color: rgba(64, 222, 164, 0.62);
-  background: rgba(64, 222, 164, 0.24);
-  box-shadow: 0 0 1rem rgba(64, 222, 164, 0.14);
+  border-color: rgba(125, 211, 252, 0.72);
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.3), rgba(167, 139, 250, 0.22)),
+    rgba(12, 18, 30, 0.86);
+  box-shadow:
+    0 0 0 1px rgba(125, 211, 252, 0.12),
+    0 0 1rem rgba(34, 211, 238, 0.16);
 }
 
 .settings-toggle-row input[type="checkbox"]:checked::after {
-  background: var(--accent);
+  background: #f8fbff;
+  box-shadow:
+    0 0.38rem 0.85rem rgba(0, 0, 0, 0.32),
+    0 0 0.75rem rgba(125, 211, 252, 0.38);
   transform: translateX(1.45rem);
 }
 
@@ -12359,7 +12370,12 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .settings-toggle-row strong {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.7rem;
+  line-height: 1;
+  text-align: center;
   color: var(--ink);
 }
 
