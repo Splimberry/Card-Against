@@ -6339,7 +6339,9 @@ function attachFloatingDescriptionTooltip(element) {
       return;
     }
     const tooltip = ensureFloatingDescriptionTooltip();
-    tooltip.textContent = element.dataset.description;
+    tooltip.textContent = window.CardsAgainstAiI18n?.t
+      ? window.CardsAgainstAiI18n.t(element.dataset.description)
+      : element.dataset.description;
     setHidden(tooltip, false);
     document.body?.setAttribute("data-floating-tooltip-active", "true");
     positionFloatingDescriptionTooltip(element, tooltip);
@@ -35744,7 +35746,9 @@ function showRoomPlayerTooltip(anchor) {
   }
   activeRoomPlayerTooltipAnchor = anchor;
   const tooltip = ensureRoomPlayerTooltipElement();
-  tooltip.textContent = tooltipText;
+  tooltip.textContent = window.CardsAgainstAiI18n?.t
+    ? window.CardsAgainstAiI18n.t(tooltipText)
+    : tooltipText;
   tooltip.classList.add("visible");
   scheduleRoomPlayerTooltipPosition();
 }
