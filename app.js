@@ -19734,7 +19734,7 @@ function getPowerPanelHeightForAnimation() {
 }
 
 function animatePowerPanelHeightChange(beforeHeight) {
-  if (!elements.powerPanel || shouldReduceMotion() || !Element.prototype.animate) {
+  if (!elements.powerPanel || isRoomMode() || shouldReduceMotion() || !Element.prototype.animate) {
     return;
   }
   const afterHeight = getPowerPanelHeightForAnimation();
