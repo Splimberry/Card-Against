@@ -5164,23 +5164,25 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .power-card[data-rarity="doom"] {
   --power-rarity-shadow:
-    0 0 0.95rem rgba(255, 36, 82, 0.28),
-    0 0 1.55rem rgba(255, 36, 82, 0.18),
-    0 0.7rem 1.6rem rgba(120, 5, 24, 0.18);
-  --power-rarity-inset-shadow: inset 0 0 1.05rem rgba(255, 36, 82, 0.12);
-  border-color: rgba(255, 36, 82, 0.78);
+    0 0 0.9rem rgba(255, 28, 76, 0.46),
+    0 0 1.85rem rgba(255, 28, 76, 0.28),
+    0 0.7rem 1.6rem rgba(190, 18, 60, 0.24);
+  --power-rarity-inset-shadow: inset 0 0 1.15rem rgba(255, 28, 76, 0.18);
+  border-color: rgba(255, 28, 76, 0.9);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 32%),
-    radial-gradient(circle at 76% 50%, rgba(255, 36, 82, 0.18), transparent 46%),
-    linear-gradient(135deg, rgba(255, 36, 82, 0.16), rgba(11, 8, 14, 0.82)),
-    rgba(16, 5, 10, 0.9);
-  animation: doomPowerCardGlitch 1800ms steps(2, end) infinite;
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.075) 0 1px, transparent 1px 8px),
+    radial-gradient(circle at 76% 50%, rgba(255, 28, 76, 0.34), transparent 48%),
+    linear-gradient(135deg, rgba(255, 28, 76, 0.28), rgba(90, 8, 28, 0.3)),
+    rgba(20, 2, 8, 0.94);
+  animation:
+    doomPowerCardGlitch 1500ms steps(2, end) infinite,
+    cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card[data-rarity="doom"] strong {
   color: #ffe5ec;
   text-shadow:
-    0 0 0.75rem rgba(255, 36, 82, 0.52),
+    0 0 0.85rem rgba(255, 28, 76, 0.72),
     -0.04rem 0 rgba(255, 255, 255, 0.24);
 }
 
@@ -5195,8 +5197,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     url("assets/modifiers/skull.svg") right 0.35rem center / min(48%, 4.8rem) no-repeat;
   filter:
     invert(19%) sepia(95%) saturate(4406%) hue-rotate(335deg) brightness(107%) contrast(103%)
-    drop-shadow(0 0 0.55rem rgba(255, 36, 82, 0.38));
-  opacity: 0.18;
+    drop-shadow(0 0 0.7rem rgba(255, 28, 76, 0.52));
+  opacity: 0.23;
 }
 
 .power-card[data-rarity="doom"]::after {
@@ -5207,16 +5209,19 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 7px);
+    linear-gradient(90deg, transparent, rgba(255, 232, 238, 0.18), transparent),
+    linear-gradient(180deg, transparent 0 36%, rgba(255, 28, 76, 0.28) 46%, rgba(255, 255, 255, 0.08) 52%, transparent 64%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 7px);
   background-size:
     180% 100%,
+    100% 190%,
     100% 9px;
   background-position:
     150% 0,
+    0 -80%,
     0 0;
   mix-blend-mode: screen;
-  opacity: 0.32;
+  opacity: 0.46;
   animation:
     doomPowerScan 2200ms ease-in-out infinite,
     cardChaosLines 1600ms steps(4, end) infinite;
@@ -5595,6 +5600,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   0%, 22% {
     background-position:
       150% 0,
+      0 -95%,
       0 0;
     opacity: 0.2;
   }
@@ -5602,15 +5608,17 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   54% {
     background-position:
       35% 0,
+      0 25%,
       0 4px;
-    opacity: 0.44;
+    opacity: 0.54;
   }
 
   100% {
     background-position:
       -90% 0,
+      0 105%,
       0 0;
-    opacity: 0.24;
+    opacity: 0.3;
   }
 }
 
@@ -10301,6 +10309,11 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   --section-accent-rgb: 250 204 21;
 }
 
+.ability-section[data-rarity="doom"] {
+  --section-accent: #ff2a5f;
+  --section-accent-rgb: 255 42 95;
+}
+
 .ability-section[data-rarity="debuff"] {
   --section-accent: #ff7aa0;
   --section-accent-rgb: 255 122 160;
@@ -10375,6 +10388,67 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   color: #facc15;
 }
 
+.ability-card[data-rarity="doom"] {
+  overflow: hidden;
+  border-color: rgba(255, 28, 76, 0.82);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.075) 0 1px, transparent 1px 8px),
+    radial-gradient(circle at 82% 50%, rgba(255, 28, 76, 0.28), transparent 48%),
+    linear-gradient(135deg, rgba(255, 28, 76, 0.24), rgba(90, 8, 28, 0.28)),
+    rgba(20, 2, 8, 0.88);
+  box-shadow:
+    0 0 1.15rem rgba(255, 28, 76, 0.32),
+    inset 0 0 1rem rgba(255, 28, 76, 0.12);
+  animation: doomAbilityViewerGlitch 1450ms steps(2, end) infinite;
+}
+
+.ability-card[data-rarity="doom"]::before {
+  content: "";
+  position: absolute;
+  inset: 0.3rem;
+  pointer-events: none;
+  border-radius: inherit;
+  background: url("assets/modifiers/skull.svg") right 0.35rem center / min(42%, 4rem) no-repeat;
+  filter:
+    invert(19%) sepia(95%) saturate(4406%) hue-rotate(335deg) brightness(107%) contrast(103%)
+    drop-shadow(0 0 0.55rem rgba(255, 28, 76, 0.5));
+  opacity: 0.16;
+}
+
+.ability-card[data-rarity="doom"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 0 36%, rgba(255, 28, 76, 0.24) 46%, rgba(255, 255, 255, 0.08) 52%, transparent 64%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 7px);
+  background-size:
+    100% 190%,
+    100% 9px;
+  background-position:
+    0 -80%,
+    0 0;
+  mix-blend-mode: screen;
+  opacity: 0.42;
+  animation:
+    chaosAbilityViewerScan 1200ms linear infinite,
+    cardChaosLines 1600ms steps(4, end) infinite;
+}
+
+.ability-card[data-rarity="doom"] > * {
+  position: relative;
+  z-index: 1;
+}
+
+.ability-card[data-rarity="doom"] strong {
+  color: #ffe5ec;
+  text-shadow:
+    0 0 0.75rem rgba(255, 28, 76, 0.68),
+    -0.04rem 0 rgba(255, 255, 255, 0.22);
+}
+
 .ability-card[data-rarity="debuff"] {
   border-color: rgba(255, 77, 125, 0.58);
   background: rgba(255, 77, 125, 0.12);
@@ -10431,6 +10505,27 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .ability-card.chaos-infused[data-rarity="gold"] {
   --chaos-rarity-rgb: 251 191 36;
+}
+
+.ability-card.chaos-infused[data-rarity="doom"] {
+  --chaos-rarity-rgb: 255 28 76;
+}
+
+@keyframes doomAbilityViewerGlitch {
+  0%, 100% {
+    filter: saturate(1.05) brightness(1);
+    transform: translate3d(0, 0, 0);
+  }
+
+  46% {
+    filter: saturate(1.28) brightness(1.12) contrast(1.08);
+    transform: translate3d(-0.025rem, 0, 0);
+  }
+
+  48% {
+    filter: saturate(1.12) brightness(1.04);
+    transform: translate3d(0.025rem, 0, 0);
+  }
 }
 
 @keyframes chaosAbilityViewerPulse {

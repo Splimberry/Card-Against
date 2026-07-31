@@ -8661,8 +8661,10 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
 }
 
 function renderAbilityLibrary() {
-  const rarityOrder = ["grey", "blue", "purple", "gold", "doom"];
   const chaosPreview = Boolean(elements.abilityChaosPreviewToggle?.checked);
+  const rarityOrder = chaosPreview
+    ? ["grey", "blue", "purple", "gold", "doom"]
+    : ["grey", "blue", "purple", "gold"];
   elements.abilityLibrary.replaceChildren();
 
   rarityOrder.forEach((rarity, index) => {
@@ -8738,6 +8740,16 @@ function renderAbilityLibrary() {
 }
 
 function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
+  if (power?.rarity === "doom") {
+    return {
+      name: power.name,
+      short: power.short,
+      description: getDisplayedPowerDescription(power, null),
+      rarity: power.rarity,
+      doom: true
+    };
+  }
+
   if (!chaosPreview) {
     return {
       name: power.name,
