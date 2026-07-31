@@ -452,7 +452,7 @@ const powerDeck = [
   { id: "bartender", name: "Bartender", rarity: "gold", short: "auto mix", description: "Lasts the entire game. At the start of every round, automatically activates Cocktail Mix for you without using a power-up.", type: "bartender" },
   { id: "hot_in_here", name: "It's Getting Hot", rarity: "gold", short: "streak burn", description: "Lasts the entire game. At the start of every round, everyone else loses 5% x (your streak - 1). No loss if your streak is below 2.", type: "hot_in_here" },
   { id: "red_button", name: "Red Button", rarity: "doom", short: "leader nuke", description: "Pick a target. If they are above you, they immediately lose 5,000 points and 3 streak. If they are below you, they gain Impending Doom for the rest of the match.", type: "red_button", targeted: true, immediate: true, doom: true },
-  { id: "ultimatum", name: "Ultimatum", rarity: "doom", short: "3x doom shield", description: "For 3 rounds, block all point loss, debuffs, streak loss, and targeting. Each round, players ahead of you lose 10%, and everyone else carries a wrong-answer bomb for next round.", type: "ultimatum", immediate: true, doom: true },
+  { id: "ultimatum", name: "Ultimatum", rarity: "doom", short: "3x doom shield", description: "For 3 rounds, block all point loss, debuffs, streak loss, and targeting. Each round, players ahead of you lose 10%. Everyone except you gains Explosive for the rest of the match: wrong answers lose 10% of their score.", type: "ultimatum", immediate: true, doom: true },
   { id: "secret_agent", name: "Secret Agent", rarity: "doom", short: "identity scramble", description: "Scramble every other player's name and visible profile style for 3 rounds, then swap your score with a random player ahead of you.", type: "secret_agent", immediate: true, doom: true },
   { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of streak-loss immunity.", type: "thermal_scythe", targeted: true, immediate: true, doom: true }
 ];
@@ -3425,6 +3425,7 @@ const state = {
   chaosRefreshOwners: {},
   impendingDoomOwners: {},
   ultimatumRounds: {},
+  explosiveDoomOwners: {},
   doomStreakGuardRounds: {},
   secretAgentRounds: {},
   permanentDeathMarks: {},
@@ -7464,6 +7465,7 @@ function getActiveEffectEntries() {
       [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for the remaining rounds.", { chaosInfused: true })],
       [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", "Impending Doom", "Cannot gain positive status effects. Wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
       [hasDoomShield(owner), createActiveEffect(owner, "ultimatum", `Ultimatum x${state.ultimatumRounds[owner]}`, "Blocks point loss, debuffs, streak loss, and targeting. Cannot be removed.")],
+      [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", "Explosive", "Wrong answers lose 10% of this player's score. Cannot be removed.")],
       [(state.doomStreakGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "thermal_scythe", `Thermal Guard x${state.doomStreakGuardRounds[owner]}`, "Blocks streak loss. Cannot be removed.")],
       [(state.secretAgentRounds?.[owner] || 0) > 0, createActiveEffect(owner, "secret_agent", `Secret Agent x${state.secretAgentRounds[owner]}`, "Scrambles other players' visible identities and style. Cannot be removed.")],
       [state.thornOwners[owner], createActiveEffect(owner, "thorns", state.thornOwners[owner] !== true && Number(state.thornOwners[owner]) > 0.33 ? "Thorns III" : "Thorns", state.thornOwners[owner] !== true && Number(state.thornOwners[owner]) > 0.33 ? "Reflects 66% of this player's scoring losses to everyone else." : "Reflects 33% of this player's scoring losses to everyone else.", { chaosInfused: state.thornOwners[owner] !== true && Number(state.thornOwners[owner]) > 0.33 })],
@@ -7543,7 +7545,7 @@ function getActiveEffectEntries() {
     entries.push(createActiveEffect(
       bomb.targetOwner,
       "ultimatum",
-      `Doom Bomb x${roundsLeft}`,
+      `Explosive x${roundsLeft}`,
       "If this player answers incorrectly next round, they lose 10% of their score. Cannot be removed."
     ));
   });
@@ -7912,7 +7914,7 @@ function describeImmediatePowerEvent(entry) {
         ? `${entry.power.name} gave ${formatPowerEventOwner(target)} Impending Doom for the rest of the match.`
         : `${entry.power.name} hit ${formatPowerEventOwner(target)} for ${formatPowerEventPoints(meta.appliedLoss || 0)} and ${Number(meta.streakLoss || 0).toLocaleString()} streak.`;
     case "ultimatum":
-      return `${entry.power.name} gave ${ownerLabel} an unbreakable shield for ${Number(meta.rounds || 3).toLocaleString()} rounds and armed Doom bombs on ${formatPowerEventTargets(meta.bombTargets || [])}.`;
+      return `${entry.power.name} gave ${ownerLabel} an unbreakable shield for ${Number(meta.rounds || 3).toLocaleString()} rounds and gave Explosive to ${formatPowerEventTargets(meta.explosiveTargets || meta.bombTargets || [])}.`;
     case "secret_agent":
       return meta.swappedOwner
         ? `${entry.power.name} scrambled identities and swapped ${ownerLabel}'s score with ${getOwnerLabel(meta.swappedOwner)}.`
@@ -12343,6 +12345,7 @@ const roomAbilityEffectMapKeys = [
   "chaosRefreshOwners",
   "impendingDoomOwners",
   "ultimatumRounds",
+  "explosiveDoomOwners",
   "doomStreakGuardRounds",
   "secretAgentRounds",
   "permanentDeathMarks",
@@ -18724,6 +18727,10 @@ function hasDoomShield(owner) {
   return (state.ultimatumRounds?.[owner] || 0) > 0;
 }
 
+function hasExplosiveDoom(owner) {
+  return Boolean(owner && state.explosiveDoomOwners?.[owner]);
+}
+
 function hasDoomStreakGuard(owner) {
   return hasDoomShield(owner) || (state.doomStreakGuardRounds?.[owner] || 0) > 0;
 }
@@ -19458,7 +19465,6 @@ const powerGhostTransientClasses = [
 const powerUseExitHoldMs = 640;
 const powerRemoveExitDurationMs = 340;
 const powerRemoveExitBufferMs = 180;
-const legendaryPowerSheenCycleMs = 3400;
 
 function removePowerAnimationGhosts(owner, options = {}) {
   const removeUseGhosts = options.use !== false;
@@ -23669,22 +23675,18 @@ function applyRedButtonPower(owner, power, meta = {}) {
 
 function applyUltimatumPower(owner, power) {
   const rounds = addOwnerDurationRounds(state.ultimatumRounds, owner, 3);
-  const bombRound = (state.round || 0) + 1;
   const targets = getActiveOwners().filter((participant) => participant !== owner);
-  const plantedBombs = targets.map((targetOwner) => ({
-    owner,
-    targetOwner,
-    round: bombRound
-  }));
-  state.ultimatumBombs = [...(state.ultimatumBombs || []), ...plantedBombs];
+  state.explosiveDoomOwners = state.explosiveDoomOwners || {};
+  targets.forEach((target) => {
+    state.explosiveDoomOwners[target] = true;
+  });
   updateLatestPlayedPowerMeta(owner, {
     rounds,
-    bombTargets: targets,
-    bombRound
+    explosiveTargets: targets
   });
   queueStatFlash("doom", power.name, ["Unbreakable Shield", `${rounds} Rounds`], { owners: [owner], complex: true, priority: true });
   targets.forEach((target) => {
-    queueStatFlash("doom", power.name, "Doom Bomb Armed\nWrong Next Round", getTargetedFlashOptions(owner, target, { complex: true }));
+    queueStatFlash("doom", power.name, "Explosive\nRest of Match", getTargetedFlashOptions(owner, target, { complex: true }));
   });
   renderScore();
   return true;
@@ -23837,6 +23839,15 @@ function applyDoomRoundDeltas(deltas, owners, winnerSet = new Set(), events = []
         addDoomDelta(deltas, target, loss, `${getOwnerLabel(owner)}'s Ultimatum`, events);
       });
     });
+
+  owners.forEach((owner) => {
+    if (!hasExplosiveDoom(owner) || activeWinnerSet.has(owner)) {
+      return;
+    }
+    const projected = getProjectedOwnerScore(owner, deltas);
+    const loss = Math.floor(projected * 0.1);
+    addDoomDelta(deltas, owner, loss, "Explosive", events);
+  });
 
   const remainingBombs = [];
   (state.ultimatumBombs || []).forEach((bomb) => {
@@ -25082,9 +25093,7 @@ function renderPowerUps() {
     elements.powerPanel.appendChild(button);
     renderedCardIndex += 1;
     if (animateChaosInfusion) {
-      const chaosInfusionDelayMs = visualPower.rarity === "gold"
-        ? enterDelayMs + enterDurationMs + legendaryPowerSheenCycleMs
-        : enterDelayMs + enterDurationMs + 70;
+      const chaosInfusionDelayMs = enterDelayMs + enterDurationMs + 70;
       window.setTimeout(() => {
         if (!button.isConnected || button.dataset.power !== power.id) {
           return;
@@ -26955,6 +26964,11 @@ function buildDevToolScreen() {
             <button type="button" class="overlay-debug-button overlay-debug-bounty" data-overlay-debug="bounty"><span>Double Bounty</span><strong>Final Gains x2</strong></button>
             <button type="button" class="overlay-debug-button overlay-debug-coin" data-overlay-debug="coin-shower"><span>Coin Shower</span><strong>Bonus Round</strong></button>
             <button type="button" class="overlay-debug-button overlay-debug-sudden" data-overlay-debug="sudden-death"><span>Sudden Death</span><strong>Losers -25%</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-doom" data-overlay-debug="doom-red-button"><span>Red Button</span><strong>-5,000 + Streak</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-doom" data-overlay-debug="doom-ultimatum"><span>Ultimatum</span><strong>Unbreakable Shield</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-doom" data-overlay-debug="doom-explosive"><span>Explosive</span><strong>Wrong -10%</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-doom" data-overlay-debug="doom-secret-agent"><span>Secret Agent</span><strong>Identity Scramble</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-doom" data-overlay-debug="doom-thermal-scythe"><span>Thermal Scythe</span><strong>Streak Harvest</strong></button>
             <button type="button" class="overlay-debug-button overlay-debug-outage" data-overlay-debug="outage"><span>Power Outage</span><strong>Power Offline</strong></button>
             <button type="button" class="overlay-debug-button overlay-debug-no-mercy" data-overlay-debug="no-mercy"><span>No Mercy</span><strong>3 Red Flashes</strong></button>
             <button type="button" class="overlay-debug-button overlay-debug-market" data-overlay-debug="black-market"><span>Black Market</span><strong>Shop Open</strong></button>
@@ -30687,6 +30701,11 @@ function triggerOverlayDebug(type) {
     bounty: () => queueStatFlash("bounty", "Double Bounty", "Final Gains x2", { complex: true, durationMs: 2700, soundName: "bountyRound" }),
     "coin-shower": () => queueStatFlash("coin", "Coin Shower", "Bonus Round", { complex: true, durationMs: 2700, soundName: "bountyRound" }),
     "sudden-death": () => queueStatFlash("sudden-death", "Sudden Death", "Losers Lose 25%", { complex: true, durationMs: 2700, soundName: "suddenDeath" }),
+    "doom-red-button": () => queueStatFlash("doom", "Red Button", ["-5,000 Points", "-3 Streak"], { complex: true, durationMs: 2700, soundName: "bombLoss" }),
+    "doom-ultimatum": () => queueStatFlash("doom", "Ultimatum", ["Unbreakable Shield", "3 Rounds"], { complex: true, durationMs: 2700, soundName: "bombLoss" }),
+    "doom-explosive": () => queueStatFlash("doom", "Explosive", "Wrong Answer -10%", { complex: true, durationMs: 2500, soundName: "bombLoss" }),
+    "doom-secret-agent": () => queueStatFlash("doom", "Secret Agent", ["Identity Scrambled", "Score Swapped"], { complex: true, durationMs: 2900, soundName: "glitch" }),
+    "doom-thermal-scythe": () => queueStatFlash("doom", "Thermal Scythe", ["Streak Harvested", "Thermal Guard"], { complex: true, durationMs: 2700, soundName: "bombLoss" }),
     outage: () => queueStatFlash("outage", "Power Outage", "Power-Ups Offline", { complex: true, durationMs: 2700, soundName: "lightOff" }),
     "no-mercy": () => queueStatFlash("no-mercy", "No Mercy", "Losers Lose 15%", { complex: true, durationMs: 2500, soundName: "noMercy" }),
     "black-market": () => queueStatFlash("black-market", "Black Market", "Unlimited Shop Open", { complex: true, durationMs: 2700, soundName: "blackMarket" }),
@@ -31066,6 +31085,7 @@ function resetMatch(mode) {
   state.chaosRefreshOwners = {};
   state.impendingDoomOwners = {};
   state.ultimatumRounds = {};
+  state.explosiveDoomOwners = {};
   state.doomStreakGuardRounds = {};
   state.secretAgentRounds = {};
   state.permanentDeathMarks = {};

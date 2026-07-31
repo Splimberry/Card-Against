@@ -3334,6 +3334,18 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     inset -0.22rem 0 0 rgba(255, 77, 125, 0.38);
 }
 
+.overlay-debug-doom {
+  border-color: rgba(255, 28, 76, 0.56);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 8px),
+    linear-gradient(135deg, rgba(255, 28, 76, 0.18), rgba(126, 34, 206, 0.12)),
+    rgba(18, 2, 8, 0.94);
+  box-shadow:
+    inset 0.22rem 0 0 rgba(255, 28, 76, 0.88),
+    inset -0.22rem 0 0 rgba(168, 85, 247, 0.28),
+    0 0 1rem rgba(255, 28, 76, 0.16);
+}
+
 .overlay-debug-burning {
   border-color: rgba(255, 155, 62, 0.46);
   box-shadow: inset 0.22rem 0 0 rgba(255, 119, 47, 0.9);
@@ -5094,6 +5106,11 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   box-shadow:
     var(--power-rarity-shadow),
     var(--power-rarity-inset-shadow);
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .power-card > * {
@@ -5169,19 +5186,17 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .power-card[data-rarity="doom"] {
   --power-rarity-shadow:
-    0 0 0.9rem rgba(255, 28, 76, 0.46),
-    0 0 1.85rem rgba(255, 28, 76, 0.28),
-    0 0.7rem 1.6rem rgba(190, 18, 60, 0.24);
-  --power-rarity-inset-shadow: inset 0 0 1.15rem rgba(255, 28, 76, 0.18);
+    0 0 0.85rem rgba(255, 28, 76, 0.42),
+    0 0 1.55rem rgba(201, 37, 123, 0.26),
+    0 0.72rem 1.65rem rgba(76, 29, 149, 0.18);
+  --power-rarity-inset-shadow: inset 0 0 1.08rem rgba(255, 28, 76, 0.16);
   border-color: rgba(255, 28, 76, 0.9);
   background:
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.075) 0 1px, transparent 1px 8px),
-    radial-gradient(circle at 76% 50%, rgba(255, 28, 76, 0.34), transparent 48%),
-    linear-gradient(135deg, rgba(255, 28, 76, 0.28), rgba(90, 8, 28, 0.3)),
+    radial-gradient(circle at 76% 50%, rgba(255, 28, 76, 0.3), transparent 48%),
+    radial-gradient(circle at 18% 20%, rgba(168, 85, 247, 0.18), transparent 42%),
+    linear-gradient(135deg, rgba(255, 28, 76, 0.24), rgba(126, 34, 206, 0.16) 48%, rgba(90, 8, 28, 0.28)),
     rgba(20, 2, 8, 0.94);
-  animation:
-    doomPowerCardGlitch 1500ms steps(2, end) infinite,
-    cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card[data-rarity="doom"] strong {
@@ -5202,8 +5217,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     url("assets/modifiers/skull.svg") right 0.35rem center / min(48%, 4.8rem) no-repeat;
   filter:
     invert(19%) sepia(95%) saturate(4406%) hue-rotate(335deg) brightness(107%) contrast(103%)
-    drop-shadow(0 0 0.7rem rgba(255, 28, 76, 0.52));
-  opacity: 0.23;
+    drop-shadow(0 0 0.7rem rgba(255, 28, 76, 0.48))
+    drop-shadow(0 0 0.95rem rgba(168, 85, 247, 0.16));
+  opacity: 0.21;
+  animation: doomSkullPulse 2100ms steps(2, end) infinite;
 }
 
 .power-card[data-rarity="doom"]::after {
@@ -5214,8 +5231,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(90deg, transparent, rgba(255, 232, 238, 0.18), transparent),
-    linear-gradient(180deg, transparent 0 36%, rgba(255, 28, 76, 0.28) 46%, rgba(255, 255, 255, 0.08) 52%, transparent 64%),
+    linear-gradient(90deg, transparent, rgba(255, 232, 238, 0.18), rgba(168, 85, 247, 0.12), transparent),
+    linear-gradient(180deg, transparent 0 36%, rgba(255, 28, 76, 0.27) 46%, rgba(168, 85, 247, 0.12) 52%, transparent 64%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 7px);
   background-size:
     180% 100%,
@@ -5246,6 +5263,21 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   mix-blend-mode: screen;
   opacity: 0.42;
   animation: powerGoldSheen 3400ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.power-card[data-rarity="gold"].chaos-infuse-pending::after {
+  content: none;
+}
+
+button.power-card:hover:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
+button.power-card:focus-visible:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
+  transform: translateY(-0.08rem) scale(1.025);
+  filter: brightness(1.08);
+}
+
+button.power-card.selected:hover:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
+button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
+  transform: translateY(-0.1rem) scale(1.04);
 }
 
 .power-card.selected {
@@ -5730,25 +5762,25 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   }
 }
 
-@keyframes doomPowerCardGlitch {
+@keyframes doomSkullPulse {
   0%, 100% {
-    filter: saturate(1) brightness(1);
-    transform: translate3d(0, 0, 0);
+    opacity: 0.18;
+    transform: translate3d(0, 0, 0) scale(1);
   }
 
   44% {
-    filter: saturate(1.18) brightness(1.06);
-    transform: translate3d(0, 0, 0);
+    opacity: 0.24;
+    transform: translate3d(0, 0, 0) scale(1.01);
   }
 
   46% {
-    filter: saturate(1.35) brightness(1.12) contrast(1.08);
-    transform: translate3d(-0.025rem, 0, 0);
+    opacity: 0.28;
+    transform: translate3d(-0.025rem, 0, 0) scale(1.015);
   }
 
   48% {
-    filter: saturate(1.12) brightness(1.02);
-    transform: translate3d(0.025rem, 0, 0);
+    opacity: 0.2;
+    transform: translate3d(0.025rem, 0, 0) scale(1);
   }
 }
 
@@ -10550,10 +10582,12 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   background:
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.075) 0 1px, transparent 1px 8px),
     radial-gradient(circle at 82% 50%, rgba(255, 28, 76, 0.28), transparent 48%),
-    linear-gradient(135deg, rgba(255, 28, 76, 0.24), rgba(90, 8, 28, 0.28)),
+    radial-gradient(circle at 18% 24%, rgba(168, 85, 247, 0.18), transparent 42%),
+    linear-gradient(135deg, rgba(255, 28, 76, 0.24), rgba(126, 34, 206, 0.14) 48%, rgba(90, 8, 28, 0.28)),
     rgba(20, 2, 8, 0.88);
   box-shadow:
     0 0 1.15rem rgba(255, 28, 76, 0.32),
+    -0.28rem 0 1rem rgba(168, 85, 247, 0.12),
     inset 0 0 1rem rgba(255, 28, 76, 0.12);
   animation: doomAbilityViewerGlitch 1450ms steps(2, end) infinite;
 }
@@ -10578,7 +10612,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   border-radius: inherit;
   pointer-events: none;
   background:
-    linear-gradient(180deg, transparent 0 36%, rgba(255, 28, 76, 0.24) 46%, rgba(255, 255, 255, 0.08) 52%, transparent 64%),
+    linear-gradient(180deg, transparent 0 36%, rgba(255, 28, 76, 0.24) 46%, rgba(168, 85, 247, 0.12) 52%, transparent 64%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 7px);
   background-size:
     100% 190%,
@@ -12762,9 +12796,9 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .stat-flash.doom {
   background:
-    linear-gradient(90deg, rgba(255, 36, 82, 0.18), transparent 22%, rgba(255, 255, 255, 0.06), transparent 78%, rgba(255, 36, 82, 0.14)),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 7px),
-    radial-gradient(circle at center, rgba(255, 36, 82, 0.34), rgba(90, 8, 28, 0.22) 44%, transparent 74%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.065) 0 1px, transparent 1px 8px),
+    linear-gradient(90deg, rgba(255, 28, 76, 0.2), transparent 22%, rgba(168, 85, 247, 0.1), transparent 78%, rgba(255, 28, 76, 0.16)),
+    radial-gradient(circle at center, rgba(255, 28, 76, 0.34), rgba(126, 34, 206, 0.16) 38%, rgba(90, 8, 28, 0.2) 54%, transparent 76%),
     rgba(18, 2, 8, 0.26);
 }
 
@@ -13012,6 +13046,17 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     0 0 1.55rem rgba(255, 77, 125, 0.34);
 }
 
+.stat-flash.doom .stat-flash-panel {
+  border-color: rgba(255, 28, 76, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 28, 76, 0.2), rgba(126, 34, 206, 0.15) 48%, rgba(36, 8, 18, 0.34)),
+    rgba(12, 8, 13, 0.88);
+  box-shadow:
+    0 1.25rem 4rem rgba(0, 0, 0, 0.44),
+    0 0 1.75rem rgba(255, 28, 76, 0.42),
+    -0.32rem 0 1.1rem rgba(168, 85, 247, 0.16);
+}
+
 .stat-flash.outage .stat-flash-panel {
   border-color: rgba(255, 232, 148, 0.5);
   background:
@@ -13032,7 +13077,8 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     0 0 1.55rem rgba(64, 222, 164, 0.32);
 }
 
-.stat-flash.chaos .stat-flash-panel::before {
+.stat-flash.chaos .stat-flash-panel::before,
+.stat-flash.doom .stat-flash-panel::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -13043,6 +13089,12 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   opacity: 0.55;
   pointer-events: none;
   animation: chaosScanline var(--stat-flash-duration, 1150ms) steps(8) both;
+}
+
+.stat-flash.doom .stat-flash-panel::before {
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 7px),
+    linear-gradient(90deg, transparent, rgba(255, 28, 76, 0.22), rgba(168, 85, 247, 0.12), transparent);
 }
 
 .stat-flash-title,
