@@ -25081,6 +25081,16 @@ function renderPowerUps() {
       enterDurationMs = animationType === "refresh" ? 620 : 560;
       button.style.setProperty("--power-enter-delay", `${enterDelayMs}ms`);
       animatedFreshCount += 1;
+      const clearFreshPowerClass = (event) => {
+        if (event && (event.target !== button || !event.animationName?.startsWith("power"))) {
+          return;
+        }
+        button.classList.remove("fresh-power", "fresh-refill", "fresh-refresh");
+        button.style.removeProperty("--power-enter-delay");
+        button.removeEventListener("animationend", clearFreshPowerClass);
+      };
+      button.addEventListener("animationend", clearFreshPowerClass);
+      window.setTimeout(() => clearFreshPowerClass(), enterDelayMs + enterDurationMs + 120);
     }
     if (panelVisible && selected && takePowerSelectionAnimation(owner, power.id)) {
       button.classList.add("power-selected-pop");

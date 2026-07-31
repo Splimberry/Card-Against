@@ -2273,14 +2273,25 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-play[data-rarity="doom"],
 .result-power-pill[data-rarity="doom"],
 .effect-badge[data-rarity="doom"] {
-  border-color: rgba(255, 36, 82, 0.82);
+  border-color: rgba(255, 28, 76, 0.82);
   background:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 5px),
-    linear-gradient(115deg, rgba(255, 36, 82, 0.22), rgba(120, 5, 24, 0.28));
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.095) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgba(255, 28, 76, 0.24), transparent 26%, rgba(168, 85, 247, 0.14), transparent 74%, rgba(255, 28, 76, 0.18)),
+    radial-gradient(circle at center, rgba(255, 28, 76, 0.26), rgba(90, 8, 28, 0.28) 58%, transparent 82%),
+    rgba(20, 2, 8, 0.92);
+  background-size:
+    100% 6px,
+    240% 100%,
+    100% 100%,
+    100% 100%;
   color: #ffe5ec;
   box-shadow:
-    0 0 0.75rem rgba(255, 36, 82, 0.34),
+    0 0 0.78rem rgba(255, 28, 76, 0.36),
+    -0.16rem 0 0.68rem rgba(168, 85, 247, 0.14),
     inset 0 0 0.62rem rgba(255, 255, 255, 0.08);
+  animation:
+    doomPillGlitchShift 1180ms steps(2, end) infinite,
+    doomPillColorShift 2600ms ease-in-out infinite;
 }
 
 .leaderboard-power-pill.chaos-infused,
@@ -2323,7 +2334,25 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-play.chaos-infused[data-rarity="doom"],
 .result-power-pill.chaos-infused[data-rarity="doom"],
 .effect-badge.chaos-infused[data-rarity="doom"] {
-  --chaos-rarity-rgb: 255 36 82;
+  --chaos-rarity-rgb: 255 28 76;
+  border-color: rgba(255, 28, 76, 0.88);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.105) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgba(255, 28, 76, 0.28), transparent 25%, rgba(168, 85, 247, 0.18), transparent 70%, rgba(255, 28, 76, 0.2)),
+    radial-gradient(circle at center, rgba(255, 28, 76, 0.28), rgba(90, 8, 28, 0.3) 58%, transparent 82%),
+    rgba(20, 2, 8, 0.94);
+  background-size:
+    100% 6px,
+    240% 100%,
+    100% 100%,
+    100% 100%;
+  box-shadow:
+    0 0 0.86rem rgba(255, 28, 76, 0.4),
+    -0.18rem 0 0.75rem rgba(168, 85, 247, 0.18),
+    inset 0 0 0.68rem rgba(255, 255, 255, 0.08);
+  animation:
+    doomPillGlitchShift 980ms steps(2, end) infinite,
+    doomPillColorShift 2300ms ease-in-out infinite;
 }
 
 @keyframes leaderboardPowerPillPop {
@@ -2343,6 +2372,40 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: brightness(1);
+  }
+}
+
+@keyframes doomPillGlitchShift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  46% {
+    transform: translate3d(-0.035rem, 0.01rem, 0);
+  }
+
+  52% {
+    transform: translate3d(0.035rem, -0.01rem, 0);
+  }
+}
+
+@keyframes doomPillColorShift {
+  0%, 100% {
+    background-position:
+      0 0,
+      118% 0,
+      50% 50%,
+      0 0;
+    filter: saturate(1.03) brightness(1);
+  }
+
+  50% {
+    background-position:
+      0 3px,
+      32% 0,
+      50% 50%,
+      0 0;
+    filter: saturate(1.2) brightness(1.08);
   }
 }
 
@@ -5036,6 +5099,32 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   color: #facc15;
 }
 
+.effect-badge[data-rarity="doom"] {
+  border-color: rgba(255, 28, 76, 0.82);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.095) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgba(255, 28, 76, 0.24), transparent 26%, rgba(168, 85, 247, 0.14), transparent 74%, rgba(255, 28, 76, 0.18)),
+    radial-gradient(circle at center, rgba(255, 28, 76, 0.26), rgba(90, 8, 28, 0.28) 58%, transparent 82%),
+    rgba(20, 2, 8, 0.92);
+  background-size:
+    100% 6px,
+    240% 100%,
+    100% 100%,
+    100% 100%;
+  color: #ffe5ec;
+  box-shadow:
+    0 0 0.78rem rgba(255, 28, 76, 0.36),
+    -0.16rem 0 0.68rem rgba(168, 85, 247, 0.14),
+    inset 0 0 0.62rem rgba(255, 255, 255, 0.08);
+  animation:
+    doomPillGlitchShift 1180ms steps(2, end) infinite,
+    doomPillColorShift 2600ms ease-in-out infinite;
+}
+
+.effect-badge[data-rarity="doom"] strong {
+  color: #ffe5ec;
+}
+
 .effect-badge.chaos-infused {
   --chaos-rarity-rgb: 180 187 198;
   border-color: rgb(var(--chaos-rarity-rgb) / 0.72);
@@ -5058,6 +5147,28 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .effect-badge.chaos-infused[data-rarity="gold"] {
   --chaos-rarity-rgb: 251 191 36;
+}
+
+.effect-badge.chaos-infused[data-rarity="doom"] {
+  --chaos-rarity-rgb: 255 28 76;
+  border-color: rgba(255, 28, 76, 0.88);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.105) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgba(255, 28, 76, 0.28), transparent 25%, rgba(168, 85, 247, 0.18), transparent 70%, rgba(255, 28, 76, 0.2)),
+    radial-gradient(circle at center, rgba(255, 28, 76, 0.28), rgba(90, 8, 28, 0.3) 58%, transparent 82%),
+    rgba(20, 2, 8, 0.94);
+  background-size:
+    100% 6px,
+    240% 100%,
+    100% 100%,
+    100% 100%;
+  box-shadow:
+    0 0 0.86rem rgba(255, 28, 76, 0.4),
+    -0.18rem 0 0.75rem rgba(168, 85, 247, 0.18),
+    inset 0 0 0.68rem rgba(255, 255, 255, 0.08);
+  animation:
+    doomPillGlitchShift 980ms steps(2, end) infinite,
+    doomPillColorShift 2300ms ease-in-out infinite;
 }
 
 .effect-badge.chaos-infused strong {
@@ -5458,13 +5569,13 @@ button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-
 }
 
 .power-card[data-suggestion-edge="left"] .power-suggestion-bubble::after {
-  left: 1.4rem;
+  left: 50%;
 }
 
 .power-card[data-suggestion-edge="right"] .power-suggestion-bubble::after {
-  right: 1.4rem;
-  left: auto;
-  transform: rotate(45deg);
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .power-suggestion-bubble strong {
@@ -13275,6 +13386,12 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     noMercyFlash var(--stat-flash-duration, 1150ms) steps(3, end) both;
 }
 
+.stat-flash.doom.stat-flash-playing {
+  animation:
+    statFlashWash var(--stat-flash-duration, 1150ms) ease-out both,
+    doomOverlayColorShift var(--stat-flash-duration, 1150ms) ease-out both;
+}
+
 .stat-flash.sudden-death.stat-flash-playing .stat-flash-panel {
   animation:
     statFlashPanel var(--stat-flash-duration, 1150ms) cubic-bezier(0.16, 1, 0.3, 1) both,
@@ -13312,6 +13429,7 @@ body[data-performance-mode="balanced"][data-game-active] .power-card.chaos-infus
 body[data-performance-mode="balanced"][data-game-active] .power-card[data-rarity="gold"]::after,
 body[data-performance-mode="balanced"][data-game-active] .power-card[data-rarity="doom"]:not(.fresh-power):not(.power-selected-pop):not(.power-use-ghost):not(.power-remove-exit-ghost),
 body[data-performance-mode="balanced"][data-game-active] .power-card[data-rarity="doom"]::after,
+body[data-performance-mode="balanced"][data-game-active] :is(.leaderboard-power-pill, .power-play, .result-power-pill, .effect-badge)[data-rarity="doom"],
 body[data-performance-mode="balanced"][data-game-active] :is(.leaderboard-power-pill, .power-play, .result-power-pill, .effect-badge).chaos-infused,
 body[data-performance-mode="balanced"][data-game-active] .wild-fire-glow-layer,
 body[data-performance-mode="balanced"][data-game-active] .danger-flash,
@@ -13880,6 +13998,36 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   34%,
   58% {
     filter: brightness(1.28) saturate(1.25);
+  }
+}
+
+@keyframes doomOverlayColorShift {
+  0%,
+  100% {
+    filter: saturate(1) brightness(1);
+    background-position:
+      0 0,
+      112% 0,
+      center,
+      0 0;
+  }
+
+  36% {
+    filter: saturate(1.22) brightness(1.08) hue-rotate(-5deg);
+    background-position:
+      0 0.2rem,
+      42% 0,
+      center,
+      0 0;
+  }
+
+  54% {
+    filter: saturate(1.12) brightness(1.04) hue-rotate(8deg);
+    background-position:
+      0 0.34rem,
+      22% 0,
+      center,
+      0 0;
   }
 }
 
