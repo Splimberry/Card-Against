@@ -7409,9 +7409,17 @@ function getActiveEffectEntries() {
   const owners = getActiveOwners();
 
   owners.forEach((owner) => {
+    const worldBurnStacks = getEffectStackCount(state.worldBurnOwners[owner]);
+    const lawnMowerStacks = getModeEffectStacks(state.lawnMowerOwners[owner]);
+    const bartenderStacks = getModeEffectStacks(state.bartenders[owner]);
+    const typhoonStacks = getModeEffectStacks(state.typhoonOwners[owner]);
+    const thornPercent = getThornReflectPercent(owner);
+    const doomStacks = getEffectStackCount(state.impendingDoomOwners?.[owner]);
+    const explosiveStacks = getEffectStackCount(state.explosiveDoomOwners?.[owner]);
+    const permanentDeathMarkStacks = getSourceStackInfo(state.permanentDeathMarks?.[owner]).count;
     const effects = [
-      [state.permafrostProtection[owner], createActiveEffect(owner, "permafrost", "Permafrost", "Blocks this player's point deductions for the rest of the match.")],
-      [state.eternalFlameProtection[owner], createActiveEffect(owner, "eternal_flame", "Eternal Flame", "Blocks this player's streak losses for the rest of the match.")],
+      [state.permafrostProtection[owner], createActiveEffect(owner, "permafrost", `Permafrost${formatStackSuffix(getEffectStackCount(state.permafrostProtection[owner]))}`, "Blocks this player's point deductions for the rest of the match.")],
+      [state.eternalFlameProtection[owner], createActiveEffect(owner, "eternal_flame", `Eternal Flame${formatStackSuffix(getEffectStackCount(state.eternalFlameProtection[owner]))}`, "Blocks this player's streak losses for the rest of the match.")],
       [(state.pocketShieldCharges[owner] || 0) > 0, createActiveEffect(owner, "shield", `Pocket Shield x${state.pocketShieldCharges[owner]}`, "Blocks this player's next point deduction.")],
       [(state.streakAnchorCharges[owner] || 0) > 0, createActiveEffect(owner, "streak_retainer", `Streak Anchor x${state.streakAnchorCharges[owner]}`, "Blocks this player's next streak loss.")],
       [state.freezeProtection[owner] > 0, createActiveEffect(owner, "deep_freeze", `Deep Freeze x${state.freezeProtection[owner]}`, "Blocks this player's point deductions for the remaining rounds.")],
@@ -7421,14 +7429,14 @@ function getActiveEffectEntries() {
       [(state.debuffShieldCharges[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Antivirus x${state.debuffShieldCharges[owner]}`, "Blocks this player's next debuff.")],
       [(state.debuffShieldRounds[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Encryption x${state.debuffShieldRounds[owner]}`, "Blocks debuffs on this player for the remaining rounds.", { chaosInfused: true })],
       [state.cocktailPenaltyRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Cocktail Debt x${state.cocktailPenaltyRounds[owner]}`, "Wrong answers cost this player 2.5% of their score.")],
-      [state.failedInvestmentDebuffs[owner], createActiveEffect(owner, "cocktail_mix", "Failed Investment", "This player's next correct-answer payout is reduced to 80%.")],
+      [state.failedInvestmentDebuffs[owner], createActiveEffect(owner, "cocktail_mix", `Failed Investment${formatStackSuffix(getEffectStackCount(state.failedInvestmentDebuffs[owner]))}`, "Each stack reduces this player's next correct-answer payout by 20%.")],
       [state.timeDilationRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Time Dilation x${state.timeDilationRounds[owner]}`, "Adds 10 seconds to this player's answer timer.")],
       [state.pendingStreakBonuses[owner] > 0, createActiveEffect(owner, "rocket", `Rocket Fuel +${state.pendingStreakBonuses[owner]}`, "Adds streak to this player at the start of next round.")],
       [state.pendingPowerBonuses[owner] > 0, createActiveEffect(owner, "small_insurance", `Pending Bonus +${state.pendingPowerBonuses[owner]}`, "Pays this player next round.")],
       [state.insurancePolicies[owner], createActiveEffect(
         owner,
         state.insurancePolicies[owner]?.powerId || "small_insurance",
-        `${getPowerById(state.insurancePolicies[owner]?.powerId)?.name || "Insurance"} x${state.insurancePolicies[owner]?.remaining || 0}`,
+        `${getPowerById(state.insurancePolicies[owner]?.powerId)?.name || "Insurance"}${formatStackSuffix(getEffectStackCount(state.insurancePolicies[owner]) || 1)} · ${state.insurancePolicies[owner]?.remaining || 0}r`,
         `Triggers on your next loss within ${state.insurancePolicies[owner]?.remaining || 0} round${(state.insurancePolicies[owner]?.remaining || 0) === 1 ? "" : "s"}: keeps your streak and pays ${Math.round((state.insurancePolicies[owner]?.payoutPercent || 0) * 100)}% of your total score${state.insurancePolicies[owner]?.refillOnTrigger ? ", then refills all ability slots" : ""}.`
       )],
       [state.pendingCocktailBuffs[owner] > 0, createActiveEffect(owner, "overachiever", `Overachiever Buff x${state.pendingCocktailBuffs[owner]}`, "Gives this player a Cocktail Mix buff next round.")],
@@ -7436,40 +7444,40 @@ function getActiveEffectEntries() {
       [(state.pocketShieldBreakThresholds[owner] || 0) > 0, createActiveEffect(owner, "shield", "Resistant Shield", "Point shield persists until it blocks over 2,000 points in one round.", { chaosInfused: true })],
       [state.chaosInfusionBoostRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Four Leaf Clover x${state.chaosInfusionBoostRounds[owner]}`, "Buff rolls only, Rare+ new power-ups, and 25% chaos infusion odds.", { chaosInfused: true })],
       [state.luckRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Lucky Side x${state.luckRounds[owner]}`, "Buff/debuff rolls become buffs, and new power-ups are Rare or better.")],
-      [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", "Heaven/Hell Curse", "Loses 250 points each round.")],
+      [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", `Heaven/Hell Curse${formatStackSuffix(getEffectStackCount(state.heavenHellCurses[owner]))}`, "Loses 250 points each round per stack.")],
       [state.bottomFeederRounds[owner] > 0, createActiveEffect(owner, "bottom_feeder", `Bottom Feeder x${state.bottomFeederRounds[owner]}`, `Pays this player ${(state.bottomFeederRounds[owner] * 100).toLocaleString()} points after each loss.`)],
-      [state.worldBurnOwners[owner], createActiveEffect(owner, "world_burn", "Let the World Burn", "First place loses 5% at each round start.")],
-      [state.lawnMowerOwners[owner], createActiveEffect(owner, "law_mower", state.lawnMowerOwners[owner] === "chaos" ? "Cut Down to Size" : "Lawn Mower", state.lawnMowerOwners[owner] === "chaos" ? "Players ahead lose 15% of this player's score; Chaos refresh trims them to 1 power-up." : "Players ahead lose 12% of this player's score each round.", { chaosInfused: state.lawnMowerOwners[owner] === "chaos" })],
-      [state.arsonists[owner], createActiveEffect(owner, "arsonist", "Arsonist", "This player and a random other player gain 1 streak at round start.")],
-      [state.bartenders[owner], createActiveEffect(owner, "bartender", state.bartenders[owner] === "chaos" ? "Pharmacy" : "Bartender", state.bartenders[owner] === "chaos" ? "Serves this player Blue Pill at round start." : "Serves this player Cocktail Mix at round start.", { chaosInfused: state.bartenders[owner] === "chaos" })],
-      [state.virusFactories[owner], createActiveEffect(owner, "virus_factory", "Virus Factory", "Each player has a 33% chance to self-roll a debuff at round start.")],
-      [state.error404Owners[owner], createActiveEffect(owner, "crawler_virus", "Error 404", "Each player has a 33% chance to get scrambled at a random timer moment each round.")],
-      [state.typhoonOwners[owner], createActiveEffect(
+      [worldBurnStacks > 0, createActiveEffect(owner, "world_burn", `Let the World Burn${formatStackSuffix(worldBurnStacks)}`, `${worldBurnStacks} stack${worldBurnStacks === 1 ? "" : "s"}: first place loses 5% at each round start per stack.`)],
+      [getModeEffectTotal(lawnMowerStacks) > 0, createActiveEffect(owner, "law_mower", lawnMowerStacks.chaos > 0 ? `Cut Down to Size${formatStackSuffix(lawnMowerStacks.chaos)}${lawnMowerStacks.normal ? ` + Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}` : ""}` : `Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}`, lawnMowerStacks.chaos > 0 ? "Chaos stacks hit players ahead for 15% and trim Chaos-refreshed hands; normal stacks hit for 12%." : "Players ahead lose 12% of this player's score each round per stack.", { chaosInfused: lawnMowerStacks.chaos > 0 })],
+      [getEffectStackCount(state.arsonists[owner]) > 0, createActiveEffect(owner, "arsonist", `Arsonist${formatStackSuffix(getEffectStackCount(state.arsonists[owner]))}`, "Each stack gives this player and a random other player 1 streak at round start.")],
+      [getModeEffectTotal(bartenderStacks) > 0, createActiveEffect(owner, "bartender", bartenderStacks.chaos > 0 ? `Pharmacy${formatStackSuffix(bartenderStacks.chaos)}${bartenderStacks.normal ? ` + Bartender${formatStackSuffix(bartenderStacks.normal)}` : ""}` : `Bartender${formatStackSuffix(bartenderStacks.normal)}`, bartenderStacks.chaos > 0 ? "Chaos stacks serve three Blue Pill buffs at round start; normal stacks serve Cocktail Mix." : "Serves this player Cocktail Mix at round start per stack.", { chaosInfused: bartenderStacks.chaos > 0 })],
+      [getEffectStackCount(state.virusFactories[owner]) > 0, createActiveEffect(owner, "virus_factory", `Virus Factory${formatStackSuffix(getEffectStackCount(state.virusFactories[owner]))}`, "Each stack gives every player a separate 33% chance to self-roll a debuff at round start.")],
+      [getEffectStackCount(state.error404Owners[owner]) > 0, createActiveEffect(owner, "crawler_virus", `Error 404${formatStackSuffix(getEffectStackCount(state.error404Owners[owner]))}`, "Each stack rolls a separate 33% chance to scramble players at a random timer moment each round.")],
+      [getModeEffectTotal(typhoonStacks) > 0, createActiveEffect(
         owner,
         "typhoon_season",
-        state.typhoonOwners[owner] === "chaos" ? "The Heaven Has Opened" : "Typhoon Season",
-        state.typhoonOwners[owner] === "chaos"
-          ? "At round start, others may self-zap; this player may cast Divine Strike or Devine Thunder on higher-streak players."
-          : "At round start, each player has a 33% chance to self-cast Zap Strike or Lightning Strike.",
-        { chaosInfused: state.typhoonOwners[owner] === "chaos" }
+        typhoonStacks.chaos > 0 ? `The Heaven Has Opened${formatStackSuffix(typhoonStacks.chaos)}${typhoonStacks.normal ? ` + Typhoon${formatStackSuffix(typhoonStacks.normal)}` : ""}` : `Typhoon Season${formatStackSuffix(typhoonStacks.normal)}`,
+        typhoonStacks.chaos > 0
+          ? "Each chaos stack rolls Heaven effects independently; normal stacks roll normal Typhoon separately."
+          : "At round start, each stack rolls a 33% chance for each player to self-cast Zap Strike or Lightning Strike.",
+        { chaosInfused: typhoonStacks.chaos > 0 }
       )],
-      [state.eternalSlumberOwners[owner], createActiveEffect(owner, "sin_sloth", "Eternal Slumber", "No player can keep a streak higher than this player's streak.")],
-      [state.wrathOwners[owner], createActiveEffect(owner, "sin_wrath", "Explosive Temper", "When this player loses, a random other player gets a next-round 10% bomb.", { chaosInfused: true })],
-      [state.divineBlessingOwners[owner], createActiveEffect(owner, "blessing", "Devine Blessing", "This player gains 500 plus 5% score every round.", { chaosInfused: true })],
-      [state.superFuelOwners[owner], createActiveEffect(owner, "rocket", "Super Fuel", "This player's future streak gains are doubled.", { chaosInfused: true })],
-      [state.vultureSwarmOwners[owner], createActiveEffect(owner, "vulture", "Vulture Swarm", "Pays this player 500 points per previous loss each round.", { chaosInfused: true })],
-      [state.chaosRefreshOwners[owner], createActiveEffect(owner, "reign_chaos", "Chaos Infusioner", "This player's next hand refresh becomes chaos-infused.", { chaosInfused: true })],
-      [state.permanentDeathMarks[owner], createActiveEffect(owner, "time_bomb", "Permanent Death Mark", "Point losses are doubled for the rest of the game.", { chaosInfused: true })],
-      [state.chaosEnvyOwners[owner], createActiveEffect(owner, "sin_envy", "Virus Corruption", "Each round, everyone loses 3% x this player's wrong-answer count.", { chaosInfused: true })],
-      [state.chaosBottomFeederOwners[owner], createActiveEffect(owner, "bottom_feeder", "Scavenger", "Adds a Bottom Feeder stack at the end of every round.", { chaosInfused: true })],
+      [getEffectStackCount(state.eternalSlumberOwners[owner]) > 0, createActiveEffect(owner, "sin_sloth", `Eternal Slumber${formatStackSuffix(getEffectStackCount(state.eternalSlumberOwners[owner]))}`, "No player can keep a streak higher than this player's streak.")],
+      [getEffectStackCount(state.wrathOwners[owner]) > 0, createActiveEffect(owner, "sin_wrath", `Explosive Temper${formatStackSuffix(getEffectStackCount(state.wrathOwners[owner]))}`, "When this player loses, each stack plants a random next-round 10% bomb.", { chaosInfused: true })],
+      [getEffectStackCount(state.divineBlessingOwners[owner]) > 0, createActiveEffect(owner, "blessing", `Devine Blessing${formatStackSuffix(getEffectStackCount(state.divineBlessingOwners[owner]))}`, "Each stack gives this player 500 plus 5% score every round.", { chaosInfused: true })],
+      [getEffectStackCount(state.superFuelOwners[owner]) > 0, createActiveEffect(owner, "rocket", `Super Fuel${formatStackSuffix(getEffectStackCount(state.superFuelOwners[owner]))}`, "Each stack adds another future streak gain bonus.", { chaosInfused: true })],
+      [getEffectStackCount(state.vultureSwarmOwners[owner]) > 0, createActiveEffect(owner, "vulture", `Vulture Swarm${formatStackSuffix(getEffectStackCount(state.vultureSwarmOwners[owner]))}`, "Each stack pays this player 500 points per previous loss every round.", { chaosInfused: true })],
+      [getEffectStackCount(state.chaosRefreshOwners[owner]) > 0, createActiveEffect(owner, "reign_chaos", `Chaos Infusioner${formatStackSuffix(getEffectStackCount(state.chaosRefreshOwners[owner]))}`, "Each stack turns one hand refresh chaos-infused.", { chaosInfused: true })],
+      [permanentDeathMarkStacks > 0, createActiveEffect(owner, "time_bomb", `Permanent Death Mark${formatStackSuffix(permanentDeathMarkStacks)}`, "Each stack doubles current point losses for the rest of the game.", { chaosInfused: true })],
+      [getEffectStackCount(state.chaosEnvyOwners[owner]) > 0, createActiveEffect(owner, "sin_envy", `Virus Corruption${formatStackSuffix(getEffectStackCount(state.chaosEnvyOwners[owner]))}`, "Each stack drains everyone by 3% x this player's wrong-answer count every round.", { chaosInfused: true })],
+      [getEffectStackCount(state.chaosBottomFeederOwners[owner]) > 0, createActiveEffect(owner, "bottom_feeder", `Scavenger${formatStackSuffix(getEffectStackCount(state.chaosBottomFeederOwners[owner]))}`, "Each stack adds a Bottom Feeder stack at the end of every round.", { chaosInfused: true })],
       [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for the remaining rounds.", { chaosInfused: true })],
-      [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", "Impending Doom", "Cannot gain positive status effects. Wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
+      [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", `Impending Doom${formatStackSuffix(doomStacks)}`, "Cannot gain positive status effects. Each stack makes wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
       [hasDoomShield(owner), createActiveEffect(owner, "ultimatum", `Ultimatum x${state.ultimatumRounds[owner]}`, "Blocks point loss, debuffs, streak loss, and targeting. Cannot be removed.")],
-      [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", "Explosive", "Wrong answers lose 10% of this player's score. Cannot be removed.")],
+      [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", `Explosive${formatStackSuffix(explosiveStacks)}`, "Each stack makes wrong answers lose 10% of this player's score. Cannot be removed.")],
       [(state.doomStreakGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "thermal_scythe", `Thermal Guard x${state.doomStreakGuardRounds[owner]}`, "Blocks streak loss. Cannot be removed.")],
       [(state.secretAgentRounds?.[owner] || 0) > 0, createActiveEffect(owner, "secret_agent", `Secret Agent x${state.secretAgentRounds[owner]}`, "Scrambles other players' visible identities and style. Cannot be removed.")],
-      [state.thornOwners[owner], createActiveEffect(owner, "thorns", state.thornOwners[owner] !== true && Number(state.thornOwners[owner]) > 0.33 ? "Thorns III" : "Thorns", state.thornOwners[owner] !== true && Number(state.thornOwners[owner]) > 0.33 ? "Reflects 66% of this player's scoring losses to everyone else." : "Reflects 33% of this player's scoring losses to everyone else.", { chaosInfused: state.thornOwners[owner] !== true && Number(state.thornOwners[owner]) > 0.33 })],
-      [state.hotInHereOwners[owner], createActiveEffect(owner, "hot_in_here", "It's Getting Hot", "At round start, everyone else loses 5% x (this player's streak - 1).")],
+      [thornPercent > 0, createActiveEffect(owner, "thorns", thornPercent > 0.33 ? `Thorns III${formatStackSuffix(Math.round(thornPercent / 0.33))}` : "Thorns", `Reflects ${Math.round(thornPercent * 100)}% of this player's scoring losses to everyone else.`, { chaosInfused: thornPercent > 0.33 })],
+      [getEffectStackCount(state.hotInHereOwners[owner]) > 0, createActiveEffect(owner, "hot_in_here", `It's Getting Hot${formatStackSuffix(getEffectStackCount(state.hotInHereOwners[owner]))}`, "At round start, each stack makes everyone else lose 5% x (this player's streak - 1).")],
       [state.redHerringMasks[owner] && owner === getFocusedOwner(), createActiveEffect(
         owner,
         "red_herring",
@@ -7490,40 +7498,53 @@ function getActiveEffectEntries() {
     entries.push(createActiveEffect("table", "hot_in_here", "Wild Fire", "Everyone permanently carries It's Getting Hot. This cannot be removed by power-ups."));
   }
 
-  state.timeBombs.forEach((bomb) => {
+  const groupedTimedEffects = (items, getKey) => {
+    const groups = new Map();
+    (items || []).forEach((item) => {
+      const key = getKey(item);
+      groups.set(key, [...(groups.get(key) || []), item]);
+    });
+    return [...groups.values()];
+  };
+
+  groupedTimedEffects(state.timeBombs, (bomb) => `${bomb.owner}|${bomb.round}`).forEach((bombs) => {
+    const bomb = bombs[0];
     const roundsLeft = Math.max(0, bomb.round - state.round);
     entries.push(createActiveEffect(
       bomb.owner,
       "time_bomb",
-      `Time Bomb x${roundsLeft}`,
-      "When it detonates, players ahead of this player lose 10% of their score."
+      `Time Bomb${formatStackSuffix(bombs.length)} · ${roundsLeft}r`,
+      "When it detonates, each stack makes players ahead of this player lose 10% of their score."
     ));
   });
 
-  (state.debuffTimeBombs || []).forEach((bomb) => {
+  groupedTimedEffects(state.debuffTimeBombs, (bomb) => `${bomb.owner}|${bomb.round}`).forEach((bombs) => {
+    const bomb = bombs[0];
     const roundsLeft = Math.max(0, bomb.round - state.round);
     entries.push(createActiveEffect(
       bomb.owner,
       "cocktail_mix",
-      `Debuff Time Bomb x${roundsLeft}`,
-      "This player loses 10% of their score when it detonates."
+      `Debuff Time Bomb${formatStackSuffix(bombs.length)} · ${roundsLeft}r`,
+      "This player loses 10% of their score per stack when it detonates."
     ));
   });
 
-  (state.deathMarks || []).forEach((mark) => {
+  groupedTimedEffects(state.deathMarks, (mark) => `${mark.targetOwner}|${mark.remaining || 0}`).forEach((marks) => {
+    const mark = marks[0];
     if (!owners.includes(mark.targetOwner)) {
       return;
     }
     entries.push(createActiveEffect(
       mark.targetOwner,
       "time_bomb",
-      `Death Mark x${mark.remaining || 0}`,
-      "This player's point losses are doubled; when it expires, they lose 10% of their score.",
+      `Death Mark${formatStackSuffix(marks.length)} · ${mark.remaining || 0}r`,
+      "Each stack doubles this player's point losses; when it expires, they lose 10% of their score.",
       { chaosInfused: true }
     ));
   });
 
-  (state.wrathBombs || []).forEach((bomb) => {
+  groupedTimedEffects(state.wrathBombs, (bomb) => `${bomb.targetOwner}|${bomb.round}`).forEach((bombs) => {
+    const bomb = bombs[0];
     if (!owners.includes(bomb.targetOwner)) {
       return;
     }
@@ -7531,13 +7552,14 @@ function getActiveEffectEntries() {
     entries.push(createActiveEffect(
       bomb.targetOwner,
       "sin_wrath",
-      `Wrath Bomb x${roundsLeft}`,
-      "Explodes next round for 10% of this player's score.",
+      `Wrath Bomb${formatStackSuffix(bombs.length)} · ${roundsLeft}r`,
+      "Each stack explodes for 10% of this player's score.",
       { chaosInfused: true }
     ));
   });
 
-  (state.ultimatumBombs || []).forEach((bomb) => {
+  groupedTimedEffects(state.ultimatumBombs, (bomb) => `${bomb.targetOwner}|${Number(bomb.round) || state.round}`).forEach((bombs) => {
+    const bomb = bombs[0];
     if (!owners.includes(bomb.targetOwner)) {
       return;
     }
@@ -7545,8 +7567,8 @@ function getActiveEffectEntries() {
     entries.push(createActiveEffect(
       bomb.targetOwner,
       "ultimatum",
-      `Explosive x${roundsLeft}`,
-      "If this player answers incorrectly next round, they lose 10% of their score. Cannot be removed."
+      `Ultimatum Bomb${formatStackSuffix(bombs.length)} · ${roundsLeft}r`,
+      "If this player answers incorrectly next round, each stack makes them lose 10% of their score. Cannot be removed."
     ));
   });
 
@@ -7563,28 +7585,30 @@ function getActiveEffectEntries() {
     ));
   });
 
-  (state.deathBombMarks || []).forEach((bomb) => {
+  groupedTimedEffects(state.deathBombMarks, (bomb) => `${bomb.targetOwner}|${bomb.remaining || 0}`).forEach((bombs) => {
+    const bomb = bombs[0];
     if (!owners.includes(bomb.targetOwner)) {
       return;
     }
     entries.push(createActiveEffect(
       bomb.targetOwner,
       "execution",
-      `Death Bomb x${bomb.remaining || 0}`,
-      "If this player answers incorrectly, they lose 20% and get a permanent Death Mark.",
+      `Death Bomb${formatStackSuffix(bombs.length)} · ${bomb.remaining || 0}r`,
+      "If this player answers incorrectly, each stack makes them lose 20% and get a permanent Death Mark.",
       { chaosInfused: true }
     ));
   });
 
-  Object.entries(state.eventHorizonMarks || {}).forEach(([target, sourceOwner]) => {
+  Object.entries(state.eventHorizonMarks || {}).forEach(([target, sourceValue]) => {
+    const sourceInfo = getSourceStackInfo(sourceValue);
     if (!owners.includes(target)) {
       return;
     }
     entries.push(createActiveEffect(
       target,
       "void_bomb",
-      "Event Horizon",
-      `If this player loses, Event Horizon hits again${sourceOwner && owners.includes(sourceOwner) ? ` from ${getOwnerLabel(sourceOwner)}` : ""}.`,
+      `Event Horizon${formatStackSuffix(sourceInfo.count)}`,
+      `If this player loses, Event Horizon hits again${sourceInfo.sourceOwner && owners.includes(sourceInfo.sourceOwner) ? ` from ${getOwnerLabel(sourceInfo.sourceOwner)}` : ""}.`,
       { chaosInfused: true }
     ));
   });
@@ -8012,7 +8036,7 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
   activeEntries
     .filter((entry) => entry.power.type === "shield")
     .forEach((entry) => {
-      state.pocketShieldCharges[entry.owner] = Math.max(state.pocketShieldCharges[entry.owner] || 0, 1);
+      state.pocketShieldCharges[entry.owner] = (state.pocketShieldCharges[entry.owner] || 0) + 1;
       state.pocketShieldBreakThresholds[entry.owner] = Math.max(state.pocketShieldBreakThresholds[entry.owner] || 0, entry.power.breakThreshold || 0);
       queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, (entry.power.breakThreshold || 0) > 0
@@ -8024,7 +8048,7 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
     .filter((entry) => entry.power.type === "streak_retainer")
     .filter((entry) => !isChaosInfusedPower(entry.power))
     .forEach((entry) => {
-      state.streakAnchorCharges[entry.owner] = Math.max(state.streakAnchorCharges[entry.owner] || 0, 1);
+      state.streakAnchorCharges[entry.owner] = (state.streakAnchorCharges[entry.owner] || 0) + 1;
       queueStatFlash("shield", entry.power.name, "Streak Shield Armed", { owners: [entry.owner], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} armed 1 streak-loss shield for ${getOwnerLabel(entry.owner)}.`));
     });
@@ -8052,17 +8076,17 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
   activeEntries
     .filter((entry) => entry.power.type === "world_burn")
     .forEach((entry) => {
-      state.worldBurnOwners[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will make first place lose 5% at each round start.`));
+      const stacks = addEffectStack(state.worldBurnOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will make first place lose 5% at each round start.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "law_mower")
     .forEach((entry) => {
-      state.lawnMowerOwners[entry.owner] = isChaosInfusedPower(entry.power) ? "chaos" : true;
+      const stacks = addModeEffectStack(state.lawnMowerOwners, entry.owner, isChaosInfusedPower(entry.power));
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
-        ? `${entry.power.name} will hit players ahead of ${getOwnerLabel(entry.owner)} for 15% of ${getOwnerLabel(entry.owner)}'s score each round, then trim them to 1 power-up after Chaos refresh.`
-        : `${entry.power.name} will hit players ahead of ${getOwnerLabel(entry.owner)} for 12% of ${getOwnerLabel(entry.owner)}'s score each round.`));
+        ? `${entry.power.name} chaos stack ${stacks.chaos} will hit players ahead of ${getOwnerLabel(entry.owner)} for 15% of ${getOwnerLabel(entry.owner)}'s score each round, then trim them to 1 power-up after Chaos refresh.`
+        : `${entry.power.name} stack ${stacks.normal} will hit players ahead of ${getOwnerLabel(entry.owner)} for 12% of ${getOwnerLabel(entry.owner)}'s score each round.`));
     });
 
   activeEntries
@@ -8073,68 +8097,68 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
         events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid target.`));
         return;
       }
-      state.soulLinks = [...(state.soulLinks || []).filter((link) => link.owner !== entry.owner), { owner: entry.owner, targetOwner: target }];
+      state.soulLinks = [...(state.soulLinks || []), { owner: entry.owner, targetOwner: target }];
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} linked ${getOwnerLabel(entry.owner)} with ${getOwnerLabel(target)}.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "arsonist")
     .forEach((entry) => {
-      state.arsonists[entry.owner] = true;
+      const stacks = addEffectStack(state.arsonists, entry.owner);
       const target = getRandomOtherOwner(entry.owner);
       setOwnerStreak(entry.owner, getOwnerStreak(entry.owner) + 1);
       if (target) {
         setOwnerStreak(target, getOwnerStreak(target) + 1);
       }
       queueStatFlash("positive", entry.power.name, "+1 Streak", { owners: [entry.owner, target].filter(Boolean) });
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} gave ${getOwnerLabel(entry.owner)}${target ? ` and ${getOwnerLabel(target)}` : ""} 1 streak now, then repeats at round start.`));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} gave ${getOwnerLabel(entry.owner)}${target ? ` and ${getOwnerLabel(target)}` : ""} 1 streak now, then repeats at round start.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "bartender")
     .forEach((entry) => {
-      state.bartenders[entry.owner] = isChaosInfusedPower(entry.power) ? "chaos" : true;
+      const stacks = addModeEffectStack(state.bartenders, entry.owner, isChaosInfusedPower(entry.power));
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
-        ? `${entry.power.name} will serve Blue Pill to ${getOwnerLabel(entry.owner)} at each round start.`
-        : `${entry.power.name} will serve Cocktail Mix to ${getOwnerLabel(entry.owner)} at each round start.`));
+        ? `${entry.power.name} chaos stack ${stacks.chaos} will serve Blue Pill to ${getOwnerLabel(entry.owner)} at each round start.`
+        : `${entry.power.name} stack ${stacks.normal} will serve Cocktail Mix to ${getOwnerLabel(entry.owner)} at each round start.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "virus_factory")
     .forEach((entry) => {
-      state.virusFactories[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} gives each player a 33% chance to self-roll a debuff at round start.`));
+      const stacks = addEffectStack(state.virusFactories, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} gives each player a separate 33% chance to self-roll a debuff at round start.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "typhoon_season")
     .forEach((entry) => {
-      state.typhoonOwners[entry.owner] = isChaosInfusedPower(entry.power) ? "chaos" : true;
+      const stacks = addModeEffectStack(state.typhoonOwners, entry.owner, isChaosInfusedPower(entry.power));
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
-        ? `${entry.power.name} armed: others may self-zap at round start; ${getOwnerLabel(entry.owner)} may cast Divine Strike or Devine Thunder on higher-streak players.`
-        : `${entry.power.name} armed: each player has a 33% chance to self-cast Zap Strike or Lightning Strike at round start.`));
+        ? `${entry.power.name} chaos stack ${stacks.chaos} armed: others may self-zap at round start; ${getOwnerLabel(entry.owner)} may cast Divine Strike or Devine Thunder on higher-streak players.`
+        : `${entry.power.name} stack ${stacks.normal} armed: each player has a 33% chance to self-cast Zap Strike or Lightning Strike at round start.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "thorns")
     .forEach((entry) => {
-      state.thornOwners[entry.owner] = entry.power.reflectPercent || true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will reflect ${Math.round((entry.power.reflectPercent || 0.33) * 100)}% of ${getOwnerLabel(entry.owner)}'s scoring losses to everyone else.`));
+      state.thornOwners[entry.owner] = getThornReflectPercent(entry.owner) + (entry.power.reflectPercent || 0.33);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will now reflect ${Math.round(getThornReflectPercent(entry.owner) * 100)}% of ${getOwnerLabel(entry.owner)}'s scoring losses to everyone else.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "hot_in_here")
     .forEach((entry) => {
-      state.hotInHereOwners[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} makes everyone else lose 5% x (${getOwnerLabel(entry.owner)}'s streak - 1) at round start.`));
+      const stacks = addEffectStack(state.hotInHereOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} makes everyone else lose 5% x (${getOwnerLabel(entry.owner)}'s streak - 1) at round start.`));
     });
 
   activeEntries
     .filter((entry) => entry.power.type === "sin_wrath" && isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       state.wrathOwners = state.wrathOwners || {};
-      state.wrathOwners[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will plant a next-round 10% bomb on a random other player whenever ${getOwnerLabel(entry.owner)} loses.`));
+      const stacks = addEffectStack(state.wrathOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will plant a next-round 10% bomb on a random other player whenever ${getOwnerLabel(entry.owner)} loses.`));
     });
 }
 
@@ -8283,9 +8307,9 @@ function applyReignChaosEndRound(playedEntries, deltas, owners, events) {
 
   chaosEntries.forEach((entry) => {
     if (isChaosInfusedPower(entry.power)) {
-      state.chaosRefreshOwners[entry.owner] = true;
+      const stacks = addEffectStack(state.chaosRefreshOwners, entry.owner);
       queueStatFlash("chaos", entry.power.name, "Next Refresh\nChaos Infused", { owners: [entry.owner], complex: true });
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} armed ${getOwnerLabel(entry.owner)}'s next power-up refresh to become chaos-infused.`));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} armed ${getOwnerLabel(entry.owner)}'s next ${stacks} power-up refresh${stacks === 1 ? "" : "es"} to become chaos-infused.`));
       return;
     }
     queueStatFlash("mixed", entry.power.name, "+/-15% Roll\nHand Reroll", { owners });
@@ -8311,14 +8335,18 @@ function applyLeaderBurnDeltas(deltas, owners, events) {
   Object.keys(state.worldBurnOwners || {})
     .filter((owner) => owners.includes(owner))
     .forEach((owner) => {
+      const stacks = getEffectStackCount(state.worldBurnOwners[owner]);
+      if (stacks <= 0) {
+        return;
+      }
       const currentScores = Object.fromEntries(owners.map((participant) => [participant, Math.max(0, getScore(participant) + (deltas[participant] || 0))]));
       const highScore = Math.max(...Object.values(currentScores));
       owners
         .filter((participant) => currentScores[participant] === highScore && highScore > 0)
         .forEach((leader) => {
-          const amount = Math.floor(currentScores[leader] * 0.05);
+          const amount = Math.floor(currentScores[leader] * 0.05) * stacks;
           deltas[leader] -= amount;
-          events.push(`Let the World Burn from ${getOwnerLabel(owner)} burned ${getOwnerLabel(leader)} for ${amount.toLocaleString()} points.`);
+          events.push(`Let the World Burn x${stacks} from ${getOwnerLabel(owner)} burned ${getOwnerLabel(leader)} for ${amount.toLocaleString()} points.`);
         });
     });
 }
@@ -8328,23 +8356,28 @@ function applyLawnMowerDeltas(deltas, owners, events) {
     .filter((owner) => owners.includes(owner))
     .forEach((owner) => {
       const ownerTotal = Math.max(0, getScore(owner) + (deltas[owner] || 0));
-      const isChaosMower = state.lawnMowerOwners[owner] === "chaos";
-      const amount = Math.floor(ownerTotal * (isChaosMower ? 0.15 : 0.12));
-      if (amount <= 0) {
-        return;
-      }
-      owners
-        .filter((participant) => participant !== owner && getScore(participant) + (deltas[participant] || 0) > ownerTotal)
-        .forEach((participant) => {
-          deltas[participant] -= amount;
-          events.push(`${isChaosMower ? "Cut Down to Size" : "Lawn Mower"} from ${getOwnerLabel(owner)} trimmed ${getOwnerLabel(participant)} for ${amount.toLocaleString()} points.`);
-        });
+      const stacks = getModeEffectStacks(state.lawnMowerOwners[owner]);
+      [
+        { count: stacks.normal, percent: 0.12, label: "Lawn Mower" },
+        { count: stacks.chaos, percent: 0.15, label: "Cut Down to Size" }
+      ].forEach((effect) => {
+        const amount = Math.floor(ownerTotal * effect.percent) * effect.count;
+        if (amount <= 0) {
+          return;
+        }
+        owners
+          .filter((participant) => participant !== owner && getScore(participant) + (deltas[participant] || 0) > ownerTotal)
+          .forEach((participant) => {
+            deltas[participant] -= amount;
+            events.push(`${effect.label} x${effect.count} from ${getOwnerLabel(owner)} trimmed ${getOwnerLabel(participant)} for ${amount.toLocaleString()} points.`);
+          });
+      });
     });
 }
 
 function trimChaosRefreshedHandsFromLawnMower(owners, events) {
   Object.keys(state.lawnMowerOwners || {})
-    .filter((owner) => owners.includes(owner) && state.lawnMowerOwners[owner] === "chaos")
+    .filter((owner) => owners.includes(owner) && getModeEffectStacks(state.lawnMowerOwners[owner]).chaos > 0)
     .forEach((owner) => {
       const ownerScore = getScore(owner);
       owners
@@ -8367,21 +8400,29 @@ function applyPersistentRoundDeltas(deltas, owners, events) {
   Object.keys(state.divineBlessingOwners || {})
     .filter((owner) => owners.includes(owner))
     .forEach((owner) => {
+      const stacks = getEffectStackCount(state.divineBlessingOwners[owner]);
+      if (stacks <= 0) {
+        return;
+      }
       const currentTotal = Math.max(0, getScore(owner) + (deltas[owner] || 0));
-      const amount = 500 + Math.floor(currentTotal * 0.05);
+      const amount = (500 + Math.floor(currentTotal * 0.05)) * stacks;
       deltas[owner] += amount;
-      events.push(`Devine Blessing gave ${getOwnerLabel(owner)} ${amount.toLocaleString()} points.`);
+      events.push(`Devine Blessing x${stacks} gave ${getOwnerLabel(owner)} ${amount.toLocaleString()} points.`);
     });
   Object.keys(state.vultureSwarmOwners || {})
     .filter((owner) => owners.includes(owner))
     .forEach((owner) => {
+      const stacks = getEffectStackCount(state.vultureSwarmOwners[owner]);
+      if (stacks <= 0) {
+        return;
+      }
       const losses = state.matchHistory.filter((round) => !(round.winners || [round.winner]).includes(getOwnerLabel(owner))).length;
-      const amount = losses * 500;
+      const amount = losses * 500 * stacks;
       if (amount <= 0) {
         return;
       }
       deltas[owner] += amount;
-      events.push(`Vulture Swarm paid ${getOwnerLabel(owner)} ${amount.toLocaleString()} points for ${losses} previous losses.`);
+      events.push(`Vulture Swarm x${stacks} paid ${getOwnerLabel(owner)} ${amount.toLocaleString()} points for ${losses} previous losses.`);
     });
 }
 
@@ -8418,19 +8459,23 @@ function armInsurancePolicy(owner, power) {
   if (cost > 0) {
     addScore(owner, -cost);
   }
+  const existing = state.insurancePolicies[owner] || {};
+  const existingPercent = Number(existing.payoutPercent) || 0;
+  const nextPercent = existingPercent + (power.payoutPercent || 0);
   state.insurancePolicies[owner] = {
-    powerId: power.id,
-    remaining: 3,
-    payoutPercent: power.payoutPercent || 0,
-    refillOnTrigger: Boolean(power.refillOnTrigger),
-    repeat: Boolean(power.repeat || isChaosInfusedPower(power))
+    powerId: nextPercent >= existingPercent ? power.id : existing.powerId || power.id,
+    remaining: Math.max(0, Math.floor(Number(existing.remaining) || 0)) + 3,
+    payoutPercent: nextPercent,
+    refillOnTrigger: Boolean(existing.refillOnTrigger || power.refillOnTrigger),
+    repeat: Boolean(existing.repeat || power.repeat || isChaosInfusedPower(power)),
+    stacks: getEffectStackCount(existing) + 1
   };
   queueStatFlash(
     "mixed",
     power.name,
     [
       cost > 0 ? formatSignedStat(-cost, "Point") : "No Cost",
-      `Armed for 3 rounds`
+      `Armed x${state.insurancePolicies[owner].stacks}`
     ],
     { owners: [owner], complex: true }
   );
@@ -8448,6 +8493,7 @@ function resolveInsurancePolicies(losingOwners, deltas, startingScores, events) 
 
     if (losers.has(owner)) {
       const projectedScore = Math.max(0, (startingScores[owner] || 0) + (deltas[owner] || 0));
+      const stacks = getEffectStackCount(policy) || 1;
       const payout = Math.floor(projectedScore * (policy.payoutPercent || 0));
       deltas[owner] += payout;
       triggeredOwners.add(owner);
@@ -8457,7 +8503,7 @@ function resolveInsurancePolicies(losingOwners, deltas, startingScores, events) 
       events.push(createPowerEvent(
         owner,
         power,
-        `${power.name} triggered on the loss, paid ${payout.toLocaleString()} points, and kept ${getOwnerLabel(owner)}'s streak.`
+        `${power.name} x${stacks} triggered on the loss, paid ${payout.toLocaleString()} points, and kept ${getOwnerLabel(owner)}'s streak.`
       ));
       if (refillEvent) {
         events.push(refillEvent);
@@ -8549,9 +8595,9 @@ function applyLawsuitEntries(playedEntries, deltas, owners, events) {
 }
 
 function applyThornsDeltas(deltas, owners, events) {
-  const thornOwners = owners.filter((owner) => state.thornOwners[owner] && (deltas[owner] || 0) < 0);
+  const thornOwners = owners.filter((owner) => getThornReflectPercent(owner) > 0 && (deltas[owner] || 0) < 0);
   thornOwners.forEach((owner) => {
-    const reflectPercent = Number.isFinite(state.thornOwners[owner]) ? state.thornOwners[owner] : 0.33;
+    const reflectPercent = getThornReflectPercent(owner);
     const reflected = Math.floor(Math.abs(deltas[owner]) * reflectPercent);
     if (reflected <= 0) {
       return;
@@ -8575,8 +8621,9 @@ function applyVoidBombCaps(playedEntries, deltas, events) {
         : [getEntryTarget(entry)].filter(Boolean);
       targets.forEach((target) => cappedTargets.set(target, entry));
     });
-  Object.entries(state.eventHorizonMarks || {}).forEach(([target, sourceOwner]) => {
-    cappedTargets.set(target, { owner: sourceOwner || target, power: getPowerById("void_bomb__chaos") });
+  Object.entries(state.eventHorizonMarks || {}).forEach(([target, sourceValue]) => {
+    const sourceInfo = getSourceStackInfo(sourceValue);
+    cappedTargets.set(target, { owner: sourceInfo.sourceOwner || target, power: getPowerById("void_bomb__chaos") });
   });
   cappedTargets.forEach((entry, target) => {
     if (target && deltas[target] > 1000) {
@@ -8588,7 +8635,8 @@ function applyVoidBombCaps(playedEntries, deltas, events) {
 }
 
 function applyEventHorizonAfterRound(owners, winnerSet, events) {
-  Object.entries({ ...(state.eventHorizonMarks || {}) }).forEach(([target, sourceOwner]) => {
+  Object.entries({ ...(state.eventHorizonMarks || {}) }).forEach(([target, sourceValue]) => {
+    const sourceInfo = getSourceStackInfo(sourceValue);
     if (!owners.includes(target)) {
       delete state.eventHorizonMarks[target];
       return;
@@ -8598,29 +8646,35 @@ function applyEventHorizonAfterRound(owners, winnerSet, events) {
       events.push(`Event Horizon released ${getOwnerLabel(target)} after they won the round.`);
       return;
     }
-    triggerEventHorizonOnTarget(sourceOwner, target, events);
+    triggerEventHorizonOnTarget(sourceInfo.sourceOwner, target, events, getPowerById("void_bomb__chaos"), { preserveStackCount: true });
   });
 }
 
 function applyPermanentDeathMarkDeltas(deltas, owners, events) {
-  Object.entries(state.permanentDeathMarks || {}).forEach(([target, sourceOwner]) => {
+  Object.entries(state.permanentDeathMarks || {}).forEach(([target, sourceValue]) => {
+    const markInfo = getSourceStackInfo(sourceValue);
     if (!owners.includes(target)) {
       delete state.permanentDeathMarks[target];
       return;
     }
-    const currentLoss = Math.abs(Math.min(0, deltas[target] || 0));
+    let currentLoss = Math.abs(Math.min(0, deltas[target] || 0));
     if (currentLoss <= 0) {
       return;
     }
-    deltas[target] -= currentLoss;
-    events.push(`Permanent Death Mark doubled ${getOwnerLabel(target)}'s point losses by ${currentLoss.toLocaleString()}${sourceOwner && owners.includes(sourceOwner) ? ` for ${getOwnerLabel(sourceOwner)}` : ""}.`);
+    let addedLoss = 0;
+    for (let stack = 0; stack < markInfo.count; stack += 1) {
+      deltas[target] -= currentLoss;
+      addedLoss += currentLoss;
+      currentLoss *= 2;
+    }
+    events.push(`Permanent Death Mark x${markInfo.count} increased ${getOwnerLabel(target)}'s point losses by ${addedLoss.toLocaleString()}${markInfo.sourceOwner && owners.includes(markInfo.sourceOwner) ? ` for ${getOwnerLabel(markInfo.sourceOwner)}` : ""}.`);
   });
 }
 
 function plantDeathBombs(owner, power, events = []) {
   const targets = getActiveOwners().filter((participant) => participant !== owner);
   state.deathBombMarks = [
-    ...(state.deathBombMarks || []).filter((bomb) => bomb.owner !== owner),
+    ...(state.deathBombMarks || []),
     ...targets.map((targetOwner) => ({
       owner,
       targetOwner,
@@ -8641,7 +8695,7 @@ function applyDeathBombMarks(owners, winnerSet, deltas, events) {
       const currentTotal = Math.max(0, getScore(bomb.targetOwner) + (deltas[bomb.targetOwner] || 0));
       const amount = Math.floor(currentTotal * 0.2);
       deltas[bomb.targetOwner] -= amount;
-      state.permanentDeathMarks[bomb.targetOwner] = bomb.owner;
+      addSourceStack(state.permanentDeathMarks, bomb.targetOwner, bomb.owner);
       queueStatFlash("bomb", "Death Bomb", [formatSignedStat(-amount, "Point"), "Death Marked"], { owners: [bomb.targetOwner], complex: true });
       events.push(`Death Bomb exploded on ${getOwnerLabel(bomb.targetOwner)} for ${amount.toLocaleString()} points and left a permanent Death Mark.`);
       return;
@@ -8720,18 +8774,19 @@ function applyHotPotatoHit(target, deltas, events, sourceOwner = "", lossPercent
 
 function applyFailedInvestmentDebuffs(deltas, winnerSet, events) {
   getActiveOwners().forEach((owner) => {
-    if (!state.failedInvestmentDebuffs[owner] || !winnerSet.has(owner)) {
+    const stacks = getEffectStackCount(state.failedInvestmentDebuffs[owner]);
+    if (stacks <= 0 || !winnerSet.has(owner)) {
       return;
     }
     const gained = Math.max(0, deltas[owner] || 0);
     if (gained <= 0) {
       return;
     }
-    const penalty = Math.ceil(gained * 0.2);
+    const penalty = Math.min(gained, Math.ceil(gained * 0.2 * stacks));
     deltas[owner] -= penalty;
     state.failedInvestmentDebuffs[owner] = false;
     queueStatFlash("negative", "Failed Investment", formatSignedStat(-penalty, "Point"), { owners: [owner] });
-    events.push(`${getOwnerLabel(owner)} lost ${penalty.toLocaleString()} points to Failed Investment, receiving 80% of their correct-answer payout.`);
+    events.push(`${getOwnerLabel(owner)} lost ${penalty.toLocaleString()} points to Failed Investment x${stacks}.`);
   });
 }
 
@@ -18449,17 +18504,18 @@ function applyRoundStartEffects() {
   Object.keys(state.chaosEnvyOwners || {})
     .filter((owner) => owners.includes(owner))
     .forEach((owner) => {
+      const stacks = getEffectStackCount(state.chaosEnvyOwners[owner]);
       const wrongCount = getWrongAnswerCount(owner);
-      if (wrongCount <= 0) {
+      if (stacks <= 0 || wrongCount <= 0) {
         return;
       }
-      const percent = Math.min(0.9, wrongCount * 0.03);
+      const percent = Math.min(0.9, wrongCount * 0.03 * stacks);
       owners.forEach((participant) => {
         const loss = Math.floor(getScore(participant) * percent);
         const appliedLoss = applyProtectedScoreLoss(participant, loss, "Virus Corruption", events);
         totalDeltas[participant] -= appliedLoss;
       });
-      events.push(`Virus Corruption from ${getOwnerLabel(owner)} drained ${Math.round(percent * 100)}% from everyone.`);
+      events.push(`Virus Corruption x${stacks} from ${getOwnerLabel(owner)} drained ${Math.round(percent * 100)}% from everyone.`);
     });
 
   state.pendingDeadWeights
@@ -18513,44 +18569,58 @@ function applyRoundStartEffects() {
     if (!owners.includes(owner)) {
       return;
     }
-    const target = getRandomOtherOwner(owner);
-    setOwnerStreak(owner, getOwnerStreak(owner) + 1);
-    if (target) {
-      setOwnerStreak(target, getOwnerStreak(target) + 1);
+    const stacks = getEffectStackCount(state.arsonists[owner]);
+    for (let stack = 0; stack < stacks; stack += 1) {
+      const target = getRandomOtherOwner(owner);
+      setOwnerStreak(owner, getOwnerStreak(owner) + 1);
+      if (target) {
+        setOwnerStreak(target, getOwnerStreak(target) + 1);
+      }
+      queueStatFlash("positive", "Arsonist", "+1 Streak", { owners: [owner, target].filter(Boolean) });
+      events.push(`Arsonist gave ${getOwnerLabel(owner)}${target ? ` and ${getOwnerLabel(target)}` : ""} 1 streak.`);
     }
-    queueStatFlash("positive", "Arsonist", "+1 Streak", { owners: [owner, target].filter(Boolean) });
-    events.push(`Arsonist gave ${getOwnerLabel(owner)}${target ? ` and ${getOwnerLabel(target)}` : ""} 1 streak.`);
   });
 
   Object.keys(state.bartenders || {}).forEach((owner) => {
     if (!owners.includes(owner)) {
       return;
     }
-    const result = state.bartenders[owner] === "chaos"
-      ? Array.from({ length: 3 }, () => applyCocktailMix(owner, { buffsOnly: true }))
-      : applyCocktailMix(owner, { buffsOnly: false });
-    if (result) {
-      const source = state.bartenders[owner] === "chaos" ? "Pharmacy" : "Bartender";
-      queueCocktailResultFlash(source, result, { owners: [owner] });
-      events.push(`${source} served ${getOwnerLabel(owner)}: ${Array.isArray(result) ? result.join(", ") : result}.`);
+    const stacks = getModeEffectStacks(state.bartenders[owner]);
+    for (let stack = 0; stack < stacks.normal; stack += 1) {
+      const result = applyCocktailMix(owner, { buffsOnly: false });
+      if (result) {
+        queueCocktailResultFlash("Bartender", result, { owners: [owner] });
+        events.push(`Bartender served ${getOwnerLabel(owner)}: ${result}.`);
+      }
+    }
+    for (let stack = 0; stack < stacks.chaos; stack += 1) {
+      const result = Array.from({ length: 3 }, () => applyCocktailMix(owner, { buffsOnly: true }));
+      queueCocktailResultFlash("Pharmacy", result, { owners: [owner] });
+      events.push(`Pharmacy served ${getOwnerLabel(owner)}: ${result.join(", ")}.`);
     }
   });
 
-  if (Object.keys(state.virusFactories || {}).some((owner) => owners.includes(owner))) {
-    owners.forEach((owner) => {
-      if (Math.random() >= 0.33) {
-        return;
+  Object.keys(state.virusFactories || {})
+    .filter((owner) => owners.includes(owner))
+    .forEach((sourceOwner) => {
+      const stacks = getEffectStackCount(state.virusFactories[sourceOwner]);
+      for (let stack = 0; stack < stacks; stack += 1) {
+        owners.forEach((owner) => {
+          if (Math.random() >= 0.33) {
+            return;
+          }
+          const result = applyCocktailMix(owner, { debuffsOnly: true, source: "Virus Factory" });
+          queueCocktailResultFlash("Virus Factory", result, { owners: [owner] });
+          events.push(`Virus Factory from ${getOwnerLabel(sourceOwner)} hit ${getOwnerLabel(owner)} with a debuff: ${result}.`);
+        });
       }
-      const result = applyCocktailMix(owner, { debuffsOnly: true });
-      queueCocktailResultFlash("Virus Factory", result, { owners: [owner] });
-      events.push(`Virus Factory hit ${getOwnerLabel(owner)} with a debuff: ${result}.`);
     });
-  }
 
   Object.entries(state.typhoonOwners || {})
     .filter(([owner]) => owners.includes(owner))
-    .forEach(([stormOwner, mode]) => {
-      if (mode === "chaos") {
+    .forEach(([stormOwner, value]) => {
+      const stacks = getModeEffectStacks(value);
+      for (let stack = 0; stack < stacks.chaos; stack += 1) {
         owners.forEach((target) => {
           if (Math.random() >= 0.33) {
             return;
@@ -18567,18 +18637,19 @@ function applyRoundStartEffects() {
           queueStatFlash(appliedLoss > 0 ? "lightning" : "positive", "The Heaven Has Opened", appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", { owners: [target], complex: true });
           events.push(`The Heaven Has Opened made ${getOwnerLabel(target)} self-cast ${strike.name} on themself for ${appliedLoss.toLocaleString()} points.`);
         });
-        return;
       }
-      owners.forEach((owner) => {
-        if (Math.random() >= 0.33) {
-          return;
-        }
-        const strike = Math.random() < 0.5 ? getPowerById("zap_strike") : getPowerById("lightning_strike");
-        const amount = (strike.type === "lightning_strike" ? 500 : 250) * (getOwnerStreak(owner) + 1);
-        const appliedLoss = applyProtectedScoreLoss(owner, amount, "Typhoon Season", events);
-        queueStatFlash(appliedLoss > 0 ? "lightning" : "positive", "Typhoon Season", appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", { owners: [owner], complex: true });
-        events.push(`Typhoon Season made ${getOwnerLabel(owner)} self-cast ${strike.name} on themself for ${appliedLoss.toLocaleString()} points.`);
-      });
+      for (let stack = 0; stack < stacks.normal; stack += 1) {
+        owners.forEach((owner) => {
+          if (Math.random() >= 0.33) {
+            return;
+          }
+          const strike = Math.random() < 0.5 ? getPowerById("zap_strike") : getPowerById("lightning_strike");
+          const amount = (strike.type === "lightning_strike" ? 500 : 250) * (getOwnerStreak(owner) + 1);
+          const appliedLoss = applyProtectedScoreLoss(owner, amount, "Typhoon Season", events);
+          queueStatFlash(appliedLoss > 0 ? "lightning" : "positive", "Typhoon Season", appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", { owners: [owner], complex: true });
+          events.push(`Typhoon Season made ${getOwnerLabel(owner)} self-cast ${strike.name} on themself for ${appliedLoss.toLocaleString()} points.`);
+        });
+      }
     });
 
   (state.soulLinks || []).forEach((link) => {
@@ -18606,12 +18677,13 @@ function applyRoundStartEffects() {
       return;
     }
     const source = isMatchModifierEnabled("wildFire") && !state.hotInHereOwners[owner] ? "Wild Fire" : "It's Getting Hot";
+    const stacks = source === "Wild Fire" ? 1 : Math.max(1, getEffectStackCount(state.hotInHereOwners[owner]));
     owners.filter((participant) => participant !== owner).forEach((participant) => {
-      const loss = Math.floor(getScore(participant) * (burnPercent / 100));
+      const loss = Math.floor(getScore(participant) * (burnPercent / 100)) * stacks;
       const appliedLoss = applyProtectedScoreLoss(participant, loss, source, events);
       hotInHereDeltas[participant] -= appliedLoss;
     });
-    events.push(`${source} burned everyone except ${getOwnerLabel(owner)} for ${burnPercent}%.`);
+    events.push(`${source}${stacks > 1 ? ` x${stacks}` : ""} burned everyone except ${getOwnerLabel(owner)} for ${burnPercent * stacks}%.`);
   });
   queueDeltaStatFlash("It's Getting Hot", hotInHereDeltas, "Point", { kind: "burning" });
 
@@ -18720,7 +18792,7 @@ function isDoomPower(powerOrId) {
 }
 
 function hasImpendingDoom(owner) {
-  return Boolean(owner && state.impendingDoomOwners?.[owner]);
+  return getEffectStackCount(owner && state.impendingDoomOwners?.[owner]) > 0;
 }
 
 function hasDoomShield(owner) {
@@ -18728,7 +18800,7 @@ function hasDoomShield(owner) {
 }
 
 function hasExplosiveDoom(owner) {
-  return Boolean(owner && state.explosiveDoomOwners?.[owner]);
+  return getEffectStackCount(owner && state.explosiveDoomOwners?.[owner]) > 0;
 }
 
 function hasDoomStreakGuard(owner) {
@@ -19932,7 +20004,7 @@ function getPowerDrawOptions(owner) {
 
 function rerollPowerHand(owner, count, options = {}) {
   const hand = [];
-  const forceChaosInfusion = Boolean(state.chaosRefreshOwners?.[owner]);
+  const forceChaosInfusion = getEffectStackCount(state.chaosRefreshOwners?.[owner]) > 0;
   clearFreshPowerAnimations(owner);
   for (let index = 0; index < count; index += 1) {
     const powerId = drawPowerCard(hand, { ...getPowerDrawOptions(owner), ...options, forceChaosInfusion });
@@ -19943,7 +20015,7 @@ function rerollPowerHand(owner, count, options = {}) {
   state.powerHands[owner] = hand;
   markPowerHandAnimation(owner, hand, "refresh");
   if (forceChaosInfusion) {
-    delete state.chaosRefreshOwners[owner];
+    removeEffectStack(state.chaosRefreshOwners, owner);
   }
 }
 
@@ -22927,29 +22999,43 @@ function deleteRandomPowerFromHand(targetOwner) {
   return deletedPower;
 }
 
-function triggerEventHorizonOnTarget(sourceOwner, targetOwner, events = [], sourcePower = getPowerById("void_bomb__chaos")) {
+function triggerEventHorizonOnTarget(sourceOwner, targetOwner, events = [], sourcePower = getPowerById("void_bomb__chaos"), options = {}) {
   if (!targetOwner || !getActiveOwners().includes(targetOwner) || targetOwner === sourceOwner) {
     return null;
   }
+  const previous = getSourceStackInfo(state.eventHorizonMarks?.[targetOwner]);
+  const stackCount = options.preserveStackCount
+    ? Math.max(1, previous.count)
+    : Math.max(1, previous.count + 1);
+  const nextSourceOwner = sourceOwner || previous.sourceOwner || "";
   removeActiveEffectsForOwner(targetOwner);
-  const deletedPower = deleteRandomPowerFromHand(targetOwner);
-  state.eventHorizonMarks[targetOwner] = sourceOwner || "";
+  const deletedPowers = [];
+  for (let stack = 0; stack < stackCount; stack += 1) {
+    const deletedPower = deleteRandomPowerFromHand(targetOwner);
+    if (deletedPower) {
+      deletedPowers.push(deletedPower);
+    }
+  }
+  state.eventHorizonMarks[targetOwner] = {
+    count: stackCount,
+    sourceOwner: nextSourceOwner
+  };
   queueStatFlash(
     "bomb",
     sourcePower?.name || "Event Horizon",
-    deletedPower ? `${deletedPower.name} Lost` : "Power Disabled",
-    getTargetedFlashOptions(sourceOwner, targetOwner, { complex: true })
+    deletedPowers.length ? `${deletedPowers.length} Power${deletedPowers.length === 1 ? "" : "s"} Lost` : "Power Disabled",
+    getTargetedFlashOptions(nextSourceOwner, targetOwner, { complex: true })
   );
   events.push(createPowerEvent(
-    sourceOwner,
+    nextSourceOwner,
     sourcePower || getPowerById("void_bomb"),
-    `${sourcePower?.name || "Event Horizon"} stripped ${getOwnerLabel(targetOwner)}'s active effects${deletedPower ? ` and removed ${deletedPower.name}` : ""}.`
+    `${sourcePower?.name || "Event Horizon"} x${stackCount} stripped ${getOwnerLabel(targetOwner)}'s active effects${deletedPowers.length ? ` and removed ${deletedPowers.map((power) => power.name).join(", ")}` : ""}.`
   ));
-  return deletedPower;
+  return deletedPowers[0] || null;
 }
 
 function armCrawlerVirus(owner) {
-  state.error404Owners[owner] = true;
+  addEffectStack(state.error404Owners, owner);
   queueStatFlash("mixed", "Error 404", "Chaos routine armed", { owners: [owner], complex: true });
 }
 
@@ -22969,17 +23055,21 @@ function scheduleError404Effects(events = []) {
     return;
   }
 
-  owners.forEach((target) => {
-    if (Math.random() >= 0.33) {
-      return;
+  activeErrorOwners.forEach((sourceOwner) => {
+    const stacks = getEffectStackCount(state.error404Owners[sourceOwner]);
+    for (let stack = 0; stack < stacks; stack += 1) {
+      owners.forEach((target) => {
+        if (Math.random() >= 0.33) {
+          return;
+        }
+        state.error404Schedule.push({
+          owner: sourceOwner,
+          target,
+          triggerAt: getTimerChaosTriggerSecond(),
+          used: false
+        });
+      });
     }
-    const sourceOwner = activeErrorOwners[Math.floor(Math.random() * activeErrorOwners.length)];
-    state.error404Schedule.push({
-      owner: sourceOwner,
-      target,
-      triggerAt: getTimerChaosTriggerSecond(),
-      used: false
-    });
   });
   if (state.error404Schedule.length) {
     events.push(`Error 404 armed ${state.error404Schedule.length} Chaos trigger${state.error404Schedule.length === 1 ? "" : "s"} for this round.`);
@@ -23009,20 +23099,44 @@ function getRemovableActiveEffects(owner) {
       effects.push({ label, remove });
     }
   };
-  add(state.permafrostProtection[owner], "Permafrost", () => { state.permafrostProtection[owner] = false; });
-  add(state.eternalFlameProtection[owner], "Eternal Flame", () => { state.eternalFlameProtection[owner] = false; });
+  add(state.permafrostProtection[owner], "Permafrost", () => {
+    if (getEffectStackCount(state.permafrostProtection[owner]) > 1) {
+      state.permafrostProtection[owner] = getEffectStackCount(state.permafrostProtection[owner]) - 1;
+    } else {
+      state.permafrostProtection[owner] = false;
+    }
+  });
+  add(state.eternalFlameProtection[owner], "Eternal Flame", () => {
+    if (getEffectStackCount(state.eternalFlameProtection[owner]) > 1) {
+      state.eternalFlameProtection[owner] = getEffectStackCount(state.eternalFlameProtection[owner]) - 1;
+    } else {
+      state.eternalFlameProtection[owner] = false;
+    }
+  });
   add((state.pocketShieldCharges[owner] || 0) > 0, "Pocket Shield", () => { state.pocketShieldCharges[owner] = 0; });
   add((state.streakAnchorCharges[owner] || 0) > 0, "Streak Anchor", () => { state.streakAnchorCharges[owner] = 0; });
   add((state.freezeProtection[owner] || 0) > 0, "Deep Freeze", () => { state.freezeProtection[owner] = 0; });
   add((state.streakFreezeRounds[owner] || 0) > 0, "Freeze Ray", () => { state.streakFreezeRounds[owner] = 0; });
   add((state.debuffShieldCharges[owner] || 0) > 0, "Antivirus", () => { state.debuffShieldCharges[owner] = 0; });
   add((state.debuffShieldRounds[owner] || 0) > 0, "Encryption", () => { state.debuffShieldRounds[owner] = 0; });
-  add((state.failedInvestmentDebuffs[owner] || false), "Failed Investment", () => { state.failedInvestmentDebuffs[owner] = false; });
+  add((state.failedInvestmentDebuffs[owner] || false), "Failed Investment", () => {
+    const nextCount = getEffectStackCount(state.failedInvestmentDebuffs[owner]) - 1;
+    state.failedInvestmentDebuffs[owner] = nextCount > 0 ? nextCount : false;
+  });
   add((state.timeDilationRounds[owner] || 0) > 0, "Time Dilation", () => { state.timeDilationRounds[owner] = 0; });
   add((state.streakLossProtectionRounds[owner] || 0) > 0, "Streak Guard", () => { state.streakLossProtectionRounds[owner] = 0; });
   add((state.cocktailPenaltyRounds[owner] || 0) > 0, "Cocktail Debt", () => { state.cocktailPenaltyRounds[owner] = 0; });
+  add((state.timeBombs || []).some((bomb) => bomb.owner === owner), "Time Bomb", () => {
+    const index = (state.timeBombs || []).findIndex((bomb) => bomb.owner === owner);
+    if (index >= 0) {
+      state.timeBombs = (state.timeBombs || []).filter((_, candidateIndex) => candidateIndex !== index);
+    }
+  });
   add((state.debuffTimeBombs || []).some((bomb) => bomb.owner === owner), "Debuff Time Bomb", () => {
-    state.debuffTimeBombs = (state.debuffTimeBombs || []).filter((bomb) => bomb.owner !== owner);
+    const index = (state.debuffTimeBombs || []).findIndex((bomb) => bomb.owner === owner);
+    if (index >= 0) {
+      state.debuffTimeBombs = (state.debuffTimeBombs || []).filter((_, candidateIndex) => candidateIndex !== index);
+    }
   });
   add((state.pendingStreakBonuses[owner] || 0) > 0, "Rocket Fuel", () => { state.pendingStreakBonuses[owner] = 0; });
   add((state.pendingPowerBonuses[owner] || 0) > 0, "Pending Bonus", () => { state.pendingPowerBonuses[owner] = 0; });
@@ -23032,46 +23146,86 @@ function getRemovableActiveEffects(owner) {
   add((state.chaosInfusionBoostRounds[owner] || 0) > 0, "Four Leaf Clover", () => { state.chaosInfusionBoostRounds[owner] = 0; });
   add((state.freezeReflectionRounds[owner] || 0) > 0, "Uno Reverse", () => { state.freezeReflectionRounds[owner] = 0; });
   add((state.luckRounds[owner] || 0) > 0, "Lucky Side", () => { state.luckRounds[owner] = 0; });
-  add(state.heavenHellCurses[owner], "Heaven/Hell Curse", () => { state.heavenHellCurses[owner] = false; });
-  add((state.bottomFeederRounds[owner] || 0) > 0, "Bottom Feeder", () => { state.bottomFeederRounds[owner] = 0; });
-  add(state.worldBurnOwners[owner], "Let the World Burn", () => { delete state.worldBurnOwners[owner]; });
-  add(state.lawnMowerOwners[owner], "Lawn Mower", () => { delete state.lawnMowerOwners[owner]; });
-  add(state.arsonists[owner], "Arsonist", () => { delete state.arsonists[owner]; });
-  add(state.bartenders[owner], "Bartender", () => { delete state.bartenders[owner]; });
-  add(state.virusFactories[owner], "Virus Factory", () => { delete state.virusFactories[owner]; });
+  add(state.heavenHellCurses[owner], "Heaven/Hell Curse", () => {
+    const nextCount = getEffectStackCount(state.heavenHellCurses[owner]) - 1;
+    state.heavenHellCurses[owner] = nextCount > 0 ? nextCount : false;
+  });
+  add((state.bottomFeederRounds[owner] || 0) > 0, "Bottom Feeder", () => { state.bottomFeederRounds[owner] = Math.max(0, (state.bottomFeederRounds[owner] || 0) - 1); });
+  add(getEffectStackCount(state.worldBurnOwners[owner]) > 0, "Let the World Burn", () => { removeEffectStack(state.worldBurnOwners, owner); });
+  add(getModeEffectTotal(state.lawnMowerOwners[owner]) > 0, "Lawn Mower", () => { removeModeEffectStack(state.lawnMowerOwners, owner, getModeEffectStacks(state.lawnMowerOwners[owner]).chaos > 0); });
+  add(getEffectStackCount(state.arsonists[owner]) > 0, "Arsonist", () => { removeEffectStack(state.arsonists, owner); });
+  add(getModeEffectTotal(state.bartenders[owner]) > 0, "Bartender", () => { removeModeEffectStack(state.bartenders, owner, getModeEffectStacks(state.bartenders[owner]).chaos > 0); });
+  add(getEffectStackCount(state.virusFactories[owner]) > 0, "Virus Factory", () => { removeEffectStack(state.virusFactories, owner); });
   add(state.error404Owners[owner], "Error 404", () => {
-    delete state.error404Owners[owner];
+    removeEffectStack(state.error404Owners, owner);
     state.error404Schedule = (state.error404Schedule || []).filter((entry) => entry.owner !== owner);
   });
-  add(state.typhoonOwners[owner], "Typhoon Season", () => { delete state.typhoonOwners[owner]; });
-  add(state.eternalSlumberOwners[owner], "Eternal Slumber", () => { delete state.eternalSlumberOwners[owner]; });
-  add(state.wrathOwners[owner], "Explosive Temper", () => { delete state.wrathOwners[owner]; });
-  add(state.divineBlessingOwners[owner], "Devine Blessing", () => { delete state.divineBlessingOwners[owner]; });
-  add(state.superFuelOwners[owner], "Super Fuel", () => { delete state.superFuelOwners[owner]; });
-  add(state.vultureSwarmOwners[owner], "Vulture Swarm", () => { delete state.vultureSwarmOwners[owner]; });
-  add(state.chaosEnvyOwners[owner], "Virus Corruption", () => { delete state.chaosEnvyOwners[owner]; });
-  add(state.chaosBottomFeederOwners[owner], "Scavenger", () => { delete state.chaosBottomFeederOwners[owner]; });
+  add(getModeEffectTotal(state.typhoonOwners[owner]) > 0, "Typhoon Season", () => { removeModeEffectStack(state.typhoonOwners, owner, getModeEffectStacks(state.typhoonOwners[owner]).chaos > 0); });
+  add(getEffectStackCount(state.eternalSlumberOwners[owner]) > 0, "Eternal Slumber", () => { removeEffectStack(state.eternalSlumberOwners, owner); });
+  add(getEffectStackCount(state.wrathOwners[owner]) > 0, "Explosive Temper", () => { removeEffectStack(state.wrathOwners, owner); });
+  add(getEffectStackCount(state.divineBlessingOwners[owner]) > 0, "Devine Blessing", () => { removeEffectStack(state.divineBlessingOwners, owner); });
+  add(getEffectStackCount(state.superFuelOwners[owner]) > 0, "Super Fuel", () => { removeEffectStack(state.superFuelOwners, owner); });
+  add(getEffectStackCount(state.vultureSwarmOwners[owner]) > 0, "Vulture Swarm", () => { removeEffectStack(state.vultureSwarmOwners, owner); });
+  add(getEffectStackCount(state.chaosEnvyOwners[owner]) > 0, "Virus Corruption", () => { removeEffectStack(state.chaosEnvyOwners, owner); });
+  add(getEffectStackCount(state.chaosBottomFeederOwners[owner]) > 0, "Scavenger", () => { removeEffectStack(state.chaosBottomFeederOwners, owner); });
   add(state.loserTaxCollectors[owner], "Debt Collector", () => { delete state.loserTaxCollectors[owner]; });
-  add(state.thornOwners[owner], "Thorns", () => { delete state.thornOwners[owner]; });
-  add(state.hotInHereOwners[owner], "It's Getting Hot", () => { delete state.hotInHereOwners[owner]; });
+  add(getThornReflectPercent(owner) > 0, "Thorns", () => {
+    const nextPercent = Math.max(0, getThornReflectPercent(owner) - 0.33);
+    if (nextPercent > 0) {
+      state.thornOwners[owner] = nextPercent;
+    } else {
+      delete state.thornOwners[owner];
+    }
+  });
+  add(getEffectStackCount(state.hotInHereOwners[owner]) > 0, "It's Getting Hot", () => { removeEffectStack(state.hotInHereOwners, owner); });
   add(state.redHerringMasks[owner], "Red Herring", () => { delete state.redHerringMasks[owner]; });
-  add(state.insurancePolicies[owner], "Insurance", () => { delete state.insurancePolicies[owner]; });
-  add(state.insuranceFrauds[owner], "Insurance Fraud", () => { delete state.insuranceFrauds[owner]; });
+  add(state.insurancePolicies[owner], "Insurance", () => {
+    const policy = state.insurancePolicies[owner];
+    const stacks = getEffectStackCount(policy) || 1;
+    if (stacks <= 1) {
+      delete state.insurancePolicies[owner];
+      return;
+    }
+    state.insurancePolicies[owner] = {
+      ...policy,
+      stacks: stacks - 1,
+      payoutPercent: (Number(policy.payoutPercent) || 0) * ((stacks - 1) / stacks),
+      remaining: Math.max(0, (Number(policy.remaining) || 0) - 3)
+    };
+  });
+  add(state.insuranceFrauds[owner], "Insurance Fraud", () => {
+    const fraud = state.insuranceFrauds[owner];
+    const stacks = getEffectStackCount(fraud) || 1;
+    if (stacks <= 1) {
+      delete state.insuranceFrauds[owner];
+      return;
+    }
+    state.insuranceFrauds[owner] = { ...fraud, stacks: stacks - 1 };
+  });
   add((state.deathMarks || []).some((mark) => mark.targetOwner === owner), "Death Mark", () => {
-    state.deathMarks = (state.deathMarks || []).filter((mark) => mark.targetOwner !== owner);
+    const index = (state.deathMarks || []).findIndex((mark) => mark.targetOwner === owner);
+    if (index >= 0) {
+      state.deathMarks = (state.deathMarks || []).filter((_, candidateIndex) => candidateIndex !== index);
+    }
   });
-  add(state.permanentDeathMarks?.[owner], "Permanent Death Mark", () => { delete state.permanentDeathMarks[owner]; });
+  add(getSourceStackInfo(state.permanentDeathMarks?.[owner]).count > 0, "Permanent Death Mark", () => { removeSourceStack(state.permanentDeathMarks, owner); });
   add((state.deathBombMarks || []).some((bomb) => bomb.targetOwner === owner), "Death Bomb", () => {
-    state.deathBombMarks = (state.deathBombMarks || []).filter((bomb) => bomb.targetOwner !== owner);
+    const index = (state.deathBombMarks || []).findIndex((bomb) => bomb.targetOwner === owner);
+    if (index >= 0) {
+      state.deathBombMarks = (state.deathBombMarks || []).filter((_, candidateIndex) => candidateIndex !== index);
+    }
   });
-  add(state.chaosRefreshOwners?.[owner], "Chaos Infusioner", () => { delete state.chaosRefreshOwners[owner]; });
+  add(getEffectStackCount(state.chaosRefreshOwners?.[owner]) > 0, "Chaos Infusioner", () => { removeEffectStack(state.chaosRefreshOwners, owner); });
   add((state.wrathBombs || []).some((bomb) => bomb.targetOwner === owner), "Wrath Bomb", () => {
-    state.wrathBombs = (state.wrathBombs || []).filter((bomb) => bomb.targetOwner !== owner);
+    const index = (state.wrathBombs || []).findIndex((bomb) => bomb.targetOwner === owner);
+    if (index >= 0) {
+      state.wrathBombs = (state.wrathBombs || []).filter((_, candidateIndex) => candidateIndex !== index);
+    }
   });
   add((state.streakLinks || []).some((link) => link.owner === owner || link.targetOwner === owner), "Streak Link", () => {
     state.streakLinks = (state.streakLinks || []).filter((link) => link.owner !== owner && link.targetOwner !== owner);
   });
-  add(state.eventHorizonMarks?.[owner], "Event Horizon", () => { delete state.eventHorizonMarks[owner]; });
+  add(getSourceStackInfo(state.eventHorizonMarks?.[owner]).count > 0, "Event Horizon", () => { removeSourceStack(state.eventHorizonMarks, owner); });
   add((state.skillIssueMarks || []).some((mark) => mark.owner === owner || mark.targetOwner === owner), "Skill Issue", () => {
     state.skillIssueMarks = (state.skillIssueMarks || []).filter((mark) => mark.owner !== owner && mark.targetOwner !== owner);
   });
@@ -23134,6 +23288,186 @@ function addOwnerDurationRounds(store, owner, rounds) {
   const nextRounds = Math.max(0, Math.floor(Number(store[owner]) || 0)) + addedRounds;
   store[owner] = nextRounds;
   return nextRounds;
+}
+
+function getEffectStackCount(value) {
+  if (!value) {
+    return 0;
+  }
+  if (value === true || typeof value === "string") {
+    return 1;
+  }
+  if (typeof value === "number") {
+    return Math.max(0, Math.floor(value));
+  }
+  if (typeof value === "object") {
+    const directCount = Number(value.count ?? value.stacks);
+    if (Number.isFinite(directCount) && directCount > 0) {
+      return Math.floor(directCount);
+    }
+    return Math.max(0, Math.floor(Number(value.normal) || 0)) + Math.max(0, Math.floor(Number(value.chaos) || 0));
+  }
+  return 0;
+}
+
+function addEffectStack(store, owner, amount = 1) {
+  if (!store || !owner) {
+    return 0;
+  }
+  const added = Math.max(0, Math.floor(Number(amount) || 0));
+  const count = getEffectStackCount(store[owner]) + added;
+  if (count > 0) {
+    store[owner] = count;
+  } else {
+    delete store[owner];
+  }
+  return count;
+}
+
+function removeEffectStack(store, owner, amount = 1) {
+  if (!store || !owner) {
+    return 0;
+  }
+  const nextCount = Math.max(0, getEffectStackCount(store[owner]) - Math.max(1, Math.floor(Number(amount) || 1)));
+  if (nextCount > 0) {
+    store[owner] = nextCount;
+  } else {
+    delete store[owner];
+  }
+  return nextCount;
+}
+
+function getModeEffectStacks(value) {
+  if (!value) {
+    return { normal: 0, chaos: 0 };
+  }
+  if (value === "chaos") {
+    return { normal: 0, chaos: 1 };
+  }
+  if (value === true) {
+    return { normal: 1, chaos: 0 };
+  }
+  if (typeof value === "number") {
+    return { normal: Math.max(0, Math.floor(value)), chaos: 0 };
+  }
+  if (typeof value === "object") {
+    return {
+      normal: Math.max(0, Math.floor(Number(value.normal) || 0)),
+      chaos: Math.max(0, Math.floor(Number(value.chaos) || 0))
+    };
+  }
+  return { normal: 1, chaos: 0 };
+}
+
+function getModeEffectTotal(value) {
+  const stacks = getModeEffectStacks(value);
+  return stacks.normal + stacks.chaos;
+}
+
+function addModeEffectStack(store, owner, chaosInfused = false, amount = 1) {
+  if (!store || !owner) {
+    return { normal: 0, chaos: 0 };
+  }
+  const stacks = getModeEffectStacks(store[owner]);
+  const added = Math.max(0, Math.floor(Number(amount) || 0));
+  if (chaosInfused) {
+    stacks.chaos += added;
+  } else {
+    stacks.normal += added;
+  }
+  if (stacks.normal || stacks.chaos) {
+    store[owner] = stacks;
+  } else {
+    delete store[owner];
+  }
+  return stacks;
+}
+
+function removeModeEffectStack(store, owner, preferChaos = false) {
+  if (!store || !owner) {
+    return { normal: 0, chaos: 0 };
+  }
+  const stacks = getModeEffectStacks(store[owner]);
+  if (preferChaos && stacks.chaos > 0) {
+    stacks.chaos -= 1;
+  } else if (!preferChaos && stacks.normal > 0) {
+    stacks.normal -= 1;
+  } else if (stacks.chaos > 0) {
+    stacks.chaos -= 1;
+  } else if (stacks.normal > 0) {
+    stacks.normal -= 1;
+  }
+  if (stacks.normal || stacks.chaos) {
+    store[owner] = stacks;
+  } else {
+    delete store[owner];
+  }
+  return stacks;
+}
+
+function getSourceStackInfo(value) {
+  if (!value) {
+    return { count: 0, sourceOwner: "" };
+  }
+  if (typeof value === "object") {
+    return {
+      count: Math.max(0, Math.floor(Number(value.count ?? value.stacks) || 0)),
+      sourceOwner: value.sourceOwner || value.owner || ""
+    };
+  }
+  return {
+    count: getEffectStackCount(value),
+    sourceOwner: typeof value === "string" ? value : ""
+  };
+}
+
+function addSourceStack(store, owner, sourceOwner = "", amount = 1) {
+  if (!store || !owner) {
+    return { count: 0, sourceOwner: "" };
+  }
+  const current = getSourceStackInfo(store[owner]);
+  const count = current.count + Math.max(0, Math.floor(Number(amount) || 0));
+  const next = {
+    count,
+    sourceOwner: sourceOwner || current.sourceOwner || ""
+  };
+  if (count > 0) {
+    store[owner] = next;
+  } else {
+    delete store[owner];
+  }
+  return next;
+}
+
+function removeSourceStack(store, owner, amount = 1) {
+  if (!store || !owner) {
+    return { count: 0, sourceOwner: "" };
+  }
+  const current = getSourceStackInfo(store[owner]);
+  const count = Math.max(0, current.count - Math.max(1, Math.floor(Number(amount) || 1)));
+  if (count > 0) {
+    store[owner] = { ...current, count };
+  } else {
+    delete store[owner];
+  }
+  return getSourceStackInfo(store[owner]);
+}
+
+function formatStackSuffix(count) {
+  const normalized = Math.max(0, Math.floor(Number(count) || 0));
+  return normalized > 1 ? ` x${normalized}` : "";
+}
+
+function getThornReflectPercent(owner) {
+  const value = state.thornOwners?.[owner];
+  if (!value) {
+    return 0;
+  }
+  if (value === true) {
+    return 0.33;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(0, numeric) : 0.33;
 }
 
 function addGlobalDurationRounds(key, rounds) {
@@ -23377,8 +23711,8 @@ function applyRandomDebuff(owner, source = "Debuff", options = {}) {
     return appliedLoss > 0 ? `Self Combustion: ${formatSignedStat(-appliedLoss, "Point")}` : "Self Combustion blocked";
   }
   if (roll === 5) {
-    state.failedInvestmentDebuffs[owner] = true;
-    return "Failed Investment: next correct payout is 80%";
+    const stacks = addEffectStack(state.failedInvestmentDebuffs, owner);
+    return `Failed Investment x${stacks}: next correct payout loses 20% per stack`;
   }
   if (roll === 6) {
     const added = giveDeadWeightToOwner(owner);
@@ -23464,8 +23798,11 @@ function removeActiveEffectsForOwner(owner) {
   state.streakLinks = (state.streakLinks || []).filter((link) => link.owner !== owner && link.targetOwner !== owner);
   delete state.eventHorizonMarks[owner];
   Object.keys(state.eventHorizonMarks || {})
-    .filter((targetOwner) => state.eventHorizonMarks[targetOwner] === owner)
+    .filter((targetOwner) => getSourceStackInfo(state.eventHorizonMarks[targetOwner]).sourceOwner === owner)
     .forEach((targetOwner) => delete state.eventHorizonMarks[targetOwner]);
+  Object.keys(state.permanentDeathMarks || {})
+    .filter((targetOwner) => getSourceStackInfo(state.permanentDeathMarks[targetOwner]).sourceOwner === owner)
+    .forEach((targetOwner) => delete state.permanentDeathMarks[targetOwner]);
   state.skillIssueMarks = (state.skillIssueMarks || []).filter((mark) => mark.owner !== owner && mark.targetOwner !== owner);
   state.debuffTimeBombs = (state.debuffTimeBombs || []).filter((bomb) => bomb.owner !== owner);
   state.error404Schedule = (state.error404Schedule || []).filter((entry) => entry.owner !== owner && entry.target !== owner);
@@ -23635,12 +23972,13 @@ function applyImpendingDoomToOwner(target, sourceOwner, power) {
     return false;
   }
   removeActiveEffectsForOwner(target);
-  state.impendingDoomOwners[target] = true;
+  const stacks = addEffectStack(state.impendingDoomOwners, target);
   updateLatestPlayedPowerMeta(sourceOwner, {
     targetOwner: target,
-    appliedDoomStatus: true
+    appliedDoomStatus: true,
+    doomStacks: stacks
   });
-  queueStatFlash("doom", power?.name || "Impending Doom", "Impending Doom\nRest of Match", getTargetedFlashOptions(sourceOwner, target, { complex: true, priority: true }));
+  queueStatFlash("doom", power?.name || "Impending Doom", [`Impending Doom x${stacks}`, "Rest of Match"], getTargetedFlashOptions(sourceOwner, target, { complex: true, priority: true }));
   return true;
 }
 
@@ -23678,7 +24016,7 @@ function applyUltimatumPower(owner, power) {
   const targets = getActiveOwners().filter((participant) => participant !== owner);
   state.explosiveDoomOwners = state.explosiveDoomOwners || {};
   targets.forEach((target) => {
-    state.explosiveDoomOwners[target] = true;
+    addEffectStack(state.explosiveDoomOwners, target);
   });
   updateLatestPlayedPowerMeta(owner, {
     rounds,
@@ -23686,7 +24024,7 @@ function applyUltimatumPower(owner, power) {
   });
   queueStatFlash("doom", power.name, ["Unbreakable Shield", `${rounds} Rounds`], { owners: [owner], complex: true, priority: true });
   targets.forEach((target) => {
-    queueStatFlash("doom", power.name, "Explosive\nRest of Match", getTargetedFlashOptions(owner, target, { complex: true }));
+    queueStatFlash("doom", power.name, [`Explosive x${getEffectStackCount(state.explosiveDoomOwners[target])}`, "Rest of Match"], getTargetedFlashOptions(owner, target, { complex: true }));
   });
   renderScore();
   return true;
@@ -23822,12 +24160,13 @@ function applyDoomRoundDeltas(deltas, owners, winnerSet = new Set(), events = []
   const activeWinnerSet = winnerSet instanceof Set ? winnerSet : new Set(winnerSet || []);
 
   owners.forEach((owner) => {
-    if (!hasImpendingDoom(owner) || activeWinnerSet.has(owner)) {
+    const stacks = getEffectStackCount(state.impendingDoomOwners?.[owner]);
+    if (stacks <= 0 || activeWinnerSet.has(owner)) {
       return;
     }
     const projected = getProjectedOwnerScore(owner, deltas);
-    const loss = 1000 + Math.floor(projected * 0.1);
-    addDoomDelta(deltas, owner, loss, "Impending Doom", events);
+    const loss = (1000 + Math.floor(projected * 0.1)) * stacks;
+    addDoomDelta(deltas, owner, loss, `Impending Doom x${stacks}`, events);
   });
 
   owners
@@ -23841,12 +24180,13 @@ function applyDoomRoundDeltas(deltas, owners, winnerSet = new Set(), events = []
     });
 
   owners.forEach((owner) => {
-    if (!hasExplosiveDoom(owner) || activeWinnerSet.has(owner)) {
+    const stacks = getEffectStackCount(state.explosiveDoomOwners?.[owner]);
+    if (stacks <= 0 || activeWinnerSet.has(owner)) {
       return;
     }
     const projected = getProjectedOwnerScore(owner, deltas);
-    const loss = Math.floor(projected * 0.1);
-    addDoomDelta(deltas, owner, loss, "Explosive", events);
+    const loss = Math.floor(projected * 0.1) * stacks;
+    addDoomDelta(deltas, owner, loss, `Explosive x${stacks}`, events);
   });
 
   const remainingBombs = [];
@@ -24000,7 +24340,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const before = Object.fromEntries(getActiveOwners().map((participant) => [participant, getOwnerStreak(participant)]));
     let cappedOwners = [];
     if (isChaosInfusedPower(power)) {
-      state.eternalSlumberOwners[owner] = true;
+      addEffectStack(state.eternalSlumberOwners, owner);
       cappedOwners = enforceEternalSlumberStreakCaps();
     } else {
       cappedOwners = [...new Set([...capStreaksToOwner(owner), ...enforceEternalSlumberStreakCaps()])];
@@ -24100,7 +24440,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
       if (stolenStreak > 0) {
         setOwnerStreak(owner, getOwnerStreak(owner) + stolenStreak, { force: true });
       }
-      state.permanentDeathMarks[target] = owner;
+      addSourceStack(state.permanentDeathMarks, target, owner);
       state.playedPowerMeta[owner] = {
         ...(state.playedPowerMeta[owner] || {}),
         targetOwner: target,
@@ -24150,7 +24490,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     if (target && getActiveOwners().includes(target)) {
       setOwnerStreak(owner, getOwnerStreak(target), { force: true });
       state.streakLinks = [
-        ...(state.streakLinks || []).filter((link) => link.owner !== owner),
+        ...(state.streakLinks || []),
         { owner, targetOwner: target, remaining: 2 }
       ];
       state.playedPowerMeta[owner] = {
@@ -24166,7 +24506,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const target = meta.targetOwner;
     if (target && getActiveOwners().includes(target)) {
       state.deathMarks = [
-        ...(state.deathMarks || []).filter((mark) => mark.targetOwner !== target),
+        ...(state.deathMarks || []),
         { owner, targetOwner: target, remaining: 3 }
       ];
       state.playedPowerMeta[owner] = {
@@ -24191,9 +24531,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "sin_envy" && isChaosInfusedPower(power)) {
-    state.chaosEnvyOwners[owner] = true;
+    const stacks = addEffectStack(state.chaosEnvyOwners, owner);
     const wrongCount = getWrongAnswerCount(owner);
-    const percent = Math.min(0.9, wrongCount * (power.persistentWrongTaxPercent || 0.03));
+    const percent = Math.min(0.9, wrongCount * (power.persistentWrongTaxPercent || 0.03) * stacks);
     if (percent > 0) {
       getActiveOwners().forEach((participant) => {
         const amount = Math.floor(getScore(participant) * percent);
@@ -24482,8 +24822,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "rocket" && isChaosInfusedPower(power)) {
     setOwnerStreak(owner, getOwnerStreak(owner) + 3, { force: true });
-    state.superFuelOwners[owner] = true;
+    const stacks = addEffectStack(state.superFuelOwners, owner);
     queueStatFlash("positive", power.name, ["+3 Streak", "Future Streaks x2"], { owners: [owner], complex: true });
+    updateLatestPlayedPowerMeta(owner, { superFuelStacks: stacks });
     renderScore();
   }
 
@@ -37177,8 +37518,8 @@ function applyBlessingEntries(playedEntries, startingScores, deltas, events) {
     .filter((entry) => entry.power.type === "blessing")
     .forEach((entry) => {
       if (isChaosInfusedPower(entry.power)) {
-        state.divineBlessingOwners[entry.owner] = true;
-        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will pay ${getOwnerLabel(entry.owner)} 500 plus 5% score every round.`));
+        const stacks = addEffectStack(state.divineBlessingOwners, entry.owner);
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will pay ${getOwnerLabel(entry.owner)} 500 plus 5% score every round.`));
         return;
       }
       const amount = 500 + Math.floor(startingScores[entry.owner] * 0.1);
@@ -37192,8 +37533,8 @@ function applyVultureEntries(playedEntries, winnerSet, deltas, events) {
     .filter((entry) => entry.power.type === "vulture")
     .forEach((entry) => {
       if (isChaosInfusedPower(entry.power)) {
-        state.vultureSwarmOwners[entry.owner] = true;
-        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will pay ${getOwnerLabel(entry.owner)} 500 points per previous loss every round.`));
+        const stacks = addEffectStack(state.vultureSwarmOwners, entry.owner);
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will pay ${getOwnerLabel(entry.owner)} 500 points per previous loss every round.`));
         return;
       }
       const losses = state.matchHistory.filter((round) => !(round.winners || [round.winner]).includes(getOwnerLabel(entry.owner))).length + (winnerSet.has(entry.owner) ? 0 : 1);
@@ -37207,8 +37548,15 @@ function armInsuranceFraudEntries(playedEntries, events) {
   playedEntries
     .filter((entry) => entry.power.type === "insurance_fraud")
     .forEach((entry) => {
-      state.insuranceFrauds[entry.owner] = { startsRound: state.round, remaining: 3, losses: 0 };
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} secretly armed a 3-loss payout for ${getOwnerLabel(entry.owner)}.`));
+      const existing = state.insuranceFrauds[entry.owner] || {};
+      const stacks = getEffectStackCount(existing) + 1;
+      state.insuranceFrauds[entry.owner] = {
+        startsRound: Math.min(Number(existing.startsRound) || state.round, state.round),
+        remaining: Math.max(Number(existing.remaining) || 0, 3),
+        losses: Math.max(0, Math.floor(Number(existing.losses) || 0)),
+        stacks
+      };
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} secretly armed ${stacks} 3-loss payout${stacks === 1 ? "" : "s"} for ${getOwnerLabel(entry.owner)}.`));
     });
 }
 
@@ -37218,7 +37566,7 @@ function armBottomFeederEntries(playedEntries, events) {
     .forEach((entry) => {
       state.bottomFeederRounds[entry.owner] = (state.bottomFeederRounds[entry.owner] || 0) + 1;
       if (isChaosInfusedPower(entry.power)) {
-        state.chaosBottomFeederOwners[entry.owner] = true;
+        addEffectStack(state.chaosBottomFeederOwners, entry.owner);
       }
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
         ? `${entry.power.name} stack ${state.bottomFeederRounds[entry.owner]} pays ${getOwnerLabel(entry.owner)} after losses and adds a stack every round.`
@@ -37237,10 +37585,11 @@ function applyBottomFeederPayouts(deltas, owners, winnerSet, events) {
     events.push(`${getOwnerLabel(participant)} gained ${amount.toLocaleString()} points from ${stacks} Bottom Feeder stack${stacks === 1 ? "" : "s"}.`);
   });
   owners
-    .filter((participant) => state.chaosBottomFeederOwners[participant])
+    .filter((participant) => getEffectStackCount(state.chaosBottomFeederOwners[participant]) > 0)
     .forEach((participant) => {
-      state.bottomFeederRounds[participant] = (state.bottomFeederRounds[participant] || 0) + 1;
-      events.push(`Scavenger added a Bottom Feeder stack to ${getOwnerLabel(participant)}.`);
+      const stacks = getEffectStackCount(state.chaosBottomFeederOwners[participant]);
+      state.bottomFeederRounds[participant] = (state.bottomFeederRounds[participant] || 0) + stacks;
+      events.push(`Scavenger x${stacks} added ${stacks} Bottom Feeder stack${stacks === 1 ? "" : "s"} to ${getOwnerLabel(participant)}.`);
     });
 }
 
@@ -37249,12 +37598,15 @@ function applyWrathLossTriggers(losingOwners, events) {
   Object.keys(state.wrathOwners || {})
     .filter((owner) => losers.has(owner) && getActiveOwners().includes(owner))
     .forEach((owner) => {
-      const target = getRandomOtherOwner(owner);
-      if (!target) {
-        return;
+      const stacks = getEffectStackCount(state.wrathOwners[owner]);
+      for (let stack = 0; stack < stacks; stack += 1) {
+        const target = getRandomOtherOwner(owner);
+        if (!target) {
+          return;
+        }
+        state.wrathBombs = [...(state.wrathBombs || []), { owner, targetOwner: target, round: state.round + 1 }];
+        events.push(`Explosive Temper planted a bomb on ${getOwnerLabel(target)} for next round.`);
       }
-      state.wrathBombs = [...(state.wrathBombs || []), { owner, targetOwner: target, round: state.round + 1 }];
-      events.push(`Explosive Temper planted a bomb on ${getOwnerLabel(target)} for next round.`);
     });
 }
 
@@ -37387,13 +37739,15 @@ function progressInsuranceFrauds(deltas, winnerSet, events) {
     }
     fraud.losses += 1;
     fraud.remaining -= 1;
+    const stacks = getEffectStackCount(fraud) || 1;
     if (fraud.losses >= 3) {
-      deltas[participant] += 4500;
-      setOwnerStreak(participant, getOwnerStreak(participant) + 3);
-      const buff = applyCocktailMix(participant, { buffsOnly: true });
+      const payout = 4500 * stacks;
+      deltas[participant] += payout;
+      setOwnerStreak(participant, getOwnerStreak(participant) + (3 * stacks));
+      const buffs = Array.from({ length: stacks }, () => applyCocktailMix(participant, { buffsOnly: true })).filter(Boolean);
       markAchievementInsuranceTrigger(participant, "fraud");
       delete state.insuranceFrauds[participant];
-      events.push(`${getOwnerLabel(participant)} cashed out 4,500 secret Insurance Fraud points, 3 streak, and ${buff}.`);
+      events.push(`${getOwnerLabel(participant)} cashed out Insurance Fraud x${stacks}: ${payout.toLocaleString()} points, ${3 * stacks} streak${buffs.length ? `, and ${buffs.join(", ")}` : ""}.`);
     } else if (fraud.remaining <= 0) {
       delete state.insuranceFrauds[participant];
     } else {
@@ -37492,8 +37846,8 @@ function createNoCorrectAward() {
   playedEntries
     .filter((entry) => entry.power.type === "eternal_flame")
     .forEach((entry) => {
-      state.eternalFlameProtection[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} now blocks ${getOwnerLabel(entry.owner)}'s streak losses for the rest of the match.`));
+      const stacks = addEffectStack(state.eternalFlameProtection, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} now blocks ${getOwnerLabel(entry.owner)}'s streak losses for the rest of the match.`));
     });
 
   playedEntries
@@ -37559,15 +37913,17 @@ function createNoCorrectAward() {
   playedEntries
     .filter((entry) => entry.power.type === "heaven_hell")
     .forEach((entry) => {
-      state.heavenHellCurses[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} cursed ${getOwnerLabel(entry.owner)} for the rest of the game.`));
+      const stacks = addEffectStack(state.heavenHellCurses, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} curse stack ${stacks} cursed ${getOwnerLabel(entry.owner)} for the rest of the game.`));
     });
 
   owners
-    .filter((participant) => state.heavenHellCurses[participant])
+    .filter((participant) => getEffectStackCount(state.heavenHellCurses[participant]) > 0)
     .forEach((participant) => {
-      deltas[participant] -= 250;
-      events.push(`${getOwnerLabel(participant)} lost 250 points from the Heaven or Hell curse.`);
+      const stacks = getEffectStackCount(state.heavenHellCurses[participant]);
+      const amount = 250 * stacks;
+      deltas[participant] -= amount;
+      events.push(`${getOwnerLabel(participant)} lost ${amount.toLocaleString()} points from Heaven or Hell x${stacks}.`);
     });
 
   playedEntries
@@ -37732,9 +38088,9 @@ function createNoCorrectAward() {
       return !blocked;
     })
     .forEach((entry) => {
-      state.permafrostProtection[entry.owner] = true;
+      const stacks = addEffectStack(state.permafrostProtection, entry.owner);
       queueStatFlash("shield", entry.power.name, "Permanent Shield Armed", { owners: [entry.owner], complex: true });
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} blocks ${getOwnerLabel(entry.owner)}'s point deductions for the rest of the match.`));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} blocks ${getOwnerLabel(entry.owner)}'s point deductions for the rest of the match.`));
     });
 
   let amplifiedMultiplier = 1;
@@ -37968,8 +38324,8 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   playedEntries
     .filter((entry) => entry.power.type === "eternal_flame")
     .forEach((entry) => {
-      state.eternalFlameProtection[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} now blocks ${getOwnerLabel(entry.owner)}'s streak losses for the rest of the match.`));
+      const stacks = addEffectStack(state.eternalFlameProtection, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} now blocks ${getOwnerLabel(entry.owner)}'s streak losses for the rest of the match.`));
     });
 
   playedEntries
@@ -38011,7 +38367,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   });
 
   winners.forEach((winner) => {
-    setOwnerStreak(winner, getOwnerStreak(winner) + (state.superFuelOwners[winner] ? 2 : 1));
+    setOwnerStreak(winner, getOwnerStreak(winner) + 1 + getEffectStackCount(state.superFuelOwners[winner]));
   });
 
   playedEntries
@@ -38274,8 +38630,8 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   playedEntries
     .filter((entry) => !winnerSet.has(entry.owner) && entry.power.type === "heaven_hell")
     .forEach((entry) => {
-      state.heavenHellCurses[entry.owner] = true;
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} cursed ${getOwnerLabel(entry.owner)} for the rest of the game.`));
+      const stacks = addEffectStack(state.heavenHellCurses, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} curse stack ${stacks} cursed ${getOwnerLabel(entry.owner)} for the rest of the game.`));
     });
 
   playedEntries
@@ -38290,10 +38646,12 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     });
 
   owners
-    .filter((participant) => state.heavenHellCurses[participant])
+    .filter((participant) => getEffectStackCount(state.heavenHellCurses[participant]) > 0)
     .forEach((participant) => {
-      deltas[participant] -= 250;
-      events.push(`${getOwnerLabel(participant)} lost 250 points from the Heaven or Hell curse.`);
+      const stacks = getEffectStackCount(state.heavenHellCurses[participant]);
+      const amount = 250 * stacks;
+      deltas[participant] -= amount;
+      events.push(`${getOwnerLabel(participant)} lost ${amount.toLocaleString()} points from Heaven or Hell x${stacks}.`);
     });
 
   playedEntries
@@ -38530,9 +38888,9 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       return !blocked;
     })
     .forEach((entry) => {
-      state.permafrostProtection[entry.owner] = true;
+      const stacks = addEffectStack(state.permafrostProtection, entry.owner);
       queueStatFlash("shield", entry.power.name, "Permanent Shield Armed", { owners: [entry.owner], complex: true });
-      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} blocks ${getOwnerLabel(entry.owner)}'s point deductions for the rest of the match.`));
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} blocks ${getOwnerLabel(entry.owner)}'s point deductions for the rest of the match.`));
     });
 
   const reverseTotal = applyReverseVerdicts(playedEntries, deltas, owners, events);
