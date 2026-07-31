@@ -19240,6 +19240,14 @@ function canPlayPower(owner) {
   return !hasPlayedPowerThisRound(owner) || hasAllOut(owner) || (state.extraPowerUses[owner] || 0) > 0;
 }
 
+function canUseMultiplePowerUpsThisRound(owner) {
+  return Boolean(
+    hasAllOut(owner)
+    || hasPowerDebugUnlimitedUse(owner)
+    || (state.extraPowerUses[owner] || 0) > 0
+  );
+}
+
 function createEmptyPowerSelectionMap() {
   return Object.fromEntries(DEFAULT_OWNER_IDS.map((owner) => [owner, []]));
 }
@@ -25256,6 +25264,8 @@ function getPowerSuggestionText(power, category, context) {
 }
 
 function getActivePowerSuggestion(owner, hand = state.powerHands[owner] || []) {
+  const alreadyCommittedToSingleUse = !canUseMultiplePowerUpsThisRound(owner)
+    && (getSelectedPowerIds(owner).length > 0 || hasPlayedPowerThisRound(owner));
   if (state.powerSuggestionsEnabled === false
     || state.isSpectator
     || !owner
@@ -25266,6 +25276,7 @@ function getActivePowerSuggestion(owner, hand = state.powerHands[owner] || []) {
     || elements.gameStage.classList.contains("hidden")
     || !elements.verdictPanel.classList.contains("hidden")
     || !elements.endPanel.classList.contains("hidden")
+    || alreadyCommittedToSingleUse
     || !canPlayPower(owner)) {
     return null;
   }
