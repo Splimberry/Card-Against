@@ -4916,10 +4916,7 @@ function getQuestionLanguageLabel(language) {
 
 function setupMatchesQuestionLanguage(setup, questionLanguage = getCurrentQuestionLanguage()) {
   const setupLanguage = normalizeQuestionLanguage(setup?.language);
-  if (setup?.questionStyle === MULTIPLE_CHOICE_STYLE) {
-    return setupLanguage === normalizeQuestionLanguage(questionLanguage);
-  }
-  return setupLanguage === "en";
+  return setupLanguage === normalizeQuestionLanguage(questionLanguage);
 }
 
 function getThemeSignature(themes = getEnabledTriviaThemes(), questionLanguage = getCurrentQuestionLanguage()) {
@@ -5709,8 +5706,10 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
 
 function normalizePromptText(text) {
   return String(text || "")
+    .normalize("NFD")
     .toLowerCase()
-    .replace(/[_\W]+/g, " ")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
 
@@ -6572,7 +6571,7 @@ function normalizeTriviaAnswer(answer) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .replace(/\b(the|a|an)\b/g, " ")
     .replace(/\s+/g, " ")
     .trim();
