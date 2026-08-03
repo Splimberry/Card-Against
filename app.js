@@ -6142,7 +6142,7 @@ function getRoundOverlayIconConfig(kind, title, options = {}) {
     coin: { src: "assets/overlays/coin.svg", className: "coin" },
     bounty: { src: "assets/overlays/coin.svg", className: "coin" },
     outage: { src: "assets/modifiers/fast-forward.svg", className: "outage" },
-    sabotage: { src: "assets/modifiers/skull.svg", className: "doom" },
+    sabotage: { src: "assets/modifiers/skull.svg", className: "sabotage" },
     casino: { src: "assets/modifiers/dice.svg", className: "casino" },
     "black-market": { src: "assets/overlays/store.svg", className: "market" },
     negative: { src: "assets/overlays/arrow.svg", className: "negative" },

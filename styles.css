@@ -3071,13 +3071,34 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     rgba(8, 10, 16, 0.84);
 }
 
+.round-overlay-icon.sabotage {
+  --overlay-icon-color: #ff4d7d;
+  background:
+    linear-gradient(135deg, rgba(255, 77, 125, 0.2), rgba(36, 8, 18, 0.32)),
+    rgba(12, 8, 13, 0.88);
+  box-shadow:
+    0 0.7rem 1.4rem rgba(0, 0, 0, 0.28),
+    0 0 0.85rem rgba(255, 77, 125, 0.28),
+    inset 0 0 0.55rem rgba(255, 77, 125, 0.12);
+}
+
 .round-overlay-icon.shield {
   --overlay-icon-color: #83e7ff;
 }
 
-.round-overlay-icon.coin,
-.round-overlay-icon.market {
+.round-overlay-icon.coin {
   --overlay-icon-color: #ffdf79;
+}
+
+.round-overlay-icon.market {
+  --overlay-icon-color: #64dea4;
+  background:
+    linear-gradient(145deg, rgba(64, 222, 164, 0.18), rgba(8, 10, 16, 0.88)),
+    rgba(8, 10, 16, 0.82);
+  box-shadow:
+    0 0.7rem 1.4rem rgba(0, 0, 0, 0.28),
+    0 0 0.85rem rgba(64, 222, 164, 0.28),
+    inset 0 0 0.55rem rgba(64, 222, 164, 0.12);
 }
 
 .round-overlay-icon.outage {
@@ -5389,6 +5410,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     var(--power-rarity-inset-shadow);
   transition:
     transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 300ms cubic-bezier(0.22, 1, 0.36, 1),
     filter 210ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 210ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 210ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -5560,6 +5582,19 @@ button.power-card:focus-visible:not([aria-disabled="true"]):not(.fresh-power):no
 button.power-card.selected:hover:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
 button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
   transform: translateY(-0.08rem) scale(1.026);
+}
+
+/* Chaos cards animate their transform for the glitch effect, so use the
+   independent scale property for hover growth instead of replacing it. */
+button.power-card.chaos-infused:hover:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
+button.power-card.chaos-infused:focus-visible:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
+  scale: 1.018;
+  filter: brightness(1.08);
+}
+
+button.power-card.chaos-infused.selected:hover:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
+button.power-card.chaos-infused.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
+  scale: 1.026;
 }
 
 .power-card.selected {
