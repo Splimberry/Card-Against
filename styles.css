@@ -13350,6 +13350,45 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   mask-image: radial-gradient(circle at center, #000 0 44%, transparent 72%);
 }
 
+.stat-flash.doom.ultimatum::before,
+.stat-flash.doom.ultimatum::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  background-position: center;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stat-flash.doom.ultimatum::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='540' viewBox='0 0 900 540'%3E%3Cdefs%3E%3Cpattern id='d' width='60' height='69.282' patternUnits='userSpaceOnUse'%3E%3Cg fill='none' stroke='%23ff1c4c' stroke-width='1.45' stroke-linejoin='round' stroke-linecap='round' opacity='.72'%3E%3Cpath d='M10 0h20l10 17.321-10 17.32H10L0 17.321 10 0Z'/%3E%3Cpath d='M40-17.321h20L70 0 60 17.321H40L30 0l10-17.321Z'/%3E%3Cpath d='M40 17.321h20l10 17.32-10 17.321H40l-10-17.321 10-17.32Z'/%3E%3Cpath d='M10 34.641h20l10 17.321-10 17.32H10L0 51.962l10-17.321Z'/%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Crect width='900' height='540' fill='url(%23d)'/%3E%3C/svg%3E");
+  background-size: cover;
+  filter:
+    drop-shadow(0 0 0.18rem rgba(255, 28, 76, 0.5))
+    drop-shadow(0 0 0.5rem rgba(168, 85, 247, 0.28));
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%),
+    radial-gradient(circle at center, #000 0 38%, rgba(0, 0, 0, 0.54) 58%, transparent 76%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%),
+    radial-gradient(circle at center, #000 0 38%, rgba(0, 0, 0, 0.54) 58%, transparent 76%);
+  mask-composite: intersect;
+}
+
+.stat-flash.doom.ultimatum::after {
+  inset: 12%;
+  background:
+    radial-gradient(circle at center, rgba(255, 28, 76, 0.2), rgba(168, 85, 247, 0.13) 42%, transparent 72%),
+    repeating-radial-gradient(circle at center, rgba(255, 28, 76, 0.08) 0 0.08rem, transparent 0.08rem 0.7rem);
+  filter: blur(10px);
+  -webkit-mask-image: radial-gradient(circle at center, #000 0 46%, transparent 74%);
+  mask-image: radial-gradient(circle at center, #000 0 46%, transparent 74%);
+}
+
 .stat-flash.sabotage {
   background:
     linear-gradient(90deg, rgba(255, 77, 125, 0.18), transparent 28%, rgba(64, 222, 164, 0.1), transparent 72%, rgba(255, 77, 125, 0.16)),
@@ -13661,6 +13700,14 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .stat-flash.shield.stat-flash-playing::after {
   animation: shieldHexInnerPulse var(--stat-flash-duration, 1150ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stat-flash.doom.ultimatum.stat-flash-playing::before {
+  animation: doomHexPulse var(--stat-flash-duration, 1150ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stat-flash.doom.ultimatum.stat-flash-playing::after {
+  animation: doomHexInnerPulse var(--stat-flash-duration, 1150ms) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .stat-flash.outage.stat-flash-playing {
@@ -14325,6 +14372,64 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   100% {
     opacity: 0;
     transform: scale(1.04);
+  }
+}
+
+@keyframes doomHexPulse {
+  0% {
+    opacity: 0;
+    transform: translateY(0.18rem) scale(0.92) skewX(-1deg);
+    background-position: center -0.2rem;
+  }
+
+  16% {
+    opacity: 0.68;
+    transform: translateY(0) scale(0.99) skewX(0);
+  }
+
+  42% {
+    opacity: 0.46;
+    transform: translateY(-0.04rem) scale(1.02) skewX(0.5deg);
+    background-position: center 0.12rem;
+  }
+
+  72% {
+    opacity: 0.28;
+    transform: translateY(-0.18rem) scale(1.04) skewX(-0.5deg);
+    background-position: center 0.32rem;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-0.48rem) scale(1.08) skewX(1deg);
+    background-position: center 0.52rem;
+  }
+}
+
+@keyframes doomHexInnerPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  18% {
+    opacity: 0.42;
+    transform: scale(0.99);
+  }
+
+  48% {
+    opacity: 0.26;
+    transform: scale(1.02);
+  }
+
+  78% {
+    opacity: 0.14;
+    transform: scale(1.05);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
   }
 }
 

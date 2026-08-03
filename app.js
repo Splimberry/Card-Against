@@ -6300,6 +6300,10 @@ function queueStatFlash(kind, title, detail, options = {}) {
     kind: getPerformanceOverlayKind(kind),
     title: sourceAttribution || cleanTitle,
     detail: cleanDetail,
+    overlayVariant: options.overlayVariant === "ultimatum"
+      || cleanTitle.toLowerCase() === "ultimatum"
+      ? "ultimatum"
+      : "",
     durationMs: getStatFlashDuration(cleanDetail, { ...options, sourceAttribution: Boolean(sourceAttribution) }),
     soundName: options.soundName || getStatFlashSoundName(kind, cleanDetail, options),
     flickerText: state.performanceMode !== "low-power" && state.performanceMode !== "minimal" && Boolean(options.flickerText || shouldFlickerStatFlashText(kind, cleanDetail)),
@@ -6414,9 +6418,12 @@ function playNextStatFlash() {
     next.onTextChange(next.detail);
   }
   flash.style.setProperty("--stat-flash-duration", `${next.durationMs}ms`);
-  flash.classList.remove("positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin", "hidden", "stat-flash-playing");
+  flash.classList.remove("positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin", "ultimatum", "hidden", "stat-flash-playing");
   void flash.offsetWidth;
   flash.classList.add(next.kind, "stat-flash-playing");
+  if (next.overlayVariant) {
+    flash.classList.add(next.overlayVariant);
+  }
   if (next.soundName) {
     playSound(next.soundName);
   }
@@ -6471,7 +6478,7 @@ function clearStatFlashes(options = {}) {
   const flash = document.querySelector("#statFlash");
   if (flash) {
     flash.classList.add("hidden");
-    flash.classList.remove("stat-flash-playing", "positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin");
+    flash.classList.remove("stat-flash-playing", "positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin", "ultimatum");
   }
 }
 
