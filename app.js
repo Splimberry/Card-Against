@@ -457,7 +457,7 @@ const powerDeck = [
   { id: "red_button", name: "Red Button", rarity: "doom", short: "leader nuke", description: "Pick a target. If they are above you, they immediately lose 5,000 points and 3 streak. If they are below you, they gain Impending Doom for the rest of the match.", type: "red_button", targeted: true, immediate: true, doom: true },
   { id: "ultimatum", name: "Ultimatum", rarity: "doom", short: "3x doom shield", description: "For 3 rounds, block all point loss, debuffs, streak loss, and targeting. Each round, players ahead of you lose 10%. Everyone except you gains Explosive for the rest of the match: wrong answers lose 10% of their score.", type: "ultimatum", immediate: true, doom: true },
   { id: "secret_agent", name: "Secret Agent", rarity: "doom", short: "identity scramble", description: "Scramble every other player's name and visible profile style for 3 rounds, then swap your score with a random player ahead of you.", type: "secret_agent", immediate: true, doom: true },
-  { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of streak-loss immunity.", type: "thermal_scythe", targeted: true, immediate: true, doom: true }
+  { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.", type: "thermal_scythe", targeted: true, immediate: true, doom: true }
 ];
 const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
 const chaosInfusedPowerSuffix = "__chaos";
@@ -7782,7 +7782,7 @@ function getActiveEffectEntries() {
       [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", `Impending Doom${formatStackSuffix(doomStacks)}`, "Cannot gain positive status effects. Each stack makes wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
       [hasDoomShield(owner), createActiveEffect(owner, "ultimatum", `Ultimatum x${state.ultimatumRounds[owner]}`, "Blocks point loss, debuffs, streak loss, and targeting. Cannot be removed.")],
       [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", `Explosive${formatStackSuffix(explosiveStacks)}`, "Each stack makes wrong answers lose 10% of this player's score. Cannot be removed.")],
-      [(state.doomStreakGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "thermal_scythe", `Thermal Guard x${state.doomStreakGuardRounds[owner]}`, "Blocks streak loss. Cannot be removed.")],
+      [(state.doomStreakGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "thermal_scythe", `Thermal Guard x${state.doomStreakGuardRounds[owner]}`, "Blocks all streak reductions. Cannot be removed.")],
       [(state.secretAgentRounds?.[owner] || 0) > 0, createActiveEffect(owner, "secret_agent", `Secret Agent x${state.secretAgentRounds[owner]}`, "Scrambles other players' visible identities and style. Cannot be removed.")],
       [thornPercent > 0, createActiveEffect(owner, "thorns", thornPercent > 0.33 ? `Thorns III${formatStackSuffix(Math.round(thornPercent / 0.33))}` : "Thorns", `Reflects ${Math.round(thornPercent * 100)}% of this player's scoring losses to everyone else.`, { chaosInfused: thornPercent > 0.33 })],
       [getEffectStackCount(state.hotInHereOwners[owner]) > 0, createActiveEffect(owner, "hot_in_here", `It's Getting Hot${formatStackSuffix(getEffectStackCount(state.hotInHereOwners[owner]))}`, "At round start, each stack makes everyone else lose 5% x (this player's streak - 1).")],
@@ -19225,7 +19225,7 @@ function getSecretAgentMaskedLabel(owner) {
 }
 
 function setOwnerStreak(owner, value, options = {}) {
-  if (!options.force && value < getOwnerStreak(owner) && hasDoomStreakGuard(owner)) {
+  if (value < getOwnerStreak(owner) && hasDoomStreakGuard(owner)) {
     queueStatFlash("doom", "Doom Guard", "Streak Locked", { owners: [owner], complex: true });
     return;
   }

@@ -1147,7 +1147,7 @@
     "Pick a target. If they are above you, they immediately lose 5,000 points and 3 streak. If they are below you, they gain Impending Doom for the rest of the match.": "选择一个目标。如果他领先你，他立刻失去 5,000 分和 3 连胜。如果他落后你，他获得持续整场的迫近末日。",
     "For 3 rounds, block all point loss, debuffs, streak loss, and targeting. Each round, players ahead of you lose 10%. Everyone except you gains Explosive for the rest of the match: wrong answers lose 10% of their score.": "持续 3 回合，阻挡所有扣分、负面效果、连胜损失和指定目标。每回合领先你的玩家失去 10%。除你以外所有人获得持续整场的爆炸状态：答错会失去 10% 分数。",
     "Scramble every other player's name and visible profile style for 3 rounds, then swap your score with a random player ahead of you.": "扰乱其他所有玩家的名字和可见档案样式 3 回合，然后与随机一名领先你的玩家交换分数。",
-    "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of streak-loss immunity.": "选择一个目标。从其他所有人身上偷最多 3 连胜，然后按 500 x 你的连胜加 2% x 你的连胜攻击目标。他剩余的连胜转给你，并且你获得 3 回合连胜损失免疫。"
+    "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.": "选择一个目标。从其他所有人身上偷最多 3 连胜，然后按 500 x 你的连胜加 2% x 你的连胜攻击目标。他剩余的连胜转给你，并且你获得 3 回合所有连胜减少免疫。"
   });
 
   Object.assign(zhHans, {
