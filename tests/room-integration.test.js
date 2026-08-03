@@ -3758,6 +3758,58 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
 }
 
+async function testRoomUsesStoredHostQuestionLanguage() {
+  const code = makeCode(8143);
+  const room = makeRoom(code, {
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ]
+  });
+  room.settings.questionLanguage = "zh-Hans";
+  await upsertRoom(room);
+
+  const started = await roomRoundAdvancingCommand(code, {
+    hostParticipantId: "host-client",
+    matchId: `${code}-match`,
+    round: 1,
+    matchSettings: {
+      rounds: 5,
+      timerSeconds: 30,
+      maxPlayers: 5,
+      enabledThemes: ["Science"]
+    }
+  });
+  assert.equal(started.response.status, 200, started.payload.error);
+  assert.equal(started.payload.game.matchSettings.questionLanguage, "zh-Hans");
+  assert.equal(started.payload.game.setup.language, "zh-Hans");
+  assert.equal(started.payload.room.settings.questionLanguage, "zh-Hans");
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.settings.questionLanguage, "zh-Hans");
+  assert.equal(stored.payload.room.game.matchSettings.questionLanguage, "zh-Hans");
+  assert.equal(stored.payload.room.game.setup.language, "zh-Hans");
+}
+
 async function testRoomStartMatchPreservesInitialPowerState() {
   const code = makeCode(8142);
   const matchId = `${code}-match`;
@@ -6657,6 +6709,7 @@ async function main() {
   await testRoomRoundSetupEndpointCreatesSharedSetup();
   await testRoomRoundSetupRecoversMissingPreparationState();
   await testRoomRoundSetupCannotSkipPreparedRound();
+  await testRoomUsesStoredHostQuestionLanguage();
   await testStaleRoomRoundAdvancingCannotOverwriteCurrentRound();
   await testDelayedRoomRoundAdvancingCannotClearStartedSetup();
   await testStaleRoomSetupCannotOverwriteGrading();

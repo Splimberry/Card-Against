@@ -3219,6 +3219,15 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   }
 
   const matchSettings = normalizeRoomGameSettings(command.payload.matchSettings || command.payload.settings || currentGame?.matchSettings || room.settings);
+  const questionLanguage = normalizeQuestionLanguage(
+    command.payload.questionLanguage
+      || command.payload.language
+      || command.payload.matchSettings?.questionLanguage
+      || command.payload.settings?.questionLanguage
+      || room.settings?.questionLanguage
+      || matchSettings.questionLanguage
+  );
+  matchSettings.questionLanguage = questionLanguage;
   applyRoomRoundPreparationState(room, {
     normalizedCode: room.code,
     currentGame: startsNewMatch ? null : currentGame,
@@ -3231,7 +3240,6 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
 
   const enabledThemes = normalizeEnabledThemes(command.payload.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
   const preferredTheme = normalizePreferredTheme(command.payload.preferredTheme, enabledThemes);
-  const questionLanguage = normalizeQuestionLanguage(command.payload.questionLanguage || command.payload.language);
   const recentBlackCards = Array.isArray(command.payload.recentBlackCards) ? command.payload.recentBlackCards.map(String).slice(-30) : [];
   const totalRounds = clampServerNumber(command.payload.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
   const setupSeed = String(command.payload.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
@@ -3404,6 +3412,15 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
   let currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
   const round = clampServerNumber(command.payload.round || currentRound, 1, 100, currentRound || 1);
   const matchSettings = normalizeRoomGameSettings(command.payload.matchSettings || command.payload.settings || currentGame?.matchSettings || room.settings);
+  const questionLanguage = normalizeQuestionLanguage(
+    command.payload.questionLanguage
+      || command.payload.language
+      || command.payload.matchSettings?.questionLanguage
+      || command.payload.settings?.questionLanguage
+      || room.settings?.questionLanguage
+      || matchSettings.questionLanguage
+  );
+  matchSettings.questionLanguage = questionLanguage;
   const activeMatchInProgress = room.status === "in-progress" && currentGame && currentGame.status !== "ended";
 
   if (activeMatchInProgress && currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
@@ -3450,7 +3467,6 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
 
   const enabledThemes = normalizeEnabledThemes(command.payload.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
   const preferredTheme = normalizePreferredTheme(command.payload.preferredTheme, enabledThemes);
-  const questionLanguage = normalizeQuestionLanguage(command.payload.questionLanguage || command.payload.language);
   const recentBlackCards = Array.isArray(command.payload.recentBlackCards) ? command.payload.recentBlackCards.map(String).slice(-30) : [];
   const totalRounds = clampServerNumber(command.payload.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
   const setupSeed = String(command.payload.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
@@ -5394,6 +5410,7 @@ function normalizeRoomSettings(settings = {}, code = "") {
     rounds: clampServerNumber(source.rounds, 1, 10, 10),
     timerSeconds: clampServerNumber(source.timerSeconds, 10, 60, 30),
     maxPlayers: clampServerNumber(source.maxPlayers, 2, 10, 5),
+    questionLanguage: normalizeQuestionLanguage(source.questionLanguage || source.language),
     harsh: classicMode ? false : Boolean(source.harsh),
     chaos: classicMode ? false : Boolean(source.chaos),
     timeMoney: classicMode ? false : Boolean(source.timeMoney),
@@ -5910,6 +5927,7 @@ function normalizeRoomGameSettings(settings = {}) {
     rounds: clampServerNumber(source.rounds, 1, 10, 10),
     timerSeconds: clampServerNumber(source.timerSeconds, 10, 60, 30),
     maxPlayers: clampServerNumber(source.maxPlayers, 2, 10, 5),
+    questionLanguage: normalizeQuestionLanguage(source.questionLanguage || source.language),
     harsh: classicMode ? false : Boolean(source.harsh),
     chaos: classicMode ? false : Boolean(source.chaos),
     timeMoney: classicMode ? false : Boolean(source.timeMoney),

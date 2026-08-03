@@ -3156,6 +3156,7 @@ const state = {
     rounds: 10,
     timerSeconds: 30,
     maxPlayers: 5,
+    questionLanguage: getCurrentQuestionLanguage(),
     harsh: false,
     chaos: false,
     timeMoney: false,
@@ -4958,6 +4959,11 @@ function getCurrentQuestionLanguage() {
   return normalizeQuestionLanguage(window.CardsAgainstAiI18n?.getLanguage?.() || "en");
 }
 
+function getRoomQuestionLanguage(settings = state.roomSettings) {
+  const source = settings && typeof settings === "object" ? settings : {};
+  return normalizeQuestionLanguage(source.questionLanguage || getCurrentQuestionLanguage());
+}
+
 function getQuestionLanguageLabel(language) {
   return questionLanguages[normalizeQuestionLanguage(language)]?.label || questionLanguages.en.label;
 }
@@ -5695,7 +5701,7 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
   const timingOptions = getRoundSetupTimingOptions(options);
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = options.preferredTheme || "";
-  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
+  const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getRoomQuestionLanguage());
   const setupSeed = String(options.setupSeed || `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 80);
   const clientEventId = String(options.clientEventId || createRoomSyncCommandId("prepare-round", state.roomSettings.code)).slice(0, 160);
 
@@ -16181,6 +16187,7 @@ function getRoomMatchSettingsPayload(settings = state.roomSettings) {
     rounds: clampNumber(source.rounds, 1, 10, 10),
     timerSeconds: clampNumber(source.timerSeconds, 10, 60, 30),
     maxPlayers: clampNumber(source.maxPlayers, 2, 10, 5),
+    questionLanguage: getRoomQuestionLanguage(source),
     harsh: classicMode ? false : Boolean(source.harsh),
     chaos: classicMode ? false : Boolean(source.chaos),
     timeMoney: classicMode ? false : Boolean(source.timeMoney),
@@ -32672,6 +32679,7 @@ function getDefaultRoomSettings(code = "CAI-0000") {
     rounds: 10,
     timerSeconds: 30,
     maxPlayers: 5,
+    questionLanguage: getCurrentQuestionLanguage(),
     harsh: false,
     chaos: false,
     timeMoney: false,
@@ -34649,6 +34657,7 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     nextRoundAt: options.autoAdvance ? Math.max(0, Number(getRoomRoundResultForCurrentRound()?.nextRoundAt) || 0) : 0,
     matchId,
     matchSettings,
+    questionLanguage: matchSettings.questionLanguage,
     totalRounds: setupOptions.totalRounds,
     recentBlackCards: state.recentBlackCards,
     enabledThemes: getEnabledTriviaThemes(),
@@ -35555,6 +35564,7 @@ function getHostedRoomsRenderSignature(visibleRooms = []) {
     maxPlayers: getRoomMaxPlayers(room.settings),
     spectators: Number(room.spectators) || 0,
     private: Boolean(room.settings?.private),
+    questionLanguage: getRoomQuestionLanguage(room.settings),
     mode: getRoomModeLabel(room.settings),
     host: {
       id: room.host?.id || "",
@@ -35671,6 +35681,15 @@ function renderHostedRooms(options = {}) {
       emptyText: "No Modifiers"
     });
     meta.appendChild(modifierChip);
+    const questionLanguage = getRoomQuestionLanguage(room.settings);
+    const languagePill = document.createElement("span");
+    languagePill.className = "join-room-language-pill";
+    languagePill.textContent = questionLanguages[questionLanguage]?.shortLabel || questionLanguages.en.shortLabel;
+    languagePill.title = getQuestionLanguageLabel(questionLanguage);
+    languagePill.setAttribute("aria-label", `Question language: ${getQuestionLanguageLabel(questionLanguage)}`);
+    languagePill.dataset.description = getQuestionLanguageLabel(questionLanguage);
+    attachFloatingDescriptionTooltip(languagePill);
+    meta.appendChild(languagePill);
     details.append(host, meta);
     const actions = document.createElement("div");
     actions.className = "join-room-actions";
