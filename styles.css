@@ -2952,7 +2952,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   position: absolute;
   top: 0.72rem;
   left: 0.72rem;
-  z-index: 46;
+  z-index: 140;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
@@ -3006,6 +3006,24 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   object-fit: contain;
   filter: brightness(0) invert(1) drop-shadow(0 0 0.42rem color-mix(in srgb, var(--overlay-icon-color) 80%, transparent));
   opacity: 0.96;
+}
+
+/* Round effect details need room to expand beside the icon and above the game UI. */
+.round-overlay-icon[data-tooltip] {
+  --tooltip-hidden-transform: translate(0.45rem, -50%) scale(0.94);
+  --tooltip-visible-transform: translate(0, -50%) scale(1);
+}
+
+.round-overlay-icon[data-tooltip]::after {
+  top: 50%;
+  bottom: auto;
+  left: calc(100% + 0.55rem);
+  z-index: 9999;
+  box-sizing: border-box;
+  max-width: min(19rem, calc(100vw - 4rem));
+  text-align: left;
+  white-space: pre-line;
+  transform-origin: 0 50%;
 }
 
 .round-overlay-icon.positive {
