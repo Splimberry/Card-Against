@@ -3026,6 +3026,12 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   transform-origin: 0 50%;
 }
 
+.round-overlay-icon[data-tooltip]:hover,
+.round-overlay-icon[data-tooltip]:focus-visible {
+  z-index: 10000;
+  overflow: visible;
+}
+
 .round-overlay-icon.positive {
   --overlay-icon-color: #64dea4;
 }
