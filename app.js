@@ -1153,6 +1153,7 @@ const loserBadgeTiers = [
   { minScore: 0, label: "Incorrect", bonus: 0 }
 ];
 const MULTIPLE_CHOICE_STYLE = "multiple-choice";
+const QUESTION_DEBUG_PASSED_IDS_KEY = "cards-against-ai:question-debug:passed-new-questions";
 const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
 const gradingStrictnessLabels = {
   forgiving: "Forgiving",
@@ -3911,6 +3912,7 @@ const elements = {
   devQuestionThemeFilter: null,
   devQuestionTypeFilter: null,
   devQuestionLanguageFilter: null,
+  devQuestionPassNewButton: null,
   devQuestionCounts: null,
   devQuestionResults: null,
   devQuestionCounter: null,
@@ -27297,7 +27299,10 @@ function buildDevToolScreen() {
             <option value="all">All questions</option>
             <option value="image">Image only</option>
             <option value="text">Text only</option>
-            <option value="multiple-choice">Multiple choice</option>
+            <option value="image-mcq">Image MCQ</option>
+            <option value="text-mcq">Text MCQ</option>
+            <option value="multiple-choice">All multiple choice</option>
+            <option value="newly-added">Newly added</option>
           </select>
         </label>
         <label>
@@ -27316,6 +27321,7 @@ function buildDevToolScreen() {
           <button type="button" class="icon-button" id="devQuestionCheckImagesButton">Broken Image Check</button>
           <button type="button" class="icon-button" id="devQuestionLeastSeenButton">Least Seen</button>
           <button type="button" class="icon-button" id="devQuestionMostRepeatedButton">Most Repeated</button>
+          <button type="button" class="icon-button" id="devQuestionPassNewButton">Pass New Batch</button>
         </div>
         <div class="debug-status" id="devQuestionToolsStatus">Question tools ready.</div>
         <div class="dev-question-tool-results" id="devQuestionToolsResults"></div>
@@ -27644,6 +27650,7 @@ function buildDevToolScreen() {
   elements.devQuestionThemeFilter = screen.querySelector("#devQuestionThemeFilter");
   elements.devQuestionTypeFilter = screen.querySelector("#devQuestionTypeFilter");
   elements.devQuestionLanguageFilter = screen.querySelector("#devQuestionLanguageFilter");
+  elements.devQuestionPassNewButton = screen.querySelector("#devQuestionPassNewButton");
   elements.devQuestionCounts = screen.querySelector("#devQuestionCounts");
   elements.devQuestionResults = screen.querySelector("#devQuestionResults");
   elements.devQuestionCounter = screen.querySelector("#devQuestionCounter");
@@ -27792,6 +27799,7 @@ function bindDevToolEvents() {
   elements.devQuestionCheckImagesButton.addEventListener("click", checkQuestionImageUrls);
   elements.devQuestionLeastSeenButton.addEventListener("click", () => renderQuestionUsageReport("least"));
   elements.devQuestionMostRepeatedButton.addEventListener("click", () => renderQuestionUsageReport("most"));
+  elements.devQuestionPassNewButton.addEventListener("click", passNewQuestionBatch);
   elements.devQuestionToolsResults.addEventListener("click", (event) => {
     const button = event.target.closest("[data-question-tool-focus]");
     if (button) {
@@ -29813,6 +29821,58 @@ async function loadQuestionDebugBank(force = false) {
   }
 }
 
+function getQuestionDebugPassedIds() {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(QUESTION_DEBUG_PASSED_IDS_KEY) || "[]");
+    return new Set(Array.isArray(stored) ? stored.map((id) => String(id || "").trim()).filter(Boolean) : []);
+  } catch (error) {
+    console.warn("Could not read passed question debug state:", error);
+    return new Set();
+  }
+}
+
+function saveQuestionDebugPassedIds(ids) {
+  try {
+    window.localStorage.setItem(QUESTION_DEBUG_PASSED_IDS_KEY, JSON.stringify([...ids].slice(-5000)));
+    return true;
+  } catch (error) {
+    console.warn("Could not save passed question debug state:", error);
+    return false;
+  }
+}
+
+function isQuestionDebugNew(question, passedIds = getQuestionDebugPassedIds()) {
+  return Boolean(question?.debugBatch) && !passedIds.has(String(question.id || ""));
+}
+
+function updateQuestionDebugPassButton() {
+  if (!elements.devQuestionPassNewButton) {
+    return;
+  }
+  const passedIds = getQuestionDebugPassedIds();
+  const count = state.questionDebugBank.filter((question) => isQuestionDebugNew(question, passedIds)).length;
+  elements.devQuestionPassNewButton.disabled = count === 0;
+  elements.devQuestionPassNewButton.textContent = count ? `Pass New Batch (${count})` : "New Batch Passed";
+}
+
+function passNewQuestionBatch() {
+  const passedIds = getQuestionDebugPassedIds();
+  const newQuestions = state.questionDebugBank.filter((question) => isQuestionDebugNew(question, passedIds));
+  if (!newQuestions.length) {
+    elements.devQuestionToolsStatus.textContent = "There are no unpassed newly added questions.";
+    updateQuestionDebugPassButton();
+    return;
+  }
+  newQuestions.forEach((question) => passedIds.add(String(question.id)));
+  if (!saveQuestionDebugPassedIds(passedIds)) {
+    elements.devQuestionToolsStatus.textContent = "Could not save the passed-question list in this browser.";
+    return;
+  }
+  elements.devQuestionToolsStatus.textContent = `Passed ${newQuestions.length} newly added question${newQuestions.length === 1 ? "" : "s"}. They are hidden from the Newly added view in this browser.`;
+  updateQuestionDebugPassButton();
+  filterQuestionDebugBank();
+}
+
 function renderQuestionDebugCounts(counts = {}) {
   elements.devQuestionCounts.replaceChildren();
   const selectedTheme = elements.devQuestionThemeFilter?.value || "all";
@@ -29856,6 +29916,7 @@ function filterQuestionDebugBank() {
   const theme = elements.devQuestionThemeFilter.value;
   const type = elements.devQuestionTypeFilter.value;
   const language = elements.devQuestionLanguageFilter?.value || "all";
+  const passedIds = getQuestionDebugPassedIds();
   renderQuestionDebugCounts();
   elements.devQuestionCounts.querySelectorAll(".dev-count-chip").forEach((button) => {
     button.classList.toggle("selected", button.dataset.theme === theme);
@@ -29868,10 +29929,20 @@ function filterQuestionDebugBank() {
     if (language !== "all" && questionLanguage !== language) {
       return false;
     }
-    if (type === "multiple-choice" && question.questionStyle !== MULTIPLE_CHOICE_STYLE) {
+    const isMultipleChoice = question.questionStyle === MULTIPLE_CHOICE_STYLE;
+    if (type === "image-mcq" && !(question.type === "image" && isMultipleChoice)) {
       return false;
     }
-    if (type !== "all" && type !== "multiple-choice" && question.type !== type) {
+    if (type === "text-mcq" && !(question.type === "text" && isMultipleChoice)) {
+      return false;
+    }
+    if (type === "multiple-choice" && !isMultipleChoice) {
+      return false;
+    }
+    if (type === "newly-added" && !isQuestionDebugNew(question, passedIds)) {
+      return false;
+    }
+    if (type !== "all" && !["image-mcq", "text-mcq", "multiple-choice", "newly-added"].includes(type) && question.type !== type) {
       return false;
     }
     if (!query) {
@@ -29896,6 +29967,7 @@ function filterQuestionDebugBank() {
     return normalizeTriviaAnswer(haystack).includes(query);
   });
   state.questionDebugIndex = Math.min(Math.max(0, state.questionDebugIndex), Math.max(0, state.questionDebugFiltered.length - 1));
+  updateQuestionDebugPassButton();
   renderQuestionDebugResults();
   renderQuestionDebugPreview();
 }
@@ -29918,7 +29990,7 @@ function renderQuestionDebugResults() {
     button.dataset.questionDebugIndex = String(index);
     const answer = document.createElement("span");
     answer.textContent = question.canonicalAnswer || "-";
-    button.dataset.tooltip = `${question.id} - ${question.theme} - ${getQuestionLanguageLabel(question.language)} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ` - ${getGradingStrictnessLabel(question.gradingStrictness)}`}`;
+    button.dataset.tooltip = `${question.id} - ${question.theme} - ${getQuestionLanguageLabel(question.language)} - ${question.difficulty} - ${question.type}${question.questionStyle === MULTIPLE_CHOICE_STYLE ? " - multiple choice" : ` - ${getGradingStrictnessLabel(question.gradingStrictness)}`}${question.debugBatch ? " - newly added" : ""}`;
     button.append(answer);
     elements.devQuestionResults.appendChild(button);
   });
@@ -29968,6 +30040,7 @@ function renderQuestionDebugPreview() {
     getQuestionLanguageLabel(question.language),
     question.type === "image" ? "Image" : "Text",
     question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Multiple choice" : "",
+    question.debugBatch ? "New batch" : "",
     question.questionStyle === MULTIPLE_CHOICE_STYLE ? "Exact option" : getGradingStrictnessLabel(question.gradingStrictness),
     normalizeDifficulty(question.difficulty)
   ].filter(Boolean).forEach((text) => {
@@ -29988,7 +30061,7 @@ function renderQuestionDebugPreview() {
       ? `Rejected: ${question.rejectedAnswers.join(", ")}`
       : "No explicit rejections listed.";
   }
-  elements.devQuestionStatus.textContent = `Seed id: ${question.id}`;
+  elements.devQuestionStatus.textContent = `Seed id: ${question.id}${question.debugBatch ? ` · Batch: ${question.debugBatch}` : ""}`;
   renderDevQuestionImage(question);
   resetDevQuestionGradingTester(question.questionStyle === MULTIPLE_CHOICE_STYLE
     ? "Multiple choice uses exact option marking. Type or click an option to test it."
@@ -31096,6 +31169,7 @@ function normalizeDevQuestionIdForComparison(id) {
 }
 
 function getDevQuestionCreatePayload() {
+  const editingQuestion = state.questionDebugBank.find((question) => question.id === state.questionEditOriginalId);
   const payload = {
     id: formatDevQuestionId(elements.devCreateId.value),
     type: elements.devCreateType.value,
@@ -31106,6 +31180,7 @@ function getDevQuestionCreatePayload() {
       : normalizeGradingStrictness(elements.devCreateStrictness?.value),
     theme: elements.devCreateTheme.value,
     difficulty: elements.devCreateDifficulty.value,
+    ...(editingQuestion?.debugBatch ? { debugBatch: editingQuestion.debugBatch } : {}),
     question: elements.devCreateQuestion.value.trim(),
     canonicalAnswer: elements.devCreateCanonical.value.trim(),
     acceptedAnswers: parseCommaSeparatedAnswers(elements.devCreateAccepted.value),

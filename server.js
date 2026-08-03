@@ -1700,6 +1700,7 @@ async function handleDebugQuestions(res) {
       gradingStrictness: normalizeGradingStrictness(question.gradingStrictness),
       theme: question.theme,
       difficulty: question.difficulty,
+      debugBatch: question.debugBatch,
       question: question.blackCard,
       image: question.image,
       canonicalAnswer: question.canonicalAnswer,
@@ -1954,6 +1955,7 @@ function normalizeCreatedQuestion(body) {
     ? "multiple-choice"
     : "standard";
   const language = normalizeQuestionLanguage(source.language || source.questionLanguage);
+  const debugBatch = normalizeQuestionDebugBatch(source.debugBatch);
   const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
   const question = String(source.question || "").trim().replace(/\s+/g, " ").slice(0, 260);
   const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
@@ -1993,6 +1995,7 @@ function normalizeCreatedQuestion(body) {
     gradingStrictness,
     theme,
     difficulty,
+    ...(debugBatch ? { debugBatch } : {}),
     question,
     canonicalAnswer,
     acceptedAnswers: uniqueAnswers(acceptedAnswers).slice(0, 16),
@@ -6467,6 +6470,14 @@ function normalizeQuestionLanguage(language) {
   return "en";
 }
 
+function normalizeQuestionDebugBatch(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100);
+}
+
 function loadQuestionBank() {
   const filePath = join(root, "data", "questions.json");
   if (!existsSync(filePath)) {
@@ -6536,6 +6547,7 @@ function normalizeSeedQuestion(question) {
     : "standard";
   const language = normalizeQuestionLanguage(source.language || source.questionLanguage);
   const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
+  const debugBatch = normalizeQuestionDebugBatch(source.debugBatch);
   const theme = triviaThemes.includes(source.theme) ? source.theme : "Pop Culture";
   const blackCard = String(source.question || source.blackCard || "").trim().replace(/\s+/g, " ").slice(0, 220);
   const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
@@ -6586,6 +6598,7 @@ function normalizeSeedQuestion(question) {
     gradingStrictness,
     theme,
     difficulty: String(source.difficulty || "medium").trim().slice(0, 30),
+    ...(debugBatch ? { debugBatch } : {}),
     blackCard,
     image: type === "image"
       ? {

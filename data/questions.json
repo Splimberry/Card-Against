@@ -22257,5 +22257,5105 @@
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
+  },
+  {
+    "id": "chinese-popculture-mcq-toy-story-first-pixar",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "皮克斯第一部院线长片是哪部电影？",
+    "canonicalAnswer": "玩具总动员",
+    "multipleChoiceOptions": [
+      "虫虫危机",
+      "玩具总动员",
+      "怪物史莱克",
+      "钢铁巨人"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-central-perk",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "《老友记》中，主角们经常聚会的咖啡馆叫什么？",
+    "canonicalAnswer": "中央公园咖啡馆",
+    "multipleChoiceOptions": [
+      "莫妮卡咖啡馆",
+      "中央公园咖啡馆",
+      "麦克拉伦酒吧",
+      "咖啡神经"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-katniss-everdeen",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "《饥饿游戏》小说和电影的女主角是谁？",
+    "canonicalAnswer": "凯特尼斯·伊夫狄恩",
+    "multipleChoiceOptions": [
+      "翠丝·普赖尔",
+      "凯特尼斯·伊夫狄恩",
+      "克拉丽·弗雷",
+      "贝拉·斯旺"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-neo-actor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《黑客帝国》中饰演尼奥的是哪位演员？",
+    "canonicalAnswer": "基努·里维斯",
+    "multipleChoiceOptions": [
+      "基努·里维斯",
+      "约翰尼·德普",
+      "克里斯蒂安·贝尔",
+      "布拉德·皮特"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-spirited-away-director",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "动画电影《千与千寻》是哪位导演的作品？",
+    "canonicalAnswer": "宫崎骏",
+    "multipleChoiceOptions": [
+      "细田守",
+      "新海诚",
+      "宫崎骏",
+      "今敏"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-dunder-mifflin-product",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《办公室》里的邓德·米夫林公司主要销售什么产品？",
+    "canonicalAnswer": "纸张",
+    "multipleChoiceOptions": [
+      "打印机",
+      "纸张",
+      "办公椅",
+      "办公软件"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-bad-guy-singer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "热门歌曲《Bad Guy》是哪位歌手发布的？",
+    "canonicalAnswer": "比莉·艾利什",
+    "multipleChoiceOptions": [
+      "洛德",
+      "比莉·艾利什",
+      "奥莉维亚·罗德里戈",
+      "杜阿·利帕"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-minas-tirith",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《指环王》中，刚铎的首都是哪座城市？",
+    "canonicalAnswer": "米那斯提力斯",
+    "multipleChoiceOptions": [
+      "米那斯魔窟",
+      "奥斯吉力亚斯",
+      "埃多拉斯",
+      "米那斯提力斯"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-the-wire-city",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "犯罪剧《火线》主要以美国哪座城市为背景？",
+    "canonicalAnswer": "巴尔的摩",
+    "multipleChoiceOptions": [
+      "巴尔的摩",
+      "底特律",
+      "费城",
+      "芝加哥"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-mcq-blue-box-doctor-who",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《神秘博士》中，博士的蓝色警亭时光机器叫什么？",
+    "canonicalAnswer": "TARDIS",
+    "multipleChoiceOptions": [
+      "TARDIS",
+      "博格方块",
+      "宁静号",
+      "诺斯特罗莫号"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-blade-runner-origami",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《银翼杀手》中，哪种反复出现的小物件与盖夫关系最密切？",
+    "canonicalAnswer": "折纸",
+    "multipleChoiceOptions": [
+      "折纸",
+      "银币",
+      "棋子",
+      "拍立得照片"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-twin-peaks-pie",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《双峰》中，库珀探员反复称赞哪种餐厅甜点？",
+    "canonicalAnswer": "樱桃派",
+    "multipleChoiceOptions": [
+      "苹果酥",
+      "樱桃派",
+      "柠檬挞",
+      "巧克力蛋糕"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-akira-bike",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《阿基拉》中，哪位角色因红色摩托车滑行镜头而闻名？",
+    "canonicalAnswer": "金田",
+    "multipleChoiceOptions": [
+      "铁雄",
+      "金田",
+      "圭",
+      "山形"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-office-teapot",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《办公室》中，吉姆送给帕姆的圣诞礼物藏在什么东西里？",
+    "canonicalAnswer": "茶壶",
+    "multipleChoiceOptions": [
+      "茶壶",
+      "订书机",
+      "雪球摆件",
+      "咖啡杯"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-spinal-tap-amp",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《摇滚万万岁》中，乐队的功放音量最高可以调到几？",
+    "canonicalAnswer": "11",
+    "multipleChoiceOptions": [
+      "10",
+      "11",
+      "12",
+      "13"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-watchmen-comedian-pin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《守望者》中，带血笑脸徽章属于哪位角色？",
+    "canonicalAnswer": "笑匠",
+    "multipleChoiceOptions": [
+      "罗夏",
+      "笑匠",
+      "奥兹曼迪亚斯",
+      "夜枭"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-mad-men-carousel",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《广告狂人》中，唐·德雷珀著名的“旋转木马”提案是为哪家公司做的？",
+    "canonicalAnswer": "柯达",
+    "multipleChoiceOptions": [
+      "柯达",
+      "宝丽来",
+      "尼康",
+      "徕卡"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-star-trek-kobayashi",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《星际迷航》中，小林丸最出名的是哪种测试？",
+    "canonicalAnswer": "无胜算情境测试",
+    "multipleChoiceOptions": [
+      "无胜算情境测试",
+      "曲速试验",
+      "医学考试",
+      "外交仪式"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-buffy-library",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《吸血鬼猎人巴菲》中，吉尔斯在桑尼代尔高中担任什么职务？",
+    "canonicalAnswer": "图书管理员",
+    "multipleChoiceOptions": [
+      "图书管理员",
+      "历史老师",
+      "校长",
+      "学校辅导员"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-textmcq-inception-totem",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《盗梦空间》中，柯布的图腾最常被呈现为什么物品？",
+    "canonicalAnswer": "旋转陀螺",
+    "multipleChoiceOptions": [
+      "灌铅骰子",
+      "国际象棋象",
+      "旋转陀螺",
+      "黄铜钥匙"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-midnight-cowboy-line",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪部电影最著名地出现了即兴喊出的“我走这儿呢！”？",
+    "canonicalAnswer": "《午夜牛郎》",
+    "multipleChoiceOptions": [
+      "《午夜牛郎》",
+      "《出租车司机》",
+      "《热天午后》",
+      "《法国贩毒网》"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-matrix-agents",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《黑客帝国》中负责监管模拟世界的西装程序通常被称为什么？",
+    "canonicalAnswer": "特工",
+    "multipleChoiceOptions": [
+      "特工",
+      "架构师",
+      "操作员",
+      "哨兵"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-parks-jjs-diner",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《公园与游憩》中，莱斯莉·诺普最喜欢的华夫饼餐厅叫什么？",
+    "canonicalAnswer": "JJ餐厅",
+    "multipleChoiceOptions": [
+      "JJ餐厅",
+      "卢氏咖啡馆",
+      "胖汉堡",
+      "蛇洞酒廊"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-kiki-witch",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪部吉卜力电影讲述一位年轻女巫在海滨城市开始快递服务？",
+    "canonicalAnswer": "《魔女宅急便》",
+    "multipleChoiceOptions": [
+      "《魔女宅急便》",
+      "《侧耳倾听》",
+      "《龙猫》",
+      "《岁月的童话》"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-godfather-woltz",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《教父》中，马头场景是为了迫使杰克·沃尔兹做什么？",
+    "canonicalAnswer": "让约翰尼·方坦出演电影",
+    "multipleChoiceOptions": [
+      "让约翰尼·方坦出演电影",
+      "卖掉他的电影公司",
+      "撤回对柯里昂家族的诉讼",
+      "向克莱门扎支付保护费"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-michael-scott-book",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《办公室》中，迈克尔·斯科特那本未完成的商业书籍与哪句话同名？",
+    "canonicalAnswer": "我总能搞定",
+    "multipleChoiceOptions": [
+      "我总能搞定",
+      "这就是她说的",
+      "世界最佳老板",
+      "午夜威胁"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-stranger-things-lab",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《怪奇物语》中，十一号早年的经历与哪处设施最直接相关？",
+    "canonicalAnswer": "霍金斯国家实验室",
+    "multipleChoiceOptions": [
+      "霍金斯国家实验室",
+      "星庭研究附楼",
+      "布伦纳纪念医院",
+      "莱诺拉山研究所"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-citizen-kane-rosebud",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪部电影把“玫瑰花蕾”变成了核心谜团？",
+    "canonicalAnswer": "《公民凯恩》",
+    "multipleChoiceOptions": [
+      "《公民凯恩》",
+      "《卡萨布兰卡》",
+      "《日落大道》",
+      "《第三人》"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-princess-bride-poison",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《公主新娘》中，智斗围绕哪种据称无色无味的毒药展开？",
+    "canonicalAnswer": "伊奥卡因粉",
+    "multipleChoiceOptions": [
+      "伊奥卡因粉",
+      "茄根萃取物",
+      "西西里毒堇",
+      "韦斯利根"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-popculture-hardmcq2-festivus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "虚构节日“Festivus”与哪部情景喜剧关系最密切？",
+    "canonicalAnswer": "《宋飞正传》",
+    "multipleChoiceOptions": [
+      "《宋飞正传》",
+      "《欢乐一家亲》",
+      "《老友记》",
+      "《消消气》"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-minecraft-creator",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "最初创造《我的世界》的是谁？",
+    "canonicalAnswer": "马库斯·佩尔松",
+    "multipleChoiceOptions": [
+      "马库斯·佩尔松",
+      "加布·纽维尔",
+      "威尔·赖特",
+      "约翰·卡马克"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-portal-cube",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "《传送门》中带有爱心标记的方块叫什么？",
+    "canonicalAnswer": "加重伴侣方块",
+    "multipleChoiceOptions": [
+      "加重伴侣方块",
+      "加重储存方块",
+      "光圈友谊方块",
+      "热力劝阻方块"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-npc-meaning",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "在游戏中，NPC通常代表什么？",
+    "canonicalAnswer": "非玩家角色",
+    "multipleChoiceOptions": [
+      "网络玩家角色",
+      "非玩家角色",
+      "新玩家职业",
+      "中立阵营伙伴"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-vaporeon-stone",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在许多宝可梦游戏中，伊布接触哪种石头会进化成水伊布？",
+    "canonicalAnswer": "水之石",
+    "multipleChoiceOptions": [
+      "月之石",
+      "水之石",
+      "觉醒之石",
+      "冰之石"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-git-stage-command",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪个 Git 命令会在提交前暂存已修改的文件？",
+    "canonicalAnswer": "git add",
+    "multipleChoiceOptions": [
+      "git save",
+      "git add",
+      "git push",
+      "git merge"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-python-creator",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪种编程语言是 Guido van Rossum 创建的？",
+    "canonicalAnswer": "Python",
+    "multipleChoiceOptions": [
+      "Ruby",
+      "Python",
+      "Perl",
+      "Lua"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-d20-checks",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《龙与地下城》中，能力检定最常掷哪种骰子？",
+    "canonicalAnswer": "d20",
+    "multipleChoiceOptions": [
+      "d12",
+      "d20",
+      "d10",
+      "d8"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-doom-developer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "最初的 1993 年游戏《毁灭战士》由哪家工作室开发？",
+    "canonicalAnswer": "id Software",
+    "multipleChoiceOptions": [
+      "id Software",
+      "Raven Software",
+      "Apogee Software",
+      "Looking Glass Studios"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-tetris-blocks",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "《俄罗斯方块》中的四格形状通常叫什么？",
+    "canonicalAnswer": "四联骨牌",
+    "multipleChoiceOptions": [
+      "多联骨牌",
+      "四联骨牌",
+      "四连块",
+      "四方块"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-mcq-halo-ringworld",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在《光环》世界观中，巨大的环形超级武器叫什么？",
+    "canonicalAnswer": "光环",
+    "multipleChoiceOptions": [
+      "质量中继器",
+      "光环",
+      "方舟",
+      "城堡"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-zelda-mask-moon",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《塞尔达传说：姆吉拉的假面》中，月亮坠落前会重复多少个游戏日？",
+    "canonicalAnswer": "三天",
+    "multipleChoiceOptions": [
+      "两天",
+      "三天",
+      "五天",
+      "七天"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-dark-souls-bonfire",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《黑暗之魂》中，在篝火处休息通常有什么代价？",
+    "canonicalAnswer": "大多数被击败的敌人会重生",
+    "multipleChoiceOptions": [
+      "大多数被击败的敌人会重生",
+      "武器会立即损坏",
+      "等级会重置",
+      "首领会多出额外阶段"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-catan-longest-road",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《卡坦岛》中，“最长道路”奖励值多少分？",
+    "canonicalAnswer": "2",
+    "multipleChoiceOptions": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-magic-stack",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在《万智牌》中，等待结算的咒语和异能放在哪个共用区域？",
+    "canonicalAnswer": "堆叠区",
+    "multipleChoiceOptions": [
+      "堆叠区",
+      "坟墓场",
+      "统帅区",
+      "放逐区"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-pokemon-nuzlocke",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在常见的宝可梦 Nuzlocke 挑战中，宝可梦晕倒后通常会怎样？",
+    "canonicalAnswer": "视为不能再使用",
+    "multipleChoiceOptions": [
+      "将它交换出去",
+      "视为不能再使用",
+      "失去所有招式",
+      "必须携带一件道具"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-doom-idkfa",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在经典《毁灭战士》中，作弊码 IDKFA 通常对应什么效果？",
+    "canonicalAnswer": "获得武器、弹药和钥匙",
+    "multipleChoiceOptions": [
+      "只有上帝模式",
+      "穿墙",
+      "获得武器、弹药和钥匙",
+      "跳过关卡"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-dnd-armor-class",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《龙与地下城》中，护甲等级最直接衡量生物有多难被什么？",
+    "canonicalAnswer": "攻击命中",
+    "multipleChoiceOptions": [
+      "攻击命中",
+      "对话说服",
+      "魔法治疗",
+      "在野外追踪"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-portal-cake",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《传送门》中，GLaDOS承诺的蛋糕主要被用作什么？",
+    "canonicalAnswer": "虚假的奖励",
+    "multipleChoiceOptions": [
+      "虚假的奖励",
+      "治疗道具",
+      "关卡钥匙",
+      "伴侣方块升级"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-speedrun-any-percent",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在速通中，“any%”跑法主要以什么目标评判？",
+    "canonicalAnswer": "不论完成度，尽快结束游戏",
+    "multipleChoiceOptions": [
+      "收集所有道具",
+      "不论完成度，尽快结束游戏",
+      "不使用漏洞",
+      "完成所有支线任务"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-textmcq-final-fantasy-limit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "《最终幻想 VII》中，克劳德著名的终极极限技叫什么？",
+    "canonicalAnswer": "超究武神霸斩",
+    "multipleChoiceOptions": [
+      "狮子心",
+      "超究武神霸斩",
+      "斩铁剑",
+      "陨石雨"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-dnd-natural-20",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《龙与地下城》中，攻击检定掷出自然 20 通常会产生什么结果？",
+    "canonicalAnswer": "暴击",
+    "multipleChoiceOptions": [
+      "暴击",
+      "自动获得先攻",
+      "免费的法术位",
+      "护甲等级翻倍"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-skyrim-greybeards",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《上古卷轴 V：天际》中，灰胡子居住在哪座山上的修道院？",
+    "canonicalAnswer": "高吼峰",
+    "multipleChoiceOptions": [
+      "高吼峰",
+      "龙临堡",
+      "天佑神殿",
+      "沃尔基哈城堡"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-halo-cortana",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《光环》中，士官长的人工智能伙伴叫什么？",
+    "canonicalAnswer": "科塔娜",
+    "multipleChoiceOptions": [
+      "科塔娜",
+      "伊娃",
+      "米兰达",
+      "塞瑞娜"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-chess-en-passant",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "国际象棋中的吃过路兵允许兵在对方刚刚做出什么动作后立即将其吃掉？",
+    "canonicalAnswer": "从起始位置向前走两格",
+    "multipleChoiceOptions": [
+      "从起始位置向前走两格",
+      "在第八横排升变",
+      "斜向吃子并将军",
+      "挡住王车易位路线"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-40k-astartes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在《战锤 40,000》中，星际战士正式的帝国称号是什么？",
+    "canonicalAnswer": "阿斯塔特修会",
+    "multipleChoiceOptions": [
+      "阿斯塔特修会",
+      "机械修会",
+      "帝国卫队",
+      "禁军军团"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-minecraft-ender-pearl",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《我的世界》中，投掷末影珍珠主要用来做什么？",
+    "canonicalAnswer": "传送到它落下的位置",
+    "multipleChoiceOptions": [
+      "传送到它落下的位置",
+      "打开末地传送门框架",
+      "召唤末影人伙伴",
+      "修复鞘翅耐久"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-hades-zagreus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在游戏《哈迪斯》中，扎格列欧斯试图逃离由哪位神统治的领域？",
+    "canonicalAnswer": "哈迪斯",
+    "multipleChoiceOptions": [
+      "哈迪斯",
+      "阿瑞斯",
+      "宙斯",
+      "塔纳托斯"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-lol-last-hit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《英雄联盟》中，补刀主要会给玩家什么奖励？",
+    "canonicalAnswer": "金币",
+    "multipleChoiceOptions": [
+      "金币",
+      "视野分数",
+      "技能急速",
+      "召唤师技能充能"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-pokemon-stab",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在宝可梦对战中，STAB指的是哪种情况带来的伤害加成？",
+    "canonicalAnswer": "招式属性与使用者的属性之一相同",
+    "multipleChoiceOptions": [
+      "招式属性与使用者的属性之一相同",
+      "目标换人后招式命中",
+      "使用者先于伤害行动",
+      "目标同时弱于使用者的两种属性"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-gaming-hardmcq2-session-zero",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在桌面角色扮演游戏中，Session Zero主要用来做什么？",
+    "canonicalAnswer": "在游戏开始前设定共识并构建战役",
+    "multipleChoiceOptions": [
+      "在游戏开始前设定共识并构建战役",
+      "解决最终首领战",
+      "在先攻前掷伤害",
+      "替代一次缺席的常规游戏"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-canada-capital",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "加拿大的首都是哪座城市？",
+    "canonicalAnswer": "渥太华",
+    "multipleChoiceOptions": [
+      "多伦多",
+      "渥太华",
+      "蒙特利尔",
+      "温哥华"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-pompeii-vesuvius",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "公元 79 年维苏威火山喷发掩埋了哪座古罗马城市？",
+    "canonicalAnswer": "庞贝",
+    "multipleChoiceOptions": [
+      "庞贝",
+      "赫库兰尼姆",
+      "奥斯蒂亚",
+      "卡普阿"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-japan-currency",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "日本的官方货币是什么？",
+    "canonicalAnswer": "日元",
+    "multipleChoiceOptions": [
+      "韩元",
+      "人民币",
+      "日元",
+      "林吉特"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-versailles-treaty",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪项条约正式结束了德国与协约国之间的第一次世界大战？",
+    "canonicalAnswer": "《凡尔赛条约》",
+    "multipleChoiceOptions": [
+      "《凡尔赛条约》",
+      "《巴黎条约》",
+      "《特里亚农条约》",
+      "《布列斯特-立陶夫斯克条约》"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-inca-capital",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "印加帝国的首都是什么？",
+    "canonicalAnswer": "库斯科",
+    "multipleChoiceOptions": [
+      "特诺奇蒂特兰",
+      "库斯科",
+      "马丘比丘",
+      "基多"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-magna-carta-king",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "1215 年签署《大宪章》的英国国王是谁？",
+    "canonicalAnswer": "约翰王",
+    "multipleChoiceOptions": [
+      "理查一世",
+      "约翰王",
+      "亨利二世",
+      "爱德华一世"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-kilimanjaro-country",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "乞力马扎罗山位于哪个国家？",
+    "canonicalAnswer": "坦桑尼亚",
+    "multipleChoiceOptions": [
+      "肯尼亚",
+      "坦桑尼亚",
+      "乌干达",
+      "埃塞俄比亚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-berlin-wall-year",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "柏林墙在哪一年倒塌？",
+    "canonicalAnswer": "1989 年",
+    "multipleChoiceOptions": [
+      "1987 年",
+      "1989 年",
+      "1991 年",
+      "1993 年"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-silk-road-terminus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "哪座中国城市常被称为古代丝绸之路的东方起点？",
+    "canonicalAnswer": "长安",
+    "multipleChoiceOptions": [
+      "洛阳",
+      "长安",
+      "南京",
+      "开封"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-mcq-byzantine-capital",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "拜占庭帝国在其大部分历史时期的首都是哪里？",
+    "canonicalAnswer": "君士坦丁堡",
+    "multipleChoiceOptions": [
+      "君士坦丁堡",
+      "安条克",
+      "尼西亚",
+      "塞萨洛尼基"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-hanseatic-league",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "汉萨同盟的贸易活动主要与哪个区域有关？",
+    "canonicalAnswer": "波罗的海和北海",
+    "multipleChoiceOptions": [
+      "波罗的海和北海",
+      "波斯湾",
+      "加勒比海",
+      "红海"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-rosenbergs-trial",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "朱利叶斯和埃塞尔·罗森堡夫妇在冷战时期哪起争议中被美国判罪？",
+    "canonicalAnswer": "原子间谍案",
+    "multipleChoiceOptions": [
+      "原子间谍案",
+      "水门事件闯入案",
+      "两伊门资金案",
+      "五角大楼文件泄密案"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-suez-canal-seas",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "苏伊士运河连接地中海和哪片水域？",
+    "canonicalAnswer": "红海",
+    "multipleChoiceOptions": [
+      "黑海",
+      "红海",
+      "里海",
+      "阿拉伯海"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-hagia-sophia-city",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "圣索菲亚大教堂位于今天的哪座城市？",
+    "canonicalAnswer": "伊斯坦布尔",
+    "multipleChoiceOptions": [
+      "雅典",
+      "伊斯坦布尔",
+      "罗马",
+      "耶路撒冷"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-taiping-rebellion",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "太平天国运动主要发生在哪个国家？",
+    "canonicalAnswer": "中国",
+    "multipleChoiceOptions": [
+      "中国",
+      "日本",
+      "朝鲜",
+      "越南"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-treaty-tordesillas",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "《托德西利亚斯条约》主要在西班牙和哪个国家之间划分海外领地？",
+    "canonicalAnswer": "葡萄牙",
+    "multipleChoiceOptions": [
+      "葡萄牙",
+      "法国",
+      "英格兰",
+      "荷兰"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-mali-mansa-musa",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "曼萨·穆萨与哪个中世纪西非帝国关系最密切？",
+    "canonicalAnswer": "马里帝国",
+    "multipleChoiceOptions": [
+      "马里帝国",
+      "桑海帝国",
+      "加纳帝国",
+      "贝宁帝国"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-prague-defenestration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "1618 年布拉格掷出窗外事件促成了哪场欧洲重大冲突？",
+    "canonicalAnswer": "三十年战争",
+    "multipleChoiceOptions": [
+      "三十年战争",
+      "西班牙王位继承战争",
+      "七年战争",
+      "克里米亚战争"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-andes-altiplano",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "阿尔蒂普拉诺高原主要位于哪条山系之中？",
+    "canonicalAnswer": "安第斯山脉",
+    "multipleChoiceOptions": [
+      "安第斯山脉",
+      "阿尔卑斯山脉",
+      "喜马拉雅山脉",
+      "阿特拉斯山脉"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-textmcq-meiji-restoration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "明治维新与哪个国家的现代化最密切相关？",
+    "canonicalAnswer": "日本",
+    "multipleChoiceOptions": [
+      "日本",
+      "泰国",
+      "中国",
+      "韩国"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-persian-royal-road",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "古代波斯王家大道最著名的是连接苏萨和哪座西部城市？",
+    "canonicalAnswer": "萨迪斯",
+    "multipleChoiceOptions": [
+      "萨迪斯",
+      "雅典",
+      "巴比伦",
+      "孟菲斯"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-congress-vienna",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "维也纳会议主要是在什么冲突时期之后重新划分欧洲？",
+    "canonicalAnswer": "拿破仑战争",
+    "multipleChoiceOptions": [
+      "拿破仑战争",
+      "三十年战争",
+      "克里米亚战争",
+      "普法战争"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-strait-hormuz",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "霍尔木兹海峡连接波斯湾和哪片水域？",
+    "canonicalAnswer": "阿曼湾",
+    "multipleChoiceOptions": [
+      "阿曼湾",
+      "红海",
+      "里海",
+      "阿拉伯湾"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-edict-milan",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "《米兰敕令》与哪位罗马皇帝统治下的宗教宽容最密切相关？",
+    "canonicalAnswer": "君士坦丁",
+    "multipleChoiceOptions": [
+      "君士坦丁",
+      "戴克里先",
+      "狄奥多西",
+      "查士丁尼"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-louisiana-purchase",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "美国从哪个国家购买了路易斯安那领地？",
+    "canonicalAnswer": "法国",
+    "multipleChoiceOptions": [
+      "法国",
+      "西班牙",
+      "英国",
+      "墨西哥"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-indus-cities",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "哈拉帕和摩亨佐-达罗是哪个古代文明的重要遗址？",
+    "canonicalAnswer": "印度河流域文明",
+    "multipleChoiceOptions": [
+      "印度河流域文明",
+      "孔雀帝国",
+      "笈多帝国",
+      "阿契美尼德帝国"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-berlin-airlift",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "柏林空运是西方针对苏联哪项行动的回应？",
+    "canonicalAnswer": "封锁通往西柏林的陆路",
+    "multipleChoiceOptions": [
+      "封锁通往西柏林的陆路",
+      "修建柏林墙",
+      "入侵捷克斯洛伐克",
+      "关闭苏伊士运河"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-pax-romana",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "通常认为罗马和平始于哪位罗马统治者在位时期？",
+    "canonicalAnswer": "奥古斯都",
+    "multipleChoiceOptions": [
+      "奥古斯都",
+      "尤利乌斯·凯撒",
+      "尼禄",
+      "图拉真"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-cape-good-hope",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "好望角位于今天哪个国家的海岸？",
+    "canonicalAnswer": "南非",
+    "multipleChoiceOptions": [
+      "南非",
+      "纳米比亚",
+      "莫桑比克",
+      "马达加斯加"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-geohistory-hardmcq2-versailles-germany",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "《凡尔赛条约》最著名的第一次世界大战后条款针对哪个国家？",
+    "canonicalAnswer": "德国",
+    "multipleChoiceOptions": [
+      "德国",
+      "奥匈帝国",
+      "奥斯曼土耳其",
+      "保加利亚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-cheetah-speed",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "哪种动物通常被认为是陆地上速度最快的动物？",
+    "canonicalAnswer": "猎豹",
+    "multipleChoiceOptions": [
+      "叉角羚",
+      "猎豹",
+      "豹",
+      "跳羚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-platypus-bill",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "哪种产卵哺乳动物长着鸭子一样的嘴？",
+    "canonicalAnswer": "鸭嘴兽",
+    "multipleChoiceOptions": [
+      "针鼹",
+      "鸭嘴兽",
+      "水獭",
+      "海狸"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-koala-food",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "考拉主要吃哪种树的叶子？",
+    "canonicalAnswer": "桉树",
+    "multipleChoiceOptions": [
+      "金合欢",
+      "桉树",
+      "竹子",
+      "红树林"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-whale-shark",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "哪种鲨鱼是现存体型最大的鱼类？",
+    "canonicalAnswer": "鲸鲨",
+    "multipleChoiceOptions": [
+      "姥鲨",
+      "大白鲨",
+      "鲸鲨",
+      "虎鲨"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-bee-waggle-dance",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "蜜蜂用哪种行为传达食物来源的方向？",
+    "canonicalAnswer": "摇摆舞",
+    "multipleChoiceOptions": [
+      "颤抖舞",
+      "摇摆舞",
+      "圆舞",
+      "八字清洁舞"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-octopus-blood",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "章鱼的血液在含氧时是什么颜色？",
+    "canonicalAnswer": "蓝色",
+    "multipleChoiceOptions": [
+      "绿色",
+      "蓝色",
+      "紫色",
+      "红色"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-seahorse-babies",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "在海马中，哪一方负责孕育发育中的幼体？",
+    "canonicalAnswer": "雄性",
+    "multipleChoiceOptions": [
+      "雌性",
+      "雄性",
+      "父母双方",
+      "都不是"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-monarch-migration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "许多北美东部的君主斑蝶会迁徙到哪个国家过冬？",
+    "canonicalAnswer": "墨西哥",
+    "multipleChoiceOptions": [
+      "墨西哥",
+      "哥斯达黎加",
+      "巴西",
+      "古巴"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-elephant-gestation",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "哪种陆地哺乳动物以妊娠期接近 22 个月而闻名？",
+    "canonicalAnswer": "非洲象",
+    "multipleChoiceOptions": [
+      "白犀牛",
+      "非洲象",
+      "河马",
+      "长颈鹿"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-mcq-peregrine-dive",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "哪种鸟以名为“俯冲”的极速捕猎俯冲而闻名？",
+    "canonicalAnswer": "游隼",
+    "multipleChoiceOptions": [
+      "金雕",
+      "游隼",
+      "灰背隼",
+      "红尾鵟"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-platypus-order",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "鸭嘴兽和针鼹属于哪类产卵哺乳动物？",
+    "canonicalAnswer": "单孔类",
+    "multipleChoiceOptions": [
+      "有袋类",
+      "单孔类",
+      "鲸类",
+      "有蹄类"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-nudibranch",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "海蛞蝓最准确地说是哪种动物？",
+    "canonicalAnswer": "一种海蛞蝓",
+    "multipleChoiceOptions": [
+      "一种海蛞蝓",
+      "一种深海鱼",
+      "一种珊瑚虫",
+      "一种小型鱿鱼"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-okapi-family",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "霍加狓现存最亲近的亲属是哪种动物？",
+    "canonicalAnswer": "长颈鹿",
+    "multipleChoiceOptions": [
+      "斑马",
+      "长颈鹿",
+      "羚羊",
+      "貘"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-axolotl-regeneration",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "六角恐龙因能再生哪些身体部位而闻名？",
+    "canonicalAnswer": "四肢",
+    "multipleChoiceOptions": [
+      "四肢",
+      "羽毛",
+      "外壳",
+      "角"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-baleen-whale-food",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "须鲸主要用鲸须板从水中滤食什么？",
+    "canonicalAnswer": "磷虾等小型猎物",
+    "multipleChoiceOptions": [
+      "海草",
+      "磷虾等小型猎物",
+      "带硬壳的蛤蜊",
+      "漂浮的种子"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-mantis-shrimp-eyes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "螳螂虾尤其因哪种复杂结构而出名？",
+    "canonicalAnswer": "视觉系统",
+    "multipleChoiceOptions": [
+      "视觉系统",
+      "筑巢方式",
+      "羽毛展示",
+      "产奶能力"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-tarsier-eyes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "眼镜猴最引人注目的特征是什么？",
+    "canonicalAnswer": "非常大的眼睛",
+    "multipleChoiceOptions": [
+      "非常大的眼睛",
+      "有毒的距",
+      "装甲尾巴",
+      "透明皮肤"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-coral-animal",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "珊瑚是由称为什么的微小动物组成的群落？",
+    "canonicalAnswer": "珊瑚虫",
+    "multipleChoiceOptions": [
+      "珊瑚虫",
+      "孢子",
+      "幼虫",
+      "鳞片"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-cuttlefish-camouflage",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "乌贼用哪种特殊皮肤细胞快速改变颜色？",
+    "canonicalAnswer": "色素胞",
+    "multipleChoiceOptions": [
+      "色素胞",
+      "发光细胞",
+      "骨板",
+      "壶腹器官"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-textmcq-albatross-wingspan",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "漂泊信天翁尤其以拥有现存鸟类中最大的什么之一而闻名？",
+    "canonicalAnswer": "翼展",
+    "multipleChoiceOptions": [
+      "翼展",
+      "喙",
+      "每窝幼鸟数",
+      "奔跑速度"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-ruminants-cud",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "牛和鹿等反刍动物在消化时最出名的行为是什么？",
+    "canonicalAnswer": "从多室胃中反刍食物",
+    "multipleChoiceOptions": [
+      "从多室胃中反刍食物",
+      "用鲸须过滤浮游生物",
+      "用后方尖牙产生毒液",
+      "只在嗉囊中消化食物"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-octopus-blood",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "章鱼的血液呈蓝色，是因为它使用哪种携氧分子？",
+    "canonicalAnswer": "血蓝蛋白",
+    "multipleChoiceOptions": [
+      "血蓝蛋白",
+      "血红蛋白",
+      "叶绿素",
+      "角蛋白"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-penguin-hemisphere",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "野生企鹅几乎全部自然分布在哪个半球？",
+    "canonicalAnswer": "南半球",
+    "multipleChoiceOptions": [
+      "南半球",
+      "北半球",
+      "只有北极圈",
+      "只有热带岛屿"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-tasmanian-devil-island",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "袋獾是原产于哪座岛屿的有袋类动物？",
+    "canonicalAnswer": "塔斯马尼亚岛",
+    "multipleChoiceOptions": [
+      "塔斯马尼亚岛",
+      "马达加斯加岛",
+      "婆罗洲",
+      "新几内亚岛"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-shark-electric-fields",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "鲨鱼通过称为什么的感觉器官探测微弱电场？",
+    "canonicalAnswer": "洛伦兹壶腹",
+    "multipleChoiceOptions": [
+      "洛伦兹壶腹",
+      "犁鼻器",
+      "侧气孔",
+      "韦伯氏器官"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-birds-dinosaurs",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "现代鸟类最直接地演化自哪一类动物？",
+    "canonicalAnswer": "兽脚类恐龙",
+    "multipleChoiceOptions": [
+      "兽脚类恐龙",
+      "翼龙",
+      "海生爬行动物",
+      "早期哺乳动物"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-honeybee-waggle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "蜜蜂的摇摆舞主要向其他蜜蜂传达什么？",
+    "canonicalAnswer": "食物的方向和距离",
+    "multipleChoiceOptions": [
+      "食物的方向和距离",
+      "蜂王的年龄",
+      "捕食者的危险程度",
+      "蜂巢的形状"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-sea-otter-tools",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "海獭使用石头主要是为了做什么？",
+    "canonicalAnswer": "敲开带硬壳的猎物",
+    "multipleChoiceOptions": [
+      "敲开带硬壳的猎物",
+      "建造水下巢穴",
+      "在海滩上向配偶发信号",
+      "刮除珊瑚上的藻类"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-komodo-monitor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "科莫多巨蜥属于哪一大类蜥蜴？",
+    "canonicalAnswer": "巨蜥",
+    "multipleChoiceOptions": [
+      "巨蜥",
+      "鬣蜥",
+      "壁虎",
+      "石龙子"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-animals-hardmcq2-bat-echolocation",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "许多蝙蝠通过哪种能力导航和捕猎？",
+    "canonicalAnswer": "回声定位",
+    "multipleChoiceOptions": [
+      "回声定位",
+      "磁性感光合作用",
+      "仅靠红外视觉",
+      "化学拟态"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-guacamole-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "鳄梨酱的主要原料是哪种水果？",
+    "canonicalAnswer": "牛油果",
+    "multipleChoiceOptions": [
+      "墨西哥酸浆",
+      "牛油果",
+      "大蕉",
+      "青柠"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-latte-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "咖啡拿铁通常以一份什么咖啡为基础？",
+    "canonicalAnswer": "浓缩咖啡",
+    "multipleChoiceOptions": [
+      "冷萃咖啡",
+      "浓缩咖啡",
+      "土耳其咖啡",
+      "滤泡咖啡"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-hummus-chickpeas",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "传统鹰嘴豆泥的主要原料是哪种豆类？",
+    "canonicalAnswer": "鹰嘴豆",
+    "multipleChoiceOptions": [
+      "扁豆",
+      "鹰嘴豆",
+      "蚕豆",
+      "白芸豆"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-sushi-rice",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "“寿司”这个词最直接指的是哪种经过处理的食材？",
+    "canonicalAnswer": "醋饭",
+    "multipleChoiceOptions": [
+      "生鱼",
+      "醋饭",
+      "海苔包裹物",
+      "芥末酱"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-miso-soybeans",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "味噌最常由发酵哪种豆制成？",
+    "canonicalAnswer": "大豆",
+    "multipleChoiceOptions": [
+      "大豆",
+      "红小豆",
+      "绿豆",
+      "黑豆"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-tequila-agave",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "龙舌兰酒主要由哪种植物制成？",
+    "canonicalAnswer": "蓝色龙舌兰",
+    "multipleChoiceOptions": [
+      "蓝色龙舌兰",
+      "甘蔗",
+      "仙人掌果",
+      "丝兰"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-kimchi-cabbage",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "白菜泡菜最常用哪种蔬菜制作？",
+    "canonicalAnswer": "大白菜",
+    "multipleChoiceOptions": [
+      "白萝卜",
+      "小白菜",
+      "大白菜",
+      "芥菜"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-parmigiano-country",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "帕玛森干酪是哪个国家受保护的特色奶酪？",
+    "canonicalAnswer": "意大利",
+    "multipleChoiceOptions": [
+      "法国",
+      "意大利",
+      "瑞士",
+      "西班牙"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-roux-ingredients",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "经典面糊油酱是用面粉和哪种脂肪一起烹制的？",
+    "canonicalAnswer": "黄油",
+    "multipleChoiceOptions": [
+      "橄榄油",
+      "黄油",
+      "奶油",
+      "蛋黄"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-mcq-pisco-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "皮斯科主要由哪种水果酿成的白兰地蒸馏而来？",
+    "canonicalAnswer": "葡萄",
+    "multipleChoiceOptions": [
+      "苹果",
+      "葡萄",
+      "李子",
+      "梨"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-kombucha-culture",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "康普茶发酵所用的菌种通常简称为什么？",
+    "canonicalAnswer": "SCOBY",
+    "multipleChoiceOptions": [
+      "SCOBY",
+      "MISO",
+      "UMAMI",
+      "KAPPA"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-paella-saffron",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "传统海鲜饭中，哪种香料因赋予米饭金黄色而珍贵？",
+    "canonicalAnswer": "藏红花",
+    "multipleChoiceOptions": [
+      "姜黄",
+      "藏红花",
+      "红椒粉",
+      "孜然"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-mole-origin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "墨西哥摩雷酱最主要与哪个国家的菜系有关？",
+    "canonicalAnswer": "墨西哥",
+    "multipleChoiceOptions": [
+      "秘鲁",
+      "墨西哥",
+      "西班牙",
+      "危地马拉"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-kimchi-fermentation",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "泡菜的酸味主要来自哪种过程？",
+    "canonicalAnswer": "乳酸发酵",
+    "multipleChoiceOptions": [
+      "焦糖化",
+      "乳酸发酵",
+      "冷冻干燥",
+      "蒸馏"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-mascarpone-dessert",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "马斯卡彭奶酪是意大利哪种甜点的经典原料？",
+    "canonicalAnswer": "提拉米苏",
+    "multipleChoiceOptions": [
+      "奶油甜馅煎饼卷",
+      "提拉米苏",
+      "潘娜陶塔",
+      "西西里奶酪卷"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-pisco-sour",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "皮斯科酸酒以哪种葡萄白兰地为基酒？",
+    "canonicalAnswer": "皮斯科",
+    "multipleChoiceOptions": [
+      "干邑",
+      "皮斯科",
+      "格拉巴酒",
+      "雅文邑"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-roux-thickener",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "面糊油酱通常是用面粉和什么制成的？",
+    "canonicalAnswer": "脂肪",
+    "multipleChoiceOptions": [
+      "醋",
+      "脂肪",
+      "糖浆",
+      "蛋白"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-espresso-crema",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "一杯制作良好的浓缩咖啡顶部的棕褐色泡沫叫什么？",
+    "canonicalAnswer": "咖啡脂",
+    "multipleChoiceOptions": [
+      "咖啡脂",
+      "开花",
+      "泡沫头",
+      "泡沫盖"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-yuzu-citrus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "柚子最准确地说是哪种食材？",
+    "canonicalAnswer": "柑橘类水果",
+    "multipleChoiceOptions": [
+      "一种海藻",
+      "柑橘类水果",
+      "一种米酒",
+      "一种发酵豆酱"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-textmcq-tempeh-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "传统天贝主要由发酵哪种食物制成？",
+    "canonicalAnswer": "大豆",
+    "multipleChoiceOptions": [
+      "大豆",
+      "鹰嘴豆",
+      "米粉",
+      "木薯根"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-mayonnaise-emulsion",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "蛋黄酱主要是油和什么形成的乳状液，后者起稳定作用？",
+    "canonicalAnswer": "蛋黄",
+    "multipleChoiceOptions": [
+      "蛋黄",
+      "明胶",
+      "泡打粉",
+      "玉米淀粉"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-risotto-rice",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "哪种短粒米通常用于制作口感浓稠的烩饭？",
+    "canonicalAnswer": "阿博里奥米",
+    "multipleChoiceOptions": [
+      "阿博里奥米",
+      "印度香米",
+      "茉莉香米",
+      "卡罗莱纳米"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-miso-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "味噌通常是以哪种食材为基础发酵而成的酱？",
+    "canonicalAnswer": "大豆",
+    "multipleChoiceOptions": [
+      "大豆",
+      "鹰嘴豆",
+      "芝麻",
+      "米粉"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-bechamel",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "经典白酱是用什么使牛奶变稠的？",
+    "canonicalAnswer": "白色面糊油酱",
+    "multipleChoiceOptions": [
+      "白色面糊油酱",
+      "蛋黄奶糊",
+      "番茄浓缩汁",
+      "打发奶油"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-sushi-rice-vinegar",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "寿司饭煮好后传统上会用以什么为核心的混合调味料拌制？",
+    "canonicalAnswer": "米醋",
+    "multipleChoiceOptions": [
+      "米醋",
+      "酱油",
+      "芝麻油",
+      "味噌汤"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-marmalade",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "橘子果酱与许多普通果酱的区别通常在于包含什么？",
+    "canonicalAnswer": "柑橘果皮",
+    "multipleChoiceOptions": [
+      "柑橘果皮",
+      "烤坚果",
+      "发酵奶油",
+      "整颗咖啡豆"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-sourdough-leaven",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "酸面包主要由含有野生酵母和什么的酵种发酵？",
+    "canonicalAnswer": "乳酸菌",
+    "multipleChoiceOptions": [
+      "乳酸菌",
+      "只有小苏打",
+      "霉菌孢子",
+      "明胶菌种"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-ghee",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "酥油最准确地说是哪种乳制品？",
+    "canonicalAnswer": "澄清黄油",
+    "multipleChoiceOptions": [
+      "澄清黄油",
+      "发酵奶油",
+      "新鲜奶酪凝乳",
+      "打发酪乳"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-bulgur",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "布格麦通常由经过预煮的小麦制成，最后以什么形式出现？",
+    "canonicalAnswer": "碎粒",
+    "multipleChoiceOptions": [
+      "碎粒",
+      "压榨油",
+      "发酵糊",
+      "发芽面粉"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-fooddrinks-hardmcq2-negroni-spirit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "经典尼格罗尼由金巴利、甜味美思和哪种烈酒调成？",
+    "canonicalAnswer": "金酒",
+    "multipleChoiceOptions": [
+      "金酒",
+      "黑麦威士忌",
+      "白朗姆酒",
+      "龙舌兰酒"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-baseball-strikes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "在棒球中，通常几个好球会造成出局？",
+    "canonicalAnswer": "三个",
+    "multipleChoiceOptions": [
+      "两个",
+      "三个",
+      "四个",
+      "五个"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-golf-birdie",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "高尔夫中，比标准杆少一杆的成绩叫什么？",
+    "canonicalAnswer": "小鸟球",
+    "multipleChoiceOptions": [
+      "小鸟球",
+      "老鹰球",
+      "柏忌",
+      "标准杆"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-basketball-three",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "篮球中，三分线外投中的球值多少分？",
+    "canonicalAnswer": "三分",
+    "multipleChoiceOptions": [
+      "两分",
+      "三分",
+      "四分",
+      "一分"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-ashes-teams",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "板球赛事“灰烬杯”是哪两个国家之间的对抗？",
+    "canonicalAnswer": "澳大利亚",
+    "multipleChoiceOptions": [
+      "印度",
+      "澳大利亚",
+      "新西兰",
+      "南非"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-marathon-distance",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "马拉松的正式距离约为多少公里？",
+    "canonicalAnswer": "42.195 公里",
+    "multipleChoiceOptions": [
+      "40 公里",
+      "42.195 公里",
+      "45 公里",
+      "50 公里"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-boxing-tko",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "拳击中的 TKO 代表什么？",
+    "canonicalAnswer": "技术性击倒",
+    "multipleChoiceOptions": [
+      "计时击倒",
+      "技术性击倒",
+      "完全击倒",
+      "锦标赛击倒"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-rugby-try-points",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "英式橄榄球中，一次达阵得多少分？",
+    "canonicalAnswer": "五分",
+    "multipleChoiceOptions": [
+      "四分",
+      "五分",
+      "六分",
+      "七分"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-tennis-deuce",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "网球计分中，一方在平分后赢下下一分会进入什么状态？",
+    "canonicalAnswer": "占先",
+    "multipleChoiceOptions": [
+      "占先",
+      "破发点",
+      "盘点",
+      "局点"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-olympic-rings",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "传统上，奥运五环代表什么？",
+    "canonicalAnswer": "五个有人居住的大洲",
+    "multipleChoiceOptions": [
+      "五个创始城市",
+      "五个有人居住的大洲",
+      "五项古代运动",
+      "五个最初国家"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-mcq-f1-checkered-flag",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "赛车中，哪种旗帜表示比赛结束？",
+    "canonicalAnswer": "方格旗",
+    "multipleChoiceOptions": [
+      "黑旗",
+      "黄旗",
+      "方格旗",
+      "蓝旗"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-cricket-duck",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "板球中，击球手零分出局被称为什么？",
+    "canonicalAnswer": "鸭蛋",
+    "multipleChoiceOptions": [
+      "鸭蛋",
+      "贝果",
+      "鹅蛋",
+      "白卷"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-tennis-let",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "网球中，发球擦网后仍落入正确发球区通常称为什么？",
+    "canonicalAnswer": "擦网重发",
+    "multipleChoiceOptions": [
+      "擦网重发",
+      "失误",
+      "ACE 球",
+      "截击"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-baseball-cycle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "棒球中，单场完成“完全循环打击”需要打出哪组安打？",
+    "canonicalAnswer": "一垒安打、二垒安打、三垒安打和全垒打",
+    "multipleChoiceOptions": [
+      "四支全垒打",
+      "一垒安打、二垒安打、三垒安打和全垒打",
+      "三支二垒安打和一次保送",
+      "每局一次安打"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-rugby-conversion",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "英式橄榄球中，达阵后的成功附加踢球值多少分？",
+    "canonicalAnswer": "2 分",
+    "multipleChoiceOptions": [
+      "1 分",
+      "2 分",
+      "3 分",
+      "5 分"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-f1-undercut",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "在一级方程式策略中，“undercut”通常指提前进站，以在什么方面取得时间优势？",
+    "canonicalAnswer": "新轮胎",
+    "multipleChoiceOptions": [
+      "新轮胎",
+      "更轻的燃油重量",
+      "安全车重新开始",
+      "启用 DRS"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-basketball-eurostep",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "篮球中，欧洲步主要用于让突破球员做什么？",
+    "canonicalAnswer": "用侧向步伐躲开防守者",
+    "multipleChoiceOptions": [
+      "用侧向步伐躲开防守者",
+      "设置合法掩护",
+      "卡位抢篮板",
+      "后仰投篮"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-golf-albatross",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "高尔夫中，albatross 指单洞低于标准杆多少杆？",
+    "canonicalAnswer": "低于标准杆三杆",
+    "multipleChoiceOptions": [
+      "低于标准杆两杆",
+      "低于标准杆三杆",
+      "低于标准杆四杆",
+      "高于标准杆一杆"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-cycling-peloton",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "公路自行车赛中，主要的骑手集团叫什么？",
+    "canonicalAnswer": "大集团",
+    "multipleChoiceOptions": [
+      "争球",
+      "大集团",
+      "线阵",
+      "牛棚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-volleyball-libero",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "排球中，自由人主要专长于哪方面？",
+    "canonicalAnswer": "后排防守和接传球",
+    "multipleChoiceOptions": [
+      "后排防守和接传球",
+      "只负责发球",
+      "网前拦网",
+      "裁判挑战"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-textmcq-snooker-maximum-break",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "斯诺克的标准满分杆是多少分？",
+    "canonicalAnswer": "147 分",
+    "multipleChoiceOptions": [
+      "120 分",
+      "147 分",
+      "155 分",
+      "180 分"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-soccer-offside-trap",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "足球中的越位陷阱通常要求后卫一起做什么？",
+    "canonicalAnswer": "前压让进攻球员处于越位位置",
+    "multipleChoiceOptions": [
+      "前压让进攻球员处于越位位置",
+      "角球时挤在门将身边",
+      "与中场交换位置",
+      "退到禁区点后方"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-triple-double",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "篮球中的三双是指一名球员在多少项统计数据上达到两位数？",
+    "canonicalAnswer": "三项",
+    "multipleChoiceOptions": [
+      "三项",
+      "两项",
+      "四项",
+      "五项"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-baseball-balk",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "棒球中的投手犯规主要是哪位球员的非法动作？",
+    "canonicalAnswer": "投手",
+    "multipleChoiceOptions": [
+      "投手",
+      "捕手",
+      "击球手",
+      "游击手"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-tennis-tiebreak",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "标准网球抢七通常先得 7 分，但还需要满足什么条件？",
+    "canonicalAnswer": "至少领先两分获胜",
+    "multipleChoiceOptions": [
+      "至少领先两分获胜",
+      "每一分都发球",
+      "恰好赢四个回合",
+      "以零分拿下下一局"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-cricket-lbw",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "板球中的 LBW 是哪种出局方式的缩写？",
+    "canonicalAnswer": "腿前挡球",
+    "multipleChoiceOptions": [
+      "腿前挡球",
+      "长球出界",
+      "延迟击球警告",
+      "球门线后方"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-rugby-knock-on",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "橄榄球中，knock-on 通常是指球员做了什么？",
+    "canonicalAnswer": "用手或手臂意外把球碰向前方",
+    "multipleChoiceOptions": [
+      "用手或手臂意外把球碰向前方",
+      "直接把球踢出边线",
+      "进行高于肩膀的擒抱",
+      "阻挡附加踢球"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-golf-match-play",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "高尔夫比洞赛主要通过计算什么来得分？",
+    "canonicalAnswer": "赢下的洞数",
+    "multipleChoiceOptions": [
+      "赢下的洞数",
+      "总杆数",
+      "击中球道数",
+      "挽救的推杆数"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-fencing-epee",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "击剑中，重剑与花剑的区别之一是有效得分区域是什么？",
+    "canonicalAnswer": "全身",
+    "multipleChoiceOptions": [
+      "全身",
+      "只有躯干",
+      "只有头部和手臂",
+      "腰部以下"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-hockey-power-play",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "冰球中的多打少通常是因为什么发生的？",
+    "canonicalAnswer": "对方有球员正在受罚",
+    "multipleChoiceOptions": [
+      "对方有球员正在受罚",
+      "守门员主动离场",
+      "两队同时换线",
+      "一次干净地赢下争球"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-sports-hardmcq2-football-safety",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "美式橄榄球中的 safety 得多少分？",
+    "canonicalAnswer": "2 分",
+    "multipleChoiceOptions": [
+      "2 分",
+      "1 分",
+      "3 分",
+      "6 分"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-http-404",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "在网页中，HTTP 状态码 404 通常表示什么？",
+    "canonicalAnswer": "未找到",
+    "multipleChoiceOptions": [
+      "禁止访问",
+      "未找到",
+      "网关错误",
+      "永久移动"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-rickroll-song",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "网络“瑞克摇”通常会把人带到瑞克·艾斯利的哪首歌？",
+    "canonicalAnswer": "永不放弃你",
+    "multipleChoiceOptions": [
+      "永远在一起",
+      "永不放弃你",
+      "带我飞",
+      "非洲"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-tldr",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "网络上的 TL;DR 通常是什么意思？",
+    "canonicalAnswer": "太长了，没看",
+    "multipleChoiceOptions": [
+      "太长了，没看",
+      "稍后聊，正在研究",
+      "文本链接，直接回复",
+      "帖子锁定，请勿转发"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-dns-purpose",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "DNS 主要为互联网用户把什么转换成什么？",
+    "canonicalAnswer": "域名转换为 IP 地址",
+    "multipleChoiceOptions": [
+      "密码转换为哈希",
+      "域名转换为 IP 地址",
+      "图片转换为缩略图",
+      "邮箱转换为用户名"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-captcha-purpose",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "CAPTCHA 验证主要用来区分人类和什么？",
+    "canonicalAnswer": "机器人",
+    "multipleChoiceOptions": [
+      "管理员",
+      "机器人",
+      "浏览器",
+      "版主"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-two-factor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "双因素认证在密码登录之外增加了什么？",
+    "canonicalAnswer": "第二种身份凭证",
+    "multipleChoiceOptions": [
+      "公开个人资料",
+      "第二种身份凭证",
+      "更长的用户名",
+      "浏览器书签"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-phishing-goal",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "钓鱼信息通常试图窃取什么？",
+    "canonicalAnswer": "登录信息或个人资料",
+    "multipleChoiceOptions": [
+      "登录信息或个人资料",
+      "屏幕亮度",
+      "键盘快捷键",
+      "仅浏览历史"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-rss-format",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "RSS 源通常使用哪类标记格式编写？",
+    "canonicalAnswer": "XML",
+    "multipleChoiceOptions": [
+      "YAML",
+      "XML",
+      "Markdown",
+      "SQL"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-gpl-linux",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "Linux 内核最著名的是以哪类开源许可证发布？",
+    "canonicalAnswer": "GPL",
+    "multipleChoiceOptions": [
+      "MIT",
+      "GPL",
+      "Apache",
+      "BSD"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-mcq-hashtag-origin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "大多数社交平台上，用哪个符号创建话题标签？",
+    "canonicalAnswer": "#",
+    "multipleChoiceOptions": [
+      "@",
+      "#",
+      "&",
+      "%"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-rfc-meaning",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "在互联网标准中，RFC 代表什么？",
+    "canonicalAnswer": "征求意见稿",
+    "multipleChoiceOptions": [
+      "征求意见稿",
+      "远程文件命令",
+      "运行时格式代码",
+      "注册防火墙证书"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-http-404",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "HTTP 状态码 404 最具体地表示什么？",
+    "canonicalAnswer": "未找到",
+    "multipleChoiceOptions": [
+      "禁止访问",
+      "未找到",
+      "网关错误",
+      "永久移动"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-captcha",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "CAPTCHA 验证主要用于在线区分人类和什么？",
+    "canonicalAnswer": "自动化机器人",
+    "multipleChoiceOptions": [
+      "自动化机器人",
+      "搜索引擎",
+      "VPN 用户",
+      "密码管理器"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-rss-feed",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "RSS 源最常用于让人订阅哪类更新？",
+    "canonicalAnswer": "新文章或新帖子",
+    "multipleChoiceOptions": [
+      "新文章或新帖子",
+      "加密密码",
+      "付款收据",
+      "浏览器 Cookie"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-dns-cache",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "DNS 缓存主要帮助浏览器和网络避免重复查询什么？",
+    "canonicalAnswer": "域名记录",
+    "multipleChoiceOptions": [
+      "域名记录",
+      "屏幕分辨率",
+      "视频字幕",
+      "用户头像"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-archive-wayback",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "互联网档案馆的 Wayback Machine 最出名的是保存什么？",
+    "canonicalAnswer": "已存档的网页",
+    "multipleChoiceOptions": [
+      "已存档的网页",
+      "实时聊天记录",
+      "私人密码",
+      "流媒体播放列表"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-two-factor-totp",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "在双因素认证中，TOTP 代码主要基于密钥和哪种变化中的数值？",
+    "canonicalAnswer": "时间",
+    "multipleChoiceOptions": [
+      "时间",
+      "屏幕亮度",
+      "IP 地址",
+      "电池电量"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-meme-loss",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "网络迷因“Loss”源自哪部网络漫画的极简画面布局？",
+    "canonicalAnswer": "Ctrl+Alt+Del",
+    "multipleChoiceOptions": [
+      "xkcd",
+      "Ctrl+Alt+Del",
+      "Penny Arcade",
+      "The Perry Bible Fellowship"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-irc-channel",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "在 IRC 中，聊天室传统上被称为什么？",
+    "canonicalAnswer": "频道",
+    "multipleChoiceOptions": [
+      "频道",
+      "子版块",
+      "服务器",
+      "帖子串"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-textmcq-open-source-fork",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "在开源文化中，fork 通常是为做什么而创建项目的独立副本？",
+    "canonicalAnswer": "独立开发",
+    "multipleChoiceOptions": [
+      "独立开发",
+      "删除旧问题",
+      "压缩文件",
+      "封禁贡献者"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-oauth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "OAuth 的主要用途是在不直接共享用户密码的情况下让应用做什么？",
+    "canonicalAnswer": "委托有限的授权",
+    "multipleChoiceOptions": [
+      "委托有限的授权",
+      "压缩视频文件",
+      "隐藏 IP 地址",
+      "注册域名"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-phishing",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "钓鱼攻击通常通过做什么来欺骗用户？",
+    "canonicalAnswer": "冒充可信来源",
+    "multipleChoiceOptions": [
+      "冒充可信来源",
+      "加快页面加载",
+      "加密本地备份",
+      "阻止浏览器 Cookie"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-tls-padlock",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "浏览器地址栏的 HTTPS 锁图标主要表示连接使用了什么保护？",
+    "canonicalAnswer": "TLS 加密",
+    "multipleChoiceOptions": [
+      "TLS 加密",
+      "广告拦截",
+      "双因素登录",
+      "本地杀毒扫描"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-mx-record",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "在 DNS 中，MX 记录主要用于指向哪类流量？",
+    "canonicalAnswer": "电子邮件",
+    "multipleChoiceOptions": [
+      "电子邮件",
+      "视频流",
+      "浏览器书签",
+      "密码重置"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-pull-request",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "在 GitHub 等平台上，pull request 主要是提出什么？",
+    "canonicalAnswer": "将代码改动合并到项目中",
+    "multipleChoiceOptions": [
+      "将代码改动合并到项目中",
+      "重置所有用户密码",
+      "购买域名",
+      "安排服务器重启"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-cdn",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "CDN 主要通过什么类型的网络改善网页传输？",
+    "canonicalAnswer": "地理分散的服务器",
+    "multipleChoiceOptions": [
+      "地理分散的服务器",
+      "一台私人笔记本",
+      "离线 USB 镜像",
+      "加密的浏览历史"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-http-429",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "HTTP 状态码 429 最常表示什么？",
+    "canonicalAnswer": "请求过多",
+    "multipleChoiceOptions": [
+      "请求过多",
+      "需要付款",
+      "网关超时",
+      "不支持的媒体类型"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-git-rebase",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "在 Git 中，rebase 分支最直接地意味着对其提交做什么？",
+    "canonicalAnswer": "将提交重新应用到新的基点上",
+    "multipleChoiceOptions": [
+      "将提交重新应用到新的基点上",
+      "只从远程历史中删除提交",
+      "上传前加密提交",
+      "把提交变成问题评论"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-cookies",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "浏览器 Cookie 主要是为哪种目的保存的小段数据？",
+    "canonicalAnswer": "记住网站专属状态",
+    "multipleChoiceOptions": [
+      "记住网站专属状态",
+      "渲染矢量图形",
+      "冷却处理器",
+      "提高显示器亮度"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-internet-hardmcq2-url-fragment",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "在 URL 中，# 符号后的片段通常主要在哪里处理？",
+    "canonicalAnswer": "浏览器中",
+    "multipleChoiceOptions": [
+      "浏览器中",
+      "DNS 根服务器",
+      "TLS 证书内部",
+      "邮件服务器"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-force-unit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "力的国际单位制单位是什么？",
+    "canonicalAnswer": "牛顿",
+    "multipleChoiceOptions": [
+      "焦耳",
+      "牛顿",
+      "瓦特",
+      "帕斯卡"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-ph-acidic",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "pH 值低于 7 的溶液通常被描述为什么？",
+    "canonicalAnswer": "酸性",
+    "multipleChoiceOptions": [
+      "碱性",
+      "中性",
+      "酸性",
+      "含盐"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-photosynthesis",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "植物利用光、二氧化碳和水制造糖的过程叫什么？",
+    "canonicalAnswer": "光合作用",
+    "multipleChoiceOptions": [
+      "呼吸作用",
+      "光合作用",
+      "发酵",
+      "蒸腾作用"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-potassium-symbol",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "钾的化学符号是什么？",
+    "canonicalAnswer": "K",
+    "multipleChoiceOptions": [
+      "P",
+      "Pt",
+      "K",
+      "Po"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-dna-a-pairs",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "在 DNA 中，腺嘌呤通常与哪种碱基配对？",
+    "canonicalAnswer": "胸腺嘧啶",
+    "multipleChoiceOptions": [
+      "尿嘧啶",
+      "胸腺嘧啶",
+      "鸟嘌呤",
+      "胞嘧啶"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-great-red-spot",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "大红斑是哪个行星上的巨大风暴？",
+    "canonicalAnswer": "木星",
+    "multipleChoiceOptions": [
+      "土星",
+      "木星",
+      "海王星",
+      "火星"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-helium-atomic-number",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "哪种稀有气体的原子序数是 2？",
+    "canonicalAnswer": "氦",
+    "multipleChoiceOptions": [
+      "氖",
+      "氦",
+      "氩",
+      "氪"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-speed-of-light",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "真空中的光速精确定义值是多少？",
+    "canonicalAnswer": "299,792,458 米/秒",
+    "multipleChoiceOptions": [
+      "299,792,458 米/秒",
+      "300,000,000 米/秒",
+      "186,000 英里/秒",
+      "299,792 千米/秒"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-water-angle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "水分子的键角最接近哪个数值？",
+    "canonicalAnswer": "104.5 度",
+    "multipleChoiceOptions": [
+      "90 度",
+      "104.5 度",
+      "109.5 度",
+      "120 度"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-mcq-avogadro",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "阿伏伽德罗常数表示一什么中所含的粒子数？",
+    "canonicalAnswer": "摩尔",
+    "multipleChoiceOptions": [
+      "摩尔",
+      "克",
+      "升",
+      "开尔文"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-doppler-effect",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "多普勒效应解释了观测到的波频率因什么而改变？",
+    "canonicalAnswer": "相对运动",
+    "multipleChoiceOptions": [
+      "相对运动",
+      "化学键合",
+      "放射性衰变",
+      "隔热"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-crispr-cas9",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "CRISPR-Cas9 与哪种生物技术关系最密切？",
+    "canonicalAnswer": "基因编辑",
+    "multipleChoiceOptions": [
+      "基因编辑",
+      "蛋白质结晶",
+      "碳测年",
+      "磁共振扫描"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-lagrange-point",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "拉格朗日点是引力和轨道效应使什么成为可能的位置？",
+    "canonicalAnswer": "物体保持相对稳定的位置",
+    "multipleChoiceOptions": [
+      "物体保持相对稳定的位置",
+      "光停止运动",
+      "行星反向自转",
+      "真空产生声音"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-ph-scale",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "在 pH 值中，低于 7 通常表示物质具有什么性质？",
+    "canonicalAnswer": "酸性",
+    "multipleChoiceOptions": [
+      "酸性",
+      "中性",
+      "碱性",
+      "放射性"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-mitochondrial-dna",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "在人类中，线粒体 DNA 通常遗传自哪位亲代？",
+    "canonicalAnswer": "母亲",
+    "multipleChoiceOptions": [
+      "母亲",
+      "父亲",
+      "父母各一半",
+      "双方都不是"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-hubble-redshift",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "在天文学中，遥远星系的红移是哪个宏观观点的重要证据？",
+    "canonicalAnswer": "宇宙膨胀",
+    "multipleChoiceOptions": [
+      "宇宙膨胀",
+      "地球是平的",
+      "恒星正在缩小",
+      "不存在引力"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-absolute-zero",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "绝对零度相当于摄氏温标中的多少度？",
+    "canonicalAnswer": "-273.15 摄氏度",
+    "multipleChoiceOptions": [
+      "0 摄氏度",
+      "-100 摄氏度",
+      "-273.15 摄氏度",
+      "-459.67 摄氏度"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-plate-tectonics",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "板块构造主要描述了什么的大型板块运动？",
+    "canonicalAnswer": "地球岩石圈",
+    "multipleChoiceOptions": [
+      "地球岩石圈",
+      "洋流",
+      "云层系统",
+      "磁场线"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-photosynthesis-electrons",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "在产氧光合作用中，植物释放的氧气主要来自分解什么？",
+    "canonicalAnswer": "水",
+    "multipleChoiceOptions": [
+      "水",
+      "二氧化碳",
+      "葡萄糖",
+      "氮气"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-textmcq-periodic-noble-gases",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "氦、氖和氩属于元素周期表中的哪一族？",
+    "canonicalAnswer": "稀有气体",
+    "multipleChoiceOptions": [
+      "卤素",
+      "稀有气体",
+      "碱金属",
+      "镧系元素"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-control-group",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "在实验中，对照组主要用于提供什么？",
+    "canonicalAnswer": "比较基准",
+    "multipleChoiceOptions": [
+      "比较基准",
+      "保证正确的结果",
+      "更大的样本误差",
+      "替代测量"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-isotopes",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "同一元素的同位素拥有相同数量的质子，但中子数量不同，对吗？",
+    "canonicalAnswer": "中子",
+    "multipleChoiceOptions": [
+      "中子",
+      "仅中性原子中的电子",
+      "原子符号",
+      "化学键"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-semiconductor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "半导体的名称来自其电导率通常介于哪两类物质之间？",
+    "canonicalAnswer": "导体和绝缘体",
+    "multipleChoiceOptions": [
+      "导体和绝缘体",
+      "液体和气体",
+      "磁体和电池",
+      "酸和碱"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-greenhouse-infrared",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "温室气体主要通过吸收并重新发射哪种辐射使地球变暖？",
+    "canonicalAnswer": "红外辐射",
+    "multipleChoiceOptions": [
+      "红外辐射",
+      "伽马射线",
+      "仅紫外线",
+      "无线电广播"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-dna-polymerase",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "DNA 聚合酶最直接负责什么？",
+    "canonicalAnswer": "构建新的 DNA 链",
+    "multipleChoiceOptions": [
+      "构建新的 DNA 链",
+      "消化脂肪",
+      "泵送血液",
+      "分解叶片中的水"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-newton-third",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "牛顿第三定律说相互作用的物体施加大小相等且什么相同的力？",
+    "canonicalAnswer": "方向相反",
+    "multipleChoiceOptions": [
+      "方向相反",
+      "总是向下",
+      "延迟一秒",
+      "不受质量影响"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-sound-vacuum",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "声音无法穿过真空，是因为它需要什么？",
+    "canonicalAnswer": "物质介质",
+    "multipleChoiceOptions": [
+      "物质介质",
+      "可见光",
+      "磁极",
+      "核反应"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-antibiotics",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "抗生素用于治疗由哪类生物引起的感染？",
+    "canonicalAnswer": "细菌",
+    "multipleChoiceOptions": [
+      "细菌",
+      "病毒",
+      "过敏原",
+      "只有朊病毒"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-half-life",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "在放射性衰变中，半衰期指的是发生什么所需的时间？",
+    "canonicalAnswer": "样品中一半的放射性原子核发生衰变",
+    "multipleChoiceOptions": [
+      "样品中一半的放射性原子核发生衰变",
+      "原子失去一半质子",
+      "辐射传播半米",
+      "分子分裂成相等两半"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-science-hardmcq2-osmosis",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "渗透是水通过哪种屏障的运动？",
+    "canonicalAnswer": "选择性透过膜",
+    "multipleChoiceOptions": [
+      "选择性透过膜",
+      "铜线",
+      "声波",
+      "真空间隙"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-thor-hammer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "北欧神话中，雷神托尔的锤子叫什么？",
+    "canonicalAnswer": "妙尔尼尔",
+    "multipleChoiceOptions": [
+      "冈格尼尔",
+      "妙尔尼尔",
+      "格拉墨",
+      "德劳普尼尔"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-athena-birth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "希腊神话中，雅典娜据说从谁的头颅中诞生？",
+    "canonicalAnswer": "宙斯",
+    "multipleChoiceOptions": [
+      "阿瑞斯",
+      "宙斯",
+      "波塞冬",
+      "阿波罗"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-anubis-role",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "阿努比斯与古埃及信仰中的哪一部分关系最密切？",
+    "canonicalAnswer": "死者与防腐",
+    "multipleChoiceOptions": [
+      "尼罗河泛滥",
+      "死者与防腐",
+      "丰收",
+      "旭日"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-persephone-mother",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊神话中，珀耳塞福涅的母亲是谁？",
+    "canonicalAnswer": "得墨忒耳",
+    "multipleChoiceOptions": [
+      "赫拉",
+      "得墨忒耳",
+      "赫斯提亚",
+      "瑞亚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-odin-ravens",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "奥丁的两只乌鸦叫什么？",
+    "canonicalAnswer": "胡金和穆宁",
+    "multipleChoiceOptions": [
+      "胡金和穆宁",
+      "基利和弗雷基",
+      "阿斯克和恩布拉",
+      "斯库尔和哈提"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-achilles-weakness",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "阿喀琉斯最著名的身体弱点是哪一部分？",
+    "canonicalAnswer": "脚跟",
+    "multipleChoiceOptions": [
+      "脚跟",
+      "肩膀",
+      "手腕",
+      "脖子"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-charon-ferry",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊神话中，谁负责用船载灵魂渡过通往冥界的河？",
+    "canonicalAnswer": "卡戎",
+    "multipleChoiceOptions": [
+      "卡戎",
+      "塔纳托斯",
+      "赫尔墨斯",
+      "俄耳甫斯"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-loki-fenrir",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "北欧神话中，哪位诡计之神是芬里尔的父亲？",
+    "canonicalAnswer": "洛基",
+    "multipleChoiceOptions": [
+      "洛基",
+      "奥丁",
+      "提尔",
+      "巴德尔"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-susanoo",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "日本神话中，须佐之男主要被认为是哪方面的神？",
+    "canonicalAnswer": "风暴与海洋之神",
+    "multipleChoiceOptions": [
+      "风暴与海洋之神",
+      "稻米与狐狸之神",
+      "山脉与铁之神",
+      "月亮与夜晚之神"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-mcq-heracles-labors",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "赫拉克勒斯最著名地完成了多少项功业？",
+    "canonicalAnswer": "十二项",
+    "multipleChoiceOptions": [
+      "九项",
+      "十项",
+      "十二项",
+      "十四项"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-hermes-caduceus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "在希腊神话中，双蛇杖与哪位神关系最密切？",
+    "canonicalAnswer": "赫尔墨斯",
+    "multipleChoiceOptions": [
+      "阿波罗",
+      "赫尔墨斯",
+      "阿瑞斯",
+      "狄俄尼索斯"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-norse-yggdrasil",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "北欧神话中的世界树是什么？",
+    "canonicalAnswer": "世界之树",
+    "multipleChoiceOptions": [
+      "世界之树",
+      "魔法锤",
+      "海蛇",
+      "黄金大厅"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-egyptian-judgement",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "古埃及信仰中，死者的心脏要与什么进行称量？",
+    "canonicalAnswer": "玛阿特的羽毛",
+    "multipleChoiceOptions": [
+      "玛阿特的羽毛",
+      "圣甲虫壳",
+      "太阳圆盘",
+      "莲花"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-athena-birth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "传说雅典娜从宙斯身体的哪个部位出生？",
+    "canonicalAnswer": "头部",
+    "multipleChoiceOptions": [
+      "手部",
+      "头部",
+      "影子",
+      "心脏"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-ragnarok-wolf",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "北欧神话中，哪匹狼注定会在诸神黄昏杀死奥丁？",
+    "canonicalAnswer": "芬里尔",
+    "multipleChoiceOptions": [
+      "芬里尔",
+      "加姆",
+      "斯库尔",
+      "哈提"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-orpheus-underworld",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "俄耳甫斯前往冥界是为了带回谁？",
+    "canonicalAnswer": "欧律狄刻",
+    "multipleChoiceOptions": [
+      "欧律狄刻",
+      "阿里阿德涅",
+      "海伦",
+      "美狄亚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-japanese-kitsune",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "日本民间传说中的狐妖通常会变成什么动物的样子？",
+    "canonicalAnswer": "狐狸",
+    "multipleChoiceOptions": [
+      "狐狸",
+      "鹤",
+      "猫",
+      "蛇"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-mayan-feathered-serpent",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "库库尔坎和羽蛇神都与哪种神话形象有关？",
+    "canonicalAnswer": "羽蛇",
+    "multipleChoiceOptions": [
+      "羽蛇",
+      "风暴巨人",
+      "月兔",
+      "火鸟"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-greek-ambrosia",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊神话中，神酒或神食通常是给谁享用的？",
+    "canonicalAnswer": "众神",
+    "multipleChoiceOptions": [
+      "众神",
+      "死者",
+      "只有英雄",
+      "海怪"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-textmcq-irish-cu-chulainn",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "库丘林是哪一神话传统中的英雄？",
+    "canonicalAnswer": "爱尔兰神话",
+    "multipleChoiceOptions": [
+      "爱尔兰神话",
+      "希腊神话",
+      "阿兹特克神话",
+      "印度教神话"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-demeter-persephone",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊神话中，珀耳塞福涅是哪位女神的女儿？",
+    "canonicalAnswer": "得墨忒耳",
+    "multipleChoiceOptions": [
+      "得墨忒耳",
+      "赫拉",
+      "阿佛洛狄忒",
+      "赫斯提亚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-loki-trickster",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "北欧神话中，哪位人物最与诡计和变形有关？",
+    "canonicalAnswer": "洛基",
+    "multipleChoiceOptions": [
+      "洛基",
+      "巴德尔",
+      "提尔",
+      "海姆达尔"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-prometheus-fire",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊神话中，普罗米修斯因把什么带给人类而受罚？",
+    "canonicalAnswer": "火",
+    "multipleChoiceOptions": [
+      "火",
+      "葡萄酒",
+      "字母",
+      "里拉琴"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-hera-domain",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "赫拉与婚姻最密切相关，同时在奥林匹斯众神中担任什么角色？",
+    "canonicalAnswer": "众神之后",
+    "multipleChoiceOptions": [
+      "众神之后",
+      "众神使者",
+      "众神铁匠",
+      "亡者摆渡人"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-anubis-mummification",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "在古埃及宗教中，阿努比斯尤其与哪种葬仪有关？",
+    "canonicalAnswer": "木乃伊制作",
+    "multipleChoiceOptions": [
+      "木乃伊制作",
+      "丰收节",
+      "日食",
+      "河流泛滥"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-medusa-perseus",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位希腊英雄以杀死美杜莎而闻名？",
+    "canonicalAnswer": "珀耳修斯",
+    "multipleChoiceOptions": [
+      "珀耳修斯",
+      "忒修斯",
+      "赫拉克勒斯",
+      "伊阿宋"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-icarus-sun",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "伊卡洛斯飞得太靠近什么后从天空坠落？",
+    "canonicalAnswer": "太阳",
+    "multipleChoiceOptions": [
+      "太阳",
+      "奥林匹斯山",
+      "暴风云",
+      "月亮"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-pandora-jar",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊神话中，潘多拉打开的禁忌容器把什么释放到了世间？",
+    "canonicalAnswer": "灾祸与苦难",
+    "multipleChoiceOptions": [
+      "灾祸与苦难",
+      "四季",
+      "海潮",
+      "第一场收成"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-odin-eye",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "北欧神话中，哪位神牺牲一只眼睛来换取智慧？",
+    "canonicalAnswer": "奥丁",
+    "multipleChoiceOptions": [
+      "奥丁",
+      "提尔",
+      "巴德尔",
+      "弗雷"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-mythology-hardmcq2-river-styx",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊冥界神话中，哪条河与誓言和通往死者的道路有关？",
+    "canonicalAnswer": "冥河",
+    "multipleChoiceOptions": [
+      "冥河",
+      "遗忘河",
+      "尼罗河",
+      "台伯河"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-cage-433",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "哪位作曲家创作了无声作品《4分33秒》？",
+    "canonicalAnswer": "约翰·凯奇",
+    "multipleChoiceOptions": [
+      "约翰·凯奇",
+      "菲利普·格拉斯",
+      "史蒂夫·赖希",
+      "特里·莱利"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-primary-colors",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "哪一组列出了绘画中的传统三原色？",
+    "canonicalAnswer": "红、黄、蓝",
+    "multipleChoiceOptions": [
+      "红、黄、蓝",
+      "红、绿、蓝",
+      "青、品红、黄",
+      "橙、绿、紫"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-reggae-jamaica",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "雷鬼音乐与哪个国家的联系最为密切？",
+    "canonicalAnswer": "牙买加",
+    "multipleChoiceOptions": [
+      "特立尼达和多巴哥",
+      "牙买加",
+      "巴巴多斯",
+      "古巴"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-pollock-style",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "杰克逊·波洛克尤其以哪种绘画技巧闻名？",
+    "canonicalAnswer": "滴画",
+    "multipleChoiceOptions": [
+      "点彩画",
+      "滴画",
+      "湿壁画",
+      "木刻"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-duchamp-fountain",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪位艺术家提交了现成艺术作品《泉》？",
+    "canonicalAnswer": "马塞尔·杜尚",
+    "multipleChoiceOptions": [
+      "马塞尔·杜尚",
+      "曼·雷",
+      "弗朗西斯·毕卡比亚",
+      "让·阿尔普"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-piano-keys",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "标准全尺寸钢琴有多少个琴键？",
+    "canonicalAnswer": "88 个",
+    "multipleChoiceOptions": [
+      "76 个",
+      "88 个",
+      "92 个",
+      "96 个"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-flamenco-country",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "弗拉门戈音乐和舞蹈与哪个国家的联系最密切？",
+    "canonicalAnswer": "西班牙",
+    "multipleChoiceOptions": [
+      "葡萄牙",
+      "西班牙",
+      "阿根廷",
+      "墨西哥"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-blue-note",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "在爵士和蓝调中，刻意降低的富有表现力的音高通常叫什么？",
+    "canonicalAnswer": "蓝调音",
+    "multipleChoiceOptions": [
+      "装饰音",
+      "蓝调音",
+      "持续音",
+      "导音"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-ballet-swan-lake",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "芭蕾舞剧《天鹅湖》的音乐是哪位作曲家创作的？",
+    "canonicalAnswer": "彼得·伊里奇·柴可夫斯基",
+    "multipleChoiceOptions": [
+      "谢尔盖·普罗科菲耶夫",
+      "彼得·伊里奇·柴可夫斯基",
+      "伊戈尔·斯特拉文斯基",
+      "尼古拉·里姆斯基-科萨科夫"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-mcq-woodblock-japan",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "浮世绘是历史悠久的日本艺术形式，以哪种媒介最为人熟知？",
+    "canonicalAnswer": "木版画",
+    "multipleChoiceOptions": [
+      "水墨卷轴",
+      "木版画",
+      "青铜铸造",
+      "漆器陶瓷"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-blue-period",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "蓝色时期与哪位艺术家有关？",
+    "canonicalAnswer": "巴勃罗·毕加索",
+    "multipleChoiceOptions": [
+      "巴勃罗·毕加索",
+      "克劳德·莫奈",
+      "弗里达·卡罗",
+      "亨利·马蒂斯"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-fugue",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "在古典音乐中，赋格围绕一个通常称为什么的主要音乐思想展开？",
+    "canonicalAnswer": "主题",
+    "multipleChoiceOptions": [
+      "主题",
+      "桥段",
+      "副歌",
+      "尾声"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-impasto",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "厚涂画法的特征是颜料以什么方式涂在画面上？",
+    "canonicalAnswer": "厚厚涂抹，使其从表面凸起",
+    "multipleChoiceOptions": [
+      "厚厚涂抹，使其从表面凸起",
+      "只用透明薄涂",
+      "不留下可见笔触",
+      "只用无黏合剂的粉末颜料"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-baroque-basso-continuo",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "数字低音尤其与西方古典音乐的哪个时期有关？",
+    "canonicalAnswer": "巴洛克时期",
+    "multipleChoiceOptions": [
+      "巴洛克时期",
+      "浪漫主义时期",
+      "印象主义时期",
+      "极简主义时期"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-triptych",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "三联画由多少块画板组成？",
+    "canonicalAnswer": "三块",
+    "multipleChoiceOptions": [
+      "两块",
+      "三块",
+      "四块",
+      "五块"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-kintsugi",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "金继是一种用什么材料突出裂缝的日本修复艺术？",
+    "canonicalAnswer": "黄金",
+    "multipleChoiceOptions": [
+      "黄金",
+      "墨水",
+      "丝绸",
+      "竹子"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-synesthesia-scriabin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "作曲家亚历山大·斯克里亚宾常与把声音联系到哪种感官概念的音乐有关？",
+    "canonicalAnswer": "色彩",
+    "multipleChoiceOptions": [
+      "色彩",
+      "味道",
+      "气味",
+      "温度"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-dada-origin",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "达达主义艺术运动始于哪场重大冲突期间？",
+    "canonicalAnswer": "第一次世界大战",
+    "multipleChoiceOptions": [
+      "第一次世界大战",
+      "第二次世界大战",
+      "普法战争",
+      "冷战"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-sitars-strings",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "西塔琴与哪个地区的古典音乐联系最密切？",
+    "canonicalAnswer": "南亚",
+    "multipleChoiceOptions": [
+      "南亚",
+      "西非",
+      "安第斯地区",
+      "斯堪的纳维亚"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-textmcq-woodcut-print",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "木刻是将图像刻在木头上，再用来做什么？",
+    "canonicalAnswer": "印刷",
+    "multipleChoiceOptions": [
+      "印刷",
+      "铸造青铜",
+      "编织布料",
+      "调节琴弦"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-sonata-form",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "古典奏鸣曲式的主要部分通常是呈示部、展开部和什么？",
+    "canonicalAnswer": "再现部",
+    "multipleChoiceOptions": [
+      "再现部",
+      "终止式",
+      "间奏",
+      "即兴段"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-pointillism",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "点彩画主要用许多什么样的小痕迹构成图像？",
+    "canonicalAnswer": "彩色小点",
+    "multipleChoiceOptions": [
+      "彩色小点",
+      "雕刻石痕",
+      "折叠纸条",
+      "投射的影子"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-cubism-forms",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "立体主义尤其以把主体拆解成什么样的形式而闻名？",
+    "canonicalAnswer": "碎片化的几何形体",
+    "multipleChoiceOptions": [
+      "碎片化的几何形体",
+      "平滑的摄影渐变",
+      "单点透视的宗教图标",
+      "未上色的大理石表面"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-well-tempered-clavier",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "《平均律键盘曲集》是哪位作曲家的重要键盘作品？",
+    "canonicalAnswer": "约翰·塞巴斯蒂安·巴赫",
+    "multipleChoiceOptions": [
+      "约翰·塞巴斯蒂安·巴赫",
+      "路德维希·范·贝多芬",
+      "弗朗茨·舒伯特",
+      "乔治·弗里德里希·亨德尔"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-adagio",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "在音乐中，速度标记 adagio 通常表示以何种速度演奏？",
+    "canonicalAnswer": "缓慢地",
+    "multipleChoiceOptions": [
+      "缓慢地",
+      "非常快地",
+      "突然停顿",
+      "只使用打击乐"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-fresco-plaster",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "真正的湿壁画是画在什么表面上的？",
+    "canonicalAnswer": "湿灰泥",
+    "multipleChoiceOptions": [
+      "湿灰泥",
+      "抛光青铜",
+      "干画布",
+      "雕刻玻璃"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-blue-note",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "在蓝调和爵士乐中，蓝调音通常以什么方式处理音高？",
+    "canonicalAnswer": "为表现力而弯曲或降低",
+    "multipleChoiceOptions": [
+      "为表现力而弯曲或降低",
+      "只能由铜管乐器演奏",
+      "完全从音阶中删除",
+      "在乐句之间无声地保持"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-libretto",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "歌剧中的 libretto 最准确地说是什么？",
+    "canonicalAnswer": "作品的文本或歌词",
+    "multipleChoiceOptions": [
+      "作品的文本或歌词",
+      "指挥台",
+      "调律系统",
+      "只有绘制的背景幕"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-camera-obscura",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "暗箱是一种光学装置，艺术家曾用它来做什么？",
+    "canonicalAnswer": "把图像投射到表面上",
+    "multipleChoiceOptions": [
+      "把图像投射到表面上",
+      "更快地混合油画颜料",
+      "调音弦乐器",
+      "均匀地雕刻木版"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "chinese-artmusic-hardmcq2-coda",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "language": "zh-Hans",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "在音乐中，尾声通常是乐曲的哪一部分？",
+    "canonicalAnswer": "结尾段落",
+    "multipleChoiceOptions": [
+      "结尾段落",
+      "第一次排练标记",
+      "重复的调音音符",
+      "最安静的乐器"
+    ],
+    "debugBatch": "zh-hans-text-mcq-2026-08-03"
   }
 ]
