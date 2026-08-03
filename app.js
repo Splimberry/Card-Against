@@ -6129,6 +6129,7 @@ function getRoundOverlayIconConfig(kind, title, options = {}) {
   const normalizedKind = normalizeStatFlashKind(kind);
   const cleanTitle = String(title || "Effect").trim() || "Effect";
   const titleKey = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "effect";
+  const normalizedTitle = cleanTitle.toLowerCase();
   const defaults = {
     chaos: { src: "assets/modifiers/dice.svg", className: "chaos" },
     mixed: { src: "assets/modifiers/equalizer.svg", className: "mixed" },
@@ -6149,10 +6150,19 @@ function getRoundOverlayIconConfig(kind, title, options = {}) {
     positive: { src: "assets/overlays/arrow.svg", className: "positive" }
   };
   const fallback = defaults[normalizedKind] || defaults.positive;
+  const titleAsset = !options.iconSrc && /\b(blue pill|mega pill|pharmacy)\b/.test(normalizedTitle)
+    ? { src: "assets/overlays/pill.svg", className: "pill" }
+    : !options.iconSrc && /\b(virus|antivirus|encryption|error 404)\b/.test(normalizedTitle)
+      ? { src: "assets/overlays/coronavirus.svg", className: "virus" }
+      : null;
+  const modeAsset = options.iconKey === "mode:time-money"
+    ? { src: "assets/modifiers/stop-watch.svg", className: "time-money" }
+    : null;
+  const resolvedAsset = modeAsset || titleAsset || fallback;
   return {
     key: String(options.iconKey || `${normalizedKind}:${titleKey}`),
-    src: String(options.iconSrc || fallback.src),
-    className: String(options.iconClassName || fallback.className),
+    src: String(options.iconSrc || resolvedAsset.src),
+    className: String(options.iconClassName || resolvedAsset.className),
     label: String(options.iconLabel || cleanTitle)
   };
 }
@@ -25369,42 +25379,47 @@ function applyRoomRoundStartModifiers() {
         detail: "All Power-Ups\nRefresh every round",
         iconKey: "mode:chaos",
         priority: true,
-        durationMs: 2200
+        durationMs: 1000
       },
       {
         enabled: "amplified",
         kind: "mixed",
         title: "Amplified",
         detail: `x${(state.roundAmplifiedMultiplier || 1).toFixed(3)} Multiplier`,
-        iconKey: "mode:amplified"
+        iconKey: "mode:amplified",
+        durationMs: 1000
       },
       {
         enabled: "wildFire",
         kind: "burning",
         title: "Wild Fire",
         detail: "Streak losses burn\neveryone else",
-        iconKey: "mode:wildfire"
+        iconKey: "mode:wildfire",
+        durationMs: 1000
       },
       {
         enabled: "harsh",
         kind: "negative",
         title: "Brutal",
         detail: "Wrong answers lose\n10% of your score",
-        iconKey: "mode:brutal"
+        iconKey: "mode:brutal",
+        durationMs: 1000
       },
       {
         enabled: "timeMoney",
         kind: "mixed",
         title: "Time Is Money",
         detail: "More time remaining\nmeans more points",
-        iconKey: "mode:time-money"
+        iconKey: "mode:time-money",
+        durationMs: 1000
       },
       {
         enabled: "partyMayhem",
         kind: "casino",
         title: "Party Mayhem",
         detail: "Table events appear\nmore often",
-        iconKey: "mode:party-mayhem"
+        iconKey: "mode:party-mayhem",
+        durationMs: 1000
       }
     ].filter((introduction) => isMatchModifierEnabled(introduction.enabled));
 

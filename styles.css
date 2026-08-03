@@ -3115,6 +3115,24 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   --overlay-icon-color: #ffdf79;
 }
 
+.round-overlay-icon.time-money {
+  --overlay-icon-color: #8fe7ff;
+}
+
+.round-overlay-icon.pill {
+  --overlay-icon-color: #c5a6ff;
+  background:
+    linear-gradient(145deg, rgba(167, 139, 250, 0.2), rgba(8, 10, 16, 0.88)),
+    rgba(8, 10, 16, 0.82);
+}
+
+.round-overlay-icon.virus {
+  --overlay-icon-color: #9ce978;
+  background:
+    linear-gradient(145deg, rgba(156, 233, 120, 0.18), rgba(8, 10, 16, 0.88)),
+    rgba(8, 10, 16, 0.82);
+}
+
 .round-overlay-icon.market {
   --overlay-icon-color: #64dea4;
   background:
