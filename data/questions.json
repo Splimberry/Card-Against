@@ -19859,1900 +19859,2400 @@
     "gradingStrictness": "strict"
   },
   {
-    "id": "chinese-popculture-mcq-toy-story-first-pixar",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-popcorn-snack",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "easy",
-    "question": "哪部电影是皮克斯第一部在影院上映的长篇动画电影？",
-    "canonicalAnswer": "玩具总动员",
+    "question": "这张图片提示的是哪种经典电影院零食？",
+    "canonicalAnswer": "爆米花",
     "multipleChoiceOptions": [
-      "虫虫危机",
-      "玩具总动员",
-      "怪物史瑞克",
-      "钢铁巨人"
+      "玉米片",
+      "爆米花",
+      "椒盐卷饼",
+      "热狗"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Popcorn02.jpg",
+      "alt": "Popcorn image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-central-perk",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-superhero-costume",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "easy",
-    "question": "在《老友记》中，主角们经常聚会的咖啡馆叫什么？",
-    "canonicalAnswer": "中央咖啡馆",
+    "question": "这种服装风格最常和哪类流行文化角色相关？",
+    "canonicalAnswer": "超级英雄",
     "multipleChoiceOptions": [
-      "蒙克咖啡馆",
-      "中央咖啡馆",
-      "麦克拉伦酒吧",
-      "神经咖啡馆"
+      "超级英雄",
+      "侦探",
+      "海盗",
+      "巫师"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Spider-Man_2011_San_Diego_Comic-Con_Cosplay.jpg",
+      "alt": "Superhero image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-katniss-everdeen",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-film-camera",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "easy",
-    "question": "《饥饿游戏》小说和电影中的女主角是谁？",
-    "canonicalAnswer": "凯妮丝·艾佛丁",
+    "question": "这张摄像机图片最能代表哪种娱乐媒介？",
+    "canonicalAnswer": "电影",
     "multipleChoiceOptions": [
-      "翠丝·普赖尔",
-      "凯妮丝·艾佛丁",
-      "克莱瑞·弗雷",
-      "贝拉·斯旺"
+      "戏剧",
+      "电影",
+      "广播",
+      "播客"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arriflex_-_35mm_Movie_Camera_-_Kolkata_2012-10-09_1590.JPG",
+      "alt": "Film camera image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-neo-actor",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-vinyl-record",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "medium",
-    "question": "《黑客帝国》中饰演尼奥的演员是谁？",
-    "canonicalAnswer": "基努·里维斯",
+    "question": "这种圆形音乐载体最准确叫什么？",
+    "canonicalAnswer": "黑胶唱片",
     "multipleChoiceOptions": [
-      "基努·里维斯",
-      "约翰尼·德普",
-      "克里斯蒂安·贝尔",
-      "布拉德·皮特"
+      "激光影碟",
+      "黑胶唱片",
+      "光盘",
+      "卡式磁带"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Vinyl_record.svg",
+      "alt": "Vinyl record image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-spirited-away-director",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-cosplay",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "medium",
-    "question": "动画电影《千与千寻》的导演是谁？",
-    "canonicalAnswer": "宫崎骏",
+    "question": "在粉丝活动中打扮成虚构角色通常叫什么？",
+    "canonicalAnswer": "角色扮演",
     "multipleChoiceOptions": [
-      "细田守",
-      "新海诚",
-      "宫崎骏",
-      "今敏"
+      "角色扮演",
+      "实境角色扮演",
+      "方法派表演",
+      "角色选角"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Anime_Expo_2012_-_Cosplay.jpg",
+      "alt": "Cosplay image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-dunder-mifflin-product",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-comic-book",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "medium",
-    "question": "在《办公室》中，Dunder Mifflin 主要销售什么产品？",
-    "canonicalAnswer": "纸张",
+    "question": "这种由分格画面组成的印刷读物通常叫什么？",
+    "canonicalAnswer": "漫画书",
     "multipleChoiceOptions": [
-      "打印机",
-      "纸张",
-      "办公椅",
-      "办公文具软件"
+      "漫画书",
+      "故事板",
+      "图像备忘录",
+      "翻页动画书"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fan_Expo_2013_-_Comics_(9669561784).jpg",
+      "alt": "Comic book image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-bad-guy-singer",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-red-carpet",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "medium",
-    "question": "热门歌曲《Bad Guy》是哪位歌手发行的？",
-    "canonicalAnswer": "比莉·艾利什",
+    "question": "明星首映礼和颁奖礼最常和哪种通道联系在一起？",
+    "canonicalAnswer": "红毯",
     "multipleChoiceOptions": [
-      "洛德",
-      "比莉·艾利什",
-      "奥莉维亚·罗德里戈",
-      "杜阿·利帕"
+      "T 台",
+      "红毯",
+      "舞台前沿",
+      "媒体区"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Red_carpet.jpg",
+      "alt": "Red carpet image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-minas-tirith",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-stage-microphone",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "hard",
-    "question": "在《指环王》中，刚铎的首都是哪座城市？",
-    "canonicalAnswer": "米那斯提力斯",
+    "question": "这张演出提示最直接指向哪种现场表演身份？",
+    "canonicalAnswer": "歌手",
     "multipleChoiceOptions": [
-      "米那斯魔窟",
-      "奥斯吉力亚斯",
-      "伊多拉斯",
-      "米那斯提力斯"
+      "歌手",
+      "导演",
+      "制作人",
+      "替身演员"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Shure_SM58_microphone.jpg",
+      "alt": "Stage microphone image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-the-wire-city",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-animation-cel",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "hard",
-    "question": "犯罪剧《火线》主要设定在哪座美国城市？",
-    "canonicalAnswer": "巴尔的摩",
+    "question": "一连串绘制或渲染的画面会形成哪种银幕艺术形式？",
+    "canonicalAnswer": "动画",
     "multipleChoiceOptions": [
-      "巴尔的摩",
-      "底特律",
-      "费城",
-      "芝加哥"
+      "动画",
+      "电影摄影",
+      "字体排版",
+      "即兴表演"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Praxinoscope_animation.gif",
+      "alt": "Animation image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-popculture-mcq-blue-box-doctor-who",
-    "type": "text",
+    "id": "chinese-popculture-imgmcq-television-set",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "hard",
-    "question": "在《神秘博士》中，博士的蓝色警亭时间机器叫什么？",
-    "canonicalAnswer": "TARDIS",
+    "question": "这台家用屏幕最直接对应哪种播出媒介？",
+    "canonicalAnswer": "电视",
     "multipleChoiceOptions": [
-      "TARDIS",
-      "博格方块",
-      "宁静号",
-      "诺斯特罗莫号"
+      "影院",
+      "电视",
+      "直播",
+      "广播"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Old_television_set.png",
+      "alt": "Television image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-minecraft-creator",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-arcade-cabinet",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "easy",
-    "question": "《Minecraft》最初是谁创造的？",
-    "canonicalAnswer": "马库斯·佩尔松",
+    "question": "这种投币式游戏机器通常叫什么？",
+    "canonicalAnswer": "街机机台",
     "multipleChoiceOptions": [
-      "马库斯·佩尔松",
-      "加布·纽维尔",
-      "威尔·赖特",
-      "约翰·卡马克"
+      "街机机台",
+      "弹珠机拉杆",
+      "服务器机架",
+      "主机底座"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arcade_cabinet.png",
+      "alt": "Arcade cabinet image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-portal-cube",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-joystick",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "easy",
-    "question": "在《Portal》中，带有爱心标记的方块叫什么？",
-    "canonicalAnswer": "加权同伴方块",
+    "question": "这张游戏控制器图片提示的是哪种输入设备？",
+    "canonicalAnswer": "摇杆",
     "multipleChoiceOptions": [
-      "加权同伴方块",
-      "加权储物方块",
-      "光圈朋友方块",
-      "热能抑制方块"
+      "轨迹球",
+      "摇杆",
+      "方向盘",
+      "光线枪"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Joystick_black_red_petri_01.svg",
+      "alt": "Joystick image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-npc-meaning",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-chessboard",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "easy",
-    "question": "在游戏中，NPC 通常代表什么意思？",
-    "canonicalAnswer": "非玩家角色",
+    "question": "这块策略游戏棋盘属于哪款经典游戏？",
+    "canonicalAnswer": "国际象棋",
     "multipleChoiceOptions": [
-      "网络玩家角色",
-      "非玩家角色",
-      "新手职业",
-      "中立队友"
+      "西洋跳棋",
+      "国际象棋",
+      "围棋",
+      "双陆棋"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/ChessSet.jpg",
+      "alt": "Chessboard image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-vaporeon-stone",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-pixel-art",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "medium",
-    "question": "在许多《宝可梦》游戏中，伊布接触哪种石头会进化成水伊布？",
-    "canonicalAnswer": "水之石",
+    "question": "这种方块感很强的数字美术风格通常叫什么？",
+    "canonicalAnswer": "像素艺术",
     "multipleChoiceOptions": [
-      "月之石",
-      "水之石",
-      "觉醒之石",
-      "冰之石"
+      "体素雕刻",
+      "像素艺术",
+      "矢量描摹",
+      "光线追踪"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pixel_art_smiley.png",
+      "alt": "Pixel art image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-git-stage-command",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-tabletop-dice",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "medium",
-    "question": "哪个 Git 命令会在提交前暂存已修改的文件？",
-    "canonicalAnswer": "git add",
+    "question": "这些带数字的物件在桌游中最常用来随机决定什么？",
+    "canonicalAnswer": "掷骰结果",
     "multipleChoiceOptions": [
-      "git save",
-      "git add",
-      "git push",
-      "git merge"
+      "抽牌选择",
+      "掷骰结果",
+      "代币交易",
+      "棋盘重置"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dice_(typical_role_playing_game_dice).jpg",
+      "alt": "Tabletop dice image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-python-creator",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-game-controller",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "medium",
-    "question": "哪种编程语言是由 Guido van Rossum 创建的？",
-    "canonicalAnswer": "Python",
+    "question": "这个手持设备主要用于什么活动？",
+    "canonicalAnswer": "玩电子游戏",
     "multipleChoiceOptions": [
-      "Ruby",
-      "Python",
-      "Perl",
-      "Lua"
+      "玩电子游戏",
+      "混音",
+      "扫码",
+      "修图"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Gamepad.svg",
+      "alt": "Game controller image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-d20-checks",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-robotics",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "medium",
-    "question": "在《龙与地下城》中，能力检定最常掷哪种骰子？",
-    "canonicalAnswer": "d20",
+    "question": "制作这种可编程机器属于哪种科技爱好？",
+    "canonicalAnswer": "机器人技术",
     "multipleChoiceOptions": [
-      "d12",
-      "d20",
-      "d10",
-      "d8"
+      "密码学",
+      "机器人技术",
+      "速通",
+      "模型上色"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Small_size_robocup.jpg",
+      "alt": "Robotics image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-doom-developer",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-motherboard",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "hard",
-    "question": "1993 年原版《Doom》由哪家工作室开发？",
-    "canonicalAnswer": "id Software",
+    "question": "许多电脑内部的主电路板叫什么？",
+    "canonicalAnswer": "主板",
     "multipleChoiceOptions": [
-      "id Software",
-      "Raven Software",
-      "Apogee Software",
-      "Looking Glass Studios"
+      "主板",
+      "显卡",
+      "电源",
+      "散热片"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/S479-Motherboard.jpg",
+      "alt": "Motherboard image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-tetris-blocks",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-mechanical-keyboard",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "hard",
-    "question": "《俄罗斯方块》中由四个小方块组成的形状通常叫什么？",
-    "canonicalAnswer": "四格骨牌",
+    "question": "这种有明显敲击手感的电脑输入设备很受程序员和 PC 玩家欢迎，它是什么？",
+    "canonicalAnswer": "机械键盘",
     "multipleChoiceOptions": [
-      "多联骨牌",
-      "四格骨牌",
-      "四联体",
-      "四立方体"
+      "机械键盘",
+      "MIDI 控制器",
+      "直播控制台",
+      "绘图板"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mechanical_Keyboard.jpg",
+      "alt": "Mechanical keyboard image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-gaming-mcq-halo-ringworld",
-    "type": "text",
+    "id": "chinese-gaming-imgmcq-circuit-board",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "hard",
-    "question": "在《Halo》的设定中，巨大的环形超级武器叫什么？",
-    "canonicalAnswer": "光环",
+    "question": "这张图片中的纹路线电子板最笼统叫什么？",
+    "canonicalAnswer": "电路板",
     "multipleChoiceOptions": [
-      "质量中继器",
-      "光环",
-      "方舟",
-      "城塞"
+      "电路板",
+      "光盘",
+      "散热风扇",
+      "电池单元"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Printed_Circuit_Board.jpg",
+      "alt": "Circuit board image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-canada-capital",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-eiffel-tower",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "easy",
-    "question": "加拿大的首都是哪座城市？",
-    "canonicalAnswer": "渥太华",
+    "question": "图片中显示的是巴黎哪座地标？",
+    "canonicalAnswer": "埃菲尔铁塔",
     "multipleChoiceOptions": [
-      "多伦多",
-      "渥太华",
-      "蒙特利尔",
-      "温哥华"
+      "埃菲尔铁塔",
+      "凯旋门",
+      "卢浮宫金字塔",
+      "巴黎圣母院"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tour_Eiffel_Wikimedia_Commons.jpg",
+      "alt": "Eiffel Tower image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-pompeii-vesuvius",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-colosseum",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "easy",
-    "question": "哪座古罗马城市在公元 79 年被维苏威火山喷发掩埋？",
-    "canonicalAnswer": "庞贝",
+    "question": "这张图片代表哪座古罗马圆形竞技场？",
+    "canonicalAnswer": "罗马斗兽场",
     "multipleChoiceOptions": [
-      "庞贝",
-      "赫库兰尼姆",
-      "奥斯蒂亚",
-      "卡普亚"
+      "万神殿",
+      "罗马斗兽场",
+      "大竞技场",
+      "罗马广场"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Colosseum_in_Rome%2C_Italy_-_April_2007.jpg",
+      "alt": "Colosseum image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-japan-currency",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-pyramids",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "easy",
-    "question": "日本的官方货币是什么？",
-    "canonicalAnswer": "日元",
+    "question": "这些古代石造建筑最强烈地与哪个文明相关？",
+    "canonicalAnswer": "古埃及",
     "multipleChoiceOptions": [
-      "韩元",
-      "人民币元",
-      "日元",
-      "林吉特"
+      "古埃及",
+      "古希腊",
+      "古罗马",
+      "古波斯"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/All_Gizah_Pyramids.jpg",
+      "alt": "Egyptian pyramids image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-versailles-treaty",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-stonehenge",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "medium",
-    "question": "哪项条约正式结束了德国与协约国之间的一战？",
-    "canonicalAnswer": "凡尔赛条约",
+    "question": "这张图片提示的是英格兰哪座史前石圈？",
+    "canonicalAnswer": "巨石阵",
     "multipleChoiceOptions": [
-      "凡尔赛条约",
-      "巴黎条约",
-      "特里亚农条约",
-      "布列斯特-立陶夫斯克条约"
+      "埃夫伯里石圈",
+      "巨石阵",
+      "卡拉尼什石阵",
+      "纽格兰奇墓"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Stonehenge2007_07_30.jpg",
+      "alt": "Stonehenge image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-inca-capital",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-statue-liberty",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "medium",
-    "question": "印加帝国的首都是什么？",
-    "canonicalAnswer": "库斯科",
+    "question": "这张图片代表纽约港哪座纪念碑？",
+    "canonicalAnswer": "自由女神像",
     "multipleChoiceOptions": [
-      "特诺奇蒂特兰",
-      "库斯科",
+      "自由女神像",
+      "华盛顿纪念碑",
+      "林肯纪念堂",
+      "拱门地标"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Statue_of_Liberty_7.jpg",
+      "alt": "Statue of Liberty image clue",
+      "credit": "Wikimedia Commons"
+    },
+    "language": "zh-Hans",
+    "acceptedAnswers": [],
+    "botCards": [],
+    "rejectedAnswers": []
+  },
+  {
+    "id": "chinese-geohistory-imgmcq-taj-mahal",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "这座位于阿格拉的白色大理石陵墓是哪一个？",
+    "canonicalAnswer": "泰姬陵",
+    "multipleChoiceOptions": [
+      "泰姬陵",
+      "胡马雍陵",
+      "风之宫殿",
+      "贾玛清真寺"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Taj_Mahal_(Edited).jpeg",
+      "alt": "Taj Mahal image clue",
+      "credit": "Wikimedia Commons"
+    },
+    "language": "zh-Hans",
+    "acceptedAnswers": [],
+    "botCards": [],
+    "rejectedAnswers": []
+  },
+  {
+    "id": "chinese-geohistory-imgmcq-machu-picchu",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "这张山间遗址图片提示的是秘鲁哪处印加遗址？",
+    "canonicalAnswer": "马丘比丘",
+    "multipleChoiceOptions": [
       "马丘比丘",
-      "基多"
+      "奇琴伊察",
+      "特奥蒂瓦坎",
+      "佩特拉"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Machu_Picchu%2C_Peru.jpg",
+      "alt": "Machu Picchu image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-magna-carta-king",
-    "type": "text",
-    "questionStyle": "multiple-choice",
-    "theme": "Geo and History",
-    "difficulty": "medium",
-    "question": "1215 年签署《大宪章》的英格兰国王是谁？",
-    "canonicalAnswer": "约翰王",
-    "multipleChoiceOptions": [
-      "理查一世",
-      "约翰王",
-      "亨利二世",
-      "爱德华一世"
-    ],
-    "language": "zh-Hans",
-    "acceptedAnswers": [],
-    "botCards": [],
-    "rejectedAnswers": []
-  },
-  {
-    "id": "chinese-geohistory-mcq-kilimanjaro-country",
-    "type": "text",
-    "questionStyle": "multiple-choice",
-    "theme": "Geo and History",
-    "difficulty": "medium",
-    "question": "乞力马扎罗山位于哪个国家？",
-    "canonicalAnswer": "坦桑尼亚",
-    "multipleChoiceOptions": [
-      "肯尼亚",
-      "坦桑尼亚",
-      "乌干达",
-      "埃塞俄比亚"
-    ],
-    "language": "zh-Hans",
-    "acceptedAnswers": [],
-    "botCards": [],
-    "rejectedAnswers": []
-  },
-  {
-    "id": "chinese-geohistory-mcq-berlin-wall-year",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-great-wall",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "hard",
-    "question": "柏林墙是哪一年倒塌的？",
-    "canonicalAnswer": "1989",
+    "question": "图片中代表的是中国哪条漫长防御建筑？",
+    "canonicalAnswer": "中国长城",
     "multipleChoiceOptions": [
-      "1987",
-      "1989",
-      "1991",
-      "1993"
+      "中国长城",
+      "哈德良长城",
+      "贝宁城墙",
+      "安东尼长城"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Great_Wall_of_China_at_Jinshanling-edit.jpg",
+      "alt": "Great Wall of China image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-silk-road-terminus",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-acropolis",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "hard",
-    "question": "哪座中国城市常被称为古丝绸之路的东方起点？",
-    "canonicalAnswer": "长安",
+    "question": "图片中雅典山顶建筑群最常被称为什么？",
+    "canonicalAnswer": "雅典卫城",
     "multipleChoiceOptions": [
-      "洛阳",
-      "长安",
-      "南京",
-      "开封"
+      "雅典卫城",
+      "古市集",
+      "奥林匹亚宙斯神庙",
+      "德尔斐"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Acropolis_of_Athens_01361.JPG",
+      "alt": "Acropolis image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-geohistory-mcq-byzantine-capital",
-    "type": "text",
+    "id": "chinese-geohistory-imgmcq-petra",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Geo and History",
     "difficulty": "hard",
-    "question": "拜占庭帝国在大部分历史时期的首都是什么？",
-    "canonicalAnswer": "君士坦丁堡",
+    "question": "这张图片提示的是约旦哪座岩石雕凿古城？",
+    "canonicalAnswer": "佩特拉",
     "multipleChoiceOptions": [
-      "君士坦丁堡",
-      "安条克",
-      "尼西亚",
-      "塞萨洛尼基"
+      "佩特拉",
+      "巴尔米拉",
+      "波斯波利斯",
+      "巴勒贝克"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Al_Khazneh_Petra_edit_2.jpg",
+      "alt": "Petra image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-cheetah-speed",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-red-panda",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "easy",
-    "question": "哪种动物通常被认为是陆地上最快的动物？",
-    "canonicalAnswer": "猎豹",
+    "question": "这张图片中的红色树栖哺乳动物是哪一种？",
+    "canonicalAnswer": "小熊猫",
     "multipleChoiceOptions": [
-      "叉角羚",
-      "猎豹",
-      "花豹",
-      "跳羚"
+      "貉",
+      "小熊猫",
+      "长鼻浣熊",
+      "环尾猫"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/RedPandaFullBody.JPG",
+      "alt": "Red panda image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-platypus-bill",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-meerkat",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "easy",
-    "question": "哪种会产卵的哺乳动物有像鸭子一样的嘴？",
-    "canonicalAnswer": "鸭嘴兽",
+    "question": "这种直立站着的沙漠哺乳动物最可能是哪一种？",
+    "canonicalAnswer": "猫鼬",
     "multipleChoiceOptions": [
-      "针鼹",
-      "鸭嘴兽",
-      "水獭",
-      "海狸"
+      "獴",
+      "猫鼬",
+      "草原犬鼠",
+      "狐獴"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Suricata_suricatta_2.jpg",
+      "alt": "Meerkat image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-koala-food",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-sloth",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "easy",
-    "question": "考拉主要吃哪种树的叶子？",
-    "canonicalAnswer": "桉树",
+    "question": "图片中这种行动缓慢的树栖哺乳动物是什么？",
+    "canonicalAnswer": "树懒",
     "multipleChoiceOptions": [
-      "金合欢",
-      "桉树",
-      "竹子",
-      "红树林"
+      "树懒",
+      "考拉",
+      "食蚁兽",
+      "狐猴"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bradypus.jpg",
+      "alt": "Sloth image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-whale-shark",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-puffin",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "medium",
-    "question": "哪种鲨鱼是现存最大的鱼类？",
-    "canonicalAnswer": "鲸鲨",
+    "question": "这张图片提示的是哪种有彩色喙的海鸟？",
+    "canonicalAnswer": "海鹦",
     "multipleChoiceOptions": [
-      "姥鲨",
-      "大白鲨",
-      "鲸鲨",
-      "虎鲨"
+      "海鹦",
+      "企鹅",
+      "小海雀",
+      "塘鹅"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Atlantic_Puffin_Fratercula_arctica.jpg",
+      "alt": "Puffin image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-bee-waggle-dance",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-flamingo",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "medium",
-    "question": "蜜蜂会用哪种行为分享食物来源的方向？",
-    "canonicalAnswer": "摇摆舞",
+    "question": "这张图片代表哪种粉色长腿鸟？",
+    "canonicalAnswer": "火烈鸟",
     "multipleChoiceOptions": [
-      "颤抖舞",
-      "摇摆舞",
-      "圆舞",
-      "八字梳理"
+      "火烈鸟",
+      "琵鹭",
+      "鹮",
+      "鹭"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Flamingo_Santacruz.jpg",
+      "alt": "Flamingo image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-octopus-blood",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-camel",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "medium",
-    "question": "章鱼血液在含氧时是什么颜色？",
-    "canonicalAnswer": "蓝色",
+    "question": "这张图片显示的是哪种适应沙漠环境的动物？",
+    "canonicalAnswer": "骆驼",
     "multipleChoiceOptions": [
-      "绿色",
-      "蓝色",
-      "紫色",
-      "红色"
+      "骆驼",
+      "美洲驼",
+      "羊驼",
+      "原驼"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Camelus_dromedarius_in_Sahara.jpg",
+      "alt": "Camel image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-seahorse-babies",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-capybara",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "medium",
-    "question": "在海马中，哪一性别负责携带发育中的幼体？",
-    "canonicalAnswer": "雄性",
+    "question": "这种大型半水栖啮齿动物最准确叫什么？",
+    "canonicalAnswer": "水豚",
     "multipleChoiceOptions": [
-      "雌性",
-      "雄性",
-      "双亲",
-      "都不是"
+      "河狸",
+      "水豚",
+      "海狸鼠",
+      "旱獭"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hydrochoerus_hydrochaeris_(Linnaeus_1766).jpg",
+      "alt": "Capybara image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-monarch-migration",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-jellyfish",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "hard",
-    "question": "许多北美东部的帝王蝶会迁徙到哪个国家越冬？",
-    "canonicalAnswer": "墨西哥",
+    "question": "这张漂浮的图片提示的是哪种柔软的海洋动物？",
+    "canonicalAnswer": "水母",
     "multipleChoiceOptions": [
-      "墨西哥",
-      "哥斯达黎加",
-      "巴西",
-      "古巴"
+      "水母",
+      "海葵",
+      "僧帽水母",
+      "栉水母"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Aurelia_aurita_(Cnidaria)_Luc_Viatour.jpg",
+      "alt": "Jellyfish image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-elephant-gestation",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-peacock",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "hard",
-    "question": "哪种陆地哺乳动物以接近 22 个月的孕期闻名？",
-    "canonicalAnswer": "非洲象",
+    "question": "哪种鸟以图片暗示的华丽尾羽展示闻名？",
+    "canonicalAnswer": "孔雀",
     "multipleChoiceOptions": [
-      "白犀牛",
-      "非洲象",
-      "河马",
-      "长颈鹿"
+      "孔雀",
+      "雉鸡",
+      "极乐鸟",
+      "火鸡"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Peacock_Plumage.jpg",
+      "alt": "Peacock image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-animals-mcq-peregrine-dive",
-    "type": "text",
+    "id": "chinese-animals-imgmcq-crocodile",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Animals",
     "difficulty": "hard",
-    "question": "哪种鸟以被称为俯冲捕猎的极高速下坠动作闻名？",
-    "canonicalAnswer": "游隼",
+    "question": "这张图片代表哪种大型半水栖爬行动物？",
+    "canonicalAnswer": "鳄鱼",
     "multipleChoiceOptions": [
-      "金雕",
-      "游隼",
-      "矛隼",
-      "红尾鵟"
+      "短吻鳄",
+      "鳄鱼",
+      "凯门鳄",
+      "恒河鳄"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Crocodile_(Crocodylus_niloticus)_head.jpg",
+      "alt": "Crocodile image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-guacamole-base",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-ramen",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "easy",
-    "question": "鳄梨酱的主要原料是哪种水果？",
-    "canonicalAnswer": "牛油果",
+    "question": "这张图片代表哪种面汤？",
+    "canonicalAnswer": "拉面",
     "multipleChoiceOptions": [
-      "酸浆番茄",
-      "牛油果",
-      "大蕉",
-      "青柠"
+      "越南河粉",
+      "拉面",
+      "叻沙",
+      "乌冬"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fresh_ramen_noodle_001.jpg",
+      "alt": "Ramen image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-latte-base",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-croissant",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "easy",
-    "question": "拿铁咖啡通常以哪种咖啡为基础？",
-    "canonicalAnswer": "浓缩咖啡",
+    "question": "图片中这种酥脆的月牙形点心叫什么？",
+    "canonicalAnswer": "可颂",
     "multipleChoiceOptions": [
-      "冷萃咖啡",
-      "浓缩咖啡",
-      "土耳其咖啡",
-      "滴滤咖啡"
+      "布里欧修",
+      "可颂",
+      "丹麦酥",
+      "蝴蝶酥"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Croissant-Petr_Kratochvil.jpg",
+      "alt": "Croissant image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-hummus-chickpeas",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-pizza",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "easy",
-    "question": "传统鹰嘴豆泥主要以哪种豆类为基础？",
-    "canonicalAnswer": "鹰嘴豆",
+    "question": "这张图片提示的是哪种圆形意式菜肴？",
+    "canonicalAnswer": "披萨",
     "multipleChoiceOptions": [
-      "扁豆",
-      "鹰嘴豆",
-      "蚕豆",
-      "白豆"
+      "扁面包",
+      "披萨",
+      "佛卡夏",
+      "墨西哥夹饼"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Eq_it-na_pizza-margherita_sep2005_sml.jpg",
+      "alt": "Pizza image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-sushi-rice",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-paella",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "“寿司”这个词最直接指哪种经过调味处理的食材？",
-    "canonicalAnswer": "醋饭",
+    "question": "这锅食物代表哪种西班牙米饭料理？",
+    "canonicalAnswer": "海鲜饭",
     "multipleChoiceOptions": [
-      "生鱼",
-      "醋饭",
-      "海苔包裹",
-      "芥末酱"
+      "意式烩饭",
+      "海鲜饭",
+      "什锦饭",
+      "抓饭"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Paella_01.jpg",
+      "alt": "Paella image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-miso-soybeans",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-taco",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "味噌酱最常由哪种豆发酵制成？",
-    "canonicalAnswer": "大豆",
+    "question": "这张图片提示的是哪种折叠的墨西哥食物？",
+    "canonicalAnswer": "塔可",
     "multipleChoiceOptions": [
-      "大豆",
-      "红豆",
-      "绿豆",
-      "黑豆"
+      "塔可",
+      "馅饼",
+      "玉米饼",
+      "塔马利"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/001_Tacos_de_carnitas%2C_carne_asada_y_al_pastor.jpg",
+      "alt": "Taco image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-tequila-agave",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-espresso",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "龙舌兰酒主要由哪种植物制成？",
-    "canonicalAnswer": "蓝龙舌兰",
+    "question": "这种小杯浓咖啡最准确叫什么？",
+    "canonicalAnswer": "意式浓缩咖啡",
     "multipleChoiceOptions": [
-      "蓝龙舌兰",
-      "甘蔗",
-      "仙人掌果",
-      "丝兰"
+      "意式浓缩咖啡",
+      "美式咖啡",
+      "卡布奇诺",
+      "玛奇朵"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Espresso_BW_1.jpg",
+      "alt": "Espresso image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-kimchi-cabbage",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-macarons",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "白菜泡菜最常用哪种蔬菜制作？",
-    "canonicalAnswer": "大白菜",
+    "question": "图片中这种彩色法式夹心小甜点叫什么？",
+    "canonicalAnswer": "马卡龙",
     "multipleChoiceOptions": [
-      "白萝卜",
-      "小白菜",
-      "大白菜",
-      "芥菜"
+      "马卡龙",
+      "玛德琳",
+      "蛋白霜",
+      "法式小点心"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Macarons%2C_French_made_mini_meringue_based_confection.JPG",
+      "alt": "Macaron image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-parmigiano-country",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-curry",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "hard",
-    "question": "帕尔马干酪是哪个国家的受保护奶酪？",
-    "canonicalAnswer": "意大利",
+    "question": "这种带香料和酱汁的菜最笼统叫什么？",
+    "canonicalAnswer": "咖喱",
     "multipleChoiceOptions": [
-      "法国",
-      "意大利",
-      "瑞士",
-      "西班牙"
+      "炖菜",
+      "咖喱",
+      "法式杂烩",
+      "浓汤"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Thai_Red_Curry.jpg",
+      "alt": "Curry image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-roux-ingredients",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-pretzel",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "hard",
-    "question": "经典 roux 通常是面粉和哪种脂肪一起加热制成？",
-    "canonicalAnswer": "黄油",
+    "question": "图片中这种扭结形烘焙零食叫什么？",
+    "canonicalAnswer": "椒盐卷饼",
     "multipleChoiceOptions": [
-      "橄榄油",
-      "黄油",
-      "奶油",
-      "蛋黄"
+      "椒盐卷饼",
+      "贝果",
+      "比亚利面包",
+      "面包棒"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pretzel.jpg",
+      "alt": "Pretzel image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-fooddrinks-mcq-pisco-base",
-    "type": "text",
+    "id": "chinese-fooddrinks-imgmcq-dim-sum",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "hard",
-    "question": "皮斯科是一种主要由哪种水果蒸馏出的白兰地？",
-    "canonicalAnswer": "葡萄",
+    "question": "这类共享的广式小吃通常统称为什么？",
+    "canonicalAnswer": "点心",
     "multipleChoiceOptions": [
-      "苹果",
-      "葡萄",
-      "李子",
-      "梨"
+      "点心",
+      "韩式小菜",
+      "西班牙小吃",
+      "中东小菜"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dim_sum_breakfast.jpg",
+      "alt": "Dim sum image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-baseball-strikes",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-archery",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "easy",
-    "question": "在棒球中，通常几次好球会导致出局？",
-    "canonicalAnswer": "三次",
+    "question": "哪项运动使用弓把箭射向靶子？",
+    "canonicalAnswer": "射箭",
     "multipleChoiceOptions": [
-      "两次",
-      "三次",
-      "四次",
-      "五次"
+      "射箭",
+      "击剑",
+      "射击",
+      "飞镖"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Archery_competition.jpg",
+      "alt": "Archery image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-golf-birdie",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-fencing",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "easy",
-    "question": "在高尔夫中，低于标准杆一杆的成绩叫什么？",
-    "canonicalAnswer": "小鸟球",
+    "question": "这张戴面罩对决的图片代表哪项奥运格斗运动？",
+    "canonicalAnswer": "击剑",
     "multipleChoiceOptions": [
-      "小鸟球",
-      "老鹰球",
-      "柏忌",
-      "标准杆"
+      "剑道",
+      "击剑",
+      "拳击",
+      "跆拳道"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fencing_foil_valid_surfaces.svg",
+      "alt": "Fencing image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-basketball-three",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-rowing",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "easy",
-    "question": "在篮球中，三分线外投进一球值多少分？",
-    "canonicalAnswer": "三分",
+    "question": "这张图片提示的是哪项船类运动？",
+    "canonicalAnswer": "赛艇",
     "multipleChoiceOptions": [
-      "两分",
-      "三分",
-      "四分",
-      "一分"
+      "赛艇",
+      "帆船",
+      "皮划艇",
+      "漂流"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rowing_at_the_2012_Summer_Olympics.jpg",
+      "alt": "Rowing image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-ashes-teams",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-surfing",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "medium",
-    "question": "灰烬杯是英格兰和哪个国家之间的板球宿敌对抗？",
-    "canonicalAnswer": "澳大利亚",
+    "question": "这张乘浪图片代表哪项板类运动？",
+    "canonicalAnswer": "冲浪",
     "multipleChoiceOptions": [
-      "印度",
-      "澳大利亚",
-      "新西兰",
-      "南非"
+      "冲浪",
+      "尾波滑水",
+      "风帆冲浪",
+      "桨板"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Surfing_in_Hawaii.jpg",
+      "alt": "Surfing image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-marathon-distance",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-ice-hockey",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "medium",
-    "question": "马拉松官方距离大约是多少公里？",
-    "canonicalAnswer": "42.195 km",
+    "question": "哪项冰场运动使用球杆和冰球？",
+    "canonicalAnswer": "冰球",
     "multipleChoiceOptions": [
-      "40 km",
-      "42.195 km",
-      "45 km",
-      "50 km"
+      "曲棍球",
+      "冰球",
+      "长曲棍球",
+      "班迪球"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/NHL_hockey.jpg",
+      "alt": "Ice hockey image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-boxing-tko",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-table-tennis",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "medium",
-    "question": "在拳击中，TKO 代表什么？",
-    "canonicalAnswer": "技术性击倒",
+    "question": "这张图片代表哪项快速室内球拍运动？",
+    "canonicalAnswer": "乒乓球",
     "multipleChoiceOptions": [
-      "限时击倒",
-      "技术性击倒",
-      "完全击倒",
-      "锦标赛击倒"
+      "羽毛球",
+      "壁球",
+      "乒乓球",
+      "板式网球"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Table_Tennis_2.jpg",
+      "alt": "Table tennis image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-rugby-try-points",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-skateboarding",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "medium",
-    "question": "在英式橄榄球联盟中，达阵得多少分？",
-    "canonicalAnswer": "五分",
+    "question": "这张滑板提示的是哪项街头和公园运动？",
+    "canonicalAnswer": "滑板",
     "multipleChoiceOptions": [
-      "四分",
-      "五分",
-      "六分",
-      "七分"
+      "滑板",
+      "单板滑雪",
+      "长板",
+      "滑板车"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Skateboarding.jpg",
+      "alt": "Skateboarding image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-tennis-deuce",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-cricket",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "hard",
-    "question": "在网球计分中，平分后某一方赢下下一分，接下来叫什么？",
-    "canonicalAnswer": "占先",
+    "question": "这张图片代表哪项有三柱门的球棒运动？",
+    "canonicalAnswer": "板球",
     "multipleChoiceOptions": [
-      "占先",
-      "破发点",
-      "盘点",
-      "局点"
+      "棒球",
+      "板球",
+      "圆场棒球",
+      "垒球"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cricket_at_the_Gabba.jpg",
+      "alt": "Cricket image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-olympic-rings",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-boxing",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "hard",
-    "question": "五个奥运五环传统上代表什么？",
-    "canonicalAnswer": "五个有人居住的大洲",
+    "question": "这张拳套图片代表哪项擂台格斗运动？",
+    "canonicalAnswer": "拳击",
     "multipleChoiceOptions": [
-      "五个创始城市",
-      "五个有人居住的大洲",
-      "五项古代运动",
-      "五个原始国家"
+      "踢拳",
+      "拳击",
+      "摔跤",
+      "柔道"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Boxing_gloves_red.jpg",
+      "alt": "Boxing image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-sports-mcq-f1-checkered-flag",
-    "type": "text",
+    "id": "chinese-sports-imgmcq-cycling",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "hard",
-    "question": "在赛车中，哪面旗表示比赛结束？",
-    "canonicalAnswer": "方格旗",
+    "question": "这张自行车图片暗示的是哪项竞速运动？",
+    "canonicalAnswer": "自行车赛",
     "multipleChoiceOptions": [
-      "黑旗",
-      "黄旗",
-      "方格旗",
-      "蓝旗"
+      "铁人三项",
+      "自行车赛",
+      "速度滑冰",
+      "冬季两项"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tour_de_France_2005_01.jpg",
+      "alt": "Cycling image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-http-404",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-wifi-router",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "easy",
-    "question": "在网络中，HTTP 状态码 404 通常表示什么？",
-    "canonicalAnswer": "未找到",
+    "question": "这种家庭联网设备最常叫什么？",
+    "canonicalAnswer": "Wi-Fi 路由器",
     "multipleChoiceOptions": [
-      "禁止访问",
-      "未找到",
-      "错误网关",
-      "永久移动"
+      "调制解调器",
+      "Wi-Fi 路由器",
+      "交换机",
+      "防火墙"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Wireless_router.jpg",
+      "alt": "Wi-Fi router image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-rickroll-song",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-emoji",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "easy",
-    "question": "Rickroll 通常会把人带到 Rick Astley 的哪首歌？",
-    "canonicalAnswer": "Never Gonna Give You Up",
+    "question": "聊天和帖子中使用的小图形符号叫什么？",
+    "canonicalAnswer": "表情符号",
     "multipleChoiceOptions": [
-      "Together Forever",
-      "Never Gonna Give You Up",
-      "Take On Me",
-      "Africa"
+      "表情符号",
+      "验证码",
+      "头像",
+      "贴纸包"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Twemoji_1f600.svg",
+      "alt": "Emoji image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-tldr",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-laptop",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "easy",
-    "question": "TL;DR 在网上通常是什么意思？",
-    "canonicalAnswer": "太长不看",
+    "question": "这张图片代表哪种便携式电脑？",
+    "canonicalAnswer": "笔记本电脑",
     "multipleChoiceOptions": [
-      "太长不看",
-      "稍后聊；正在研究",
-      "文本链接；直接回复",
-      "已锁帖；不要转发"
+      "平板电脑",
+      "笔记本电脑",
+      "台式机主机",
+      "智能手表"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Laptop.jpg",
+      "alt": "Laptop image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-dns-purpose",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-smartphone",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "medium",
-    "question": "DNS 主要为互联网用户转换什么？",
-    "canonicalAnswer": "域名转换为 IP 地址",
+    "question": "哪种口袋设备是移动互联网文化的核心？",
+    "canonicalAnswer": "智能手机",
     "multipleChoiceOptions": [
-      "密码转换为哈希",
-      "域名转换为 IP 地址",
-      "图片转换为缩略图",
-      "邮件转换为用户名"
+      "智能手机",
+      "电子阅读器",
+      "计算器",
+      "掌上游戏机"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/SmartPhone.jpg",
+      "alt": "Smartphone image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-captcha-purpose",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-podcast",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "medium",
-    "question": "CAPTCHA 测试主要用来区分人类和什么？",
-    "canonicalAnswer": "机器人",
+    "question": "这个麦克风配置最容易让人想到哪种线上音频形式？",
+    "canonicalAnswer": "播客",
     "multipleChoiceOptions": [
-      "管理员",
-      "机器人",
-      "浏览器",
-      "版主"
+      "播客",
+      "网络研讨会",
+      "博客文章",
+      "电子报"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/USB-Microphone.jpg",
+      "alt": "Podcast image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-two-factor",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-hashtag-sign",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "medium",
-    "question": "双因素认证会在密码登录之外增加什么？",
-    "canonicalAnswer": "第二种身份证明",
+    "question": "这个符号在线上用来标记可搜索的话题，它叫什么？",
+    "canonicalAnswer": "话题标签",
     "multipleChoiceOptions": [
-      "公开个人资料",
-      "第二种身份证明",
-      "更长的用户名",
-      "浏览器书签"
+      "提及符号",
+      "话题标签",
+      "账号名",
+      "永久链接"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Hashtag.svg",
+      "alt": "Hashtag image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-phishing-goal",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-qr-code",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "medium",
-    "question": "钓鱼信息通常试图窃取什么？",
-    "canonicalAnswer": "登录或个人信息",
+    "question": "这张图片代表哪种可扫描的方形代码？",
+    "canonicalAnswer": "二维码",
     "multipleChoiceOptions": [
-      "登录或个人信息",
-      "屏幕亮度",
-      "键盘快捷键",
-      "仅浏览器历史"
+      "条形码",
+      "二维码",
+      "验证码",
+      "短链接"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/QR_code_for_mobile_English_Wikipedia.svg",
+      "alt": "QR code image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-rss-format",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-livestream",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "hard",
-    "question": "RSS 订阅源通常使用哪类标记格式编写？",
-    "canonicalAnswer": "XML",
+    "question": "把视频实时播给线上观众通常叫什么？",
+    "canonicalAnswer": "直播",
     "multipleChoiceOptions": [
-      "YAML",
-      "XML",
-      "Markdown",
-      "SQL"
+      "直播",
+      "缓存",
+      "侧载",
+      "镜像"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Live_Stream_Video_Equipment_(51837785879).jpg",
+      "alt": "Livestream image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-gpl-linux",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-server-rack",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "hard",
-    "question": "Linux 内核著名地采用哪类开源许可证发布？",
-    "canonicalAnswer": "GPL",
+    "question": "成排的机器通常出现在什么互联网基础设施中？",
+    "canonicalAnswer": "数据中心",
     "multipleChoiceOptions": [
-      "MIT",
-      "GPL",
-      "Apache",
-      "BSD"
+      "数据中心",
+      "搜索栏",
+      "浏览器标签页",
+      "版主管理队列"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rack001.jpg",
+      "alt": "Server rack image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-internet-mcq-hashtag-origin",
-    "type": "text",
+    "id": "chinese-internet-imgmcq-drone-camera",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Internet Culture",
     "difficulty": "hard",
-    "question": "大多数社交平台用哪个符号创建话题标签？",
-    "canonicalAnswer": "#",
+    "question": "这种会飞的拍摄设备常出现在网络创作者视频中，它是什么？",
+    "canonicalAnswer": "无人机",
     "multipleChoiceOptions": [
-      "@",
-      "#",
-      "&",
-      "%"
+      "无人机",
+      "网络摄像头",
+      "稳定器",
+      "运动相机"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/DJI_Phantom_2_Vision%2B_V3_hovering.jpg",
+      "alt": "Drone camera image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-force-unit",
-    "type": "text",
+    "id": "chinese-science-imgmcq-microscope",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "easy",
-    "question": "力的 SI 单位是什么？",
-    "canonicalAnswer": "牛顿",
+    "question": "哪种实验室仪器用于观察非常微小的物体？",
+    "canonicalAnswer": "显微镜",
     "multipleChoiceOptions": [
-      "焦耳",
-      "牛顿",
-      "瓦特",
-      "帕斯卡"
+      "望远镜",
+      "显微镜",
+      "光谱仪",
+      "气压计"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Microscope_(PSF).png",
+      "alt": "Microscope image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-ph-acidic",
-    "type": "text",
+    "id": "chinese-science-imgmcq-telescope",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "easy",
-    "question": "pH 值低于 7 的溶液通常被描述为什么？",
-    "canonicalAnswer": "酸性",
+    "question": "哪种仪器用于观察天空中的遥远物体？",
+    "canonicalAnswer": "望远镜",
     "multipleChoiceOptions": [
-      "碱性",
-      "中性",
-      "酸性",
-      "盐性"
+      "望远镜",
+      "显微镜",
+      "潜望镜",
+      "地震仪"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Amateur_telescope.jpg",
+      "alt": "Telescope image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-photosynthesis",
-    "type": "text",
+    "id": "chinese-science-imgmcq-fossil",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "easy",
-    "question": "植物利用光、二氧化碳和水制造糖的过程叫什么？",
-    "canonicalAnswer": "光合作用",
+    "question": "古代生命保存下来的遗骸或痕迹叫什么？",
+    "canonicalAnswer": "化石",
     "multipleChoiceOptions": [
-      "呼吸作用",
-      "光合作用",
-      "发酵",
-      "蒸腾作用"
+      "化石",
+      "晶体",
+      "陨石",
+      "沉积物"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Fossil_trilobite_(128894561).jpg",
+      "alt": "Fossil image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-potassium-symbol",
-    "type": "text",
+    "id": "chinese-science-imgmcq-volcano",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "medium",
-    "question": "钾的化学符号是什么？",
-    "canonicalAnswer": "K",
+    "question": "这张喷发图片代表哪种地质特征？",
+    "canonicalAnswer": "火山",
     "multipleChoiceOptions": [
-      "P",
-      "Pt",
-      "K",
-      "Po"
+      "间歇泉",
+      "火山",
+      "断层线",
+      "天坑"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Mayon_Volcano_as_of_March_2020.jpg",
+      "alt": "Volcano image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-dna-a-pairs",
-    "type": "text",
+    "id": "chinese-science-imgmcq-solar-panel",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "medium",
-    "question": "在 DNA 中，腺嘌呤通常与哪种碱基配对？",
-    "canonicalAnswer": "胸腺嘧啶",
+    "question": "哪种技术能把阳光直接转换成电能？",
+    "canonicalAnswer": "太阳能板",
     "multipleChoiceOptions": [
-      "尿嘧啶",
-      "胸腺嘧啶",
-      "鸟嘌呤",
-      "胞嘧啶"
+      "太阳能板",
+      "风力涡轮机",
+      "燃料电池",
+      "电池组"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Solar_panels_on_a_roof.jpg",
+      "alt": "Solar panel image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-great-red-spot",
-    "type": "text",
+    "id": "chinese-science-imgmcq-beaker",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "medium",
-    "question": "大红斑是哪颗行星上的巨大风暴？",
-    "canonicalAnswer": "木星",
+    "question": "图片中这种常见实验室玻璃器皿叫什么？",
+    "canonicalAnswer": "烧杯",
     "multipleChoiceOptions": [
-      "土星",
-      "木星",
-      "海王星",
-      "火星"
+      "烧杯",
+      "培养皿",
+      "滴定管",
+      "试管架"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/A_glass_beaker.jpg",
+      "alt": "Beaker image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-helium-atomic-number",
-    "type": "text",
+    "id": "chinese-science-imgmcq-neuron",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "medium",
-    "question": "哪种稀有气体的原子序数是 2？",
-    "canonicalAnswer": "氦",
+    "question": "这种分枝状细胞图片代表哪种神经系统细胞？",
+    "canonicalAnswer": "神经元",
     "multipleChoiceOptions": [
-      "氖",
-      "氦",
-      "氩",
-      "氪"
+      "神经元",
+      "血小板",
+      "骨细胞",
+      "淋巴细胞"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Neuron.svg",
+      "alt": "Neuron image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-speed-of-light",
-    "type": "text",
+    "id": "chinese-science-imgmcq-magnet",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "hard",
-    "question": "真空中光速的精确定义值是多少？",
-    "canonicalAnswer": "299,792,458 m/s",
+    "question": "哪种物体会产生能吸引铁的看不见的场？",
+    "canonicalAnswer": "磁铁",
     "multipleChoiceOptions": [
-      "299,792,458 m/s",
-      "300,000,000 m/s",
-      "186,000 miles/s",
-      "299,792 km/s"
+      "磁铁",
+      "电池",
+      "透镜",
+      "温度计"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/VFPt_magnet_field.svg",
+      "alt": "Magnet image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-water-angle",
-    "type": "text",
+    "id": "chinese-science-imgmcq-atom-model",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "hard",
-    "question": "水分子的键角最接近哪个数值？",
-    "canonicalAnswer": "104.5 度",
+    "question": "这样的图示通常代表物质的哪个基本单位？",
+    "canonicalAnswer": "原子",
     "multipleChoiceOptions": [
-      "90 度",
-      "104.5 度",
-      "109.5 度",
-      "120 度"
+      "原子",
+      "分子",
+      "细胞",
+      "晶体"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Helium_atom_QM.svg",
+      "alt": "Atom model image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-science-mcq-avogadro",
-    "type": "text",
+    "id": "chinese-science-imgmcq-rocket",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Science",
     "difficulty": "hard",
-    "question": "阿伏伽德罗常数表示一什么中的粒子数量？",
-    "canonicalAnswer": "摩尔",
+    "question": "哪种载具被设计用来把载荷发射到太空？",
+    "canonicalAnswer": "火箭",
     "multipleChoiceOptions": [
-      "摩尔",
-      "克",
-      "升",
-      "开尔文"
+      "火箭",
+      "飞艇",
+      "滑翔机",
+      "潜水艇"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Soyuz_TMA-9_launch.jpg",
+      "alt": "Rocket image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-thor-hammer",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-trident",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "easy",
-    "question": "在北欧神话中，托尔的锤子叫什么？",
-    "canonicalAnswer": "妙尔尼尔",
+    "question": "这种三叉武器和哪位希腊海神强烈相关？",
+    "canonicalAnswer": "波塞冬",
     "multipleChoiceOptions": [
-      "冈格尼尔",
-      "妙尔尼尔",
-      "格拉姆",
-      "德罗普尼尔"
-    ],
-    "language": "zh-Hans",
-    "acceptedAnswers": [],
-    "botCards": [],
-    "rejectedAnswers": []
-  },
-  {
-    "id": "chinese-mythology-mcq-athena-birth",
-    "type": "text",
-    "questionStyle": "multiple-choice",
-    "theme": "Mythology",
-    "difficulty": "easy",
-    "question": "在希腊神话中，雅典娜据说是从谁的头中诞生的？",
-    "canonicalAnswer": "宙斯",
-    "multipleChoiceOptions": [
-      "阿瑞斯",
       "宙斯",
       "波塞冬",
-      "阿波罗"
+      "阿瑞斯",
+      "赫尔墨斯"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Trident.svg",
+      "alt": "Trident image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-anubis-role",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-labyrinth",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "easy",
-    "question": "阿努比斯最常与古埃及信仰中的哪一部分相关？",
-    "canonicalAnswer": "死者与防腐",
+    "question": "希腊神话中的迷宫结构最常被称为什么？",
+    "canonicalAnswer": "迷宫",
     "multipleChoiceOptions": [
-      "尼罗河洪水",
-      "死者与防腐",
-      "收成",
-      "升起的太阳"
+      "迷宫",
+      "神谕所",
+      "古市集",
+      "卫城"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Labyrinth_(simple).svg",
+      "alt": "Labyrinth image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-persephone-mother",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-thunderbolt",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "雷电是希腊哪位神的标志性武器？",
+    "canonicalAnswer": "宙斯",
+    "multipleChoiceOptions": [
+      "宙斯",
+      "哈迪斯",
+      "阿波罗",
+      "赫菲斯托斯"
+    ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Lightning_Bolt.svg",
+      "alt": "Thunderbolt image clue",
+      "credit": "Wikimedia Commons"
+    },
+    "language": "zh-Hans",
+    "acceptedAnswers": [],
+    "botCards": [],
+    "rejectedAnswers": []
+  },
+  {
+    "id": "chinese-mythology-imgmcq-phoenix",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "medium",
-    "question": "在希腊神话中，珀耳塞福涅的母亲是谁？",
-    "canonicalAnswer": "德墨忒尔",
+    "question": "哪种神话鸟类以从灰烬中重生闻名？",
+    "canonicalAnswer": "凤凰",
     "multipleChoiceOptions": [
-      "赫拉",
-      "德墨忒尔",
-      "赫斯提亚",
-      "瑞亚"
+      "凤凰",
+      "狮鹫",
+      "哈耳庇厄",
+      "大鹏"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Phoenix-Fabelwesen.jpg",
+      "alt": "Phoenix image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-odin-ravens",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-dragon",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "medium",
-    "question": "奥丁的两只乌鸦叫什么名字？",
-    "canonicalAnswer": "胡金与穆宁",
+    "question": "这张图片提示的是哪种传说中的爬行动物形象？",
+    "canonicalAnswer": "龙",
     "multipleChoiceOptions": [
-      "胡金与穆宁",
-      "格里与弗雷基",
-      "阿斯克与恩布拉",
-      "斯库尔与哈提"
+      "龙",
+      "许德拉",
+      "蛇怪",
+      "双足飞龙"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Dragon_Chinese.svg",
+      "alt": "Dragon image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-achilles-weakness",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-sphinx",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "medium",
-    "question": "阿喀琉斯最著名的弱点在身体哪个部位？",
-    "canonicalAnswer": "脚跟",
+    "question": "这种狮身并会出谜语的生物叫什么？",
+    "canonicalAnswer": "斯芬克斯",
     "multipleChoiceOptions": [
-      "脚跟",
-      "肩膀",
-      "手腕",
-      "脖子"
+      "斯芬克斯",
+      "曼提柯尔",
+      "奇美拉",
+      "狮鹫"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Great_Sphinx_of_Giza_-_20080716a.jpg",
+      "alt": "Sphinx image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-charon-ferry",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-valkyrie",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "medium",
-    "question": "在希腊神话中，谁把灵魂渡过通往冥界的河？",
-    "canonicalAnswer": "卡戎",
+    "question": "在北欧神话中，挑选阵亡战士的女武者叫什么？",
+    "canonicalAnswer": "女武神",
     "multipleChoiceOptions": [
-      "卡戎",
-      "塔纳托斯",
-      "赫尔墨斯",
-      "俄耳甫斯"
+      "女武神",
+      "命运女神",
+      "缪斯",
+      "复仇女神"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Valkyrie_by_Peter_Nicolai_Arbo.jpg",
+      "alt": "Valkyrie image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-loki-fenrir",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-mermaid",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "hard",
-    "question": "在北欧神话中，哪位诡计之神是芬里尔的父亲？",
-    "canonicalAnswer": "洛基",
+    "question": "这张海上传说图片代表哪种半人半鱼形象？",
+    "canonicalAnswer": "美人鱼",
     "multipleChoiceOptions": [
-      "洛基",
-      "奥丁",
-      "提尔",
-      "巴德尔"
+      "美人鱼",
+      "塞壬",
+      "海仙女",
+      "海豹女"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Edna_Hart_Little_Mermaid_Den_lille_havfrue_1915.jpg",
+      "alt": "Mermaid image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-susanoo",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-minotaur",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "hard",
-    "question": "在日本神话中，须佐之男主要被认为是什么之神？",
-    "canonicalAnswer": "风暴与海洋",
+    "question": "住在迷宫中心的牛头人身形象叫什么？",
+    "canonicalAnswer": "弥诺陶洛斯",
     "multipleChoiceOptions": [
-      "风暴与海洋",
-      "稻米与狐狸",
-      "山脉与铁",
-      "月亮与夜晚"
+      "弥诺陶洛斯",
+      "半人马",
+      "萨堤尔",
+      "独眼巨人"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Minotaur.jpg",
+      "alt": "Minotaur image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-mythology-mcq-heracles-labors",
-    "type": "text",
+    "id": "chinese-mythology-imgmcq-unicorn",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Mythology",
     "difficulty": "hard",
-    "question": "赫拉克勒斯最著名的是完成了多少项功业？",
-    "canonicalAnswer": "十二",
+    "question": "这张图片提示的是哪种有角的马形传说生物？",
+    "canonicalAnswer": "独角兽",
     "multipleChoiceOptions": [
-      "九",
-      "十",
-      "十二",
-      "十四"
+      "独角兽",
+      "珀伽索斯",
+      "海马",
+      "水马"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Unicorn_(PSF).png",
+      "alt": "Unicorn image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-cage-433",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-paintbrush",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "easy",
-    "question": "哪位作曲家创作了无声作品《4'33\"》？",
-    "canonicalAnswer": "约翰·凯奇",
+    "question": "这张图片代表哪种艺术家工具？",
+    "canonicalAnswer": "画笔",
     "multipleChoiceOptions": [
-      "约翰·凯奇",
-      "菲利普·格拉斯",
-      "史蒂夫·赖希",
-      "特里·赖利"
+      "调色刀",
+      "画笔",
+      "炭笔",
+      "触控笔"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Paintbrushes.jpg",
+      "alt": "Paintbrush image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-primary-colors",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-guitar",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "easy",
-    "question": "哪组选项列出了绘画中的传统三原色？",
-    "canonicalAnswer": "红、黄、蓝",
+    "question": "这张音乐图片显示的是哪种弦乐器？",
+    "canonicalAnswer": "吉他",
     "multipleChoiceOptions": [
-      "红、黄、蓝",
-      "红、绿、蓝",
-      "青、品红、黄",
-      "橙、绿、紫"
+      "吉他",
+      "小提琴",
+      "曼陀林",
+      "班卓琴"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Acoustic_guitar.jpg",
+      "alt": "Guitar image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-reggae-jamaica",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-ballet",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "easy",
-    "question": "雷鬼音乐最强烈地与哪个国家相关？",
-    "canonicalAnswer": "牙买加",
+    "question": "这张足尖鞋图片提示的是哪种舞蹈形式？",
+    "canonicalAnswer": "芭蕾",
     "multipleChoiceOptions": [
-      "特立尼达和多巴哥",
-      "牙买加",
-      "巴巴多斯",
-      "古巴"
+      "芭蕾",
+      "踢踏舞",
+      "弗拉门戈",
+      "交谊舞"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ballet_shoes.jpg",
+      "alt": "Ballet image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-pollock-style",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-graffiti",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "medium",
-    "question": "杰克逊·波洛克尤其以哪种绘画技法闻名？",
-    "canonicalAnswer": "滴画法",
+    "question": "这种喷涂在公共墙面上的艺术通常叫什么？",
+    "canonicalAnswer": "涂鸦",
     "multipleChoiceOptions": [
-      "点彩派",
-      "滴画法",
+      "涂鸦",
       "湿壁画",
-      "木刻"
+      "马赛克",
+      "蚀刻画"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Graffiti_in_Berlin.jpg",
+      "alt": "Graffiti image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-duchamp-fountain",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-trumpet",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "medium",
-    "question": "哪位艺术家提交了现成品艺术作品《泉》？",
-    "canonicalAnswer": "马塞尔·杜尚",
+    "question": "这张图片代表哪种铜管乐器？",
+    "canonicalAnswer": "小号",
     "multipleChoiceOptions": [
-      "马塞尔·杜尚",
-      "曼·雷",
-      "弗朗西斯·皮卡比亚",
-      "让·阿尔普"
+      "小号",
+      "长号",
+      "圆号",
+      "短号"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Trumpet_1.jpg",
+      "alt": "Trumpet image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-piano-keys",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-pottery",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "medium",
-    "question": "标准全尺寸钢琴有多少个琴键？",
-    "canonicalAnswer": "88",
+    "question": "把黏土塑造成器皿最直接属于哪种工艺？",
+    "canonicalAnswer": "陶艺",
     "multipleChoiceOptions": [
-      "76",
-      "88",
-      "92",
-      "96"
+      "陶艺",
+      "版画",
+      "编织",
+      "书法"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Potter_at_work%2C_Jaura%2C_Madhya_Pradesh%2C_India.jpg",
+      "alt": "Pottery image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-flamenco-country",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-sculpture",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "medium",
-    "question": "弗拉门戈音乐和舞蹈最密切地与哪个国家相关？",
-    "canonicalAnswer": "西班牙",
+    "question": "三维的雕刻或塑形艺术叫什么？",
+    "canonicalAnswer": "雕塑",
     "multipleChoiceOptions": [
-      "葡萄牙",
-      "西班牙",
-      "阿根廷",
-      "墨西哥"
+      "雕塑",
+      "拼贴画",
+      "水彩画",
+      "石版画"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/David_von_Michelangelo.jpg",
+      "alt": "Sculpture image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-blue-note",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-piano",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "hard",
-    "question": "在爵士和蓝调中，刻意压低以表达情绪的音通常叫什么？",
-    "canonicalAnswer": "蓝调音",
+    "question": "这张音乐图片代表哪种键盘乐器？",
+    "canonicalAnswer": "钢琴",
     "multipleChoiceOptions": [
-      "装饰音",
-      "蓝调音",
-      "持续低音",
-      "导音"
+      "钢琴",
+      "羽管键琴",
+      "管风琴",
+      "合成器"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Two_pianos_-_grand_piano_and_upright_piano.jpg",
+      "alt": "Piano image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-ballet-swan-lake",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-mural",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "hard",
-    "question": "芭蕾舞剧《天鹅湖》的音乐由哪位作曲家创作？",
-    "canonicalAnswer": "彼得·伊里奇·柴可夫斯基",
+    "question": "直接画在墙上的大型艺术作品叫什么？",
+    "canonicalAnswer": "壁画",
     "multipleChoiceOptions": [
-      "谢尔盖·普罗科菲耶夫",
-      "彼得·伊里奇·柴可夫斯基",
-      "伊戈尔·斯特拉文斯基",
-      "尼古拉·里姆斯基-科萨科夫"
+      "壁画",
+      "肖像画",
+      "三联画",
+      "静物画"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Belfast_Mural.jpg",
+      "alt": "Mural image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],
     "rejectedAnswers": []
   },
   {
-    "id": "chinese-artmusic-mcq-woodblock-japan",
-    "type": "text",
+    "id": "chinese-artmusic-imgmcq-opera-stage",
+    "type": "image",
     "questionStyle": "multiple-choice",
     "theme": "Art and Music",
     "difficulty": "hard",
-    "question": "浮世绘是日本历史艺术形式，最以哪种媒介闻名？",
-    "canonicalAnswer": "木版画",
+    "question": "这种舞台古典歌唱演出最可能是哪种艺术形式？",
+    "canonicalAnswer": "歌剧",
     "multipleChoiceOptions": [
-      "水墨卷轴",
-      "木版画",
-      "青铜铸造",
-      "漆器陶瓷"
+      "歌剧",
+      "芭蕾",
+      "清唱剧",
+      "音乐剧"
     ],
+    "image": {
+      "url": "https://commons.wikimedia.org/wiki/Special:FilePath/La_Traviata_at_Hamburgische_Staatsoper_2013_-_Photo_No_274_by_Monika_Rittershaus.jpg",
+      "alt": "Opera stage image clue",
+      "credit": "Wikimedia Commons"
+    },
     "language": "zh-Hans",
     "acceptedAnswers": [],
     "botCards": [],

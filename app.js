@@ -12343,6 +12343,7 @@ function resetRoomPowerSyncClocks() {
   state.roomPowerPlayedUpdatedAt = {};
   state.roomPowerPlayerRevision = {};
   state.roomPowerPlayerUpdatedAt = {};
+  state.roomPowerHandAnimationKeys = {};
 }
 
 function getRoomPowerHandSyncEntry(owner) {
@@ -13030,7 +13031,17 @@ function applyRoomPowerState(payload = {}) {
       : [];
     const handChanged = previousHand.length !== nextHand.length
       || previousHand.some((powerId, index) => powerId !== nextHand[index]);
-    const shouldAnimateSyncedHand = owner === getCurrentPowerOwner();
+    const handAnimationKey = [
+      getCurrentRoomMatchId(),
+      Number(state.round) || 0,
+      owner,
+      entryRevision || powerRevision || 0,
+      entryUpdatedAt || updatedAt || 0,
+      nextHand.join(",")
+    ].join("|");
+    state.roomPowerHandAnimationKeys = state.roomPowerHandAnimationKeys || {};
+    const handAnimationAlreadyPlayed = state.roomPowerHandAnimationKeys[owner] === handAnimationKey;
+    const shouldAnimateSyncedHand = owner === getCurrentPowerOwner() && !handAnimationAlreadyPlayed;
     let syncedFreshIds = [];
     let syncedFreshType = "refill";
     if (shouldAnimateSyncedHand && handChanged && nextHand.length > previousHand.length) {
@@ -13059,6 +13070,9 @@ function applyRoomPowerState(payload = {}) {
       : handChanged && shouldAnimateSyncedHand
         ? []
         : (state.freshPowerUpAnimations[owner] || []).filter((entry) => nextHand.includes(entry?.powerId));
+    if (handChanged && owner === getCurrentPowerOwner()) {
+      state.roomPowerHandAnimationKeys[owner] = handAnimationKey;
+    }
     setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((powerId) => nextHand.includes(powerId)));
     changed = true;
   });
@@ -16507,7 +16521,7 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     if (normalizedPayload.eventType === "round-skipped") {
       appliedDelta = forceRoomRoundToGrading(normalizedPayload);
     }
-    if ((normalizedPayload.eventType === "room-updated" || normalizedPayload.eventType === "room-created" || normalizedPayload.eventType === "round-started" || normalizedPayload.eventType === "participant-left") && normalizedPayload.room) {
+    if (!appliedDelta && (normalizedPayload.eventType === "room-updated" || normalizedPayload.eventType === "room-created" || normalizedPayload.eventType === "round-started" || normalizedPayload.eventType === "participant-left") && normalizedPayload.room) {
       appliedDelta = applyRealtimeRoomPayload(normalizedPayload.room);
     }
     if (appliedDelta && handledRoomEventTypes.includes(normalizedPayload.eventType)) {

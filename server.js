@@ -6719,9 +6719,7 @@ async function getSeedQuestionSetup(options = {}) {
   const runtimeQuestionBank = await getRuntimeQuestionBank();
   const languagePool = runtimeQuestionBank.filter((question) => {
     const language = normalizeQuestionLanguage(question.language);
-    return isMultipleChoiceQuestion(question)
-      ? language === questionLanguage
-      : language === "en";
+    return language === questionLanguage;
   });
   const preferredPool = preferredTheme
     ? languagePool.filter((question) => question.theme === preferredTheme && !isRepeatedQuestion(question.blackCard, recentBlackCards))
@@ -6735,11 +6733,8 @@ async function getSeedQuestionSetup(options = {}) {
 
   const multipleChoicePool = pool.filter(isMultipleChoiceQuestion);
   const standardPool = pool.filter((question) => !isMultipleChoiceQuestion(question));
-  if (multipleChoiceChancePercent <= 0 && !standardPool.length) {
-    return null;
-  }
-  const wantsMultipleChoice = multipleChoicePool.length
-    && (Math.abs(hashString(`${seed}-question-style`)) % 10000) / 100 < multipleChoiceChancePercent;
+  const wantsMultipleChoice = (multipleChoicePool.length && !standardPool.length)
+    || (multipleChoicePool.length && (Math.abs(hashString(`${seed}-question-style`)) % 10000) / 100 < multipleChoiceChancePercent);
   const pickPool = wantsMultipleChoice
     ? multipleChoicePool
     : standardPool.length ? standardPool : pool;
@@ -6763,7 +6758,8 @@ async function getSeedQuestionSetup(options = {}) {
       : [],
     debug: {
       multipleChoiceChancePercent: Math.round(multipleChoiceChancePercent * 100) / 100,
-      wantedMultipleChoice: Boolean(wantsMultipleChoice)
+      wantedMultipleChoice: Boolean(wantsMultipleChoice),
+      languageOnlyMultipleChoice: Boolean(multipleChoicePool.length && !standardPool.length)
     },
     source: "seed",
     id: picked.id
@@ -6792,8 +6788,10 @@ async function resolveSeedQuestionImage(setup, preferredTheme, options = {}) {
 
 function normalizeQuestionText(text) {
   return String(text || "")
+    .normalize("NFD")
     .toLowerCase()
-    .replace(/[_\W]+/g, " ")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
 
@@ -8418,7 +8416,7 @@ function normalizeTriviaAnswer(value) {
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .replace(/\b(the|a|an)\b/g, " ")
     .replace(/\s+/g, " ")
     .trim()
