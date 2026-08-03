@@ -12261,9 +12261,6 @@ function getRoomRoundResultForCurrentRound(round = state.round) {
   if (result.matchId && getCurrentRoomMatchId() && result.matchId !== getCurrentRoomMatchId()) {
     return null;
   }
-  if (result.questionId && state.questionId && result.questionId !== state.questionId) {
-    return null;
-  }
   return result;
 }
 
@@ -12291,9 +12288,6 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   }
   const result = normalizeRoomRoundResultPayload(payload.roundResult || payload.game?.roundResult || payload);
   if (!result || Number(result.round) !== Number(state.round)) {
-    return false;
-  }
-  if (result.questionId && state.questionId && result.questionId !== state.questionId) {
     return false;
   }
   state.roomRoundResult = result;
@@ -12453,7 +12447,15 @@ function playSyncedRoomRoundResult(result = null, localFallback = "") {
   if (!syncedResult || Number(syncedResult.round) !== Number(state.round)) {
     return false;
   }
-  if (syncedResult.questionId && state.questionId && syncedResult.questionId !== state.questionId) {
+  // A result is authoritative for the room/match/round. The local question id can
+  // still be loading when the result event arrives, so it must not block playback.
+  if (syncedResult.matchId && getCurrentRoomMatchId() && syncedResult.matchId !== getCurrentRoomMatchId()) {
+    return false;
+  }
+  // Do not consume the playback key while the match is still being resumed. The
+  // stored result will be played by the resume/startup path once the game stage is
+  // mounted and the current work token is valid.
+  if (!isCurrentMatchWork(state.matchWorkToken)) {
     return false;
   }
   const playbackKey = getRoomRoundResultPlaybackKey(syncedResult);
@@ -14327,6 +14329,11 @@ function applyRealtimeRoomGrading(payload = {}) {
   const existingResult = getRoomRoundResultForCurrentRound(round);
   if (existingResult) {
     applyAuthoritativeRoomResultState(existingResult);
+    if (state.isSpectator) {
+      maybePlaySpectatorRoomRoundResult(existingResult);
+    } else if (!isCurrentHost() || state.joiningRoom) {
+      playSyncedRoomRoundResult(existingResult, getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+    }
     return true;
   }
   if (state.isSpectator) {
