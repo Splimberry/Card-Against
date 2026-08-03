@@ -40,6 +40,7 @@ const currencyStorageKey = "cardsAgainstAiCurrency";
 const achievementMilestonesStorageKey = "cardsAgainstAiAchievementMilestones";
 const questionSubmissionSeenStorageKey = "cardsAgainstAiQuestionSubmissionSeen";
 const questionSubmissionRefundedStorageKey = "cardsAgainstAiQuestionSubmissionRefunded";
+const userQuestionDraftStorageKey = "cardsAgainstAiUserQuestionDraft:v1";
 const performanceModeStorageKey = "cardsAgainstAiPerformanceMode";
 const powerSuggestionStorageKey = "cardsAgainstAiPowerSuggestionsEnabled";
 const userStorageVersion = 1;
@@ -60,6 +61,7 @@ const chatCooldownWindowMs = 2000;
 const chatCooldownMaxMessages = 3;
 const chatCooldownDurationMs = 10000;
 const userQuestionSubmissionCost = 250;
+const userQuestionDraftSaveDelayMs = 450;
 const roomChatHistoryLimit = 50;
 const roomMissingGraceMs = 10000;
 const roomHostReconnectGraceMs = 60 * 1000;
@@ -3647,6 +3649,8 @@ const state = {
   questionEditReturnId: "",
   userQuestionSubmissions: [],
   userQuestionSubmissionPollId: null,
+  userQuestionDraftSaveTimerId: null,
+  userQuestionDraftStorageUserKey: "",
   devQuestionSubmissions: [],
   devSelectedSubmissionId: "",
   supabaseClient: null,
@@ -3837,6 +3841,7 @@ const elements = {
   userQuestionImageAlt: null,
   userQuestionImageCredit: null,
   userQuestionSubmitButton: null,
+  userQuestionSaveDraftButton: null,
   userQuestionClearButton: null,
   userQuestionStatus: null,
   userQuestionSubmissionList: null,
@@ -28076,6 +28081,7 @@ function buildUserQuestionScreen() {
         </fieldset>
         <div class="dev-create-actions">
           <button type="submit" class="primary-button" id="userQuestionSubmitButton">Submit for 250 Coins</button>
+          <button type="button" class="icon-button" id="userQuestionSaveDraftButton">Save Draft</button>
           <button type="button" class="icon-button danger-button" id="userQuestionClearButton">Clear</button>
           <div class="debug-status" id="userQuestionStatus">Submissions are reviewed by an admin before they enter the question bank.</div>
         </div>
@@ -28138,6 +28144,7 @@ function buildUserQuestionScreen() {
   elements.userQuestionPreviewPlaceholder = screen.querySelector("#userQuestionPreviewPlaceholder");
   elements.userQuestionPreviewCredit = screen.querySelector("#userQuestionPreviewCredit");
   elements.userQuestionPreviewText = screen.querySelector("#userQuestionPreviewText");
+  elements.userQuestionSaveDraftButton = screen.querySelector("#userQuestionSaveDraftButton");
   elements.userQuestionTheme.innerHTML = triviaThemes.map((theme) => `<option value="${theme}">${theme}</option>`).join("");
   elements.userQuestionTheme.addEventListener("change", () => {
     syncUserQuestionIdPrefix();
@@ -28157,11 +28164,15 @@ function buildUserQuestionScreen() {
   });
   elements.userQuestionForm.addEventListener("input", updateUserQuestionPreview);
   elements.userQuestionForm.addEventListener("change", updateUserQuestionPreview);
+  elements.userQuestionForm.addEventListener("input", scheduleUserQuestionDraftSave);
+  elements.userQuestionForm.addEventListener("change", scheduleUserQuestionDraftSave);
   elements.userQuestionForm.addEventListener("submit", submitUserQuestion);
   elements.userQuestionBackButton.addEventListener("click", closeUserQuestionScreen);
+  elements.userQuestionSaveDraftButton.addEventListener("click", () => saveUserQuestionDraft());
   elements.userQuestionClearButton.addEventListener("click", clearUserQuestionForm);
   updateUserQuestionImageFields();
   syncUserQuestionIdPrefix();
+  restoreUserQuestionDraft();
   updateUserQuestionPreview();
 }
 
@@ -28176,6 +28187,139 @@ function syncUserQuestionIdPrefix() {
   if (!current || getKnownThemeIdPrefixes().has(current.split("-")[0])) {
     elements.userQuestionId.value = `${prefix}-`;
   }
+}
+
+function getUserQuestionDraftStorageUserKey() {
+  const rawUserId = state.supabaseUser?.id || state.clientId || "guest";
+  return String(rawUserId).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 140) || "guest";
+}
+
+function getUserQuestionDraftStorageKey() {
+  return `${userQuestionDraftStorageKey}:${getUserQuestionDraftStorageUserKey()}`;
+}
+
+function getUserQuestionDraftValues() {
+  return {
+    version: 1,
+    savedAt: Date.now(),
+    theme: elements.userQuestionTheme?.value || "",
+    difficulty: elements.userQuestionDifficulty?.value || "medium",
+    type: elements.userQuestionType?.value || "text",
+    questionStyle: elements.userQuestionStyle?.value || "standard",
+    strictness: elements.userQuestionStrictness?.value || "normal",
+    id: elements.userQuestionId?.value || "",
+    question: elements.userQuestionText?.value || "",
+    canonicalAnswer: elements.userQuestionCanonical?.value || "",
+    acceptedAnswers: elements.userQuestionAccepted?.value || "",
+    incorrectAnswers: elements.userQuestionBots?.value || "",
+    rejectedAnswers: elements.userQuestionRejected?.value || "",
+    imageUrl: elements.userQuestionImageUrl?.value || "",
+    imageAlt: elements.userQuestionImageAlt?.value || "",
+    imageCredit: elements.userQuestionImageCredit?.value || ""
+  };
+}
+
+function hasUserQuestionDraftContent(draft) {
+  return [
+    draft?.question,
+    draft?.canonicalAnswer,
+    draft?.acceptedAnswers,
+    draft?.incorrectAnswers,
+    draft?.rejectedAnswers,
+    draft?.imageUrl,
+    draft?.imageAlt,
+    draft?.imageCredit,
+    String(draft?.id || "").replace(/-+$/g, "")
+  ].some((value) => String(value || "").trim());
+}
+
+function saveUserQuestionDraft(options = {}) {
+  if (!elements.userQuestionForm) {
+    return false;
+  }
+  if (state.userQuestionDraftSaveTimerId) {
+    window.clearTimeout(state.userQuestionDraftSaveTimerId);
+    state.userQuestionDraftSaveTimerId = null;
+  }
+  const draft = getUserQuestionDraftValues();
+  if (!hasUserQuestionDraftContent(draft)) {
+    clearUserQuestionDraft({ announce: false });
+    if (options.announce !== false) {
+      elements.userQuestionStatus.textContent = "There is nothing to save yet.";
+    }
+    return false;
+  }
+  const saved = writeJsonStorage(getUserQuestionDraftStorageKey(), draft);
+  state.userQuestionDraftStorageUserKey = getUserQuestionDraftStorageUserKey();
+  if (options.announce !== false) {
+    elements.userQuestionStatus.textContent = saved
+      ? "Draft saved locally on this device."
+      : "Could not save the draft locally.";
+  }
+  return saved;
+}
+
+function scheduleUserQuestionDraftSave() {
+  if (!elements.userQuestionForm) {
+    return;
+  }
+  if (state.userQuestionDraftSaveTimerId) {
+    window.clearTimeout(state.userQuestionDraftSaveTimerId);
+  }
+  state.userQuestionDraftSaveTimerId = window.setTimeout(() => {
+    state.userQuestionDraftSaveTimerId = null;
+    saveUserQuestionDraft({ announce: false });
+  }, userQuestionDraftSaveDelayMs);
+}
+
+function clearUserQuestionDraft(options = {}) {
+  if (state.userQuestionDraftSaveTimerId) {
+    window.clearTimeout(state.userQuestionDraftSaveTimerId);
+    state.userQuestionDraftSaveTimerId = null;
+  }
+  try {
+    localStorage.removeItem(getUserQuestionDraftStorageKey());
+  } catch {}
+  if (options.announce !== false && elements.userQuestionStatus) {
+    elements.userQuestionStatus.textContent = "Local draft cleared.";
+  }
+}
+
+function restoreUserQuestionDraft() {
+  if (!elements.userQuestionForm) {
+    return false;
+  }
+  const storageUserKey = getUserQuestionDraftStorageUserKey();
+  const draft = readJsonStorage(getUserQuestionDraftStorageKey(), null);
+  state.userQuestionDraftStorageUserKey = storageUserKey;
+  if (!draft || draft.version !== 1 || !hasUserQuestionDraftContent(draft)) {
+    return false;
+  }
+
+  const selectValues = [
+    [elements.userQuestionTheme, draft.theme],
+    [elements.userQuestionDifficulty, draft.difficulty],
+    [elements.userQuestionType, draft.type],
+    [elements.userQuestionStyle, draft.questionStyle],
+    [elements.userQuestionStrictness, draft.strictness]
+  ];
+  selectValues.forEach(([select, value]) => {
+    if (select && [...select.options].some((option) => option.value === value)) {
+      select.value = value;
+    }
+  });
+  elements.userQuestionId.value = String(draft.id || "").slice(0, 160);
+  elements.userQuestionText.value = String(draft.question || "");
+  elements.userQuestionCanonical.value = String(draft.canonicalAnswer || "");
+  elements.userQuestionAccepted.value = String(draft.acceptedAnswers || "");
+  elements.userQuestionBots.value = String(draft.incorrectAnswers || "");
+  elements.userQuestionRejected.value = String(draft.rejectedAnswers || "");
+  elements.userQuestionImageUrl.value = String(draft.imageUrl || "");
+  elements.userQuestionImageAlt.value = String(draft.imageAlt || "");
+  elements.userQuestionImageCredit.value = String(draft.imageCredit || "");
+  updateUserQuestionImageFields();
+  elements.userQuestionStatus.textContent = "Draft restored from this device.";
+  return true;
 }
 
 function syncQuestionCreateAnswerFields({
@@ -28326,6 +28470,7 @@ function getUserQuestionPayload() {
 }
 
 function clearUserQuestionForm() {
+  clearUserQuestionDraft({ announce: false });
   elements.userQuestionForm.reset();
   updateUserQuestionImageFields();
   syncUserQuestionIdPrefix();
@@ -28361,6 +28506,7 @@ async function submitUserQuestion(event) {
   elements.userQuestionStatus.textContent = "Submitting for admin review...";
   try {
     const result = await postUserQuestionSubmission(payload);
+    clearUserQuestionDraft({ announce: false });
     elements.userQuestionStatus.textContent = "Submitted for review. An admin will approve or deny it.";
     elements.userQuestionForm.reset();
     updateUserQuestionImageFields();
@@ -28369,6 +28515,7 @@ async function submitUserQuestion(event) {
     await loadUserQuestionSubmissions();
     playSound("reveal");
   } catch (error) {
+    saveUserQuestionDraft({ announce: false });
     addCurrency(userQuestionSubmissionCost);
     renderProfile();
     const message = /invalid authentication token/i.test(error.message || "")
@@ -28565,11 +28712,15 @@ async function openUserQuestionScreen() {
   buildUserQuestionScreen();
   setHidden(elements.modeScreen, true);
   setHidden(elements.userQuestionScreen, false);
+  if (state.userQuestionDraftStorageUserKey !== getUserQuestionDraftStorageUserKey()) {
+    restoreUserQuestionDraft();
+  }
   await loadUserQuestionSubmissions({ markSeen: true });
   playSound("click");
 }
 
 function closeUserQuestionScreen() {
+  saveUserQuestionDraft({ announce: false });
   setHidden(elements.userQuestionScreen, true);
   setHidden(elements.modeScreen, false);
   saveSubmissionSeenIds([...loadSubmissionSeenIds(), ...getResolvedUserSubmissionIds()]);
@@ -32572,6 +32723,9 @@ function shouldSendRoomExitLeave() {
 function handleWindowBeforeUnload() {
   flushUserStorageSnapshot();
   flushPendingUserInventoryBeforePageExit();
+  if (elements.userQuestionScreen && !elements.userQuestionScreen.classList.contains("hidden")) {
+    saveUserQuestionDraft({ announce: false });
+  }
   if (!shouldSendRoomExitLeave()) {
     return;
   }
@@ -32582,6 +32736,9 @@ function handleWindowBeforeUnload() {
 function handleWindowPageHide() {
   flushUserStorageSnapshot();
   flushPendingUserInventoryBeforePageExit();
+  if (elements.userQuestionScreen && !elements.userQuestionScreen.classList.contains("hidden")) {
+    saveUserQuestionDraft({ announce: false });
+  }
   if (!shouldSendRoomExitLeave()) {
     return;
   }
