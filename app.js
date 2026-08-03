@@ -12505,6 +12505,25 @@ function cloneRoomAbilitySyncValue(value, fallback) {
   }
 }
 
+// Realtime payloads may arrive through more than one server path. Keep their
+// comparisons deterministic so an equivalent payload cannot restart UI work.
+function getRoomSyncSignature(value) {
+  const normalize = (entry) => {
+    if (Array.isArray(entry)) {
+      return entry.map(normalize);
+    }
+    if (entry && typeof entry === "object") {
+      return Object.fromEntries(
+        Object.keys(entry)
+          .sort()
+          .map((key) => [key, normalize(entry[key])])
+      );
+    }
+    return entry;
+  };
+  return JSON.stringify(normalize(value));
+}
+
 function getRoomAbilityEffectStatePayload() {
   return {
     maps: Object.fromEntries(roomAbilityEffectMapKeys.map((key) => [
@@ -12529,6 +12548,7 @@ function applyRoomAbilityEffectStatePayload(effects) {
   if (!effects || typeof effects !== "object") {
     return false;
   }
+  const previousSignature = getRoomSyncSignature(getRoomAbilityEffectStatePayload());
   const maps = effects.maps && typeof effects.maps === "object" ? effects.maps : {};
   const arrays = effects.arrays && typeof effects.arrays === "object" ? effects.arrays : {};
   roomAbilityEffectMapKeys.forEach((key) => {
@@ -12559,10 +12579,13 @@ function applyRoomAbilityEffectStatePayload(effects) {
     state.currentTableEvent = values.currentTableEvent && typeof values.currentTableEvent === "object"
       ? cloneRoomAbilitySyncValue(values.currentTableEvent, null)
       : null;
+  }
+  const changed = previousSignature !== getRoomSyncSignature(getRoomAbilityEffectStatePayload());
+  if (changed && Object.hasOwn(values, "currentTableEvent")) {
     applyTableEventStageClasses();
     renderTableEventControls();
   }
-  return true;
+  return changed;
 }
 
 function getRoomPowerStatePayload(owners = getActiveOwners()) {
@@ -13075,7 +13098,7 @@ function applyRoomPowerState(payload = {}) {
       state.roomPowerHandAnimationKeys[owner] = handAnimationKey;
     }
     setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((powerId) => nextHand.includes(powerId)));
-    changed = true;
+    changed = changed || handChanged;
   });
   played.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId);
@@ -13095,6 +13118,23 @@ function applyRoomPowerState(payload = {}) {
       }))
       .filter((stack) => getPowerById(stack.powerId))
       .slice(0, 10);
+    const previousStacks = Array.isArray(state.playedPowerStacks[owner])
+      ? state.playedPowerStacks[owner]
+      : [];
+    const previousPlayedSignature = getRoomSyncSignature({
+      stacks: previousStacks,
+      primaryPowerId: state.playedPowerUps[owner] || "",
+      meta: state.playedPowerMeta[owner] || null
+    });
+    const nextPlayedPowerId = String(entry.primaryPowerId || nextStacks[0]?.powerId || "") || null;
+    const nextPlayedMeta = entry.meta && typeof entry.meta === "object"
+      ? { ...entry.meta }
+      : nextStacks.at(-1)?.meta || null;
+    const playedChanged = previousPlayedSignature !== getRoomSyncSignature({
+      stacks: nextStacks,
+      primaryPowerId: nextPlayedPowerId || "",
+      meta: nextPlayedMeta
+    });
     const previousRevealIds = new Set((state.playedPowerStacks[owner] || []).map((stack) => stack.revealId).filter(Boolean));
     nextStacks.forEach((stack) => {
       const power = getPowerById(stack.powerId);
@@ -13106,13 +13146,11 @@ function applyRoomPowerState(payload = {}) {
       }
     });
     state.playedPowerStacks[owner] = nextStacks;
-    state.playedPowerUps[owner] = String(entry.primaryPowerId || nextStacks[0]?.powerId || "") || null;
-    state.playedPowerMeta[owner] = entry.meta && typeof entry.meta === "object"
-      ? { ...entry.meta }
-      : nextStacks.at(-1)?.meta || null;
+    state.playedPowerUps[owner] = nextPlayedPowerId;
+    state.playedPowerMeta[owner] = nextPlayedMeta;
     getRoomPowerEntryUpdatedAt("played", owner, entryUpdatedAt || Date.now());
     rememberRoomPowerEntryRevision("played", owner, entryRevision);
-    changed = true;
+    changed = changed || playedChanged;
   });
   players.forEach((entry) => {
     const owner = getRoomOwnerForParticipantId(entry?.participantId);
@@ -13124,22 +13162,27 @@ function applyRoomPowerState(payload = {}) {
     if (!forceAuthoritative && isStaleRoomPowerEntry("players", owner, entryRevision, entryUpdatedAt)) {
       return;
     }
-    setScore(owner, Number(entry.score) || 0);
-    setOwnerStreak(owner, Number(entry.streak) || 0, { force: true });
+    const nextScore = Math.max(0, Math.round(Number(entry.score) || 0));
+    const nextStreak = Math.max(0, Math.round(Number(entry.streak) || 0));
+    const playerChanged = getScore(owner) !== nextScore || getOwnerStreak(owner) !== nextStreak;
+    if (playerChanged) {
+      setScore(owner, nextScore);
+      setOwnerStreak(owner, nextStreak, { force: true });
+    }
     getRoomPowerEntryUpdatedAt("players", owner, entryUpdatedAt || Date.now());
     rememberRoomPowerEntryRevision("players", owner, entryRevision);
-    changed = true;
+    changed = changed || playerChanged;
   });
   const effectsApplied = (forceAuthoritative || !payloadIsOlderThanKnownPowerState) && applyRoomAbilityEffectStatePayload(effects);
   if (effectsApplied) {
     changed = true;
   }
-  if (!changed) {
-    return false;
-  }
   state.roomPowerStateRevision = Math.max(state.roomPowerStateRevision || 0, powerRevision || 0);
   state.roomPowerStateUpdatedAt = Math.max(state.roomPowerStateUpdatedAt || 0, updatedAt || Date.now());
   rememberRoomRevisionPayload({ ...payload, code: payload.code || state.roomSettings.code, revision });
+  if (!changed) {
+    return false;
+  }
   if (state.roomGame) {
     const syncedParticipantIds = new Set(hands.map((entry) => String(entry?.participantId || "")).filter(Boolean));
     const syncedPlayedParticipantIds = new Set(played.map((entry) => String(entry?.participantId || "")).filter(Boolean));
@@ -13559,6 +13602,15 @@ function applyRoomTimerStatePayload(payload = {}) {
     participantTimers,
     gradingForceAt: Math.max(0, Number(timerState.gradingForceAt) || getRoomTimerForceAtFromTimers(participantTimers))
   };
+  const previousTimerFields = {
+    roundStartedAt: Math.max(0, Number(state.roomGame?.roundStartedAt) || 0),
+    baseDurationMs: Math.max(5000, Number(state.roomGame?.baseDurationMs) || 0),
+    participantTimers: state.roomGame?.participantTimers && typeof state.roomGame.participantTimers === "object"
+      ? state.roomGame.participantTimers
+      : {},
+    gradingForceAt: Math.max(0, Number(state.roomGame?.gradingForceAt) || 0)
+  };
+  const timerChanged = getRoomSyncSignature(previousTimerFields) !== getRoomSyncSignature(nextTimerFields);
   state.roomGame = {
     ...(state.roomGame || {}),
     ...nextTimerFields,
@@ -13573,14 +13625,19 @@ function applyRoomTimerStatePayload(payload = {}) {
       }
     };
   }
-  if (!state.isSpectator && !elements.inputPanel.classList.contains("hidden") && elements.verdictPanel.classList.contains("hidden")) {
+  if (timerChanged && !state.isSpectator && !elements.inputPanel.classList.contains("hidden") && elements.verdictPanel.classList.contains("hidden")) {
     state.timerRemaining = getRoomParticipantTimerRemainingSeconds(getCurrentPowerOwner(), state.roomGame);
     renderTimer();
   }
-  if (isCurrentHost() && !state.joiningRoom && state.roomGame?.status === "playing") {
+  if (
+    isCurrentHost()
+    && !state.joiningRoom
+    && state.roomGame?.status === "playing"
+    && (timerChanged || !state.roomAutoResolveId)
+  ) {
     scheduleHostRoomSubmissionDeadline();
   }
-  return true;
+  return timerChanged;
 }
 
 function applyLocalRoomTimeBenderTimerEffect(owner, options = {}) {
@@ -25548,7 +25605,7 @@ function renderPowerUps() {
       button.classList.add(animationType === "refresh" ? "fresh-refresh" : "fresh-refill");
       const baseEnterDelay = animationType === "refresh" ? 360 : 0;
       enterDelayMs = baseEnterDelay + Math.min(animatedFreshCount, 5) * 80;
-      enterDurationMs = animationType === "refresh" ? 620 : 560;
+      enterDurationMs = animationType === "refresh" ? 680 : 620;
       button.style.setProperty("--power-enter-delay", `${enterDelayMs}ms`);
       animatedFreshCount += 1;
       const clearFreshPowerClass = (event) => {
@@ -35900,10 +35957,85 @@ function scheduleRoomPanelHeightSync() {
   });
 }
 
+function getRoomPlayerListRenderSignature(target) {
+  const isRoomSetupList = isSharedRoomPlayerList(target);
+  const participants = state.roomParticipants.map((participant) => ({
+    id: participant.id || "",
+    name: participant.name || "",
+    avatar: participant.avatar || "",
+    equippedTitleId: participant.equippedTitleId || "",
+    specialBadges: normalizeSpecialBadges(participant.specialBadges || []),
+    cardCustomization: participant.cardCustomization || null,
+    profileUserId: participant.profileUserId || "",
+    connectionId: participant.connectionId || "",
+    role: normalizeRoomParticipantRole(participant),
+    host: Boolean(participant.host),
+    spectator: Boolean(participant.spectator),
+    bot: Boolean(participant.bot),
+    active: isRoomParticipantActive(participant),
+    muted: Boolean(participant.muted),
+    status: participant.status || "",
+    pendingModeration: getPendingRoomModerationAction(participant.id || "")
+  }));
+  const players = state.players.map((player) => ({
+    owner: player.owner || "",
+    participantId: player.participantId || "",
+    label: player.label || "",
+    avatar: player.avatar || "",
+    equippedTitleId: player.equippedTitleId || "",
+    specialBadges: normalizeSpecialBadges(player.specialBadges || []),
+    cardCustomization: player.cardCustomization || null,
+    host: Boolean(player.host),
+    spectator: Boolean(player.spectator),
+    bot: Boolean(player.bot),
+    type: player.type || "",
+    active: player.active !== false,
+    muted: Boolean(player.muted),
+    connectionStatus: player.connectionStatus || ""
+  }));
+  const pendingBots = isRoomSetupList
+    ? getPendingRoomBotAdds().map((bot) => ({ id: bot.id || "", name: bot.name || "" }))
+    : [];
+  const featuredHostId = state.roomParticipants.find(isRoomParticipantHost)?.id
+    || state.joiningRoom?.host?.id
+    || state.hostedRooms.find((room) => room.code === state.roomSettings.code)?.host?.id
+    || (!state.joiningRoom && isCurrentHost() ? state.clientId : "");
+  return getRoomSyncSignature({
+    target: target.id || "room-player-list",
+    code: state.roomSettings.code || "draft",
+    status: state.currentRoomStatus || "draft",
+    mode: state.mode || "",
+    currentOwner: state.currentOwner || "",
+    clientId: state.clientId || "",
+    currentHost: isCurrentHost(),
+    maxPlayers: getRoomMaxPlayers(),
+    hostProfileVisible: isRoomPlayerListHostProfileVisible(target),
+    featuredHostId,
+    participants,
+    players,
+    pendingBots,
+    profile: {
+      name: state.profile.name || "",
+      avatar: state.profile.avatar || "",
+      equippedTitleId: state.profile.equippedTitleId || "",
+      specialBadges: normalizeSpecialBadges(state.profile.specialBadges || []),
+      cardCustomization: state.profile.cardCustomization || null
+    }
+  });
+}
+
 function renderRoomPlayers() {
   const playerLists = getSharedRoomPlayerLists();
   let hasAnimatedListChange = false;
   playerLists.forEach((target) => {
+    const renderSignature = getRoomPlayerListRenderSignature(target);
+    const listIsStable = target.dataset.roomPlayerRenderSignature === renderSignature
+      && target.childElementCount > 0
+      && !target.dataset.roomPlayerExitAnimating
+      && !target.classList.contains("room-player-list-resizing");
+    if (listIsStable) {
+      return;
+    }
     const animated = animateRoomPlayerListChange(target, () => renderRoomPlayerList(target), {
       animateFromZero: true,
       onComplete: scheduleRoomPanelHeightSync
@@ -36337,6 +36469,7 @@ function renderRoomPlayerList(target, options = {}) {
 
   target.replaceChildren();
   target.dataset.roomPlayerListRenderKey = renderKey;
+  target.dataset.roomPlayerRenderSignature = getRoomPlayerListRenderSignature(target);
   if (isRoomSetupList && !displayedPlayers.length) {
     const empty = document.createElement("p");
     empty.className = "room-waiting-copy";
@@ -36401,6 +36534,7 @@ function renderRoomPlayerList(target, options = {}) {
     target.appendChild(card);
   });
   animateRoomPlayerCardMoves(target, previousCardRects);
+  target.dataset.roomPlayerRenderSignature = getRoomPlayerListRenderSignature(target);
   return true;
 }
 

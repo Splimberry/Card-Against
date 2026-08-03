@@ -5222,10 +5222,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     var(--power-rarity-shadow),
     var(--power-rarity-inset-shadow);
   transition:
-    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 210ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 210ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 210ms cubic-bezier(0.22, 1, 0.36, 1);
   transform-origin: center;
 }
 
@@ -5428,7 +5428,7 @@ button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-
 }
 
 .power-card.power-selected-pop {
-  animation: powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: powerSelectedPop 380ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .power-card.power-use-ghost {
@@ -5441,7 +5441,7 @@ button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-
   overflow: hidden;
   transition: none;
   transform-origin: center;
-  animation: powerUseGhost 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: powerUseGhost 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .power-card.power-remove-exit-ghost {
@@ -5475,14 +5475,14 @@ button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-
 
 .power-card.fresh-refill {
   animation-name: powerRefillSlideIn;
-  animation-duration: 560ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-duration: 620ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .power-card.fresh-refresh {
   animation-name: powerRefreshSlideIn;
-  animation-duration: 620ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-duration: 680ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .power-card.unusable {
@@ -5741,7 +5741,7 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 
 .power-card.chaos-infused.chaos-infuse-upgrading {
   animation:
-    powerChaosInfuse 800ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    powerChaosInfuse 800ms cubic-bezier(0.22, 1, 0.36, 1) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
@@ -5783,24 +5783,24 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 
 .power-card.chaos-infused.fresh-refill {
   animation:
-    powerRefillSlideIn 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    powerRefillSlideIn 620ms cubic-bezier(0.22, 1, 0.36, 1) var(--power-enter-delay, 0ms) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.fresh-refresh {
   animation:
-    powerRefreshSlideIn 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--power-enter-delay, 0ms) both,
+    powerRefreshSlideIn 680ms cubic-bezier(0.22, 1, 0.36, 1) var(--power-enter-delay, 0ms) both,
     cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.power-selected-pop {
   animation:
-    powerSelectedPop 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    powerSelectedPop 380ms cubic-bezier(0.22, 1, 0.36, 1),
     cardChaosBgDrift 3600ms linear infinite;
 }
 
 .power-card.chaos-infused.power-use-ghost {
-  animation: powerUseGhost 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: powerUseGhost 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .power-card.chaos-infused.power-remove-exit-ghost {
@@ -5813,7 +5813,7 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
     filter: brightness(1);
   }
 
-  52% {
+  58% {
     transform: translateY(-0.12rem) scale(1.022);
     filter: brightness(1.24);
   }
