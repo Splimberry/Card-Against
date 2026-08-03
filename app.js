@@ -16,6 +16,9 @@ const BACKGROUND_IMAGE_PRELOAD_LIMIT = 80;
 const TABLE_EVENT_CHANCE_DEFAULT = 0.15;
 const TABLE_EVENT_CHANCE_MAYHEM = 0.8;
 const DOOM_POWER_CHANCE_DEFAULT = 0.01;
+const TARGET_WIPE_POINT_LOSS_PERCENT = 0.125;
+const TARGET_WIPE_GAIN_RETENTION = 0.75;
+const TARGET_WIPE_POWER_LOSS_COUNT = 2;
 const rarityInfo = {
   grey: { label: "Common", weight: 48 },
   blue: { label: "Rare", weight: 30 },
@@ -459,7 +462,7 @@ const powerDeck = [
   { id: "secret_agent", name: "Secret Agent", rarity: "doom", short: "identity scramble", description: "Scramble every other player's name and visible profile style for 3 rounds. At the end of the effect, swap your score with a random player ahead of you. If the match ends sooner, the swap happens in the final round.", type: "secret_agent", immediate: true, doom: true },
   { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.", type: "thermal_scythe", targeted: true, immediate: true, doom: true },
   { id: "ragnarok_protocol", name: "Ragnarok Protocol", rarity: "doom", short: "rank multiplier", description: "For this round, multiply every player's positive point gain by 50% times their leaderboard position. First place gets 50%; tenth place gets 500%.", type: "ragnarok_protocol", doom: true },
-  { id: "collapsing_star", name: "Collapsing Star", rarity: "doom", short: "wipe the room", description: "Immediately mark everyone else with Target Wipe for 3 rounds. After that, every round randomly marks a player ahead of you for 3 rounds. If a marked player wins, they lose 15% per stack, all power-ups, and all points from that round.", type: "collapsing_star", immediate: true, doom: true },
+  { id: "collapsing_star", name: "Collapsing Star", rarity: "doom", short: "wipe the room", description: "Immediately mark everyone else with Target Wipe for 3 rounds. After that, every round randomly marks a player ahead of you for 3 rounds. If a marked player wins, they lose 12.5% per stack, lose 2 power-ups per stack, and retain only 75% of their round gain per stack.", type: "collapsing_star", immediate: true, doom: true },
   { id: "admin_pass", name: "Admin Pass", rarity: "doom", short: "bribe up to 2", description: "Choose up to 2 players. They lose this round even if correct, and you gain the highest payout they would have earned.", type: "admin_pass", targeted: true, doom: true },
   { id: "null_protocol", name: "Null Protocol", rarity: "doom", short: "null 3 targets", description: "Choose 3 players. For the rest of the match they cannot gain positive status effects or bonus points, and Null Corruption reduces their point gains by 10% plus 5% for every wrong answer.", type: "null_protocol", targeted: true, immediate: true, doom: true }
 ];
@@ -7805,7 +7808,7 @@ function getActiveEffectEntries() {
       [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for the remaining rounds.", { chaosInfused: true })],
       [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", `Impending Doom${formatStackSuffix(doomStacks)}`, "Cannot gain positive status effects. Each stack makes wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
       [getEffectStackCount(state.nullProtocolOwners?.[owner]) > 0, createActiveEffect(owner, "null_protocol", `Null Corruption${formatStackSuffix(getEffectStackCount(state.nullProtocolOwners[owner]))}`, "Cannot gain positive statuses or bonus points. Point gains lose 10%, plus 5% for every wrong answer. Cannot be removed.")],
-      [getEffectStackCount(state.targetWipeMarks?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Target Wipe${formatStackSuffix(getEffectStackCount(state.targetWipeMarks[owner]?.count || state.targetWipeMarks[owner]))} · ${state.targetWipeMarks[owner]?.remaining || 0}r`, "If this player wins while marked, they lose 15% per stack, lose all power-ups, and gain no points that round.", { chaosInfused: true })],
+      [getEffectStackCount(state.targetWipeMarks?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Target Wipe${formatStackSuffix(getEffectStackCount(state.targetWipeMarks[owner]?.count || state.targetWipeMarks[owner]))} · ${state.targetWipeMarks[owner]?.remaining || 0}r`, "If this player wins while marked, they lose 12.5% per stack, lose 2 power-ups per stack, and retain only 75% of their round gain per stack.", { chaosInfused: true })],
       [getEffectStackCount(state.collapsingStarOwners?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Collapsing Star${formatStackSuffix(getEffectStackCount(state.collapsingStarOwners[owner]))}`, "Each round, randomly marks a player ahead of this player with Target Wipe.", { chaosInfused: true })],
       [hasDoomShield(owner), createActiveEffect(owner, "ultimatum", `Ultimatum x${state.ultimatumRounds[owner]}`, "Blocks point loss, debuffs, streak loss, and targeting. Cannot be removed.")],
       [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", `Explosive${formatStackSuffix(explosiveStacks)}`, "Each stack makes wrong answers lose 10% of this player's score. Cannot be removed.")],
@@ -24994,15 +24997,21 @@ function applyDoomRoundDeltas(deltas, owners, winnerSet = new Set(), events = []
     }
     if (activeWinnerSet.has(target)) {
       const projected = getProjectedOwnerScore(target, deltas);
-      const loss = Math.floor(projected * 0.15 * count);
+      const loss = Math.floor(projected * TARGET_WIPE_POINT_LOSS_PERCENT * count);
       if (deltas[target] > 0) {
         deltas[target] = 0;
       }
+      const gainRetention = Math.pow(TARGET_WIPE_GAIN_RETENTION, count);
+      if (deltas[target] > 0) {
+        deltas[target] = Math.floor(deltas[target] * gainRetention);
+      }
       addDoomDelta(deltas, target, loss, `Target Wipe x${count}`, events);
-      state.powerHands[target] = [];
+      const currentHand = Array.isArray(state.powerHands[target]) ? state.powerHands[target] : [];
+      const powerLossCount = Math.min(currentHand.length, TARGET_WIPE_POWER_LOSS_COUNT * count);
+      state.powerHands[target] = currentHand.slice(0, Math.max(0, currentHand.length - powerLossCount));
       markAnswerCardDamaged(target, loss);
       delete state.targetWipeMarks[target];
-      events.push(`Target Wipe x${count} cleared ${getOwnerLabel(target)}'s remaining round gain and power-ups.`);
+      events.push(`Target Wipe x${count} reduced ${getOwnerLabel(target)}'s round gain to ${Math.round(gainRetention * 100)}%, removed ${powerLossCount} power-up${powerLossCount === 1 ? "" : "s"}, and dealt ${loss.toLocaleString()} points of damage.`);
       return;
     }
     const remaining = Math.max(0, Number(mark?.remaining) || 0) - 1;
