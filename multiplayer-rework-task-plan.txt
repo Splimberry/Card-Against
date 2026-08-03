@@ -176,25 +176,14 @@ Recent phase progress:
   `/api/rooms` PUT, `/presence`, `/settings`, `/heartbeat`, `/chat`, `/game`, `/lobby`,
   `/round-advancing`, `/round-setup`, `/answer`, `/grading`, `/power-state`,
   `/round-result`, `/round-skip`, `/moderation`, `/close`, and `/leave`.
-- Removed the now-unregistered legacy handler bodies for the same endpoints, leaving only the command
-  router and shared normalization/helper functions.
 - Kept room list GET, direct room GET, events GET, commands POST, admin/debug endpoints,
   and recovery snapshots for allowed join/rejoin/revision-gap cases.
 - Removed dead client submission/grading retry helpers that were no longer called.
-- Renamed room presence maintenance away from misleading directory-polling names.
-- Removed no-op join directory polling shells and the participant realtime retry fan-out.
-- Added a per-room command queue inside the server process so rapid same-room commands serialize before
-  reading, mutating, and writing room state.
-- Added first-slice server power validation: active targets must exist, and once the server has an
-  authoritative hand for an actor, used powers must be present in that hand.
-- Added regressions for Classic-mode settings normalization, rapid bot add uniqueness, simultaneous
-  answer submission, and rejected forged/invalid power use.
 
 Still to implement:
 
 - Phase 5 server-authoritative power rule calculation remains partial. The transport is command-only,
-  and `use_power` now validates known hand ownership and targets, but scoring/effect math still comes
-  from the client-computed power-state patch until the full rule engine is migrated.
+  but `use_power` still accepts a client-computed power-state patch until the rule engine is migrated.
 
 
 Why This Rework Exists
@@ -251,7 +240,7 @@ These are the main current paths that should be removed or converted behind a ne
 - app.js state.roomDirectoryPollId
 - app.js state.roomAutoResolveId
 - app.js refreshCurrentRoomDirectory()
-- app.js startRoomPresenceMaintenance()
+- app.js startRoomDirectoryPolling()
 - app.js waitForRoomSubmissionsThenPlay()
 - app.js publishCurrentRoomSubmission()
 - app.js submitRoomAnswer() multiplayer branch that locally marks remote answers
@@ -734,7 +723,7 @@ Step 1: Add event/revision foundation
 Step 2: Replace lobby sync
 
 - Replace create/join/rejoin/leave/kick/ban/bot/settings with command events.
-- Remove room directory polling while inside a room; keep only room presence maintenance/host heartbeat and join-screen room list refresh.
+- Remove room directory polling while inside a room.
 - Keep room list refresh only on join screen.
 
 Step 3: Replace match start and phase sync
@@ -861,3 +850,8 @@ The rework is done only when:
 - clients apply events idempotently by revision/clientEventId
 - stale snapshots cannot overwrite newer event-applied state
 - all listed acceptance tests pass
+
+
+
+
+

@@ -3636,6 +3636,11 @@ const state = {
   statFlashActive: false,
   statFlashTimerId: null,
   statFlashTextTimerId: null,
+  statFlashMatchKey: "",
+  statFlashRoundKey: "",
+  statFlashRoundOverlayCount: 0,
+  statFlashModeIntroductionKeys: new Set(),
+  roundOverlayIcons: [],
   pointLossSoundToken: 0,
   questionDebugBank: [],
   questionDebugFiltered: [],
@@ -4139,6 +4144,7 @@ const elements = {
   loadingText: document.querySelector("#loadingText"),
   loadingSkeleton: document.querySelector("#loadingSkeleton"),
   cardsArea: document.querySelector("#cardsArea"),
+  roundOverlayIcons: document.querySelector("#roundOverlayIcons"),
   playerCardLabel: document.querySelector("#playerCardLabel"),
   playerCardAvatar: document.querySelector("#playerCardAvatar"),
   botOneLabel: document.querySelector("#botOneLabel"),
@@ -6111,6 +6117,135 @@ function normalizeStatFlashKind(kind) {
   ].includes(kind) ? kind : "positive";
 }
 
+function getStatFlashPresentationMatchKey() {
+  return getCurrentRoomMatchId() || `local-${state.matchWorkToken}`;
+}
+
+function getStatFlashPresentationRoundKey() {
+  return `${getStatFlashPresentationMatchKey()}|${Number(state.round) || 1}`;
+}
+
+function getRoundOverlayIconConfig(kind, title, options = {}) {
+  const normalizedKind = normalizeStatFlashKind(kind);
+  const cleanTitle = String(title || "Effect").trim() || "Effect";
+  const titleKey = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "effect";
+  const defaults = {
+    chaos: { src: "assets/modifiers/dice.svg", className: "chaos" },
+    mixed: { src: "assets/modifiers/equalizer.svg", className: "mixed" },
+    burning: { src: "assets/modifiers/flame.svg", className: "burning" },
+    lightning: { src: "assets/overlays/flash.svg", className: "lightning" },
+    bomb: { src: "assets/overlays/bomb.svg", className: "bomb" },
+    doom: { src: "assets/overlays/nuke.svg", className: "doom" },
+    shield: { src: "assets/overlays/shield.svg", className: "shield" },
+    "sudden-death": { src: "assets/modifiers/skull.svg", className: "doom" },
+    "no-mercy": { src: "assets/modifiers/skull.svg", className: "doom" },
+    coin: { src: "assets/overlays/coin.svg", className: "coin" },
+    bounty: { src: "assets/overlays/coin.svg", className: "coin" },
+    outage: { src: "assets/modifiers/fast-forward.svg", className: "outage" },
+    sabotage: { src: "assets/modifiers/skull.svg", className: "doom" },
+    casino: { src: "assets/modifiers/dice.svg", className: "casino" },
+    "black-market": { src: "assets/overlays/store.svg", className: "market" },
+    negative: { src: "assets/overlays/arrow.svg", className: "negative" },
+    positive: { src: "assets/overlays/arrow.svg", className: "positive" }
+  };
+  const fallback = defaults[normalizedKind] || defaults.positive;
+  return {
+    key: String(options.iconKey || `${normalizedKind}:${titleKey}`),
+    src: String(options.iconSrc || fallback.src),
+    className: String(options.iconClassName || fallback.className),
+    label: String(options.iconLabel || cleanTitle)
+  };
+}
+
+function formatRoundOverlayTooltip(icon) {
+  const details = Array.isArray(icon.details) ? icon.details.filter(Boolean).slice(-3) : [];
+  const lines = [icon.label, ...details];
+  if (icon.count > 1) {
+    lines.push(`Triggered x${icon.count}`);
+  }
+  return lines.join("\n");
+}
+
+function renderRoundOverlayIcons() {
+  const container = elements.roundOverlayIcons || document.querySelector("#roundOverlayIcons");
+  if (!container) {
+    return;
+  }
+  const existing = new Map(
+    [...container.children]
+      .filter((element) => element.dataset.overlayIconKey)
+      .map((element) => [element.dataset.overlayIconKey, element])
+  );
+  container.replaceChildren();
+  (Array.isArray(state.roundOverlayIcons) ? state.roundOverlayIcons : []).forEach((icon) => {
+    const button = existing.get(icon.key) || document.createElement("button");
+    const isNew = !existing.has(icon.key);
+    button.type = "button";
+    button.className = `round-overlay-icon ${icon.className || ""}`.trim();
+    button.dataset.overlayIconKey = icon.key;
+    button.dataset.tooltip = formatRoundOverlayTooltip(icon);
+    button.setAttribute("aria-label", formatRoundOverlayTooltip(icon).replace(/\n/g, ". "));
+    button.innerHTML = `
+      <img src="${icon.src}" alt="" loading="lazy" decoding="async">
+      ${icon.count > 1 ? `<span class="round-overlay-icon-count">x${icon.count}</span>` : ""}
+    `;
+    container.appendChild(button);
+    button.classList.remove("round-overlay-icon-entering", "round-overlay-icon-pulse");
+    void button.offsetWidth;
+    button.classList.add(isNew ? "round-overlay-icon-entering" : "round-overlay-icon-pulse");
+    window.setTimeout(() => {
+      button.classList.remove("round-overlay-icon-entering", "round-overlay-icon-pulse");
+    }, 760);
+  });
+}
+
+function syncStatFlashRoundPresentation(options = {}) {
+  const matchKey = getStatFlashPresentationMatchKey();
+  const roundKey = getStatFlashPresentationRoundKey();
+  if (state.statFlashRoundKey === roundKey) {
+    return false;
+  }
+  const matchChanged = Boolean(state.statFlashMatchKey && state.statFlashMatchKey !== matchKey);
+  if (options.clearQueue !== false && state.statFlashRoundKey) {
+    clearStatFlashes({ clearIcons: false });
+  }
+  state.statFlashMatchKey = matchKey;
+  state.statFlashRoundKey = roundKey;
+  state.statFlashRoundOverlayCount = 0;
+  if (matchChanged) {
+    state.statFlashModeIntroductionKeys = new Set();
+  }
+  state.roundOverlayIcons = [];
+  renderRoundOverlayIcons();
+  return true;
+}
+
+function recordRoundOverlayIcon(kind, title, detail, options = {}) {
+  syncStatFlashRoundPresentation();
+  const config = getRoundOverlayIconConfig(kind, title, options);
+  const details = Array.isArray(detail)
+    ? detail.map((line) => String(line || "").trim()).filter(Boolean)
+    : String(detail || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  const existing = state.roundOverlayIcons.find((icon) => icon.key === config.key);
+  if (existing) {
+    existing.count += 1;
+    existing.details = [...new Set([...(existing.details || []), ...details])].slice(-3);
+    existing.className = config.className;
+    existing.src = config.src;
+    existing.label = config.label;
+  } else {
+    state.roundOverlayIcons.push({
+      key: config.key,
+      src: config.src,
+      className: config.className,
+      label: config.label,
+      count: 1,
+      details
+    });
+  }
+  renderRoundOverlayIcons();
+}
+
 function getFocusedOwner() {
   return getCurrentPowerOwner();
 }
@@ -6132,6 +6267,32 @@ function queueStatFlash(kind, title, detail, options = {}) {
     : String(detail || "").trim();
   if (!cleanTitle || !cleanDetail) {
     return;
+  }
+  syncStatFlashRoundPresentation();
+  const iconConfig = getRoundOverlayIconConfig(kind, cleanTitle, options);
+  const round = Number(state.round) || 1;
+  const isFirstRound = round <= 1 && options.forceLimited !== true;
+  const isModeIntroduction = options.modeIntroduction === true;
+  const introductionKey = String(options.introductionKey || options.iconKey || iconConfig.key);
+  if (isModeIntroduction && isFirstRound && state.statFlashModeIntroductionKeys.has(introductionKey)) {
+    return;
+  }
+  recordRoundOverlayIcon(kind, cleanTitle, cleanDetail, options);
+
+  const isChaosGlitch = options.chaosGlitch === true;
+  const isFinalPointOverlay = options.finalPointOverlay === true || options.finalResult === true;
+  const hasOverlayBudget = state.statFlashRoundOverlayCount < 3;
+  const shouldShowFullOverlay = isChaosGlitch
+    || isFinalPointOverlay
+    || (isModeIntroduction ? isFirstRound : isFirstRound || hasOverlayBudget);
+  if (!shouldShowFullOverlay) {
+    return;
+  }
+  if (!isFirstRound && !isChaosGlitch && !isFinalPointOverlay) {
+    state.statFlashRoundOverlayCount += 1;
+  }
+  if (isModeIntroduction && isFirstRound) {
+    state.statFlashModeIntroductionKeys.add(introductionKey);
   }
   const focusedOwner = getFocusedOwner();
   const sourceOwner = options.sourceOwner || "";
@@ -6236,7 +6397,9 @@ function getTargetedFlashOptions(sourceOwner, targetOwner, options = {}) {
   return {
     ...options,
     owners: [targetOwner],
-    sourceOwner
+    sourceOwner,
+    iconSrc: options.iconSrc || "assets/overlays/customer.svg",
+    iconClassName: options.iconClassName || "targeted"
   };
 }
 
@@ -6290,9 +6453,17 @@ function playNextStatFlash() {
   }, next.durationMs);
 }
 
-function clearStatFlashes() {
+function clearStatFlashes(options = {}) {
   state.statFlashQueue = [];
   state.statFlashActive = false;
+  if (options.clearIcons !== false) {
+    state.statFlashMatchKey = "";
+    state.statFlashRoundKey = "";
+    state.statFlashRoundOverlayCount = 0;
+    state.statFlashModeIntroductionKeys = new Set();
+    state.roundOverlayIcons = [];
+    renderRoundOverlayIcons();
+  }
   if (state.statFlashTimerId) {
     window.clearTimeout(state.statFlashTimerId);
     state.statFlashTimerId = null;
@@ -10738,9 +10909,6 @@ function renderTableEventControls() {
 
 function rollRoundAmplifiedMultiplier() {
   state.roundAmplifiedMultiplier = isMatchModifierEnabled("amplified") ? getRandomMultiplier(1, 2) : 1;
-  if (isMatchModifierEnabled("amplified")) {
-    queueStatFlash("mixed", "Amplified", `x${state.roundAmplifiedMultiplier.toFixed(3)} Multiplier`, { owners: getActiveOwners() });
-  }
 }
 
 function applyRoundAmplifiedMultiplier(deltas, owners, events) {
@@ -10748,7 +10916,12 @@ function applyRoundAmplifiedMultiplier(deltas, owners, events) {
     return 1;
   }
   const amplifiedMultiplier = state.roundAmplifiedMultiplier || 1;
-  queueStatFlash("mixed", "Amplified", `x${amplifiedMultiplier.toFixed(3)} Multiplier`, { owners });
+  if (Number(state.round) > 1) {
+    queueStatFlash("mixed", "Amplified", `x${amplifiedMultiplier.toFixed(3)} Multiplier`, {
+      owners,
+      iconKey: "mode:amplified"
+    });
+  }
   owners.forEach((participant) => {
     deltas[participant] = Math.round(deltas[participant] * amplifiedMultiplier);
   });
@@ -18830,6 +19003,7 @@ function applyRoundStartEffects() {
   });
   queueDeltaStatFlash("Soul Link", soulLinkDeltas);
 
+  const hotInHereOverlaySource = isMatchModifierEnabled("wildFire") ? "Wild Fire" : "It's Getting Hot";
   getHotInHereEffectOwners(owners).forEach((owner) => {
     if (!owners.includes(owner)) {
       return;
@@ -18847,7 +19021,10 @@ function applyRoundStartEffects() {
     });
     events.push(`${source}${stacks > 1 ? ` x${stacks}` : ""} burned everyone except ${getOwnerLabel(owner)} for ${burnPercent * stacks}%.`);
   });
-  queueDeltaStatFlash("It's Getting Hot", hotInHereDeltas, "Point", { kind: "burning" });
+  queueDeltaStatFlash(hotInHereOverlaySource, hotInHereDeltas, "Point", {
+    kind: "burning",
+    iconKey: hotInHereOverlaySource === "Wild Fire" ? "mode:wildfire" : "effect:its-getting-hot"
+  });
 
   const persistentDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
   applyPersistentRoundDeltas(persistentDeltas, owners, events);
@@ -23792,7 +23969,13 @@ function shouldDisableAnswerInputNow() {
 
 function applyChaosDebuff(owner, source = "Chaos", options = {}) {
   if (owner !== getFocusedOwner() || !isAnswerInputLive()) {
-    queueStatFlash("chaos", source, randomChaosText(16), { owners: [owner], durationMs: 3000, complex: true, sourceOwner: options.sourceOwner });
+    queueStatFlash("chaos", source, randomChaosText(16), {
+      owners: [owner],
+      durationMs: 3000,
+      complex: true,
+      chaosGlitch: true,
+      sourceOwner: options.sourceOwner
+    });
     return;
   }
 
@@ -23818,6 +24001,7 @@ function applyChaosDebuff(owner, source = "Chaos", options = {}) {
     owners: [owner],
     durationMs: 3000,
     complex: true,
+    chaosGlitch: true,
     priority: true,
     flickerText: true,
     onTextChange: setChaosAnswerText,
@@ -25170,25 +25354,70 @@ function setupPowerHands() {
 }
 
 function applyRoomRoundStartModifiers() {
-  if (!isMatchModifierEnabled("chaos")) {
-    return;
-  }
-
   const owners = getActiveOwners();
   if (Number(state.round) <= 1) {
-    queueStatFlash("chaos", "Chaos Mode", "Chaos Mode\nActive", {
-      owners,
-      complex: true,
-      priority: true,
-      durationMs: 2200
-    });
+    if (isMatchModifierEnabled("chaos")) {
+      queueStatFlash("chaos", "Chaos Mode", "All Power-Ups\nRefresh every round", {
+        owners,
+        modeIntroduction: true,
+        iconKey: "mode:chaos",
+        complex: true,
+        priority: true,
+        durationMs: 2200
+      });
+    }
+    if (isMatchModifierEnabled("amplified")) {
+      queueStatFlash("mixed", "Amplified", `x${(state.roundAmplifiedMultiplier || 1).toFixed(3)} Multiplier`, {
+        owners,
+        modeIntroduction: true,
+        iconKey: "mode:amplified",
+        complex: true
+      });
+    }
+    if (isMatchModifierEnabled("wildFire")) {
+      queueStatFlash("burning", "Wild Fire", "Streak losses burn\neveryone else", {
+        owners,
+        modeIntroduction: true,
+        iconKey: "mode:wildfire",
+        complex: true
+      });
+    }
+    if (isMatchModifierEnabled("harsh")) {
+      queueStatFlash("negative", "Brutal", "Wrong answers lose\n10% of your score", {
+        owners,
+        modeIntroduction: true,
+        iconKey: "mode:brutal",
+        complex: true
+      });
+    }
+    if (isMatchModifierEnabled("timeMoney")) {
+      queueStatFlash("mixed", "Time Is Money", "More time remaining\nmeans more points", {
+        owners,
+        modeIntroduction: true,
+        iconKey: "mode:time-money",
+        complex: true
+      });
+    }
+    if (isMatchModifierEnabled("partyMayhem")) {
+      queueStatFlash("casino", "Party Mayhem", "Table events appear\nmore often", {
+        owners,
+        modeIntroduction: true,
+        iconKey: "mode:party-mayhem",
+        complex: true
+      });
+    }
+    return;
+  }
+  if (!isMatchModifierEnabled("chaos")) {
     return;
   }
   owners.forEach((owner) => {
     rerollPowerHand(owner, getPowerHandLimit(owner), { allowDoom: true });
   });
-  queueStatFlash("chaos", "Chaos Mode", "All Power-Ups\nRefreshed + Refilled", {
+  queueStatFlash("chaos", "Chaos Refresh", "All Power-Ups\nRefreshed + Refilled", {
     owners,
+    modeIntroduction: true,
+    iconKey: "mode:chaos",
     complex: true,
     priority: true,
     durationMs: 2400
@@ -27106,6 +27335,7 @@ function getRoundSetupRenderKey(setup, options = {}) {
 }
 
 function renderRound() {
+  syncStatFlashRoundPresentation();
   stopNextRoundCountdown();
   stopLoadingMessages();
   clearCardBadges();
@@ -27581,6 +27811,10 @@ function buildDevToolScreen() {
             <button type="button" class="overlay-debug-button overlay-debug-sabotage" data-overlay-debug="sabotage"><span>Sabotage</span><strong>-5% + Debuff</strong></button>
             <button type="button" class="overlay-debug-button overlay-debug-complex" data-overlay-debug="complex"><span>Complex Buff</span><strong>Multi-line</strong></button>
             <button type="button" class="overlay-debug-button overlay-debug-sequence" data-overlay-debug="sequence"><span>Sequence</span><strong>Queue Test</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-sequence" data-overlay-debug="budget-sequence"><span>3 Overlay Budget</span><strong>4 triggers</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-lightning" data-overlay-debug="icon-repeat"><span>Icon Counter</span><strong>Zap x3</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-chaos" data-overlay-debug="chaos-glitch"><span>Chaos Glitch</span><strong>Budget exempt</strong></button>
+            <button type="button" class="overlay-debug-button overlay-debug-bounty" data-overlay-debug="final-point"><span>Final Point</span><strong>Budget exempt</strong></button>
           </div>
         </section>
         <aside class="overlay-debug-info">
@@ -31589,7 +31823,30 @@ function triggerOverlayDebug(type) {
       queueStatFlash("burning", "Wild Fire", "-5% Points", { complex: true });
       queueStatFlash("lightning", "Zap Strike", "-300 Points", { complex: true });
       queueStatFlash("mixed", "Gambler's Dice", ["Airdrop", "Void Bomb"], { complex: true });
-    }
+    },
+    "budget-sequence": () => {
+      queueStatFlash("positive", "Gain Points", "+500 Points", { unit: "Point", forceLimited: true });
+      queueStatFlash("burning", "Wild Fire", "-5% Points", { complex: true, forceLimited: true });
+      queueStatFlash("lightning", "Zap Strike", "-300 Points", { complex: true, forceLimited: true });
+      queueStatFlash("bomb", "Fourth Trigger", "Icon only after the limit", { complex: true, forceLimited: true });
+    },
+    "icon-repeat": () => {
+      queueStatFlash("lightning", "Zap Strike", "-300 Points", { complex: true, forceLimited: true, iconKey: "effect:zap" });
+      queueStatFlash("lightning", "Zap Strike", "-600 Points", { complex: true, forceLimited: true, iconKey: "effect:zap" });
+      queueStatFlash("lightning", "Zap Strike", "-900 Points", { complex: true, forceLimited: true, iconKey: "effect:zap" });
+    },
+    "chaos-glitch": () => queueStatFlash("chaos", "Chaos Glitch", "Attack is always visible", {
+      complex: true,
+      forceLimited: true,
+      chaosGlitch: true,
+      iconKey: "effect:chaos-glitch"
+    }),
+    "final-point": () => queueStatFlash("bounty", "Final Point", "+2,500 Points", {
+      complex: true,
+      forceLimited: true,
+      finalPointOverlay: true,
+      iconKey: "effect:final-point"
+    })
   };
   if (!test[debugType]) {
     return;
@@ -39640,7 +39897,10 @@ function animateScorePop(owner, awarded) {
     return;
   }
 
-  queueDeltaStatFlash("Score Change", Object.fromEntries(entries));
+  queueDeltaStatFlash("Score Change", Object.fromEntries(entries), "Point", {
+    finalPointOverlay: isFinalRound(),
+    iconKey: isFinalRound() ? "effect:final-point" : "effect:score-change"
+  });
 
   entries.forEach(([targetOwner, amount]) => {
     const target = elements.leaderboard.querySelector(`[data-owner="${targetOwner}"] .leaderboard-score`);

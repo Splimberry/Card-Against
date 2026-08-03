@@ -2948,6 +2948,150 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     border-color 320ms ease;
 }
 
+.round-overlay-icons {
+  position: absolute;
+  top: 0.72rem;
+  left: 0.72rem;
+  z-index: 46;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  width: min(19rem, calc(100% - 1.45rem));
+  pointer-events: none;
+}
+
+.game-stage.spectator-mode .round-overlay-icons {
+  top: 3.05rem;
+}
+
+.round-overlay-icon {
+  --overlay-icon-color: #b8f5ff;
+  position: relative;
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  min-height: 0;
+  place-items: center;
+  padding: 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--overlay-icon-color) 62%, white 12%);
+  border-radius: 0.62rem;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--overlay-icon-color) 18%, transparent), rgba(8, 10, 16, 0.88)),
+    rgba(8, 10, 16, 0.82);
+  box-shadow:
+    0 0.7rem 1.4rem rgba(0, 0, 0, 0.28),
+    0 0 0.8rem color-mix(in srgb, var(--overlay-icon-color) 34%, transparent),
+    inset 0 0 0.55rem color-mix(in srgb, var(--overlay-icon-color) 12%, transparent);
+  color: var(--overlay-icon-color);
+  pointer-events: auto;
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.round-overlay-icon:hover,
+.round-overlay-icon:focus-visible {
+  transform: translateY(-2px) scale(1.06);
+  border-color: color-mix(in srgb, var(--overlay-icon-color) 88%, white 24%);
+  box-shadow:
+    0 0.85rem 1.6rem rgba(0, 0, 0, 0.34),
+    0 0 1.15rem color-mix(in srgb, var(--overlay-icon-color) 55%, transparent),
+    inset 0 0 0.65rem color-mix(in srgb, var(--overlay-icon-color) 18%, transparent);
+}
+
+.round-overlay-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) invert(1) drop-shadow(0 0 0.42rem color-mix(in srgb, var(--overlay-icon-color) 80%, transparent));
+  opacity: 0.96;
+}
+
+.round-overlay-icon.positive {
+  --overlay-icon-color: #64dea4;
+}
+
+.round-overlay-icon.positive img {
+  transform: rotate(180deg);
+}
+
+.round-overlay-icon.negative {
+  --overlay-icon-color: #ff4d7d;
+}
+
+.round-overlay-icon.targeted {
+  --overlay-icon-color: #b8f5ff;
+}
+
+.round-overlay-icon-count {
+  position: absolute;
+  right: -0.32rem;
+  bottom: -0.32rem;
+  display: grid;
+  min-width: 1.22rem;
+  height: 1.22rem;
+  place-items: center;
+  padding: 0 0.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  background: #0a0b11;
+  color: #ffffff;
+  font-size: 0.58rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 0 0.55rem color-mix(in srgb, var(--overlay-icon-color) 62%, transparent);
+}
+
+.round-overlay-icon.chaos,
+.round-overlay-icon.casino {
+  --overlay-icon-color: #64dea4;
+}
+
+.round-overlay-icon.mixed {
+  --overlay-icon-color: #f4d35e;
+}
+
+.round-overlay-icon.burning {
+  --overlay-icon-color: #ff9b3e;
+}
+
+.round-overlay-icon.lightning {
+  --overlay-icon-color: #8fe7ff;
+}
+
+.round-overlay-icon.bomb {
+  --overlay-icon-color: #ff9f30;
+}
+
+.round-overlay-icon.doom {
+  --overlay-icon-color: #ff4d7d;
+  background:
+    linear-gradient(135deg, rgba(255, 28, 76, 0.24), rgba(126, 34, 206, 0.18) 52%, rgba(8, 10, 16, 0.9)),
+    rgba(8, 10, 16, 0.84);
+}
+
+.round-overlay-icon.shield {
+  --overlay-icon-color: #83e7ff;
+}
+
+.round-overlay-icon.coin,
+.round-overlay-icon.market {
+  --overlay-icon-color: #ffdf79;
+}
+
+.round-overlay-icon.outage {
+  --overlay-icon-color: #fff09e;
+}
+
+.round-overlay-icon-entering {
+  animation: roundOverlayIconIn 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.round-overlay-icon-pulse {
+  animation: roundOverlayIconPulse 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .game-stage.wild-fire-active .table-surface {
   border-color: rgba(255, 77, 125, 0.38);
   box-shadow:
@@ -3362,10 +3506,12 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .overlay-debug-button strong {
+  min-width: 0;
   margin-top: 0.3rem;
   color: var(--ink);
   font-size: clamp(0.95rem, 1.5vw, 1.15rem);
   line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 
 .overlay-debug-positive {
@@ -3428,6 +3574,26 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .overlay-debug-bounty {
   border-color: rgba(255, 213, 93, 0.52);
   box-shadow: inset 0.22rem 0 0 rgba(255, 213, 93, 0.9);
+}
+
+.overlay-debug-market {
+  border-color: rgba(64, 222, 164, 0.52);
+  background:
+    linear-gradient(135deg, rgba(64, 222, 164, 0.14), transparent 62%),
+    rgba(7, 16, 15, 0.94);
+  box-shadow:
+    inset 0.22rem 0 0 rgba(64, 222, 164, 0.9),
+    0 0 1rem rgba(64, 222, 164, 0.12);
+}
+
+.overlay-debug-sabotage {
+  border-color: rgba(255, 77, 125, 0.56);
+  background:
+    linear-gradient(135deg, rgba(255, 77, 125, 0.16), transparent 62%),
+    rgba(18, 5, 11, 0.94);
+  box-shadow:
+    inset 0.22rem 0 0 rgba(255, 77, 125, 0.9),
+    0 0 1rem rgba(255, 77, 125, 0.14);
 }
 
 .overlay-debug-info h2 {
@@ -13960,6 +14126,44 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
 
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes roundOverlayIconIn {
+  0% {
+    opacity: 0;
+    filter: brightness(0.7) saturate(0.7);
+    transform: translateX(-0.55rem) scale(0.72) rotate(-7deg);
+  }
+
+  58% {
+    opacity: 1;
+    filter: brightness(1.42) saturate(1.2);
+    transform: translateX(0.08rem) scale(1.12) rotate(2deg);
+  }
+
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: translateX(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes roundOverlayIconPulse {
+  0%,
+  100% {
+    filter: brightness(1) saturate(1);
+    transform: scale(1);
+  }
+
+  38% {
+    filter: brightness(1.55) saturate(1.3);
+    transform: scale(1.16);
+  }
+
+  72% {
+    filter: brightness(1.08) saturate(1.08);
+    transform: scale(0.98);
   }
 }
 
