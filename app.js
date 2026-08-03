@@ -15,6 +15,7 @@ const BACKGROUND_PREFETCH_DELAY_MS = 1200;
 const BACKGROUND_IMAGE_PRELOAD_LIMIT = 80;
 const TABLE_EVENT_CHANCE_DEFAULT = 0.15;
 const TABLE_EVENT_CHANCE_MAYHEM = 0.8;
+const DOOM_POWER_CHANCE_DEFAULT = 0.01;
 const rarityInfo = {
   grey: { label: "Common", weight: 48 },
   blue: { label: "Rare", weight: 30 },
@@ -460,7 +461,7 @@ const powerDeck = [
 ];
 const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
 const chaosInfusedPowerSuffix = "__chaos";
-const chaosInfusionChance = 0.1;
+const chaosInfusionChance = 0.2;
 const chaosInfusedPowerOverrides = {
   small_bounty: {
     name: "Unstable Bounty",
@@ -716,9 +717,9 @@ const chaosInfusedPowerOverrides = {
   lucky_side: {
     name: "Four Leaf Clover",
     short: "5 round luck",
-    description: "For 5 rounds, buff/debuff rolls can only give you buffs, refreshed or received power-ups are Rare or better, and your chaos infusion chance becomes 25%.",
+    description: "For 5 rounds, buff/debuff rolls can only give you buffs, refreshed or received power-ups are Rare or better, and your chaos infusion chance becomes 50%.",
     rounds: 5,
-    chaosInfusionChance: 0.25
+    chaosInfusionChance: 0.5
   },
   nail_coffin: {
     name: "Yep, They Are Dead",
@@ -7749,7 +7750,7 @@ function getActiveEffectEntries() {
       [state.pendingCocktailBuffs[owner] > 0, createActiveEffect(owner, "overachiever", `Overachiever Buff x${state.pendingCocktailBuffs[owner]}`, "Gives this player a Cocktail Mix buff next round.")],
       [state.pendingLegendaryPowers[owner] > 0, createActiveEffect(owner, "overachiever", `Pending Legendary x${state.pendingLegendaryPowers[owner]}`, "Gives this player a Legendary power-up next round after Chaos refresh.")],
       [(state.pocketShieldBreakThresholds[owner] || 0) > 0, createActiveEffect(owner, "shield", "Resistant Shield", "Point shield persists until it blocks over 2,000 points in one round.", { chaosInfused: true })],
-      [state.chaosInfusionBoostRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Four Leaf Clover x${state.chaosInfusionBoostRounds[owner]}`, "Buff rolls only, Rare+ new power-ups, and 25% chaos infusion odds.", { chaosInfused: true })],
+      [state.chaosInfusionBoostRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Four Leaf Clover x${state.chaosInfusionBoostRounds[owner]}`, "Buff rolls only, Rare+ new power-ups, and 50% chaos infusion odds.", { chaosInfused: true })],
       [state.luckRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Lucky Side x${state.luckRounds[owner]}`, "Buff/debuff rolls become buffs, and new power-ups are Rare or better.")],
       [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", `Heaven/Hell Curse${formatStackSuffix(getEffectStackCount(state.heavenHellCurses[owner]))}`, "Loses 250 points each round per stack.")],
       [state.bottomFeederRounds[owner] > 0, createActiveEffect(owner, "bottom_feeder", `Bottom Feeder x${state.bottomFeederRounds[owner]}`, `Pays this player ${(state.bottomFeederRounds[owner] * 100).toLocaleString()} points after each loss.`)],
@@ -20380,12 +20381,26 @@ function drawPowerCard(existing = [], options = {}) {
     return null;
   }
 
-  const totalWeight = pool.reduce((total, power) => total + rarityInfo[power.rarity].weight, 0);
+  const doomPool = pool.filter((power) => power.rarity === "doom");
+  if (options.allowDoom && doomPool.length) {
+    const doomChance = Number.isFinite(options.doomChance)
+      ? Math.min(1, Math.max(0, Number(options.doomChance)))
+      : DOOM_POWER_CHANCE_DEFAULT;
+    if (Math.random() < doomChance) {
+      return doomPool[Math.floor(Math.random() * doomPool.length)].id;
+    }
+  }
+
+  const weightedPool = pool.filter((power) => power.rarity !== "doom");
+  if (!weightedPool.length) {
+    return doomPool[0]?.id || null;
+  }
+  const totalWeight = weightedPool.reduce((total, power) => total + rarityInfo[power.rarity].weight, 0);
   let roll = Math.random() * totalWeight;
-  const picked = pool.find((power) => {
+  const picked = weightedPool.find((power) => {
     roll -= rarityInfo[power.rarity].weight;
     return roll <= 0;
-  }) || pool[pool.length - 1];
+  }) || weightedPool[weightedPool.length - 1];
   return options.forceNoChaosInfusion ? picked.id : maybeChaosInfusePowerId(picked.id, options);
 }
 
@@ -20404,8 +20419,17 @@ function getPowerDrawOptions(owner) {
   return {
     excludeAi: getPlayer(owner)?.type === "bot",
     minRarity: (state.luckRounds[owner] || 0) > 0 ? "blue" : null,
-    chaosInfusionChance: (state.chaosInfusionBoostRounds[owner] || 0) > 0 ? 0.25 : null
+    chaosInfusionChance: (state.chaosInfusionBoostRounds[owner] || 0) > 0 ? 0.5 : null,
+    doomChance: getPowerDoomChance(owner)
   };
+}
+
+function getPowerDoomChance(owner) {
+  if (!owner || !isLastPlace(owner)) {
+    return DOOM_POWER_CHANCE_DEFAULT;
+  }
+  const round = Math.min(10, Math.max(1, Math.floor(Number(state.round) || 1)));
+  return round / 100;
 }
 
 function rerollPowerHand(owner, count, options = {}) {

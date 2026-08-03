@@ -1109,7 +1109,7 @@
     "Pick a player. Delete their highest-rarity power-up, or a random one if tied.": "选择一名玩家。删除他最高稀有度的能力卡；若并列则随机删除一张。",
     "Lasts the entire game. At the start of every round, each player has a 33% chance to activate a debuff on themself.": "持续整局。每回合开始时，每名玩家都有 33% 概率对自己触发负面效果。",
     "Only usable if you lost last round. For 3 rounds, buff/debuff rolls can only give you buffs, and refreshed or received power-ups are Rare or better.": "只能在你上一回合输了时使用。接下来 3 回合，增益/负面抽取只会给你增益，刷新或获得的能力卡为稀有或更高。",
-    "For 5 rounds, buff/debuff rolls can only give you buffs, refreshed or received power-ups are Rare or better, and your chaos infusion chance becomes 25%.": "接下来 5 回合，增益/负面抽取只会给你增益，刷新或获得的能力卡为稀有或更高，混沌灌注概率变为 25%。",
+    "For 5 rounds, buff/debuff rolls can only give you buffs, refreshed or received power-ups are Rare or better, and your chaos infusion chance becomes 50%.": "接下来 5 回合，增益/负面抽取只会给你增益，刷新或获得的能力卡为稀有或更高，混沌灌注概率变为 50%。",
     "Anyone who loses points this round loses double.": "本回合任何失去分数的人都会损失双倍。",
     "Trigger Sudden Death on everyone except you, making each of them lose 25% of their current score.": "对除你以外所有人触发突然死亡，让他们各自失去当前分数 25%。",
     "Pick a player. If they lose this round, take 500 points from them and gain 1 streak.": "选择一名玩家。如果他本回合输了，从他身上拿走 500 分并获得 1 连胜。",
