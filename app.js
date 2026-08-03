@@ -6143,7 +6143,7 @@ function getRoundOverlayIconConfig(kind, title, options = {}) {
     "no-mercy": { src: "assets/modifiers/skull.svg", className: "doom" },
     coin: { src: "assets/overlays/coin.svg", className: "coin" },
     bounty: { src: "assets/overlays/coin.svg", className: "coin" },
-    outage: { src: "assets/modifiers/fast-forward.svg", className: "outage" },
+    outage: { src: "assets/modifiers/no-stopping.svg", className: "outage" },
     sabotage: { src: "assets/modifiers/skull.svg", className: "sabotage" },
     casino: { src: "assets/modifiers/dice.svg", className: "casino" },
     "black-market": { src: "assets/overlays/store.svg", className: "market" },
@@ -18956,30 +18956,33 @@ function applyRoundStartEffects() {
     .filter((owner) => owners.includes(owner))
     .forEach((sourceOwner) => {
       const stacks = getEffectStackCount(state.virusFactories[sourceOwner]);
-      for (let stack = 0; stack < stacks; stack += 1) {
-        owners.forEach((owner) => {
-          if (Math.random() >= 0.33) {
-            return;
-          }
+      owners.forEach((owner) => {
+        runStackedChanceRolls(stacks, 0.33, () => {
           const result = applyCocktailMix(owner, { debuffsOnly: true, source: "Virus Factory" });
           queueCocktailResultFlash("Virus Factory", result, { owners: [owner] });
           events.push(`Virus Factory from ${getOwnerLabel(sourceOwner)} hit ${getOwnerLabel(owner)} with a debuff: ${result}.`);
         });
-      }
+      });
     });
 
   Object.entries(state.typhoonOwners || {})
     .filter(([owner]) => owners.includes(owner))
     .forEach(([stormOwner, value]) => {
       const stacks = getModeEffectStacks(value);
-      for (let stack = 0; stack < stacks.chaos; stack += 1) {
-        owners.forEach((target) => {
-          if (Math.random() >= 0.33) {
-            return;
-          }
+      owners.forEach((target) => {
+        runStackedChanceRolls(stacks.chaos, 0.33, () => {
           if (target === stormOwner) {
             const strike = Math.random() < 0.5 ? getPowerById("zap_strike__chaos") : getPowerById("lightning_strike__chaos");
+            if (!strike) {
+              return;
+            }
             const appliedLoss = activateImmediateZapStrike(stormOwner, strike, {});
+            queueStatFlash(
+              appliedLoss > 0 ? "lightning" : "mixed",
+              "The Heaven Has Opened",
+              appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "No Higher Streaks",
+              { owners: [stormOwner], complex: true }
+            );
             events.push(`The Heaven Has Opened made ${getOwnerLabel(stormOwner)} cast ${strike.name} on higher-streak players for ${appliedLoss.toLocaleString()} points.`);
             return;
           }
@@ -18989,19 +18992,19 @@ function applyRoundStartEffects() {
           queueStatFlash(appliedLoss > 0 ? "lightning" : "positive", "The Heaven Has Opened", appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", { owners: [target], complex: true });
           events.push(`The Heaven Has Opened made ${getOwnerLabel(target)} self-cast ${strike.name} on themself for ${appliedLoss.toLocaleString()} points.`);
         });
-      }
-      for (let stack = 0; stack < stacks.normal; stack += 1) {
-        owners.forEach((owner) => {
-          if (Math.random() >= 0.33) {
+      });
+      owners.forEach((owner) => {
+        runStackedChanceRolls(stacks.normal, 0.33, () => {
+          const strike = Math.random() < 0.5 ? getPowerById("zap_strike") : getPowerById("lightning_strike");
+          if (!strike) {
             return;
           }
-          const strike = Math.random() < 0.5 ? getPowerById("zap_strike") : getPowerById("lightning_strike");
           const amount = (strike.type === "lightning_strike" ? 500 : 250) * (getOwnerStreak(owner) + 1);
           const appliedLoss = applyProtectedScoreLoss(owner, amount, "Typhoon Season", events);
           queueStatFlash(appliedLoss > 0 ? "lightning" : "positive", "Typhoon Season", appliedLoss > 0 ? formatSignedStat(-appliedLoss, "Point") : "Blocked", { owners: [owner], complex: true });
           events.push(`Typhoon Season made ${getOwnerLabel(owner)} self-cast ${strike.name} on themself for ${appliedLoss.toLocaleString()} points.`);
         });
-      }
+      });
     });
 
   (state.soulLinks || []).forEach((link) => {
@@ -20390,6 +20393,19 @@ function getRandomActiveOwner() {
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * ((max - min) + 1)) + min;
+}
+
+function runStackedChanceRolls(stackCount, chance, callback) {
+  const rolls = Math.max(0, Math.floor(Number(stackCount) || 0));
+  let triggered = 0;
+  for (let index = 0; index < rolls; index += 1) {
+    if (Math.random() >= chance) {
+      continue;
+    }
+    triggered += 1;
+    callback(index);
+  }
+  return { rolls, triggered };
 }
 
 function getRandomMultiplier(min = 1, max = 2) {
