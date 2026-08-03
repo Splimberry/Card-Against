@@ -1675,6 +1675,60 @@
     "This profile is already active in that room. Use the existing tab, or reconnect after it disconnects.": "此档案已在该房间中活跃。请使用现有标签页，或在它断开后重新连接。"
   });
 
+  Object.assign(zhHans, {
+    // Dynamically composed power and overlay text.
+    "All Power-Ups": "所有能力卡",
+    "Chaos Refresh": "混沌刷新",
+    "Chaos Mode": "混沌模式",
+    "Refresh every round": "每回合刷新",
+    "Refreshed + Refilled": "已刷新并补满",
+    "Adds 10 seconds to this player's answer timer.": "为该玩家的答题计时增加 10 秒。",
+    "Time Dilation: +10 seconds for 3 rounds": "时间膨胀：3 回合内增加 10 秒",
+    "Power Disabled": "能力已禁用",
+    "Effects Removed": "效果已移除",
+    "Point Shield Armed": "扣分护盾已启动",
+    "Streak Shield Armed": "连胜护盾已启动",
+    "Streaks Locked": "连胜已锁定",
+    "Next Refresh": "下次刷新",
+    "Rest of Match": "本局剩余时间",
+    "Unbreakable Shield": "不可破坏护盾",
+    "Identity Scrambled": "身份已打乱",
+    "Score Swapped": "分数已交换",
+    "Streak Harvested": "已收割连胜",
+    "Thermal Guard": "热能护卫",
+    "Wrong Answer -10%": "答错 -10%",
+    "Power-Ups Offline": "能力卡已离线",
+    "Unlimited Shop Open": "无限商店已开启",
+    "Everyone Rolls": "全员抽取",
+    "Lucky Player +50%": "幸运玩家 +50%",
+    "Attack is always visible": "攻击始终可见",
+    "Icon only after the limit": "达到上限后仅显示图标",
+    "More time remaining": "剩余时间越多",
+    "means more points": "获得的分数越多",
+    "Streak losses burn": "连胜损失会灼烧",
+    "everyone else": "其他所有人",
+    "Table events appear": "场上事件出现",
+    "Wrong answers lose": "答错会失去",
+    "10% of your score": "你分数的 10%",
+    "Bonus Round": "奖励回合",
+    "Chaos Glitch": "混沌故障",
+    "Doom Guard": "末日护卫",
+    "Final Point": "最终分数",
+    "Fourth Trigger": "第四次触发",
+    "Gain Points": "获得分数",
+    "Gambler": "赌徒",
+    "Point Loss": "分数损失",
+    "Round Start": "回合开始",
+    "Shield": "护盾",
+    "Streak Guard": "连胜保护",
+    "Losers Lose 25%": "输家失去 25%",
+    "Losers Lose 15%": "输家失去 15%",
+    "Final Gains x2": "最终收益 x2",
+    "-5% + Debuff": "-5% + 负面效果",
+    "-5% + debuff": "-5% + 负面效果",
+    "Power Disabled\nEffects Removed": "能力已禁用\n效果已移除"
+  });
+
   const translations = {
     "zh-Hans": zhHans
   };
@@ -1907,7 +1961,8 @@
     "並": "并", "乾": "干", "償": "偿", "報": "报", "場": "场", "塊": "块", "後": "后", "來": "来",
     "張": "张", "條": "条", "測": "测", "滾": "滚", "爾": "尔", "狀": "状", "稱": "称", "碼": "码", "穫": "获",
     "終": "终", "給": "给", "綻": "绽", "繼": "继", "訂": "订", "計": "计", "訊": "讯", "評": "评",
-    "詩": "诗", "篩": "筛", "討": "讨", "關": "关", "風": "风", "飽": "饱"
+    "詩": "诗", "篩": "筛", "討": "讨", "關": "关", "風": "风", "飽": "饱",
+    "遊": "游", "懲": "惩"
   };
 
   function normalizeLanguage(language) {
@@ -1946,6 +2001,10 @@
     if (Object.prototype.hasOwnProperty.call(dictionary, core)) {
       return localizeOutput(dictionary[core], language);
     }
+    const dynamic = translateDynamicCore(core, language);
+    if (dynamic !== null) {
+      return dynamic;
+    }
     const patterns = patternTranslations[language] || [];
     for (const [regex, replacement] of patterns) {
       const match = core.match(regex);
@@ -1954,6 +2013,71 @@
       }
     }
     return localizeOutput(core, language);
+  }
+
+  function translateDynamicCore(core, language = currentLanguage) {
+    if (!core || language !== "zh-Hans") {
+      return null;
+    }
+
+    if (core.includes("\n")) {
+      return core.split("\n").map((line) => translateCore(line, language)).join("\n");
+    }
+
+    const parenthetical = core.match(/^(.+)\s+\(([^()]*)\)$/);
+    if (parenthetical) {
+      const translatedBase = translateCore(parenthetical[1], language);
+      const translatedNote = translateCore(parenthetical[2], language);
+      if (translatedBase !== parenthetical[1] || translatedNote !== parenthetical[2]) {
+        return `${translatedBase}（${translatedNote}）`;
+      }
+    }
+
+    const colon = core.match(/^([^:]+):\s+(.+)$/);
+    if (colon) {
+      const translatedLabel = translateCore(colon[1], language);
+      const translatedValue = translateCore(colon[2], language);
+      if (translatedLabel !== colon[1] || translatedValue !== colon[2]) {
+        return `${translatedLabel}：${translatedValue}`;
+      }
+    }
+
+    const numeric = core.match(/^([+-]?[\d,]+(?:\.\d+)?)\s+(Points?|Streaks?|seconds?|rounds?)$/i);
+    if (numeric) {
+      const units = {
+        point: "分",
+        points: "分",
+        streak: "连胜",
+        streaks: "连胜",
+        second: "秒",
+        seconds: "秒",
+        round: "回合",
+        rounds: "回合"
+      };
+      return `${numeric[1]} ${units[numeric[2].toLowerCase()] || numeric[2]}`;
+    }
+
+    const duration = core.match(/^([+-]?[\d,]+)\s+seconds?\s+for\s+([\d,]+)\s+rounds?$/i);
+    if (duration) {
+      return `${duration[2]} 回合内增加 ${duration[1].replace(/^\+/, "")} 秒`;
+    }
+
+    const multiplier = core.match(/^x([\d.]+)\s+Multiplier$/i);
+    if (multiplier) {
+      return `x${multiplier[1]} 倍率`;
+    }
+
+    const triggered = core.match(/^Triggered x(\d+)$/i);
+    if (triggered) {
+      return `触发 x${triggered[1]}`;
+    }
+
+    const currentCost = core.match(/^Current cost: ([\d,]+) points\.?$/i);
+    if (currentCost) {
+      return `当前费用：${currentCost[1]} 分`;
+    }
+
+    return null;
   }
 
   function translateText(source, language = currentLanguage) {
