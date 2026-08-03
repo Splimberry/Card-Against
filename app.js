@@ -6273,7 +6273,9 @@ function queueStatFlash(kind, title, detail, options = {}) {
   if (isModeIntroduction && isFirstRound && state.statFlashModeIntroductionKeys.has(introductionKey)) {
     return;
   }
-  recordRoundOverlayIcon(kind, cleanTitle, cleanDetail, options);
+  if (options.skipIconRecord !== true) {
+    recordRoundOverlayIcon(kind, cleanTitle, cleanDetail, options);
+  }
 
   const isChaosGlitch = options.chaosGlitch === true;
   const isFinalPointOverlay = options.finalPointOverlay === true || options.finalResult === true;
@@ -25359,56 +25361,68 @@ function setupPowerHands() {
 function applyRoomRoundStartModifiers() {
   const owners = getActiveOwners();
   if (Number(state.round) <= 1) {
-    if (isMatchModifierEnabled("chaos")) {
-      queueStatFlash("chaos", "Chaos Mode", "All Power-Ups\nRefresh every round", {
-        owners,
-        modeIntroduction: true,
+    const modeIntroductions = [
+      {
+        enabled: "chaos",
+        kind: "chaos",
+        title: "Chaos Mode",
+        detail: "All Power-Ups\nRefresh every round",
         iconKey: "mode:chaos",
-        complex: true,
         priority: true,
         durationMs: 2200
-      });
-    }
-    if (isMatchModifierEnabled("amplified")) {
-      queueStatFlash("mixed", "Amplified", `x${(state.roundAmplifiedMultiplier || 1).toFixed(3)} Multiplier`, {
-        owners,
+      },
+      {
+        enabled: "amplified",
+        kind: "mixed",
+        title: "Amplified",
+        detail: `x${(state.roundAmplifiedMultiplier || 1).toFixed(3)} Multiplier`,
+        iconKey: "mode:amplified"
+      },
+      {
+        enabled: "wildFire",
+        kind: "burning",
+        title: "Wild Fire",
+        detail: "Streak losses burn\neveryone else",
+        iconKey: "mode:wildfire"
+      },
+      {
+        enabled: "harsh",
+        kind: "negative",
+        title: "Brutal",
+        detail: "Wrong answers lose\n10% of your score",
+        iconKey: "mode:brutal"
+      },
+      {
+        enabled: "timeMoney",
+        kind: "mixed",
+        title: "Time Is Money",
+        detail: "More time remaining\nmeans more points",
+        iconKey: "mode:time-money"
+      },
+      {
+        enabled: "partyMayhem",
+        kind: "casino",
+        title: "Party Mayhem",
+        detail: "Table events appear\nmore often",
+        iconKey: "mode:party-mayhem"
+      }
+    ].filter((introduction) => isMatchModifierEnabled(introduction.enabled));
+
+    modeIntroductions.forEach((introduction) => {
+      // Mode icons are global match context, so they must be visible even when
+      // a client is not the owner of the first round's underlying effect.
+      const options = {
+        owners: [],
         modeIntroduction: true,
-        iconKey: "mode:amplified",
-        complex: true
-      });
-    }
-    if (isMatchModifierEnabled("wildFire")) {
-      queueStatFlash("burning", "Wild Fire", "Streak losses burn\neveryone else", {
-        owners,
-        modeIntroduction: true,
-        iconKey: "mode:wildfire",
-        complex: true
-      });
-    }
-    if (isMatchModifierEnabled("harsh")) {
-      queueStatFlash("negative", "Brutal", "Wrong answers lose\n10% of your score", {
-        owners,
-        modeIntroduction: true,
-        iconKey: "mode:brutal",
-        complex: true
-      });
-    }
-    if (isMatchModifierEnabled("timeMoney")) {
-      queueStatFlash("mixed", "Time Is Money", "More time remaining\nmeans more points", {
-        owners,
-        modeIntroduction: true,
-        iconKey: "mode:time-money",
-        complex: true
-      });
-    }
-    if (isMatchModifierEnabled("partyMayhem")) {
-      queueStatFlash("casino", "Party Mayhem", "Table events appear\nmore often", {
-        owners,
-        modeIntroduction: true,
-        iconKey: "mode:party-mayhem",
-        complex: true
-      });
-    }
+        iconKey: introduction.iconKey,
+        skipIconRecord: true,
+        complex: true,
+        ...(introduction.priority ? { priority: true } : {}),
+        ...(introduction.durationMs ? { durationMs: introduction.durationMs } : {})
+      };
+      recordRoundOverlayIcon(introduction.kind, introduction.title, introduction.detail, options);
+      queueStatFlash(introduction.kind, introduction.title, introduction.detail, options);
+    });
     return;
   }
   if (!isMatchModifierEnabled("chaos")) {
