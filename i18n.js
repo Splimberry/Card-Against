@@ -1902,7 +1902,12 @@
     "駭": "骇", "騙": "骗", "騰": "腾", "驅": "驱", "驚": "惊", "體": "体", "髒": "脏", "鬆": "松",
     "鬥": "斗", "鬧": "闹", "魯": "鲁", "鮑": "鲍", "鮮": "鲜", "鳥": "鸟", "鳳": "凤", "鳴": "鸣",
     "鴻": "鸿", "鵝": "鹅", "鷹": "鹰", "鹹": "咸", "麗": "丽", "麥": "麦", "黃": "黄", "點": "点",
-    "黨": "党", "齊": "齐", "齋": "斋", "齒": "齿", "龍": "龙", "龜": "龟"
+    "黨": "党", "齊": "齐", "齋": "斋", "齒": "齿", "龍": "龙", "龜": "龟",
+    // Common Traditional characters that appear in newer dynamic translations.
+    "並": "并", "乾": "干", "償": "偿", "報": "报", "場": "场", "塊": "块", "後": "后", "來": "来",
+    "張": "张", "條": "条", "測": "测", "滾": "滚", "爾": "尔", "狀": "状", "稱": "称", "碼": "码", "穫": "获",
+    "終": "终", "給": "给", "綻": "绽", "繼": "继", "訂": "订", "計": "计", "訊": "讯", "評": "评",
+    "詩": "诗", "篩": "筛", "討": "讨", "關": "关", "風": "风", "飽": "饱"
   };
 
   function normalizeLanguage(language) {
@@ -1911,7 +1916,7 @@
   }
 
   function simplifyChineseText(text) {
-    return String(text || "").replace(/瀏覽|./g, (character) => simplifiedCharacterMap[character] || character);
+    return Array.from(String(text || ""), (character) => simplifiedCharacterMap[character] || character).join("");
   }
 
   function localizeOutput(text, language = currentLanguage) {
