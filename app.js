@@ -456,7 +456,7 @@ const powerDeck = [
   { id: "hot_in_here", name: "It's Getting Hot", rarity: "gold", short: "streak burn", description: "Lasts the entire game. At the start of every round, everyone else loses 5% x (your streak - 1). No loss if your streak is below 2.", type: "hot_in_here" },
   { id: "red_button", name: "Red Button", rarity: "doom", short: "leader nuke", description: "Pick a target. If they are above you, they immediately lose 5,000 points and 3 streak. If they are below you, they gain Impending Doom for the rest of the match.", type: "red_button", targeted: true, immediate: true, doom: true },
   { id: "ultimatum", name: "Ultimatum", rarity: "doom", short: "3x doom shield", description: "For 3 rounds, block all point loss, debuffs, streak loss, and targeting. Each round, players ahead of you lose 10%. Everyone except you gains Explosive for the rest of the match: wrong answers lose 10% of their score.", type: "ultimatum", immediate: true, doom: true },
-  { id: "secret_agent", name: "Secret Agent", rarity: "doom", short: "identity scramble", description: "Scramble every other player's name and visible profile style for 3 rounds, then swap your score with a random player ahead of you.", type: "secret_agent", immediate: true, doom: true },
+  { id: "secret_agent", name: "Secret Agent", rarity: "doom", short: "identity scramble", description: "Scramble every other player's name and visible profile style for 3 rounds. At the end of the effect, swap your score with a random player ahead of you. If the match ends sooner, the swap happens in the final round.", type: "secret_agent", immediate: true, doom: true },
   { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.", type: "thermal_scythe", targeted: true, immediate: true, doom: true },
   { id: "ragnarok_protocol", name: "Ragnarok Protocol", rarity: "doom", short: "rank multiplier", description: "For this round, multiply every player's positive point gain by 50% times their leaderboard position. First place gets 50%; tenth place gets 500%.", type: "ragnarok_protocol", doom: true },
   { id: "collapsing_star", name: "Collapsing Star", rarity: "doom", short: "wipe the room", description: "Immediately mark everyone else with Target Wipe for 3 rounds. After that, every round randomly marks a player ahead of you for 3 rounds. If a marked player wins, they lose 15% per stack, all power-ups, and all points from that round.", type: "collapsing_star", immediate: true, doom: true },
@@ -3446,6 +3446,7 @@ const state = {
   explosiveDoomOwners: {},
   doomStreakGuardRounds: {},
   secretAgentRounds: {},
+  secretAgentSwapRounds: {},
   permanentDeathMarks: {},
   timeBombs: [],
   deathMarks: [],
@@ -4867,6 +4868,7 @@ function clearRoomMatchPowerState() {
   state.explosiveDoomOwners = {};
   state.doomStreakGuardRounds = {};
   state.secretAgentRounds = {};
+  state.secretAgentSwapRounds = {};
   state.chaosInputLockId = "";
   state.timerPenalties = createOwnerValueMap(0);
   state.lastPlayedPowerUps = createOwnerValueMap(null);
@@ -7808,7 +7810,12 @@ function getActiveEffectEntries() {
       [hasDoomShield(owner), createActiveEffect(owner, "ultimatum", `Ultimatum x${state.ultimatumRounds[owner]}`, "Blocks point loss, debuffs, streak loss, and targeting. Cannot be removed.")],
       [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", `Explosive${formatStackSuffix(explosiveStacks)}`, "Each stack makes wrong answers lose 10% of this player's score. Cannot be removed.")],
       [(state.doomStreakGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "thermal_scythe", `Thermal Guard x${state.doomStreakGuardRounds[owner]}`, "Blocks all streak reductions. Cannot be removed.")],
-      [(state.secretAgentRounds?.[owner] || 0) > 0, createActiveEffect(owner, "secret_agent", `Secret Agent x${state.secretAgentRounds[owner]}`, "Scrambles other players' visible identities and style. Cannot be removed.")],
+      [(state.secretAgentRounds?.[owner] || 0) > 0, createActiveEffect(
+        owner,
+        "secret_agent",
+        `Secret Agent x${state.secretAgentRounds[owner]}`,
+        `Scrambles other players' visible identities and style. Score swap resolves at the end of round ${getSecretAgentPendingSwapRounds(owner)[0] || "the effect"}. Cannot be removed.`
+      )],
       [thornPercent > 0, createActiveEffect(owner, "thorns", thornPercent > 0.33 ? `Thorns III${formatStackSuffix(Math.round(thornPercent / 0.33))}` : "Thorns", `Reflects ${Math.round(thornPercent * 100)}% of this player's scoring losses to everyone else.`, { chaosInfused: thornPercent > 0.33 })],
       [getEffectStackCount(state.hotInHereOwners[owner]) > 0, createActiveEffect(owner, "hot_in_here", `It's Getting Hot${formatStackSuffix(getEffectStackCount(state.hotInHereOwners[owner]))}`, "At round start, each stack makes everyone else lose 5% x (this player's streak - 1).")],
       [state.redHerringMasks[owner] && owner === getFocusedOwner(), createActiveEffect(
@@ -8273,9 +8280,7 @@ function describeImmediatePowerEvent(entry) {
     case "ultimatum":
       return `${entry.power.name} gave ${ownerLabel} an unbreakable shield for ${Number(meta.rounds || 3).toLocaleString()} rounds and gave Explosive to ${formatPowerEventTargets(meta.explosiveTargets || meta.bombTargets || [])}.`;
     case "secret_agent":
-      return meta.swappedOwner
-        ? `${entry.power.name} scrambled identities and swapped ${ownerLabel}'s score with ${getOwnerLabel(meta.swappedOwner)}.`
-        : `${entry.power.name} scrambled identities, but found no higher-score player to swap with.`;
+      return `${entry.power.name} scrambled identities for ${Number(meta.rounds || 3).toLocaleString()} rounds; the score swap is scheduled for the end of round ${meta.triggerRound || "the effect"}.`;
     case "thermal_scythe":
       return `${entry.power.name} harvested ${Number((meta.firstHarvest || 0) + (meta.finalHarvest || 0)).toLocaleString()} streak and hit ${formatPowerEventOwner(target)} for ${formatPowerEventPoints(meta.appliedLoss || 0)}.`;
     case "ragnarok_protocol":
@@ -12764,6 +12769,7 @@ const roomAbilityEffectMapKeys = [
   "explosiveDoomOwners",
   "doomStreakGuardRounds",
   "secretAgentRounds",
+  "secretAgentSwapRounds",
   "permanentDeathMarks",
   "allOutRounds",
   "extraPowerUses",
@@ -12954,14 +12960,24 @@ function buildRoomRoundResultJudgements(result, cardRatings = state.currentRound
 
 function buildRoomRoundResultScoreDeltas(awarded, scoreBefore = {}, streakBefore = {}) {
   const winningOwners = new Set(awarded?.winningOwners || []);
+  const scoreSwapOwners = new Set(
+    (Array.isArray(awarded?.scoreSwaps) ? awarded.scoreSwaps : [])
+      .flatMap((swap) => [swap?.owner, swap?.swappedOwner])
+      .filter(Boolean)
+  );
   return getActiveOwners()
     .map((owner) => {
       const scoreAfter = getScore(owner);
       const streakAfter = getOwnerStreak(owner);
-      const delta = Math.round(Number(awarded?.deltas?.[owner]) || 0);
       const beforeScore = Number.isFinite(Number(scoreBefore?.[owner]))
         ? Number(scoreBefore[owner])
-        : Math.max(0, scoreAfter - delta);
+        : null;
+      const delta = scoreSwapOwners.has(owner) && beforeScore !== null
+        ? scoreAfter - beforeScore
+        : Math.round(Number(awarded?.deltas?.[owner]) || 0);
+      const normalizedBeforeScore = beforeScore === null
+        ? Math.max(0, scoreAfter - delta)
+        : beforeScore;
       const beforeStreak = Number.isFinite(Number(streakBefore?.[owner]))
         ? Number(streakBefore[owner])
         : streakAfter;
@@ -12970,7 +12986,7 @@ function buildRoomRoundResultScoreDeltas(awarded, scoreBefore = {}, streakBefore
         owner,
         label: getOwnerLabel(owner),
         delta,
-        scoreBefore: Math.max(0, Math.round(beforeScore)),
+        scoreBefore: Math.max(0, Math.round(normalizedBeforeScore)),
         scoreAfter,
         streakBefore: Math.max(0, Math.round(beforeStreak)),
         streakAfter,
@@ -24668,25 +24684,105 @@ function applyUltimatumPower(owner, power) {
 
 function applySecretAgentPower(owner, power) {
   const rounds = addOwnerDurationRounds(state.secretAgentRounds, owner, 3);
-  const aheadOwners = getOwnersAheadOf(owner);
-  const swappedOwner = aheadOwners.length ? aheadOwners[Math.floor(Math.random() * aheadOwners.length)] : "";
-  if (swappedOwner) {
-    const ownerScore = getScore(owner);
-    setScore(owner, getScore(swappedOwner));
-    setScore(swappedOwner, ownerScore);
-  }
+  const triggerRound = scheduleSecretAgentSwap(owner);
   updateLatestPlayedPowerMeta(owner, {
     rounds,
-    swappedOwner
+    triggerRound
   });
   queueStatFlash(
     "doom",
     power.name,
-    swappedOwner ? [`Identity Scrambled`, `Swapped with ${getOwnerLabel(swappedOwner)}`] : ["Identity Scrambled", "No Higher Score"],
+    ["Identity Scrambled", `Score Swap · End Round ${triggerRound}`],
     { owners: getActiveOwners(), complex: true, priority: true }
   );
   renderScore();
   return true;
+}
+
+function getSecretAgentPendingSwapRounds(owner) {
+  const value = state.secretAgentSwapRounds?.[owner];
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .map((round) => Math.floor(Number(round)))
+    .filter((round) => Number.isFinite(round) && round > 0)
+    .sort((a, b) => a - b);
+}
+
+function getSecretAgentSwapTriggerRound() {
+  const currentRound = Math.max(1, Math.floor(Number(state.round) || 1));
+  const configuredMaxRounds = Math.floor(Number(state.maxRounds) || 0);
+  const maxRounds = configuredMaxRounds > 0
+    ? Math.max(currentRound, configuredMaxRounds)
+    : currentRound + 2;
+  return Math.min(currentRound + 2, maxRounds);
+}
+
+function scheduleSecretAgentSwap(owner) {
+  if (!owner) {
+    return getSecretAgentSwapTriggerRound();
+  }
+  const triggerRound = getSecretAgentSwapTriggerRound();
+  const pendingRounds = getSecretAgentPendingSwapRounds(owner);
+  state.secretAgentSwapRounds[owner] = [...pendingRounds, triggerRound];
+  return triggerRound;
+}
+
+function resolveSecretAgentSwapsAtRoundEnd(owners = getActiveOwners(), events = []) {
+  const activeOwners = [...new Set(owners)].filter((owner) => getPlayer(owner));
+  const scoreSwaps = [];
+  const pendingByOwner = state.secretAgentSwapRounds || {};
+  const currentRound = Math.max(1, Math.floor(Number(state.round) || 1));
+  const power = getPowerById("secret_agent");
+
+  Object.entries(pendingByOwner).forEach(([owner, value]) => {
+    if (!activeOwners.includes(owner)) {
+      delete pendingByOwner[owner];
+      return;
+    }
+    const pendingRounds = Array.isArray(value) ? value : [value];
+    const dueRounds = pendingRounds
+      .map((round) => Math.floor(Number(round)))
+      .filter((round) => Number.isFinite(round) && round > 0 && round <= currentRound);
+    const remainingRounds = pendingRounds
+      .map((round) => Math.floor(Number(round)))
+      .filter((round) => Number.isFinite(round) && round > currentRound);
+
+    if (remainingRounds.length) {
+      pendingByOwner[owner] = remainingRounds;
+    } else {
+      delete pendingByOwner[owner];
+    }
+
+    dueRounds.forEach((triggerRound) => {
+      const aheadOwners = getOwnersAheadOf(owner, activeOwners);
+      const swappedOwner = aheadOwners.length
+        ? aheadOwners[Math.floor(Math.random() * aheadOwners.length)]
+        : "";
+      if (!swappedOwner) {
+        queueStatFlash("doom", power?.name || "Secret Agent", "No Higher Score", { owners: [owner], complex: true, priority: true });
+        if (power) {
+          events.push(createPowerEvent(owner, power, `${power.name} ended its identity scramble, but no player was ahead to swap with.`));
+        }
+        return;
+      }
+
+      const ownerScore = getScore(owner);
+      const targetScore = getScore(swappedOwner);
+      setScore(owner, targetScore);
+      setScore(swappedOwner, ownerScore);
+      scoreSwaps.push({ owner, swappedOwner, triggerRound });
+      queueStatFlash("doom", power?.name || "Secret Agent", "Score Swapped", {
+        owners: [owner, swappedOwner],
+        complex: true,
+        priority: true
+      });
+      if (power) {
+        events.push(createPowerEvent(owner, power, `${power.name} ended its identity scramble and swapped ${getOwnerLabel(owner)}'s score with ${getOwnerLabel(swappedOwner)}.`));
+      }
+    });
+  });
+
+  return scoreSwaps;
 }
 
 function applyThermalScythePower(owner, power, meta = {}) {
@@ -32703,6 +32799,7 @@ function resetMatch(mode) {
   state.explosiveDoomOwners = {};
   state.doomStreakGuardRounds = {};
   state.secretAgentRounds = {};
+  state.secretAgentSwapRounds = {};
   state.permanentDeathMarks = {};
   state.timeBombs = [];
   state.deathMarks = [];
@@ -39190,6 +39287,8 @@ function createNoCorrectAward() {
     if (refillEvent) {
       events.push(refillEvent);
     }
+    const scoreSwaps = resolveSecretAgentSwapsAtRoundEnd(owners, events);
+    decrementRoundEffectCounters(owners);
     renderScore();
     return {
       bonus: 0,
@@ -39205,6 +39304,7 @@ function createNoCorrectAward() {
       chaosPlayed: false,
       winningOwners: [],
       payoutDetails: {},
+      scoreSwaps,
       payoutOwner: null,
       reversePlayed: false,
       reverseTotal: 0,
@@ -39480,6 +39580,7 @@ function createNoCorrectAward() {
   const hasPointChanges = Object.values(deltas).some((amount) => amount !== 0);
   playUnassignedPointLossSound(deltas, pointLossSoundToken);
   owners.forEach((participant) => addScore(participant, deltas[participant]));
+  const scoreSwaps = resolveSecretAgentSwapsAtRoundEnd(owners, events);
   decrementRoundEffectCounters(owners);
   events.push(...replenishPowerSlotsForOwners(owners, "after getting the answer wrong"));
   renderScore();
@@ -39503,6 +39604,7 @@ function createNoCorrectAward() {
     reverseTotal,
     amplifiedMultiplier,
     deltas,
+    scoreSwaps,
     events,
     noPoints: !hasPointChanges,
     noCorrect: true,
@@ -39700,6 +39802,8 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     if (refillEvent) {
       events.push(refillEvent);
     }
+    const scoreSwaps = resolveSecretAgentSwapsAtRoundEnd(owners, events);
+    decrementRoundEffectCounters(owners);
     return {
       bonus: 0,
       tagBonus: 0,
@@ -39711,6 +39815,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       chaosPlayed: false,
       winningOwners: winners,
       payoutDetails: {},
+      scoreSwaps,
       deltas: Object.fromEntries(owners.map((participant) => [participant, 0])),
       events,
       noPoints: true,
@@ -40384,6 +40489,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   total = Math.max(0, deltas[payoutOwner] || 0);
   playUnassignedPointLossSound(deltas, pointLossSoundToken);
   owners.forEach((participant) => addScore(participant, deltas[participant]));
+  const scoreSwaps = resolveSecretAgentSwapsAtRoundEnd(owners, events);
   decrementRoundEffectCounters(owners);
   events.push(...refillEvents);
   events.push(...streakRewardRefillEvents);
@@ -40406,6 +40512,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     reverseTotal,
     amplifiedMultiplier,
     deltas,
+    scoreSwaps,
     events,
     tag: rating.label,
     total
@@ -40680,6 +40787,7 @@ function applyFinalMatchEffects() {
     }
   });
   state.secretAgentRounds = {};
+  state.secretAgentSwapRounds = {};
 
   protectNegativeDeltasNow(deltas, owners, "Final Effects", events);
   const changed = Object.values(deltas).some((amount) => amount !== 0);
