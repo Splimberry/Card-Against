@@ -25339,8 +25339,7 @@ function getPowerSuggestionText(power, category, context) {
 }
 
 function getActivePowerSuggestion(owner, hand = state.powerHands[owner] || []) {
-  const alreadyCommittedToSingleUse = !canUseMultiplePowerUpsThisRound(owner)
-    && (getSelectedPowerIds(owner).length > 0 || hasPlayedPowerThisRound(owner));
+  const alreadyCommittedToPower = getSelectedPowerIds(owner).length > 0 || hasPlayedPowerThisRound(owner);
   if (state.powerSuggestionsEnabled === false
     || state.isSpectator
     || !owner
@@ -25351,7 +25350,7 @@ function getActivePowerSuggestion(owner, hand = state.powerHands[owner] || []) {
     || elements.gameStage.classList.contains("hidden")
     || !elements.verdictPanel.classList.contains("hidden")
     || !elements.endPanel.classList.contains("hidden")
-    || alreadyCommittedToSingleUse
+    || alreadyCommittedToPower
     || !canPlayPower(owner)) {
     return null;
   }
@@ -25384,6 +25383,45 @@ function getActivePowerSuggestion(owner, hand = state.powerHands[owner] || []) {
   return candidates[0] || null;
 }
 
+const powerSuggestionExitDurationMs = 220;
+
+function playPowerSuggestionExitAnimation(activeSuggestion) {
+  if (shouldReduceMotion() || !elements.powerPanel || !document.body) {
+    return;
+  }
+  const previousSuggestions = [...elements.powerPanel.querySelectorAll(".power-card.power-suggestion")];
+  const activePowerId = activeSuggestion?.powerId || "";
+  previousSuggestions.forEach((card) => {
+    if (card.dataset.power === activePowerId) {
+      return;
+    }
+    const rect = card.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+    const exitLayer = document.createElement("span");
+    exitLayer.className = "power-suggestion-exit-layer";
+    exitLayer.setAttribute("aria-hidden", "true");
+    Object.assign(exitLayer.style, {
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`
+    });
+    const glow = card.querySelector(".power-suggestion-glow")?.cloneNode(true);
+    const bubble = card.querySelector(".power-suggestion-bubble")?.cloneNode(true);
+    if (glow) {
+      exitLayer.appendChild(glow);
+    }
+    if (bubble) {
+      exitLayer.appendChild(bubble);
+    }
+    document.body.appendChild(exitLayer);
+    requestAnimationFrame(() => exitLayer.classList.add("power-suggestion-exiting"));
+    window.setTimeout(() => exitLayer.remove(), powerSuggestionExitDurationMs + 80);
+  });
+}
+
 function appendPowerSuggestionBubble(button, suggestion) {
   if (!button || !suggestion?.text) {
     return;
@@ -25409,6 +25447,8 @@ function renderPowerUps() {
   const panelVisible = !elements.powerPanel.classList.contains("hidden");
   const beforeHeight = getPowerPanelHeightForAnimation();
   const layoutSnapshot = panelVisible ? capturePowerHandLayoutSnapshot(owner) : null;
+  const activeSuggestion = getActivePowerSuggestion(owner, hand);
+  playPowerSuggestionExitAnimation(activeSuggestion);
   const powersBlocked = isClassicModeEnabled() || isTableEventActive("power_outage");
   const label = isDuelMode() ? `${getOwnerLabel(owner)} power-ups` : "Your power-ups";
   const hint = powersBlocked
@@ -25443,7 +25483,6 @@ function renderPowerUps() {
   }
 
   const getPowerCardMarkup = (displayPower) => `<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
-  const activeSuggestion = getActivePowerSuggestion(owner, hand);
   let animatedFreshCount = 0;
   let renderedCardIndex = 0;
   renderEntries.forEach(({ powerId, exiting }) => {
