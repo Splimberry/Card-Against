@@ -748,6 +748,7 @@ const chaosInfusedPowerOverrides = {
     short: "+500 +5%",
     description: "Gain 500 points plus 5% of your current score every round for the rest of the game. Triggers immediately.",
     persistent: true,
+    immediate: true,
     percent: 0.05
   },
   hot_potato: {
@@ -8514,6 +8515,7 @@ function applyNewPointPowerEntries(playedEntries, deltas, owners, events, winner
     "hoarder",
     "gamblers_dream",
     "hard_reset",
+    "blessing",
     "sin_pride",
     "sin_sloth",
     "crawler_virus",
@@ -24899,6 +24901,20 @@ function consumeImmediatePower(owner, power, meta = {}) {
     renderScore();
   }
 
+  if (power.type === "blessing") {
+    const isPersistentBlessing = isChaosInfusedPower(power);
+    const amount = 500 + Math.floor(Math.max(0, getScore(owner)) * (isPersistentBlessing ? power.percent || 0.05 : 0.1));
+    if (isPersistentBlessing) {
+      const stacks = addEffectStack(state.divineBlessingOwners, owner);
+      updateLatestPlayedPowerMeta(owner, { blessingStacks: stacks, blessingAmount: amount });
+    } else {
+      updateLatestPlayedPowerMeta(owner, { blessingAmount: amount });
+    }
+    addScore(owner, amount);
+    queueStatFlash("positive", power.name, formatSignedStat(amount, "Point"), { owners: [owner], complex: true });
+    renderScore();
+  }
+
   if (power.type === "sin_envy" && isChaosInfusedPower(power)) {
     const stacks = addEffectStack(state.chaosEnvyOwners, owner);
     const wrongCount = getWrongAnswerCount(owner);
@@ -38428,6 +38444,7 @@ function applySinEnvyEntries(playedEntries, startingScores, deltas, owners, even
 function applyBlessingEntries(playedEntries, startingScores, deltas, events) {
   playedEntries
     .filter((entry) => entry.power.type === "blessing")
+    .filter((entry) => !isEntryImmediateResolved(entry))
     .forEach((entry) => {
       if (isChaosInfusedPower(entry.power)) {
         const stacks = addEffectStack(state.divineBlessingOwners, entry.owner);
