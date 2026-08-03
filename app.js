@@ -4844,6 +4844,25 @@ function clearRoundSubmissionState(options = {}) {
   }
 }
 
+function clearRoomMatchPowerState() {
+  // Match effects may intentionally survive round changes, but never survive
+  // returning to the lobby or starting a different match.
+  clearProlongedPowerEffects();
+  state.impendingDoomOwners = {};
+  state.ultimatumRounds = {};
+  state.explosiveDoomOwners = {};
+  state.doomStreakGuardRounds = {};
+  state.secretAgentRounds = {};
+  state.chaosInputLockId = "";
+  state.timerPenalties = createOwnerValueMap(0);
+  state.lastPlayedPowerUps = createOwnerValueMap(null);
+  state.forcedWinnerOwner = null;
+  state.roundAmplifiedMultiplier = 1;
+  state.currentTableEvent = null;
+  state.tableEventSabotageUsed = {};
+  state.blackMarketPurchases = {};
+}
+
 function clearRoomMatchScopedStateForLobby(options = {}) {
   cancelActiveMatchWork();
   stopTimer();
@@ -4857,6 +4876,12 @@ function clearRoomMatchScopedStateForLobby(options = {}) {
   state.roomRoundResult = null;
   state.roomRoundResolving = false;
   resetRoomPowerSyncClocks();
+  clearRoomMatchPowerState();
+  resetPlayedPowersForRound();
+  state.powerHands = {};
+  state.freshPowerUps = {};
+  state.freshPowerUpAnimations = {};
+  state.powerHandExitHolds = {};
   clearRoundSubmissionState({ clearParticipants: options.clearParticipants !== false });
   state.round = 1;
   state.localEntryStep = 1;
@@ -36305,13 +36330,12 @@ async function beginRoomMatch() {
   }
   state.currentRoomStatus = "in-progress";
   state.roomMatchStartGuardUntil = Date.now() + 25000;
-  setCurrentRoomMatchId(createRoomMatchId());
   state.roomGame = null;
   state.roomRoundResult = null;
+  resetMatch("room");
+  setCurrentRoomMatchId(createRoomMatchId());
   resetRoomPowerSyncClocks();
-  clearRoundSubmissionState();
   applyRandomRoomModifiersForMatch();
-  setPlayersForMode("room");
   setupPowerHands();
   const initialPowerState = getRoomPowerStatePayload();
   addSystemChat("The host started the match.");

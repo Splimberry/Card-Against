@@ -3816,6 +3816,76 @@ async function testRoomStartMatchPreservesInitialPowerState() {
   assert.deepEqual(started.payload.game.powerState.hands.find((entry) => entry.participantId === "guest-client").hand, ["xray_hacks", "dead_weight", "bounty"]);
 }
 
+async function testRematchDoesNotReusePreviousPowerState() {
+  const code = makeCode(8141);
+  const oldMatchId = `${code}-old-match`;
+  const newMatchId = `${code}-new-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "complete",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ],
+    game: {
+      matchId: oldMatchId,
+      status: "ended",
+      round: 5,
+      setup: makeSetup(5),
+      powerState: {
+        matchId: oldMatchId,
+        hands: [{ participantId: "host-client", owner: "player", hand: ["typhoon_season"] }],
+        played: [],
+        players: [],
+        effects: { maps: { typhoonOwners: { player: { stacks: 1 } } } }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const started = await roomCommand(code, "rematch", {
+    hostParticipantId: "host-client",
+    matchId: newMatchId,
+    round: 1,
+    matchSettings: {
+      ...makeRoom(code).settings,
+      rounds: 5
+    },
+    powerState: {
+      matchId: oldMatchId,
+      hands: [{ participantId: "host-client", owner: "player", hand: ["typhoon_season"] }],
+      played: [],
+      players: [],
+      effects: { maps: { typhoonOwners: { player: { stacks: 1 } } } }
+    }
+  });
+  assert.equal(started.response.status, 200, started.payload.error);
+  assert.equal(started.payload.game.matchId, newMatchId);
+  assert.equal(started.payload.game.powerState, null);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.matchId, newMatchId);
+  assert.equal(stored.payload.room.game.powerState, null);
+}
+
 async function testRoomRoundSetupEndpointCreatesSharedSetup() {
   const code = makeCode(8160);
   const matchId = `${code}-match`;
@@ -6590,6 +6660,7 @@ async function main() {
   await testStaleRoomRoundAdvancingCannotOverwriteCurrentRound();
   await testDelayedRoomRoundAdvancingCannotClearStartedSetup();
   await testStaleRoomSetupCannotOverwriteGrading();
+  await testRematchDoesNotReusePreviousPowerState();
   await testRematchRoundSetupCanStartAfterCompleteMatch();
   await testStaleRoomRoundResultCannotOverwriteCurrentRound();
   await testStaleRoomRoundSkipCannotOverwriteCurrentRound();

@@ -3153,6 +3153,10 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   const currentGame = room.game && typeof room.game === "object" ? room.game : null;
   const currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
   const payloadMatchId = String(command.payload.matchId || "").slice(0, 80);
+  const startsNewMatch = isStartMatch
+    || room.status === "lobby"
+    || room.status === "complete"
+    || currentGame?.status === "ended";
   if (isAutoAdvance) {
     const roundResult = normalizeRoomRoundResult(currentGame?.roundResult || null);
     const nextRoundAt = clampServerNumber(roundResult?.nextRoundAt, 0, Number.MAX_SAFE_INTEGER, 0);
@@ -3176,7 +3180,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
       return;
     }
   }
-  const matchId = isStartMatch
+  const matchId = startsNewMatch
     ? (payloadMatchId || `${room.code}-${Date.now()}`)
     : (payloadMatchId || currentMatchId || `${room.code}-${Date.now()}`);
   const currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
@@ -3184,7 +3188,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     command.payload.round || command.payload.nextRound,
     1,
     100,
-    isStartMatch ? 1 : currentRound || 1
+    startsNewMatch ? 1 : currentRound || 1
   );
   const roomIsActiveMatch = room.status === "in-progress" && currentGame && currentGame.status !== "ended";
   if (!isStartMatch && roomIsActiveMatch && currentMatchId && payloadMatchId && payloadMatchId !== currentMatchId) {
@@ -3217,7 +3221,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   const matchSettings = normalizeRoomGameSettings(command.payload.matchSettings || command.payload.settings || currentGame?.matchSettings || room.settings);
   applyRoomRoundPreparationState(room, {
     normalizedCode: room.code,
-    currentGame: isStartMatch ? null : currentGame,
+    currentGame: startsNewMatch ? null : currentGame,
     matchId,
     round,
     matchSettings,
@@ -3245,6 +3249,14 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     throw new Error("No seed questions are available for the selected themes.");
   }
 
+  const requestedPowerState = command.payload.powerState && typeof command.payload.powerState === "object"
+    ? command.payload.powerState
+    : null;
+  const initialPowerState = startsNewMatch
+    ? requestedPowerState && String(requestedPowerState.matchId || "") === matchId
+      ? requestedPowerState
+      : null
+    : requestedPowerState || room.game?.powerState || null;
   const now = Date.now();
   const timerState = createRoomTimerState(room, matchSettings, now);
   room.participants = room.participants.map((participant) => {
@@ -3277,7 +3289,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     answers: {},
     matchSettings,
     roundResult: null,
-    powerState: command.payload.powerState || room.game?.powerState || null,
+    powerState: initialPowerState,
     setupStartedAt: room.game?.setupStartedAt || now,
     roundStartedAt: now,
     baseDurationMs: timerState.baseDurationMs,
