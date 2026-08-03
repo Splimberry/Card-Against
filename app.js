@@ -463,8 +463,8 @@ const powerDeck = [
   { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.", type: "thermal_scythe", targeted: true, immediate: true, doom: true },
   { id: "ragnarok_protocol", name: "Ragnarok Protocol", rarity: "doom", short: "rank multiplier", description: "For this round, multiply every player's positive point gain by 50% times their leaderboard position. First place gets 50%; tenth place gets 500%.", type: "ragnarok_protocol", doom: true },
   { id: "collapsing_star", name: "Collapsing Star", rarity: "doom", short: "wipe the room", description: "Immediately mark everyone else with Target Wipe for 3 rounds. After that, every round randomly marks a player ahead of you for 3 rounds. If a marked player wins, they lose 12.5% per stack, lose 2 power-ups per stack, and retain only 75% of their round gain per stack.", type: "collapsing_star", immediate: true, doom: true },
-  { id: "admin_pass", name: "Admin Pass", rarity: "doom", short: "bribe up to 2", description: "Choose up to 2 players. They lose this round even if correct, and you gain the highest payout they would have earned.", type: "admin_pass", targeted: true, doom: true },
-  { id: "null_protocol", name: "Null Protocol", rarity: "doom", short: "null 3 targets", description: "Choose 3 players. For the rest of the match they cannot gain positive status effects or bonus points, and Null Corruption reduces their point gains by 10% plus 5% for every wrong answer.", type: "null_protocol", targeted: true, immediate: true, doom: true }
+  { id: "admin_pass", name: "Admin Pass", rarity: "doom", short: "bribe up to 3", description: "Choose up to 3 players. Correct answers from your targets lose this round, and you gain the highest payout they would have earned.", type: "admin_pass", targeted: true, doom: true },
+  { id: "null_protocol", name: "Null Protocol", rarity: "doom", short: "null up to 3", description: "Choose up to 3 players. For the rest of the match they cannot gain positive status effects or bonus points, and Null Corruption reduces their point gains by 10% plus 5% for every wrong answer.", type: "null_protocol", targeted: true, immediate: true, doom: true }
 ];
 const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
 const chaosInfusedPowerSuffix = "__chaos";
@@ -22997,11 +22997,8 @@ function chooseTargetOwner(owner, power) {
 }
 
 function getMultiTargetRequirement(power) {
-  if (power?.type === "admin_pass") {
-    return { min: 1, max: 2, label: "Choose up to 2 players" };
-  }
-  if (power?.type === "null_protocol") {
-    return { min: 3, max: 3, label: "Choose exactly 3 players" };
+  if (power?.type === "admin_pass" || power?.type === "null_protocol") {
+    return { min: 1, max: 3, label: "Choose up to 3 players" };
   }
   return null;
 }
@@ -26620,7 +26617,7 @@ function isPowerUsable(power, owner) {
   }
 
   if (power.type === "null_protocol") {
-    return getTargetCandidates(owner, power).length >= 3;
+    return getTargetCandidates(owner, power).length >= 1;
   }
 
   if (power.type === "sin_pride") {
@@ -38798,7 +38795,11 @@ async function playRound(rawInput, options = {}) {
     awarded = syncedRoundResult.awarded;
     applyAuthoritativeRoomResultState(syncedRoundResult, { render: false });
   } else {
-    const hasAdminPass = getPlayedPowerEntries(getActiveOwners()).some((entry) => entry.power.type === "admin_pass");
+    const correctOwnerSet = new Set(getUniqueOwnersFromCardIndexes(correctIndexes));
+    const hasAdminPass = getPlayedPowerEntries(getActiveOwners()).some((entry) => (
+      entry.power.type === "admin_pass"
+      && getEntryTargets(entry).some((target) => correctOwnerSet.has(target))
+    ));
     awarded = hasCorrectAnswer || hasAdminPass
       ? awardPoints(winnerOwner, winningRating, winningOwners, ratingsByOwner, { allowNoWinner: !hasCorrectAnswer })
       : createNoCorrectAward();
@@ -39762,6 +39763,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     winnerSet.add(owner);
   }
   const naturalWinnerSet = new Set(winnerSet);
+  const isCorrectAnswerOwner = (participant) => naturalWinnerSet.has(participant) || Boolean(ratingsByOwner[participant]?.correct);
   let winners = [...winnerSet];
   const startingScores = Object.fromEntries(owners.map((participant) => [participant, getScore(participant)]));
   const startingStreaks = Object.fromEntries(owners.map((participant) => [participant, getOwnerStreak(participant)]));
@@ -39788,7 +39790,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     .forEach((entry) => {
       const targets = getEntryTargets(entry)
         .filter((target) => owners.includes(target) && target !== entry.owner)
-        .slice(0, 2);
+        .slice(0, 3);
       if (!targets.length) {
         events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid targets.`));
         return;
@@ -39796,11 +39798,14 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       adminPassOwner = adminPassOwner || entry.owner;
       targets.forEach((target) => adminPassTargetOwners.add(target));
     });
-  if (adminPassOwner && adminPassTargetOwners.size) {
-    adminPassTargetOwners.forEach((target) => winnerSet.delete(target));
+  const adminPassCorrectTargetOwners = [...adminPassTargetOwners].filter(isCorrectAnswerOwner);
+  if (adminPassOwner && adminPassCorrectTargetOwners.length) {
+    adminPassCorrectTargetOwners.forEach((target) => winnerSet.delete(target));
     winnerSet.add(adminPassOwner);
     winners = [...winnerSet];
-    events.push(`Admin Pass forced ${formatPowerEventTargets([...adminPassTargetOwners])} to lose and transferred their highest hypothetical payout to ${getOwnerLabel(adminPassOwner)}.`);
+    events.push(`Admin Pass forced ${formatPowerEventTargets(adminPassCorrectTargetOwners)} to lose and transferred their highest hypothetical payout to ${getOwnerLabel(adminPassOwner)}.`);
+  } else if (adminPassOwner && adminPassTargetOwners.size) {
+    events.push(`Admin Pass found no selected correct answers to override.`);
   }
 
   if (playedEntries.some((entry) => entry.power.type === "no_one_wins")) {
@@ -40042,12 +40047,12 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     return base + streakBonus + tagBonus + difficultyBonus + underdog;
   };
 
-  if (adminPassOwner && adminPassTargetOwners.size) {
+  if (adminPassOwner && adminPassCorrectTargetOwners.length) {
     const highestHypotheticalPayout = Math.max(
       0,
-      ...[...adminPassTargetOwners].map(estimateAdminPassPayout)
+      ...adminPassCorrectTargetOwners.map(estimateAdminPassPayout)
     );
-    adminPassTargetOwners.forEach((target) => {
+    adminPassCorrectTargetOwners.forEach((target) => {
       payoutDetails[target] = {
         ...(payoutDetails[target] || {}),
         total: 0,
@@ -40077,7 +40082,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       payoutDetails[briber] = { ...payoutDetails[briber], tag: "Won by bribing", correct: true, bribedWinner: true };
     }
     const forcedTarget = getEntryTarget(entry);
-    if (forcedTarget && owners.includes(forcedTarget)) {
+    if (forcedTarget && owners.includes(forcedTarget) && isCorrectAnswerOwner(forcedTarget)) {
       payoutDetails[forcedTarget] = {
         ...(payoutDetails[forcedTarget] || {}),
         tag: "Lost due to bribe",
