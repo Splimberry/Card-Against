@@ -6205,16 +6205,12 @@ function syncStatFlashRoundPresentation(options = {}) {
   if (state.statFlashRoundKey === roundKey) {
     return false;
   }
-  const matchChanged = Boolean(state.statFlashMatchKey && state.statFlashMatchKey !== matchKey);
   if (options.clearQueue !== false && state.statFlashRoundKey) {
     clearStatFlashes({ clearIcons: false });
   }
   state.statFlashMatchKey = matchKey;
   state.statFlashRoundKey = roundKey;
   state.statFlashRoundOverlayCount = 0;
-  if (matchChanged) {
-    state.statFlashModeIntroductionKeys = new Set();
-  }
   state.roundOverlayIcons = [];
   renderRoundOverlayIcons();
   return true;
