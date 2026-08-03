@@ -127,6 +127,9 @@
     "Grading focus": "評分重點",
     "Trivia Question": "問答題目",
     "Mixed Trivia": "混合問答",
+    "Easy": "简单",
+    "Medium": "中等",
+    "Hard": "困难",
     "Medium +500": "中等 +500",
     "Waiting for image...": "等待圖片...",
     "Power ups": "能力卡",
@@ -154,6 +157,7 @@
     "Power up results": "能力結算",
     "Round point recap": "回合分數總結",
     "Next Round": "下一回合",
+    "Show Results": "查看结果",
     "AI generation failed": "AI 生成失敗",
     "Could not generate this round.": "無法生成本回合。",
     "Try Again": "再試一次",
@@ -444,6 +448,15 @@
     "Exact Answer": "精準答案",
     "Close Enough": "接近答案",
     "Missed": "答錯",
+    "Accurate": "准确",
+    "Nice": "不错",
+    "Accepted Alias": "接受的别名",
+    "Nearly There": "差一点",
+    "Close Guess": "接近答案",
+    "Wrong Category": "类别错误",
+    "Quick reaction": "快速反应",
+    "Fast enough": "速度够快",
+    "Speed demon": "速度恶魔",
     "Speed Demon": "速度魔人",
     "Quick Reaction": "快速反應",
     "Fast Enough": "夠快",
@@ -2022,6 +2035,19 @@
 
     if (core.includes("\n")) {
       return core.split("\n").map((line) => translateCore(line, language)).join("\n");
+    }
+
+    const countdown = core.match(/^(Next Round|Show Results|Waiting for host) \((\d+)s\)$/i);
+    if (countdown) {
+      return `${translateCore(countdown[1], language)}（${countdown[2]}秒）`;
+    }
+
+    const labelledBonus = core.match(/^(.+?) \+([\d,]+)$/);
+    if (labelledBonus) {
+      const translatedLabel = translateCore(labelledBonus[1], language);
+      if (translatedLabel !== labelledBonus[1]) {
+        return `${translatedLabel} +${labelledBonus[2]}`;
+      }
     }
 
     const parenthetical = core.match(/^(.+)\s+\(([^()]*)\)$/);
