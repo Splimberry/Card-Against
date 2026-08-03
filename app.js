@@ -3109,6 +3109,7 @@ const soundState = {
   sfxBuffers: new Map(),
   sfxBufferPromises: new Map(),
   sfxPreloadStarted: false,
+  sfxPreloadPromise: null,
   sfxPreloadIdleId: null,
   sfxVolume: clampNumber(localStorage.getItem("cardsAgainstAiSfxVolume") || savedUserCache?.settings?.sfx, 0, 100, 50) / 100,
   musicVolume: clampNumber(localStorage.getItem("cardsAgainstAiMusicVolume") || savedUserCache?.settings?.music, 0, 100, 50) / 100
@@ -3619,6 +3620,7 @@ const state = {
   triviaTheme: "",
   questionImage: null,
   questionImageLoadId: 0,
+  roundSetupRenderKey: "",
   blackCardAnimationToken: 0,
   questionCardEntranceToken: 0,
   questionCardStackSerial: 0,
@@ -4130,6 +4132,7 @@ const elements = {
   tableEventActionPanel: document.querySelector("#tableEventActionPanel"),
   loadingPanel: document.querySelector("#loadingPanel"),
   loadingText: document.querySelector("#loadingText"),
+  loadingSkeleton: document.querySelector("#loadingSkeleton"),
   cardsArea: document.querySelector("#cardsArea"),
   playerCardLabel: document.querySelector("#playerCardLabel"),
   playerCardAvatar: document.querySelector("#playerCardAvatar"),
@@ -4333,10 +4336,12 @@ function getPreloadableSfxSources() {
     audioAssets.noMercy,
     audioAssets.blackMarket,
     audioAssets.dice,
-    audioAssets.roulette
+    audioAssets.roulette,
+    audioAssets.warning,
+    audioAssets.ticking
   ].filter(Boolean);
   const remainingSources = Object.entries(audioAssets)
-    .filter(([key]) => !["music", "warning", "ticking"].includes(key))
+    .filter(([key]) => key !== "music")
     .map(([, src]) => src);
   return [...new Set([...prioritySources, ...remainingSources])];
 }
@@ -4391,22 +4396,25 @@ function preloadSfxBuffer(src) {
 }
 
 function preloadSfxAudioAssets() {
-  if (soundState.muted || soundState.sfxPreloadStarted) {
-    return;
+  if (soundState.muted) {
+    return Promise.resolve([]);
+  }
+  if (soundState.sfxPreloadPromise) {
+    return soundState.sfxPreloadPromise;
+  }
+  if (soundState.sfxPreloadStarted) {
+    return Promise.resolve([]);
   }
   initAudio();
   if (!soundState.ctx) {
-    return;
+    return Promise.resolve([]);
   }
   soundState.sfxPreloadStarted = true;
   const sources = getPreloadableSfxSources();
-  const preloadNext = (index = 0) => {
-    if (index >= sources.length || soundState.muted) {
-      return;
-    }
-    preloadSfxBuffer(sources[index]).finally(() => preloadNext(index + 1));
-  };
-  preloadNext();
+  soundState.sfxPreloadPromise = Promise.allSettled(
+    sources.map((source) => preloadSfxBuffer(source))
+  ).then((results) => results.map((result) => result.status === "fulfilled" ? result.value : null));
+  return soundState.sfxPreloadPromise;
 }
 
 function playBufferedAudioFile(src, volume = 1, options = {}) {
@@ -4451,7 +4459,7 @@ function playAudioFile(src, volume = 1, options = {}) {
   }
 
   const audio = new Audio(src);
-  audio.preload = options.loop || options.ignoreSettings ? "auto" : "metadata";
+  audio.preload = "auto";
   audio.loop = Boolean(options.loop);
   const effectiveVolume = options.ignoreSettings ? volume : volume * getScaledSfxVolume();
   if (!options.ignoreSettings && effectiveVolume > 1) {
@@ -4840,6 +4848,7 @@ function clearRoomMatchScopedStateForLobby(options = {}) {
   clearRoundSubmissionState({ clearParticipants: options.clearParticipants !== false });
   state.round = 1;
   state.localEntryStep = 1;
+  state.roundSetupRenderKey = "";
   state.questionId = "";
   state.blackCard = "";
   state.questionType = "image";
@@ -5069,6 +5078,14 @@ function preloadQuestionImage(setup) {
   });
 }
 
+function preloadRoundExperience(setup) {
+  if (!setup) {
+    return;
+  }
+  preloadQuestionImage(setup);
+  preloadSfxAudioAssets();
+}
+
 function runBackgroundTaskWhenIdle(callback, delay = 0) {
   window.setTimeout(() => {
     const run = () => {
@@ -5090,6 +5107,8 @@ function preloadQuestionImageInBackground(setup) {
   if (!getQuestionImageUrls(setup).length) {
     return;
   }
+  // Start the image request immediately so the next card can use the cache.
+  preloadQuestionImage(setup);
   runBackgroundTaskWhenIdle(() => preloadQuestionImage(setup), 250);
 }
 
@@ -5108,7 +5127,7 @@ function takeReservedSetup(enabledThemes = getEnabledTriviaThemes(), previousBla
     return null;
   }
   const [setup] = state.questionReserve.splice(index, 1);
-  preloadQuestionImageInBackground(setup);
+  preloadRoundExperience(setup);
   return setup;
 }
 
@@ -5203,7 +5222,7 @@ function startWarmSetupPreload(options = {}) {
     .then((setup) => {
       if (state.warmSetupVersion === warmVersion && state.warmSetupSignature === signature) {
         state.warmSetup = setup;
-        preloadQuestionImageInBackground(setup);
+        preloadRoundExperience(setup);
       }
       return setup;
     })
@@ -9732,6 +9751,7 @@ function startLoadingMessages(kind, firstLine) {
   const messages = loadingMessages[kind] || loadingMessages.round;
   let index = Math.floor(Math.random() * messages.length);
   stopLoadingMessages();
+  elements.loadingPanel.dataset.loadingState = kind || "loading";
   elements.loadingText.textContent = firstLine || messages[index];
   state.loadingLineId = setInterval(() => {
     index = (index + 1) % messages.length;
@@ -12197,6 +12217,7 @@ function showWaitingForRoomRoundResult() {
   }
   stopTimer();
   stopLoadingMessages();
+  elements.loadingPanel.dataset.loadingState = "waiting-host";
   elements.loadingText.textContent = "Waiting for the host to sync the answer review...";
   animateTableLayoutChange(() => {
     setHidden(elements.inputPanel, true);
@@ -26938,6 +26959,7 @@ function animateBlackCardToNaturalHeightAfterLayout(blackCard, beforeHeight, opt
 function resetRoundUiForLoading(options = {}) {
   stopNextRoundCountdown();
   stopTimer();
+  state.roundSetupRenderKey = "";
   clearCardBadges();
   addQuestionCardToPile();
   prepareIncomingQuestionCard();
@@ -27009,6 +27031,7 @@ function resetRoundUiForLoading(options = {}) {
 
 function showWaitingForHostRoundSetup(round = state.round) {
   stopLoadingMessages();
+  elements.loadingPanel.dataset.loadingState = "waiting-host";
   elements.loadingText.textContent = `Waiting for the host to deal round ${round}...`;
   setHidden(elements.loadingPanel, false);
   setHidden(elements.errorPanel, true);
@@ -27060,6 +27083,21 @@ async function recoverFromStaleRoomRoundSetup(error, context = {}) {
   }
 
   return true;
+}
+
+function getRoundSetupRenderKey(setup, options = {}) {
+  const matchKey = String(
+    options.matchId
+      || setup?.matchId
+      || getCurrentRoomMatchId()
+      || `local-${state.matchWorkToken}`
+  ).trim();
+  const roundKey = Number(options.round || setup?.round || state.round) || 0;
+  const questionKey = [
+    String(setup?.id || "").trim(),
+    normalizePromptText(setup?.blackCard)
+  ].join(":");
+  return [matchKey, roundKey, questionKey].join("|");
 }
 
 function renderRound() {
@@ -27269,6 +27307,8 @@ function syncCurrentRoundSetupMetadata(setup) {
 }
 
 function applyRoundSetup(setup, options = {}) {
+  const renderKey = getRoundSetupRenderKey(setup, options);
+  const shouldRender = options.forceRender === true || state.roundSetupRenderKey !== renderKey;
   stopLoadingMessages();
   setHidden(elements.errorPanel, true);
   state.roomRoundResult = null;
@@ -27293,7 +27333,16 @@ function applyRoundSetup(setup, options = {}) {
   state.recentBlackCards = [...state.recentBlackCards, state.blackCard].slice(-20);
   state.recentTriviaThemes = [...state.recentTriviaThemes, state.triviaTheme].filter(Boolean).slice(-triviaThemes.length);
   recordQuestionUsage(setup);
-  preloadQuestionImage(setup);
+  preloadRoundExperience(setup);
+  if (!shouldRender) {
+    syncCurrentRoundSetupMetadata(setup);
+    if (!options.skipPublish) {
+      publishRoomRoundSetup(setup);
+    }
+    scheduleNextSetupPrefetch();
+    return;
+  }
+  state.roundSetupRenderKey = renderKey;
   const wasRenderingSyncedRoomResume = state.renderingSyncedRoomResume;
   state.renderingSyncedRoomResume = Boolean(options.resumeSyncedRoom);
   try {
@@ -31510,7 +31559,7 @@ function prefetchNextSetup() {
       ) {
         state.nextSetup = setup;
         state.nextSetupStatus = "ready";
-        preloadQuestionImageInBackground(setup);
+        preloadRoundExperience(setup);
       }
     })
     .catch((error) => {
@@ -31587,6 +31636,10 @@ async function newRound() {
         return;
       }
       if (await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
+        return;
+      }
+      if (isRoomMode() && !isCurrentHost()) {
+        showWaitingForHostRoundSetup(state.round);
         return;
       }
       console.warn(error);
@@ -31962,6 +32015,10 @@ async function startGame(mode) {
       return;
     }
     if (roomSetupContext && await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
+      return;
+    }
+    if (mode === "room" && !isCurrentHost()) {
+      showWaitingForHostRoundSetup(state.round);
       return;
     }
     console.warn(error);
