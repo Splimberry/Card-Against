@@ -680,7 +680,7 @@ async function handleListOwnQuestionSubmissions(req, url, res) {
     sendJson(res, 400, { error: "Missing creatorId." });
     return;
   }
-  const authContext = getQuestionSubmissionAuthContext(req, creatorId);
+  const authContext = await getQuestionSubmissionAuthContext(req, creatorId);
   if (!authContext.ok) {
     sendJson(res, authContext.status, { error: authContext.error });
     return;
@@ -703,7 +703,7 @@ async function handleCreateQuestionSubmission(req, res) {
     const question = normalizeCreatedQuestion(body.question || body);
     const creator = body.creator && typeof body.creator === "object" ? body.creator : {};
     const requestedCreatorId = String(creator.id || "").trim().slice(0, 120);
-    const authContext = getQuestionSubmissionAuthContext(req, requestedCreatorId);
+    const authContext = await getQuestionSubmissionAuthContext(req, requestedCreatorId);
     if (!authContext.ok) {
       sendJson(res, authContext.status, { error: authContext.error });
       return;
@@ -922,7 +922,7 @@ function handleLogout(req, res) {
 
 async function handleGetUserInventory(req, url, res) {
   const requestedUserId = normalizeInventoryUserId(url.searchParams.get("userId"));
-  const authContext = getInventoryAuthContext(req, requestedUserId);
+  const authContext = await getInventoryAuthContext(req, requestedUserId);
   if (!authContext.ok) {
     sendJson(res, authContext.status, { error: authContext.error });
     return;
@@ -944,7 +944,7 @@ async function handleUserInventoryOps(req, res) {
   try {
     const body = await readRequestJson(req, { maxBytes: 500_000 });
     const requestedUserId = normalizeInventoryUserId(body.userId);
-    const authContext = getInventoryAuthContext(req, requestedUserId);
+    const authContext = await getInventoryAuthContext(req, requestedUserId);
     if (!authContext.ok) {
       sendJson(res, authContext.status, { error: authContext.error });
       return;
@@ -1001,7 +1001,7 @@ async function handleUserInventoryOps(req, res) {
 async function handleUserInventoryPurchase(req, res) {
   try {
     const body = await readRequestJson(req, { maxBytes: 50_000 });
-    const authContext = getInventoryAuthContext(req, normalizeInventoryUserId(body.userId));
+    const authContext = await getInventoryAuthContext(req, normalizeInventoryUserId(body.userId));
     if (!authContext.ok) {
       sendJson(res, authContext.status, { error: authContext.error });
       return;
@@ -1064,7 +1064,7 @@ async function handleUserInventoryPurchase(req, res) {
 async function handleUserInventoryMilestone(req, res) {
   try {
     const body = await readRequestJson(req, { maxBytes: 50_000 });
-    const authContext = getInventoryAuthContext(req, normalizeInventoryUserId(body.userId));
+    const authContext = await getInventoryAuthContext(req, normalizeInventoryUserId(body.userId));
     if (!authContext.ok) {
       sendJson(res, authContext.status, { error: authContext.error });
       return;
@@ -1193,7 +1193,7 @@ function getBlockedLegacyEconomyOpResult(rawOp, authContext) {
   return null;
 }
 
-function getInventoryAuthContext(req, requestedUserId) {
+async function getInventoryAuthContext(req, requestedUserId) {
   const mode = getInventoryAuthMode();
   if (mode === "off") {
     return {
@@ -1206,7 +1206,7 @@ function getInventoryAuthContext(req, requestedUserId) {
   }
 
   const warnings = [];
-  const auth = getAuthenticatedUser(req);
+  const auth = await getAuthenticatedUser(req);
   if (auth.ok) {
     if (requestedUserId && requestedUserId !== auth.userId) {
       if (mode === "enforce") {
@@ -1256,7 +1256,7 @@ function getInventoryAuthMode() {
   return ["off", "warn", "enforce"].includes(mode) ? mode : "warn";
 }
 
-function getQuestionSubmissionAuthContext(req, requestedCreatorId) {
+async function getQuestionSubmissionAuthContext(req, requestedCreatorId) {
   const explicitMode = String(process.env.QUESTION_SUBMISSION_AUTH_MODE || "").trim().toLowerCase();
   const mode = ["off", "warn", "enforce"].includes(explicitMode) ? explicitMode : getInventoryAuthMode();
   if (mode === "off") {
@@ -1269,7 +1269,7 @@ function getQuestionSubmissionAuthContext(req, requestedCreatorId) {
   }
 
   const warnings = [];
-  const auth = getAuthenticatedUser(req);
+  const auth = await getAuthenticatedUser(req);
   if (auth.ok) {
     if (requestedCreatorId && requestedCreatorId !== auth.userId) {
       if (mode === "enforce") {
@@ -1306,34 +1306,76 @@ function getQuestionSubmissionAuthContext(req, requestedCreatorId) {
   };
 }
 
-function getAuthenticatedUser(req) {
+async function getAuthenticatedUser(req) {
   const token = getBearerToken(req);
   if (!token) {
     return { ok: false, error: "" };
   }
 
   const secret = getSupabaseJwtSecret();
-  if (!secret) {
-    return {
-      ok: false,
-      status: 503,
-      error: "SUPABASE_JWT_SECRET is not configured."
-    };
+  let localVerificationFailure = secret
+    ? { ok: false, status: 401, error: "Invalid authentication token." }
+    : { ok: false, status: 503, error: "SUPABASE_JWT_SECRET is not configured." };
+
+  if (secret) {
+    try {
+      const payload = verifySupabaseJwt(token, secret);
+      const userId = normalizeInventoryUserId(payload.sub);
+      if (!userId) {
+        localVerificationFailure = { ok: false, status: 401, error: "Invalid authentication token." };
+      } else {
+        return {
+          ok: true,
+          userId,
+          payload
+        };
+      }
+    } catch {
+      localVerificationFailure = { ok: false, status: 401, error: "Invalid authentication token." };
+    }
   }
 
+  const remoteVerification = await verifySupabaseAccessToken(token);
+  return remoteVerification || localVerificationFailure;
+}
+
+async function verifySupabaseAccessToken(token) {
+  const supabaseUrl = getSupabaseUrl().replace(/\/+$/g, "");
+  const anonKey = getSupabaseAnonKey();
+  if (!supabaseUrl || !anonKey || typeof fetch !== "function") {
+    return null;
+  }
+
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), 2500)
+    : null;
   try {
-    const payload = verifySupabaseJwt(token, secret);
-    const userId = normalizeInventoryUserId(payload.sub);
-    if (!userId) {
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      method: "GET",
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`
+      },
+      signal: controller?.signal
+    });
+    if (response.status === 401 || response.status === 403) {
       return { ok: false, status: 401, error: "Invalid authentication token." };
     }
-    return {
-      ok: true,
-      userId,
-      payload
-    };
+    if (!response.ok) {
+      return null;
+    }
+    const user = await response.json().catch(() => null);
+    const userId = normalizeInventoryUserId(user?.id);
+    return userId
+      ? { ok: true, userId, payload: user }
+      : { ok: false, status: 401, error: "Invalid authentication token." };
   } catch {
-    return { ok: false, status: 401, error: "Invalid authentication token." };
+    return null;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
