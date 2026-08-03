@@ -141,6 +141,13 @@ const commonTriviaAbbreviationAliases = new Map([
   ["national hockey league", ["nhl"]]
 ]);
 const questionBank = loadQuestionBank();
+const runtimeQuestionBankCacheTtlMs = 30 * 1000;
+let runtimeQuestionBankCache = null;
+let runtimeQuestionBankPromise = null;
+
+function invalidateRuntimeQuestionBankCache() {
+  runtimeQuestionBankCache = null;
+}
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -1845,6 +1852,7 @@ async function writeQuestionFile(questions) {
 }
 
 function syncQuestionBankUpsert(question, originalId = question.id) {
+  invalidateRuntimeQuestionBankCache();
   const normalized = normalizeSeedQuestion(question);
   if (!normalized) {
     return;
@@ -1867,6 +1875,7 @@ function syncQuestionBankUpsert(question, originalId = question.id) {
 }
 
 function syncQuestionBankDelete(id) {
+  invalidateRuntimeQuestionBankCache();
   const normalizedId = normalizeQuestionText(id);
   const index = questionBank.findIndex((entry) => normalizeQuestionText(entry.id) === normalizedId);
   if (index >= 0) {
@@ -1881,6 +1890,7 @@ async function upsertQuestionOverride(question) {
     deleted: false,
     source: "debug"
   });
+  invalidateRuntimeQuestionBankCache();
 }
 
 async function markQuestionOverrideDeleted(id) {
@@ -1890,6 +1900,7 @@ async function markQuestionOverrideDeleted(id) {
     deleted: true,
     source: "debug"
   });
+  invalidateRuntimeQuestionBankCache();
 }
 
 async function createRuntimeQuestion(question) {
@@ -3228,6 +3239,14 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
       || matchSettings.questionLanguage
   );
   matchSettings.questionLanguage = questionLanguage;
+  const requestedPowerState = command.payload.powerState && typeof command.payload.powerState === "object"
+    ? command.payload.powerState
+    : null;
+  const initialPowerState = startsNewMatch
+    ? requestedPowerState && String(requestedPowerState.matchId || "") === matchId
+      ? requestedPowerState
+      : null
+    : requestedPowerState || currentGame?.powerState || null;
   applyRoomRoundPreparationState(room, {
     normalizedCode: room.code,
     currentGame: startsNewMatch ? null : currentGame,
@@ -3235,8 +3254,21 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     round,
     matchSettings,
     hostParticipantId: command.participantId,
-    clientEventId: command.clientEventId
+    clientEventId: command.clientEventId,
+    powerState: initialPowerState
   });
+
+  // Publish the authoritative preparing state before question generation. This
+  // lets every connected client leave the lobby immediately while the server
+  // finishes preparing the shared question.
+  finalizeRoom(room);
+  const preparingRoom = await backendStore.upsertRoom(room);
+  const preparationRevision = getRoomRevision(preparingRoom);
+  scheduleServerRoomRealtimeBroadcast(
+    preparingRoom.code,
+    getRoomEventsAfterRevision(preparingRoom, previousRevision, { includeSubmittedAnswers: true }),
+    { includeSubmittedAnswers: true }
+  );
 
   const enabledThemes = normalizeEnabledThemes(command.payload.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
   const preferredTheme = normalizePreferredTheme(command.payload.preferredTheme, enabledThemes);
@@ -3257,14 +3289,6 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
     throw new Error("No seed questions are available for the selected themes.");
   }
 
-  const requestedPowerState = command.payload.powerState && typeof command.payload.powerState === "object"
-    ? command.payload.powerState
-    : null;
-  const initialPowerState = startsNewMatch
-    ? requestedPowerState && String(requestedPowerState.matchId || "") === matchId
-      ? requestedPowerState
-      : null
-    : requestedPowerState || room.game?.powerState || null;
   const now = Date.now();
   const timerState = createRoomTimerState(room, matchSettings, now);
   room.participants = room.participants.map((participant) => {
@@ -3314,7 +3338,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+    ...createRoomCommandResponse(storedRoom, preparationRevision, { includeSubmittedAnswers: true }),
     game: storedRoom.game || room.game
   });
 }
@@ -4828,7 +4852,9 @@ function applyRoomRoundPreparationState(room, options = {}) {
     answers: {},
     matchSettings,
     roundResult: null,
-    powerState: currentMatchId === matchId ? currentGame?.powerState || null : null,
+    powerState: currentMatchId === matchId
+      ? currentGame?.powerState || options.powerState || null
+      : options.powerState || null,
     setupStartedAt: now,
     roundStartedAt: 0,
     updatedAt: now
@@ -6569,47 +6595,74 @@ function loadQuestionBank() {
 }
 
 async function getRuntimeQuestionBank() {
-  const merged = new Map();
-  questionBank.forEach((question) => {
-    merged.set(normalizeQuestionText(question.id), question);
-  });
+  const now = Date.now();
+  if (runtimeQuestionBankCache && runtimeQuestionBankCache.expiresAt > now) {
+    return runtimeQuestionBankCache.questions;
+  }
+  if (runtimeQuestionBankPromise) {
+    return runtimeQuestionBankPromise;
+  }
 
-  try {
-    const submissions = await backendStore.listQuestionSubmissions();
-    submissions
-      .filter((submission) => submission.status === "approved")
-      .forEach((submission) => {
-        const normalized = normalizeSeedQuestion(submission.question);
+  runtimeQuestionBankPromise = (async () => {
+    const merged = new Map();
+    questionBank.forEach((question) => {
+      merged.set(normalizeQuestionText(question.id), question);
+    });
+
+    try {
+      const submissions = await backendStore.listQuestionSubmissions();
+      submissions
+        .filter((submission) => submission.status === "approved")
+        .forEach((submission) => {
+          const normalized = normalizeSeedQuestion(submission.question);
+          if (normalized) {
+            merged.set(normalizeQuestionText(normalized.id), { ...normalized, source: "player" });
+          }
+        });
+    } catch (error) {
+      console.warn("Could not load approved player questions:", error.message || error);
+    }
+
+    try {
+      const overrides = await backendStore.listQuestionOverrides();
+      overrides.forEach((override) => {
+        const normalizedId = normalizeQuestionText(override.id);
+        if (!normalizedId) {
+          return;
+        }
+        if (override.deleted) {
+          merged.delete(normalizedId);
+          return;
+        }
+        const normalized = normalizeSeedQuestion(override.question);
         if (normalized) {
-          merged.set(normalizeQuestionText(normalized.id), { ...normalized, source: "player" });
+          merged.set(normalizeQuestionText(normalized.id), { ...normalized, source: "debug" });
         }
       });
-  } catch (error) {
-    console.warn("Could not load approved player questions:", error.message || error);
-  }
+    } catch (error) {
+      console.warn("Could not load debug question overrides:", error.message || error);
+    }
+
+    const questions = [...merged.values()];
+    runtimeQuestionBankCache = {
+      questions,
+      expiresAt: Date.now() + runtimeQuestionBankCacheTtlMs
+    };
+    return questions;
+  })();
 
   try {
-    const overrides = await backendStore.listQuestionOverrides();
-    overrides.forEach((override) => {
-      const normalizedId = normalizeQuestionText(override.id);
-      if (!normalizedId) {
-        return;
-      }
-      if (override.deleted) {
-        merged.delete(normalizedId);
-        return;
-      }
-      const normalized = normalizeSeedQuestion(override.question);
-      if (normalized) {
-        merged.set(normalizeQuestionText(normalized.id), { ...normalized, source: "debug" });
-      }
-    });
-  } catch (error) {
-    console.warn("Could not load debug question overrides:", error.message || error);
+    return await runtimeQuestionBankPromise;
+  } finally {
+    runtimeQuestionBankPromise = null;
   }
-
-  return [...merged.values()];
 }
+
+// Warm the shared bank during server startup so the first room does not pay
+// the approved-question and override lookup cost on its critical path.
+void getRuntimeQuestionBank().catch((error) => {
+  console.warn("Could not warm the runtime question bank:", error?.message || error);
+});
 
 function normalizeSeedQuestion(question) {
   const source = question && typeof question === "object" ? question : {};

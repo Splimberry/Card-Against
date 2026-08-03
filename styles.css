@@ -10477,6 +10477,26 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   gap: 0.55rem;
 }
 
+.target-selection-hint {
+  margin: -0.1rem 0 0.7rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.target-modal[data-mode="multi-player"] .target-option[aria-pressed="true"],
+.target-modal[data-mode="multi-player"] .target-option.selected {
+  border-color: rgba(96, 165, 250, 0.92);
+  background: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.35), 0 0 1rem rgba(59, 130, 246, 0.18);
+}
+
+.target-modal[data-mode="multi-player"] #confirmTargetButton {
+  width: 100%;
+  margin-top: 0.8rem;
+}
+
 .target-modal[data-mode="theme"] .target-list {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;

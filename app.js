@@ -457,7 +457,11 @@ const powerDeck = [
   { id: "red_button", name: "Red Button", rarity: "doom", short: "leader nuke", description: "Pick a target. If they are above you, they immediately lose 5,000 points and 3 streak. If they are below you, they gain Impending Doom for the rest of the match.", type: "red_button", targeted: true, immediate: true, doom: true },
   { id: "ultimatum", name: "Ultimatum", rarity: "doom", short: "3x doom shield", description: "For 3 rounds, block all point loss, debuffs, streak loss, and targeting. Each round, players ahead of you lose 10%. Everyone except you gains Explosive for the rest of the match: wrong answers lose 10% of their score.", type: "ultimatum", immediate: true, doom: true },
   { id: "secret_agent", name: "Secret Agent", rarity: "doom", short: "identity scramble", description: "Scramble every other player's name and visible profile style for 3 rounds, then swap your score with a random player ahead of you.", type: "secret_agent", immediate: true, doom: true },
-  { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.", type: "thermal_scythe", targeted: true, immediate: true, doom: true }
+  { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.", type: "thermal_scythe", targeted: true, immediate: true, doom: true },
+  { id: "ragnarok_protocol", name: "Ragnarok Protocol", rarity: "doom", short: "rank multiplier", description: "For this round, multiply every player's positive point gain by 50% times their leaderboard position. First place gets 50%; tenth place gets 500%.", type: "ragnarok_protocol", doom: true },
+  { id: "collapsing_star", name: "Collapsing Star", rarity: "doom", short: "wipe the room", description: "Immediately mark everyone else with Target Wipe for 3 rounds. After that, every round randomly marks a player ahead of you for 3 rounds. If a marked player wins, they lose 15% per stack, all power-ups, and all points from that round.", type: "collapsing_star", immediate: true, doom: true },
+  { id: "admin_pass", name: "Admin Pass", rarity: "doom", short: "bribe up to 2", description: "Choose up to 2 players. They lose this round even if correct, and you gain the highest payout they would have earned.", type: "admin_pass", targeted: true, doom: true },
+  { id: "null_protocol", name: "Null Protocol", rarity: "doom", short: "null 3 targets", description: "Choose 3 players. For the rest of the match they cannot gain positive status effects or bonus points, and Null Corruption reduces their point gains by 10% plus 5% for every wrong answer.", type: "null_protocol", targeted: true, immediate: true, doom: true }
 ];
 const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
 const chaosInfusedPowerSuffix = "__chaos";
@@ -3435,6 +3439,9 @@ const state = {
   eventHorizonMarks: {},
   chaosRefreshOwners: {},
   impendingDoomOwners: {},
+  collapsingStarOwners: {},
+  targetWipeMarks: {},
+  nullProtocolOwners: {},
   ultimatumRounds: {},
   explosiveDoomOwners: {},
   doomStreakGuardRounds: {},
@@ -4094,7 +4101,9 @@ const elements = {
   confirmEndButton: document.querySelector("#confirmEndButton"),
   targetModal: document.querySelector("#targetModal"),
   targetTitle: document.querySelector("#targetTitle"),
+  targetSelectionHint: document.querySelector("#targetSelectionHint"),
   targetList: document.querySelector("#targetList"),
+  confirmTargetButton: document.querySelector("#confirmTargetButton"),
   cancelTargetButton: document.querySelector("#cancelTargetButton"),
   sfxVolumeSlider: document.querySelector("#sfxVolumeSlider"),
   musicVolumeSlider: document.querySelector("#musicVolumeSlider"),
@@ -4851,6 +4860,9 @@ function clearRoomMatchPowerState() {
   // returning to the lobby or starting a different match.
   clearProlongedPowerEffects();
   state.impendingDoomOwners = {};
+  state.collapsingStarOwners = {};
+  state.targetWipeMarks = {};
+  state.nullProtocolOwners = {};
   state.ultimatumRounds = {};
   state.explosiveDoomOwners = {};
   state.doomStreakGuardRounds = {};
@@ -7244,11 +7256,21 @@ function renderAnswerCardsForOwners(owners = getRoundCardOwners(), indexes = own
   }
 }
 
-function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, winnerIndex)) {
+function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, winnerIndex), awarded = null) {
   getAnswerCardNodes().forEach((card) => {
     const badge = card.querySelector(".rating-badge");
     const cardIndex = Number(card.dataset.cardIndex);
-    const rating = ratings[cardIndex];
+    const owner = card.dataset.owner || getOwnerFromCardIndex(cardIndex);
+    const payout = awarded?.payoutDetails?.[owner];
+    const bribedOutcome = payout?.bribedWinner || payout?.bribedLoser;
+    const rating = bribedOutcome
+      ? {
+        ...(ratings[cardIndex] || {}),
+        label: payout.tag,
+        bonus: 0,
+        correct: Boolean(payout.bribedWinner)
+      }
+      : ratings[cardIndex];
     const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
     updateRatingBadge(badge, rating, reason);
     const gradingReason = card.querySelector(".grading-reason");
@@ -7780,6 +7802,9 @@ function getActiveEffectEntries() {
       [getEffectStackCount(state.chaosBottomFeederOwners[owner]) > 0, createActiveEffect(owner, "bottom_feeder", `Scavenger${formatStackSuffix(getEffectStackCount(state.chaosBottomFeederOwners[owner]))}`, "Each stack adds a Bottom Feeder stack at the end of every round.", { chaosInfused: true })],
       [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for the remaining rounds.", { chaosInfused: true })],
       [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", `Impending Doom${formatStackSuffix(doomStacks)}`, "Cannot gain positive status effects. Each stack makes wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
+      [getEffectStackCount(state.nullProtocolOwners?.[owner]) > 0, createActiveEffect(owner, "null_protocol", `Null Corruption${formatStackSuffix(getEffectStackCount(state.nullProtocolOwners[owner]))}`, "Cannot gain positive statuses or bonus points. Point gains lose 10%, plus 5% for every wrong answer. Cannot be removed.")],
+      [getEffectStackCount(state.targetWipeMarks?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Target Wipe${formatStackSuffix(getEffectStackCount(state.targetWipeMarks[owner]?.count || state.targetWipeMarks[owner]))} · ${state.targetWipeMarks[owner]?.remaining || 0}r`, "If this player wins while marked, they lose 15% per stack, lose all power-ups, and gain no points that round.", { chaosInfused: true })],
+      [getEffectStackCount(state.collapsingStarOwners?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Collapsing Star${formatStackSuffix(getEffectStackCount(state.collapsingStarOwners[owner]))}`, "Each round, randomly marks a player ahead of this player with Target Wipe.", { chaosInfused: true })],
       [hasDoomShield(owner), createActiveEffect(owner, "ultimatum", `Ultimatum x${state.ultimatumRounds[owner]}`, "Blocks point loss, debuffs, streak loss, and targeting. Cannot be removed.")],
       [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", `Explosive${formatStackSuffix(explosiveStacks)}`, "Each stack makes wrong answers lose 10% of this player's score. Cannot be removed.")],
       [(state.doomStreakGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "thermal_scythe", `Thermal Guard x${state.doomStreakGuardRounds[owner]}`, "Blocks all streak reductions. Cannot be removed.")],
@@ -8166,8 +8191,8 @@ function describeImmediatePowerEvent(entry) {
   const target = getEntryTarget(entry);
   const meta = getEntryMeta(entry);
   const ownerLabel = getOwnerLabel(entry.owner);
-  if (meta.blockedByImpendingDoom) {
-    return `${entry.power.name} was blocked by Impending Doom on ${ownerLabel}.`;
+  if (meta.blockedByImpendingDoom || meta.blockedByNullProtocol) {
+    return `${entry.power.name} was blocked by ${meta.blockedByImpendingDoom ? "Impending Doom" : "Null Protocol"} on ${ownerLabel}.`;
   }
   switch (entry.power.type) {
     case "next_question":
@@ -8253,6 +8278,14 @@ function describeImmediatePowerEvent(entry) {
         : `${entry.power.name} scrambled identities, but found no higher-score player to swap with.`;
     case "thermal_scythe":
       return `${entry.power.name} harvested ${Number((meta.firstHarvest || 0) + (meta.finalHarvest || 0)).toLocaleString()} streak and hit ${formatPowerEventOwner(target)} for ${formatPowerEventPoints(meta.appliedLoss || 0)}.`;
+    case "ragnarok_protocol":
+      return `${entry.power.name} multiplied positive point gains for this round by leaderboard position: 1st is 50%, 2nd is 100%, and each place adds another 50%.`;
+    case "collapsing_star":
+      return `${entry.power.name} marked ${formatPowerEventTargets(meta.immediateTargets || meta.targetOwners || [], "everyone else")} for Target Wipe for 3 rounds, then armed recurring random marks on players ahead of ${ownerLabel}.`;
+    case "admin_pass":
+      return `${entry.power.name} forced ${formatPowerEventTargets(meta.targetOwners || [target], "a target")} to lose and awarded ${formatPowerEventPoints(meta.bribePayout || 0)} to ${ownerLabel}.`;
+    case "null_protocol":
+      return `${entry.power.name} permanently corrupted ${formatPowerEventTargets(meta.targetOwners || meta.nullTargets || [], "three targets")}: no positive statuses or bonus points, plus a 10% gain penalty that grows 5% per wrong answer.`;
     case "virus_deployment": {
       const targets = isChaosInfusedPower(entry.power)
         ? getActiveOwners().filter((owner) => owner !== entry.owner)
@@ -8462,6 +8495,13 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
     });
 
   activeEntries
+    .filter((entry) => entry.power.type === "collapsing_star" && !isEntryImmediateResolved(entry))
+    .forEach((entry) => {
+      const stacks = addEffectStack(state.collapsingStarOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will mark a random player ahead with Target Wipe at each round start.`));
+    });
+
+  activeEntries
     .filter((entry) => entry.power.type === "sin_wrath" && isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       state.wrathOwners = state.wrathOwners || {};
@@ -8563,7 +8603,9 @@ function applyNewPointPowerEntries(playedEntries, deltas, owners, events, winner
     "red_button",
     "ultimatum",
     "secret_agent",
-    "thermal_scythe"
+    "thermal_scythe",
+    "null_protocol",
+    "collapsing_star"
   ]);
 
   playedEntries
@@ -12715,6 +12757,9 @@ const roomAbilityEffectMapKeys = [
   "eventHorizonMarks",
   "chaosRefreshOwners",
   "impendingDoomOwners",
+  "collapsingStarOwners",
+  "targetWipeMarks",
+  "nullProtocolOwners",
   "ultimatumRounds",
   "explosiveDoomOwners",
   "doomStreakGuardRounds",
@@ -12888,12 +12933,14 @@ function buildRoomRoundResultJudgements(result, cardRatings = state.currentRound
       const owner = getOwnerFromCardIndex(index);
       const rating = cardRatings[index] || {};
       const payout = awarded?.payoutDetails?.[owner] || {};
+      const bribedWinner = Boolean(payout.bribedWinner || payout.tag === "Won by bribing");
+      const bribedLoser = Boolean(payout.bribedLoser || payout.tag === "Lost due to bribe");
       return {
         index,
         participantId: getRoomParticipantIdForOwner(owner),
         owner,
         answer,
-        correct: Boolean(rating.correct || correctSet.has(index)),
+        correct: bribedWinner ? true : bribedLoser ? false : Boolean(rating.correct || correctSet.has(index)),
         tag: String(payout.tag || rating.label || (correctSet.has(index) ? "Correct" : "Incorrect")),
         bonus: Math.round(Number(payout.tagBonus ?? rating.bonus) || 0),
         reason: gradingReasons[index] || getAnswerGradingReason(answer, rating, result, index),
@@ -13115,6 +13162,9 @@ function getImmediatePowerAffectedOwners(owner, power, meta = {}) {
   if (meta.targetOwner) {
     owners.add(meta.targetOwner);
   }
+  if (Array.isArray(meta.targetOwners)) {
+    meta.targetOwners.forEach((targetOwner) => owners.add(targetOwner));
+  }
   if (power?.type === "sin_sloth"
     || power?.type === "gamblers_dream"
     || power?.type === "hard_reset"
@@ -13159,6 +13209,9 @@ function broadcastRoomPowerState(owner, power, meta = {}) {
     powerId: power.id,
     actorParticipantId: getRoomParticipantIdForOwner(owner),
     targetParticipantId: meta.targetOwner ? getRoomParticipantIdForOwner(meta.targetOwner) : "",
+    targetParticipantIds: Array.isArray(meta.targetOwners)
+      ? meta.targetOwners.map(getRoomParticipantIdForOwner).filter(Boolean)
+      : [],
     deletedPowerId: meta.deletedPowerId || state.playedPowerMeta[owner]?.deletedPowerId || "",
     stolenPowerId: meta.stolenPowerId || state.playedPowerMeta[owner]?.stolenPowerId || "",
     timerAction,
@@ -18855,6 +18908,42 @@ function renderSubmissionStatus() {
   setHidden(elements.roomSubmitStatus, false);
 }
 
+function addTargetWipeMark(targetOwner, sourceOwner, stacks = 1, rounds = 3) {
+  if (!targetOwner || !sourceOwner) {
+    return null;
+  }
+  state.targetWipeMarks = state.targetWipeMarks || {};
+  const existing = state.targetWipeMarks[targetOwner] || {};
+  const nextCount = Math.max(0, Number(existing.count) || 0) + Math.max(1, Number(stacks) || 1);
+  const nextRemaining = Math.max(0, Number(existing.remaining) || 0) + Math.max(1, Number(rounds) || 3);
+  state.targetWipeMarks[targetOwner] = {
+    count: nextCount,
+    remaining: nextRemaining,
+    sourceOwner
+  };
+  return state.targetWipeMarks[targetOwner];
+}
+
+function applyCollapsingStarRoundStart(owners, events) {
+  Object.entries(state.collapsingStarOwners || {}).forEach(([sourceOwner, value]) => {
+    if (!owners.includes(sourceOwner)) {
+      return;
+    }
+    const stacks = getEffectStackCount(value);
+    for (let index = 0; index < stacks; index += 1) {
+      const candidates = getOwnersAheadOf(sourceOwner, owners).filter((target) => !hasDoomShield(target));
+      if (!candidates.length) {
+        events.push(`${getOwnerLabel(sourceOwner)}'s Collapsing Star found no player ahead to mark.`);
+        continue;
+      }
+      const targetOwner = candidates[Math.floor(Math.random() * candidates.length)];
+      const mark = addTargetWipeMark(targetOwner, sourceOwner, 1, 3);
+      queueStatFlash("doom", "Collapsing Star", [`Target Wipe x${mark.count}`, `${mark.remaining} Rounds`], getTargetedFlashOptions(sourceOwner, targetOwner, { complex: true, priority: true }));
+      events.push(`Collapsing Star marked ${getOwnerLabel(targetOwner)} with Target Wipe x${mark.count} for ${mark.remaining} rounds.`);
+    }
+  });
+}
+
 function applyRoundStartEffects() {
   const owners = getActiveOwners();
   const events = [];
@@ -18864,6 +18953,7 @@ function applyRoundStartEffects() {
   const soulLinkDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
   const hotInHereDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
   const totalDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  applyCollapsingStarRoundStart(owners, events);
   getActiveOwners().forEach((owner) => {
     const pendingStreak = state.pendingStreakBonuses[owner] || 0;
     if (pendingStreak > 0) {
@@ -19202,12 +19292,16 @@ function hasExplosiveDoom(owner) {
   return getEffectStackCount(owner && state.explosiveDoomOwners?.[owner]) > 0;
 }
 
+function hasNullProtocol(owner) {
+  return getEffectStackCount(owner && state.nullProtocolOwners?.[owner]) > 0;
+}
+
 function hasDoomStreakGuard(owner) {
   return hasDoomShield(owner) || (state.doomStreakGuardRounds?.[owner] || 0) > 0;
 }
 
 function canGainPositiveStatus(owner) {
-  return !hasImpendingDoom(owner);
+  return !hasImpendingDoom(owner) && !hasNullProtocol(owner);
 }
 
 function isSecretAgentMaskedOwner(owner) {
@@ -19805,7 +19899,18 @@ function isEntryImmediateResolved(entry) {
 }
 
 function getEntryTarget(entry) {
-  return getEntryMeta(entry).targetOwner;
+  const meta = getEntryMeta(entry);
+  return meta.targetOwner || (Array.isArray(meta.targetOwners) ? meta.targetOwners[0] : "");
+}
+
+function getEntryTargets(entry) {
+  const meta = getEntryMeta(entry);
+  const targets = Array.isArray(meta.targetOwners)
+    ? meta.targetOwners
+    : meta.targetOwner
+      ? [meta.targetOwner]
+      : [];
+  return [...new Set(targets.filter(Boolean))];
 }
 
 function rememberLastPlayedPowers(owners = getActiveOwners()) {
@@ -22805,6 +22910,9 @@ function getTargetCandidates(owner, power = null) {
   if (power?.type === "xray_hacks") {
     return targetableCandidates;
   }
+  if (power?.type === "admin_pass" || power?.type === "null_protocol") {
+    return targetableCandidates;
+  }
   if (power?.type === "lawsuit") {
     return targetableCandidates.filter((participant) => getRemovableActiveEffects(participant).length > 0);
   }
@@ -22869,6 +22977,26 @@ function chooseTargetOwner(owner, power) {
   return null;
 }
 
+function getMultiTargetRequirement(power) {
+  if (power?.type === "admin_pass") {
+    return { min: 1, max: 2, label: "Choose up to 2 players" };
+  }
+  if (power?.type === "null_protocol") {
+    return { min: 3, max: 3, label: "Choose exactly 3 players" };
+  }
+  return null;
+}
+
+function chooseTargetOwners(owner, power) {
+  const requirement = getMultiTargetRequirement(power);
+  const candidates = sortTargetCandidatesForPower(getTargetCandidates(owner, power), owner, power);
+  if (!requirement) {
+    const target = chooseTargetOwner(owner, power);
+    return target ? [target] : [];
+  }
+  return candidates.slice(0, requirement.max);
+}
+
 function getWrongAnswerCount(owner) {
   const label = getOwnerLabel(owner);
   return state.matchHistory.filter((round) => !(round.winners || [round.winner]).includes(label)).length;
@@ -22891,8 +23019,21 @@ function openTargetSelector(owner, power, powerId) {
     return;
   }
 
+  const requirement = getMultiTargetRequirement(power);
   elements.targetTitle.textContent = power.name;
-  elements.targetModal.dataset.mode = "player";
+  elements.targetModal.dataset.mode = requirement ? "multi-player" : "player";
+  elements.targetModal.dataset.minTargets = String(requirement?.min || 1);
+  elements.targetModal.dataset.maxTargets = String(requirement?.max || 1);
+  elements.targetModal.dataset.selectedTargets = "[]";
+  if (elements.targetSelectionHint) {
+    elements.targetSelectionHint.textContent = requirement?.label || "Choose a player";
+    setHidden(elements.targetSelectionHint, !requirement);
+  }
+  if (elements.confirmTargetButton) {
+    elements.confirmTargetButton.textContent = requirement ? "Confirm Targets" : "Confirm";
+    setHidden(elements.confirmTargetButton, !requirement);
+    elements.confirmTargetButton.disabled = Boolean(requirement);
+  }
   elements.targetList.replaceChildren();
   candidates.forEach((targetOwner) => {
     const player = getPlayer(targetOwner);
@@ -22900,6 +23041,9 @@ function openTargetSelector(owner, power, powerId) {
     button.type = "button";
     button.className = "target-option";
     button.dataset.targetOwner = targetOwner;
+    if (requirement) {
+      button.setAttribute("aria-pressed", "false");
+    }
     const avatar = document.createElement("span");
     avatar.className = "room-player-avatar";
     renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
@@ -23157,6 +23301,16 @@ function closeTargetSelector() {
   elements.targetModal.dataset.owner = "";
   elements.targetModal.dataset.power = "";
   elements.targetModal.dataset.mode = "";
+  elements.targetModal.dataset.selectedTargets = "[]";
+  elements.targetModal.dataset.minTargets = "";
+  elements.targetModal.dataset.maxTargets = "";
+  if (elements.targetSelectionHint) {
+    setHidden(elements.targetSelectionHint, true);
+  }
+  if (elements.confirmTargetButton) {
+    setHidden(elements.confirmTargetButton, true);
+    elements.confirmTargetButton.disabled = true;
+  }
   hideModalWithMotion(elements.targetModal);
 }
 
@@ -23164,7 +23318,7 @@ function cancelTargetSelector() {
   const owner = elements.targetModal.dataset.owner;
   const powerId = elements.targetModal.dataset.power;
   const mode = elements.targetModal.dataset.mode;
-  if (mode === "player" && owner && powerId) {
+  if ((mode === "player" || mode === "multi-player") && owner && powerId) {
     setSelectedPowerIds(owner, getSelectedPowerIds(owner).filter((selectedPowerId) => selectedPowerId !== powerId));
     renderPowerUps();
   }
@@ -23248,7 +23402,7 @@ function completeAnswerChoice(answer) {
   closeTargetSelector();
 }
 
-function completeTargetSelection(targetOwner) {
+function completeTargetSelection(targetOwnerOrTargets) {
   const owner = elements.targetModal.dataset.owner;
   const powerId = elements.targetModal.dataset.power;
   const power = getPowerById(powerId);
@@ -23257,10 +23411,38 @@ function completeTargetSelection(targetOwner) {
     completeTableSabotageSelection(targetOwner);
     return;
   }
-  if (!owner || !power || !targetOwner) {
+  const requirement = getMultiTargetRequirement(power);
+  const targetOwners = Array.isArray(targetOwnerOrTargets)
+    ? [...new Set(targetOwnerOrTargets.filter(Boolean))]
+    : targetOwnerOrTargets
+      ? [targetOwnerOrTargets]
+      : [];
+  if (!owner || !power || !targetOwners.length) {
     closeTargetSelector();
     return;
   }
+
+  if (requirement) {
+    const validTargets = targetOwners.filter((targetOwner) => getTargetCandidates(owner, power).includes(targetOwner));
+    if (validTargets.length < requirement.min || validTargets.length > requirement.max) {
+      return;
+    }
+    const selectionMeta = { targetOwners: validTargets, targetOwner: validTargets[0] };
+    closeTargetSelector();
+    playSound("targetSelect");
+    if (power.immediate) {
+      consumeImmediatePower(owner, power, { ...selectionMeta, suppressSound: true });
+    } else {
+      updateSelectedPowerUp(owner, powerId, selectionMeta, { forceSelect: true });
+      if (commitWaitingPhasePowerUpForOwner(owner)) {
+        return;
+      }
+      renderPowerUps();
+    }
+    return;
+  }
+
+  const targetOwner = targetOwners[0];
 
   if (power.type === "streak_bonus") {
     closeTargetSelector();
@@ -24286,18 +24468,22 @@ function playRolledPower(owner, picked, sourcePower) {
       });
       return true;
     }
-    const targetOwner = chooseTargetOwner(owner, picked) || getTargetCandidates(owner, picked)[0];
-    if (!targetOwner) {
+    const targetOwners = chooseTargetOwners(owner, picked);
+    if (!targetOwners.length || (getMultiTargetRequirement(picked)?.min || 1) > targetOwners.length) {
       return false;
     }
+    const targetOwner = targetOwners[0];
+    const targetMeta = getMultiTargetRequirement(picked)
+      ? { targetOwners, targetOwner }
+      : { targetOwner };
     if (picked.type === "streak_bonus") {
       return activateStreakInjector(owner, picked, picked.id, targetOwner);
     }
     if (picked.immediate) {
-      consumeImmediatePower(owner, picked, { targetOwner, originalPowerId: sourcePower.id, diceRoll: true });
+      consumeImmediatePower(owner, picked, { ...targetMeta, originalPowerId: sourcePower.id, diceRoll: true });
       return true;
     }
-    recordPlayedPower(owner, picked.id, { remainingTime: state.timerRemaining, targetOwner, originalPowerId: sourcePower.id, diceRoll: true });
+    recordPlayedPower(owner, picked.id, { remainingTime: state.timerRemaining, ...targetMeta, originalPowerId: sourcePower.id, diceRoll: true });
     return true;
   }
 
@@ -24550,6 +24736,55 @@ function applyThermalScythePower(owner, power, meta = {}) {
   return true;
 }
 
+function applyNullProtocolPower(owner, power, meta = {}) {
+  const targets = getEntryTargets({ owner, meta }).filter((target) => getActiveOwners().includes(target) && target !== owner);
+  if (targets.length < 3) {
+    updateLatestPlayedPowerMeta(owner, { failed: "Null Protocol needs 3 valid targets" });
+    queueStatFlash("doom", power.name, "Choose 3 Valid Targets", { owners: [owner], complex: true });
+    return true;
+  }
+  state.nullProtocolOwners = state.nullProtocolOwners || {};
+  targets.slice(0, 3).forEach((target) => {
+    addEffectStack(state.nullProtocolOwners, target);
+  });
+  updateLatestPlayedPowerMeta(owner, {
+    targetOwners: targets.slice(0, 3),
+    targetOwner: targets[0],
+    nullTargets: targets.slice(0, 3)
+  });
+  queueStatFlash("doom", power.name, ["Null Corruption", `${targets.length} Targets`], { owners: targets, complex: true, priority: true });
+  targets.slice(0, 3).forEach((target) => {
+    queueStatFlash("doom", power.name, ["10% Base Penalty", "Permanent"], getTargetedFlashOptions(owner, target, { complex: true }));
+  });
+  renderScore();
+  return true;
+}
+
+function applyCollapsingStarPower(owner, power) {
+  const targets = getActiveOwners().filter((target) => target !== owner);
+  if (!targets.length) {
+    updateLatestPlayedPowerMeta(owner, { failed: "No other active players" });
+    queueStatFlash("doom", power.name, "No Valid Targets", { owners: [owner], complex: true });
+    return true;
+  }
+
+  state.collapsingStarOwners = state.collapsingStarOwners || {};
+  const recurringStacks = addEffectStack(state.collapsingStarOwners, owner);
+  targets.forEach((target) => {
+    const mark = addTargetWipeMark(target, owner, 1, 3);
+    queueStatFlash("doom", power.name, [`Target Wipe x${mark.count}`, `${mark.remaining} Rounds`], getTargetedFlashOptions(owner, target, { complex: true, priority: true }));
+  });
+  updateLatestPlayedPowerMeta(owner, {
+    targetOwners: targets,
+    targetOwner: targets[0],
+    immediateTargets: targets,
+    recurringStacks
+  });
+  queueStatFlash("doom", power.name, ["Everyone Marked", "Recurring Ahead Targets Armed"], { owners: [owner], complex: true, priority: true });
+  renderScore();
+  return true;
+}
+
 function applyDoomPowerImmediate(owner, power, meta = {}) {
   if (!isDoomPower(power)) {
     return false;
@@ -24565,6 +24800,12 @@ function applyDoomPowerImmediate(owner, power, meta = {}) {
   }
   if (power.type === "thermal_scythe") {
     return applyThermalScythePower(owner, power, meta);
+  }
+  if (power.type === "null_protocol") {
+    return applyNullProtocolPower(owner, power, meta);
+  }
+  if (power.type === "collapsing_star") {
+    return applyCollapsingStarPower(owner, power);
   }
   return false;
 }
@@ -24594,20 +24835,104 @@ function isPositiveStatusPower(power) {
 }
 
 function blockPositiveStatusPowerIfDoomed(owner, power, meta = {}) {
-  if (!owner || !power || isDoomPower(power) || !hasImpendingDoom(owner) || !isPositiveStatusPower(power)) {
+  const impending = hasImpendingDoom(owner);
+  const nullCorruption = hasNullProtocol(owner);
+  const nullBonusPower = [
+    "afterparty",
+    "airdrop",
+    "bounty",
+    "blessing",
+    "blue_pill",
+    "cocktail_mix",
+    "gamblers_dream",
+    "magic_8",
+    "participation",
+    "rocket",
+    "sin_pride",
+    "speed_answer",
+    "vulture"
+  ].includes(power?.type);
+  const blockedPower = isPositiveStatusPower(power) || (nullCorruption && nullBonusPower);
+  if (!owner || !power || isDoomPower(power) || (!impending && !nullCorruption) || !blockedPower) {
     return false;
   }
   updateLatestPlayedPowerMeta(owner, {
     ...meta,
-    blockedByImpendingDoom: true,
+    blockedByImpendingDoom: impending,
+    blockedByNullProtocol: nullCorruption,
     hoarderShield: false
   });
-  queueStatFlash("doom", "Impending Doom", `${power.name} Blocked`, { owners: [owner], complex: true });
+  queueStatFlash("doom", impending ? "Impending Doom" : "Null Protocol", `${power.name} Blocked`, { owners: [owner], complex: true });
   return true;
 }
 
 function applyDoomRoundDeltas(deltas, owners, winnerSet = new Set(), events = []) {
   const activeWinnerSet = winnerSet instanceof Set ? winnerSet : new Set(winnerSet || []);
+
+  const ragnarokEntry = getPlayedPowerEntries(owners).find((entry) => entry.power.type === "ragnarok_protocol");
+  if (ragnarokEntry) {
+    const rankedOwners = [...owners].sort((a, b) => {
+      const scoreDifference = getScore(b) - getScore(a);
+      return scoreDifference || getOwnerLabel(a).localeCompare(getOwnerLabel(b));
+    });
+    rankedOwners.forEach((rankedOwner, index) => {
+      const positiveGain = Math.max(0, deltas[rankedOwner] || 0);
+      if (positiveGain <= 0) {
+        return;
+      }
+      const multiplier = (index + 1) * 0.5;
+      deltas[rankedOwner] = (deltas[rankedOwner] || 0) - positiveGain + Math.floor(positiveGain * multiplier);
+      events.push(`Ragnarok Protocol multiplied ${getOwnerLabel(rankedOwner)}'s positive gain by ${multiplier.toFixed(1)}x at rank ${index + 1}.`);
+    });
+  }
+
+  Object.entries({ ...(state.targetWipeMarks || {}) }).forEach(([target, mark]) => {
+    if (!owners.includes(target)) {
+      delete state.targetWipeMarks[target];
+      return;
+    }
+    const count = Math.max(0, Number(mark?.count) || 0);
+    if (count <= 0) {
+      delete state.targetWipeMarks[target];
+      return;
+    }
+    if (activeWinnerSet.has(target)) {
+      const projected = getProjectedOwnerScore(target, deltas);
+      const loss = Math.floor(projected * 0.15 * count);
+      if (deltas[target] > 0) {
+        deltas[target] = 0;
+      }
+      addDoomDelta(deltas, target, loss, `Target Wipe x${count}`, events);
+      state.powerHands[target] = [];
+      markAnswerCardDamaged(target, loss);
+      delete state.targetWipeMarks[target];
+      events.push(`Target Wipe x${count} cleared ${getOwnerLabel(target)}'s remaining round gain and power-ups.`);
+      return;
+    }
+    const remaining = Math.max(0, Number(mark?.remaining) || 0) - 1;
+    if (remaining > 0) {
+      state.targetWipeMarks[target] = { ...mark, remaining };
+    } else {
+      delete state.targetWipeMarks[target];
+      events.push(`Target Wipe expired on ${getOwnerLabel(target)}.`);
+    }
+  });
+
+  owners.forEach((target) => {
+    const stacks = getEffectStackCount(state.nullProtocolOwners?.[target]);
+    if (stacks <= 0) {
+      return;
+    }
+    const wrongCount = getWrongAnswerCount(target) + (activeWinnerSet.has(target) ? 0 : 1);
+    const percent = Math.min(0.95, (0.1 + (wrongCount * 0.05)) * stacks);
+    const positiveGain = Math.max(0, deltas[target] || 0);
+    if (positiveGain <= 0) {
+      return;
+    }
+    const penalty = Math.floor(positiveGain * percent);
+    deltas[target] -= penalty;
+    events.push(`Null Corruption x${stacks} reduced ${getOwnerLabel(target)}'s gains by ${Math.round(percent * 100)}% (${wrongCount} wrong answers).`);
+  });
 
   owners.forEach((owner) => {
     const stacks = getEffectStackCount(state.impendingDoomOwners?.[owner]);
@@ -26105,11 +26430,18 @@ function selectPowerUp(powerId) {
     if (!targetOwner) {
       return;
     }
-    if (power.immediate) {
-      consumeImmediatePower(owner, power, { targetOwner });
+    const targetOwners = chooseTargetOwners(owner, power);
+    const targetMeta = getMultiTargetRequirement(power)
+      ? { targetOwners, targetOwner: targetOwners[0] }
+      : { targetOwner };
+    if (getMultiTargetRequirement(power) && targetOwners.length < getMultiTargetRequirement(power).min) {
       return;
     }
-    updateSelectedPowerUp(owner, powerId, { targetOwner }, { forceSelect: true });
+    if (power.immediate) {
+      consumeImmediatePower(owner, power, targetMeta);
+      return;
+    }
+    updateSelectedPowerUp(owner, powerId, targetMeta, { forceSelect: true });
     if (commitWaitingPhasePowerUpForOwner(owner)) {
       playSound("click");
       return;
@@ -26176,6 +26508,14 @@ function isPowerUsable(power, owner) {
       return getActiveOwners().some((participant) => participant !== owner && getOwnerStreak(participant) > 0);
     }
     return getTargetCandidates(owner, power).length > 0;
+  }
+
+  if (power.type === "admin_pass") {
+    return getTargetCandidates(owner, power).length >= 1;
+  }
+
+  if (power.type === "null_protocol") {
+    return getTargetCandidates(owner, power).length >= 3;
   }
 
   if (power.type === "sin_pride") {
@@ -26591,18 +26931,22 @@ function commitSingleBotPowerUp(owner, options = {}) {
     return true;
   }
   if (power?.targeted) {
-    const targetOwner = chooseTargetOwner(owner, power);
-    if (!targetOwner) {
+    const targetOwners = chooseTargetOwners(owner, power);
+    if (!targetOwners.length || (getMultiTargetRequirement(power)?.min || 1) > targetOwners.length) {
       return false;
     }
+    const targetOwner = targetOwners[0];
+    const targetMeta = getMultiTargetRequirement(power)
+      ? { targetOwners, targetOwner }
+      : { targetOwner };
     if (power.type === "streak_bonus") {
       return activateStreakInjector(owner, power, powerId, targetOwner);
     }
     if (power.immediate) {
-      consumeImmediatePower(owner, power, { targetOwner });
+      consumeImmediatePower(owner, power, targetMeta);
       return true;
     }
-    state.playedPowerMeta[owner] = { ...(state.playedPowerMeta[owner] || {}), targetOwner };
+    state.playedPowerMeta[owner] = { ...(state.playedPowerMeta[owner] || {}), ...targetMeta };
   }
 
   if (power?.immediate) {
@@ -32352,6 +32696,9 @@ function resetMatch(mode) {
   state.eventHorizonMarks = {};
   state.chaosRefreshOwners = {};
   state.impendingDoomOwners = {};
+  state.collapsingStarOwners = {};
+  state.targetWipeMarks = {};
+  state.nullProtocolOwners = {};
   state.ultimatumRounds = {};
   state.explosiveDoomOwners = {};
   state.doomStreakGuardRounds = {};
@@ -38307,7 +38654,7 @@ async function playRound(rawInput, options = {}) {
   const winner = forcedWinnerOwner
     ? { ...roundResult.winner, index: getCardIndexFromOwner(forcedWinnerOwner) }
     : roundResult.winner;
-  const winnerOwner = getOwnerFromCardIndex(winner.index);
+  let winnerOwner = getOwnerFromCardIndex(winner.index);
   const correctIndexes = roundResult.correctIndexes;
   const revealAnswerIndex = Number.isInteger(Number(roundResult.revealAnswerIndex))
     ? clampNumber(roundResult.revealAnswerIndex, 0, Math.max(roundResult.cards.length - 1, 0), winner.index)
@@ -38329,7 +38676,7 @@ async function playRound(rawInput, options = {}) {
       .map((participantId) => getOwnerFromRoomRoundParticipantId(participantId))
       .filter((owner) => owner && getActiveOwners().includes(owner));
   }
-  const hasCorrectAnswer = winningOwners.length > 0;
+  let hasCorrectAnswer = winningOwners.length > 0;
   const progressOwner = isRoomMode() ? state.currentOwner : "player";
   const shouldTrackCurrentProgress = progressOwner !== "spectator";
   const focusedAnswerCorrect = shouldTrackCurrentProgress && correctIndexes.includes(getCardIndexFromOwner(progressOwner));
@@ -38345,9 +38692,15 @@ async function playRound(rawInput, options = {}) {
     awarded = syncedRoundResult.awarded;
     applyAuthoritativeRoomResultState(syncedRoundResult, { render: false });
   } else {
-    awarded = hasCorrectAnswer
-      ? awardPoints(winnerOwner, winningRating, winningOwners, ratingsByOwner)
+    const hasAdminPass = getPlayedPowerEntries(getActiveOwners()).some((entry) => entry.power.type === "admin_pass");
+    awarded = hasCorrectAnswer || hasAdminPass
+      ? awardPoints(winnerOwner, winningRating, winningOwners, ratingsByOwner, { allowNoWinner: !hasCorrectAnswer })
       : createNoCorrectAward();
+  }
+  if (Array.isArray(awarded?.winningOwners) && awarded.winningOwners.length) {
+    winningOwners = [...awarded.winningOwners];
+    winnerOwner = winningOwners[0] || winnerOwner;
+    hasCorrectAnswer = winningOwners.length > 0;
   }
   decorateAwardWithAnswerDamage(awarded);
   awardRoundCoins(winningOwners, awarded);
@@ -38375,10 +38728,12 @@ async function playRound(rawInput, options = {}) {
     triggerStreakFire();
   }
 
-  renderCardBadges(roundResult.cards, winner.index, cardRatings);
+  renderCardBadges(roundResult.cards, winner.index, cardRatings, awarded);
   correctIndexes.forEach((index) => {
     const card = getAnswerCardNodes().find((node) => Number(node.dataset.cardIndex) === index);
-    if (card) {
+    const cardOwner = card?.dataset.owner || getOwnerFromCardIndex(index);
+    const payout = awarded?.payoutDetails?.[cardOwner];
+    if (card && !payout?.bribedLoser) {
       card.classList.add("answer-priority");
     }
   });
@@ -39288,14 +39643,15 @@ function clearProlongedPowerEffects() {
   state.hotPotatoOwners = [];
 }
 
-function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwners = [owner], ratingsByOwner = {}) {
+function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwners = [owner], ratingsByOwner = {}, options = {}) {
   const owners = getActiveOwners();
   const pointLossSoundToken = state.pointLossSoundToken;
   const winnerSet = new Set(winningOwners.filter((participant) => owners.includes(participant)));
-  if (!winnerSet.size && owners.includes(owner)) {
+  if (!winnerSet.size && owners.includes(owner) && !options.allowNoWinner) {
     winnerSet.add(owner);
   }
-  const winners = [...winnerSet];
+  const naturalWinnerSet = new Set(winnerSet);
+  let winners = [...winnerSet];
   const startingScores = Object.fromEntries(owners.map((participant) => [participant, getScore(participant)]));
   const startingStreaks = Object.fromEntries(owners.map((participant) => [participant, getOwnerStreak(participant)]));
   const pendingBonuses = Object.fromEntries(owners.map((participant) => [participant, state.pendingPowerBonuses[participant] || 0]));
@@ -39313,6 +39669,28 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   playedEntries.forEach((entry) => events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} used ${entry.power.name}.`)));
 
   ({ playedEntries } = applyPlayedPowerDisables(playedEntries, events));
+
+  let adminPassOwner = "";
+  const adminPassTargetOwners = new Set();
+  playedEntries
+    .filter((entry) => entry.power.type === "admin_pass")
+    .forEach((entry) => {
+      const targets = getEntryTargets(entry)
+        .filter((target) => owners.includes(target) && target !== entry.owner)
+        .slice(0, 2);
+      if (!targets.length) {
+        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} had no valid targets.`));
+        return;
+      }
+      adminPassOwner = adminPassOwner || entry.owner;
+      targets.forEach((target) => adminPassTargetOwners.add(target));
+    });
+  if (adminPassOwner && adminPassTargetOwners.size) {
+    adminPassTargetOwners.forEach((target) => winnerSet.delete(target));
+    winnerSet.add(adminPassOwner);
+    winners = [...winnerSet];
+    events.push(`Admin Pass forced ${formatPowerEventTargets([...adminPassTargetOwners])} to lose and transferred their highest hypothetical payout to ${getOwnerLabel(adminPassOwner)}.`);
+  }
 
   if (playedEntries.some((entry) => entry.power.type === "no_one_wins")) {
     const tableFlip = playedEntries.find((entry) => entry.power.type === "no_one_wins");
@@ -39460,7 +39838,8 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     const baseWinPoints = timeMoneyBase ?? BASE_WIN_POINTS;
     let directPowerBonus = 0;
     let ownerSabotagePenalty = 0;
-    let ownerTotal = baseWinPoints + ownerBonus + ownerTagBonus + ownerDifficultyBonus + ownerUnderdogBonus;
+    const adminForcedOnly = adminPassOwner === winner && !naturalWinnerSet.has(winner);
+    let ownerTotal = adminForcedOnly ? 0 : baseWinPoints + ownerBonus + ownerTagBonus + ownerDifficultyBonus + ownerUnderdogBonus;
 
     if (timeMoneyBase !== null) {
       events.push(`Time Is Money set ${getOwnerLabel(winner)}'s base win to ${baseWinPoints.toLocaleString()} points.`);
@@ -39490,7 +39869,9 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       events.push(createPowerEvent(winner, getPowerById("heaven_hell"), `Heaven or Hell added 750 win points to ${getOwnerLabel(winner)}.`));
     }
 
-    ownerTotal += directPowerBonus;
+    if (!adminForcedOnly) {
+      ownerTotal += directPowerBonus;
+    }
     playedEntries
       .filter((entry) => entry.owner !== winner && entry.power.type === "sabotage" && getEntryTarget(entry) === winner)
       .forEach((entry) => {
@@ -39524,13 +39905,76 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       sabotagePenalty: ownerSabotagePenalty,
       baseWinPoints,
       tag: ownerRating.label,
-      total: ownerTotal,
+      total: adminForcedOnly ? 0 : ownerTotal,
       powerLabel: ownerPower ? ownerPower.name : ""
     };
     sabotagePenalty += ownerSabotagePenalty;
   });
 
-  const primaryPayout = payoutDetails[owner] || {
+  const estimateAdminPassPayout = (target) => {
+    const existing = payoutDetails[target];
+    if (existing && existing.total > 0) {
+      return existing.total;
+    }
+    const timingMeta = getPlayedPowerEntries([target]).find((entry) => getEntryMeta(entry).remainingTime !== undefined)?.meta || {};
+    const base = isMatchModifierEnabled("timeMoney")
+      ? Math.max(0, (state.answerRemainingTimes[target] ?? timingMeta.remainingTime ?? 0) * TIME_MONEY_SECONDS_MULTIPLIER)
+      : BASE_WIN_POINTS;
+    const streakBonus = Math.max(0, startingStreaks[target] || 0) * STREAK_BONUS_POINTS;
+    const ownerRating = ratingsByOwner[target];
+    const tagBonus = Number(ownerRating?.bonus) || 50;
+    const difficultyBonus = getDifficultyBonus();
+    const underdog = highScore - startingScores[target] >= UNDERDOG_BONUS_THRESHOLD ? UNDERDOG_BONUS_POINTS : 0;
+    return base + streakBonus + tagBonus + difficultyBonus + underdog;
+  };
+
+  if (adminPassOwner && adminPassTargetOwners.size) {
+    const highestHypotheticalPayout = Math.max(
+      0,
+      ...[...adminPassTargetOwners].map(estimateAdminPassPayout)
+    );
+    adminPassTargetOwners.forEach((target) => {
+      payoutDetails[target] = {
+        ...(payoutDetails[target] || {}),
+        total: 0,
+        tag: "Lost due to bribe",
+        correct: false,
+        bribedLoser: true,
+        hypotheticalTotal: estimateAdminPassPayout(target)
+      };
+    });
+    const currentOwnerPayout = naturalWinnerSet.has(adminPassOwner)
+      ? Math.max(0, payoutDetails[adminPassOwner]?.total || 0)
+      : 0;
+    payoutDetails[adminPassOwner] = {
+      ...(payoutDetails[adminPassOwner] || {}),
+      total: currentOwnerPayout + highestHypotheticalPayout,
+      tag: "Won by bribing",
+      correct: true,
+      bribedWinner: true,
+      bribePayout: highestHypotheticalPayout
+    };
+  }
+
+  const bribeJudgeEntries = playedEntries.filter((entry) => entry.power.type === "bribe_judge");
+  bribeJudgeEntries.forEach((entry) => {
+    const briber = entry.owner;
+    if (payoutDetails[briber]) {
+      payoutDetails[briber] = { ...payoutDetails[briber], tag: "Won by bribing", correct: true, bribedWinner: true };
+    }
+    const forcedTarget = getEntryTarget(entry);
+    if (forcedTarget && owners.includes(forcedTarget)) {
+      payoutDetails[forcedTarget] = {
+        ...(payoutDetails[forcedTarget] || {}),
+        tag: "Lost due to bribe",
+        correct: false,
+        bribedLoser: true
+      };
+    }
+  });
+
+  const primaryResultOwner = adminPassOwner || owner;
+  const primaryPayout = payoutDetails[primaryResultOwner] || {
     bonus: 0,
     tagBonus: rating.bonus || 0,
     difficultyBonus: getDifficultyBonus(),
@@ -39756,7 +40200,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} lost ${amount.toLocaleString()} points from ${entry.power.name}.`));
     });
 
-  let payoutOwner = owner;
+  let payoutOwner = adminPassOwner || owner;
   const largestWinnerPayout = Math.max(0, ...Object.values(payoutDetails).map((detail) => detail.total || 0));
   winners.forEach((winner) => {
     deltas[winner] += payoutDetails[winner]?.total || 0;
@@ -40888,8 +41332,35 @@ elements.targetModal.addEventListener("click", (event) => {
 
   const option = event.target.closest("[data-target-owner]");
   if (option) {
-    completeTargetSelection(option.dataset.targetOwner);
+    if (elements.targetModal.dataset.mode !== "multi-player") {
+      completeTargetSelection(option.dataset.targetOwner);
+      return;
+    }
+    const requirement = getMultiTargetRequirement(getPowerById(elements.targetModal.dataset.power));
+    const selected = JSON.parse(elements.targetModal.dataset.selectedTargets || "[]");
+    const targetOwner = option.dataset.targetOwner;
+    const nextSelected = selected.includes(targetOwner)
+      ? selected.filter((candidate) => candidate !== targetOwner)
+      : selected.length < (requirement?.max || 1)
+        ? [...selected, targetOwner]
+        : selected;
+    elements.targetModal.dataset.selectedTargets = JSON.stringify(nextSelected);
+    option.setAttribute("aria-pressed", String(nextSelected.includes(targetOwner)));
+    option.classList.toggle("selected", nextSelected.includes(targetOwner));
+    if (elements.confirmTargetButton) {
+      elements.confirmTargetButton.disabled = nextSelected.length < (requirement?.min || 1);
+    }
+    if (elements.targetSelectionHint && requirement) {
+      elements.targetSelectionHint.textContent = `${requirement.label} · ${nextSelected.length}/${requirement.max}`;
+    }
   }
+});
+elements.confirmTargetButton?.addEventListener("click", () => {
+  if (elements.targetModal.dataset.mode !== "multi-player") {
+    return;
+  }
+  const selected = JSON.parse(elements.targetModal.dataset.selectedTargets || "[]");
+  completeTargetSelection(selected);
 });
 elements.cancelTargetButton.addEventListener("click", cancelTargetSelector);
 document.addEventListener("keydown", (event) => {
