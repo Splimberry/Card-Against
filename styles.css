@@ -5485,87 +5485,79 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   transform-origin: center;
 }
 
-.power-category-mark {
-  --power-category-rgb: 180 187 198;
+.power-card::before,
+.ability-card::before {
+  content: "";
   position: absolute;
   z-index: 1;
-  display: grid;
-  place-items: center;
+  inset: 0.25rem;
+  border-radius: inherit;
   pointer-events: none;
   opacity: 0.3;
   mix-blend-mode: screen;
+  background-image: var(--power-category-icon);
+  background-position: right center;
+  background-repeat: no-repeat;
+  background-size: min(52%, 5rem);
 }
 
-.power-category-mark img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.power-card::before,
+.ability-card::before {
   filter:
     brightness(0) invert(1)
     drop-shadow(0 0 0.75rem rgb(var(--power-category-rgb) / 0.8));
 }
 
-.power-card .power-category-mark {
-  right: 0.25rem;
-  top: 50%;
-  bottom: auto;
-  width: min(52%, 5rem);
-  aspect-ratio: 1;
-  transform: translateY(-50%);
-}
-
-.power-card > .power-category-mark {
-  z-index: 1;
-}
-
-.ability-card .power-category-mark {
-  right: 0.28rem;
-  top: 50%;
-  bottom: auto;
-  width: min(44%, 4.2rem);
-  aspect-ratio: 1;
-  opacity: 0.25;
-  transform: translateY(-50%);
+.ability-card {
+  isolation: isolate;
+  overflow: hidden;
 }
 
 .power-card[data-category="defense"],
 .ability-card[data-category="defense"] {
+  --power-category-icon: url("assets/overlays/shield.svg");
   --power-category-rgb: 34 211 238;
 }
 
 .power-card[data-category="target"],
 .ability-card[data-category="target"] {
+  --power-category-icon: url("assets/overlays/customer.svg");
   --power-category-rgb: 255 77 125;
 }
 
 .power-card[data-category="boost"],
 .ability-card[data-category="boost"] {
+  --power-category-icon: url("assets/overlays/coin.svg");
   --power-category-rgb: 251 191 36;
 }
 
 .power-card[data-category="chaos"],
 .ability-card[data-category="chaos"] {
+  --power-category-icon: url("assets/modifiers/dice.svg");
   --power-category-rgb: 168 85 247;
 }
 
 .power-card[data-category="disruption"],
 .ability-card[data-category="disruption"] {
+  --power-category-icon: url("assets/overlays/flash.svg");
   --power-category-rgb: 255 77 125;
 }
 
 .power-card[data-category="risk"],
 .ability-card[data-category="risk"] {
+  --power-category-icon: url("assets/overlays/bomb.svg");
   --power-category-rgb: 255 159 47;
 }
 
 .power-card[data-category="utility"],
 .ability-card[data-category="utility"] {
+  --power-category-icon: url("assets/overlays/store.svg");
   --power-category-rgb: 64 222 164;
 }
 
 .power-card[data-category="doom"],
 .ability-card[data-category="doom"] {
+  --power-category-icon: url("assets/modifiers/skull.svg");
   --power-category-rgb: 255 28 76;
 }
 

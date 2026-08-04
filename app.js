@@ -526,17 +526,6 @@ function getPowerCategory(powerOrId) {
   return "utility";
 }
 
-function getPowerCategoryMarkup(powerOrCategory, options = {}) {
-  const category = powerCategoryInfo[powerOrCategory]
-    ? powerOrCategory
-    : getPowerCategory(powerOrCategory);
-  if (options.skipExistingDoom && category === "doom") {
-    return "";
-  }
-  const info = powerCategoryInfo[category] || powerCategoryInfo.utility;
-  return `<span class="power-category-mark" data-category="${category}" aria-hidden="true"><img src="${info.icon}" alt="" loading="lazy" decoding="async"></span>`;
-}
-
 const chaosInfusedPowerOverrides = {
   small_bounty: {
     name: "Unstable Bounty",
@@ -9661,7 +9650,7 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
       card.dataset.tooltip = entry.description;
       card.tabIndex = 0;
     }
-    card.innerHTML = `${category && powerCategoryInfo[category] ? getPowerCategoryMarkup(category, { skipExistingDoom: true }) : ""}<span>${entry.name}</span><strong>${entry.short}</strong><small>${entry.description}</small>`;
+    card.innerHTML = `<span>${entry.name}</span><strong>${entry.short}</strong><small>${entry.description}</small>`;
     grid.appendChild(card);
   });
   body.appendChild(grid);
@@ -27070,7 +27059,7 @@ function renderPowerUps() {
     return;
   }
 
-  const getPowerCardMarkup = (displayPower) => `${getPowerCategoryMarkup(displayPower, { skipExistingDoom: true })}<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
+  const getPowerCardMarkup = (displayPower) => `<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
   let animatedFreshCount = 0;
   let renderedCardIndex = 0;
   renderEntries.forEach(({ powerId, exiting }) => {
