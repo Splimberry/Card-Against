@@ -239,7 +239,8 @@ const profileCardStyles = [
   { id: "black", name: "Black", kind: "black", colorId: "black", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-35" },
   { id: "burning", name: "Burning", kind: "burning", colorId: "orange", condition: "Unlock The cook achievement.", unlockType: "achievement", achievementId: "the-cook", target: 1 },
   { id: "chaos", name: "Chaos", kind: "chaos", condition: "Win 50 public non-selfhosted Chaos matches.", unlockType: "progress", progressKey: "publicChaosWins", target: 50 },
-  { id: "black-market", name: "Black Market", kind: "blackMarket", condition: "Spend 250,000 points buying power-ups.", unlockType: "progress", progressKey: "powerPurchaseSpendTotal", target: 250000 }
+  { id: "black-market", name: "Black Market", kind: "blackMarket", condition: "Spend 250,000 points buying power-ups.", unlockType: "progress", progressKey: "powerPurchaseSpendTotal", target: 250000 },
+  { id: "doom", name: "Doom", kind: "doom", condition: "Buy in Profile Shop for 800 coins.", unlockType: "shop", cost: 800 }
 ];
 const profileCardStyleMap = Object.fromEntries(profileCardStyles.map((style) => [style.id, style]));
 const profileCardEffects = [
@@ -352,7 +353,7 @@ const achievementMilestones = [
   { id: "achievements-70", target: 70, name: "Custom Prefix Colour", rewardText: "Custom prefix tag colour + 15% match coin boost", coinBoost: 0.15, unlocks: [{ type: "titleColor", id: "custom" }] }
 ];
 const achievementMilestoneMap = Object.fromEntries(achievementMilestones.map((milestone) => [milestone.id, milestone]));
-const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket"]);
+const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket", "doom"]);
 const pointSharingPowerTypes = new Set(["communism", "soul_link", "bartender", "airdrop", "robin_hood"]);
 const zeusPowerTypes = new Set(["zap_strike", "lightning_strike", "typhoon_season"]);
 const pointStealPowerTypes = new Set(["shameless", "robin_hood", "tax_collector", "hitman", "haha_you_lose"]);
@@ -15387,6 +15388,9 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
   } else if (style.kind === "burning") {
     primary = getProfileCardColour("orange");
     secondary = getProfileCardColour("gold");
+  } else if (style.kind === "doom") {
+    primary = getProfileCardColour("pink");
+    secondary = getProfileCardColour("purple");
   }
   const pastelActive = activeEffectIds.includes("pastel");
   const primaryRgb = pastelActive && !(isGradientStyle && shouldSkipPastelForGradientColour(primary)) ? pastelRgbParts(primary.value) : hexToRgbParts(primary.value);
@@ -15409,6 +15413,8 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
         ? `radial-gradient(circle at 50% 0%, rgb(64 222 164 / 0.26), transparent 48%), repeating-linear-gradient(135deg, rgb(64 222 164 / 0.08) 0 0.35rem, transparent 0.35rem 1rem), linear-gradient(135deg, rgb(5 20 18), rgb(10 11 18))`
         : style.kind === "burning"
             ? `radial-gradient(circle at 50% 96%, rgb(255 210 88 / 0.18), rgb(255 94 38 / 0.12) 30%, transparent 64%), linear-gradient(0deg, rgb(255 68 31 / 0.12), transparent 62%), repeating-linear-gradient(88deg, rgb(255 173 66 / 0.035) 0 0.2rem, transparent 0.2rem 1.65rem), linear-gradient(180deg, rgb(40 10 9), rgb(58 15 11) 50%, rgb(22 12 14))`
+            : style.kind === "doom"
+              ? `repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 0.48rem), linear-gradient(105deg, rgb(72 8 30 / 0.98), rgb(20 4 18 / 0.98) 48%, rgb(57 10 78 / 0.98))`
             : defaultBackgroundLayer;
   const background = themeBackground;
   const rgbBackground = themeBackground;
@@ -22876,6 +22882,12 @@ function getProfileStyleSwatch(style, draft = getProfileCustomizationDraft()) {
     return {
       primary: getProfileCardColour("orange"),
       secondary: getProfileCardColour("gold")
+    };
+  }
+  if (style.kind === "doom") {
+    return {
+      primary: getProfileCardColour("pink"),
+      secondary: getProfileCardColour("purple")
     };
   }
   return {

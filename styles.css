@@ -7995,6 +7995,15 @@ input:focus {
   animation: cardBurningGlow 2300ms ease-in-out infinite;
 }
 
+/* Keep the Burning glow inside its card frame. */
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="burning"][data-card-custom="true"] {
+  overflow: hidden;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="burning"][data-card-custom="true"]::before {
+  clip-path: inset(0 round 8px);
+}
+
 :is(.profile-card, .room-host-profile, .room-player-card, .black-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"] {
   position: relative;
   overflow: hidden;
@@ -8481,6 +8490,60 @@ input:focus {
   opacity: 0.54;
   transform-origin: 50% 100%;
   animation: cardBurningGlow 2300ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: rgba(255, 28, 76, 0.92);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 0.48rem),
+    linear-gradient(105deg, rgba(72, 8, 30, 0.98), rgba(20, 4, 18, 0.98) 48%, rgba(57, 10, 78, 0.98));
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.34),
+    0 0 1.35rem rgba(255, 28, 76, 0.4),
+    -0.22rem 0 1rem rgba(168, 85, 247, 0.18),
+    inset 0 0 1rem rgba(255, 28, 76, 0.14);
+  animation: doomProfileGlitch 1500ms steps(2, end) infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, transparent 0 34%, rgba(255, 28, 76, 0.24) 46%, rgba(168, 85, 247, 0.12) 52%, transparent 65%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 0.5rem);
+  background-size: 100% 190%, 100% 0.58rem;
+  background-position: 0 -80%, 0 0;
+  mix-blend-mode: screen;
+  opacity: 0.42;
+  animation:
+    doomProfileScan 1200ms linear infinite,
+    cardChaosLines 1700ms steps(4, end) infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 28, 76, 0.18), rgba(168, 85, 247, 0.14), transparent);
+  background-size: 220% 100%;
+  mix-blend-mode: screen;
+  opacity: 0.38;
+  animation: doomProfileColorShift 2300ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > * {
+  position: relative;
+  z-index: 2;
 }
 
 .game-stage:not(.hidden) :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"],
@@ -9050,6 +9113,56 @@ input:focus {
   70% {
     opacity: 0.48;
     transform: scaleY(1);
+  }
+}
+
+@keyframes doomProfileGlitch {
+  0%,
+  100% {
+    filter: saturate(1.05) brightness(1);
+    transform: translate3d(0, 0, 0);
+  }
+
+  46% {
+    filter: saturate(1.28) brightness(1.08) contrast(1.06);
+    transform: translate3d(-0.025rem, 0, 0);
+  }
+
+  49% {
+    filter: saturate(1.12) brightness(1.02);
+    transform: translate3d(0.025rem, 0, 0);
+  }
+}
+
+@keyframes doomProfileScan {
+  0% {
+    background-position: 0 -95%, 0 0;
+  }
+
+  54% {
+    background-position: 0 25%, 0 0.15rem;
+  }
+
+  100% {
+    background-position: 0 95%, 0 0.3rem;
+  }
+}
+
+@keyframes doomProfileColorShift {
+  0%,
+  100% {
+    background-position: -110% 0;
+    opacity: 0.24;
+  }
+
+  48% {
+    background-position: 45% 0;
+    opacity: 0.46;
+  }
+
+  68% {
+    background-position: 120% 0;
+    opacity: 0.3;
   }
 }
 
@@ -12358,6 +12471,21 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   border-color: rgba(255, 139, 44, 0.34);
 }
 
+.profile-style-option[data-profile-style-kind="doom"] {
+  border-color: rgba(255, 28, 76, 0.7);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 0.45rem),
+    linear-gradient(105deg, rgba(72, 8, 30, 0.82), rgba(20, 4, 18, 0.86) 48%, rgba(57, 10, 78, 0.82));
+  box-shadow:
+    0 0 1rem rgba(255, 28, 76, 0.25),
+    inset 0 0 0.8rem rgba(255, 28, 76, 0.1);
+}
+
+.profile-style-option[data-profile-style-kind="doom"] span {
+  color: #ffe5ec;
+  text-shadow: 0 0 0.7rem rgba(255, 28, 76, 0.6);
+}
+
 .profile-style-option[data-profile-style-kind="neon"] {
   background:
     radial-gradient(circle at 18% 16%, rgb(var(--style-swatch-rgb, 34 211 238) / 0.22), transparent 38%),
@@ -14474,6 +14602,15 @@ body[data-performance-mode="balanced"][data-game-active] .white-card.winner::aft
 }
 
 body[data-performance-mode="balanced"][data-game-active] .target-option[data-card-effects~="metallic"]::after {
+  animation-play-state: paused !important;
+}
+
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"],
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]::before,
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]::after {
   animation-play-state: paused !important;
 }
 
