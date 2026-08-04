@@ -7057,10 +7057,12 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 }
 
 .table-event-icon-button {
-  width: 2.15rem;
+  width: auto;
   height: 2.15rem;
-  flex: 0 0 2.15rem;
-  padding: 0.42rem;
+  flex: 0 1 auto;
+  gap: 0.42rem;
+  padding: 0.42rem 0.62rem;
+  white-space: nowrap;
 }
 
 .table-event-icon-button img {

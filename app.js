@@ -11411,14 +11411,13 @@ function renderTableEventControls() {
     button.className = "table-event-button table-event-icon-button black-market-button";
     button.setAttribute("aria-label", "Open Black Market");
     button.dataset.description = "Open Black Market to buy a power-up.";
+    const label = document.createElement("span");
+    label.textContent = "Black Market";
     const icon = document.createElement("img");
     icon.src = "assets/overlays/store.svg";
     icon.alt = "";
     icon.setAttribute("aria-hidden", "true");
-    const label = document.createElement("span");
-    label.className = "sr-only";
-    label.textContent = "Black Market";
-    button.append(icon, label);
+    button.append(label, icon);
     attachFloatingDescriptionTooltip(button);
     button.addEventListener("click", () => openBlackMarketSelector(owner));
     elements.tableEventActionPanel.appendChild(button);
@@ -11437,9 +11436,8 @@ function renderTableEventControls() {
     icon.alt = "";
     icon.setAttribute("aria-hidden", "true");
     const label = document.createElement("span");
-    label.className = "sr-only";
     label.textContent = used ? "Sabotage Used" : "Sabotage";
-    button.append(icon, label);
+    button.append(label, icon);
     button.disabled = used;
     attachFloatingDescriptionTooltip(button);
     button.addEventListener("click", () => openTableSabotageSelector(owner));
