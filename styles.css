@@ -14456,6 +14456,10 @@ body[data-performance-mode="balanced"][data-game-active] .white-card.winner::aft
   animation-play-state: paused !important;
 }
 
+body[data-performance-mode="balanced"][data-game-active] .target-option[data-card-effects~="metallic"]::after {
+  animation-play-state: paused !important;
+}
+
 body[data-performance-mode="low-power"] *,
 body[data-performance-mode="low-power"] *::before,
 body[data-performance-mode="low-power"] *::after,
