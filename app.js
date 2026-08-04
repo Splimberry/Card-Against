@@ -8043,10 +8043,8 @@ function renderPowerLog(awarded) {
     item.textContent = text;
     if (power) {
       item.dataset.rarity = power.rarity;
-      item.dataset.category = getPowerCategory(power);
       item.classList.toggle("chaos-infused", isChaosInfusedPower(power));
       item.dataset.description = power.description;
-      item.insertAdjacentHTML("afterbegin", getPowerCategoryMarkup(power));
       attachFloatingDescriptionTooltip(item);
     }
     elements.powerLog.appendChild(item);
@@ -8491,10 +8489,8 @@ function renderRoundRecap(awarded, winnerOwner, rating, resultSummary = null) {
           power.className = "result-power-pill";
           power.textContent = rowPower.name;
           power.dataset.rarity = rowPower.rarity;
-          power.dataset.category = getPowerCategory(rowPower);
           power.classList.toggle("chaos-infused", isChaosInfusedPower(rowPower));
           power.dataset.description = rowPower.description;
-          power.insertAdjacentHTML("afterbegin", getPowerCategoryMarkup(rowPower));
           attachFloatingDescriptionTooltip(power);
           powerList.appendChild(power);
         });
@@ -20190,11 +20186,9 @@ function renderLeaderboard() {
       const pill = document.createElement("span");
       pill.className = "leaderboard-power-pill";
       pill.dataset.rarity = playedPower.rarity;
-      pill.dataset.category = getPowerCategory(playedPower);
       pill.classList.toggle("chaos-infused", isChaosInfusedPower(playedPower));
       pill.dataset.description = playedPower.description;
       pill.textContent = playedPower.name;
-      pill.insertAdjacentHTML("afterbegin", getPowerCategoryMarkup(playedPower));
       if (playedEntry.revealId && state.pendingPowerPillAnimations?.has(playedEntry.revealId)) {
         pill.classList.add("just-played");
         state.pendingPowerPillAnimations.delete(playedEntry.revealId);
