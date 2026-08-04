@@ -6859,6 +6859,7 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   width: 1.05rem;
   height: 1.05rem;
   object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .hint-button:hover:not(:disabled),
@@ -7313,7 +7314,7 @@ input:focus {
   height: 1.55rem;
   place-items: center;
   border: 1px solid rgba(255, 213, 102, 0.62);
-  border-radius: 50%;
+  border-radius: 7px;
   background: rgba(20, 18, 12, 0.82);
   box-shadow: 0 0 0.8rem rgba(255, 213, 102, 0.24);
 }
@@ -7322,6 +7323,7 @@ input:focus {
   width: 0.92rem;
   height: 0.92rem;
   object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .white-card.answer-card-cycle-out {

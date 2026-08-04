@@ -3206,6 +3206,8 @@ const state = {
   roomPanelHeightSyncFrame: 0,
   roomDirectoryOnline: true,
   roomGame: null,
+  roomRoundTransitionPromise: null,
+  roomRoundTransitionKey: "",
   roomMatchId: "",
   roomRoundResult: null,
   roomPowerStateRevision: 0,
@@ -4890,6 +4892,7 @@ function buildTextHint(answer = "") {
 function getHintAvailability() {
   const hintState = normalizeHintState(state.hintState);
   const roundKey = getHintRoundKey();
+  const supported = isHintSupportedForCurrentQuestion();
   const usedThisRound = Boolean(state.roundHintUsage[state.currentOwner])
     || Boolean(hintState.usedRounds[roundKey])
     || Boolean(hintState.usedThisRound);
@@ -4898,10 +4901,11 @@ function getHintAvailability() {
   const hasPurchase = isMultiplayer && hintState.purchasesUsed < 2 && loadCurrencyBalance() >= 5;
   return {
     hintState,
+    supported,
     usedThisRound,
     hasFree,
     hasPurchase,
-    available: Boolean(isHintSupportedForCurrentQuestion() && (hasFree || hasPurchase) && !usedThisRound)
+    available: Boolean(supported && (hasFree || hasPurchase) && !usedThisRound)
   };
 }
 
@@ -4913,7 +4917,6 @@ function renderHintControls() {
   const visible = Boolean(
     (state.mode === "bots" || isRoomMode())
       && !state.isSpectator
-      && isHintSupportedForCurrentQuestion()
       && !elements.inputPanel?.classList.contains("hidden")
   );
   setHidden(button, !visible);
@@ -4931,12 +4934,17 @@ function renderHintControls() {
   button.disabled = disabled;
   button.classList.toggle("hint-used", availability.usedThisRound);
   button.classList.toggle("hint-unavailable", !availability.available && !availability.usedThisRound);
-  const tooltip = availability.usedThisRound
-    ? "One hint per round. Hint already used."
+  const remainingPurchases = Math.max(0, 2 - availability.hintState.purchasesUsed);
+  const tooltip = !availability.supported
+    ? "Hints are available for text and multiple-choice questions."
+    : availability.usedThisRound
+    ? isRoomMode() && remainingPurchases > 0
+      ? `Hint used this round. Available next round for 5 coins. ${remainingPurchases} purchase${remainingPurchases === 1 ? "" : "s"} remaining.`
+      : "One hint per round. Hint already used."
     : availability.hasFree
       ? `${availability.hintState.freeRemaining} free hint${availability.hintState.freeRemaining === 1 ? "" : "s"} remaining.`
       : availability.hasPurchase
-        ? `Spend 5 coins. ${Math.max(0, 2 - availability.hintState.purchasesUsed)} purchase${availability.hintState.purchasesUsed === 1 ? "" : "s"} remaining this match.`
+        ? `Spend 5 coins. ${remainingPurchases} purchase${remainingPurchases === 1 ? "" : "s"} remaining this match.`
         : "No hints remaining this match.";
   button.dataset.tooltip = tooltip;
   button.setAttribute("aria-label", `Hint. ${tooltip}`);
@@ -10673,6 +10681,11 @@ function isRoomParticipantActive(participant = {}) {
   return participant?.active !== false;
 }
 
+function isRoomParticipantDisconnected(participant = {}) {
+  const status = String(participant?.status || participant?.connectionStatus || "").trim().toLowerCase();
+  return ["disconnected", "host-disconnected", "spectator-disconnected"].includes(status);
+}
+
 function isRoomParticipantHost(participant = {}) {
   return normalizeRoomParticipantRole(participant) === "host";
 }
@@ -10721,8 +10734,12 @@ function getRoomPlayersForMode() {
     : state.joiningRoom?.participants?.length
       ? state.joiningRoom.participants
       : [];
-  const activeParticipants = normalizeRoomParticipantsList(participantSource)
+  const roomParticipants = normalizeRoomParticipantsList(participantSource);
+  const activeParticipants = roomParticipants
     .filter(isRoomGameplayParticipant)
+    .sort((a, b) => Number(!isRoomParticipantHost(a)) - Number(!isRoomParticipantHost(b)));
+  const disconnectedParticipants = roomParticipants
+    .filter((participant) => isRoomParticipantDisconnected(participant))
     .sort((a, b) => Number(!isRoomParticipantHost(a)) - Number(!isRoomParticipantHost(b)));
   const players = [];
   const seenOwners = new Set();
@@ -10765,6 +10782,7 @@ function getRoomPlayersForMode() {
 
   if (activeParticipants.length) {
     activeParticipants.forEach((participant, index) => addParticipantPlayer(participant, {}, index));
+    disconnectedParticipants.forEach((participant, index) => addParticipantPlayer(participant, {}, activeParticipants.length + index));
   } else {
     const host = state.joiningRoom?.host || {};
     addParticipantPlayer({
@@ -35626,6 +35644,9 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     roundStartedAt: 0,
     updatedAt: optimisticUpdatedAt
   };
+  state.roomGame = optimisticGame;
+  state.currentRoomStatus = "in-progress";
+  state.roomRoundTransitionKey = [commandType, matchId, Number(round) || state.round].join("|");
   // Let joined clients leave the old lobby/verdict immediately. The server
   // still owns question generation and will confirm this with round-started.
   broadcastRealtimeRoomChange("round-advancing", code, {
@@ -35642,7 +35663,7 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     settings: matchSettings,
     game: optimisticGame
   });
-  return roomSync.sendCommand(commandType, {
+  const transitionPromise = roomSync.sendCommand(commandType, {
     clientEventId,
     hostParticipantId: state.clientId,
     round: Number(round) || state.round,
@@ -35704,6 +35725,14 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     });
     return null;
   });
+  const trackedTransitionPromise = transitionPromise.finally(() => {
+    if (state.roomRoundTransitionPromise === trackedTransitionPromise) {
+      state.roomRoundTransitionPromise = null;
+      state.roomRoundTransitionKey = "";
+    }
+  });
+  state.roomRoundTransitionPromise = trackedTransitionPromise;
+  return trackedTransitionPromise;
 }
 
 function publishRoomGameEnded() {
