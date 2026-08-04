@@ -360,6 +360,7 @@ const achievementMilestones = [
 ];
 const achievementMilestoneMap = Object.fromEntries(achievementMilestones.map((milestone) => [milestone.id, milestone]));
 const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket", "doom"]);
+const rgbDisabledProfileStyleIds = new Set(["black", "chromatic", "voidglass", "solar-flare", "holographic", "circuit-core", "abyssal"]);
 const pointSharingPowerTypes = new Set(["communism", "soul_link", "bartender", "airdrop", "robin_hood"]);
 const zeusPowerTypes = new Set(["zap_strike", "lightning_strike", "typhoon_season"]);
 const pointStealPowerTypes = new Set(["shameless", "robin_hood", "tax_collector", "hitman", "haha_you_lose"]);
@@ -15392,7 +15393,7 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
     ? []
     : normalized.effectIds.filter((id) => (
       profileCardEffectMap[id]
-      && !(id === "rgb" && ["black", "chromatic"].includes(style.id))
+      && !(id === "rgb" && rgbDisabledProfileStyleIds.has(style.id))
       && !(id === "pastel" && (style.id === "default" || style.id === "black"))
     ));
   const activePatternId = isSpecialStyle ? "none" : normalized.patternId;
@@ -22821,7 +22822,7 @@ function getTitleRgbSyncStyle(customization) {
   const style = profileCardStyleMap[normalized.styleId] || profileCardStyleMap.default;
   const hasMainRgb = normalized.effectIds.includes("rgb")
     && !specialProfileCardStyleKinds.has(style.kind)
-    && !["black", "chromatic"].includes(style.id);
+    && !rgbDisabledProfileStyleIds.has(style.id);
   return hasMainRgb ? style : { kind: "solid" };
 }
 
@@ -23274,7 +23275,7 @@ function createProfileEffectButton(effect, records, progress) {
   const draft = getProfileCustomizationDraft();
   const status = getProfileUnlockStatus(effect, "effect", records, progress);
   const disabledByTheme = isSpecialProfileStyleId(draft.styleId)
-    || (effect.id === "rgb" && ["black", "chromatic"].includes(draft.styleId))
+    || (effect.id === "rgb" && rgbDisabledProfileStyleIds.has(draft.styleId))
     || (effect.id === "pastel" && (draft.styleId === "default" || draft.styleId === "black"));
   const button = document.createElement("button");
   button.type = "button";
@@ -23284,8 +23285,8 @@ function createProfileEffectButton(effect, records, progress) {
   button.dataset.selected = String(draft.effectIds.includes(effect.id) && !disabledByTheme);
   button.dataset.locked = String(!status.unlocked || disabledByTheme);
   button.dataset.description = disabledByTheme
-    ? effect.id === "rgb" && ["black", "chromatic"].includes(draft.styleId)
-      ? `RGB is disabled on the ${draft.styleId === "chromatic" ? "Chromatic" : "Black"} card theme.`
+    ? effect.id === "rgb" && rgbDisabledProfileStyleIds.has(draft.styleId)
+      ? `RGB is disabled on the ${profileCardStyleMap[draft.styleId]?.name || "selected"} card theme.`
       : effect.id === "pastel" && (draft.styleId === "default" || draft.styleId === "black")
         ? "Pastel is disabled on Classic and Black card themes."
         : "Special themes do not allow extra effects."
@@ -23679,7 +23680,7 @@ function sanitizeProfileCustomizationForSave(draft) {
   }
   next.effectIds = draft.effectIds.filter((effectId) => (
     isProfileEffectUnlocked(effectId, records, progress)
-    && !(effectId === "rgb" && ["black", "chromatic"].includes(draft.styleId))
+    && !(effectId === "rgb" && rgbDisabledProfileStyleIds.has(draft.styleId))
     && !(effectId === "pastel" && (draft.styleId === "default" || draft.styleId === "black"))
   ));
   next.patternId = isProfilePatternUnlocked(draft.patternId, records, progress) ? draft.patternId : saved.patternId;
@@ -23764,7 +23765,7 @@ function handleProfileCustomizationClick(event) {
       const effectId = effectButton.dataset.profileEffect;
       if (
         isSpecialProfileStyleId(draft.styleId)
-        || (effectId === "rgb" && ["black", "chromatic"].includes(draft.styleId))
+        || (effectId === "rgb" && rgbDisabledProfileStyleIds.has(draft.styleId))
         || (effectId === "pastel" && (draft.styleId === "default" || draft.styleId === "black"))
       ) {
         return;

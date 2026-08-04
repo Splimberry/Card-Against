@@ -8762,6 +8762,17 @@ input:focus {
   background-color: #ffffff;
 }
 
+/* Metallic adds a surface sheen as a third background layer. Keep the
+   theme-specific rim as the border-box layer so it cannot turn black. */
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-effects~="metallic"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) {
+  background-image:
+    linear-gradient(115deg, rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.16) 0 8%, rgba(255, 255, 255, 0.13) 13%, transparent 24% 38%, rgb(var(--custom-card-secondary-rgb, 255 77 125) / 0.08) 48%, transparent 62%, rgba(255, 255, 255, 0.11) 76%, transparent 90%),
+    var(--custom-card-bg),
+    var(--custom-card-rim-gradient);
+  background-origin: padding-box, padding-box, border-box;
+  background-clip: padding-box, padding-box, border-box;
+}
+
 /* Chromatic is a purchasable base theme, rather than a special theme. The
    six colour stops stay fixed while their hue values advance together, so
    the colour appears to travel without moving the strip itself. */
