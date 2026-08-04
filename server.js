@@ -3139,9 +3139,9 @@ async function handleRoomCommandUseHint(req, res, room, command, rawBody = {}) {
     return;
   }
   const isMultipleChoice = setup.questionStyle === "multiple-choice";
-  const isTextQuestion = setup.type === "text";
-  if (!isMultipleChoice && !isTextQuestion) {
-    sendJson(res, 409, { ok: false, error: "Hints are only available for text and multiple-choice questions." });
+  const hasCanonicalAnswer = Boolean(String(setup.canonicalAnswer || "").trim());
+  if (!isMultipleChoice && !hasCanonicalAnswer) {
+    sendJson(res, 409, { ok: false, error: "This question does not have an answer available for a hint." });
     return;
   }
   let hint = "";
@@ -4773,6 +4773,10 @@ function transferRoomHostToOldestPlayer(room, reason = "host-transfer") {
   room.hostExitPendingAt = 0;
   rotateRoomHostToken(room);
   finalizeRoom(room);
+  const transferSnapshot = sanitizeRoomForClient(
+    { ...room, events: [] },
+    { includeSubmittedAnswers: true }
+  );
   stampRoomEvent(room, "host_transferred", {
     previousHostId: previousHost?.id || "",
     previousHostName: previousHost?.name || room.host?.name || "Host",
@@ -4780,7 +4784,8 @@ function transferRoomHostToOldestPlayer(room, reason = "host-transfer") {
     newHostName: nextHost.name || "Host",
     reason: String(reason || "host-transfer").slice(0, 60),
     participant: nextHost,
-    host: room.host
+    host: room.host,
+    room: transferSnapshot
   });
   return room;
 }

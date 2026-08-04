@@ -2634,6 +2634,31 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   vertical-align: middle;
 }
 
+.disconnected-player-badge {
+  position: relative;
+  z-index: 10;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.18em;
+  height: 1.18em;
+  color: #b7bdc9;
+  background: currentColor;
+  -webkit-mask: url("assets/ui/no-connection.svg") center / contain no-repeat;
+  mask: url("assets/ui/no-connection.svg") center / contain no-repeat;
+  cursor: help;
+  transform: translateY(0.08em);
+  padding: 0.05em;
+  box-sizing: content-box;
+  overflow: visible;
+  filter: drop-shadow(0 0 0 transparent);
+  vertical-align: middle;
+}
+
+.leaderboard-player.disconnected-player,
+.trivia-result-row.disconnected-player {
+  opacity: 0.78;
+}
+
 .special-player-badge::before,
 .bot-player-badge::before,
 .host-player-badge::before {
@@ -6853,6 +6878,17 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   font-weight: 950;
   line-height: 1;
   transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.hint-button[data-tooltip] {
+  --tooltip-hidden-transform: translate(0, 0.42rem) scale(0.94);
+  --tooltip-visible-transform: translate(0, 0) scale(1);
+}
+
+.hint-button[data-tooltip]::after {
+  left: auto;
+  right: 0;
+  transform-origin: 100% 100%;
 }
 
 .hint-button img {
@@ -13158,7 +13194,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   text-overflow: clip;
 }
 
-.chat-message :is(.special-player-badge, .bot-player-badge, .host-player-badge, .spectator-player-badge) {
+.chat-message :is(.special-player-badge, .bot-player-badge, .host-player-badge, .spectator-player-badge, .disconnected-player-badge) {
   width: 0.95em;
   height: 0.95em;
   flex: 0 0 auto;

@@ -4834,7 +4834,10 @@ function isMultipleChoiceAnswerCorrect(answer) {
 }
 
 function isHintSupportedForCurrentQuestion() {
-  return isMultipleChoiceRound() || state.questionType === "text";
+  return Boolean(
+    isMultipleChoiceRound()
+      || String(state.canonicalAnswer || "").trim()
+  );
 }
 
 function getHintMatchId() {
@@ -4935,9 +4938,7 @@ function renderHintControls() {
   button.classList.toggle("hint-used", availability.usedThisRound);
   button.classList.toggle("hint-unavailable", !availability.available && !availability.usedThisRound);
   const remainingPurchases = Math.max(0, 2 - availability.hintState.purchasesUsed);
-  const tooltip = !availability.supported
-    ? "Hints are available for text and multiple-choice questions."
-    : availability.usedThisRound
+  const tooltip = availability.usedThisRound
     ? isRoomMode() && remainingPurchases > 0
       ? `Hint used this round. Available next round for 5 coins. ${remainingPurchases} purchase${remainingPurchases === 1 ? "" : "s"} remaining.`
       : "One hint per round. Hint already used."
@@ -8361,6 +8362,23 @@ function renderRoundRecap(awarded, winnerOwner, rating, resultSummary = null) {
       correct: winningSet.has(owner)
     }))
     .sort(compareScoreRowsForLeaderboard);
+  const recapOwnerSet = new Set(recapRows.map((row) => row.owner));
+  getDisconnectedRoomPlayers()
+    .filter((player) => !recapOwnerSet.has(player.owner))
+    .forEach((player) => {
+      recapRows.push({
+        owner: player.owner,
+        label: player.label || getOwnerLabel(player.owner),
+        score: getScore(player.owner),
+        displayScore: getDisplayScoreText(player.owner),
+        hiddenScore: isScoreHidden(player.owner),
+        delta: 0,
+        powers: [],
+        streak: getOwnerStreak(player.owner),
+        correct: false,
+        disconnected: true
+      });
+    });
   recapRows.forEach((row, index) => {
       const item = document.createElement("div");
       item.className = "trivia-result-row";
@@ -8368,6 +8386,7 @@ function renderRoundRecap(awarded, winnerOwner, rating, resultSummary = null) {
       item.dataset.participantId = getPlayer(row.owner)?.participantId || "";
       item.classList.toggle("correct", row.correct);
       item.classList.toggle("incorrect", !row.correct);
+      item.classList.toggle("disconnected-player", Boolean(row.disconnected));
       applyOwnerCustomizationSurface(item, row.owner);
       item.classList.toggle("kickable-bot", canKickRoomBot(row.owner, item.dataset.participantId));
       if (canKickRoomBot(row.owner, item.dataset.participantId)) {
@@ -14891,13 +14910,33 @@ function publishRoomRoundSkip(payload = {}) {
   const commandType = String(payload.reason || "") === "timer-expired" ? "resolve_timer_expired" : "skip_to_grading";
   const clientEventId = String(payload.clientEventId || createRoomSyncCommandId(commandType, code)).slice(0, 160);
   const updatedAt = Number(payload.updatedAt) || Date.now();
+  const submissions = Array.isArray(payload.submissions) ? payload.submissions : buildRoundSkipSubmissions();
+  const optimisticGame = createOptimisticRoomGradingGame(submissions, {
+    matchId: getCurrentRoomMatchId(),
+    round: state.round,
+    reason: payload.reason || "host-skip",
+    gradingForceAt: payload.gradingForceAt,
+    updatedAt
+  });
+  broadcastAndApplyOptimisticRoomChange("round-grading", code, {
+    clientEventId,
+    status: "in-progress",
+    revision: getKnownRoomRevision(code),
+    updatedAt,
+    matchId: getCurrentRoomMatchId(),
+    round: state.round,
+    reason: payload.reason || "host-skip",
+    hostParticipantId: state.clientId,
+    submissions,
+    game: optimisticGame
+  });
   return roomSync.sendCommand(commandType, {
     clientEventId,
     round: state.round,
     matchId: getCurrentRoomMatchId(),
     hostParticipantId: state.clientId,
     reason: payload.reason || "host-skip",
-    submissions: payload.submissions || buildRoundSkipSubmissions(),
+    submissions,
     gradingForceAt: payload.gradingForceAt,
     force: payload.force,
     updatedAt
@@ -17796,6 +17835,74 @@ function applyRealtimeRoomPayload(room = {}) {
   });
 }
 
+async function resumeRoomAfterHostTransfer(room = null) {
+  if (!isRoomMode() || state.isSpectator || !isCurrentHost() || state.joiningRoom) {
+    return false;
+  }
+  const activeRoom = room && typeof room === "object"
+    ? room
+    : {
+      code: state.roomSettings.code,
+      status: state.currentRoomStatus,
+      settings: state.roomSettings,
+      participants: state.roomParticipants,
+      game: state.roomGame
+    };
+  const game = activeRoom.game && typeof activeRoom.game === "object" ? activeRoom.game : state.roomGame;
+  if (!game || activeRoom.status !== "in-progress") {
+    return false;
+  }
+
+  state.mode = "room";
+  state.currentRoomStatus = "in-progress";
+  state.currentOwner = "player";
+  state.roomGame = game;
+  state.roomParticipants = normalizeRoomParticipantsList(activeRoom.participants || state.roomParticipants);
+  if (game.matchId) {
+    setCurrentRoomMatchId(game.matchId);
+  }
+  setPlayersForMode("room");
+
+  if (game.setup) {
+    // The former host may have left after marking this round as resolving.
+    // A promoted host must own the grading runner again, rather than inherit
+    // that stale local guard and silently wait forever.
+    state.roomRoundResolving = false;
+    return resumeSyncedRoomGame({
+      ...activeRoom,
+      status: "in-progress",
+      game
+    }, { host: true, spectator: false });
+  }
+  if (game.status !== "starting") {
+    return false;
+  }
+
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.gameStage, false);
+  resetRoundUiForLoading({ resetBlackCardTheme: true });
+  showWaitingForHostRoundSetup(Number(game.round) || state.round);
+  elements.loadingText.textContent = "Taking over the room and dealing the shared round...";
+  try {
+    const setup = await requestAuthoritativeRoomRoundSetup({
+      round: Number(game.round) || state.round,
+      totalRounds: state.maxRounds
+    });
+    if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
+      applyRoundSetup(setup, { skipPublish: true });
+      return true;
+    }
+  } catch (error) {
+    console.warn("Room host takeover round setup failed:", error);
+    showWaitingForHostRoundSetup(Number(game.round) || state.round);
+    elements.loadingText.textContent = "Waiting for the room state to finish syncing...";
+  }
+  return false;
+}
+
 function applyRealtimeHostTransferred(payload = {}) {
   clearHostReconnectHandoffCheck();
   const room = payload.room && typeof payload.room === "object" ? payload.room : null;
@@ -17874,6 +17981,13 @@ function applyRealtimeHostTransferred(payload = {}) {
       renderRoomPlayers();
       renderScore();
       renderSubmissionStatus();
+      void resumeRoomAfterHostTransfer(room || state.joiningRoom || {
+        code,
+        status: state.currentRoomStatus,
+        settings: state.roomSettings,
+        participants: state.roomParticipants,
+        game: state.roomGame
+      });
       applied = true;
     } else if (previousHostId === state.clientId) {
       stopRoomHeartbeat();
@@ -19744,6 +19858,17 @@ function getActiveOwners() {
   ];
 }
 
+function getDisconnectedRoomPlayers() {
+  if (!isRoomMode()) {
+    return [];
+  }
+  return state.players.filter((player) => (
+    !player.bot
+    && !player.spectator
+    && isRoomParticipantDisconnected(player)
+  ));
+}
+
 function getOwnerStreak(owner) {
   const player = getPlayer(owner);
   return player ? player.streak : state.streaks?.[owner] || 0;
@@ -19872,7 +19997,7 @@ function renderLeaderboard() {
     ".leaderboard-player[data-owner]",
     (element) => element.dataset.owner
   );
-  const leaders = getActiveOwners()
+  const activeLeaders = getActiveOwners()
     .map((owner) => {
       const player = getPlayer(owner);
       return {
@@ -19882,10 +20007,27 @@ function renderLeaderboard() {
         score: getScore(owner),
         displayScore: getDisplayScoreText(owner),
         hiddenScore: isScoreHidden(owner),
-        streak: getOwnerStreak(owner)
+        streak: getOwnerStreak(owner),
+        disconnected: false
       };
-    })
-    .sort(compareScoreRowsForLeaderboard);
+    });
+  const disconnectedLeaders = getDisconnectedRoomPlayers().map((player) => ({
+    owner: player.owner,
+    player,
+    label: player.label || getOwnerLabel(player.owner),
+    score: getScore(player.owner),
+    displayScore: getDisplayScoreText(player.owner),
+    hiddenScore: isScoreHidden(player.owner),
+    streak: getOwnerStreak(player.owner),
+    disconnected: true
+  }));
+  const leaders = [...activeLeaders, ...disconnectedLeaders]
+    .sort((a, b) => {
+      if (a.disconnected !== b.disconnected) {
+        return a.disconnected ? 1 : -1;
+      }
+      return compareScoreRowsForLeaderboard(a, b);
+    });
   const spectatorSelf = state.isSpectator && isRoomMode()
     ? getPlayer("spectator") || createPlayer("spectator", state.profile.name || "Spectator", {
       type: "spectator",
@@ -19910,12 +20052,17 @@ function renderLeaderboard() {
     const isKickableBot = canKickRoomBot(entry.owner, chip.dataset.participantId);
     chip.classList.toggle("leader", index === 0);
     chip.classList.toggle("streaking", entry.streak > 0);
+    chip.classList.toggle("disconnected-player", entry.disconnected);
     chip.classList.toggle("score-hidden", entry.hiddenScore);
     chip.classList.toggle("kickable-bot", isKickableBot);
     applyOwnerCustomizationSurface(chip, entry.owner);
     if (isKickableBot) {
       chip.setAttribute("aria-label", "Click to kick this bot from the room.");
       chip.dataset.tooltip = "Click to kick this bot from the room.";
+    }
+    if (entry.disconnected) {
+      chip.setAttribute("aria-label", `${entry.label} is disconnected.`);
+      chip.dataset.tooltip = "Disconnected. Waiting for this player to reconnect.";
     }
     const rank = document.createElement("span");
     rank.className = "leaderboard-rank";
@@ -22334,6 +22481,20 @@ function createSpectatorPlayerBadge(player) {
   return icon;
 }
 
+function createDisconnectedPlayerBadge(player) {
+  if (!isRoomMode() || player?.bot || player?.spectator || !isRoomParticipantDisconnected(player)) {
+    return null;
+  }
+  const icon = document.createElement("span");
+  icon.className = "disconnected-player-badge";
+  icon.dataset.description = "Disconnected. Waiting for this player to reconnect.";
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", "Disconnected");
+  icon.tabIndex = 0;
+  attachFloatingDescriptionTooltip(icon);
+  return icon;
+}
+
 function getDisplayTitleIdForPlayer(player) {
   if (!player) {
     return "";
@@ -22363,6 +22524,10 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
   name.textContent = label;
   applyProfileFontToElement(name, getProfileFontForPlayer(player));
   element.appendChild(name);
+  const disconnectedBadge = player?.owner && isSecretAgentMaskedOwner(player.owner) ? null : createDisconnectedPlayerBadge(player);
+  if (disconnectedBadge) {
+    element.appendChild(disconnectedBadge);
+  }
   const spectatorBadge = player?.owner && isSecretAgentMaskedOwner(player.owner) ? null : createSpectatorPlayerBadge(player);
   if (spectatorBadge) {
     element.appendChild(spectatorBadge);
@@ -33036,6 +33201,20 @@ function scheduleNextSetupPrefetch() {
   });
 }
 
+function getPendingRoomRoundTransition(round = state.round) {
+  const promise = state.roomRoundTransitionPromise;
+  const matchId = getCurrentRoomMatchId();
+  const key = String(state.roomRoundTransitionKey || "");
+  if (
+    !promise
+    || !matchId
+    || !key.endsWith(`|${matchId}|${Number(round) || state.round}`)
+  ) {
+    return null;
+  }
+  return promise;
+}
+
 async function newRound() {
   const matchToken = state.matchWorkToken;
   const previousBlackCard = state.blackCard;
@@ -33060,6 +33239,9 @@ async function newRound() {
   const preferredTheme = state.nextPreferredTheme;
   state.nextPreferredTheme = "";
   const roomSetupContext = createRoundSetupWorkContext({ matchToken });
+  const pendingRoomRoundTransition = isRoomMode() && isCurrentHost() && !state.joiningRoom
+    ? getPendingRoomRoundTransition(state.round)
+    : null;
   if (isRoomMode() && !isCurrentHost()) {
     resetRoundUiForLoading({ resetBlackCardTheme: true });
     showWaitingForHostRoundSetup(state.round);
@@ -33100,7 +33282,20 @@ async function newRound() {
         round: state.round,
         totalRounds: state.maxRounds
       };
-      const setup = await requestAuthoritativeRoomRoundSetup(setupOptions);
+      let setup = getSyncedRoomSetupForRound(state.round);
+      if (!setup && pendingRoomRoundTransition) {
+        const transitionResult = await pendingRoomRoundTransition;
+        if (!transitionResult?.ok) {
+          return;
+        }
+        setup = getSyncedRoomSetupForRound(state.round);
+        if (!setup && transitionResult.game?.setup) {
+          setup = normalizeSetupPayload(transitionResult.game.setup);
+        }
+      }
+      if (!setup) {
+        setup = await requestAuthoritativeRoomRoundSetup(setupOptions);
+      }
       if (isCurrentRoundSetupWork(roomSetupContext)) {
         applyRoundSetup(setup, { skipPublish: true });
       }
@@ -33373,6 +33568,9 @@ function resetMatch(mode) {
 }
 
 async function startGame(mode) {
+  const pendingRoomRoundTransition = mode === "room" && isCurrentHost() && !state.joiningRoom
+    ? getPendingRoomRoundTransition(1)
+    : null;
   initAudio();
   startMusic();
   playSound("click");
@@ -33421,6 +33619,20 @@ async function startGame(mode) {
     let setupAlreadyPublished = false;
     if (mode === "room" && isCurrentHost() && !state.joiningRoom) {
       firstSetup = getSyncedRoomSetupForRound(state.round);
+      if (!firstSetup && pendingRoomRoundTransition) {
+        const transitionResult = await pendingRoomRoundTransition;
+        if (!transitionResult?.ok) {
+          state.currentRoomStatus = "lobby";
+          state.roomGame = null;
+          state.roomMatchStartGuardUntil = 0;
+          renderRoomLobby();
+          return;
+        }
+        firstSetup = getSyncedRoomSetupForRound(state.round);
+        if (!firstSetup && transitionResult.game?.setup) {
+          firstSetup = normalizeSetupPayload(transitionResult.game.setup);
+        }
+      }
       if (!firstSetup) {
         firstSetup = await requestAuthoritativeRoomRoundSetup(firstRoundSetupOptions);
       }
@@ -35603,6 +35815,9 @@ function resumeSyncedRoomGame(room, options = {}) {
     syncTimerFromRoomGame(game);
     maybeResolveRoomSubmissions();
   }
+  if (host && game.status === "playing") {
+    scheduleHostRoomSubmissionDeadline();
+  }
 
   return true;
 }
@@ -37406,15 +37621,11 @@ async function beginRoomMatch() {
   setupPowerHands();
   const initialPowerState = getRoomPowerStatePayload();
   addSystemChat("The host started the match.");
-  const startResult = await publishRoomRoundAdvancing(1, { powerState: initialPowerState });
-  if (!startResult?.ok) {
-    state.currentRoomStatus = "lobby";
-    state.roomMatchStartGuardUntil = 0;
-    state.roomGame = null;
-    renderRoomLobby();
-    return;
-  }
-  startGame("room");
+  publishRoomRoundAdvancing(1, { powerState: initialPowerState });
+  // Enter the same loading transition locally at once. The pending command
+  // promise is consumed by startGame so the server still supplies the only
+  // shared question and no second prepare request is sent.
+  void startGame("room");
 }
 
 async function leaveCurrentRoom() {
@@ -38858,19 +39069,23 @@ async function advanceAfterVerdict(options = {}) {
 
   const nextRound = state.round + 1;
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
-    const advance = await publishRoomRoundAdvancing(nextRound, {
+    const advancePromise = publishRoomRoundAdvancing(nextRound, {
       autoAdvance: Boolean(options.autoAdvance)
     });
-    if (!advance) {
+    state.round = nextRound;
+    void newRound();
+    const advance = await advancePromise;
+    if (!advance && state.round === nextRound) {
       addSystemChat("Could not sync the next round yet. Try again in a moment.", { private: true });
       updateNextRoundButtonLabel();
       return;
     }
   } else {
     publishRoomRoundAdvancing(nextRound);
+    state.round = nextRound;
+    void newRound();
+    return;
   }
-  state.round = nextRound;
-  newRound();
 }
 
 function completeBlackCard(answer) {
