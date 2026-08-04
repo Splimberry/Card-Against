@@ -359,7 +359,7 @@ const achievementMilestones = [
   { id: "achievements-70", target: 70, name: "Custom Prefix Colour", rewardText: "Custom prefix tag colour + 15% match coin boost", coinBoost: 0.15, unlocks: [{ type: "titleColor", id: "custom" }] }
 ];
 const achievementMilestoneMap = Object.fromEntries(achievementMilestones.map((milestone) => [milestone.id, milestone]));
-const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket", "doom", "voidglass", "solarFlare", "holographic", "circuitCore", "abyssal"]);
+const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket", "doom"]);
 const pointSharingPowerTypes = new Set(["communism", "soul_link", "bartender", "airdrop", "robin_hood"]);
 const zeusPowerTypes = new Set(["zap_strike", "lightning_strike", "typhoon_season"]);
 const pointStealPowerTypes = new Set(["shameless", "robin_hood", "tax_collector", "hitman", "haha_you_lose"]);

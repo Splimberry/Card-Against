@@ -8746,6 +8746,22 @@ input:focus {
   animation: none !important;
 }
 
+/* The new dark themes support the regular profile effects, but keep their
+   foreground content readable against the dark card surfaces. */
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) {
+  color: #ffffff;
+  --custom-card-text: #ffffff;
+  --custom-card-active-text: #ffffff;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) :is(.name-with-title-text, .profile-name-display, .profile-fields, .answer-owner, .answer-owner > span:last-child, .leaderboard-name, .leaderboard-rank, .leaderboard-streak, .equipped-title-pill, .rating-badge, .profile-upload, .special-player-badge, .bot-player-badge, .host-player-badge, .spectator-player-badge, .disconnected-player-badge, .answer-avatar, .profile-avatar, .room-player-avatar, .leaderboard-avatar, h1, h2, h3, p, strong, em, small, label, button, input) {
+  color: #ffffff;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) :is(.special-player-badge, .bot-player-badge, .host-player-badge, .spectator-player-badge, .disconnected-player-badge)::before {
+  background-color: #ffffff;
+}
+
 /* Chromatic is a purchasable base theme, rather than a special theme. The
    six colour stops stay fixed while their hue values advance together, so
    the colour appears to travel without moving the strip itself. */
