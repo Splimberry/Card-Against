@@ -5516,12 +5516,14 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-card[data-category="defense"],
 .ability-card[data-category="defense"] {
   --power-category-icon: url("assets/overlays/shield.svg");
+  --power-category-icon-size: min(38%, 3.8rem);
   --power-category-rgb: 34 211 238;
 }
 
 .power-card[data-category="target"],
 .ability-card[data-category="target"] {
   --power-category-icon: url("assets/overlays/customer.svg");
+  --power-category-icon-size: min(40%, 4rem);
   --power-category-rgb: 255 77 125;
 }
 
@@ -5718,15 +5720,16 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   content: none;
 }
 
-button.power-card:hover:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
-button.power-card:focus-visible:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
+button.power-card:hover:not(.chaos-infused):not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
+button.power-card:focus-visible:not(.chaos-infused):not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
   transform: translateY(-0.06rem) scale(1.018);
   filter: brightness(1.08);
 }
 
-button.power-card.selected:hover:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
-button.power-card.selected:focus-visible:not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
-  transform: translateY(-0.08rem) scale(1.026);
+button.power-card.selected:hover:not(.chaos-infused):not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost),
+button.power-card.selected:focus-visible:not(.chaos-infused):not([aria-disabled="true"]):not(.fresh-power):not(.power-use-ghost):not(.power-remove-exit-ghost) {
+  transform: translateY(-0.08rem);
+  scale: 1.026;
 }
 
 /* Chaos cards animate their transform for the glitch effect, so use the
@@ -5753,7 +5756,8 @@ button.power-card.chaos-infused.selected:focus-visible:not([aria-disabled="true"
     var(--power-rarity-shadow),
     inset 0 0 1.1rem rgba(255, 255, 255, 0.09),
     var(--power-rarity-inset-shadow);
-  transform: translateY(-0.06rem) scale(1.012);
+  transform: translateY(-0.06rem);
+  scale: 1.012;
 }
 
 .power-selected-badge {
@@ -6159,17 +6163,17 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 
 @keyframes powerSelectedPop {
   0% {
-    transform: translateY(0) scale(1);
+    scale: 1;
     filter: brightness(1);
   }
 
   58% {
-    transform: translateY(-0.12rem) scale(1.022);
+    scale: 1.022;
     filter: brightness(1.24);
   }
 
   100% {
-    transform: translateY(-0.06rem) scale(1.012);
+    scale: 1.012;
     filter: brightness(1);
   }
 }
