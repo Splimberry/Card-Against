@@ -37988,7 +37988,38 @@ function handleRoomPlayerAction(action, owner, participantId = "") {
   }
 }
 
-function startRoomGame() {
+async function hydrateDraftRoomBeforeLobby(expectedSessionId, expectedCode) {
+  const code = String(expectedCode || "").trim().toUpperCase();
+  if (!code || code === "CAI-0000") {
+    return false;
+  }
+
+  const lookup = await fetchRoomByCode(code);
+  if (
+    expectedSessionId !== state.roomSessionId
+    || state.currentRoomStatus !== "draft"
+    || state.roomSettings.code !== code
+  ) {
+    return false;
+  }
+  if (lookup.status !== "found" || !lookup.room) {
+    return false;
+  }
+
+  // The draft screen can receive participant/chat events before the host
+  // reveals the lobby. Apply the latest snapshot first so that chat history
+  // is complete before the lobby is rendered.
+  applyRoomSnapshot(lookup.room, {
+    source: "draft-to-lobby-hydration",
+    skipHeartbeat: true
+  });
+  if (Array.isArray(lookup.room.chat)) {
+    mergeRoomChatMessages(lookup.room.chat);
+  }
+  return true;
+}
+
+async function startRoomGame() {
   updateRoomVariants({ publish: false });
   if (state.roomSettings.private && !state.roomSettings.password) {
     elements.roomPasswordInput.focus();
@@ -38002,6 +38033,29 @@ function startRoomGame() {
     setHidden(elements.roomLobbyScreen, false);
     playSound("click");
     return;
+  }
+
+  const draftSessionId = state.roomSessionId;
+  const draftRoomCode = state.roomSettings.code;
+  if (state.currentRoomStatus === "draft") {
+    if (state.roomLobbyTransitionInProgress) {
+      return;
+    }
+    state.roomLobbyTransitionInProgress = true;
+    elements.startRoomButton.disabled = true;
+    try {
+      await hydrateDraftRoomBeforeLobby(draftSessionId, draftRoomCode);
+    } finally {
+      state.roomLobbyTransitionInProgress = false;
+      elements.startRoomButton.disabled = false;
+    }
+    if (
+      draftSessionId !== state.roomSessionId
+      || state.currentRoomStatus !== "draft"
+      || state.roomSettings.code !== draftRoomCode
+    ) {
+      return;
+    }
   }
 
   state.mode = "room";
@@ -38019,7 +38073,6 @@ function startRoomGame() {
     state.roomModeration.bannedByRoom[state.roomSettings.code] = [];
   }
   setPlayersForMode("room");
-  state.roomChat = [];
   resetChatCooldown();
   addSystemChat(`Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`);
   upsertHostedRoom("lobby");
