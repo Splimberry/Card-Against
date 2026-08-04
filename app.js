@@ -5143,6 +5143,8 @@ function clearRoomMatchScopedStateForLobby(options = {}) {
   resetTimerDisplay();
   stopLoadingMessages();
   setGradingActive(false);
+  state.roomRoundTransitionPromise = null;
+  state.roomRoundTransitionKey = "";
   state.roomGame = null;
   setCurrentRoomMatchId("");
   state.roomRoundResult = null;
@@ -34233,6 +34235,8 @@ function clearLocalRoomState(options = {}) {
   state.joiningRoom = null;
   state.isSpectator = false;
   state.roomGame = null;
+  state.roomRoundTransitionPromise = null;
+  state.roomRoundTransitionKey = "";
   state.roomMatchId = "";
   state.roomRoundResult = null;
   resetRoomPowerSyncClocks();
@@ -35827,6 +35831,7 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
+  const roomSessionId = state.roomSessionId;
   const commandType = options.autoAdvance
     ? "resolve_auto_advance"
     : Number(round) <= 1 && !state.roomGame
@@ -35900,6 +35905,9 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     participantId: state.clientId,
     clientEventId
   }).then((data) => {
+    if (state.roomSessionId !== roomSessionId || state.roomSettings.code !== code || !isRoomMode()) {
+      return data;
+    }
     if (!data?.ok) {
       state.roomDirectoryOnline = false;
       addSystemChat(data?.error || "Could not sync the next round yet. Try again in a moment.", { private: true, sync: false });
