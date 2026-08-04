@@ -24390,7 +24390,7 @@ function completeTargetSelection(targetOwnerOrTargets) {
   const power = getPowerById(powerId);
   const mode = elements.targetModal.dataset.mode;
   if (mode === "table-sabotage") {
-    completeTableSabotageSelection(targetOwner);
+    completeTableSabotageSelection(targetOwnerOrTargets);
     return;
   }
   const requirement = getMultiTargetRequirement(power);
