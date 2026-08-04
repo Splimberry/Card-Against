@@ -10923,6 +10923,8 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .xray-hand-header .target-player-copy {
+  display: grid;
+  min-width: 0;
   gap: 0.24rem;
 }
 
