@@ -27059,7 +27059,7 @@ function renderPowerUps() {
     return;
   }
 
-  const getPowerCardMarkup = (displayPower) => `<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
+  const getPowerCardMarkup = (displayPower) => `<i class="power-selected-badge" aria-hidden="true">Selected</i><span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
   let animatedFreshCount = 0;
   let renderedCardIndex = 0;
   renderEntries.forEach(({ powerId, exiting }) => {
