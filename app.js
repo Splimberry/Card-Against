@@ -241,7 +241,12 @@ const profileCardStyles = [
   { id: "chaos", name: "Chaos", kind: "chaos", condition: "Win 50 public non-selfhosted Chaos matches.", unlockType: "progress", progressKey: "publicChaosWins", target: 50 },
   { id: "black-market", name: "Black Market", kind: "blackMarket", condition: "Spend 250,000 points buying power-ups.", unlockType: "progress", progressKey: "powerPurchaseSpendTotal", target: 250000 },
   { id: "doom", name: "Doom", kind: "doom", condition: "Buy in Profile Shop for 1,000 coins.", unlockType: "shop", cost: 1000 },
-  { id: "chromatic", name: "Chromatic", kind: "chromatic", condition: "Buy in Profile Shop for 1,000 coins.", unlockType: "shop", cost: 1000 }
+  { id: "chromatic", name: "Chromatic", kind: "chromatic", condition: "Buy in Profile Shop for 1,000 coins.", unlockType: "shop", cost: 1000 },
+  { id: "voidglass", name: "Voidglass", kind: "voidglass", condition: "Buy in Profile Shop for 1,200 coins.", unlockType: "shop", cost: 1200 },
+  { id: "solar-flare", name: "Solar Flare", kind: "solarFlare", condition: "Buy in Profile Shop for 1,000 coins.", unlockType: "shop", cost: 1000 },
+  { id: "holographic", name: "Holographic", kind: "holographic", condition: "Buy in Profile Shop for 1,500 coins.", unlockType: "shop", cost: 1500 },
+  { id: "circuit-core", name: "Circuit Core", kind: "circuitCore", condition: "Buy in Profile Shop for 900 coins.", unlockType: "shop", cost: 900 },
+  { id: "abyssal", name: "Abyssal", kind: "abyssal", condition: "Buy in Profile Shop for 1,200 coins.", unlockType: "shop", cost: 1200 }
 ];
 const profileCardStyleMap = Object.fromEntries(profileCardStyles.map((style) => [style.id, style]));
 const profileCardEffects = [
@@ -354,7 +359,7 @@ const achievementMilestones = [
   { id: "achievements-70", target: 70, name: "Custom Prefix Colour", rewardText: "Custom prefix tag colour + 15% match coin boost", coinBoost: 0.15, unlocks: [{ type: "titleColor", id: "custom" }] }
 ];
 const achievementMilestoneMap = Object.fromEntries(achievementMilestones.map((milestone) => [milestone.id, milestone]));
-const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket", "doom"]);
+const specialProfileCardStyleKinds = new Set(["burning", "chaos", "blackMarket", "doom", "voidglass", "solarFlare", "holographic", "circuitCore", "abyssal"]);
 const pointSharingPowerTypes = new Set(["communism", "soul_link", "bartender", "airdrop", "robin_hood"]);
 const zeusPowerTypes = new Set(["zap_strike", "lightning_strike", "typhoon_season"]);
 const pointStealPowerTypes = new Set(["shameless", "robin_hood", "tax_collector", "hitman", "haha_you_lose"]);
@@ -15430,14 +15435,29 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
   } else if (style.kind === "chromatic") {
     primary = getProfileCardColour("pink");
     secondary = getProfileCardColour("blue");
+  } else if (style.kind === "voidglass") {
+    primary = getProfileCardColour("blue");
+    secondary = getProfileCardColour("purple");
+  } else if (style.kind === "solarFlare") {
+    primary = getProfileCardColour("orange");
+    secondary = getProfileCardColour("gold");
+  } else if (style.kind === "holographic") {
+    primary = getProfileCardColour("blue");
+    secondary = getProfileCardColour("pink");
+  } else if (style.kind === "circuitCore") {
+    primary = getProfileCardColour("green");
+    secondary = getProfileCardColour("gold");
+  } else if (style.kind === "abyssal") {
+    primary = getProfileCardColour("blue");
+    secondary = getProfileCardColour("purple");
   }
   const pastelActive = activeEffectIds.includes("pastel");
   const primaryRgb = pastelActive && !(isGradientStyle && shouldSkipPastelForGradientColour(primary)) ? pastelRgbParts(primary.value) : hexToRgbParts(primary.value);
   const secondaryRgb = pastelActive && !(isGradientStyle && shouldSkipPastelForGradientColour(secondary)) ? pastelRgbParts(secondary.value) : hexToRgbParts(secondary.value);
-  const gradientTopRgb = style.kind === "chromatic"
+  const gradientTopRgb = isSpecialStyle
     ? primaryRgb
     : pastelActive && !shouldSkipPastelForGradientColour(gradientTop) ? pastelRgbParts(gradientTop.value) : hexToRgbParts(gradientTop.value);
-  const gradientBottomRgb = style.kind === "chromatic"
+  const gradientBottomRgb = isSpecialStyle
     ? secondaryRgb
     : pastelActive && !shouldSkipPastelForGradientColour(gradientBottom) ? pastelRgbParts(gradientBottom.value) : hexToRgbParts(gradientBottom.value);
   const patternRgb = style.kind === "black" || style.kind === "solid" && style.id === "default" ? "88 92 102" : primaryRgb;
@@ -23157,6 +23177,36 @@ function getProfileStyleSwatch(style, draft = getProfileCustomizationDraft()) {
     return {
       primary: getProfileCardColour("pink"),
       secondary: getProfileCardColour("blue")
+    };
+  }
+  if (style.kind === "voidglass") {
+    return {
+      primary: getProfileCardColour("blue"),
+      secondary: getProfileCardColour("purple")
+    };
+  }
+  if (style.kind === "solarFlare") {
+    return {
+      primary: getProfileCardColour("orange"),
+      secondary: getProfileCardColour("gold")
+    };
+  }
+  if (style.kind === "holographic") {
+    return {
+      primary: getProfileCardColour("blue"),
+      secondary: getProfileCardColour("pink")
+    };
+  }
+  if (style.kind === "circuitCore") {
+    return {
+      primary: getProfileCardColour("green"),
+      secondary: getProfileCardColour("gold")
+    };
+  }
+  if (style.kind === "abyssal") {
+    return {
+      primary: getProfileCardColour("blue"),
+      secondary: getProfileCardColour("purple")
     };
   }
   return {

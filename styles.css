@@ -8584,6 +8584,168 @@ input:focus {
   animation: none !important;
 }
 
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="voidglass"][data-card-custom="true"] {
+  border: 6px solid transparent;
+  background:
+    linear-gradient(145deg, rgba(8, 14, 24, 0.98), rgba(16, 12, 30, 0.98)),
+    linear-gradient(120deg, rgba(34, 211, 238, 0.94), rgba(167, 139, 250, 0.9) 52%, rgba(34, 211, 238, 0.94));
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.34),
+    0 0 1.25rem rgba(34, 211, 238, 0.22),
+    0 0 1.8rem rgba(167, 139, 250, 0.16);
+  animation: voidglassRefract 4200ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="voidglass"][data-card-custom="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 18%, rgba(34, 211, 238, 0.2) 42%, rgba(255, 255, 255, 0.12) 48%, rgba(167, 139, 250, 0.2) 62%, transparent 80%);
+  background-size: 220% 100%;
+  mix-blend-mode: screen;
+  opacity: 0.42;
+  animation: voidglassRefraction 3600ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="voidglass"].flying-card,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="voidglass"].flying-card::before {
+  animation: none !important;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="solar-flare"][data-card-custom="true"] {
+  border: 6px solid transparent;
+  background:
+    linear-gradient(145deg, #08090d, #160e0b 70%, #0d0a0d),
+    linear-gradient(120deg, #ff9f2f, #facc15 48%, #ff6b2f 76%, #ff9f2f);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.36),
+    0 0 1.2rem rgba(255, 159, 47, 0.2),
+    0 0 1.8rem rgba(250, 204, 21, 0.12);
+  animation: solarFlarePulse 3000ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="solar-flare"][data-card-custom="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 210, 88, 0.22), transparent 48%), linear-gradient(0deg, rgba(255, 94, 38, 0.16), transparent 62%);
+  mix-blend-mode: screen;
+  opacity: 0.46;
+  animation: solarFlareHeat 2400ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="solar-flare"].flying-card,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="solar-flare"].flying-card::before {
+  animation: none !important;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="holographic"][data-card-custom="true"] {
+  border: 6px solid transparent;
+  background:
+    linear-gradient(145deg, #080b14, #11101e 58%, #0b0f18),
+    linear-gradient(120deg, #22d3ee, #a78bfa 38%, #ff4d7d 64%, #22d3ee);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 180% 100%;
+  background-position: 0 0, 0% 50%;
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.36),
+    0 0 1.35rem rgba(34, 211, 238, 0.2),
+    0 0 1.8rem rgba(255, 77, 125, 0.14);
+  animation: holographicEdgeShift 4200ms linear infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="holographic"][data-card-custom="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 18%, rgba(34, 211, 238, 0.2) 38%, rgba(255, 255, 255, 0.15) 47%, rgba(255, 77, 125, 0.2) 62%, transparent 82%);
+  background-size: 220% 100%;
+  mix-blend-mode: screen;
+  opacity: 0.4;
+  animation: holographicFoil 3000ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="holographic"].flying-card,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="holographic"].flying-card::before {
+  animation: none !important;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] {
+  border: 6px solid transparent;
+  background:
+    linear-gradient(145deg, #07110f, #0b1516 62%, #10110c),
+    linear-gradient(120deg, #40dea4, #facc15 48%, #40dea4);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.36),
+    0 0 1.2rem rgba(64, 222, 164, 0.18),
+    0 0 1.65rem rgba(250, 204, 21, 0.12);
+  animation: circuitCorePulse 2600ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 1.1rem, rgba(64, 222, 164, 0.12) 1.1rem 1.16rem, transparent 1.16rem 2.8rem),
+    repeating-linear-gradient(0deg, transparent 0 1.2rem, rgba(250, 204, 21, 0.1) 1.2rem 1.25rem, transparent 1.25rem 2.6rem);
+  background-size: 3.6rem 100%, 100% 3.6rem;
+  mix-blend-mode: screen;
+  opacity: 0.3;
+  animation: circuitCoreTrace 3600ms linear infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card::before {
+  animation: none !important;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="abyssal"][data-card-custom="true"] {
+  border: 6px solid transparent;
+  background:
+    linear-gradient(145deg, #07111f, #0b1529 58%, #0d1022),
+    linear-gradient(120deg, #22d3ee, #8b5cf6 52%, #22d3ee);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.38),
+    0 0 1.15rem rgba(34, 211, 238, 0.16),
+    0 0 1.75rem rgba(139, 92, 246, 0.14);
+  animation: abyssalEnergy 3800ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="abyssal"][data-card-custom="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 20% 0%, rgba(34, 211, 238, 0.12), transparent 42%), radial-gradient(ellipse at 84% 100%, rgba(139, 92, 246, 0.14), transparent 48%);
+  mix-blend-mode: screen;
+  opacity: 0.46;
+  animation: abyssalCurrent 4200ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="abyssal"].flying-card,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="abyssal"].flying-card::before {
+  animation: none !important;
+}
+
 /* Chromatic is a purchasable base theme, rather than a special theme. The
    six colour stops stay fixed while their hue values advance together, so
    the colour appears to travel without moving the strip itself. */
@@ -9109,6 +9271,144 @@ input:focus {
   64% {
     opacity: 0.28;
     background-position: 120% 0;
+  }
+}
+
+@keyframes voidglassRefract {
+  0%,
+  100% {
+    filter: saturate(0.96) brightness(0.98);
+    box-shadow:
+      0 1rem 2rem rgba(0, 0, 0, 0.34),
+      0 0 1.25rem rgba(34, 211, 238, 0.2),
+      0 0 1.8rem rgba(167, 139, 250, 0.14);
+  }
+
+  50% {
+    filter: saturate(1.12) brightness(1.04);
+    box-shadow:
+      0 1rem 2rem rgba(0, 0, 0, 0.34),
+      0 0 1.55rem rgba(34, 211, 238, 0.3),
+      0 0 2.1rem rgba(167, 139, 250, 0.22);
+  }
+}
+
+@keyframes voidglassRefraction {
+  0%,
+  100% {
+    background-position: -110% 0;
+    opacity: 0.28;
+  }
+
+  48% {
+    background-position: 42% 0;
+    opacity: 0.48;
+  }
+
+  68% {
+    background-position: 120% 0;
+    opacity: 0.32;
+  }
+}
+
+@keyframes solarFlarePulse {
+  0%,
+  100% {
+    filter: brightness(0.98);
+  }
+
+  50% {
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes solarFlareHeat {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 0.58;
+  }
+}
+
+@keyframes holographicEdgeShift {
+  0%,
+  100% {
+    background-position: 0 0, 0% 50%;
+  }
+
+  50% {
+    background-position: 0 0, 100% 50%;
+  }
+}
+
+@keyframes holographicFoil {
+  0%,
+  100% {
+    background-position: -110% 0;
+    opacity: 0.26;
+  }
+
+  50% {
+    background-position: 110% 0;
+    opacity: 0.48;
+  }
+}
+
+@keyframes circuitCorePulse {
+  0%,
+  100% {
+    filter: brightness(0.98);
+  }
+
+  50% {
+    filter: brightness(1.06);
+  }
+}
+
+@keyframes circuitCoreTrace {
+  0% {
+    background-position: 0 0, 0 0;
+    opacity: 0.24;
+  }
+
+  100% {
+    background-position: 3.6rem 0, 0 3.6rem;
+    opacity: 0.42;
+  }
+}
+
+@keyframes abyssalEnergy {
+  0%,
+  100% {
+    filter: brightness(0.98) saturate(0.94);
+    box-shadow:
+      0 1rem 2rem rgba(0, 0, 0, 0.38),
+      0 0 1.15rem rgba(34, 211, 238, 0.14),
+      0 0 1.75rem rgba(139, 92, 246, 0.12);
+  }
+
+  50% {
+    filter: brightness(1.04) saturate(1.08);
+    box-shadow:
+      0 1rem 2rem rgba(0, 0, 0, 0.38),
+      0 0 1.45rem rgba(34, 211, 238, 0.24),
+      0 0 2rem rgba(139, 92, 246, 0.2);
+  }
+}
+
+@keyframes abyssalCurrent {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.54;
+    transform: scale(1.04);
   }
 }
 
@@ -12703,6 +13003,50 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     0 0 0.85rem rgba(255, 77, 125, 0.36);
 }
 
+.profile-style-option[data-profile-style-kind="voidglass"] {
+  border-color: rgba(34, 211, 238, 0.5);
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(167, 139, 250, 0.18)),
+    rgba(8, 14, 24, 0.82);
+  box-shadow: 0 0 1rem rgba(34, 211, 238, 0.16), inset 0 0 0.8rem rgba(167, 139, 250, 0.08);
+}
+
+.profile-style-option[data-profile-style-kind="solarFlare"] {
+  border-color: rgba(255, 159, 47, 0.58);
+  background:
+    radial-gradient(circle at 50% 100%, rgba(255, 210, 88, 0.28), transparent 44%),
+    linear-gradient(135deg, rgba(255, 94, 38, 0.2), rgba(250, 204, 21, 0.1)),
+    rgba(8, 9, 13, 0.82);
+  box-shadow: 0 0 1rem rgba(255, 159, 47, 0.18);
+}
+
+.profile-style-option[data-profile-style-kind="holographic"] {
+  border-color: rgba(34, 211, 238, 0.56);
+  background:
+    linear-gradient(120deg, rgba(34, 211, 238, 0.2), rgba(167, 139, 250, 0.16), rgba(255, 77, 125, 0.2)),
+    rgba(8, 11, 20, 0.82);
+  background-size: 180% 100%;
+  animation: holographicEdgeShift 4200ms linear infinite;
+}
+
+.profile-style-option[data-profile-style-kind="circuitCore"] {
+  border-color: rgba(64, 222, 164, 0.54);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 0.8rem, rgba(64, 222, 164, 0.12) 0.8rem 0.86rem, transparent 0.86rem 1.8rem),
+    linear-gradient(135deg, rgba(64, 222, 164, 0.18), rgba(250, 204, 21, 0.1)),
+    rgba(7, 17, 15, 0.84);
+  box-shadow: 0 0 1rem rgba(64, 222, 164, 0.14);
+}
+
+.profile-style-option[data-profile-style-kind="abyssal"] {
+  border-color: rgba(139, 92, 246, 0.56);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.16), transparent 38%),
+    linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(139, 92, 246, 0.18)),
+    rgba(7, 17, 31, 0.88);
+  box-shadow: 0 0 1rem rgba(139, 92, 246, 0.16);
+}
+
 .profile-style-option[data-profile-style-kind="neon"] {
   background:
     radial-gradient(circle at 18% 16%, rgb(var(--style-swatch-rgb, 34 211 238) / 0.22), transparent 38%),
@@ -13561,6 +13905,58 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     linear-gradient(120deg, #ff4d7d 0%, #ff9f2f 18%, #facc15 35%, #40dea4 52%, #22d3ee 70%, #a78bfa 86%, #ff4d7d 100%);
   background-size: 100% 100%;
   animation: chromaticPreviewFlow 4200ms linear infinite;
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="voidglass"] .profile-shop-preview {
+  border-color: rgba(34, 211, 238, 0.5);
+  box-shadow: 0 0 0.8rem rgba(34, 211, 238, 0.16);
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="voidglass"] .profile-shop-preview::before {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.82), rgba(167, 139, 250, 0.82), rgba(34, 211, 238, 0.82));
+  animation: voidglassRefraction 3600ms ease-in-out infinite;
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="solarFlare"] .profile-shop-preview {
+  border-color: rgba(255, 159, 47, 0.56);
+  box-shadow: 0 0 0.8rem rgba(255, 159, 47, 0.16);
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="solarFlare"] .profile-shop-preview::before {
+  background: linear-gradient(135deg, #ff6b2f, #facc15, #ff9f2f);
+  animation: solarFlareHeat 2400ms ease-in-out infinite;
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="holographic"] .profile-shop-preview {
+  border-color: rgba(34, 211, 238, 0.56);
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="holographic"] .profile-shop-preview::before {
+  background: linear-gradient(120deg, #22d3ee, #a78bfa 38%, #ff4d7d 64%, #22d3ee);
+  background-size: 180% 100%;
+  animation: holographicEdgeShift 4200ms linear infinite;
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="circuitCore"] .profile-shop-preview {
+  border-color: rgba(64, 222, 164, 0.54);
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="circuitCore"] .profile-shop-preview::before {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 0.55rem, rgba(64, 222, 164, 0.76) 0.55rem 0.62rem, transparent 0.62rem 1.4rem),
+    linear-gradient(135deg, rgba(64, 222, 164, 0.88), rgba(250, 204, 21, 0.78));
+  background-size: 1.8rem 100%, 100% 100%;
+  animation: circuitCoreTrace 3600ms linear infinite;
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="abyssal"] .profile-shop-preview {
+  border-color: rgba(139, 92, 246, 0.56);
+  box-shadow: 0 0 0.8rem rgba(139, 92, 246, 0.16);
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="abyssal"] .profile-shop-preview::before {
+  background: linear-gradient(135deg, #0c6f91, #8b5cf6, #22d3ee);
+  animation: abyssalCurrent 4200ms ease-in-out infinite;
 }
 
 .profile-shop-copy {
@@ -14835,6 +15231,13 @@ body[data-performance-mode="balanced"][data-game-active]
   :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]::before,
 body[data-performance-mode="balanced"][data-game-active]
   :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]::after {
+  animation-play-state: paused !important;
+}
+
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]),
+body[data-performance-mode="balanced"][data-game-active]
+  :is(.white-card, .black-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"])::before {
   animation-play-state: paused !important;
 }
 
