@@ -5550,6 +5550,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-card[data-category="disruption"],
 .ability-card[data-category="disruption"] {
   --power-category-icon: url("assets/overlays/flash.svg");
+  --power-category-icon-size: min(34%, 3.5rem);
   --power-category-rgb: 255 77 125;
 }
 
