@@ -5537,6 +5537,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-card[data-category="chaos"],
 .ability-card[data-category="chaos"] {
   --power-category-icon: url("assets/modifiers/dice.svg");
+  --power-category-icon-size: min(30%, 3.1rem);
   --power-category-rgb: 168 85 247;
 }
 
@@ -5550,7 +5551,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-card[data-category="disruption"],
 .ability-card[data-category="disruption"] {
   --power-category-icon: url("assets/overlays/flash.svg");
-  --power-category-icon-size: min(34%, 3.5rem);
+  --power-category-icon-size: min(26%, 2.7rem);
   --power-category-rgb: 255 77 125;
 }
 
