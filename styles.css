@@ -6813,7 +6813,7 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 }
 
 .question-hint {
-  margin: 0.8rem 0 0;
+  margin: 1.05rem 0 0;
   padding-top: 0.7rem;
   border-top: 1px solid rgba(255, 213, 102, 0.28);
   color: #ffe9a8;
