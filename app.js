@@ -511,12 +511,8 @@ function getPowerCategory(powerOrId) {
   const power = typeof powerOrId === "string"
     ? powerMap[String(powerOrId).replace(new RegExp(`${chaosInfusedPowerSuffix}$`), "")]
     : powerOrId;
-  const powerId = String(powerOrId?.id || powerOrId || "");
   if (power?.rarity === "doom" || power?.doom) {
     return "doom";
-  }
-  if (powerId.endsWith(chaosInfusedPowerSuffix) || power?.chaosInfused) {
-    return "chaos";
   }
   if (power?.targeted) {
     return "target";

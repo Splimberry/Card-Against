@@ -5508,9 +5508,11 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .power-card .power-category-mark {
   right: 0.25rem;
-  bottom: 0.16rem;
+  top: 50%;
+  bottom: auto;
   width: min(52%, 5rem);
   aspect-ratio: 1;
+  transform: translateY(-50%);
 }
 
 .power-card > .power-category-mark {
@@ -5519,10 +5521,12 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .ability-card .power-category-mark {
   right: 0.28rem;
-  bottom: 0.18rem;
+  top: 50%;
+  bottom: auto;
   width: min(44%, 4.2rem);
   aspect-ratio: 1;
   opacity: 0.25;
+  transform: translateY(-50%);
 }
 
 .power-card[data-category="defense"],
