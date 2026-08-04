@@ -486,25 +486,31 @@ const powerCategoryTypeSets = Object.freeze({
   ]),
   boost: new Set([
     "afterparty", "airdrop", "arsonist", "bartender", "blessing", "bottom_feeder", "bounty",
-    "gamblers_dream", "magic_8", "rocket", "sin_pride", "speed_answer", "vulture"
+    "blue_pill", "communism", "gamblers_dream", "magic_8", "rocket", "sin_pride", "speed_answer", "vulture"
   ]),
   disruption: new Set([
     "basic_sabotage", "big_sabotage", "crawler_virus", "dead_weight", "execution", "freeze_ray",
     "get_good", "hard_reset", "hitman", "law_mower", "lawsuit", "lightning_strike", "loser_tax",
-    "monopoly", "penalty_cloud", "power_heist", "shameless", "shock_bomb", "sin_envy", "software_downgrade",
-    "tax_collector", "thorns", "virus_deployment", "world_burn", "zap_strike"
+    "monopoly", "nail_coffin", "no_one_wins", "penalty_cloud", "power_heist", "shameless", "shock_bomb",
+    "sin_envy", "software_downgrade", "tax_collector", "thorns", "typhoon_season", "virus_deployment",
+    "world_burn", "zap_strike"
   ]),
   risk: new Set([
     "bribe", "bribe_judge", "double_jeopardy", "heaven_hell", "hot_potato", "last_chance",
-    "sin_gluttony", "sin_sloth", "sin_wrath", "time_bomb", "void_bomb"
+    "insurance_fraud", "sin_gluttony", "sin_sloth", "sin_wrath", "time_bomb", "void_bomb"
   ]),
   chaos: new Set([
-    "cocktail_mix", "curse", "gamblers_dice", "loose_cannon", "reign_chaos", "virus_factory"
+    "cocktail_mix", "crawler_virus", "curse", "gamblers_dice", "loose_cannon", "reign_chaos", "virus_factory"
   ]),
+  time: new Set(["time_bender"]),
   utility: new Set([
     "ability_merchant", "ai_answer", "all_out", "cheat_sheet", "mirror", "multiple_choice", "next_question",
     "premium_shuffle", "recycle_bin", "shuffle", "vending_machine", "xray_hacks"
   ])
+});
+const powerCategoryOverrides = Object.freeze({
+  next_question: "utility",
+  time_bender: "time"
 });
 
 function getPowerCategory(powerOrId) {
@@ -514,11 +520,14 @@ function getPowerCategory(powerOrId) {
   if (power?.rarity === "doom" || power?.doom) {
     return "doom";
   }
+  const type = String(power?.type || "");
+  if (powerCategoryOverrides[type]) {
+    return powerCategoryOverrides[type];
+  }
   if (power?.targeted) {
     return "target";
   }
-  const type = String(power?.type || "");
-  for (const category of ["defense", "boost", "disruption", "risk", "chaos", "utility"]) {
+  for (const category of ["defense", "boost", "disruption", "risk", "chaos", "time", "utility"]) {
     if (powerCategoryTypeSets[category].has(type)) {
       return category;
     }
@@ -4187,6 +4196,7 @@ const elements = {
   cancelEndButton: document.querySelector("#cancelEndButton"),
   confirmEndButton: document.querySelector("#confirmEndButton"),
   targetModal: document.querySelector("#targetModal"),
+  targetModalEyebrow: document.querySelector("#targetModalEyebrow"),
   targetTitle: document.querySelector("#targetTitle"),
   targetSelectionHint: document.querySelector("#targetSelectionHint"),
   targetList: document.querySelector("#targetList"),
@@ -23987,42 +23997,184 @@ function openMultipleChoiceSelector(owner, power, powerId) {
   playSound("click");
 }
 
-function renderXrayResult(owner, targetOwner, powerNames) {
+function resolveRevealedPower(powerEntry) {
+  if (powerEntry && typeof powerEntry === "object") {
+    const powerId = powerEntry.powerId || powerEntry.id || "";
+    const power = getPowerById(powerId);
+    if (power) {
+      return power;
+    }
+    powerEntry = powerEntry.name || powerId;
+  }
+
+  const value = String(powerEntry || "").trim();
+  if (!value) {
+    return null;
+  }
+  const directPower = getPowerById(value);
+  if (directPower) {
+    return directPower;
+  }
+  const basePower = powerDeck.find((power) => power.name === value);
+  if (basePower) {
+    return basePower;
+  }
+  const chaosPower = powerDeck.find((power) => chaosInfusedPowerOverrides[power.id]?.name === value);
+  return chaosPower ? getPowerById(getChaosInfusedPowerId(chaosPower.id)) : null;
+}
+
+function createXrayPowerCard(powerEntry) {
+  const power = resolveRevealedPower(powerEntry);
+  const fallbackName = typeof powerEntry === "object"
+    ? powerEntry.name || powerEntry.powerId || powerEntry.id
+    : powerEntry;
+  const card = document.createElement("article");
+  card.className = "xray-power-card";
+
+  if (!power) {
+    card.classList.add("unresolved");
+    const icon = document.createElement("span");
+    icon.className = "xray-power-icon";
+    icon.textContent = "?";
+    icon.setAttribute("aria-hidden", "true");
+    const copy = document.createElement("div");
+    copy.className = "xray-power-copy";
+    const name = document.createElement("strong");
+    name.textContent = fallbackName || "Unknown power-up";
+    const description = document.createElement("p");
+    description.textContent = "Power details are unavailable for this revealed card.";
+    copy.append(name, description);
+    card.append(icon, copy);
+    return card;
+  }
+
+  const category = getPowerCategory(power);
+  const categoryInfo = powerCategoryInfo[category] || powerCategoryInfo.utility;
+  const chaosInfused = isChaosInfusedPower(power);
+  card.dataset.rarity = power.rarity;
+  card.dataset.category = category;
+  card.classList.toggle("chaos-infused", chaosInfused);
+
+  const icon = document.createElement("span");
+  icon.className = "xray-power-icon";
+  icon.dataset.category = category;
+  const iconImage = document.createElement("img");
+  iconImage.src = categoryInfo.icon;
+  iconImage.alt = "";
+  iconImage.setAttribute("aria-hidden", "true");
+  icon.appendChild(iconImage);
+
+  const copy = document.createElement("div");
+  copy.className = "xray-power-copy";
+  const heading = document.createElement("div");
+  heading.className = "xray-power-heading";
+  const name = document.createElement("strong");
+  name.textContent = power.name;
+  heading.appendChild(name);
+
+  const badges = document.createElement("span");
+  badges.className = "xray-power-badges";
+  const rarity = document.createElement("span");
+  rarity.className = "xray-power-rarity";
+  rarity.textContent = rarityInfo[power.rarity]?.label || "Power-up";
+  const type = document.createElement("span");
+  type.className = "xray-power-category";
+  type.textContent = categoryInfo.label;
+  badges.append(rarity, type);
+  if (chaosInfused) {
+    const chaos = document.createElement("span");
+    chaos.className = "xray-power-chaos";
+    chaos.textContent = "Chaos";
+    badges.appendChild(chaos);
+  }
+  heading.appendChild(badges);
+
+  const short = document.createElement("span");
+  short.className = "xray-power-short";
+  short.textContent = power.short || "Power-up effect";
+  const description = document.createElement("p");
+  description.textContent = power.description || "Effect details unavailable.";
+  copy.append(heading, short, description);
+  card.append(icon, copy);
+  return card;
+}
+
+function renderXrayResult(owner, targetOwner, powerEntries) {
+  elements.targetModalEyebrow.textContent = "X-Ray scan";
   elements.targetTitle.textContent = `X-Ray Hacks: ${getOwnerLabel(targetOwner)}`;
   elements.targetModal.dataset.mode = "xray-result";
   elements.targetModal.dataset.owner = owner;
   elements.targetModal.dataset.power = "xray_hacks";
   elements.targetList.replaceChildren();
+
+  const targetSection = document.createElement("section");
+  targetSection.className = "xray-target-section";
+  const targetLabel = document.createElement("p");
+  targetLabel.className = "xray-section-label";
+  targetLabel.textContent = "Choose a hand to inspect";
+  const targetGrid = document.createElement("div");
+  targetGrid.className = "xray-target-grid";
   getActiveOwners()
     .filter((participant) => participant !== owner)
     .forEach((participant) => {
       const player = getPlayer(participant);
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "target-option";
+      button.className = "target-option xray-target-option";
       button.dataset.targetOwner = participant;
+      const isViewing = participant === targetOwner;
+      button.classList.toggle("active", isViewing);
+      if (isViewing) {
+        button.setAttribute("aria-current", "true");
+      }
       const avatar = document.createElement("span");
       avatar.className = "room-player-avatar";
       renderAvatar(avatar, player || { label: getOwnerLabel(participant) });
-      const copy = createTargetPlayerCopy(player, participant, participant === targetOwner ? "Viewing now" : "Click to reveal");
+      const copy = createTargetPlayerCopy(player, participant, isViewing ? "Viewing now" : "Click to reveal");
       button.append(avatar, copy);
-      elements.targetList.appendChild(button);
+      targetGrid.appendChild(button);
     });
-  const list = powerNames.length ? powerNames : ["No power-ups"];
-  const resultHeader = document.createElement("div");
-  resultHeader.className = "target-option readonly xray-result-heading";
-  resultHeader.appendChild(createTargetPlayerCopy(getPlayer(targetOwner), targetOwner, "revealed hand"));
-  elements.targetList.appendChild(resultHeader);
-  list.forEach((name) => {
-    const item = document.createElement("div");
-    item.className = "target-option readonly";
-    item.innerHTML = `<span><strong>${name}</strong></span>`;
-    elements.targetList.appendChild(item);
-  });
+  targetSection.append(targetLabel, targetGrid);
+  elements.targetList.appendChild(targetSection);
+
+  const list = Array.isArray(powerEntries) ? powerEntries : [];
+  const handSection = document.createElement("section");
+  handSection.className = "xray-hand-section";
+  const handHeader = document.createElement("div");
+  handHeader.className = "xray-hand-header";
+  const handIcon = document.createElement("span");
+  handIcon.className = "xray-hand-icon";
+  const handIconImage = document.createElement("img");
+  handIconImage.src = "assets/eye.svg";
+  handIconImage.alt = "";
+  handIconImage.setAttribute("aria-hidden", "true");
+  handIcon.appendChild(handIconImage);
+  const handCopy = createTargetPlayerCopy(
+    getPlayer(targetOwner),
+    targetOwner,
+    `${list.length} power-up${list.length === 1 ? "" : "s"} revealed`
+  );
+  handHeader.append(handIcon, handCopy);
+  const handLabel = document.createElement("p");
+  handLabel.className = "xray-section-label";
+  handLabel.textContent = "Power hand";
+  const powerList = document.createElement("div");
+  powerList.className = "xray-power-list";
+  if (!list.length) {
+    const empty = document.createElement("p");
+    empty.className = "xray-empty-hand";
+    empty.textContent = "This player has no power-ups remaining.";
+    powerList.appendChild(empty);
+  } else {
+    list.forEach((entry) => powerList.appendChild(createXrayPowerCard(entry)));
+  }
+  handSection.append(handHeader, handLabel, powerList);
+  elements.targetList.appendChild(handSection);
   setHidden(elements.targetModal, false);
 }
 
 function closeTargetSelector() {
+  elements.targetModalEyebrow.textContent = "Choose target";
   elements.targetModal.dataset.owner = "";
   elements.targetModal.dataset.power = "";
   elements.targetModal.dataset.mode = "";
@@ -24176,20 +24328,18 @@ function completeTargetSelection(targetOwnerOrTargets) {
   }
 
   if (power.type === "xray_hacks") {
-    const powerNames = (state.powerHands[targetOwner] || [])
-      .map((id) => getPowerById(id)?.name)
-      .filter(Boolean);
+    const revealedPowerIds = [...(state.powerHands[targetOwner] || [])];
     if (state.powerHands[owner]?.includes(powerId) && canPlayPower(owner)) {
       playSound("targetSelect");
-      consumeImmediatePower(owner, power, { targetOwner, revealedPowers: powerNames, suppressSound: true });
+      consumeImmediatePower(owner, power, { targetOwner, revealedPowers: revealedPowerIds, suppressSound: true });
     } else {
       state.playedPowerMeta[owner] = {
         ...(state.playedPowerMeta[owner] || {}),
         targetOwner,
-        revealedPowers: powerNames
+        revealedPowers: revealedPowerIds
       };
     }
-    renderXrayResult(owner, targetOwner, powerNames);
+    renderXrayResult(owner, targetOwner, revealedPowerIds);
     return;
   }
 
@@ -26186,7 +26336,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "xray_hacks") {
     const target = meta.targetOwner;
-    const revealed = meta.revealedPowers || (state.powerHands[target] || []).map((id) => getPowerById(id)?.name).filter(Boolean);
+    const revealed = meta.revealedPowers || (state.powerHands[target] || []).slice();
     delete state.allOutRounds[owner];
     state.extraPowerUses[owner] = 0;
     state.playedPowerMeta[owner] = {
