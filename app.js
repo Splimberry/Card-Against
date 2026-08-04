@@ -476,6 +476,7 @@ const powerCategoryInfo = Object.freeze({
   chaos: { label: "Chaos", icon: "assets/modifiers/dice.svg" },
   disruption: { label: "Disruption", icon: "assets/overlays/flash.svg" },
   risk: { label: "Risk", icon: "assets/overlays/bomb.svg" },
+  time: { label: "Time", icon: "assets/modifiers/stop-watch.svg" },
   utility: { label: "Utility", icon: "assets/overlays/store.svg" },
   doom: { label: "Doom", icon: "assets/modifiers/skull.svg" }
 });
@@ -489,7 +490,7 @@ const powerCategoryTypeSets = Object.freeze({
     "blue_pill", "communism", "gamblers_dream", "magic_8", "rocket", "sin_pride", "speed_answer", "vulture"
   ]),
   disruption: new Set([
-    "basic_sabotage", "big_sabotage", "crawler_virus", "dead_weight", "execution", "freeze_ray",
+    "basic_sabotage", "big_sabotage", "dead_weight", "execution", "freeze_ray",
     "get_good", "hard_reset", "hitman", "law_mower", "lawsuit", "lightning_strike", "loser_tax",
     "monopoly", "nail_coffin", "no_one_wins", "penalty_cloud", "power_heist", "shameless", "shock_bomb",
     "sin_envy", "software_downgrade", "tax_collector", "thorns", "typhoon_season", "virus_deployment",
