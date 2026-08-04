@@ -419,11 +419,13 @@
               <p class="eyebrow">Your answer</p>
               <h2 id="inputTitle">Answer the trivia question.</h2>
             </div>
-            <button type="button" class="hint-button" id="hintButton" aria-describedby="questionHint">
-              <span>Hint</span>
-              <img src="assets/ui/lighting-bulb.svg" alt="" aria-hidden="true">
-            </button>
-            <div class="table-event-actions hidden" id="tableEventActionPanel"></div>
+            <div class="input-panel-actions" role="group" aria-label="Round tools">
+              <div class="table-event-actions hidden" id="tableEventActionPanel"></div>
+              <button type="button" class="hint-button" id="hintButton" aria-describedby="questionHint">
+                <span>Hint</span>
+                <img src="assets/ui/lighting-bulb.svg" alt="" aria-hidden="true">
+              </button>
+            </div>
             <form id="answerForm">
               <div class="input-fields">
                 <label class="sr-only" for="answerInput">Player 1 phrase</label>

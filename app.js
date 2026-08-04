@@ -11386,8 +11386,18 @@ function renderTableEventControls() {
   if (event.id === "black_market") {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "table-event-button black-market-button";
-    button.textContent = "Black Market";
+    button.className = "table-event-button table-event-icon-button black-market-button";
+    button.setAttribute("aria-label", "Open Black Market");
+    button.dataset.description = "Open Black Market to buy a power-up.";
+    const icon = document.createElement("img");
+    icon.src = "assets/overlays/store.svg";
+    icon.alt = "";
+    icon.setAttribute("aria-hidden", "true");
+    const label = document.createElement("span");
+    label.className = "sr-only";
+    label.textContent = "Black Market";
+    button.append(icon, label);
+    attachFloatingDescriptionTooltip(button);
     button.addEventListener("click", () => openBlackMarketSelector(owner));
     elements.tableEventActionPanel.appendChild(button);
   }
@@ -11395,9 +11405,21 @@ function renderTableEventControls() {
     const used = Boolean(state.tableEventSabotageUsed[owner]);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "table-event-button sabotage-button";
-    button.textContent = used ? "Sabotage Used" : "Sabotage";
+    button.className = "table-event-button table-event-icon-button sabotage-button";
+    button.setAttribute("aria-label", used ? "Sabotage Used" : "Open Sabotage");
+    button.dataset.description = used
+      ? "Sabotage has already been used this round."
+      : "Choose a player to sabotage this round.";
+    const icon = document.createElement("img");
+    icon.src = "assets/overlays/customer.svg";
+    icon.alt = "";
+    icon.setAttribute("aria-hidden", "true");
+    const label = document.createElement("span");
+    label.className = "sr-only";
+    label.textContent = used ? "Sabotage Used" : "Sabotage";
+    button.append(icon, label);
     button.disabled = used;
+    attachFloatingDescriptionTooltip(button);
     button.addEventListener("click", () => openTableSabotageSelector(owner));
     elements.tableEventActionPanel.appendChild(button);
   }
