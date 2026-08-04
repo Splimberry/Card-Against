@@ -15427,12 +15427,19 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
   } else if (style.kind === "doom") {
     primary = getProfileCardColour("pink");
     secondary = getProfileCardColour("purple");
+  } else if (style.kind === "chromatic") {
+    primary = getProfileCardColour("pink");
+    secondary = getProfileCardColour("blue");
   }
   const pastelActive = activeEffectIds.includes("pastel");
   const primaryRgb = pastelActive && !(isGradientStyle && shouldSkipPastelForGradientColour(primary)) ? pastelRgbParts(primary.value) : hexToRgbParts(primary.value);
   const secondaryRgb = pastelActive && !(isGradientStyle && shouldSkipPastelForGradientColour(secondary)) ? pastelRgbParts(secondary.value) : hexToRgbParts(secondary.value);
-  const gradientTopRgb = pastelActive && !shouldSkipPastelForGradientColour(gradientTop) ? pastelRgbParts(gradientTop.value) : hexToRgbParts(gradientTop.value);
-  const gradientBottomRgb = pastelActive && !shouldSkipPastelForGradientColour(gradientBottom) ? pastelRgbParts(gradientBottom.value) : hexToRgbParts(gradientBottom.value);
+  const gradientTopRgb = style.kind === "chromatic"
+    ? primaryRgb
+    : pastelActive && !shouldSkipPastelForGradientColour(gradientTop) ? pastelRgbParts(gradientTop.value) : hexToRgbParts(gradientTop.value);
+  const gradientBottomRgb = style.kind === "chromatic"
+    ? secondaryRgb
+    : pastelActive && !shouldSkipPastelForGradientColour(gradientBottom) ? pastelRgbParts(gradientBottom.value) : hexToRgbParts(gradientBottom.value);
   const patternRgb = style.kind === "black" || style.kind === "solid" && style.id === "default" ? "88 92 102" : primaryRgb;
   const primaryCss = rgbPartsToCss(primaryRgb);
   const secondaryCss = rgbPartsToCss(secondaryRgb);
@@ -15452,8 +15459,8 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
             : style.kind === "doom"
               ? `repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 0.48rem), linear-gradient(105deg, rgb(72 8 30 / 0.98), rgb(20 4 18 / 0.98) 48%, rgb(57 10 78 / 0.98))`
             : defaultBackgroundLayer;
-  const background = themeBackground;
-  const rgbBackground = themeBackground;
+  const background = style.kind === "chromatic" ? "var(--chromatic-surface-gradient)" : themeBackground;
+  const rgbBackground = style.kind === "chromatic" ? "var(--chromatic-surface-gradient)" : themeBackground;
   card.style.setProperty("--custom-card-bg", background);
   card.style.setProperty("--custom-card-rgb-bg", rgbBackground);
   card.style.setProperty("--custom-card-rim", primaryCss);

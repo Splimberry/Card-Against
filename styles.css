@@ -8592,7 +8592,13 @@ input:focus {
   --chromatic-green-glow: hsl(calc(156deg + var(--chromatic-hue)) 62% 58% / 0.14);
   --chromatic-cyan-glow: hsl(calc(187deg + var(--chromatic-hue)) 72% 58% / 0.17);
   --chromatic-purple-glow: hsl(calc(255deg + var(--chromatic-hue)) 78% 70% / 0.14);
-  --chromatic-surface-gradient: linear-gradient(145deg, rgba(8, 10, 18, 0.98), rgba(13, 15, 26, 0.98));
+  --chromatic-text-red-glow: hsl(calc(345deg + var(--chromatic-hue)) 84% 64% / 0.44);
+  --chromatic-text-cyan-glow: hsl(calc(187deg + var(--chromatic-hue)) 72% 58% / 0.3);
+  --chromatic-text-purple-glow: hsl(calc(255deg + var(--chromatic-hue)) 78% 70% / 0.22);
+  --chromatic-surface-gradient:
+    radial-gradient(circle at 16% 8%, var(--chromatic-purple-glow), transparent 46%),
+    radial-gradient(circle at 86% 92%, var(--chromatic-cyan-glow), transparent 48%),
+    linear-gradient(145deg, rgba(8, 10, 18, 0.98), rgba(13, 15, 26, 0.98));
   --chromatic-border-gradient: linear-gradient(120deg,
     var(--chromatic-red) 0%,
     var(--chromatic-orange) 18%,
@@ -8655,6 +8661,9 @@ input:focus {
   --chromatic-green-glow: hsl(calc(155deg + var(--chromatic-hue)) 52% 76% / 0.18);
   --chromatic-cyan-glow: hsl(calc(187deg + var(--chromatic-hue)) 62% 76% / 0.2);
   --chromatic-purple-glow: hsl(calc(256deg + var(--chromatic-hue)) 62% 82% / 0.16);
+  --chromatic-text-red-glow: hsl(calc(340deg + var(--chromatic-hue)) 72% 78% / 0.34);
+  --chromatic-text-cyan-glow: hsl(calc(187deg + var(--chromatic-hue)) 62% 76% / 0.24);
+  --chromatic-text-purple-glow: hsl(calc(256deg + var(--chromatic-hue)) 62% 82% / 0.2);
   --chromatic-border-gradient: linear-gradient(120deg,
     var(--chromatic-red) 0%,
     var(--chromatic-orange) 18%,
@@ -8671,6 +8680,24 @@ input:focus {
     0 0 1.2rem var(--chromatic-green-glow),
     0 0 1.3rem var(--chromatic-cyan-glow),
     0 0 1.4rem var(--chromatic-purple-glow);
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="text-glow"]
+  :is(.answer-owner .name-with-title-text, .answer-owner > span:last-child, .profile-name-display .name-with-title-text, .name-with-title-text, .equipped-title-pill, .rating-badge, h2, p, strong, label, input, small, button, .leaderboard-rank, .leaderboard-name, .leaderboard-streak, em) {
+  text-shadow:
+    0 0 0.4rem rgba(255, 255, 255, 0.34),
+    0 0 0.95rem var(--chromatic-text-red-glow),
+    0 0 1.6rem var(--chromatic-text-cyan-glow),
+    0 0 2rem var(--chromatic-text-purple-glow);
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="text-glow"]
+  :is(.special-player-badge, .bot-player-badge, .host-player-badge) {
+  filter:
+    drop-shadow(0 0 0.34rem rgba(255, 255, 255, 0.32))
+    drop-shadow(0 0 0.82rem var(--chromatic-text-red-glow))
+    drop-shadow(0 0 1.18rem var(--chromatic-text-cyan-glow))
+    drop-shadow(0 0 1.38rem var(--chromatic-text-purple-glow));
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]
