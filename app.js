@@ -8391,19 +8391,25 @@ function getRoundRecapRowsFromSummary(resultSummary = null, awarded = null, winn
   }
   const deltaByOwner = new Map(
     (Array.isArray(resultSummary.scoreDeltas) ? resultSummary.scoreDeltas : [])
-      .map((entry) => [entry.owner || getRoomOwnerForParticipantId(entry.participantId), entry])
+      .map((entry) => [getRoomOwnerForParticipantId(entry.participantId) || entry.owner, entry])
       .filter(([owner]) => owner)
   );
   const winningSet = new Set(awarded?.winningOwners || [winnerOwner]);
   const rows = resultSummary.leaderboard
     .map((entry) => {
-      const owner = entry.owner || getRoomOwnerForParticipantId(entry.participantId);
-      if (!owner || !getPlayer(owner)) {
+      // Owners in a room result are named from the host's browser. Participant
+      // ids are the portable identity shared by every browser in the room.
+      const participantId = String(entry.participantId || "").trim();
+      const owner = getRoomOwnerForParticipantId(participantId) || entry.owner;
+      const player = getPlayer(owner)
+        || (participantId ? getRoomPlayerForModeration(owner, participantId) : null);
+      if (!owner || !player) {
         return null;
       }
       const deltaEntry = deltaByOwner.get(owner) || {};
       return {
         owner,
+        player,
         label: entry.label || getOwnerLabel(owner),
         score: Number.isFinite(Number(entry.score)) ? Number(entry.score) : getScore(owner),
         displayScore: entry.displayScore || getDisplayScoreText(owner),
@@ -8472,11 +8478,16 @@ function renderRoundRecap(awarded, winnerOwner, rating, resultSummary = null) {
       const item = document.createElement("div");
       item.className = "trivia-result-row";
       item.dataset.owner = row.owner;
-      item.dataset.participantId = getPlayer(row.owner)?.participantId || "";
+      const rowPlayer = row.player || getPlayer(row.owner);
+      item.dataset.participantId = rowPlayer?.participantId || "";
       item.classList.toggle("correct", row.correct);
       item.classList.toggle("incorrect", !row.correct);
       item.classList.toggle("disconnected-player", Boolean(row.disconnected));
-      applyOwnerCustomizationSurface(item, row.owner);
+      if (getPlayer(row.owner)) {
+        applyOwnerCustomizationSurface(item, row.owner);
+      } else {
+        applyProfileCustomizationSurface(item, rowPlayer?.cardCustomization || defaultProfileCustomization);
+      }
       item.classList.toggle("kickable-bot", canKickRoomBot(row.owner, item.dataset.participantId));
       if (canKickRoomBot(row.owner, item.dataset.participantId)) {
         item.dataset.tooltip = "Click to kick this bot from the room.";
@@ -8485,9 +8496,9 @@ function renderRoundRecap(awarded, winnerOwner, rating, resultSummary = null) {
       rank.textContent = `#${index + 1}`;
       const avatar = document.createElement("span");
       avatar.className = "result-player-avatar";
-      renderAvatar(avatar, getPlayer(row.owner) || { label: row.label });
+      renderAvatar(avatar, rowPlayer || { label: row.label });
       const name = document.createElement("strong");
-      renderPlayerNameWithTitle(name, row.owner, row.label);
+      renderPlayerNameWithTitle(name, rowPlayer || row.owner, row.label);
       const namePower = document.createElement("div");
       namePower.className = "result-name-power";
       const score = document.createElement("em");
@@ -39443,6 +39454,11 @@ async function advanceAfterVerdict(options = {}) {
     updateNextRoundButtonLabel();
     return;
   }
+  // Auto-advance and a near-simultaneous host click can otherwise create two
+  // transitions for the same verdict and skip or strand the next round.
+  if (isRoomMode() && state.roomRoundTransitionPromise) {
+    return;
+  }
   stopNextRoundCountdown();
   closeOverlayMenus();
   if (state.round >= state.maxRounds) {
@@ -39457,7 +39473,20 @@ async function advanceAfterVerdict(options = {}) {
     });
     state.round = nextRound;
     void newRound();
-    const advance = await advancePromise;
+    let advance = await advancePromise;
+    if (!advance && state.round === nextRound) {
+      // The server may have committed the transition even when the response
+      // was lost, so retry the idempotent command once before leaving the host
+      // on the loading screen. Normal transitions still use one request.
+      const retry = publishRoomRoundAdvancing(nextRound, {
+        autoAdvance: Boolean(options.autoAdvance)
+      });
+      advance = await retry;
+      if (advance?.ok) {
+        void newRound();
+        return;
+      }
+    }
     if (!advance && state.round === nextRound) {
       addSystemChat("Could not sync the next round yet. Try again in a moment.", { private: true });
       updateNextRoundButtonLabel();
