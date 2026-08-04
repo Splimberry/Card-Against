@@ -8575,6 +8575,15 @@ input:focus {
   z-index: 2;
 }
 
+/* The takeover clone is driven by Web Animations. Doom's idle glitch also
+   writes transform, so pause it on the clone until the card reaches the
+   question card and is removed. */
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card::before,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card::after {
+  animation: none !important;
+}
+
 /* Chromatic is a purchasable base theme, rather than a special theme. The
    six colour stops stay fixed while their hue values advance together, so
    the colour appears to travel without moving the strip itself. */
