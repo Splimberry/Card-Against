@@ -5028,13 +5028,18 @@ function showQuestionHint(text = "") {
   const hintText = String(text || "").trim();
   if (!hintText) {
     questionHint.textContent = "";
+    questionHint.classList.remove("hint-arrived");
     setHidden(questionHint, true);
     scheduleBlackCardFit();
     return;
   }
   const beforeHeight = blackCard.getBoundingClientRect().height;
+  const hintChanged = questionHint.textContent !== `Hint: ${hintText}`;
   questionHint.textContent = `Hint: ${hintText}`;
   setHidden(questionHint, false);
+  if (hintChanged) {
+    restartAnimation(questionHint, "hint-arrived");
+  }
   animateBlackCardToNaturalHeightAfterLayout(blackCard, beforeHeight, {
     allowShrink: false,
     durationMs: 520
