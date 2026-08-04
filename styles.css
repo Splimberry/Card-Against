@@ -5530,6 +5530,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-card[data-category="boost"],
 .ability-card[data-category="boost"] {
   --power-category-icon: url("assets/overlays/coin.svg");
+  --power-category-icon-size: min(30%, 3.1rem);
   --power-category-rgb: 251 191 36;
 }
 
@@ -10674,6 +10675,13 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .target-panel {
   width: min(100%, 38rem);
+  position: relative;
+  isolation: isolate;
+  animation: targetPanelIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.closing .target-panel {
+  animation: targetPanelOut 260ms ease-in both;
 }
 
 .target-modal[data-mode="theme"] .target-panel {
@@ -10935,7 +10943,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   min-width: 0;
   padding: 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-left-width: 3px;
+  border-left-width: 1px;
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.055);
 }
@@ -11175,6 +11183,64 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 850;
+}
+
+/* Target choices inherit the selected player's card surface without changing
+   the target row's layout or making the generic picker feel like a plain list. */
+.target-option[data-card-custom="true"] {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border-color: var(--custom-card-rim, rgba(255, 255, 255, 0.24));
+  background: var(--custom-card-bg, rgba(255, 255, 255, 0.07));
+  box-shadow:
+    0 0.7rem 1.4rem rgba(0, 0, 0, 0.2),
+    0 0 1rem rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.16);
+}
+
+.target-option[data-card-custom="true"] > * {
+  position: relative;
+  z-index: 2;
+}
+
+.target-option[data-card-style="gradient"][data-card-custom="true"] {
+  border-color: transparent;
+  background-color: #08090d;
+  background-image:
+    var(--custom-card-bg, #101019),
+    var(--custom-card-rim-gradient, linear-gradient(180deg, var(--accent-2), var(--accent)));
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+}
+
+.target-option[data-card-custom="true"][data-card-effects~="neon"] {
+  box-shadow:
+    0 0.7rem 1.4rem rgba(0, 0, 0, 0.22),
+    0 0 1.25rem rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.4),
+    0 0 2.1rem rgb(var(--custom-card-secondary-rgb, 255 77 125) / 0.16);
+}
+
+.target-option[data-card-custom="true"][data-card-effects~="text-glow"] .name-with-title-text,
+.target-option[data-card-custom="true"][data-card-effects~="text-glow"] small {
+  text-shadow:
+    0 0 0.45rem rgba(255, 255, 255, 0.34),
+    0 0 0.9rem rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.44),
+    0 0 1.35rem rgb(var(--custom-card-secondary-rgb, 255 77 125) / 0.22);
+}
+
+.target-option[data-card-custom="true"][data-card-effects~="metallic"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 0 20%, rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.22) 34%, rgba(255, 255, 255, 0.34) 44%, transparent 64%);
+  background-size: 180% 100%;
+  background-position: -120% 0;
+  mix-blend-mode: screen;
+  opacity: 0.42;
+  animation: cardMetallicShine 5200ms ease-in-out infinite;
 }
 
 .confirm-panel p:not(.eyebrow) {
@@ -14781,6 +14847,40 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   100% {
     opacity: 0;
     transform: translateY(0.55rem) scale(0.985);
+  }
+}
+
+@keyframes targetPanelIn {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translate3d(1.4rem, 0.3rem, 0) scale(0.975);
+  }
+
+  68% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(-0.08rem, 0, 0) scale(1.004);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes targetPanelOut {
+  0% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translate3d(-0.8rem, 0.16rem, 0) scale(0.985);
   }
 }
 
