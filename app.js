@@ -6381,7 +6381,21 @@ function createMultipleChoiceRoundResult(rawInput = "") {
   };
 }
 
+const modalCloseTimers = new WeakMap();
+
+function clearModalCloseTimer(element) {
+  const timerId = modalCloseTimers.get(element);
+  if (!timerId) {
+    return;
+  }
+  window.clearTimeout(timerId);
+  modalCloseTimers.delete(element);
+}
+
 function setHidden(element, isHidden) {
+  if (!isHidden) {
+    clearModalCloseTimer(element);
+  }
   if (!isHidden) {
     element.classList.remove("closing");
   }
@@ -7142,12 +7156,17 @@ function hideModalWithMotion(element) {
   if (!element || element.classList.contains("hidden")) {
     return;
   }
+  if (modalCloseTimers.has(element)) {
+    return;
+  }
   element.classList.remove("motion-opening");
   element.classList.add("closing");
-  window.setTimeout(() => {
+  const timerId = window.setTimeout(() => {
+    modalCloseTimers.delete(element);
     element.classList.remove("closing");
     setHidden(element, true);
   }, 240);
+  modalCloseTimers.set(element, timerId);
 }
 
 function normalizeTriviaAnswer(answer) {
@@ -14057,8 +14076,15 @@ function applyRoomPowerState(payload = {}) {
       ],
       targetOwner === actorOwner
         ? { owners: [targetOwner], complex: true }
-        : getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
+      : getTargetedFlashOptions(actorOwner, targetOwner, { complex: true })
     );
+  }
+  if (elements.targetModal.dataset.mode === "xray-result") {
+    const xrayOwner = elements.targetModal.dataset.owner;
+    const xrayTarget = elements.targetModal.dataset.xrayTarget;
+    if (xrayOwner && xrayTarget && getPlayer(xrayTarget)) {
+      renderXrayResult(xrayOwner, xrayTarget, state.powerHands[xrayTarget] || []);
+    }
   }
   renderScore();
   renderTableEventControls();
@@ -14861,6 +14887,7 @@ function applyRealtimeRoomGrading(payload = {}) {
   if (!incomingGameMatches && !canAdoptIncomingGradingGame) {
     return false;
   }
+  closeOverlayMenus({ reason: "grading" });
   if (round !== Number(state.round)) {
     if (!canAdoptIncomingGradingGame) {
       return false;
@@ -23758,6 +23785,8 @@ function openTargetSelector(owner, power, powerId) {
   const requirement = getMultiTargetRequirement(power);
   elements.targetTitle.textContent = power.name;
   elements.targetModal.dataset.mode = requirement ? "multi-player" : "player";
+  elements.targetModal.dataset.powerCategory = getPowerCategory(power);
+  elements.targetModal.dataset.powerRarity = power.rarity || "grey";
   elements.targetModal.dataset.minTargets = String(requirement?.min || 1);
   elements.targetModal.dataset.maxTargets = String(requirement?.max || 1);
   elements.targetModal.dataset.selectedTargets = "[]";
@@ -23785,12 +23814,27 @@ function openTargetSelector(owner, power, powerId) {
     renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
     const copy = createTargetPlayerCopy(player, targetOwner, `${getDisplayScoreText(targetOwner)} - ${getOwnerStreak(targetOwner)}x streak`);
     button.append(avatar, copy);
+    applyPlayerCustomizationSurface(button, player);
     elements.targetList.appendChild(button);
   });
 
   elements.targetModal.dataset.owner = owner;
   elements.targetModal.dataset.power = powerId;
   setHidden(elements.targetModal, false);
+  playSound("click");
+}
+
+function openXraySelector(owner, power, powerId) {
+  const candidates = sortTargetCandidatesForPower(getTargetCandidates(owner, power), owner, power);
+  if (!candidates.length) {
+    return;
+  }
+  // X-Ray is a hand browser, so the first click should open that browser rather
+  // than making the player pass through the generic target picker.
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = powerId;
+  elements.targetModal.dataset.xrayPending = "true";
+  renderXrayResult(owner, "", []);
   playSound("click");
 }
 
@@ -23802,6 +23846,8 @@ function openThemePowerSelector(owner, power, powerId) {
 
   elements.targetTitle.textContent = power.name;
   elements.targetModal.dataset.mode = "theme";
+  elements.targetModal.dataset.powerCategory = getPowerCategory(power);
+  elements.targetModal.dataset.powerRarity = power.rarity || "grey";
   elements.targetList.replaceChildren();
   themes.forEach((theme) => {
     const button = document.createElement("button");
@@ -23832,6 +23878,8 @@ function openMerchantSelector(owner, power, powerId) {
   const score = getScore(owner);
   elements.targetTitle.textContent = power.name;
   elements.targetModal.dataset.mode = "merchant";
+  elements.targetModal.dataset.powerCategory = getPowerCategory(power);
+  elements.targetModal.dataset.powerRarity = power.rarity || "grey";
   elements.targetList.replaceChildren();
   options.forEach((rarity) => {
     const cost = getMerchantCost(owner, rarity);
@@ -23860,6 +23908,8 @@ function openBlackMarketSelector(owner) {
   const score = getScore(owner);
   elements.targetTitle.textContent = "Black Market";
   elements.targetModal.dataset.mode = "black-market";
+  elements.targetModal.dataset.powerCategory = "utility";
+  elements.targetModal.dataset.powerRarity = "gold";
   elements.targetList.replaceChildren();
   options.forEach((rarity) => {
     const cost = getBlackMarketCost(owner, rarity);
@@ -23889,6 +23939,8 @@ function openTableSabotageSelector(owner) {
   }
   elements.targetTitle.textContent = "Sabotage";
   elements.targetModal.dataset.mode = "table-sabotage";
+  elements.targetModal.dataset.powerCategory = "disruption";
+  elements.targetModal.dataset.powerRarity = "purple";
   elements.targetList.replaceChildren();
   candidates.forEach((targetOwner) => {
     const player = getPlayer(targetOwner);
@@ -23901,6 +23953,7 @@ function openTableSabotageSelector(owner) {
     renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
     const copy = createTargetPlayerCopy(player, targetOwner, `${getDisplayScoreText(targetOwner)} - random debuff`);
     button.append(avatar, copy);
+    applyPlayerCustomizationSurface(button, player);
     elements.targetList.appendChild(button);
   });
   elements.targetModal.dataset.owner = owner;
@@ -24101,9 +24154,18 @@ function createXrayPowerCard(powerEntry) {
 }
 
 function renderXrayResult(owner, targetOwner, powerEntries) {
+  const panel = elements.targetModal.querySelector(".target-panel");
+  const previousPanelHeight = panel && !elements.targetModal.classList.contains("hidden")
+    ? panel.getBoundingClientRect().height
+    : 0;
   elements.targetModalEyebrow.textContent = "X-Ray scan";
-  elements.targetTitle.textContent = `X-Ray Hacks: ${getOwnerLabel(targetOwner)}`;
+  elements.targetTitle.textContent = targetOwner
+    ? `X-Ray Hacks: ${getOwnerLabel(targetOwner)}`
+    : "X-Ray Hacks";
   elements.targetModal.dataset.mode = "xray-result";
+  elements.targetModal.dataset.powerCategory = "disruption";
+  elements.targetModal.dataset.powerRarity = "blue";
+  elements.targetModal.dataset.xrayTarget = targetOwner || "";
   elements.targetModal.dataset.owner = owner;
   elements.targetModal.dataset.power = "xray_hacks";
   elements.targetList.replaceChildren();
@@ -24133,6 +24195,7 @@ function renderXrayResult(owner, targetOwner, powerEntries) {
       renderAvatar(avatar, player || { label: getOwnerLabel(participant) });
       const copy = createTargetPlayerCopy(player, participant, isViewing ? "Viewing now" : "Click to reveal");
       button.append(avatar, copy);
+      applyPlayerCustomizationSurface(button, player);
       targetGrid.appendChild(button);
     });
   targetSection.append(targetLabel, targetGrid);
@@ -24150,11 +24213,16 @@ function renderXrayResult(owner, targetOwner, powerEntries) {
   handIconImage.alt = "";
   handIconImage.setAttribute("aria-hidden", "true");
   handIcon.appendChild(handIconImage);
-  const handCopy = createTargetPlayerCopy(
-    getPlayer(targetOwner),
-    targetOwner,
-    `${list.length} power-up${list.length === 1 ? "" : "s"} revealed`
-  );
+  const handCopy = targetOwner
+    ? createTargetPlayerCopy(
+      getPlayer(targetOwner),
+      targetOwner,
+      `${list.length} power-up${list.length === 1 ? "" : "s"} revealed`
+    )
+    : createTargetPlayerCopy(null, "", "Click a profile above to reveal its hand");
+  if (!targetOwner) {
+    handCopy.querySelector(".name-with-title-text")?.replaceChildren(document.createTextNode("No hand selected"));
+  }
   handHeader.append(handIcon, handCopy);
   const handLabel = document.createElement("p");
   handLabel.className = "xray-section-label";
@@ -24172,6 +24240,29 @@ function renderXrayResult(owner, targetOwner, powerEntries) {
   handSection.append(handHeader, handLabel, powerList);
   elements.targetList.appendChild(handSection);
   setHidden(elements.targetModal, false);
+  animateTargetPanelHeight(panel || elements.targetModal.querySelector(".target-panel"), previousPanelHeight);
+}
+
+function animateTargetPanelHeight(panel, previousHeight = 0) {
+  if (!panel || previousHeight <= 0 || shouldReduceMotion()) {
+    return;
+  }
+  const nextHeight = panel.getBoundingClientRect().height;
+  if (Math.abs(nextHeight - previousHeight) < 2) {
+    return;
+  }
+  panel.style.height = `${previousHeight}px`;
+  panel.style.overflowY = "hidden";
+  panel.offsetHeight;
+  panel.style.transition = "height 360ms cubic-bezier(0.16, 1, 0.3, 1)";
+  window.requestAnimationFrame(() => {
+    panel.style.height = `${nextHeight}px`;
+  });
+  window.setTimeout(() => {
+    panel.style.height = "";
+    panel.style.overflowY = "";
+    panel.style.transition = "";
+  }, 390);
 }
 
 function closeTargetSelector() {
@@ -24179,6 +24270,10 @@ function closeTargetSelector() {
   elements.targetModal.dataset.owner = "";
   elements.targetModal.dataset.power = "";
   elements.targetModal.dataset.mode = "";
+  elements.targetModal.dataset.powerCategory = "";
+  elements.targetModal.dataset.powerRarity = "";
+  elements.targetModal.dataset.xrayPending = "";
+  elements.targetModal.dataset.xrayTarget = "";
   elements.targetModal.dataset.selectedTargets = "[]";
   elements.targetModal.dataset.minTargets = "";
   elements.targetModal.dataset.maxTargets = "";
@@ -24340,6 +24435,7 @@ function completeTargetSelection(targetOwnerOrTargets) {
         revealedPowers: revealedPowerIds
       };
     }
+    elements.targetModal.dataset.xrayPending = "false";
     renderXrayResult(owner, targetOwner, revealedPowerIds);
     return;
   }
@@ -27386,6 +27482,10 @@ function selectPowerUp(powerId) {
   }
 
   if (power.targeted) {
+    if (power.type === "xray_hacks" && getPlayer(owner)?.type !== "bot") {
+      openXraySelector(owner, power, powerId);
+      return;
+    }
     const targetOwner = chooseTargetOwner(owner, power);
     if (!targetOwner && getPlayer(owner)?.type !== "bot") {
       openTargetSelector(owner, power, powerId);
@@ -28285,11 +28385,15 @@ function renderBotPowerDebugPanel() {
   }
   setHidden(elements.botPowerDebugOpenButton, !available);
   const visible = available && state.powerDebugPanelOpen;
-  setHidden(elements.botPowerDebugModal, !visible);
   if (!visible) {
+    hideModalWithMotion(elements.botPowerDebugModal);
+    if (elements.botPowerDebugModal?.classList.contains("hidden")) {
+      setHidden(elements.botPowerDebugModal, true);
+    }
     reconcileBotPowerDebugPause();
     return;
   }
+  setHidden(elements.botPowerDebugModal, false);
   syncBotPowerDebugPauseToggle();
   syncBotPowerDebugUnlimitedToggle();
   reconcileBotPowerDebugPause();
@@ -28680,7 +28784,10 @@ function resetRoundUiForLoading(options = {}) {
   setHidden(elements.answerProgressPanel, true);
   setHidden(elements.powerPanel, true);
   state.powerDebugPanelOpen = false;
-  setHidden(elements.botPowerDebugModal, true);
+  hideModalWithMotion(elements.botPowerDebugModal);
+  if (elements.botPowerDebugModal?.classList.contains("hidden")) {
+    setHidden(elements.botPowerDebugModal, true);
+  }
   setHidden(elements.botPowerDebugOpenButton, true);
   reconcileBotPowerDebugPause();
   setHidden(elements.effectPanel, true);
@@ -31636,7 +31743,7 @@ function closeAdminAuthModal() {
   if (!elements.adminAuthModal) {
     return;
   }
-  setHidden(elements.adminAuthModal, true);
+  hideModalWithMotion(elements.adminAuthModal);
 }
 
 async function submitAdminLogin(event) {
@@ -39114,19 +39221,47 @@ function closeTopModal() {
   return false;
 }
 
-function closeOverlayMenus() {
-  setHidden(elements.targetModal, true);
+function closeOverlayMenus(options = {}) {
+  const animate = options.animate !== false;
+  const close = (element) => {
+    if (!element) {
+      return;
+    }
+    if (animate) {
+      hideModalWithMotion(element);
+    } else {
+      setHidden(element, true);
+    }
+  };
+
+  if (isModalOpen(elements.targetModal)) {
+    cancelTargetSelector();
+  } else {
+    close(elements.targetModal);
+  }
   if (isModalOpen(elements.confirmEndModal) || state.pendingConfirmResolver) {
     closeEndConfirm(false, { silent: true });
   } else {
-    setHidden(elements.confirmEndModal, true);
+    close(elements.confirmEndModal);
   }
-  setHidden(elements.abilitiesModal, true);
-  setHidden(elements.profileCustomModal, true);
+  close(elements.abilitiesModal);
+  if (isModalOpen(elements.profileCustomModal)) {
+    state.profileCustomizationDraft = null;
+    state.profileCustomizationHistory = [];
+    state.profileCustomizationHistoryIndex = 0;
+  }
+  close(elements.profileCustomModal);
   stopProfileShopRotationTimer();
-  setHidden(elements.profileShopModal, true);
-  setHidden(elements.themeModal, true);
-  setHidden(elements.settingsModal, true);
+  close(elements.profileShopModal);
+  close(elements.themeModal);
+  close(elements.settingsModal);
+  close(elements.roundHelpModal);
+  close(elements.profileAuthModal);
+  close(elements.adminAuthModal);
+  setBotAdvancedOpen(false);
+  state.powerDebugPanelOpen = false;
+  close(elements.botPowerDebugModal);
+  reconcileBotPowerDebugPause();
 }
 
 function syncSettingsControls() {
@@ -39728,6 +39863,7 @@ async function playRound(rawInput, options = {}) {
     state.roomRoundResolving = false;
     return;
   }
+  closeOverlayMenus({ reason: "grading" });
   const syncedRoundResult = options.roundResult ? normalizeRoomRoundResultPayload(options.roundResult) : null;
   if (isRoomMode() && (!isCurrentHost() || state.joiningRoom) && !syncedRoundResult) {
     if (!state.roomRoundResolving) {
