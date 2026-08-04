@@ -8157,6 +8157,19 @@ input:focus {
   overflow: hidden;
 }
 
+/* Metallic's shared rule has equal/higher specificity than the base theme.
+   Restore Chromatic's dark surface and moving border, while keeping the
+   metallic sheen pseudo-element active above it. */
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="metallic"] {
+  background-image:
+    var(--chromatic-surface-gradient),
+    var(--chromatic-border-gradient);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 180% 100%;
+  background-position: 0% 0%, 0% 50%;
+}
+
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card)[data-card-custom="true"][data-card-special="false"][data-card-effects~="hover"]
   :is(.answer-avatar, .profile-avatar, .room-player-avatar, .equipped-title-pill, .special-player-badge, .bot-player-badge, .host-player-badge, .rating-badge, .name-with-title-text, .profile-name-display, h2, p, strong) {
   text-shadow:
@@ -8566,18 +8579,19 @@ input:focus {
    six colour stops stay visible together while the gradient flows, so normal
    effects and patterns can still layer on top of it. */
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"] {
+  --chromatic-surface-gradient: linear-gradient(145deg, rgba(8, 10, 18, 0.98), rgba(13, 15, 26, 0.98));
+  --chromatic-border-gradient: repeating-linear-gradient(120deg,
+    #ff4d7d 0 16.66%,
+    #ff9f2f 16.66% 33.33%,
+    #facc15 33.33% 50%,
+    #40dea4 50% 66.66%,
+    #22d3ee 66.66% 83.33%,
+    #a78bfa 83.33% 100%);
   border-color: transparent;
   background-color: #080a12;
   background-image:
-    linear-gradient(145deg, rgba(8, 10, 18, 0.98), rgba(13, 15, 26, 0.98)),
-    linear-gradient(120deg,
-      #ff4d7d 0%,
-      #ff9f2f 16.66%,
-      #facc15 33.33%,
-      #40dea4 50%,
-      #22d3ee 66.66%,
-      #a78bfa 83.33%,
-      #ff4d7d 100%);
+    var(--chromatic-surface-gradient),
+    var(--chromatic-border-gradient);
   background-origin: padding-box, border-box;
   background-clip: padding-box, border-box;
   background-size: 100% 100%, 180% 100%;
@@ -8599,6 +8613,30 @@ input:focus {
   animation:
     chromaticFlow var(--chromatic-duration, 7600ms) linear infinite,
     cardRgbShift var(--card-rgb-duration, 8600ms) ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="neon"] {
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.3),
+    0 0 0.95rem rgba(255, 77, 125, 0.36),
+    0 0 1.15rem rgba(250, 204, 21, 0.24),
+    0 0 1.3rem rgba(34, 211, 238, 0.34),
+    0 0 1.5rem rgba(167, 139, 250, 0.24);
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="pastel"] {
+  --chromatic-border-gradient: repeating-linear-gradient(120deg,
+    #ff9ab3 0 16.66%,
+    #ffd09d 16.66% 33.33%,
+    #fff1a3 33.33% 50%,
+    #a9ebd0 50% 66.66%,
+    #9beaf2 66.66% 83.33%,
+    #d0bfff 83.33% 100%);
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.3),
+    0 0 1rem rgba(255, 154, 179, 0.24),
+    0 0 1.2rem rgba(155, 234, 242, 0.2),
+    0 0 1.35rem rgba(208, 191, 255, 0.18);
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]
@@ -9005,13 +9043,12 @@ input:focus {
 }
 
 @keyframes chromaticFlow {
-  0%,
-  100% {
+  0% {
     background-position: 0% 0%, 0% 50%;
   }
 
-  50% {
-    background-position: 0% 0%, 100% 50%;
+  100% {
+    background-position: 0% 0%, 200% 50%;
   }
 }
 

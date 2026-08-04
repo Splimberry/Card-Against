@@ -3788,6 +3788,8 @@ const state = {
   realtimeRoomCode: "",
   realtimeLobbyReady: false,
   realtimeRoomReady: false,
+  realtimeLobbyReconnectTimerId: null,
+  realtimeRoomReconnectTimerId: null,
   realtimeJoinRefreshTimerId: null,
   realtimeRoomRefreshTimerId: null,
   roomRealtimeStatus: "idle",
@@ -15385,7 +15387,7 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
     ? []
     : normalized.effectIds.filter((id) => (
       profileCardEffectMap[id]
-      && !(id === "rgb" && style.id === "black")
+      && !(id === "rgb" && ["black", "chromatic"].includes(style.id))
       && !(id === "pastel" && (style.id === "default" || style.id === "black"))
     ));
   const activePatternId = isSpecialStyle ? "none" : normalized.patternId;
@@ -16024,8 +16026,15 @@ function startSupabaseRealtime() {
     handleRealtimeRoomChange(payload || {});
   });
   channel.subscribe((status) => {
+    if (state.realtimeLobbyChannel !== channel) {
+      return;
+    }
     state.realtimeLobbyReady = status === "SUBSCRIBED";
     if (state.realtimeLobbyReady) {
+      if (state.realtimeLobbyReconnectTimerId) {
+        window.clearTimeout(state.realtimeLobbyReconnectTimerId);
+        state.realtimeLobbyReconnectTimerId = null;
+      }
       if (!elements.joinScreen.classList.contains("hidden") && !state.roomInvite.active) {
         void refreshHostedRoomsAndRender({ force: true });
       }
@@ -16034,13 +16043,37 @@ function startSupabaseRealtime() {
         startRoomPresenceMaintenance();
       }
       syncUserQuestionSubmissionPolling();
+    } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(String(status || "").toUpperCase())) {
+      scheduleSupabaseLobbyReconnect();
     }
   });
   state.realtimeLobbyChannel = channel;
 }
 
+function scheduleSupabaseLobbyReconnect(delayMs = 350) {
+  if (state.realtimeLobbyReconnectTimerId || !state.supabaseClient) {
+    return false;
+  }
+  const failedChannel = state.realtimeLobbyChannel;
+  state.realtimeLobbyReconnectTimerId = window.setTimeout(() => {
+    state.realtimeLobbyReconnectTimerId = null;
+    if (!state.supabaseClient || state.realtimeLobbyChannel !== failedChannel) {
+      return;
+    }
+    state.supabaseClient.removeChannel(failedChannel);
+    state.realtimeLobbyChannel = null;
+    state.realtimeLobbyReady = false;
+    startSupabaseRealtime();
+  }, Math.max(100, Number(delayMs) || 350));
+  return true;
+}
+
 function stopSupabaseRealtime() {
   stopRoomRealtime();
+  if (state.realtimeLobbyReconnectTimerId) {
+    window.clearTimeout(state.realtimeLobbyReconnectTimerId);
+    state.realtimeLobbyReconnectTimerId = null;
+  }
   if (state.realtimeJoinRefreshTimerId) {
     window.clearTimeout(state.realtimeJoinRefreshTimerId);
     state.realtimeJoinRefreshTimerId = null;
@@ -16067,7 +16100,7 @@ function startRoomRealtime(code = state.roomSettings.code) {
   channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
     handleRealtimeRoomChange(payload || {});
   });
-  channel.subscribe((status) => handleRoomRealtimeStatus(status));
+  channel.subscribe((status) => handleRoomRealtimeStatus(status, channel));
   state.realtimeRoomChannel = channel;
   state.realtimeRoomCode = roomCode;
   state.roomRealtimeStatus = "connecting";
@@ -16090,6 +16123,10 @@ function stopRoomRealtime() {
     });
   }
   stopRoomRealtimeMaintenance();
+  if (state.realtimeRoomReconnectTimerId) {
+    window.clearTimeout(state.realtimeRoomReconnectTimerId);
+    state.realtimeRoomReconnectTimerId = null;
+  }
   if (state.realtimeRoomRefreshTimerId) {
     window.clearTimeout(state.realtimeRoomRefreshTimerId);
     state.realtimeRoomRefreshTimerId = null;
@@ -17054,7 +17091,11 @@ const handledRoomEventTypes = [
   "participant-moderated",
   "host-transferred",
   "room-settings",
-  "game-ended"
+  "game-ended",
+  "power-used",
+  "hand-changed",
+  "active-effects-changed",
+  "power-resolved"
 ];
 
 const roomMembershipSnapshotEventTypes = [
@@ -17543,6 +17584,12 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     if (normalizedPayload.eventType === "answer-draft") {
       appliedDelta = applySpectatorAnswerDraft(normalizedPayload);
     }
+    // `power-used` is the event marker for a power action. The following
+    // `power-resolved`/`power-state` event contains the authoritative state,
+    // so this event is intentionally a no-op on the client.
+    if (normalizedPayload.eventType === "power-used") {
+      appliedDelta = true;
+    }
     if (["active-effects-changed", "hand-changed", "power-resolved", "power-state"].includes(normalizedPayload.eventType)) {
       appliedDelta = applyRoomPowerState(normalizedPayload);
     }
@@ -17585,7 +17632,9 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     if (!appliedDelta && (normalizedPayload.eventType === "room-updated" || normalizedPayload.eventType === "room-created" || normalizedPayload.eventType === "round-started" || normalizedPayload.eventType === "participant-left") && normalizedPayload.room) {
       appliedDelta = applyRealtimeRoomPayload(normalizedPayload.room);
     }
-    if (appliedDelta && handledRoomEventTypes.includes(normalizedPayload.eventType)) {
+    const completeHandledEvent = handledRoomEventTypes.includes(normalizedPayload.eventType)
+      && !isIncompleteRoomRealtimePayload(normalizedPayload);
+    if ((appliedDelta || completeHandledEvent) && handledRoomEventTypes.includes(normalizedPayload.eventType)) {
       return true;
     }
     if (shouldRefreshRoomAfterRealtimeMiss(normalizedPayload)) {
@@ -19186,7 +19235,11 @@ function isIncompleteRoomRealtimePayload(payload = {}) {
     "host-transferred",
     "round-advancing",
     "round-grading",
-    "round-skipped"
+    "round-skipped",
+    "power-used",
+    "hand-changed",
+    "active-effects-changed",
+    "power-resolved"
   ].includes(eventType);
 }
 
@@ -22741,7 +22794,7 @@ function getTitleRgbSyncStyle(customization) {
   const style = profileCardStyleMap[normalized.styleId] || profileCardStyleMap.default;
   const hasMainRgb = normalized.effectIds.includes("rgb")
     && !specialProfileCardStyleKinds.has(style.kind)
-    && style.id !== "black";
+    && !["black", "chromatic"].includes(style.id);
   return hasMainRgb ? style : { kind: "solid" };
 }
 
@@ -23164,7 +23217,7 @@ function createProfileEffectButton(effect, records, progress) {
   const draft = getProfileCustomizationDraft();
   const status = getProfileUnlockStatus(effect, "effect", records, progress);
   const disabledByTheme = isSpecialProfileStyleId(draft.styleId)
-    || (effect.id === "rgb" && draft.styleId === "black")
+    || (effect.id === "rgb" && ["black", "chromatic"].includes(draft.styleId))
     || (effect.id === "pastel" && (draft.styleId === "default" || draft.styleId === "black"));
   const button = document.createElement("button");
   button.type = "button";
@@ -23174,8 +23227,8 @@ function createProfileEffectButton(effect, records, progress) {
   button.dataset.selected = String(draft.effectIds.includes(effect.id) && !disabledByTheme);
   button.dataset.locked = String(!status.unlocked || disabledByTheme);
   button.dataset.description = disabledByTheme
-    ? effect.id === "rgb" && draft.styleId === "black"
-      ? "RGB is disabled on the Black card theme."
+    ? effect.id === "rgb" && ["black", "chromatic"].includes(draft.styleId)
+      ? `RGB is disabled on the ${draft.styleId === "chromatic" ? "Chromatic" : "Black"} card theme.`
       : effect.id === "pastel" && (draft.styleId === "default" || draft.styleId === "black")
         ? "Pastel is disabled on Classic and Black card themes."
         : "Special themes do not allow extra effects."
@@ -23569,7 +23622,7 @@ function sanitizeProfileCustomizationForSave(draft) {
   }
   next.effectIds = draft.effectIds.filter((effectId) => (
     isProfileEffectUnlocked(effectId, records, progress)
-    && !(effectId === "rgb" && draft.styleId === "black")
+    && !(effectId === "rgb" && ["black", "chromatic"].includes(draft.styleId))
     && !(effectId === "pastel" && (draft.styleId === "default" || draft.styleId === "black"))
   ));
   next.patternId = isProfilePatternUnlocked(draft.patternId, records, progress) ? draft.patternId : saved.patternId;
@@ -23654,7 +23707,7 @@ function handleProfileCustomizationClick(event) {
       const effectId = effectButton.dataset.profileEffect;
       if (
         isSpecialProfileStyleId(draft.styleId)
-        || (effectId === "rgb" && draft.styleId === "black")
+        || (effectId === "rgb" && ["black", "chromatic"].includes(draft.styleId))
         || (effectId === "pastel" && (draft.styleId === "default" || draft.styleId === "black"))
       ) {
         return;
@@ -37203,7 +37256,26 @@ function recordRoomCatchupSkipped(reason = "start") {
   });
 }
 
-function handleRoomRealtimeStatus(status = "") {
+function scheduleRoomRealtimeReconnect(code = state.realtimeRoomCode, delayMs = 350) {
+  const roomCode = String(code || "").trim().toUpperCase();
+  if (!roomCode || state.realtimeRoomReconnectTimerId || !state.supabaseClient) {
+    return false;
+  }
+  state.realtimeRoomReconnectTimerId = window.setTimeout(() => {
+    state.realtimeRoomReconnectTimerId = null;
+    if (!state.supabaseClient || state.realtimeRoomCode !== roomCode) {
+      return;
+    }
+    stopRoomRealtime();
+    startRoomRealtime(roomCode);
+  }, Math.max(100, Number(delayMs) || 350));
+  return true;
+}
+
+function handleRoomRealtimeStatus(status = "", channel = null) {
+  if (channel && state.realtimeRoomChannel !== channel) {
+    return;
+  }
   state.roomRealtimeStatus = String(status || "unknown");
   state.realtimeRoomReady = status === "SUBSCRIBED";
   recordRoomDiagnosticEvent("realtime-status", { code: state.realtimeRoomCode || state.roomSettings.code }, {
@@ -37213,6 +37285,10 @@ function handleRoomRealtimeStatus(status = "") {
     reason: state.realtimeRoomReady ? "Room channel is subscribed." : "Room channel is not subscribed yet."
   });
   if (state.realtimeRoomReady) {
+    if (state.realtimeRoomReconnectTimerId) {
+      window.clearTimeout(state.realtimeRoomReconnectTimerId);
+      state.realtimeRoomReconnectTimerId = null;
+    }
     state.roomRealtimeUnhealthySince = 0;
     stopRoomRealtimeMaintenance({ keepHeartbeat: true });
     startRoomHeartbeat();
@@ -37228,6 +37304,9 @@ function handleRoomRealtimeStatus(status = "") {
   }
   if (!state.roomRealtimeUnhealthySince) {
     state.roomRealtimeUnhealthySince = Date.now();
+  }
+  if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(String(status || "").toUpperCase())) {
+    scheduleRoomRealtimeReconnect(state.realtimeRoomCode);
   }
 }
 
