@@ -4773,10 +4773,15 @@ function transferRoomHostToOldestPlayer(room, reason = "host-transfer") {
   room.hostExitPendingAt = 0;
   rotateRoomHostToken(room);
   finalizeRoom(room);
-  const transferSnapshot = sanitizeRoomForClient(
-    { ...room, events: [] },
-    { includeSubmittedAnswers: true }
-  );
+  const transferRevision = getRoomRevision(room) + 1;
+  const transferSnapshot = {
+    ...sanitizeRoomForClient(
+      { ...room, events: [] },
+      { includeSubmittedAnswers: true }
+    ),
+    revision: transferRevision,
+    updatedAt: Date.now()
+  };
   stampRoomEvent(room, "host_transferred", {
     previousHostId: previousHost?.id || "",
     previousHostName: previousHost?.name || room.host?.name || "Host",
