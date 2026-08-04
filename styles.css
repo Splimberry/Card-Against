@@ -8166,7 +8166,7 @@ input:focus {
     var(--chromatic-border-gradient);
   background-origin: padding-box, border-box;
   background-clip: padding-box, border-box;
-  background-size: 100% 100%, 180% 100%;
+  background-size: 100% 100%, 100% 100%;
   background-position: 0% 0%, 0% 50%;
 }
 
@@ -8576,8 +8576,8 @@ input:focus {
 }
 
 /* Chromatic is a purchasable base theme, rather than a special theme. The
-   six colour stops stay visible together while the gradient flows, so normal
-   effects and patterns can still layer on top of it. */
+   six colour stops stay fixed while their hue values advance together, so
+   the colour appears to travel without moving the strip itself. */
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"] {
   --chromatic-hue: 0deg;
   --chromatic-red: hsl(calc(340deg + var(--chromatic-hue)) 100% 65%);
@@ -8608,7 +8608,7 @@ input:focus {
     var(--chromatic-border-gradient);
   background-origin: padding-box, border-box;
   background-clip: padding-box, border-box;
-  background-size: 100% 100%, 180% 100%;
+  background-size: 100% 100%, 100% 100%;
   background-position: 0% 0%, 0% 50%;
   box-shadow:
     0 1rem 2rem rgba(0, 0, 0, 0.3),
@@ -8619,8 +8619,7 @@ input:focus {
     0 0 1.3rem var(--chromatic-cyan-glow),
     0 0 1.4rem var(--chromatic-purple-glow);
   animation:
-    chromaticColorFlow var(--chromatic-duration, 7600ms) linear infinite,
-    chromaticFlow var(--chromatic-duration, 7600ms) linear infinite;
+    chromaticColorFlow var(--chromatic-duration, 7600ms) linear infinite;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"] > * {
@@ -8631,7 +8630,6 @@ input:focus {
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="rgb"] {
   animation:
     chromaticColorFlow var(--chromatic-duration, 7600ms) linear infinite,
-    chromaticFlow var(--chromatic-duration, 7600ms) linear infinite,
     cardRgbShift var(--card-rgb-duration, 8600ms) ease-in-out infinite;
 }
 
@@ -9094,23 +9092,13 @@ input:focus {
   }
 }
 
-@keyframes chromaticFlow {
-  0% {
-    background-position: 0% 0%, 0% 50%;
-  }
-
-  100% {
-    background-position: 0% 0%, 200% 50%;
-  }
-}
-
 @keyframes chromaticPreviewFlow {
   0% {
-    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
   }
 
   100% {
-    background-position: 200% 50%;
+    filter: hue-rotate(360deg);
   }
 }
 
@@ -12665,7 +12653,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   background:
     linear-gradient(120deg, rgba(255, 77, 125, 0.22) 0%, rgba(255, 159, 47, 0.18) 18%, rgba(250, 204, 21, 0.16) 35%, rgba(64, 222, 164, 0.18) 52%, rgba(34, 211, 238, 0.2) 70%, rgba(167, 139, 250, 0.2) 86%, rgba(255, 77, 125, 0.22) 100%),
     rgba(255, 255, 255, 0.045);
-  background-size: 240% 100%;
+  background-size: 100% 100%;
   animation: chromaticPreviewFlow 4200ms linear infinite;
   box-shadow:
     0 0 1rem rgba(34, 211, 238, 0.18),
@@ -13535,7 +13523,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="chromatic"] .profile-shop-preview::before {
   background:
     linear-gradient(120deg, #ff4d7d 0%, #ff9f2f 18%, #facc15 35%, #40dea4 52%, #22d3ee 70%, #a78bfa 86%, #ff4d7d 100%);
-  background-size: 240% 100%;
+  background-size: 100% 100%;
   animation: chromaticPreviewFlow 4200ms linear infinite;
 }
 
