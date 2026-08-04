@@ -5498,7 +5498,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   background-image: var(--power-category-icon);
   background-position: right center;
   background-repeat: no-repeat;
-  background-size: min(52%, 5rem);
+  background-size: var(--power-category-icon-size, min(44%, 4.4rem));
 }
 
 .power-card::before,
@@ -5546,6 +5546,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .power-card[data-category="risk"],
 .ability-card[data-category="risk"] {
   --power-category-icon: url("assets/overlays/bomb.svg");
+  --power-category-icon-size: min(52%, 5rem);
   --power-category-rgb: 255 159 47;
 }
 
