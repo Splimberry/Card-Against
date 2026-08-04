@@ -8579,14 +8579,28 @@ input:focus {
    six colour stops stay visible together while the gradient flows, so normal
    effects and patterns can still layer on top of it. */
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"] {
+  --chromatic-hue: 0deg;
+  --chromatic-red: hsl(calc(340deg + var(--chromatic-hue)) 100% 65%);
+  --chromatic-orange: hsl(calc(28deg + var(--chromatic-hue)) 100% 60%);
+  --chromatic-yellow: hsl(calc(48deg + var(--chromatic-hue)) 92% 56%);
+  --chromatic-green: hsl(calc(155deg + var(--chromatic-hue)) 70% 55%);
+  --chromatic-cyan: hsl(calc(187deg + var(--chromatic-hue)) 82% 55%);
+  --chromatic-purple: hsl(calc(256deg + var(--chromatic-hue)) 86% 72%);
+  --chromatic-red-glow: hsl(calc(340deg + var(--chromatic-hue)) 100% 65% / 0.22);
+  --chromatic-orange-glow: hsl(calc(28deg + var(--chromatic-hue)) 100% 60% / 0.18);
+  --chromatic-yellow-glow: hsl(calc(48deg + var(--chromatic-hue)) 92% 56% / 0.18);
+  --chromatic-green-glow: hsl(calc(155deg + var(--chromatic-hue)) 70% 55% / 0.18);
+  --chromatic-cyan-glow: hsl(calc(187deg + var(--chromatic-hue)) 82% 55% / 0.22);
+  --chromatic-purple-glow: hsl(calc(256deg + var(--chromatic-hue)) 86% 72% / 0.16);
   --chromatic-surface-gradient: linear-gradient(145deg, rgba(8, 10, 18, 0.98), rgba(13, 15, 26, 0.98));
-  --chromatic-border-gradient: repeating-linear-gradient(120deg,
-    #ff4d7d 0 16.66%,
-    #ff9f2f 16.66% 33.33%,
-    #facc15 33.33% 50%,
-    #40dea4 50% 66.66%,
-    #22d3ee 66.66% 83.33%,
-    #a78bfa 83.33% 100%);
+  --chromatic-border-gradient: linear-gradient(120deg,
+    var(--chromatic-red) 0%,
+    var(--chromatic-orange) 18%,
+    var(--chromatic-yellow) 35%,
+    var(--chromatic-green) 52%,
+    var(--chromatic-cyan) 70%,
+    var(--chromatic-purple) 86%,
+    var(--chromatic-red) 100%);
   border-color: transparent;
   background-color: #080a12;
   background-image:
@@ -8598,10 +8612,15 @@ input:focus {
   background-position: 0% 0%, 0% 50%;
   box-shadow:
     0 1rem 2rem rgba(0, 0, 0, 0.3),
-    0 0 1.1rem rgba(34, 211, 238, 0.2),
-    0 0 1.25rem rgba(255, 77, 125, 0.16),
-    0 0 1.4rem rgba(167, 139, 250, 0.12);
-  animation: chromaticFlow var(--chromatic-duration, 7600ms) linear infinite;
+    0 0 0.9rem var(--chromatic-red-glow),
+    0 0 1rem var(--chromatic-orange-glow),
+    0 0 1.1rem var(--chromatic-yellow-glow),
+    0 0 1.2rem var(--chromatic-green-glow),
+    0 0 1.3rem var(--chromatic-cyan-glow),
+    0 0 1.4rem var(--chromatic-purple-glow);
+  animation:
+    chromaticColorFlow var(--chromatic-duration, 7600ms) linear infinite,
+    chromaticFlow var(--chromatic-duration, 7600ms) linear infinite;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"] > * {
@@ -8611,6 +8630,7 @@ input:focus {
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="rgb"] {
   animation:
+    chromaticColorFlow var(--chromatic-duration, 7600ms) linear infinite,
     chromaticFlow var(--chromatic-duration, 7600ms) linear infinite,
     cardRgbShift var(--card-rgb-duration, 8600ms) ease-in-out infinite;
 }
@@ -8618,25 +8638,41 @@ input:focus {
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="neon"] {
   box-shadow:
     0 1rem 2rem rgba(0, 0, 0, 0.3),
-    0 0 0.95rem rgba(255, 77, 125, 0.36),
-    0 0 1.15rem rgba(250, 204, 21, 0.24),
-    0 0 1.3rem rgba(34, 211, 238, 0.34),
-    0 0 1.5rem rgba(167, 139, 250, 0.24);
+    0 0 0.95rem var(--chromatic-red-glow),
+    0 0 1.1rem var(--chromatic-yellow-glow),
+    0 0 1.3rem var(--chromatic-cyan-glow),
+    0 0 1.5rem var(--chromatic-purple-glow);
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="pastel"] {
-  --chromatic-border-gradient: repeating-linear-gradient(120deg,
-    #ff9ab3 0 16.66%,
-    #ffd09d 16.66% 33.33%,
-    #fff1a3 33.33% 50%,
-    #a9ebd0 50% 66.66%,
-    #9beaf2 66.66% 83.33%,
-    #d0bfff 83.33% 100%);
+  --chromatic-red: hsl(calc(340deg + var(--chromatic-hue)) 72% 78%);
+  --chromatic-orange: hsl(calc(28deg + var(--chromatic-hue)) 72% 76%);
+  --chromatic-yellow: hsl(calc(48deg + var(--chromatic-hue)) 72% 76%);
+  --chromatic-green: hsl(calc(155deg + var(--chromatic-hue)) 52% 76%);
+  --chromatic-cyan: hsl(calc(187deg + var(--chromatic-hue)) 62% 76%);
+  --chromatic-purple: hsl(calc(256deg + var(--chromatic-hue)) 62% 82%);
+  --chromatic-red-glow: hsl(calc(340deg + var(--chromatic-hue)) 72% 78% / 0.2);
+  --chromatic-orange-glow: hsl(calc(28deg + var(--chromatic-hue)) 72% 76% / 0.18);
+  --chromatic-yellow-glow: hsl(calc(48deg + var(--chromatic-hue)) 72% 76% / 0.18);
+  --chromatic-green-glow: hsl(calc(155deg + var(--chromatic-hue)) 52% 76% / 0.18);
+  --chromatic-cyan-glow: hsl(calc(187deg + var(--chromatic-hue)) 62% 76% / 0.2);
+  --chromatic-purple-glow: hsl(calc(256deg + var(--chromatic-hue)) 62% 82% / 0.16);
+  --chromatic-border-gradient: linear-gradient(120deg,
+    var(--chromatic-red) 0%,
+    var(--chromatic-orange) 18%,
+    var(--chromatic-yellow) 35%,
+    var(--chromatic-green) 52%,
+    var(--chromatic-cyan) 70%,
+    var(--chromatic-purple) 86%,
+    var(--chromatic-red) 100%);
   box-shadow:
     0 1rem 2rem rgba(0, 0, 0, 0.3),
-    0 0 1rem rgba(255, 154, 179, 0.24),
-    0 0 1.2rem rgba(155, 234, 242, 0.2),
-    0 0 1.35rem rgba(208, 191, 255, 0.18);
+    0 0 0.9rem var(--chromatic-red-glow),
+    0 0 1rem var(--chromatic-orange-glow),
+    0 0 1.1rem var(--chromatic-yellow-glow),
+    0 0 1.2rem var(--chromatic-green-glow),
+    0 0 1.3rem var(--chromatic-cyan-glow),
+    0 0 1.4rem var(--chromatic-purple-glow);
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"]
@@ -9042,6 +9078,22 @@ input:focus {
   }
 }
 
+@property --chromatic-hue {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes chromaticColorFlow {
+  from {
+    --chromatic-hue: 0deg;
+  }
+
+  to {
+    --chromatic-hue: 360deg;
+  }
+}
+
 @keyframes chromaticFlow {
   0% {
     background-position: 0% 0%, 0% 50%;
@@ -9053,13 +9105,12 @@ input:focus {
 }
 
 @keyframes chromaticPreviewFlow {
-  0%,
-  100% {
+  0% {
     background-position: 0% 50%;
   }
 
-  50% {
-    background-position: 100% 50%;
+  100% {
+    background-position: 200% 50%;
   }
 }
 
@@ -12612,9 +12663,9 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .profile-style-option[data-profile-style-kind="chromatic"] {
   border-color: rgba(255, 255, 255, 0.58);
   background:
-    linear-gradient(120deg, rgba(255, 77, 125, 0.22), rgba(255, 159, 47, 0.18), rgba(250, 204, 21, 0.16), rgba(64, 222, 164, 0.18), rgba(34, 211, 238, 0.2), rgba(167, 139, 250, 0.2)),
+    linear-gradient(120deg, rgba(255, 77, 125, 0.22) 0%, rgba(255, 159, 47, 0.18) 18%, rgba(250, 204, 21, 0.16) 35%, rgba(64, 222, 164, 0.18) 52%, rgba(34, 211, 238, 0.2) 70%, rgba(167, 139, 250, 0.2) 86%, rgba(255, 77, 125, 0.22) 100%),
     rgba(255, 255, 255, 0.045);
-  background-size: 220% 100%;
+  background-size: 240% 100%;
   animation: chromaticPreviewFlow 4200ms linear infinite;
   box-shadow:
     0 0 1rem rgba(34, 211, 238, 0.18),
@@ -13483,8 +13534,8 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="chromatic"] .profile-shop-preview::before {
   background:
-    linear-gradient(120deg, #ff4d7d 0 16.66%, #ff9f2f 16.66% 33.33%, #facc15 33.33% 50%, #40dea4 50% 66.66%, #22d3ee 66.66% 83.33%, #a78bfa 83.33% 100%);
-  background-size: 220% 100%;
+    linear-gradient(120deg, #ff4d7d 0%, #ff9f2f 18%, #facc15 35%, #40dea4 52%, #22d3ee 70%, #a78bfa 86%, #ff4d7d 100%);
+  background-size: 240% 100%;
   animation: chromaticPreviewFlow 4200ms linear infinite;
 }
 
