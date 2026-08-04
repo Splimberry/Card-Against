@@ -3250,6 +3250,14 @@ const state = {
   isSpectator: false,
   currentOwner: "player",
   roomSubmissions: {},
+  roundHintUsage: {},
+  hintState: {
+    matchId: "",
+    freeRemaining: 0,
+    purchasesUsed: 0,
+    usedThisRound: false,
+    usedRounds: {}
+  },
   localRoomSubmission: null,
   spectatorAnswerDrafts: {},
   answerDraftBroadcastTimerId: null,
@@ -4151,6 +4159,7 @@ const elements = {
   judgeBio: document.querySelector("#judgeBio"),
   judgeTags: document.querySelector("#judgeTags"),
   blackCardText: document.querySelector("#blackCardText"),
+  questionHint: document.querySelector("#questionHint"),
   blackCard: document.querySelector("#blackCard"),
   questionCardPile: document.querySelector("#questionCardPile"),
   questionThemeBadge: document.querySelector("#questionThemeBadge"),
@@ -4162,6 +4171,7 @@ const elements = {
   powerPanel: document.querySelector("#powerPanel"),
   effectPanel: document.querySelector("#effectPanel"),
   answerForm: document.querySelector("#answerForm"),
+  hintButton: document.querySelector("#hintButton"),
   answerInput: document.querySelector("#answerInput"),
   multipleChoiceOptions: document.querySelector("#multipleChoiceOptions"),
   playerTwoInput: document.querySelector("#playerTwoInput"),
@@ -4821,6 +4831,220 @@ function isMultipleChoiceAnswerCorrect(answer) {
   return Boolean(correct && normalizeMultipleChoiceOption(answer) === correct);
 }
 
+function isHintSupportedForCurrentQuestion() {
+  return isMultipleChoiceRound() || state.questionType === "text";
+}
+
+function getHintMatchId() {
+  return getCurrentRoomMatchId() || `local-${state.matchWorkToken}`;
+}
+
+function resetHintStateForMatch(matchId = getHintMatchId()) {
+  const normalizedMatchId = String(matchId || "").trim();
+  const freeRemaining = state.mode === "bots" ? 3 : state.mode === "room" ? 1 : 0;
+  state.hintState = {
+    matchId: normalizedMatchId,
+    freeRemaining,
+    purchasesUsed: 0,
+    usedThisRound: false,
+    usedRounds: {},
+    pending: false
+  };
+  state.roundHintUsage = {};
+}
+
+function normalizeHintState(source = {}, fallbackMatchId = getHintMatchId()) {
+  const value = source && typeof source === "object" ? source : {};
+  const usedRounds = value.usedRounds && typeof value.usedRounds === "object" ? value.usedRounds : {};
+  return {
+    matchId: String(value.matchId || fallbackMatchId || "").trim(),
+    freeRemaining: Math.max(0, Math.floor(Number(value.freeRemaining) || 0)),
+    purchasesUsed: Math.max(0, Math.floor(Number(value.purchasesUsed) || 0)),
+    usedThisRound: Boolean(value.usedThisRound),
+    usedRounds: Object.fromEntries(Object.entries(usedRounds).filter(([, used]) => Boolean(used)).slice(-100)),
+    pending: false
+  };
+}
+
+function getHintRoundKey(round = state.round) {
+  return `${getHintMatchId()}:${Number(round) || 0}`;
+}
+
+function buildTextHint(answer = "") {
+  const words = String(answer || "").trim().split(/\s+/).filter(Boolean);
+  return words.map((word) => {
+    let revealed = false;
+    return Array.from(word).map((character) => {
+      if (/\p{L}|\p{N}/u.test(character)) {
+        if (!revealed) {
+          revealed = true;
+          return character.toLocaleUpperCase();
+        }
+        return "_";
+      }
+      return character;
+    }).join(" ");
+  }).join("   ");
+}
+
+function getHintAvailability() {
+  const hintState = normalizeHintState(state.hintState);
+  const roundKey = getHintRoundKey();
+  const usedThisRound = Boolean(state.roundHintUsage[state.currentOwner])
+    || Boolean(hintState.usedRounds[roundKey])
+    || Boolean(hintState.usedThisRound);
+  const isMultiplayer = isRoomMode();
+  const hasFree = hintState.freeRemaining > 0;
+  const hasPurchase = isMultiplayer && hintState.purchasesUsed < 2 && loadCurrencyBalance() >= 5;
+  return {
+    hintState,
+    usedThisRound,
+    hasFree,
+    hasPurchase,
+    available: Boolean(isHintSupportedForCurrentQuestion() && (hasFree || hasPurchase) && !usedThisRound)
+  };
+}
+
+function renderHintControls() {
+  const button = elements.hintButton;
+  if (!button) {
+    return;
+  }
+  const visible = Boolean(
+    (state.mode === "bots" || isRoomMode())
+      && !state.isSpectator
+      && isHintSupportedForCurrentQuestion()
+      && !elements.inputPanel?.classList.contains("hidden")
+  );
+  setHidden(button, !visible);
+  if (!visible) {
+    return;
+  }
+  const availability = getHintAvailability();
+  const disabled = Boolean(
+    availability.usedThisRound
+      || !availability.available
+      || availability.hintState.pending
+      || state.roomSubmissions[state.currentOwner]
+      || state.matchEnded
+  );
+  button.disabled = disabled;
+  button.classList.toggle("hint-used", availability.usedThisRound);
+  button.classList.toggle("hint-unavailable", !availability.available && !availability.usedThisRound);
+  const tooltip = availability.usedThisRound
+    ? "One hint per round. Hint already used."
+    : availability.hasFree
+      ? `${availability.hintState.freeRemaining} free hint${availability.hintState.freeRemaining === 1 ? "" : "s"} remaining.`
+      : availability.hasPurchase
+        ? `Spend 5 coins. ${Math.max(0, 2 - availability.hintState.purchasesUsed)} purchase${availability.hintState.purchasesUsed === 1 ? "" : "s"} remaining this match.`
+        : "No hints remaining this match.";
+  button.dataset.tooltip = tooltip;
+  button.setAttribute("aria-label", `Hint. ${tooltip}`);
+}
+
+function showQuestionHint(text = "") {
+  const questionHint = elements.questionHint;
+  const blackCard = getBlackCardElement();
+  if (!questionHint || !blackCard) {
+    return;
+  }
+  const hintText = String(text || "").trim();
+  if (!hintText) {
+    questionHint.textContent = "";
+    setHidden(questionHint, true);
+    scheduleBlackCardFit();
+    return;
+  }
+  const beforeHeight = blackCard.getBoundingClientRect().height;
+  questionHint.textContent = `Hint: ${hintText}`;
+  setHidden(questionHint, false);
+  animateBlackCardToNaturalHeightAfterLayout(blackCard, beforeHeight, {
+    allowShrink: false,
+    durationMs: 520
+  });
+}
+
+function chooseLocalHintOptionToRemove() {
+  const wrongOptions = getCurrentMultipleChoiceOptions().filter((answer) => !isMultipleChoiceAnswerCorrect(answer));
+  if (!wrongOptions.length) {
+    return "";
+  }
+  return wrongOptions[getRoundRandomIndex(wrongOptions.length, "hint-option")];
+}
+
+function applyHintResult(result = {}, options = {}) {
+  const hintState = normalizeHintState(result.hintState || state.hintState);
+  state.hintState = hintState;
+  state.hintState.usedThisRound = true;
+  state.hintState.usedRounds[getHintRoundKey()] = true;
+  state.roundHintUsage[state.currentOwner] = true;
+  if (isMultipleChoiceRound() && result.removedOption) {
+    const removedKey = normalizeMultipleChoiceOption(result.removedOption);
+    state.multipleChoiceOptions = getCurrentMultipleChoiceOptions()
+      .filter((option) => normalizeMultipleChoiceOption(option) !== removedKey);
+    renderMultipleChoiceOptions();
+    showQuestionHint("One incorrect option was removed.");
+  } else if (result.hint) {
+    showQuestionHint(result.hint);
+  }
+  renderHintControls();
+  renderAnswerCardsForOwners(getRoundCardOwners());
+  if (!options.silent) {
+    playSound("click");
+  }
+}
+
+async function useHint() {
+  const availability = getHintAvailability();
+  if (!availability.available || availability.hintState.pending || state.isSpectator) {
+    renderHintControls();
+    return;
+  }
+  const isPaid = !availability.hasFree;
+  if (isPaid && !spendCurrency(5, "hint")) {
+    renderHintControls();
+    return;
+  }
+  if (isPaid) {
+    renderProfile();
+  }
+  state.hintState.pending = true;
+  renderHintControls();
+  if (isRoomMode()) {
+    const participantId = getRoomParticipantIdForOwner(state.currentOwner) || state.clientId;
+    const result = await roomSync.sendCommand("use_hint", {
+      participantId,
+      round: state.round,
+      matchId: getCurrentRoomMatchId(),
+      paid: isPaid
+    }, { roomCode: state.roomSettings.code, participantId });
+    if (!result?.ok) {
+      if (isPaid) {
+        addCurrency(5, "hint-refund");
+        renderProfile();
+      }
+      state.hintState.pending = false;
+      renderHintControls();
+      addSystemChat(result?.error || "Hint could not be used.", { private: true, sync: false });
+      return;
+    }
+    applyHintResult(result);
+    return;
+  }
+
+  const nextState = {
+    ...availability.hintState,
+    freeRemaining: Math.max(0, availability.hintState.freeRemaining - (isPaid ? 0 : 1)),
+    purchasesUsed: availability.hintState.purchasesUsed + (isPaid ? 1 : 0),
+    pending: false
+  };
+  applyHintResult({
+    hintState: nextState,
+    hint: isMultipleChoiceRound() ? "One incorrect option was removed." : buildTextHint(state.canonicalAnswer),
+    removedOption: isMultipleChoiceRound() ? chooseLocalHintOptionToRemove() : ""
+  });
+}
+
 function resetRoundAnswers() {
   const owners = new Set([...DEFAULT_OWNER_IDS, ...getActiveOwners()]);
   state.roundAnswers = Object.fromEntries([...owners].map((owner) => [owner, ""]));
@@ -4832,6 +5056,10 @@ function resetRoundAnswers() {
   state.currentRoundCorrectIndexes = [];
   state.currentRoundGradingReasons = [];
   state.roundAnswerDamageByOwner = {};
+  state.roundHintUsage = {};
+  if (state.hintState && typeof state.hintState === "object") {
+    state.hintState.usedThisRound = false;
+  }
 }
 
 function clearRoomParticipantSubmissionState() {
@@ -7217,7 +7445,16 @@ function createAnswerCardNode(owner, cardIndex = 0) {
   const text = document.createElement("p");
   const gradingReason = document.createElement("small");
   gradingReason.className = "grading-reason hidden";
-  card.append(answerOwner, badge, text, gradingReason);
+  const hintMarker = document.createElement("span");
+  hintMarker.className = "answer-hint-marker hidden";
+  hintMarker.dataset.tooltip = "Used a hint this round.";
+  hintMarker.setAttribute("aria-label", "Used a hint this round.");
+  const hintIcon = document.createElement("img");
+  hintIcon.src = "assets/ui/lighting-bulb.svg";
+  hintIcon.alt = "";
+  hintIcon.setAttribute("aria-hidden", "true");
+  hintMarker.appendChild(hintIcon);
+  card.append(answerOwner, badge, text, gradingReason, hintMarker);
   if (shouldUseAnswerCardCustomization(owner)) {
     applyProfileCustomizationSurface(card, getProfileCardCustomizationForOwner(owner) || defaultProfileCustomization, {
       forceCustom: isRoomMode()
@@ -7315,6 +7552,17 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   updateInlineGradingReason(gradingReason, reason);
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
   card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
+  const hintMarker = card.querySelector(".answer-hint-marker");
+  const participantId = getRoomParticipantIdForOwner(owner);
+  const participant = participantId
+    ? state.roomParticipants.find((entry) => entry.id === participantId)
+    : null;
+  const usedHint = Boolean(
+    state.roundHintUsage[owner]
+      || participant?.usedHintRound === state.round
+      || state.roomGame?.answers?.[participantId]?.usedHint
+  );
+  setHidden(hintMarker, !usedHint);
 }
 
 function getOwnAnswerCardIndex(cards) {
@@ -11853,6 +12101,7 @@ function setRoomSubmission(owner, submitted) {
   }
   renderRoomPlayers();
   renderSubmissionStatus();
+  renderHintControls();
 }
 
 function clearLocalRoomSubmission() {
@@ -11965,6 +12214,7 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
     remainingTime: Math.max(0, Number(remainingTime) || 0),
     submissionStatus: options.timedOut ? "timed_out" : "submitted",
     autoSubmitted: Boolean(options.autoSubmitted || options.timedOut),
+    usedHint: Boolean(state.roundHintUsage[owner]),
     updatedAt: submittedAt
   });
   return roomSync.sendCommand("submit_answer", {
@@ -11977,6 +12227,7 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
     remainingTime: Math.max(0, Number(remainingTime) || 0),
     timedOut: Boolean(options.timedOut),
     autoSubmitted: Boolean(options.autoSubmitted || options.timedOut),
+    usedHint: Boolean(state.roundHintUsage[owner]),
     updatedAt: submittedAt
   }, {
     roomCode: code,
@@ -12125,7 +12376,7 @@ function getCurrentRoomHostParticipantId() {
   ).slice(0, 80);
 }
 
-function updateRoomParticipantSubmission(participantId, answer, round, remainingTime, matchId = getCurrentRoomMatchId()) {
+function updateRoomParticipantSubmission(participantId, answer, round, remainingTime, matchId = getCurrentRoomMatchId(), usedHint = false) {
   const id = String(participantId || "");
   if (!id) {
     return;
@@ -12139,6 +12390,7 @@ function updateRoomParticipantSubmission(participantId, answer, round, remaining
   participant.submittedRound = Number(round) || state.round;
   participant.submissionMatchId = String(matchId || "").trim();
   participant.remainingTime = Math.max(0, Number(remainingTime) || 0);
+  participant.usedHintRound = usedHint ? Number(round) || state.round : 0;
 }
 
 function applyRoomAnswerSubmission(payload = {}, source = {}) {
@@ -12172,7 +12424,7 @@ function applyRoomAnswerSubmission(payload = {}, source = {}) {
   const answer = cleanInput(payload.answer || "");
   const remainingTime = Math.max(0, Number(payload.remainingTime) || 0);
   delete state.spectatorAnswerDrafts[participantId];
-  updateRoomParticipantSubmission(participantId, answer, round, remainingTime, getRoomMatchIdFromPayload(payload));
+  updateRoomParticipantSubmission(participantId, answer, round, remainingTime, getRoomMatchIdFromPayload(payload), Boolean(payload.usedHint));
   if (answer) {
     lockRoundAnswer(owner, answer);
     if (owner === "player") {
@@ -12183,10 +12435,46 @@ function applyRoomAnswerSubmission(payload = {}, source = {}) {
     }
   }
   state.answerRemainingTimes[owner] = remainingTime;
+  if (payload.usedHint) {
+    state.roundHintUsage[owner] = true;
+  }
   setRoomSubmission(owner, true);
   renderSpectatorAnswerCards();
   maybeSubmitRoomBotsAfterRealPlayers();
   scheduleRoomSubmissionResolveCheck("answer-submitted", source);
+  return true;
+}
+
+function applyRoomHintUsed(payload = {}) {
+  if (!isRoomMode() || !hasActiveRoomContext()) {
+    return false;
+  }
+  const code = String(payload.code || "").trim().toUpperCase();
+  const round = Number(payload.round) || 0;
+  if (code !== state.roomSettings.code || !round || round !== Number(state.round) || !roomPayloadMatchesCurrentMatch(payload)) {
+    return false;
+  }
+  const owner = getRoomOwnerForParticipantId(payload.participantId);
+  if (!owner || !getActiveOwners().includes(owner)) {
+    return false;
+  }
+  state.roundHintUsage[owner] = true;
+  const participant = state.roomParticipants.find((entry) => entry.id === String(payload.participantId || ""));
+  if (participant) {
+    participant.usedHintRound = round;
+  }
+  if (owner === state.currentOwner && payload.hintState) {
+    state.hintState = normalizeHintState(payload.hintState);
+    state.hintState.usedThisRound = true;
+  }
+  if (state.roomGame && payload.hintState) {
+    state.roomGame.hints = {
+      ...(state.roomGame.hints || {}),
+      [String(payload.participantId || "")]: payload.hintState
+    };
+  }
+  renderHintControls();
+  renderAnswerCardsForOwners(getRoundCardOwners());
   return true;
 }
 
@@ -13642,7 +13930,26 @@ function applyRoomPowerState(payload = {}) {
   return true;
 }
 
+function syncRoomHintStateFromGame(game = state.roomGame) {
+  const hints = game?.hints && typeof game.hints === "object" ? game.hints : {};
+  const ownParticipantId = getRoomParticipantIdForOwner(state.currentOwner);
+  if (ownParticipantId && hints[ownParticipantId]) {
+    state.hintState = normalizeHintState(hints[ownParticipantId], game?.matchId || getCurrentRoomMatchId());
+    state.hintState.usedThisRound = Boolean(state.hintState.usedRounds[String(state.round)]);
+  }
+  Object.entries(hints).forEach(([participantId, entry]) => {
+    if (!entry?.usedRounds?.[String(state.round)]) {
+      return;
+    }
+    const owner = getRoomOwnerForParticipantId(participantId);
+    if (owner) {
+      state.roundHintUsage[owner] = true;
+    }
+  });
+}
+
 function applyRoomGamePowerState(game = state.roomGame) {
+  syncRoomHintStateFromGame(game);
   const powerState = game?.powerState && typeof game.powerState === "object" ? game.powerState : null;
   const hasPowerState = Boolean(
     powerState
@@ -14293,6 +14600,7 @@ function buildRoundSkipSubmissions() {
           : getRoomParticipantTimerRemainingSeconds(owner),
         status: timedOut ? "timed_out" : "submitted",
         autoSubmitted: Boolean(isBotOwner(owner) || timedOut),
+        usedHint: Boolean(state.roundHintUsage[owner]),
         submittedAt: Date.now()
       };
     })
@@ -14315,6 +14623,7 @@ function createOptimisticRoomGradingGame(submissions = [], options = {}) {
       answer: cleanInput(entry.answer || ""),
       submittedAt: Math.max(0, Number(entry.submittedAt) || updatedAt),
       autoSubmitted: Boolean(entry.autoSubmitted),
+      usedHint: Boolean(entry.usedHint),
       remainingTime: Math.max(0, Number(entry.remainingTime) || 0),
       matchId,
       round
@@ -15683,6 +15992,7 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
   return [
     "chat-message",
     "answer-submitted",
+    "hint-used",
     "answer-draft",
     "round-grading",
     "round-result",
@@ -16448,6 +16758,7 @@ function applyRoomGameMatchSettings(game = null, payload = {}, options = {}) {
 const roomServerEventTypeMap = {
   answer_draft_updated: "answer-draft",
   answer_submitted: "answer-submitted",
+  hint_used: "hint-used",
   chat_message: "chat-message",
   game_ended: "game-ended",
   host_transferred: "host-transferred",
@@ -16477,6 +16788,7 @@ const roomServerEventTypeMap = {
 const roomRoundScopedEventTypes = [
   "answer-submitted",
   "answer-draft",
+  "hint-used",
   "power-state",
   "round-grading",
   "round-result",
@@ -16486,6 +16798,7 @@ const roomRoundScopedEventTypes = [
 const handledRoomEventTypes = [
   "chat-message",
   "answer-submitted",
+  "hint-used",
   "answer-draft",
   "power-state",
   "participant-updated",
@@ -16977,6 +17290,9 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     }
     if (normalizedPayload.eventType === "answer-submitted") {
       appliedDelta = applyRoomAnswerSubmission(normalizedPayload, options);
+    }
+    if (normalizedPayload.eventType === "hint-used") {
+      appliedDelta = applyRoomHintUsed(normalizedPayload);
     }
     if (normalizedPayload.eventType === "answer-draft") {
       appliedDelta = applySpectatorAnswerDraft(normalizedPayload);
@@ -18376,6 +18692,7 @@ function isIncompleteRoomRealtimePayload(payload = {}) {
   return ![
     "chat-message",
     "answer-submitted",
+    "hint-used",
     "answer-draft",
     "power-state",
     "participant-updated",
@@ -27905,6 +28222,7 @@ function resetRoundUiForLoading(options = {}) {
   elements.questionThemeBadge.textContent = "Loading...";
   renderQuestionImagePlaceholder();
   elements.blackCardText.textContent = "Loading the next trivia card...";
+  showQuestionHint("");
   scheduleBlackCardFit();
   elements.answerInput.value = "";
   elements.playerTwoInput.value = "";
@@ -27927,6 +28245,7 @@ function resetRoundUiForLoading(options = {}) {
   elements.answerInput.disabled = true;
   elements.playerTwoInput.disabled = true;
   elements.submitButton.disabled = true;
+  renderHintControls();
 
   getAnswerCardNodes().forEach((card) => card.classList.remove("winner", "launching"));
   elements.cardsArea.classList.remove("revealed");
@@ -28058,6 +28377,7 @@ function renderRound() {
     })
   );
   elements.blackCardText.textContent = state.blackCard;
+  showQuestionHint("");
   elements.questionThemeBadge.textContent = state.triviaTheme || "Mixed Trivia";
   elements.questionDifficultyBadge.textContent = getDifficultyLabel(difficulty);
   elements.questionDifficultyBadge.className = `difficulty-badge difficulty-${difficulty}`;
@@ -28126,6 +28446,7 @@ function renderRound() {
   scheduleIncomingQuestionCardAnimation(blackCard);
   restartAnimation(judgePanel, "entering");
   renderPowerUps();
+  renderHintControls();
   renderScore();
   if (!state.renderingSyncedRoomResume) {
     publishRoomScoreState("round-start-score");
@@ -28175,6 +28496,7 @@ function updateModeUi() {
       : `${getOwnerLabel("opponent")}, your turn. ${getOwnerLabel("player")}'s answer is hidden.`
     : multipleChoice ? "Choose the correct answer." : "Answer the trivia question.";
   renderMultipleChoiceOptions();
+  renderHintControls();
   setHidden(elements.exitGameButton, isRoomMode() && !isCurrentHost());
   setHidden(elements.leaveGameButton, false);
   renderRoomChat();
@@ -32868,6 +33190,7 @@ function resetMatch(mode) {
   clearStatFlashes();
   clearBackgroundSetupPrefetch();
   state.mode = mode;
+  resetHintStateForMatch(mode === "room" ? getCurrentRoomMatchId() : `local-${state.matchWorkToken}`);
   resetRoomPowerSyncClocks();
   state.roomRoundResult = null;
   state.matchModifiers = rollMatchModifiers(mode);
@@ -34676,6 +34999,7 @@ function normalizeRoomParticipantDelta(participant = {}) {
     submittedRound: Number(source.submittedRound) || 0,
     submissionMatchId: String(source.submissionMatchId || "").trim(),
     remainingTime: Math.max(0, Number(source.remainingTime) || 0),
+    usedHintRound: Number(source.usedHintRound) || 0,
     disconnectedAt: Math.max(0, Number(source.disconnectedAt) || 0),
     lastConnectedAt: Math.max(0, Number(source.lastConnectedAt) || 0),
     joinedAt: Math.max(0, Number(source.joinedAt) || 0)
@@ -35049,6 +35373,9 @@ function syncRoomSubmissionsFromParticipants() {
       changed = true;
     }
     state.roomSubmissions[owner] = true;
+    if (Number(participant.usedHintRound) === Number(state.round)) {
+      state.roundHintUsage[owner] = true;
+    }
     if (participant.answer) {
       lockRoundAnswer(owner, participant.answer);
       if (owner === "player") {
@@ -38920,6 +39247,7 @@ async function playRound(rawInput, options = {}) {
   }
   clearRoomAutoResolve();
   applyCheatSheetPowers();
+  showQuestionHint("");
   resetTimerDisplay();
   elements.answerInput.disabled = true;
   elements.playerTwoInput.disabled = true;
@@ -41226,6 +41554,10 @@ function submitCurrentAnswer(rawInput) {
 elements.answerForm.addEventListener("submit", (event) => {
   event.preventDefault();
   submitCurrentAnswer(elements.answerInput.value);
+});
+
+elements.hintButton?.addEventListener("click", () => {
+  void useHint();
 });
 
 elements.multipleChoiceOptions?.addEventListener("click", (event) => {

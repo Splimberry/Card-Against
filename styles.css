@@ -6787,6 +6787,19 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   white-space: pre-line;
 }
 
+.question-hint {
+  margin: 0.8rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(255, 213, 102, 0.28);
+  color: #ffe9a8;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .black-card.completed {
   border-color: rgba(255, 77, 125, 0.72);
   box-shadow:
@@ -6803,6 +6816,7 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 }
 
 .input-panel {
+  position: relative;
   grid-column: 2;
   grid-row: 3;
   display: grid;
@@ -6815,6 +6829,55 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(15, 13, 24, 0.86);
+}
+
+.input-panel > div:first-child {
+  padding-right: 5.7rem;
+}
+
+.hint-button {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-height: 2.15rem;
+  padding: 0.42rem 0.62rem;
+  border: 1px solid rgba(255, 213, 102, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 213, 102, 0.1);
+  color: #ffe9a8;
+  font-weight: 950;
+  line-height: 1;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.hint-button img {
+  width: 1.05rem;
+  height: 1.05rem;
+  object-fit: contain;
+}
+
+.hint-button:hover:not(:disabled),
+.hint-button:focus-visible:not(:disabled) {
+  transform: translateY(-2px) scale(1.035);
+  border-color: rgba(255, 231, 145, 0.82);
+  background: rgba(255, 213, 102, 0.18);
+}
+
+.hint-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+  transform: none;
+}
+
+.hint-button.hint-used {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
 }
 
 .input-panel h2 {
@@ -7238,6 +7301,27 @@ input:focus {
     box-shadow 260ms ease,
     opacity 220ms ease,
     filter 220ms ease;
+}
+
+.answer-hint-marker {
+  position: absolute;
+  top: 0.58rem;
+  right: 0.58rem;
+  z-index: 4;
+  display: inline-grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  place-items: center;
+  border: 1px solid rgba(255, 213, 102, 0.62);
+  border-radius: 50%;
+  background: rgba(20, 18, 12, 0.82);
+  box-shadow: 0 0 0.8rem rgba(255, 213, 102, 0.24);
+}
+
+.answer-hint-marker img {
+  width: 0.92rem;
+  height: 0.92rem;
+  object-fit: contain;
 }
 
 .white-card.answer-card-cycle-out {

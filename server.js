@@ -2821,6 +2821,10 @@ async function handleRoomCommandParsed(req, res, normalizedCode, command, body) 
       await handleRoomCommandSubmitAnswer(req, res, room, command, body);
       return;
     }
+    if (command.type === "use_hint") {
+      await handleRoomCommandUseHint(req, res, room, command, body);
+      return;
+    }
     if (command.type === "add_bot") {
       await handleRoomCommandAddBot(req, res, room, command, body);
       return;
@@ -3026,6 +3030,7 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
     answer,
     submittedAt,
     autoSubmitted: Boolean(command.payload.autoSubmitted || answerStatus === "timed_out"),
+    usedHint: Boolean(command.payload.usedHint || game.hints?.[participantId]?.usedRounds?.[String(currentRound)]),
     remainingTime,
     matchId: currentMatchId,
     round: currentRound
@@ -3047,6 +3052,7 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
   participant.submissionMatchId = currentMatchId;
   participant.remainingTime = remainingTime;
   participant.submittedAt = submittedAt;
+  participant.usedHintRound = answerState.usedHint ? currentRound : 0;
 
   stampRoomEvent(room, "answer_submitted", {
     clientEventId: command.clientEventId,
@@ -3063,7 +3069,8 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
     answer,
     remainingTime,
     submissionStatus: answerStatus,
-    autoSubmitted: answerState.autoSubmitted
+    autoSubmitted: answerState.autoSubmitted,
+    usedHint: answerState.usedHint
   });
   autoSubmitRoomBotsWhenOnlyBotsPending(room, {
     matchId: currentMatchId,
@@ -3080,6 +3087,120 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
   sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision, {
     includeSubmittedAnswers: true
   }));
+}
+
+async function handleRoomCommandUseHint(req, res, room, command, rawBody = {}) {
+  const participantId = String(command.participantId || "").slice(0, 80);
+  if (!participantId) {
+    sendJson(res, 400, { ok: false, error: "Missing participant id." });
+    return;
+  }
+  if (!requireRoomParticipantAuth(req, res, room, participantId, rawBody, "Only this participant can use a hint.")) {
+    return;
+  }
+  const participant = room.participants.find((entry) => String(entry.id || "") === participantId);
+  const game = room.game && typeof room.game === "object" ? room.game : null;
+  const setup = game?.setup && typeof game.setup === "object" ? game.setup : null;
+  const matchId = String(game?.matchId || "").slice(0, 80);
+  const round = clampServerNumber(game?.round, 0, 100, 0);
+  const payloadMatchId = String(command.payload.matchId || "").slice(0, 80);
+  const payloadRound = clampServerNumber(command.payload.round, 0, 100, 0);
+  if (!participant || participant.active === false || normalizeParticipantRole(participant) === "spectator") {
+    sendJson(res, 404, { ok: false, error: "Participant is not active in this room." });
+    return;
+  }
+  if (room.status !== "in-progress" || !game || game.status !== "playing" || !setup) {
+    sendJson(res, 409, { ok: false, error: "Hints are only available during the answering phase." });
+    return;
+  }
+  if (!matchId || payloadMatchId !== matchId || !round || payloadRound !== round) {
+    sendJson(res, 409, { ok: false, error: "This hint belongs to a previous round." });
+    return;
+  }
+  const hints = normalizeRoomHintStateMap(game.hints);
+  const previousHintState = hints[participantId] || {
+    matchId,
+    freeRemaining: 1,
+    purchasesUsed: 0,
+    usedRounds: {}
+  };
+  previousHintState.matchId = matchId;
+  if (previousHintState.usedRounds[String(round)]) {
+    sendJson(res, 409, { ok: false, error: "You can only use one hint per round." });
+    return;
+  }
+  const paid = Boolean(command.payload.paid);
+  if (previousHintState.freeRemaining <= 0 && !paid) {
+    sendJson(res, 409, { ok: false, error: "Your free hint has already been used." });
+    return;
+  }
+  if (paid && previousHintState.purchasesUsed >= 2) {
+    sendJson(res, 409, { ok: false, error: "You can only purchase two hints per match." });
+    return;
+  }
+  const isMultipleChoice = setup.questionStyle === "multiple-choice";
+  const isTextQuestion = setup.type === "text";
+  if (!isMultipleChoice && !isTextQuestion) {
+    sendJson(res, 409, { ok: false, error: "Hints are only available for text and multiple-choice questions." });
+    return;
+  }
+  let hint = "";
+  let removedOption = "";
+  if (isMultipleChoice) {
+    const options = Array.isArray(setup.multipleChoiceOptions) ? setup.multipleChoiceOptions : [];
+    const canonical = String(setup.canonicalAnswer || "").trim().toLowerCase();
+    const wrongOptions = options.filter((option) => String(option || "").trim().toLowerCase() !== canonical);
+    if (wrongOptions.length) {
+      const index = Math.abs(hashString(`${matchId}:${round}:${participantId}:hint`)) % wrongOptions.length;
+      removedOption = String(wrongOptions[index] || "").slice(0, 120);
+    }
+    hint = "One incorrect option was removed.";
+  } else {
+    const answer = String(setup.canonicalAnswer || "").trim();
+    hint = answer.split(/\s+/).filter(Boolean).map((word) => {
+      let revealed = false;
+      return Array.from(word).map((character) => {
+        if (/\p{L}|\p{N}/u.test(character)) {
+          if (!revealed) {
+            revealed = true;
+            return character.toLocaleUpperCase();
+          }
+          return "_";
+        }
+        return character;
+      }).join(" ");
+    }).join("   ");
+  }
+  const nextHintState = {
+    ...previousHintState,
+    freeRemaining: Math.max(0, previousHintState.freeRemaining - (paid ? 0 : 1)),
+    purchasesUsed: previousHintState.purchasesUsed + (paid ? 1 : 0),
+    usedRounds: { ...previousHintState.usedRounds, [String(round)]: true }
+  };
+  const previousRevision = getRoomRevision(room);
+  room.game = normalizeRoomGame({
+    ...game,
+    hints: { ...hints, [participantId]: nextHintState },
+    updatedAt: Date.now()
+  });
+  stampRoomEvent(room, "hint_used", {
+    clientEventId: command.clientEventId,
+    actorId: participantId,
+    participantId,
+    matchId,
+    round,
+    hintUsed: true,
+    paid,
+    hintState: nextHintState
+  });
+  finalizeRoom(room);
+  const storedRoom = await backendStore.upsertRoom(room);
+  sendJson(res, 200, {
+    ...(await createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true })),
+    hint,
+    removedOption,
+    hintState: nextHintState
+  });
 }
 
 async function handleRoomCommandAddBot(req, res, room, command, rawBody = {}) {
@@ -3312,6 +3433,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
       submissionMatchId: "",
       remainingTime: 0,
       submittedAt: 0,
+      usedHintRound: 0,
       role,
       host: role === "host",
       bot: role === "bot",
@@ -3541,6 +3663,7 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
       submissionMatchId: "",
       remainingTime: 0,
       submittedAt: 0,
+      usedHintRound: 0,
       role,
       host: role === "host",
       bot: role === "bot",
@@ -4835,6 +4958,7 @@ function clearParticipantMatchState(participant = {}) {
     submittedRound: 0,
     submissionMatchId: "",
     remainingTime: 0,
+    usedHintRound: 0,
     status: active ? getParticipantDefaultStatus(role) : String(participant.status || getParticipantDefaultStatus(role)).slice(0, 32)
   };
 }
@@ -5111,6 +5235,7 @@ function getParticipantAnswerStateForRound(participant = {}, answers = {}, match
     answer: String(participant.answer || "").trim().slice(0, 500),
     submittedAt: clampServerNumber(participant.submittedAt || participant.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()),
     autoSubmitted: status === "timed_out",
+    usedHint: Boolean(participant.usedHintRound === Number(round)),
     remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0),
     matchId,
     round
@@ -5135,6 +5260,7 @@ function createRoomAnswerStateFromSubmission(participant = {}, submission = {}, 
     answer: String(submission.answer || "").trim().slice(0, 500),
     submittedAt: clampServerNumber(submission.submittedAt || options.now, 0, Number.MAX_SAFE_INTEGER, options.now || Date.now()),
     autoSubmitted: Boolean(submission.autoSubmitted || status === "timed_out" || options.autoSubmitted),
+    usedHint: Boolean(submission.usedHint || options.usedHint),
     remainingTime: clampServerNumber(submission.remainingTime, 0, 600, 0),
     matchId: String(options.matchId || "").slice(0, 80),
     round: clampServerNumber(options.round, 0, 100, 0)
@@ -5238,6 +5364,7 @@ function applyAnswerStateToParticipant(participant = {}, answerState = {}) {
   participant.submissionMatchId = String(answerState.matchId || "").slice(0, 80);
   participant.remainingTime = clampServerNumber(answerState.remainingTime, 0, 600, 0);
   participant.submittedAt = clampServerNumber(answerState.submittedAt, 0, Number.MAX_SAFE_INTEGER, Date.now());
+  participant.usedHintRound = answerState.usedHint ? clampServerNumber(answerState.round, 0, 100, 0) : 0;
 }
 
 function getRoomGradingSubmissions(participants = [], answers = {}) {
@@ -5252,7 +5379,8 @@ function getRoomGradingSubmissions(participants = [], answers = {}) {
         answer: String(answerState.answer || "").slice(0, 500),
         remainingTime: clampServerNumber(answerState.remainingTime, 0, 600, 0),
         status: answerState.status,
-        autoSubmitted: Boolean(answerState.autoSubmitted)
+        autoSubmitted: Boolean(answerState.autoSubmitted),
+        usedHint: Boolean(answerState.usedHint)
       };
     })
     .filter(Boolean);
@@ -5291,7 +5419,8 @@ function startRoomGradingTransition(room, options = {}) {
         round,
         now,
         defaultStatus,
-        autoSubmitted: !submission || reason === "timer-expired"
+        autoSubmitted: !submission || reason === "timer-expired",
+        usedHint: Boolean(submission?.usedHint || game.hints?.[participantId]?.usedRounds?.[String(round)])
       });
       return;
     }
@@ -5373,6 +5502,7 @@ function normalizeRoundSkipSubmissions(submissions) {
         remainingTime: clampServerNumber(source.remainingTime, 0, 600, 0),
         status: String(source.status || "").toLowerCase() === "timed_out" ? "timed_out" : "submitted",
         autoSubmitted: Boolean(source.autoSubmitted),
+        usedHint: Boolean(source.usedHint),
         submittedAt: clampServerNumber(source.submittedAt, 0, Number.MAX_SAFE_INTEGER, 0)
       };
     })
@@ -5577,6 +5707,7 @@ function normalizeParticipant(participant) {
     submittedRound: clampServerNumber(participant.submittedRound, 0, 100, 0),
     submissionMatchId: String(participant.submissionMatchId || "").slice(0, 80),
     remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0),
+    usedHintRound: clampServerNumber(participant.usedHintRound, 0, 100, 0),
     disconnectedAt: clampServerNumber(participant.disconnectedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     lastConnectedAt: clampServerNumber(participant.lastConnectedAt, 0, Number.MAX_SAFE_INTEGER, 0),
     lastSeenAt: normalizeServerTimestamp(participant.lastSeenAt, 0),
@@ -5649,6 +5780,22 @@ function normalizeCardCustomization(customization) {
   };
 }
 
+function normalizeRoomHintStateMap(hints = {}) {
+  const source = hints && typeof hints === "object" && !Array.isArray(hints) ? hints : {};
+  return Object.fromEntries(Object.entries(source).map(([participantId, value]) => {
+    const entry = value && typeof value === "object" ? value : {};
+    const usedRounds = entry.usedRounds && typeof entry.usedRounds === "object" ? entry.usedRounds : {};
+    return [String(participantId || "").slice(0, 80), {
+      matchId: String(entry.matchId || "").slice(0, 80),
+      freeRemaining: clampServerNumber(entry.freeRemaining, 0, 3, 0),
+      purchasesUsed: clampServerNumber(entry.purchasesUsed, 0, 2, 0),
+      usedRounds: Object.fromEntries(Object.entries(usedRounds)
+        .filter(([, used]) => Boolean(used))
+        .slice(-100))
+    }];
+  }).filter(([participantId]) => participantId));
+}
+
 function normalizeRoomGame(game) {
   if (!game || typeof game !== "object") {
     return null;
@@ -5681,6 +5828,7 @@ function normalizeRoomGame(game) {
     setup,
     matchSettings,
     roundResult,
+    hints: normalizeRoomHintStateMap(game.hints),
     answers: normalizeRoomAnswerState(game.answers, game.matchId, game.round),
     powerState: normalizeRoomPowerState(game.powerState),
     setupStartedAt: clampServerNumber(game.setupStartedAt || game.preparingStartedAt, 0, Number.MAX_SAFE_INTEGER, 0),
@@ -5716,6 +5864,7 @@ function normalizeRoomAnswerState(answers = {}, matchId = "", round = 0) {
             answer: String(answerState.answer || "").slice(0, 500),
             submittedAt: clampServerNumber(answerState.submittedAt || answerState.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now()),
             autoSubmitted: Boolean(answerState.autoSubmitted || status === "timed_out"),
+            usedHint: Boolean(answerState.usedHint),
             remainingTime: clampServerNumber(answerState.remainingTime, 0, 600, 0),
             matchId: String(answerState.matchId || normalizedMatchId).slice(0, 80),
             round: clampServerNumber(answerState.round || normalizedRound, 0, 100, normalizedRound)

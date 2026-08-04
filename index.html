@@ -406,6 +406,7 @@
                 <figcaption id="questionImageCredit"></figcaption>
               </figure>
               <h2 id="blackCardText"></h2>
+              <p class="question-hint hidden" id="questionHint" aria-live="polite"></p>
             </section>
           </div>
 
@@ -418,6 +419,10 @@
               <p class="eyebrow">Your answer</p>
               <h2 id="inputTitle">Answer the trivia question.</h2>
             </div>
+            <button type="button" class="hint-button" id="hintButton" aria-describedby="questionHint">
+              <span>Hint</span>
+              <img src="assets/ui/lighting-bulb.svg" alt="" aria-hidden="true">
+            </button>
             <div class="table-event-actions hidden" id="tableEventActionPanel"></div>
             <form id="answerForm">
               <div class="input-fields">
