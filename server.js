@@ -46,6 +46,8 @@ const profileShopRotationIntervalMs = 3 * 60 * 60 * 1000;
 const profileShopRotationSize = 3;
 const profileShopRotationPurchaseGraceMs = 12 * 60 * 60 * 1000;
 const inventoryShopCatalog = new Map([
+  ["style:doom", { cost: 1000 }],
+  ["style:chromatic", { cost: 1000 }],
   ["pattern:waves", { cost: 200 }],
   ["pattern:geometric", { cost: 200 }],
   ["pattern:scales", { cost: 200 }],
@@ -2628,7 +2630,16 @@ async function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], o
 
 async function createRoomCommandResponse(room, previousRevision = 0, options = {}) {
   const events = getRoomEventsAfterRevision(room, previousRevision, options);
-  const serverBroadcast = await scheduleServerRoomRealtimeBroadcast(room.code, events, options);
+  const broadcastPromise = scheduleServerRoomRealtimeBroadcast(room.code, events, options);
+  const broadcastAckMs = Math.max(50, Math.min(750, Number(process.env.SERVER_REALTIME_ACK_MS) || 180));
+  // Do not keep the room command queue or distributed room lock open while a
+  // remote realtime acknowledgement is slow. The originating client receives
+  // these same events in the command response and rebroadcasts them when this
+  // short server acknowledgement window expires.
+  const serverBroadcast = await Promise.race([
+    broadcastPromise,
+    new Promise((resolve) => setTimeout(() => resolve(false), broadcastAckMs))
+  ]);
   return {
     ok: true,
     roomCode: room.code,
@@ -2685,6 +2696,78 @@ function validateRoomCommandEnvelope(command, room, res) {
     });
     return false;
   }
+  return true;
+}
+
+function getRoomCommandEventsByClientId(room, clientEventId) {
+  const normalizedId = String(clientEventId || "").trim().slice(0, 160);
+  if (!normalizedId) {
+    return [];
+  }
+  return normalizeRoomEvents(room?.events)
+    .filter((event) => event.clientEventId === normalizedId)
+    .sort((left, right) => left.revision - right.revision);
+}
+
+function getRoomCommandActorId(command = {}) {
+  return String(
+    command.participantId
+      || command.payload?.participantId
+      || command.payload?.actorParticipantId
+      || command.payload?.hostParticipantId
+      || ""
+  ).slice(0, 120);
+}
+
+function replayRoomCommandIfAlreadyApplied(req, res, room, command, rawBody = {}) {
+  const events = getRoomCommandEventsByClientId(room, command.clientEventId);
+  if (!events.length) {
+    return false;
+  }
+
+  const actorId = getRoomCommandActorId(command);
+  const eventActors = new Set(events
+    .map((event) => String(event.actorId || event.payload?.actorId || event.payload?.participantId || "").slice(0, 120))
+    .filter(Boolean));
+  const hostAuthenticated = hasRoomHostAuth(req, room, rawBody);
+  if (!hostAuthenticated && actorId && eventActors.size && !eventActors.has(actorId)) {
+    // Do not expose a previous command's result to another participant that
+    // happened to reuse its id. The normal handler will perform auth checks.
+    return false;
+  }
+
+  const includeSubmittedAnswers = shouldExposeRoomAnswers(room, { includePrivateSecrets: hostAuthenticated });
+  const response = {
+    ok: true,
+    roomCode: room.code,
+    revision: getRoomRevision(room),
+    updatedAt: room.updatedAt,
+    duplicate: true,
+    // The event was already published with the original command. The retry
+    // receives it here but must not publish a second realtime delivery.
+    serverBroadcast: true,
+    events: events.map((event) => sanitizeRoomEventForClient(event, {
+      includeSubmittedAnswers,
+      includePrivateSecrets: hostAuthenticated
+    }))
+  };
+  const participantId = String(command.participantId || "").slice(0, 80);
+  if (participantId) {
+    const participant = room.participants.find((entry) => entry.id === participantId);
+    if (participant) {
+      response.participant = sanitizeParticipantForClient(participant, {
+        includeSubmittedAnswers: true,
+        includePrivateSecrets: hostAuthenticated
+      });
+    }
+  }
+  if (rawBody.includeRoom || rawBody.includeRoomSnapshot) {
+    response.room = sanitizeRoomForClient(room, { includePrivateSecrets: hostAuthenticated });
+  }
+  const participantCookie = participantId && room.participants.some((entry) => entry.id === participantId)
+    ? createRoomParticipantCookie(req, room, participantId)
+    : "";
+  sendJson(res, 200, response, participantCookie ? { "Set-Cookie": participantCookie } : {});
   return true;
 }
 
@@ -2754,12 +2837,17 @@ async function handleRoomCommandCreateRoom(req, res, normalizedCode, command, ra
 function enqueueRoomCommand(code, work) {
   const normalizedCode = String(code || "").trim().toUpperCase();
   const previous = roomCommandQueues.get(normalizedCode) || Promise.resolve();
-  const next = previous.catch(() => {}).then(work);
-  roomCommandQueues.set(normalizedCode, next.finally(() => {
-    if (roomCommandQueues.get(normalizedCode) === next) {
+  const next = previous.catch(() => {}).then(() => (
+    typeof backendStore.withRoomLock === "function"
+      ? backendStore.withRoomLock(normalizedCode, work)
+      : work()
+  ));
+  const queued = next.finally(() => {
+    if (roomCommandQueues.get(normalizedCode) === queued) {
       roomCommandQueues.delete(normalizedCode);
     }
-  }));
+  });
+  roomCommandQueues.set(normalizedCode, queued);
   return next;
 }
 
@@ -2786,6 +2874,9 @@ async function handleRoomCommandParsed(req, res, normalizedCode, command, body) 
   }
 
     if (!validateRoomCommandEnvelope(command, room, res)) {
+      return;
+    }
+    if (replayRoomCommandIfAlreadyApplied(req, res, room, command, body)) {
       return;
     }
 
@@ -3391,7 +3482,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   finalizeRoom(room);
   const preparingRoom = await backendStore.upsertRoom(room);
   const preparationRevision = getRoomRevision(preparingRoom);
-  await scheduleServerRoomRealtimeBroadcast(
+  void scheduleServerRoomRealtimeBroadcast(
     preparingRoom.code,
     getRoomEventsAfterRevision(preparingRoom, previousRevision, { includeSubmittedAnswers: true }),
     { includeSubmittedAnswers: true }
@@ -5305,13 +5396,16 @@ function autoSubmitRoomBotsWhenOnlyBotsPending(room, options = {}) {
   const participants = getRoomGameplayParticipants(room);
   const answers = normalizeRoomAnswerState(game.answers, matchId, round);
   const pendingParticipants = participants.filter((participant) => !getParticipantAnswerStateForRound(participant, answers, matchId, round));
-  if (!pendingParticipants.length || pendingParticipants.some((participant) => normalizeParticipantRole(participant) !== "bot")) {
+  const pendingBots = pendingParticipants.filter((participant) => normalizeParticipantRole(participant) === "bot");
+  const pendingRealPlayers = pendingParticipants.filter((participant) => normalizeParticipantRole(participant) !== "bot");
+  if (!pendingBots.length || (pendingRealPlayers.length && !options.forceBots)) {
     return [];
   }
   const now = Date.now();
+  const requestedSubmissions = getRoomGradingSubmissionMap(options.submissions);
   let nextGame = game;
   const submittedBots = [];
-  pendingParticipants.forEach((bot, index) => {
+  pendingBots.forEach((bot, index) => {
     const participantId = String(bot.id || "").slice(0, 80);
     if (!participantId) {
       return;
@@ -5320,13 +5414,15 @@ function autoSubmitRoomBotsWhenOnlyBotsPending(room, options = {}) {
     const remainingTime = timer && String(timer.status || "").toLowerCase() !== "ended"
       ? Math.max(0, Math.ceil(((Number(timer.endsAt) || now) - now) / 1000))
       : 0;
+    const requested = requestedSubmissions.get(participantId);
     const answerState = {
       participantId,
       status: "submitted",
-      answer: pickRoomBotAutoAnswer(room, bot, index),
+      answer: String(requested?.answer || pickRoomBotAutoAnswer(room, bot, index)).slice(0, 500),
       submittedAt: now,
       autoSubmitted: true,
-      remainingTime,
+      usedHint: Boolean(requested?.usedHint),
+      remainingTime: requested ? clampServerNumber(requested.remainingTime, 0, 600, remainingTime) : remainingTime,
       matchId,
       round
     };
@@ -5397,7 +5493,7 @@ function getRoomGradingSubmissions(participants = [], answers = {}) {
 }
 
 function startRoomGradingTransition(room, options = {}) {
-  const game = room.game && typeof room.game === "object" ? room.game : null;
+  let game = room.game && typeof room.game === "object" ? room.game : null;
   if (!game || room.status !== "in-progress") {
     return { started: false, duplicate: false, pendingParticipantIds: [] };
   }
@@ -5407,6 +5503,17 @@ function startRoomGradingTransition(room, options = {}) {
     return { started: false, duplicate: false, pendingParticipantIds: [] };
   }
   const participants = getRoomGameplayParticipants(room);
+  // Grading is a server transition. If a client submits the last real answer
+  // or resolves the timer, finish every pending bot in this same mutation so
+  // no browser-side bot request can delay or race grading.
+  autoSubmitRoomBotsWhenOnlyBotsPending(room, {
+    matchId,
+    round,
+    clientEventId: options.clientEventId,
+    submissions: options.submissions,
+    forceBots: Boolean(options.force || String(options.reason || "") === "timer-expired")
+  });
+  game = room.game && typeof room.game === "object" ? room.game : game;
   const existingAnswers = normalizeRoomAnswerState(game.answers, matchId, round);
   const submissionMap = getRoomGradingSubmissionMap(options.submissions);
   const answers = { ...existingAnswers };

@@ -60,7 +60,7 @@ const roomTabSessionIdPrefix = "room-tab-";
 const userStorageWriteDelayMs = 450;
 const setupCacheLimit = 30;
 const setupCacheMaxAgeMs = 24 * 60 * 60 * 1000;
-const publicCatalogVersion = "2026-07-16-1";
+const publicCatalogVersion = "2026-08-04-1";
 const chatCooldownWindowMs = 2000;
 const chatCooldownMaxMessages = 3;
 const chatCooldownDurationMs = 10000;
@@ -240,7 +240,8 @@ const profileCardStyles = [
   { id: "burning", name: "Burning", kind: "burning", colorId: "orange", condition: "Unlock The cook achievement.", unlockType: "achievement", achievementId: "the-cook", target: 1 },
   { id: "chaos", name: "Chaos", kind: "chaos", condition: "Win 50 public non-selfhosted Chaos matches.", unlockType: "progress", progressKey: "publicChaosWins", target: 50 },
   { id: "black-market", name: "Black Market", kind: "blackMarket", condition: "Spend 250,000 points buying power-ups.", unlockType: "progress", progressKey: "powerPurchaseSpendTotal", target: 250000 },
-  { id: "doom", name: "Doom", kind: "doom", condition: "Buy in Profile Shop for 800 coins.", unlockType: "shop", cost: 800 }
+  { id: "doom", name: "Doom", kind: "doom", condition: "Buy in Profile Shop for 1,000 coins.", unlockType: "shop", cost: 1000 },
+  { id: "chromatic", name: "Chromatic", kind: "chromatic", condition: "Buy in Profile Shop for 1,000 coins.", unlockType: "shop", cost: 1000 }
 ];
 const profileCardStyleMap = Object.fromEntries(profileCardStyles.map((style) => [style.id, style]));
 const profileCardEffects = [
@@ -3803,6 +3804,7 @@ const state = {
   hostedRoomsRefreshPromise: null,
   currentRoomRefreshPromise: null,
   roomEventRefreshPromise: null,
+  roomServerEventBuffer: {},
   appliedRoomEventIds: new Set(),
   appliedRoomEventOrder: [],
   locallyClosedRooms: {},
@@ -12611,7 +12613,6 @@ function applyRoomAnswerSubmission(payload = {}, source = {}) {
   }
   setRoomSubmission(owner, true);
   renderSpectatorAnswerCards();
-  maybeSubmitRoomBotsAfterRealPlayers();
   scheduleRoomSubmissionResolveCheck("answer-submitted", source);
   return true;
 }
@@ -12881,12 +12882,48 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   if (!code || code !== state.roomSettings.code) {
     return false;
   }
-  if (!roomPayloadMatchesCurrentMatch(payload)) {
+  const incomingGame = payload.game && typeof payload.game === "object"
+    ? payload.game
+    : payload.room?.game && typeof payload.room.game === "object"
+      ? payload.room.game
+      : null;
+  const result = normalizeRoomRoundResultPayload(payload.roundResult || incomingGame?.roundResult || payload);
+  if (!result) {
     return false;
   }
-  const result = normalizeRoomRoundResultPayload(payload.roundResult || payload.game?.roundResult || payload);
-  if (!result || Number(result.round) !== Number(state.round)) {
+  const incomingRound = Number(result.round || incomingGame?.round) || 0;
+  const canAdoptIncomingResult = Boolean(
+    incomingGame
+      && incomingRound >= Number(state.round || 0)
+      && canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, incomingRound)
+  );
+  if (!roomPayloadMatchesCurrentMatch(payload) && !canAdoptIncomingResult) {
     return false;
+  }
+  if (incomingRound !== Number(state.round)) {
+    if (!canAdoptIncomingResult) {
+      return false;
+    }
+    cancelActiveMatchWork();
+    state.currentRoomStatus = "in-progress";
+    state.round = incomingRound;
+    state.roomRoundResult = null;
+    if (incomingGame?.matchId) {
+      setCurrentRoomMatchId(incomingGame.matchId);
+    } else if (result.matchId) {
+      setCurrentRoomMatchId(result.matchId);
+    }
+    if (incomingGame?.matchSettings || payload.matchSettings || payload.settings) {
+      applyRoomGameMatchSettings(incomingGame, payload, { render: false, resetTimer: false });
+    }
+    if (incomingGame?.setup) {
+      try {
+        const setup = normalizeSetupPayload(incomingGame.setup);
+        applyRoundSetup(setup, { skipPublish: true, resumeSyncedRoom: true });
+      } catch {
+        return false;
+      }
+    }
   }
   state.roomRoundResult = result;
   if (result.matchId) {
@@ -14237,9 +14274,6 @@ function maybeResolveRoomSubmissions() {
   }
   if (isRoomSubmissionResolveStale()) {
     state.roomRoundResolving = false;
-  }
-  if (isCurrentHost() && !state.joiningRoom) {
-    maybeSubmitRoomBotsAfterRealPlayers();
   }
   const pendingSubmitters = getPendingSubmitters();
   if (pendingSubmitters.length > 0 || state.roomSubmissionResolveId) {
@@ -17112,13 +17146,21 @@ function canApplyRoomEventForCurrentMatch(payload = {}) {
   const incomingGame = payload.game || payload.room?.game || null;
   const round = getRoomPayloadRound(payload) || state.round;
   const isRematch = isIncomingRoomRematchPayload(payload, round);
+  const authoritativePhaseAdvance = Boolean(
+    payload.sourceId === "server"
+      && incomingGame
+      && ["round-advancing", "round-started", "round-grading", "round-result", "game-ended"].includes(eventType)
+      && Number(round || 0) >= Number(state.round || 0)
+      && String(incomingGame.status || payload.status || "").toLowerCase() !== "complete"
+      && canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, round)
+  );
   const canAdoptNewRoomGame = eventType === "round-started"
     && incomingGame
     && canAdoptIncomingRoomGame(incomingGame, payload.room || { status: payload.status || "in-progress" }, round);
   const canAdoptRoundAdvance = eventType === "round-advancing"
     && getRoomMatchIdFromPayload(payload)
     && (isRematch || isJoinedRoomWaitingForSyncedSetup(round));
-  return Boolean(isRematch || canAdoptNewRoomGame || canAdoptRoundAdvance);
+  return Boolean(isRematch || authoritativePhaseAdvance || canAdoptNewRoomGame || canAdoptRoundAdvance);
 }
 
 function isOlderRoomRoundEvent(payload = {}) {
@@ -17554,8 +17596,128 @@ function applyRoomEventPayload(payload = {}, source = {}) {
   return applied;
 }
 
+function getRoomServerEventCode(event = {}) {
+  return String(
+    event.roomCode
+      || event.payload?.roomCode
+      || event.payload?.code
+      || event.code
+      || state.roomSettings.code
+      || ""
+  ).trim().toUpperCase();
+}
+
+function isAuthoritativeRoomEvent(event = {}, options = {}) {
+  const source = String(options.source || "").trim().toLowerCase();
+  return Boolean(
+    event?.sourceId === "server"
+      || ["realtime", "server-event", "server-events", "command-response"].includes(source)
+  );
+}
+
+function getRoomServerEventBuffer(code = "") {
+  const roomCode = String(code || "").trim().toUpperCase();
+  if (!roomCode) {
+    return null;
+  }
+  if (!state.roomServerEventBuffer || typeof state.roomServerEventBuffer !== "object") {
+    state.roomServerEventBuffer = {};
+  }
+  if (!state.roomServerEventBuffer[roomCode] || typeof state.roomServerEventBuffer[roomCode] !== "object") {
+    state.roomServerEventBuffer[roomCode] = {};
+  }
+  return state.roomServerEventBuffer[roomCode];
+}
+
+function queueRoomServerEvent(event = {}, options = {}) {
+  const code = getRoomServerEventCode(event);
+  const revision = Number(event.revision) || Number(event.payload?.revision) || 0;
+  if (!code || !revision) {
+    return false;
+  }
+  const buffer = getRoomServerEventBuffer(code);
+  if (!buffer[revision]) {
+    buffer[revision] = {
+      event,
+      source: options.source || "server-event"
+    };
+  }
+  recordRoomDiagnosticEvent("event-queued", event.payload || event, {
+    source: options.source || "server-event",
+    eventType: normalizeRoomEventType(event.type || event.payload?.eventType || ""),
+    revision,
+    reason: `Queued room event revision ${revision} until the missing earlier revision is recovered.`
+  });
+  return true;
+}
+
+function flushRoomServerEventBuffer(code = "") {
+  const roomCode = String(code || "").trim().toUpperCase();
+  const buffer = getRoomServerEventBuffer(roomCode);
+  if (!buffer) {
+    return false;
+  }
+  let flushed = false;
+  while (true) {
+    const expectedRevision = getKnownRoomRevision(roomCode) + 1;
+    const queued = buffer[expectedRevision];
+    if (!queued) {
+      break;
+    }
+    const applied = applyRoomServerEventNow(queued.event, { source: queued.source || "server-event" });
+    if (!applied) {
+      break;
+    }
+    delete buffer[expectedRevision];
+    flushed = true;
+  }
+  if (!Object.keys(buffer).length && state.roomServerEventBuffer) {
+    delete state.roomServerEventBuffer[roomCode];
+  }
+  return flushed;
+}
+
+function isRoomServerEventSettled(event = {}, code = "") {
+  if (hasAppliedRoomServerEvent(event)) {
+    return true;
+  }
+  const revision = Number(event.revision) || Number(event.payload?.revision) || 0;
+  const roomCode = String(code || getRoomServerEventCode(event) || "").trim().toUpperCase();
+  if (!revision || !roomCode) {
+    return false;
+  }
+  const buffer = getRoomServerEventBuffer(roomCode);
+  return revision <= getKnownRoomRevision(roomCode) && !buffer?.[revision];
+}
+
 function applyRoomServerEvent(event = {}, source = {}) {
   const options = normalizeRoomApplySource(source);
+  const code = getRoomServerEventCode(event);
+  const revision = Number(event.revision) || Number(event.payload?.revision) || 0;
+  if (code && revision) {
+    const knownRevision = getKnownRoomRevision(code);
+    if (revision > knownRevision + 1) {
+      queueRoomServerEvent(event, options);
+      if (options.source !== "server-events" && hasActiveRoomContext() && code === state.roomSettings.code) {
+        void requestRoomRealtimeCatchup("revision-gap", {
+          force: true,
+          snapshot: false,
+          since: knownRevision
+        });
+      }
+      return true;
+    }
+  }
+  const applied = applyRoomServerEventNow(event, options);
+  if (applied) {
+    flushRoomServerEventBuffer(code);
+  }
+  return applied;
+}
+
+function applyRoomServerEventNow(event = {}, source = {}) {
+  const options = normalizeRoomApplySource(source);
+  const code = getRoomServerEventCode(event);
   if (hasAppliedRoomServerEvent(event)) {
     recordRoomDiagnosticEvent("ignored-duplicate", event.payload || {}, {
       source: options.source || "server-event",
@@ -17576,6 +17738,7 @@ function applyRoomServerEvent(event = {}, source = {}) {
     ...payload,
     eventType: normalizeRoomEventType(type),
     code: payload.code || payload.room?.code || state.roomSettings.code,
+    sourceId: event.sourceId || payload.sourceId || "server",
     revision: Number(event.revision) || 0,
     updatedAt: Number(event.createdAt) || Date.now()
   });
@@ -17608,17 +17771,42 @@ function applyRoomServerEvent(event = {}, source = {}) {
     return true;
   }
   const applied = applyRoomEventPayload(eventPayload, { source: options.source || "server-event" });
-  if (applied) {
+  const eventType = normalizeRoomEventType(event.type || event.payload?.eventType || "");
+  const hostOwnsRoundTransition = Boolean(
+    isCurrentHost()
+      && !state.joiningRoom
+      && ["round-advancing", "round-started"].includes(eventType)
+  );
+  if (applied || hostOwnsRoundTransition) {
     rememberAppliedRoomPayloadEvent(eventPayload);
     markRoomClientEventConfirmed(eventPayload, { source: options.source || "server-event" });
   }
-  recordRoomDiagnosticEvent(applied ? "applied" : "not-applied", eventPayload, {
+  recordRoomDiagnosticEvent(applied || hostOwnsRoundTransition ? "applied" : "not-applied", eventPayload, {
     source: options.source || "server-event",
-    reason: applied ? "Server event applied." : "Server event did not match a local handler."
+    reason: applied
+      ? "Server event applied."
+      : hostOwnsRoundTransition
+        ? "Host already owns this round transition locally; server event marked as settled."
+        : "Server event did not match a local handler."
   });
-  rememberAppliedRoomServerEvent(event);
-  rememberRoomRevisionPayload(eventPayload);
-  return applied;
+  if (applied || hostOwnsRoundTransition) {
+    rememberAppliedRoomServerEvent(event);
+    rememberRoomRevisionPayload(eventPayload);
+    return true;
+  }
+  if (
+    isAuthoritativeRoomEvent(event, options)
+      && options.source !== "server-events"
+      && hasActiveRoomContext()
+      && code === state.roomSettings.code
+  ) {
+    void requestRoomRealtimeCatchup("event-not-applied", {
+      force: true,
+      snapshot: true,
+      since: Math.max(0, Number(state.roomEventRevision) || 0)
+    });
+  }
+  return false;
 }
 
 async function refreshRoomEventsSinceLastRevision(options = {}) {
@@ -17651,7 +17839,9 @@ async function refreshRoomEventsSinceLastRevision(options = {}) {
         needsRoomRefresh = true;
       }
     });
-    rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
+    if (!events.length || events.every((event) => isRoomServerEventSettled(event, data.code || state.roomSettings.code))) {
+      rememberRoomRevisionPayload({ ...data, code: data.code || state.roomSettings.code });
+    }
     if (needsRoomRefresh && options.refreshRoom !== false) {
       const lookup = await fetchRoomByCode(state.roomSettings.code);
       if (lookup.status === "found" && lookup.room) {
@@ -18585,6 +18775,8 @@ function applyRoomEvent(event = {}, source = {}) {
       source: options.source || "client",
       reason: "Event payload was already applied in this tab."
     });
+    // A duplicate is already settled, so its revision must still advance the
+    // local cursor. The question-submission variable is scoped below.
     rememberRoomRevisionPayload(payload);
     return true;
   }
@@ -18632,7 +18824,9 @@ function applyRoomEvent(event = {}, source = {}) {
       source: options.source || "client",
       reason: appliedQuestionUpdate ? "Question submission update applied." : "Question submission update did not change local state."
     });
-    rememberRoomRevisionPayload(payload);
+    if (appliedQuestionUpdate) {
+      rememberRoomRevisionPayload(payload);
+    }
     return appliedQuestionUpdate;
   }
   const applied = applyRoomEventPayload(payload, options);
@@ -18646,7 +18840,9 @@ function applyRoomEvent(event = {}, source = {}) {
     source: options.source || "client",
     reason: applied ? "Room event applied." : "Room event did not match a local handler."
   });
-  rememberRoomRevisionPayload(payload);
+  if (applied || payload.optimistic) {
+    rememberRoomRevisionPayload(payload);
+  }
   return applied;
 }
 
@@ -18810,7 +19006,12 @@ const roomSync = {
     }
     const participantId = String(options.participantId || payload.participantId || state.clientId || "").slice(0, 80);
     const clientEventId = String(options.clientEventId || payload.clientEventId || createRoomSyncCommandId(commandType, roomCode)).slice(0, 160);
-    const expectedRevision = Number(options.expectedRevision ?? payload.expectedRevision ?? 0) || 0;
+    const expectedRevision = Number(
+      options.expectedRevision
+        ?? payload.expectedRevision
+        ?? getKnownRoomRevision(roomCode)
+        ?? 0
+    ) || 0;
     const commandPayload = {
       ...(payload && typeof payload === "object" ? payload : {}),
       roomCode,
@@ -18899,11 +19100,13 @@ const roomSync = {
           console.warn("Room command response event failed:", error);
         }
       });
-      rememberRoomRevisionPayload({
-        code: data.roomCode || roomCode,
-        revision: data.revision,
-        updatedAt: data.updatedAt || Date.now()
-      });
+      if (!events.length || events.every((event) => isRoomServerEventSettled(event, data.roomCode || roomCode))) {
+        rememberRoomRevisionPayload({
+          code: data.roomCode || roomCode,
+          revision: data.revision,
+          updatedAt: data.updatedAt || Date.now()
+        });
+      }
       notifyRoomSyncChange(roomSync.getLocalRoom(roomCode), {
         source: "command-response",
         commandType,
@@ -22888,6 +23091,12 @@ function getProfileStyleSwatch(style, draft = getProfileCustomizationDraft()) {
     return {
       primary: getProfileCardColour("pink"),
       secondary: getProfileCardColour("purple")
+    };
+  }
+  if (style.kind === "chromatic") {
+    return {
+      primary: getProfileCardColour("pink"),
+      secondary: getProfileCardColour("blue")
     };
   }
   return {
@@ -27865,10 +28074,9 @@ function scheduleBotPowerUpsForRound() {
 
 function scheduleRoomBotAnswersForRound() {
   state.roomBotAnswerSchedule = {};
-  if (state.mode !== "bots" && (!isRoomMode() || !isCurrentHost() || state.isSpectator)) {
-    return;
-  }
-  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
+  // Multiplayer bots are server-owned. Keep this scheduler for standalone
+  // bot matches only so a browser cannot race the room command stream.
+  if (isRoomMode() || state.mode !== "bots") {
     return;
   }
 
@@ -27898,10 +28106,7 @@ function commitScheduledBotPowerUps() {
 }
 
 function commitRoomBotAnswer(owner, options = {}) {
-  if (state.mode !== "bots" && (!isRoomMode() || !isCurrentHost() || state.isSpectator)) {
-    return false;
-  }
-  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
+  if (isRoomMode() || state.mode !== "bots") {
     return false;
   }
   if (!isBotOwner(owner) || state.roomSubmissions[owner]) {
@@ -27916,24 +28121,12 @@ function commitRoomBotAnswer(owner, options = {}) {
       state.botCards[botIndex] = answer;
     }
   }
-  if (isRoomMode()) {
-    updateRoomParticipantSubmission(getRoomParticipantIdForOwner(owner), answer, state.round, remainingTime);
-    setRoomSubmission(owner, true);
-    registerRoomBotAnswerSubmission(
-      owner,
-      publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime, { autoSubmitted: true })
-    );
-  } else {
-    setRoomSubmission(owner, true);
-  }
+  setRoomSubmission(owner, true);
   return true;
 }
 
 function commitScheduledRoomBotAnswers(options = {}) {
-  if (state.mode !== "bots" && (!isRoomMode() || !isCurrentHost() || state.isSpectator)) {
-    return false;
-  }
-  if (isRoomMode() && (!isCurrentHost() || state.isSpectator)) {
+  if (isRoomMode() || state.mode !== "bots") {
     return false;
   }
   if (!state.roomBotAnswerSchedule) {
@@ -27957,17 +28150,13 @@ function commitScheduledRoomBotAnswers(options = {}) {
     changed = commitRoomBotAnswer(owner) || changed;
   });
   if (changed) {
-    if (isRoomMode()) {
-      maybeResolveRoomSubmissions();
-    } else {
-      maybeResolveBotSubmissions();
-    }
+    maybeResolveBotSubmissions();
   }
   return changed;
 }
 
 function maybeSubmitRoomBotsAfterRealPlayers() {
-  if (!isRoomMode() || !isCurrentHost() || state.isSpectator) {
+  if (isRoomMode() || state.mode !== "bots") {
     return false;
   }
   if (getPendingRealRoomSubmitters().length > 0 || getPendingRoomBotSubmitters().length === 0) {

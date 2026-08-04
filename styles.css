@@ -8137,6 +8137,13 @@ input:focus {
   animation: cardMetallicShine 5200ms ease-in-out infinite;
 }
 
+/* The question card already clips its contents to its own border geometry.
+   Do not apply the shared 8px clip a second time: the border and sheen then
+   use different corner boxes and leave a small uncovered corner. */
+.black-card[data-card-custom="true"][data-card-special="false"][data-card-effects~="metallic"]::after {
+  clip-path: none;
+}
+
 .black-card[data-card-custom="true"][data-card-special="false"][data-card-effects~="metallic"] {
   overflow: hidden;
 }
@@ -8546,6 +8553,51 @@ input:focus {
   z-index: 2;
 }
 
+/* Chromatic is a purchasable base theme, rather than a special theme. The
+   six colour stops stay visible together while the gradient flows, so normal
+   effects and patterns can still layer on top of it. */
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"] {
+  border-color: transparent;
+  background-color: #080a12;
+  background-image:
+    linear-gradient(120deg,
+      rgba(255, 77, 125, 0.46) 0%,
+      rgba(255, 159, 47, 0.42) 16.66%,
+      rgba(250, 204, 21, 0.4) 33.33%,
+      rgba(64, 222, 164, 0.42) 50%,
+      rgba(34, 211, 238, 0.44) 66.66%,
+      rgba(167, 139, 250, 0.44) 83.33%,
+      rgba(255, 77, 125, 0.46) 100%),
+    linear-gradient(120deg,
+      #ff4d7d 0%,
+      #ff9f2f 16.66%,
+      #facc15 33.33%,
+      #40dea4 50%,
+      #22d3ee 66.66%,
+      #a78bfa 83.33%,
+      #ff4d7d 100%);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  background-size: 180% 100%, 180% 100%;
+  background-position: 0% 50%, 0% 50%;
+  box-shadow:
+    0 1rem 2rem rgba(0, 0, 0, 0.3),
+    0 0 1.5rem rgba(34, 211, 238, 0.2),
+    0 0 2rem rgba(255, 77, 125, 0.12);
+  animation: chromaticFlow var(--chromatic-duration, 7600ms) linear infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"] > * {
+  position: relative;
+  z-index: 2;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="chromatic"][data-card-custom="true"][data-card-effects~="rgb"] {
+  animation:
+    chromaticFlow var(--chromatic-duration, 7600ms) linear infinite,
+    cardRgbShift var(--card-rgb-duration, 8600ms) ease-in-out infinite;
+}
+
 .game-stage:not(.hidden) :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"],
 .game-stage:not(.hidden) :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]::before,
 .game-stage:not(.hidden) :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]::after {
@@ -8937,6 +8989,28 @@ input:focus {
   64% {
     opacity: 0.28;
     background-position: 120% 0;
+  }
+}
+
+@keyframes chromaticFlow {
+  0%,
+  100% {
+    background-position: 0% 50%, 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%, 100% 50%;
+  }
+}
+
+@keyframes chromaticPreviewFlow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
   }
 }
 
@@ -12486,6 +12560,25 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   text-shadow: 0 0 0.7rem rgba(255, 28, 76, 0.6);
 }
 
+.profile-style-option[data-profile-style-kind="chromatic"] {
+  border-color: rgba(255, 255, 255, 0.58);
+  background:
+    linear-gradient(120deg, rgba(255, 77, 125, 0.22), rgba(255, 159, 47, 0.18), rgba(250, 204, 21, 0.16), rgba(64, 222, 164, 0.18), rgba(34, 211, 238, 0.2), rgba(167, 139, 250, 0.2)),
+    rgba(255, 255, 255, 0.045);
+  background-size: 220% 100%;
+  animation: chromaticPreviewFlow 4200ms linear infinite;
+  box-shadow:
+    0 0 1rem rgba(34, 211, 238, 0.18),
+    0 0 1.35rem rgba(255, 77, 125, 0.12);
+}
+
+.profile-style-option[data-profile-style-kind="chromatic"] span {
+  color: #f7fbff;
+  text-shadow:
+    0 0 0.55rem rgba(34, 211, 238, 0.5),
+    0 0 0.85rem rgba(255, 77, 125, 0.36);
+}
+
 .profile-style-option[data-profile-style-kind="neon"] {
   background:
     radial-gradient(circle at 18% 16%, rgb(var(--style-swatch-rgb, 34 211 238) / 0.22), transparent 38%),
@@ -13337,6 +13430,13 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   mask: url("assets/patterns/hearts-pattern.svg") repeat;
   -webkit-mask-size: 3rem 3rem;
   mask-size: 3rem 3rem;
+}
+
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="chromatic"] .profile-shop-preview::before {
+  background:
+    linear-gradient(120deg, #ff4d7d 0 16.66%, #ff9f2f 16.66% 33.33%, #facc15 33.33% 50%, #40dea4 50% 66.66%, #22d3ee 66.66% 83.33%, #a78bfa 83.33% 100%);
+  background-size: 220% 100%;
+  animation: chromaticPreviewFlow 4200ms linear infinite;
 }
 
 .profile-shop-copy {
