@@ -8762,6 +8762,12 @@ input:focus {
   background-color: #ffffff;
 }
 
+/* Profile and leaderboard surfaces use the same restrained 1px rim as the
+   existing themes; answer cards keep their stronger framed border. */
+:is(.profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) {
+  border-width: 1px;
+}
+
 /* Metallic adds a surface sheen as a third background layer. Keep the
    theme-specific rim as the border-box layer so it cannot turn black. */
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-effects~="metallic"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) {
