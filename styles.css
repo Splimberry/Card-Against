@@ -7611,6 +7611,13 @@ input:focus {
   z-index: 1;
 }
 
+.white-card[data-card-custom="true"] > .answer-hint-marker {
+  position: absolute;
+  top: 0.68rem;
+  right: 0.68rem;
+  z-index: 4;
+}
+
 .white-card[data-card-style="gradient"][data-card-custom="true"] {
   border: 6px solid transparent;
   background-color: #08090d;
