@@ -2586,7 +2586,7 @@ function createRealtimeBroadcastMessage(topic, event) {
   };
 }
 
-function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], options = {}) {
+async function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], options = {}) {
   const code = String(roomCode || "").trim().toUpperCase();
   const broadcastEvents = Array.isArray(events) ? events.filter((event) => event && typeof event === "object") : [];
   const url = getSupabaseRealtimeBroadcastUrl();
@@ -2606,7 +2606,8 @@ function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], options
   if (!messages.length) {
     return false;
   }
-  fetch(url, {
+  try {
+    const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -2614,15 +2615,20 @@ function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], options
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({ messages })
-  }).catch((error) => {
+    });
+    if (!response.ok) {
+      throw new Error(`Supabase realtime broadcast failed with HTTP ${response.status}.`);
+    }
+    return true;
+  } catch (error) {
     console.warn("Server realtime broadcast failed:", error?.message || error);
-  });
-  return true;
+    return false;
+  }
 }
 
-function createRoomCommandResponse(room, previousRevision = 0, options = {}) {
+async function createRoomCommandResponse(room, previousRevision = 0, options = {}) {
   const events = getRoomEventsAfterRevision(room, previousRevision, options);
-  const serverBroadcast = scheduleServerRoomRealtimeBroadcast(room.code, events, options);
+  const serverBroadcast = await scheduleServerRoomRealtimeBroadcast(room.code, events, options);
   return {
     ok: true,
     roomCode: room.code,
@@ -2739,7 +2745,7 @@ async function handleRoomCommandCreateRoom(req, res, normalizedCode, command, ra
   });
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, 0, { includePrivateSecrets: true }),
+    ...(await createRoomCommandResponse(storedRoom, 0, { includePrivateSecrets: true })),
     room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true }),
     transferredRooms: transferredRooms.map((entry) => sanitizeRoomForClient(entry))
   }, { "Set-Cookie": createRoomHostCookie(req, storedRoom) });
@@ -2930,7 +2936,7 @@ async function handleRoomCommandUpdateAnswerDraft(req, res, room, command, rawBo
   });
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision, {
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision, {
     includeSubmittedAnswers: true
   }));
 }
@@ -2986,9 +2992,9 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
       finalizeRoom(room);
       const storedRoom = await backendStore.upsertRoom(room);
       sendJson(res, 200, {
-        ...createRoomCommandResponse(storedRoom, previousRevision, {
+        ...(await createRoomCommandResponse(storedRoom, previousRevision, {
           includeSubmittedAnswers: true
-        }),
+        })),
         duplicate: true,
         answer: existingAnswer.answer || "",
         remainingTime: clampServerNumber(existingAnswer.remainingTime, 0, 600, 0),
@@ -3071,7 +3077,7 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
   });
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision, {
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision, {
     includeSubmittedAnswers: true
   }));
 }
@@ -3140,7 +3146,7 @@ async function handleRoomCommandAddBot(req, res, room, command, rawBody = {}) {
     bot: true
   });
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision));
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision));
 }
 
 async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}) {
@@ -3264,7 +3270,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   finalizeRoom(room);
   const preparingRoom = await backendStore.upsertRoom(room);
   const preparationRevision = getRoomRevision(preparingRoom);
-  scheduleServerRoomRealtimeBroadcast(
+  await scheduleServerRoomRealtimeBroadcast(
     preparingRoom.code,
     getRoomEventsAfterRevision(preparingRoom, previousRevision, { includeSubmittedAnswers: true }),
     { includeSubmittedAnswers: true }
@@ -3338,7 +3344,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, preparationRevision, { includeSubmittedAnswers: true }),
+    ...(await createRoomCommandResponse(storedRoom, preparationRevision, { includeSubmittedAnswers: true })),
     game: storedRoom.game || room.game
   });
 }
@@ -3398,6 +3404,7 @@ async function handleRoomCommandResolveAllSubmitted(req, res, room, command, raw
     force: false,
     matchId: currentMatchId,
     round: currentRound,
+    submissions: command.payload.submissions,
     clientEventId: command.clientEventId
   });
   if (!transition.started && !transition.duplicate) {
@@ -3414,11 +3421,20 @@ async function handleRoomCommandResolveAllSubmitted(req, res, room, command, raw
 
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
-  const response = createRoomCommandResponse(storedRoom, previousRevision, {
+  const response = await createRoomCommandResponse(storedRoom, previousRevision, {
     includeSubmittedAnswers: true
   });
   if (transition.duplicate && !response.events.length && transition.payload) {
-    response.events = [createSyntheticRoomEvent(storedRoom, "round_grading", transition.payload)];
+    const syntheticEvent = createSyntheticRoomEvent(storedRoom, "round_grading", transition.payload);
+    response.events = [syntheticEvent];
+    // The normal response was already broadcast before the synthetic retry
+    // event was created. Publish the retry too so a client recovering from a
+    // missed grading event does not depend on the host rebroadcasting it.
+    response.serverBroadcast = await scheduleServerRoomRealtimeBroadcast(
+      storedRoom.code,
+      response.events,
+      { includeSubmittedAnswers: true }
+    );
   }
   sendJson(res, 200, response);
 }
@@ -3558,7 +3574,7 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true })),
     game: storedRoom.game || room.game
   });
 }
@@ -3610,7 +3626,7 @@ async function handleRoomCommandUpdateSettings(req, res, room, command, rawBody 
     host: room.host
   });
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision));
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision));
 }
 
 async function handleRoomCommandModerateParticipant(req, res, room, command, rawBody = {}) {
@@ -3669,7 +3685,7 @@ async function handleRoomCommandModerateParticipant(req, res, room, command, raw
     return;
   }
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision));
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision));
 }
 
 async function handleRoomCommandTransferHost(req, res, room, command, rawBody = {}) {
@@ -3690,7 +3706,7 @@ async function handleRoomCommandTransferHost(req, res, room, command, rawBody = 
   }
   const storedRoom = await backendStore.upsertRoom(promotedRoom);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, previousRevision),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision)),
     room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
   }, { "Set-Cookie": createRoomHostCookie(req, storedRoom) });
 }
@@ -3749,7 +3765,7 @@ async function handleRoomCommandMoveToGrading(req, res, room, command, rawBody =
   }
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision, {
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision, {
     includeSubmittedAnswers: true
   }));
 }
@@ -3789,7 +3805,7 @@ async function handleRoomCommandPublishRoundResult(req, res, room, command, rawB
     && Number(existingResult.round) === Number(roundResult.round || currentRound)
   ) {
     sendJson(res, 200, {
-      ...createRoomCommandResponse(room, previousRevision, { includeSubmittedAnswers: true }),
+      ...(await createRoomCommandResponse(room, previousRevision, { includeSubmittedAnswers: true })),
       duplicate: true,
       roundResult: existingResult,
       game: room.game
@@ -3814,7 +3830,7 @@ async function handleRoomCommandPublishRoundResult(req, res, room, command, rawB
   });
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision, {
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision, {
     includeSubmittedAnswers: true
   }));
 }
@@ -3863,7 +3879,7 @@ async function handleRoomCommandEndGame(req, res, room, command, rawBody = {}) {
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true })),
     game: storedRoom.game || game
   });
 }
@@ -3899,7 +3915,7 @@ async function handleRoomCommandReturnToLobby(req, res, room, command, rawBody =
   });
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, previousRevision),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision)),
     room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
   });
 }
@@ -3958,7 +3974,7 @@ async function handleRoomCommandSendChat(req, res, room, command, rawBody = {}) 
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, previousRevision),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision)),
     message
   });
 }
@@ -4082,7 +4098,7 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
   const storedRoom = await backendStore.upsertRoom(room);
   const responsePowerState = normalizeRoomPowerState(storedRoom.game?.powerState) || mergedPowerState;
   sendJson(res, 200, {
-    ...createRoomCommandResponse(storedRoom, previousRevision),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision)),
     round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
     matchId: storedRoom.game?.matchId || responsePowerState.matchId || "",
     powerId: String(body.powerId || "").slice(0, 80),
@@ -4117,7 +4133,7 @@ async function handleRoomCommandLeaveRoom(req, res, room, command, rawBody = {})
     if (promotedRoom) {
       const storedRoom = await backendStore.upsertRoom(promotedRoom);
       sendJson(res, 200, {
-        ...createRoomCommandResponse(storedRoom, previousRevision),
+        ...(await createRoomCommandResponse(storedRoom, previousRevision)),
         room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
       }, { "Set-Cookie": createRoomHostCookie(req, storedRoom) });
       return;
@@ -4163,7 +4179,7 @@ async function handleRoomCommandLeaveRoom(req, res, room, command, rawBody = {})
     reason
   });
   const storedRoom = await backendStore.upsertRoom(room);
-  sendJson(res, 200, createRoomCommandResponse(storedRoom, previousRevision));
+  sendJson(res, 200, await createRoomCommandResponse(storedRoom, previousRevision));
 }
 
 async function handleRoomCommandParticipantPresence(req, res, room, command, rawBody = {}, options = {}) {
@@ -4495,7 +4511,7 @@ async function handleRoomCommandParticipantPresence(req, res, room, command, raw
   const storedRoom = await backendStore.upsertRoom(activeRoom);
   const participantCookie = normalizeParticipantRole(participant) !== "bot" ? createRoomParticipantCookie(req, storedRoom, participant.id) : "";
   const response = {
-    ...createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true })),
     participant: sanitizeParticipantForClient(
       storedRoom.participants.find((entry) => entry.id === participant.id) || finalParticipant,
       { includeSubmittedAnswers: true }

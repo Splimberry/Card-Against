@@ -1228,6 +1228,17 @@ function readPowerSuggestionSetting(fallback = true) {
   return fallback !== false;
 }
 
+function readBooleanSetting(storageKey, fallback = true) {
+  const stored = storageKey ? localStorage.getItem(storageKey) : null;
+  if (stored === "true") {
+    return true;
+  }
+  if (stored === "false") {
+    return false;
+  }
+  return fallback !== false;
+}
+
 const defaultMatchTimerSeconds = 30;
 const timerSettingMinSeconds = 10;
 const timerSettingMaxSeconds = 60;
@@ -1273,6 +1284,8 @@ const savedLocalTimerSeconds = readTimerSecondsSetting("cardsAgainstAiLocalTimer
   migrateLegacyMinimum: true,
   migrationKey: "cardsAgainstAiLocalTimerDefaultMigratedV2"
 });
+const savedBotAutoAdvance = readBooleanSetting("cardsAgainstAiBotAutoAdvance", true);
+const savedLocalAutoAdvance = readBooleanSetting("cardsAgainstAiLocalAutoAdvance", true);
 const BOT_OWNER_IDS = Array.from({ length: 9 }, (_, index) => `bot${index + 1}`);
 const DEFAULT_OWNER_IDS = ["player", "opponent", ...BOT_OWNER_IDS];
 
@@ -3138,6 +3151,7 @@ const state = {
     botCount: 2,
     rounds: savedBotRounds,
     timerSeconds: savedBotTimerSeconds,
+    autoAdvance: savedBotAutoAdvance,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -3150,6 +3164,7 @@ const state = {
   localSettings: {
     rounds: savedLocalRounds,
     timerSeconds: savedLocalTimerSeconds,
+    autoAdvance: savedLocalAutoAdvance,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -3827,6 +3842,7 @@ const elements = {
   botCountValue: document.querySelector("#botCountValue"),
   botRoundsSlider: document.querySelector("#botRoundsSlider"),
   botRoundsValue: document.querySelector("#botRoundsValue"),
+  botAutoAdvanceToggle: document.querySelector("#botAutoAdvanceToggle"),
   botRandomModeToggle: document.querySelector("#botRandomModeToggle"),
   botClassicModeToggle: document.querySelector("#botClassicModeToggle"),
   botHarshModeToggle: document.querySelector("#botHarshModeToggle"),
@@ -10149,6 +10165,7 @@ function getDefaultBotSettings() {
     botCount: 2,
     rounds: 5,
     timerSeconds: 30,
+    autoAdvance: true,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -10164,6 +10181,7 @@ function getDefaultLocalSettings() {
   return {
     rounds: 5,
     timerSeconds: 30,
+    autoAdvance: true,
     classicMode: false,
     randomModifiers: false,
     harsh: false,
@@ -10260,6 +10278,9 @@ function syncBotAdvancedControls() {
     elements.botTimerSlider.value = timerSeconds;
     elements.botTimerValue.textContent = `${timerSeconds}s`;
   }
+  if (elements.botAutoAdvanceToggle) {
+    elements.botAutoAdvanceToggle.checked = settings.autoAdvance !== false;
+  }
   elements.botRandomModeToggle.checked = Boolean(settings.randomModifiers);
   elements.botClassicModeToggle.checked = Boolean(settings.classicMode);
   elements.botHarshModeToggle.checked = Boolean(settings.harsh);
@@ -10311,6 +10332,10 @@ function updateBotSettingsFromControls() {
     localStorage.setItem(isLocal ? "cardsAgainstAiLocalTimerSeconds" : "cardsAgainstAiBotTimerSeconds", String(settings.timerSeconds));
     elements.botTimerValue.textContent = `${settings.timerSeconds}s`;
   }
+  if (elements.botAutoAdvanceToggle) {
+    settings.autoAdvance = Boolean(elements.botAutoAdvanceToggle.checked);
+    localStorage.setItem(isLocal ? "cardsAgainstAiLocalAutoAdvance" : "cardsAgainstAiBotAutoAdvance", String(settings.autoAdvance));
+  }
   settings.classicMode = Boolean(elements.botClassicModeToggle.checked);
   if (settings.classicMode) {
     elements.botRandomModeToggle.checked = false;
@@ -10337,10 +10362,12 @@ function resetAdvancedSettings() {
     state.localSettings = getDefaultLocalSettings();
     localStorage.setItem("cardsAgainstAiLocalRounds", String(state.localSettings.rounds));
     localStorage.setItem("cardsAgainstAiLocalTimerSeconds", String(state.localSettings.timerSeconds));
+    localStorage.setItem("cardsAgainstAiLocalAutoAdvance", String(state.localSettings.autoAdvance));
   } else {
     state.botSettings = getDefaultBotSettings();
     localStorage.setItem("cardsAgainstAiBotRounds", String(state.botSettings.rounds));
     localStorage.setItem("cardsAgainstAiBotTimerSeconds", String(state.botSettings.timerSeconds));
+    localStorage.setItem("cardsAgainstAiBotAutoAdvance", String(state.botSettings.autoAdvance));
   }
   syncBotAdvancedControls();
   playSound("click");
@@ -11910,6 +11937,36 @@ function publishRoomAnswerSubmissionForOwner(owner, answer, remainingTime = stat
   const cleanAnswer = cleanInput(answer || "");
   const clientEventId = String(options.clientEventId || createRoomSyncCommandId("submit-answer", code)).slice(0, 160);
   const submittedAt = Date.now();
+  const participant = state.roomParticipants.find((entry) => entry.id === participantId)
+    || getPlayer(owner)
+    || { id: participantId, name: getOwnerLabel(owner) || "A player" };
+  // The submission indicator is a live UI state. Publish it before the
+  // command waits on persistence so every client can update immediately.
+  broadcastRealtimeRoomChange("answer-submitted", code, {
+    optimistic: true,
+    clientEventId,
+    participantId,
+    participant: {
+      ...participant,
+      id: participantId,
+      role: participant.role || (participant.bot ? "bot" : "player"),
+      bot: Boolean(participant.bot || isBotOwner(owner)),
+      spectator: false,
+      active: participant.active !== false,
+      status: "submitted",
+      answer: cleanAnswer,
+      submittedRound: state.round,
+      submissionMatchId: getCurrentRoomMatchId(),
+      remainingTime: Math.max(0, Number(remainingTime) || 0)
+    },
+    matchId: getCurrentRoomMatchId(),
+    round: state.round,
+    answer: cleanAnswer,
+    remainingTime: Math.max(0, Number(remainingTime) || 0),
+    submissionStatus: options.timedOut ? "timed_out" : "submitted",
+    autoSubmitted: Boolean(options.autoSubmitted || options.timedOut),
+    updatedAt: submittedAt
+  });
   return roomSync.sendCommand("submit_answer", {
     clientEventId,
     participantId,
@@ -14059,6 +14116,43 @@ function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
   const code = state.roomSettings.code;
   const participantId = getRoomParticipantIdForOwner(state.currentOwner) || state.clientId;
   const clientEventId = createRoomSyncCommandId("resolve-all-submitted", code);
+  // Include the complete local submission set with the transition command.
+  // This makes forced bot submissions part of the authoritative grading
+  // request even if their individual persistence requests are still in flight.
+  const submissions = buildRoundSkipSubmissions();
+  const canOptimisticallyStartGrading = Boolean(
+    isCurrentHost()
+    && !state.joiningRoom
+    && getPendingSubmitters().length === 0
+    && !isRoomGradingPhaseStarted()
+  );
+  if (canOptimisticallyStartGrading) {
+    const activeParticipantIds = getActiveOwners()
+      .map((owner) => getRoomParticipantIdForOwner(owner))
+      .filter(Boolean);
+    const submittedParticipantIds = new Set(submissions.map((entry) => entry.participantId));
+    if (activeParticipantIds.every((id) => submittedParticipantIds.has(id))) {
+      const updatedAt = Date.now();
+      const game = createOptimisticRoomGradingGame(submissions, {
+        matchId: getCurrentRoomMatchId(),
+        round: state.round,
+        reason: "all-submitted",
+        updatedAt
+      });
+      broadcastAndApplyOptimisticRoomChange("round-grading", code, {
+        clientEventId,
+        status: "in-progress",
+        revision: getKnownRoomRevision(code),
+        updatedAt,
+        matchId: getCurrentRoomMatchId(),
+        round: state.round,
+        reason: "all-submitted",
+        hostParticipantId: state.clientId,
+        submissions,
+        game
+      });
+    }
+  }
   recordRoomDiagnosticEvent("command-sent", {
     code: state.roomSettings.code,
     eventType: "resolve-all-submitted",
@@ -14074,7 +14168,8 @@ function requestRoomAllSubmittedGradingLock(reason = "submissions-complete") {
     participantId,
     round: state.round,
     matchId: getCurrentRoomMatchId(),
-    reason
+    reason,
+    submissions
   }, {
     roomCode: code,
     participantId,
@@ -15862,7 +15957,7 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
   const room = roomOrCode && typeof roomOrCode === "object" ? roomOrCode : null;
   const code = String(room?.code || roomOrCode || state.roomSettings.code || "").trim().toUpperCase();
   if (!code || code === "CAI-0000") {
-    return;
+    return null;
   }
   const forceRoomChannel = Boolean(details.forceRoomChannel);
   const forceLobbyChannel = Boolean(details.forceLobbyChannel);
@@ -15894,7 +15989,7 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
     if (sendToRoom) {
       queueCriticalRoomRealtimePayload(payload, code);
     }
-    return;
+    return payload;
   }
   const sentToLobby = sendToLobby
     ? sendRealtimeRoomPayload(state.realtimeLobbyChannel, createRealtimeLobbySummaryPayload(payload), { source: "lobby" })
@@ -15910,8 +16005,20 @@ function broadcastRealtimeRoomChange(eventType, roomOrCode = state.roomSettings.
     queueCriticalRoomRealtimePayload(payload, code);
   }
   if (!sentToLobby && !sentToRoom) {
-    return;
+    return payload;
   }
+  return payload;
+}
+
+function broadcastAndApplyOptimisticRoomChange(eventType, roomOrCode = state.roomSettings.code, details = {}) {
+  const payload = broadcastRealtimeRoomChange(eventType, roomOrCode, {
+    ...details,
+    optimistic: true
+  });
+  if (!payload) {
+    return false;
+  }
+  return Boolean(roomSync?.applyEvent(payload, { source: "optimistic" }));
 }
 
 function broadcastRealtimeAppEvent(eventType, details = {}) {
@@ -16456,14 +16563,20 @@ function getRoomPayloadClientEventKey(payload = {}) {
   return ["payload-client", code, eventType, clientEventId].join(":");
 }
 
-function hasAppliedRoomPayloadEvent(payload = {}) {
+function hasAppliedRoomPayloadEvent(payload = {}, options = {}) {
   const eventId = getRoomPayloadEventKey(payload);
   const clientEventId = getRoomPayloadClientEventKey(payload);
+  const source = String(options.source || "").trim().toLowerCase();
+  const authoritative = Boolean(
+    options.authoritative
+    || payload.sourceId === "server"
+    || ["realtime", "server-event", "server-events", "command-response"].includes(source)
+  );
   return Boolean(
     state.appliedRoomEventIds instanceof Set
     && (
       (eventId && state.appliedRoomEventIds.has(eventId))
-      || (clientEventId && state.appliedRoomEventIds.has(clientEventId))
+      || (!authoritative && clientEventId && state.appliedRoomEventIds.has(clientEventId))
     )
   );
 }
@@ -16950,7 +17063,7 @@ function applyRoomServerEvent(event = {}, source = {}) {
     source: options.source || "server-event",
     reason: "Received from server event catchup."
   });
-  if (hasAppliedRoomPayloadEvent(eventPayload)) {
+  if (hasAppliedRoomPayloadEvent(eventPayload, { authoritative: true, source: options.source })) {
     markRoomClientEventConfirmed(eventPayload, { source: options.source || "server-event" });
     recordRoomDiagnosticEvent("ignored-duplicate", eventPayload, {
       source: options.source || "server-event",
@@ -17865,7 +17978,11 @@ function applyRoomEvent(event = {}, source = {}) {
   const payload = normalizeRoomEventPayload(event, options);
   const payloadRevision = getRoomPayloadRevision(payload);
   const previousRevision = Number(state.roomEventRevision) || 0;
-  if (hasAppliedRoomPayloadEvent(payload)) {
+  if (hasAppliedRoomPayloadEvent(payload, {
+    authoritative: options.source === "realtime" && payload.sourceId === "server"
+      || ["server-event", "server-events", "command-response"].includes(String(options.source || "").toLowerCase()),
+    source: options.source
+  })) {
     if (!payload.optimistic) {
       markRoomClientEventConfirmed(payload, { source: options.source || "client" });
     }
@@ -18159,7 +18276,10 @@ const roomSync = {
         };
       }
       const events = Array.isArray(data.events) ? data.events : [];
-      if (options.broadcast !== false) {
+      // The server broadcast is the authoritative transport. Rebroadcast the
+      // response only when the server could not publish it, otherwise the host
+      // creates a second realtime delivery for every command.
+      if (options.broadcast !== false && data.serverBroadcast !== true) {
         getRoomSyncCommandEventsForBroadcast(events, clientEventId).forEach((event) => {
           try {
             broadcastRoomSyncServerEvent(event, roomCode);
@@ -33318,6 +33438,49 @@ function leavePublishedRoom(options = {}) {
   };
   if (isHostLeaving) {
     const clientEventId = createRoomSyncCommandId("leave-room", code);
+    const nextHost = state.roomParticipants
+      .filter((participant) => (
+        participant.id !== state.clientId
+        && participant.active !== false
+        && participant.role === "player"
+        && !participant.bot
+        && !participant.spectator
+      ))
+      .sort((a, b) => (Number(a.joinedAt) || 0) - (Number(b.joinedAt) || 0))[0] || null;
+    if (nextHost) {
+      broadcastRealtimeRoomChange("host-transferred", code, {
+        optimistic: true,
+        clientEventId,
+        revision: getKnownRoomRevision(code),
+        updatedAt: Date.now(),
+        previousHostId: state.clientId,
+        newHostId: nextHost.id,
+        newHostName: nextHost.name || "Host",
+        participant: {
+          ...nextHost,
+          host: true,
+          role: "host",
+          status: "host"
+        },
+        host: {
+          id: nextHost.id,
+          profileUserId: nextHost.profileUserId || nextHost.userId || nextHost.id,
+          name: nextHost.name || "Host",
+          avatar: nextHost.avatar || "",
+          equippedTitleId: nextHost.equippedTitleId || "",
+          specialBadges: nextHost.specialBadges || [],
+          cardCustomization: nextHost.cardCustomization || null
+        }
+      });
+    } else {
+      broadcastRealtimeRoomChange("room-closed", code, {
+        optimistic: true,
+        clientEventId,
+        revision: getKnownRoomRevision(code),
+        updatedAt: Date.now(),
+        reason: "host-left"
+      });
+    }
     if (!options.keepalive || reason !== "page-exit") {
       clearHostedRoomSession(code);
     }
@@ -35121,6 +35284,37 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
   const powerState = options.powerState && typeof options.powerState === "object"
     ? options.powerState
     : getRoomRoundStartPowerStatePayload();
+  const optimisticUpdatedAt = Date.now();
+  const optimisticGame = {
+    ...(state.roomGame || {}),
+    matchId,
+    status: "starting",
+    round: Number(round) || state.round,
+    setup: null,
+    answers: {},
+    matchSettings,
+    roundResult: null,
+    powerState,
+    setupStartedAt: optimisticUpdatedAt,
+    roundStartedAt: 0,
+    updatedAt: optimisticUpdatedAt
+  };
+  // Let joined clients leave the old lobby/verdict immediately. The server
+  // still owns question generation and will confirm this with round-started.
+  broadcastRealtimeRoomChange("round-advancing", code, {
+    optimistic: true,
+    clientEventId,
+    status: "in-progress",
+    revision: getKnownRoomRevision(code),
+    updatedAt: optimisticUpdatedAt,
+    round: Number(round) || state.round,
+    nextRound: Number(round) || state.round,
+    fromRound: Number(state.round) || 0,
+    matchId,
+    matchSettings,
+    settings: matchSettings,
+    game: optimisticGame
+  });
   return roomSync.sendCommand(commandType, {
     clientEventId,
     hostParticipantId: state.clientId,
@@ -35258,6 +35452,14 @@ function publishRoomReturnToLobby() {
   if (hostedRoom) {
     Object.assign(hostedRoom, optimisticRoom);
   }
+  broadcastRealtimeRoomChange("room-updated", code, {
+    optimistic: true,
+    clientEventId,
+    status: "lobby",
+    revision: getKnownRoomRevision(code),
+    updatedAt,
+    room: optimisticRoom
+  });
   return roomSync.sendCommand("return_to_lobby", {
     clientEventId,
     hostParticipantId: state.clientId,
@@ -35874,7 +36076,13 @@ function handleRoomRealtimeStatus(status = "") {
     stopRoomRealtimeMaintenance({ keepHeartbeat: true });
     startRoomHeartbeat();
     flushPendingRoomRealtimePayloads(state.realtimeRoomCode);
-    recordRoomCatchupSkipped("subscribed");
+    // A room can change between the join response and this channel becoming
+    // subscribed. Catch up once from the last known revision so that the
+    // realtime channel never starts with a stale lobby or game phase.
+    void requestRoomRealtimeCatchup("subscribed", {
+      force: true,
+      snapshot: false
+    });
     return;
   }
   if (!state.roomRealtimeUnhealthySince) {
@@ -36707,6 +36915,16 @@ async function addBotToRoom() {
   };
   rememberPendingRoomBotAdd({ id: botId, name: botName });
   renderRoomLobby();
+  broadcastRealtimeRoomChange("participant-joined", state.roomSettings.code, {
+    optimistic: true,
+    clientEventId,
+    status: "lobby",
+    revision: getKnownRoomRevision(state.roomSettings.code),
+    updatedAt: Date.now(),
+    participantId: botId,
+    participant: optimisticBotParticipant,
+    bot: true
+  });
   const data = await roomSync.sendCommand("add_bot", {
     botId,
     name: botName,
@@ -38185,7 +38403,14 @@ function updateNextRoundButtonLabel() {
 
 function startNextRoundCountdown() {
   stopNextRoundCountdown();
-  if (isRoomMode() && state.roomSettings.autoAdvance === false) {
+  const autoAdvanceEnabled = isRoomMode()
+    ? state.roomSettings.autoAdvance !== false
+    : state.mode === "local"
+      ? state.localSettings?.autoAdvance !== false
+      : state.mode === "bots"
+        ? state.botSettings?.autoAdvance !== false
+        : true;
+  if (!autoAdvanceEnabled) {
     state.nextRoundCountdown = 0;
     updateNextRoundButtonLabel();
     return;
@@ -41007,6 +41232,7 @@ elements.localAdvancedToggle?.addEventListener("click", () => {
 elements.botCountSlider?.addEventListener("input", updateBotSettingsFromControls);
 elements.botRoundsSlider?.addEventListener("input", updateBotSettingsFromControls);
 elements.botTimerSlider?.addEventListener("input", updateBotSettingsFromControls);
+elements.botAutoAdvanceToggle?.addEventListener("change", updateBotSettingsFromControls);
 [
   elements.botRandomModeToggle,
   elements.botClassicModeToggle,
