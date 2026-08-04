@@ -469,6 +469,78 @@ const powerDeck = [
 const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
 const chaosInfusedPowerSuffix = "__chaos";
 const chaosInfusionChance = 0.2;
+const powerCategoryInfo = Object.freeze({
+  defense: { label: "Defense", icon: "assets/overlays/shield.svg" },
+  target: { label: "Target", icon: "assets/overlays/customer.svg" },
+  boost: { label: "Boost", icon: "assets/overlays/coin.svg" },
+  chaos: { label: "Chaos", icon: "assets/modifiers/dice.svg" },
+  disruption: { label: "Disruption", icon: "assets/overlays/flash.svg" },
+  risk: { label: "Risk", icon: "assets/overlays/bomb.svg" },
+  utility: { label: "Utility", icon: "assets/overlays/store.svg" },
+  doom: { label: "Doom", icon: "assets/modifiers/skull.svg" }
+});
+const powerCategoryTypeSets = Object.freeze({
+  defense: new Set([
+    "antivirus", "deep_freeze", "eternal_flame", "insurance", "lucky_side", "participation",
+    "permafrost", "red_herring", "shield", "streak_retainer", "ultimatum"
+  ]),
+  boost: new Set([
+    "afterparty", "airdrop", "arsonist", "bartender", "blessing", "bottom_feeder", "bounty",
+    "gamblers_dream", "magic_8", "rocket", "sin_pride", "speed_answer", "vulture"
+  ]),
+  disruption: new Set([
+    "basic_sabotage", "big_sabotage", "crawler_virus", "dead_weight", "execution", "freeze_ray",
+    "get_good", "hard_reset", "hitman", "law_mower", "lawsuit", "lightning_strike", "loser_tax",
+    "monopoly", "penalty_cloud", "power_heist", "shameless", "shock_bomb", "sin_envy", "software_downgrade",
+    "tax_collector", "thorns", "virus_deployment", "world_burn", "zap_strike"
+  ]),
+  risk: new Set([
+    "bribe", "bribe_judge", "double_jeopardy", "heaven_hell", "hot_potato", "last_chance",
+    "sin_gluttony", "sin_sloth", "sin_wrath", "time_bomb", "void_bomb"
+  ]),
+  chaos: new Set([
+    "cocktail_mix", "curse", "gamblers_dice", "loose_cannon", "reign_chaos", "virus_factory"
+  ]),
+  utility: new Set([
+    "ability_merchant", "ai_answer", "all_out", "cheat_sheet", "mirror", "multiple_choice", "next_question",
+    "premium_shuffle", "recycle_bin", "shuffle", "vending_machine", "xray_hacks"
+  ])
+});
+
+function getPowerCategory(powerOrId) {
+  const power = typeof powerOrId === "string"
+    ? powerMap[String(powerOrId).replace(new RegExp(`${chaosInfusedPowerSuffix}$`), "")]
+    : powerOrId;
+  const powerId = String(powerOrId?.id || powerOrId || "");
+  if (power?.rarity === "doom" || power?.doom) {
+    return "doom";
+  }
+  if (powerId.endsWith(chaosInfusedPowerSuffix) || power?.chaosInfused) {
+    return "chaos";
+  }
+  if (power?.targeted) {
+    return "target";
+  }
+  const type = String(power?.type || "");
+  for (const category of ["defense", "boost", "disruption", "risk", "chaos", "utility"]) {
+    if (powerCategoryTypeSets[category].has(type)) {
+      return category;
+    }
+  }
+  return "utility";
+}
+
+function getPowerCategoryMarkup(powerOrCategory, options = {}) {
+  const category = powerCategoryInfo[powerOrCategory]
+    ? powerOrCategory
+    : getPowerCategory(powerOrCategory);
+  if (options.skipExistingDoom && category === "doom") {
+    return "";
+  }
+  const info = powerCategoryInfo[category] || powerCategoryInfo.utility;
+  return `<span class="power-category-mark" data-category="${category}" aria-hidden="true"><img src="${info.icon}" alt="" loading="lazy" decoding="async"></span>`;
+}
+
 const chaosInfusedPowerOverrides = {
   small_bounty: {
     name: "Unstable Bounty",
@@ -7971,8 +8043,10 @@ function renderPowerLog(awarded) {
     item.textContent = text;
     if (power) {
       item.dataset.rarity = power.rarity;
+      item.dataset.category = getPowerCategory(power);
       item.classList.toggle("chaos-infused", isChaosInfusedPower(power));
       item.dataset.description = power.description;
+      item.insertAdjacentHTML("afterbegin", getPowerCategoryMarkup(power));
       attachFloatingDescriptionTooltip(item);
     }
     elements.powerLog.appendChild(item);
@@ -8417,8 +8491,10 @@ function renderRoundRecap(awarded, winnerOwner, rating, resultSummary = null) {
           power.className = "result-power-pill";
           power.textContent = rowPower.name;
           power.dataset.rarity = rowPower.rarity;
+          power.dataset.category = getPowerCategory(rowPower);
           power.classList.toggle("chaos-infused", isChaosInfusedPower(rowPower));
           power.dataset.description = rowPower.description;
+          power.insertAdjacentHTML("afterbegin", getPowerCategoryMarkup(rowPower));
           attachFloatingDescriptionTooltip(power);
           powerList.appendChild(power);
         });
@@ -9583,13 +9659,17 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
     card.className = "ability-card";
     card.dataset.rarity = entry.rarity || rarity;
     card.dataset.description = entry.description;
+    const category = entry.category || (entry.powerId ? getPowerCategory(entry.powerId) : "");
+    if (category && powerCategoryInfo[category]) {
+      card.dataset.category = category;
+    }
     card.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
     card.classList.toggle("chaos-unavailable", Boolean(entry.chaosUnavailable));
     if (entry.chaosUnavailable) {
       card.dataset.tooltip = entry.description;
       card.tabIndex = 0;
     }
-    card.innerHTML = `<span>${entry.name}</span><strong>${entry.short}</strong><small>${entry.description}</small>`;
+    card.innerHTML = `${category && powerCategoryInfo[category] ? getPowerCategoryMarkup(category, { skipExistingDoom: true }) : ""}<span>${entry.name}</span><strong>${entry.short}</strong><small>${entry.description}</small>`;
     grid.appendChild(card);
   });
   body.appendChild(grid);
@@ -9683,6 +9763,7 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
       short: power.short,
       description: getDisplayedPowerDescription(power, null),
       rarity: power.rarity,
+      powerId: power.id,
       doom: true
     };
   }
@@ -9692,7 +9773,8 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
       name: power.name,
       short: power.short,
       description: getDisplayedPowerDescription(power, null),
-      rarity: power.rarity
+      rarity: power.rarity,
+      powerId: power.id
     };
   }
 
@@ -9702,6 +9784,7 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
       short: power.short,
       description: "This ability does not have a chaos infusion.",
       rarity: power.rarity,
+      powerId: power.id,
       chaosUnavailable: true
     };
   }
@@ -9712,6 +9795,7 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
     short: chaosPower.short,
     description: getDisplayedPowerDescription(chaosPower, null),
     rarity: chaosPower.rarity,
+    powerId: chaosPower.id,
     chaosInfused: true
   };
 }
@@ -20084,9 +20168,11 @@ function renderLeaderboard() {
       const pill = document.createElement("span");
       pill.className = "leaderboard-power-pill";
       pill.dataset.rarity = playedPower.rarity;
+      pill.dataset.category = getPowerCategory(playedPower);
       pill.classList.toggle("chaos-infused", isChaosInfusedPower(playedPower));
       pill.dataset.description = playedPower.description;
       pill.textContent = playedPower.name;
+      pill.insertAdjacentHTML("afterbegin", getPowerCategoryMarkup(playedPower));
       if (playedEntry.revealId && state.pendingPowerPillAnimations?.has(playedEntry.revealId)) {
         pill.classList.add("just-played");
         state.pendingPowerPillAnimations.delete(playedEntry.revealId);
@@ -26972,7 +27058,7 @@ function renderPowerUps() {
     return;
   }
 
-  const getPowerCardMarkup = (displayPower) => `<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
+  const getPowerCardMarkup = (displayPower) => `${getPowerCategoryMarkup(displayPower, { skipExistingDoom: true })}<span>${displayPower.name}</span><strong>${displayPower.short}</strong><small>${isChaosInfusedPower(displayPower) ? "Chaos Infused" : rarityInfo[displayPower.rarity].label}</small>`;
   let animatedFreshCount = 0;
   let renderedCardIndex = 0;
   renderEntries.forEach(({ powerId, exiting }) => {
@@ -26999,6 +27085,7 @@ function renderPowerUps() {
     button.className = "power-card";
     button.dataset.power = power.id;
     button.dataset.rarity = visualPower.rarity;
+    button.dataset.category = getPowerCategory(visualPower);
     const rule = getPowerRule(power);
     button.dataset.powerTiming = rule.timing;
     button.dataset.powerTarget = rule.target;
@@ -27010,7 +27097,7 @@ function renderPowerUps() {
     const usable = hasUseAvailable && isPowerUsable(power, owner);
     button.dataset.usable = String(usable);
     const unavailableReason = getPowerUnavailableReason(power, hasUseAvailable);
-    button.dataset.description = `${rarityInfo[power.rarity].label}: ${description}${usable ? "" : ` (${unavailableReason})`}`;
+    button.dataset.description = `${powerCategoryInfo[getPowerCategory(power)].label} power-up. ${rarityInfo[power.rarity].label}: ${description}${usable ? "" : ` (${unavailableReason})`}`;
     const selected = isPowerSelected(owner, power.id);
     button.setAttribute("aria-pressed", String(selected));
     button.setAttribute("aria-disabled", String(!usable));
@@ -27074,6 +27161,7 @@ function renderPowerUps() {
             return;
           }
           button.dataset.rarity = power.rarity;
+          button.dataset.category = getPowerCategory(power);
           button.classList.add("chaos-infused", "chaos-infuse-upgrading");
           button.innerHTML = getPowerCardMarkup(power);
           if (suggested) {

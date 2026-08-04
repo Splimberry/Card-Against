@@ -5485,6 +5485,118 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   transform-origin: center;
 }
 
+.power-category-mark {
+  --power-category-rgb: 180 187 198;
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0.16;
+  mix-blend-mode: screen;
+}
+
+.power-category-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter:
+    brightness(0) invert(1)
+    drop-shadow(0 0 0.55rem rgb(var(--power-category-rgb) / 0.72));
+}
+
+.power-card .power-category-mark {
+  right: 0.3rem;
+  bottom: 0.2rem;
+  width: min(46%, 4.6rem);
+  aspect-ratio: 1;
+}
+
+.power-card > .power-category-mark {
+  z-index: 1;
+}
+
+.ability-card .power-category-mark {
+  right: 0.35rem;
+  bottom: 0.25rem;
+  width: min(38%, 3.8rem);
+  aspect-ratio: 1;
+  opacity: 0.13;
+}
+
+.power-play .power-category-mark,
+.leaderboard-power-pill .power-category-mark,
+.result-power-pill .power-category-mark {
+  inset: 0.12rem 0.18rem 0.12rem auto;
+  width: 1.1rem;
+  opacity: 0.22;
+}
+
+.power-card[data-category="defense"],
+.ability-card[data-category="defense"],
+.power-play[data-category="defense"],
+.leaderboard-power-pill[data-category="defense"],
+.result-power-pill[data-category="defense"] {
+  --power-category-rgb: 34 211 238;
+}
+
+.power-card[data-category="target"],
+.ability-card[data-category="target"],
+.power-play[data-category="target"],
+.leaderboard-power-pill[data-category="target"],
+.result-power-pill[data-category="target"] {
+  --power-category-rgb: 255 77 125;
+}
+
+.power-card[data-category="boost"],
+.ability-card[data-category="boost"],
+.power-play[data-category="boost"],
+.leaderboard-power-pill[data-category="boost"],
+.result-power-pill[data-category="boost"] {
+  --power-category-rgb: 251 191 36;
+}
+
+.power-card[data-category="chaos"],
+.ability-card[data-category="chaos"],
+.power-play[data-category="chaos"],
+.leaderboard-power-pill[data-category="chaos"],
+.result-power-pill[data-category="chaos"] {
+  --power-category-rgb: 168 85 247;
+}
+
+.power-card[data-category="disruption"],
+.ability-card[data-category="disruption"],
+.power-play[data-category="disruption"],
+.leaderboard-power-pill[data-category="disruption"],
+.result-power-pill[data-category="disruption"] {
+  --power-category-rgb: 255 77 125;
+}
+
+.power-card[data-category="risk"],
+.ability-card[data-category="risk"],
+.power-play[data-category="risk"],
+.leaderboard-power-pill[data-category="risk"],
+.result-power-pill[data-category="risk"] {
+  --power-category-rgb: 255 159 47;
+}
+
+.power-card[data-category="utility"],
+.ability-card[data-category="utility"],
+.power-play[data-category="utility"],
+.leaderboard-power-pill[data-category="utility"],
+.result-power-pill[data-category="utility"] {
+  --power-category-rgb: 64 222 164;
+}
+
+.power-card[data-category="doom"],
+.ability-card[data-category="doom"],
+.power-play[data-category="doom"],
+.leaderboard-power-pill[data-category="doom"],
+.result-power-pill[data-category="doom"] {
+  --power-category-rgb: 255 28 76;
+}
+
 .power-card > * {
   position: relative;
   z-index: 2;
