@@ -3743,6 +3743,10 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(payload.game.matchSettings.chaos, true);
   assert.equal(payload.game.matchSettings.autoAdvance, false);
   assert.ok(payload.revision >= 2);
+  assert.deepEqual(
+    payload.events.map((event) => event.type),
+    ["room_created", "round_advancing", "round_started"].slice(1)
+  );
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -3756,6 +3760,47 @@ async function testRoomRoundAdvancingEndpointStampsEvent() {
   assert.equal(stored.payload.room.settings.chaos, true);
   assert.equal(stored.payload.room.settings.randomModifiers, false);
   assert.equal(stored.payload.room.events.some((event) => event.type === "round_advancing"), true);
+}
+
+async function testRoomCommandClientEventIdIsIdempotent() {
+  const code = makeCode(8194);
+  const clientEventId = `${code}:settings:fixed-retry`;
+  await upsertRoom(makeRoom(code));
+
+  const first = await roomCommand(code, "update_settings", {
+    hostParticipantId: "host-client",
+    status: "lobby",
+    settings: {
+      ...makeRoom(code).settings,
+      timerSeconds: 45
+    }
+  }, {}, { clientEventId });
+  assert.equal(first.response.status, 200, first.payload.error);
+  assert.equal(first.payload.duplicate, undefined);
+  const firstRevision = first.payload.revision;
+  assert.ok(first.payload.events.some((event) => event.type === "settings_updated"));
+
+  const retry = await roomCommand(code, "update_settings", {
+    hostParticipantId: "host-client",
+    status: "lobby",
+    settings: {
+      ...makeRoom(code).settings,
+      timerSeconds: 10
+    }
+  }, {}, { clientEventId });
+  assert.equal(retry.response.status, 200, retry.payload.error);
+  assert.equal(retry.payload.duplicate, true);
+  assert.equal(retry.payload.revision, firstRevision);
+  assert.equal(retry.payload.events.length, first.payload.events.length);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.revision, firstRevision);
+  assert.equal(stored.payload.room.settings.timerSeconds, 45);
+  assert.equal(
+    stored.payload.room.events.filter((event) => event.clientEventId === clientEventId).length,
+    first.payload.events.length
+  );
 }
 
 async function testRoomUsesStoredHostQuestionLanguage() {
@@ -5763,6 +5808,16 @@ async function testHostCloseEndpointDeletesRoom() {
   assert.equal(directRoom.payload.close.reason, "host-left");
 }
 
+async function testAdminClosePublishesAuthoritativeRoomClosedEvent() {
+  const code = makeCode(8116);
+  await upsertRoom(makeRoom(code));
+  const { response, payload } = await request("POST", `/api/admin/rooms/${code}/close`, undefined, adminHeaders());
+  assert.equal(response.status, 200, payload.error);
+  assert.equal(payload.room.status, "complete");
+  assert.equal(payload.events.some((event) => event.type === "room_closed"), true);
+  assert.equal(payload.events.find((event) => event.type === "room_closed")?.payload.reason, "admin");
+}
+
 async function testUserInventoryOpsAreIdempotent() {
   const userId = "inventory-user-idempotent";
   const coinOps = [
@@ -6705,6 +6760,7 @@ async function main() {
   await testSimultaneousRoomSubmissionsStartSingleGradingTransition();
   await testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound();
   await testRoomRoundAdvancingEndpointStampsEvent();
+  await testRoomCommandClientEventIdIsIdempotent();
   await testRoomStartMatchPreservesInitialPowerState();
   await testRoomRoundSetupEndpointCreatesSharedSetup();
   await testRoomRoundSetupRecoversMissingPreparationState();
@@ -6739,6 +6795,7 @@ async function main() {
   await testModerationCommandUsesTargetParticipantId();
   await testJoinedRoomParticipantIdCanBeModerated();
   await testHostCloseEndpointDeletesRoom();
+  await testAdminClosePublishesAuthoritativeRoomClosedEvent();
   await testUserInventoryOpsAreIdempotent();
   await testUserInventoryCoinReconcilePersistsExitBalance();
   await testUserInventoryPurchaseAndUnlockRowsPersist();

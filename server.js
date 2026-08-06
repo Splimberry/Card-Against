@@ -652,13 +652,20 @@ async function handleAdminCloseRoom(req, res, code) {
     return;
   }
 
+  const previousRevision = getRoomRevision(room);
   room.status = "complete";
   room.closed = createRoomClosePayload(code, "admin");
   finalizeRoom(room);
   stampRoomEvent(room, "room_closed", { reason: "admin" });
   const storedRoom = await backendStore.upsertRoom(room);
   await backendStore.upsertRoomClose(room.closed);
-  sendJson(res, 200, { room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true }) });
+  const response = await createRoomCommandResponse(storedRoom, previousRevision, {
+    includePrivateSecrets: true
+  });
+  sendJson(res, 200, {
+    ...response,
+    room: sanitizeRoomForClient(storedRoom, { includePrivateSecrets: true })
+  });
 }
 
 async function handleImageProxy(url, res) {
@@ -2572,7 +2579,10 @@ function shouldBroadcastRoomServerEventToLobby(event = {}) {
     "participant-reconnected",
     "participant-moderated",
     "room-settings",
+    "room-created",
+    "room-updated",
     "room-closed",
+    "round-setup-failed",
     "room-deleted"
   ].includes(eventType);
 }
@@ -2630,16 +2640,17 @@ async function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], o
 
 async function createRoomCommandResponse(room, previousRevision = 0, options = {}) {
   const events = getRoomEventsAfterRevision(room, previousRevision, options);
-  const broadcastPromise = scheduleServerRoomRealtimeBroadcast(room.code, events, options);
-  const broadcastAckMs = Math.max(50, Math.min(750, Number(process.env.SERVER_REALTIME_ACK_MS) || 180));
-  // Do not keep the room command queue or distributed room lock open while a
-  // remote realtime acknowledgement is slow. The originating client receives
-  // these same events in the command response and rebroadcasts them when this
-  // short server acknowledgement window expires.
-  const serverBroadcast = await Promise.race([
-    broadcastPromise,
-    new Promise((resolve) => setTimeout(() => resolve(false), broadcastAckMs))
-  ]);
+  const broadcastSinceRevision = Number.isFinite(Number(options.broadcastSinceRevision))
+    ? Math.max(0, Number(options.broadcastSinceRevision))
+    : previousRevision;
+  const broadcastEvents = broadcastSinceRevision === previousRevision
+    ? events
+    : getRoomEventsAfterRevision(room, broadcastSinceRevision, options);
+  // The server is the only authoritative publisher. Waiting for the publish
+  // acknowledgement keeps the command response and the realtime stream on
+  // the same ordered path; the initiating browser must never relay a
+  // speculative or delayed copy to the other players.
+  const serverBroadcast = await scheduleServerRoomRealtimeBroadcast(room.code, broadcastEvents, options);
   return {
     ok: true,
     roomCode: room.code,
@@ -3379,6 +3390,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   }
 
   const previousRevision = getRoomRevision(room);
+  const stableRoomBeforePreparation = cloneRoomStateForRecovery(room);
   const currentGame = room.game && typeof room.game === "object" ? room.game : null;
   const currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
   const payloadMatchId = String(command.payload.matchId || "").slice(0, 80);
@@ -3482,7 +3494,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   finalizeRoom(room);
   const preparingRoom = await backendStore.upsertRoom(room);
   const preparationRevision = getRoomRevision(preparingRoom);
-  void scheduleServerRoomRealtimeBroadcast(
+  const preparationBroadcast = await scheduleServerRoomRealtimeBroadcast(
     preparingRoom.code,
     getRoomEventsAfterRevision(preparingRoom, previousRevision, { includeSubmittedAnswers: true }),
     { includeSubmittedAnswers: true }
@@ -3493,18 +3505,47 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   const recentBlackCards = Array.isArray(command.payload.recentBlackCards) ? command.payload.recentBlackCards.map(String).slice(-30) : [];
   const totalRounds = clampServerNumber(command.payload.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
   const setupSeed = String(command.payload.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
-  const setup = await getSeedQuestionSetup({
-    recentBlackCards,
-    enabledThemes,
-    preferredTheme,
-    questionLanguage,
-    setupSeed,
-    backgroundMode: false,
-    round,
-    totalRounds
-  });
+  let setup;
+  try {
+    setup = await getSeedQuestionSetup({
+      recentBlackCards,
+      enabledThemes,
+      preferredTheme,
+      questionLanguage,
+      setupSeed,
+      backgroundMode: false,
+      round,
+      totalRounds
+    });
+  } catch {
+    const recovery = restoreRoomAfterRoundSetupFailure(room, stableRoomBeforePreparation, command);
+    const storedRoom = await backendStore.upsertRoom(recovery.room);
+    sendJson(res, 409, {
+      ...(await createRoomCommandResponse(storedRoom, previousRevision, {
+        includeSubmittedAnswers: true,
+        broadcastSinceRevision: preparationBroadcast ? preparationRevision : previousRevision
+      })),
+      ok: false,
+      recovery: true,
+      error: recovery.message,
+      game: storedRoom.game || null
+    });
+    return;
+  }
   if (!setup) {
-    throw new Error("No seed questions are available for the selected themes.");
+    const recovery = restoreRoomAfterRoundSetupFailure(room, stableRoomBeforePreparation, command);
+    const storedRoom = await backendStore.upsertRoom(recovery.room);
+    sendJson(res, 409, {
+      ...(await createRoomCommandResponse(storedRoom, previousRevision, {
+        includeSubmittedAnswers: true,
+        broadcastSinceRevision: preparationBroadcast ? preparationRevision : previousRevision
+      })),
+      ok: false,
+      recovery: true,
+      error: recovery.message,
+      game: storedRoom.game || null
+    });
+    return;
   }
 
   const now = Date.now();
@@ -3557,7 +3598,12 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...(await createRoomCommandResponse(storedRoom, preparationRevision, { includeSubmittedAnswers: true })),
+    // Include both round_advancing and round_started so a delayed first
+    // publish cannot leave joined clients waiting for a missing revision.
+    ...(await createRoomCommandResponse(storedRoom, previousRevision, {
+      includeSubmittedAnswers: true,
+      broadcastSinceRevision: preparationRevision
+    })),
     game: storedRoom.game || room.game
   });
 }
@@ -3658,6 +3704,7 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
   }
 
   const previousRevision = getRoomRevision(room);
+  const stableRoomBeforePreparation = cloneRoomStateForRecovery(room);
   let currentGame = room.game && typeof room.game === "object" ? room.game : null;
   let currentMatchId = String(currentGame?.matchId || "").slice(0, 80);
   const payloadMatchId = String(command.payload.matchId || "").slice(0, 80);
@@ -3718,23 +3765,64 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
     currentRound = clampServerNumber(currentGame?.round, 0, 100, 0);
   }
 
+  // Make the preparing state visible while the shared question is generated.
+  // The final command response below repeats the ordered events, which also
+  // covers clients that missed this first realtime publish.
+  finalizeRoom(room);
+  const preparingRoom = await backendStore.upsertRoom(room);
+  const preparationRevision = getRoomRevision(preparingRoom);
+  const preparationBroadcast = await scheduleServerRoomRealtimeBroadcast(
+    preparingRoom.code,
+    getRoomEventsAfterRevision(preparingRoom, previousRevision, { includeSubmittedAnswers: true }),
+    { includeSubmittedAnswers: true }
+  );
+
   const enabledThemes = normalizeEnabledThemes(command.payload.enabledThemes || matchSettings.enabledThemes || room.settings?.enabledThemes);
   const preferredTheme = normalizePreferredTheme(command.payload.preferredTheme, enabledThemes);
   const recentBlackCards = Array.isArray(command.payload.recentBlackCards) ? command.payload.recentBlackCards.map(String).slice(-30) : [];
   const totalRounds = clampServerNumber(command.payload.totalRounds || matchSettings.rounds || room.settings?.rounds, 1, 100, matchSettings.rounds || 10);
   const setupSeed = String(command.payload.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
-  const setup = await getSeedQuestionSetup({
-    recentBlackCards,
-    enabledThemes,
-    preferredTheme,
-    questionLanguage,
-    setupSeed,
-    backgroundMode: false,
-    round,
-    totalRounds
-  });
+  let setup;
+  try {
+    setup = await getSeedQuestionSetup({
+      recentBlackCards,
+      enabledThemes,
+      preferredTheme,
+      questionLanguage,
+      setupSeed,
+      backgroundMode: false,
+      round,
+      totalRounds
+    });
+  } catch {
+    const recovery = restoreRoomAfterRoundSetupFailure(room, stableRoomBeforePreparation, command);
+    const storedRoom = await backendStore.upsertRoom(recovery.room);
+    sendJson(res, 409, {
+      ...(await createRoomCommandResponse(storedRoom, previousRevision, {
+        includeSubmittedAnswers: true,
+        broadcastSinceRevision: preparationBroadcast ? preparationRevision : previousRevision
+      })),
+      ok: false,
+      recovery: true,
+      error: recovery.message,
+      game: storedRoom.game || null
+    });
+    return;
+  }
   if (!setup) {
-    throw new Error("No seed questions are available for the selected themes.");
+    const recovery = restoreRoomAfterRoundSetupFailure(room, stableRoomBeforePreparation, command);
+    const storedRoom = await backendStore.upsertRoom(recovery.room);
+    sendJson(res, 409, {
+      ...(await createRoomCommandResponse(storedRoom, previousRevision, {
+        includeSubmittedAnswers: true,
+        broadcastSinceRevision: preparationBroadcast ? preparationRevision : previousRevision
+      })),
+      ok: false,
+      recovery: true,
+      error: recovery.message,
+      game: storedRoom.game || null
+    });
+    return;
   }
 
   const now = Date.now();
@@ -3788,7 +3876,10 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
   sendJson(res, 200, {
-    ...(await createRoomCommandResponse(storedRoom, previousRevision, { includeSubmittedAnswers: true })),
+    ...(await createRoomCommandResponse(storedRoom, previousRevision, {
+      includeSubmittedAnswers: true,
+      broadcastSinceRevision: preparationRevision
+    })),
     game: storedRoom.game || room.game
   });
 }
@@ -3887,7 +3978,7 @@ async function handleRoomCommandModerateParticipant(req, res, room, command, raw
     reason: String(command.payload.reason || "").slice(0, 80)
   });
   if (!hasActiveRealPlayers(room)) {
-    await closeStoredRoom(room.code, "empty-room");
+    await closeStoredRoom(room.code, "empty-room", room);
     sendJson(res, 200, {
       ok: true,
       closed: true,
@@ -4352,7 +4443,7 @@ async function handleRoomCommandLeaveRoom(req, res, room, command, rawBody = {})
       }, { "Set-Cookie": createRoomHostCookie(req, storedRoom) });
       return;
     }
-    await closeStoredRoom(room.code, "host-left");
+    await closeStoredRoom(room.code, "host-left", room);
     sendJson(res, 200, {
       ok: true,
       closed: true,
@@ -4372,7 +4463,7 @@ async function handleRoomCommandLeaveRoom(req, res, room, command, rawBody = {})
   room.participants = room.participants.filter((participant) => participant.id !== participantId);
   finalizeRoom(room);
   if (!hasActiveRealPlayers(room)) {
-    await closeStoredRoom(room.code, "empty-room");
+    await closeStoredRoom(room.code, "empty-room", room);
     sendJson(res, 200, {
       ok: true,
       closed: true,
@@ -4760,9 +4851,32 @@ function createRoomClosePayload(code, reason) {
   };
 }
 
-async function closeStoredRoom(code, reason) {
+async function closeStoredRoom(code, reason, sourceRoom = null) {
   const normalizedCode = String(code || "").trim().toUpperCase();
-  await backendStore.upsertRoomClose(createRoomClosePayload(normalizedCode, reason));
+  if (!normalizedCode) {
+    return false;
+  }
+  const storedRoom = sourceRoom && typeof sourceRoom === "object"
+    ? sourceRoom
+    : await backendStore.getRoom(normalizedCode);
+  const close = createRoomClosePayload(normalizedCode, reason);
+  if (storedRoom) {
+    const previousRevision = getRoomRevision(storedRoom);
+    storedRoom.status = "complete";
+    storedRoom.closed = close;
+    stampRoomEvent(storedRoom, "room_closed", {
+      reason: close.reason,
+      closedAt: close.closedAt
+    });
+    finalizeRoom(storedRoom);
+    const persistedRoom = await backendStore.upsertRoom(storedRoom);
+    await scheduleServerRoomRealtimeBroadcast(
+      persistedRoom.code,
+      getRoomEventsAfterRevision(persistedRoom, previousRevision, { includeSubmittedAnswers: false }),
+      { includeSubmittedAnswers: false }
+    );
+  }
+  await backendStore.upsertRoomClose(close);
   return backendStore.deleteRoom(normalizedCode);
 }
 
@@ -4894,20 +5008,34 @@ async function transferExistingHostRooms(nextRoom) {
   const rooms = await backendStore.listRooms();
   const transferred = [];
   await Promise.all(rooms.map(async (room) => {
-    if (!room || room.code === nextRoom.code || room.status === "complete" || getRoomOwnerKey(room) !== ownerKey) {
-      return;
+    const transfer = async () => {
+      const latestRoom = await backendStore.getRoom(room?.code);
+      if (!latestRoom || latestRoom.code === nextRoom.code || latestRoom.status === "complete" || getRoomOwnerKey(latestRoom) !== ownerKey) {
+        return;
+      }
+      const activeRoom = await ensureRoomReconnectGrace(latestRoom, { skipHostTransfer: true });
+      if (!activeRoom) {
+        return;
+      }
+      const previousRevision = getRoomRevision(activeRoom);
+      const promotedRoom = transferRoomHostToOldestPlayer(activeRoom, "host-created-another-room");
+      if (!promotedRoom) {
+        await closeStoredRoom(activeRoom.code, "host-created-another-room", activeRoom);
+        return;
+      }
+      const storedRoom = await backendStore.upsertRoom(promotedRoom);
+      await scheduleServerRoomRealtimeBroadcast(
+        storedRoom.code,
+        getRoomEventsAfterRevision(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+        { includeSubmittedAnswers: true }
+      );
+      transferred.push(storedRoom);
+    };
+    if (room?.code && typeof backendStore.withRoomLock === "function") {
+      await backendStore.withRoomLock(room.code, transfer);
+    } else {
+      await transfer();
     }
-    const activeRoom = await ensureRoomReconnectGrace(room, { skipHostTransfer: true });
-    if (!activeRoom) {
-      return;
-    }
-    const promotedRoom = transferRoomHostToOldestPlayer(activeRoom, "host-created-another-room");
-    if (!promotedRoom) {
-      await closeStoredRoom(activeRoom.code, "host-created-another-room");
-      return;
-    }
-    const storedRoom = await backendStore.upsertRoom(promotedRoom);
-    transferred.push(storedRoom);
   }));
   return transferred;
 }
@@ -5017,9 +5145,10 @@ function isEmptyRoomCloseGraceExpired(room, now = Date.now()) {
 }
 
 async function ensureRoomReconnectGrace(room, options = {}) {
+  const previousRevision = getRoomRevision(room);
   const staleParticipants = pruneStaleActiveParticipants(room);
   if (isEmptyRoomCloseGraceExpired(room)) {
-    await closeStoredRoom(room.code, "empty-room");
+    await closeStoredRoom(room.code, "empty-room", room);
     return null;
   }
   if (!isRoomHostReconnectGraceExpired(room)) {
@@ -5027,26 +5156,46 @@ async function ensureRoomReconnectGrace(room, options = {}) {
     if (staleParticipants.length || removed.length) {
       finalizeRoom(room);
       if (isEmptyRoomCloseGraceExpired(room)) {
-        await closeStoredRoom(room.code, "empty-room");
+        await closeStoredRoom(room.code, "empty-room", room);
         return null;
       }
-      return backendStore.upsertRoom(room);
+      const storedRoom = await backendStore.upsertRoom(room);
+      await scheduleServerRoomRealtimeBroadcast(
+        storedRoom.code,
+        getRoomEventsAfterRevision(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+        { includeSubmittedAnswers: true }
+      );
+      return storedRoom;
     }
     return room;
   }
   if (!options.skipHostTransfer) {
     const promotedRoom = transferRoomHostToOldestPlayer(room, "host-reconnect-timeout");
     if (promotedRoom) {
-      return backendStore.upsertRoom(promotedRoom);
+      const storedRoom = await backendStore.upsertRoom(promotedRoom);
+      await scheduleServerRoomRealtimeBroadcast(
+        storedRoom.code,
+        getRoomEventsAfterRevision(storedRoom, previousRevision, { includeSubmittedAnswers: true }),
+        { includeSubmittedAnswers: true }
+      );
+      return storedRoom;
     }
   }
-  await closeStoredRoom(room.code, "host-disconnected");
+  await closeStoredRoom(room.code, "host-disconnected", room);
   return null;
 }
 
 async function listRoomsForDirectory() {
   const rooms = await backendStore.listRooms();
-  const checked = await Promise.all(rooms.map(ensureRoomReconnectGrace));
+  const checked = await Promise.all(rooms.map(async (room) => {
+    const check = async () => ensureRoomReconnectGrace(
+      await backendStore.getRoom(room?.code) || room
+    );
+    if (room?.code && typeof backendStore.withRoomLock === "function") {
+      return backendStore.withRoomLock(room.code, check);
+    }
+    return check();
+  }));
   return checked.filter(Boolean);
 }
 
@@ -5112,6 +5261,54 @@ function applyRoomRoundPreparationState(room, options = {}) {
     });
   }
   return room.game;
+}
+
+function cloneRoomStateForRecovery(room = {}) {
+  try {
+    if (typeof structuredClone === "function") {
+      return structuredClone(room);
+    }
+  } catch {
+    // Fall through to the JSON-safe room shape used by the backend store.
+  }
+  return JSON.parse(JSON.stringify(room || {}));
+}
+
+function restoreRoomAfterRoundSetupFailure(room, stableRoom, command = {}) {
+  const preservedEvents = normalizeRoomEvents(room?.events);
+  const preservedRevision = getRoomRevision(room);
+  const restoredRoom = cloneRoomStateForRecovery(stableRoom || {});
+  Object.keys(room).forEach((key) => {
+    delete room[key];
+  });
+  Object.assign(room, restoredRoom);
+  room.events = preservedEvents;
+  room.revision = preservedRevision;
+  room.updatedAt = Date.now();
+  finalizeRoom(room);
+
+  const failureMessage = "The shared question could not be prepared. The room was returned to its previous state.";
+  const game = room.game && typeof room.game === "object" ? room.game : null;
+  stampRoomEvent(room, "round_setup_failed", {
+    clientEventId: command.clientEventId,
+    actorId: command.participantId,
+    status: room.status,
+    previousStatus: stableRoom?.status || "lobby",
+    matchId: String(command.payload?.matchId || game?.matchId || "").slice(0, 80),
+    round: clampServerNumber(command.payload?.round || command.payload?.nextRound || game?.round, 0, 100, 0),
+    message: failureMessage,
+    room: null,
+    game: game || null
+  });
+  const failureEvent = room.events[room.events.length - 1];
+  if (failureEvent?.payload) {
+    // The recovery snapshot must carry the revision of the recovery event,
+    // otherwise clients that already saw the preparing event will reject it
+    // as an older snapshot and remain stuck in the loading phase.
+    failureEvent.payload.room = sanitizeRoomForClient({ ...room, events: [] }, { includeSubmittedAnswers: true });
+  }
+  finalizeRoom(room);
+  return { room, message: failureMessage };
 }
 
 function getRoomGameplayParticipants(room = {}) {
