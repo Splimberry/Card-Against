@@ -2531,6 +2531,98 @@ async function testRoomPowerStateTimeBenderUpdatesSharedTimers() {
   assert.equal(event.payload.timerState.participantTimers["guest-client"].speedMultiplier, 2);
 }
 
+async function testServerPowerEngineDerivesActionStateAndIsIdempotent() {
+  const code = makeCode(8172);
+  const matchId = `${code}-match`;
+  const roundStartedAt = Date.now() - 5000;
+  const clientEventId = "server-engine-time-bender-1";
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      roundStartedAt,
+      baseDurationMs: 30000,
+      participantTimers: {
+        "host-client": { endsAt: roundStartedAt + 30000, speedMultiplier: 1, status: "running" }
+      },
+      gradingForceAt: roundStartedAt + 32000,
+      powerState: {
+        matchId,
+        updatedAt: roundStartedAt,
+        hands: [
+          { participantId: "host-client", owner: "player", hand: ["time_bender", "shuffle"], fresh: ["time_bender"] }
+        ],
+        played: [],
+        players: [{ participantId: "host-client", owner: "player", score: 100, streak: 2 }],
+        effects: { maps: {}, arrays: {}, values: { protected: true } }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const actionBody = {
+    clientEventId,
+    matchId,
+    round: 1,
+    powerId: "time_bender",
+    actorParticipantId: "host-client",
+    action: {
+      version: 1,
+      type: "use",
+      powerId: "time_bender",
+      actorParticipantId: "host-client",
+      matchId,
+      round: 1
+    },
+    // These values are intentionally forged. The migrated action must use the
+    // server's previous power state for the actor hand, played card, score,
+    // and effects instead of accepting this result patch.
+    hands: [{ participantId: "host-client", owner: "player", hand: ["forged"], fresh: [] }],
+    played: [{
+      participantId: "host-client",
+      owner: "player",
+      stacks: [{ powerId: "shuffle", revealId: "forged", meta: {} }],
+      primaryPowerId: "shuffle"
+    }],
+    players: [{ participantId: "host-client", owner: "player", score: 999999, streak: 99 }],
+    effects: { maps: {}, arrays: {}, values: { forged: true } }
+  };
+
+  const first = await roomPowerStateCommand(code, actionBody);
+  assert.equal(first.response.status, 200, first.payload.error);
+  assert.equal(first.payload.serverAuthoritative, true);
+  const firstHand = first.payload.powerState.hands.find((entry) => entry.participantId === "host-client");
+  assert.deepEqual(firstHand.hand, ["shuffle"]);
+  assert.deepEqual(firstHand.fresh, []);
+  const firstPlayed = first.payload.powerState.played.find((entry) => entry.participantId === "host-client");
+  assert.equal(firstPlayed.primaryPowerId, "time_bender");
+  assert.equal(firstPlayed.stacks[0].powerId, "time_bender");
+  assert.equal(firstPlayed.stacks[0].meta.serverResolved, true);
+  assert.equal(first.payload.powerState.players[0].score, 100);
+  assert.equal(first.payload.powerState.players[0].streak, 2);
+  assert.equal(first.payload.powerState.effects.values.protected, true);
+  assert.ok(first.payload.timerState);
+
+  const storedAfterFirst = await getRoom(code);
+  assert.equal(storedAfterFirst.response.status, 200, storedAfterFirst.payload.error);
+  const firstRevision = storedAfterFirst.payload.room.revision;
+  const duplicate = await roomPowerStateCommand(code, actionBody);
+  assert.equal(duplicate.response.status, 200, duplicate.payload.error);
+  assert.equal(duplicate.payload.duplicate, true);
+  const storedAfterDuplicate = await getRoom(code);
+  assert.equal(storedAfterDuplicate.payload.room.revision, firstRevision);
+
+  const secondUse = await roomPowerStateCommand(code, {
+    ...actionBody,
+    clientEventId: "server-engine-time-bender-2"
+  });
+  assert.equal(secondUse.response.status, 409);
+  assert.match(secondUse.payload.error, /authoritative hand|already been used/i);
+}
+
 async function testStaleRoomRoundResultCannotOverwriteRematch() {
   const code = makeCode(8116);
   await upsertRoom(makeRoom(code, {
@@ -6742,6 +6834,7 @@ async function main() {
   await testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand();
   await testRoomPowerStateRejectsInvalidTargetParticipant();
   await testRoomPowerStateTimeBenderUpdatesSharedTimers();
+  await testServerPowerEngineDerivesActionStateAndIsIdempotent();
   await testStaleRoomRoundResultCannotOverwriteRematch();
   await testStaleRoomGameEndCannotCompleteRematch();
   await testRoomReturnToLobbyClearsMatchState();

@@ -33,6 +33,9 @@ const roomHostSessionTtlSeconds = 60 * 60 * 12;
 const roomParticipantSessionTtlSeconds = 60 * 60 * 12;
 const maxRoomEvents = 100;
 const roomRequestMaxBytes = 750_000;
+// Keep this list deliberately small while the server power engine is being
+// migrated. Unlisted powers continue through the compatibility path below.
+const serverPowerEngineMigratedIds = new Set(["time_bender"]);
 const hostReconnectGraceMs = 60 * 1000;
 const participantReconnectGraceMs = 60 * 1000;
 const participantActiveStaleMs = 3 * 60 * 1000;
@@ -4287,6 +4290,17 @@ async function handleRoomCommandSendChat(req, res, room, command, rawBody = {}) 
 async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) {
   const body = command.payload && typeof command.payload === "object" ? command.payload : {};
   const actorParticipantId = String(body.actorParticipantId || command.participantId || "").slice(0, 120);
+  const powerAuthMode = getRoomPowerAuthMode();
+  const action = body.action && typeof body.action === "object"
+    ? normalizeRoomPowerAction(body.action, body)
+    : null;
+  if (!action && powerAuthMode === "enforce") {
+    sendJson(res, 400, {
+      ok: false,
+      error: "Power use needs an action intent. Please refresh before using a power."
+    });
+    return;
+  }
   const requestHasHostAuth = hasRoomHostAuth(req, room, rawBody);
   if (!requestHasHostAuth) {
     if (!actorParticipantId) {
@@ -4304,16 +4318,35 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
   }
 
   const currentMatchId = String(room.game?.matchId || "").slice(0, 80);
-  const payloadMatchId = String(body.matchId || body.powerState?.matchId || "").slice(0, 80);
+  const bodyPowerId = String(body.powerId || "").trim().slice(0, 80);
+  if (action && bodyPowerId && bodyPowerId !== action.powerId) {
+    sendJson(res, 400, { ok: false, error: "Power action does not match the requested power." });
+    return;
+  }
+  const payloadMatchId = String(action?.matchId || body.matchId || body.powerState?.matchId || "").slice(0, 80);
   if (payloadMatchId && currentMatchId && payloadMatchId !== currentMatchId) {
     sendJson(res, 409, { ok: false, error: "Power state belongs to a previous match." });
     return;
   }
   const currentRound = clampServerNumber(room.game?.round, 0, 100, 0);
-  const payloadRound = clampServerNumber(body.round || body.powerState?.round, 0, 100, 0);
+  const payloadRound = clampServerNumber(action?.round || body.round || body.powerState?.round, 0, 100, 0);
   if (payloadRound && currentRound && payloadRound !== currentRound) {
     sendJson(res, 409, { ok: false, error: "Power state belongs to a different round." });
     return;
+  }
+
+  const previousRevision = getRoomRevision(room);
+  const previousPowerState = normalizeRoomPowerState(room.game?.powerState);
+  if (action) {
+    const actionValidationError = validateRoomPowerActionIntent(room, previousPowerState, action, actorParticipantId);
+    if (actionValidationError) {
+      sendJson(res, actionValidationError.status || 409, {
+        ok: false,
+        error: actionValidationError.error || "Power use failed server validation.",
+        powerId: actionValidationError.powerId || action.powerId
+      });
+      return;
+    }
   }
 
   const submittedPowerState = stripClientPowerStateRevisions({
@@ -4330,9 +4363,9 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     return;
   }
 
-  const previousRevision = getRoomRevision(room);
-  const previousPowerState = normalizeRoomPowerState(room.game?.powerState);
-  const validationError = validateRoomPowerUseAuthority(room, previousPowerState, powerState, body, actorParticipantId);
+  const validationError = action
+    ? null
+    : validateRoomPowerUseAuthority(room, previousPowerState, powerState, body, actorParticipantId);
   if (validationError) {
     sendJson(res, validationError.status || 409, {
       ok: false,
@@ -4341,10 +4374,18 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     });
     return;
   }
+  const serverActionPowerState = action
+    ? applyServerPowerAction(previousPowerState, action, command.clientEventId)
+    : null;
+  const actionPowerState = serverActionPowerState
+    ? isServerPowerEngineMigrated(action.powerId)
+      ? serverActionPowerState
+      : overlayServerPowerActionState(powerState, serverActionPowerState, actorParticipantId)
+    : powerState;
   const mergedPowerState = stampRoomPowerStateServerRevision(
     previousPowerState,
-    powerState,
-    mergeRoomPowerState(previousPowerState, powerState),
+    actionPowerState,
+    mergeRoomPowerState(previousPowerState, actionPowerState),
     getRoomPowerStateRevision(previousPowerState) + 1
   );
   if (!room.game || typeof room.game !== "object") {
@@ -4360,19 +4401,27 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     room.game.powerState = mergedPowerState;
     room.game.updatedAt = Date.now();
   }
-  const timerState = applyRoomTimerAction(room, body);
+  const timerState = applyRoomTimerAction(
+    room,
+    action?.powerId === "time_bender"
+      ? { ...body, powerId: "time_bender", timerAction: { type: "time_bender" }, actorParticipantId }
+      : body
+  );
   const powerEventPayload = {
     clientEventId: command.clientEventId,
     actorId: actorParticipantId,
     round: clampServerNumber(body.round, 0, 100, room.game.round || 0),
-    powerId: String(body.powerId || "").slice(0, 80),
+    powerId: String(action?.powerId || body.powerId || "").slice(0, 80),
     actorParticipantId,
-    targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
+    targetParticipantId: String(action?.targetParticipantId || body.targetParticipantId || "").slice(0, 120),
+    targetParticipantIds: action?.targetParticipantIds || [],
     deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
     stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
     matchId: room.game?.matchId || powerState.matchId || "",
     powerState: mergedPowerState,
-    timerState
+    timerState,
+    action: action || null,
+    serverAuthoritative: Boolean(action && isServerPowerEngineMigrated(action.powerId))
   };
   const previousHandsSignature = JSON.stringify(previousPowerState?.hands || []);
   const nextHandsSignature = JSON.stringify(mergedPowerState.hands || []);
@@ -4406,11 +4455,14 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     ...(await createRoomCommandResponse(storedRoom, previousRevision)),
     round: clampServerNumber(body.round, 0, 100, storedRoom.game?.round || 0),
     matchId: storedRoom.game?.matchId || responsePowerState.matchId || "",
-    powerId: String(body.powerId || "").slice(0, 80),
+    powerId: String(action?.powerId || body.powerId || "").slice(0, 80),
     actorParticipantId,
-    targetParticipantId: String(body.targetParticipantId || "").slice(0, 120),
+    targetParticipantId: String(action?.targetParticipantId || body.targetParticipantId || "").slice(0, 120),
+    targetParticipantIds: action?.targetParticipantIds || [],
     deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
     stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
+    action: action || null,
+    serverAuthoritative: Boolean(action && isServerPowerEngineMigrated(action.powerId)),
     powerState: responsePowerState,
     powerRevision: responsePowerState.revision || 0,
     hands: responsePowerState.hands,
@@ -6513,6 +6565,191 @@ function normalizeRoomPowerState(powerState) {
       .filter((entry) => entry.participantId)
       .slice(0, 10),
     effects: normalizeRoomAbilityEffects(powerState.effects)
+  };
+}
+
+function getRoomPowerAuthMode() {
+  const mode = String(process.env.POWER_AUTH_MODE || "warn").trim().toLowerCase();
+  return ["warn", "enforce"].includes(mode) ? mode : "warn";
+}
+
+function isServerPowerEngineMigrated(powerId = "") {
+  return serverPowerEngineMigratedIds.has(String(powerId || "").trim().toLowerCase());
+}
+
+function cloneRoomPowerActionMeta(meta) {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
+    return {};
+  }
+  try {
+    const serialized = JSON.stringify(meta);
+    if (serialized.length > 12000) {
+      return {};
+    }
+    const cloned = JSON.parse(serialized);
+    return cloned && typeof cloned === "object" && !Array.isArray(cloned) ? cloned : {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizeRoomPowerAction(action, body = {}) {
+  const source = action && typeof action === "object" ? action : {};
+  const bodyTargetIds = Array.isArray(body.targetParticipantIds) ? body.targetParticipantIds : [];
+  const sourceTargetIds = Array.isArray(source.targetParticipantIds) ? source.targetParticipantIds : bodyTargetIds;
+  const targetParticipantIds = [...new Set(sourceTargetIds
+    .map((participantId) => String(participantId || "").trim().slice(0, 120))
+    .filter(Boolean))].slice(0, 10);
+  const targetParticipantId = String(
+    source.targetParticipantId
+    || body.targetParticipantId
+    || targetParticipantIds[0]
+    || ""
+  ).trim().slice(0, 120);
+  if (targetParticipantId && !targetParticipantIds.includes(targetParticipantId)) {
+    targetParticipantIds.unshift(targetParticipantId);
+  }
+  return {
+    version: clampServerNumber(source.version, 1, 10, 1),
+    type: String(source.type || "use").trim().toLowerCase().slice(0, 30),
+    powerId: String(source.powerId || body.powerId || "").trim().slice(0, 80),
+    actorParticipantId: String(source.actorParticipantId || body.actorParticipantId || "").trim().slice(0, 120),
+    targetParticipantId,
+    targetParticipantIds,
+    matchId: String(source.matchId || body.matchId || "").trim().slice(0, 80),
+    round: clampServerNumber(source.round || body.round, 0, 100, 0),
+    meta: cloneRoomPowerActionMeta(source.meta || body.actionMeta)
+  };
+}
+
+function getRoomPowerStateEntriesWithReplacement(entries = [], participantId = "", replacement = null) {
+  const id = String(participantId || "").slice(0, 120);
+  const result = (Array.isArray(entries) ? entries : [])
+    .filter((entry) => String(entry?.participantId || "").slice(0, 120) !== id);
+  if (replacement?.participantId) {
+    result.push(replacement);
+  }
+  return result.slice(0, 10);
+}
+
+function getRoomPowerActionPlayedIds(powerState = {}, participantId = "") {
+  const entry = getRoomPowerStateEntry(powerState?.played, participantId);
+  return new Set([
+    entry?.primaryPowerId,
+    ...(Array.isArray(entry?.stacks) ? entry.stacks.map((stack) => stack?.powerId) : [])
+  ].map((powerId) => String(powerId || "").trim()).filter(Boolean));
+}
+
+function validateRoomPowerActionIntent(room, previousPowerState, action, actorParticipantId = "") {
+  const actorId = String(actorParticipantId || "").trim().slice(0, 120);
+  const currentMatchId = String(room?.game?.matchId || "").trim().slice(0, 80);
+  const currentRound = clampServerNumber(room?.game?.round, 0, 100, 0);
+  if (!action || action.type !== "use") {
+    return { status: 400, error: "Power use needs a valid action intent." };
+  }
+  if (!action.powerId) {
+    return { status: 400, error: "Power use action is missing a power id." };
+  }
+  if (action.actorParticipantId && action.actorParticipantId !== actorId) {
+    return { status: 403, error: "Power use actor does not match the authenticated participant." };
+  }
+  if (currentMatchId && action.matchId && action.matchId !== currentMatchId) {
+    return { status: 409, error: "Power action belongs to a previous match." };
+  }
+  if (currentRound && action.round && action.round !== currentRound) {
+    return { status: 409, error: "Power action belongs to a different round." };
+  }
+  if (String(room?.game?.status || "") !== "playing") {
+    return { status: 409, error: "Power cannot be used outside an active round." };
+  }
+
+  const gameplayParticipantIds = getRoomGameplayParticipantIdSet(room);
+  const targetIds = action.targetParticipantIds.length
+    ? action.targetParticipantIds
+    : action.targetParticipantId
+      ? [action.targetParticipantId]
+      : [];
+  const invalidTarget = targetIds.find((participantId) => !gameplayParticipantIds.has(participantId));
+  if (invalidTarget) {
+    return { status: 404, error: "Power target is not an active player in this room." };
+  }
+
+  const previousHand = getRoomPowerStateEntry(previousPowerState?.hands, actorId);
+  if (!previousHand) {
+    return { status: 409, error: "The server has not received this participant's power hand yet." };
+  }
+  const handIds = new Set((previousHand.hand || []).map((powerId) => String(powerId || "").trim()));
+  if (!handIds.has(action.powerId)) {
+    return { status: 409, error: "Power is not in this participant's authoritative hand.", powerId: action.powerId };
+  }
+  if (getRoomPowerActionPlayedIds(previousPowerState, actorId).has(action.powerId)) {
+    return { status: 409, error: "This power has already been used this round.", powerId: action.powerId };
+  }
+  return null;
+}
+
+function applyServerPowerAction(previousPowerState, action, clientEventId = "") {
+  const previous = normalizeRoomPowerState(previousPowerState);
+  if (!previous) {
+    return null;
+  }
+  const actorId = action.actorParticipantId;
+  const previousHand = getRoomPowerStateEntry(previous.hands, actorId);
+  const previousPlayed = getRoomPowerStateEntry(previous.played, actorId) || {
+    participantId: actorId,
+    owner: "",
+    revision: 0,
+    updatedAt: previous.updatedAt || Date.now(),
+    stacks: [],
+    primaryPowerId: "",
+    meta: null
+  };
+  const now = Date.now();
+  const revealId = `server-${String(clientEventId || `${action.matchId}-${action.round}`).slice(0, 100)}`;
+  const nextMeta = {
+    ...cloneRoomPowerActionMeta(action.meta),
+    serverResolved: true,
+    targetParticipantId: action.targetParticipantId,
+    targetParticipantIds: action.targetParticipantIds
+  };
+  const nextHand = {
+    ...previousHand,
+    updatedAt: now,
+    hand: previousHand.hand.filter((powerId) => powerId !== action.powerId),
+    fresh: previousHand.fresh.filter((powerId) => powerId !== action.powerId)
+  };
+  const nextPlayed = {
+    ...previousPlayed,
+    updatedAt: now,
+    stacks: [
+      ...(Array.isArray(previousPlayed.stacks) ? previousPlayed.stacks : []),
+      { powerId: action.powerId, revealId, meta: nextMeta }
+    ].slice(-10),
+    primaryPowerId: previousPlayed.primaryPowerId || action.powerId,
+    meta: nextMeta
+  };
+  return {
+    ...previous,
+    matchId: action.matchId || previous.matchId,
+    updatedAt: now,
+    hands: getRoomPowerStateEntriesWithReplacement(previous.hands, actorId, nextHand),
+    played: getRoomPowerStateEntriesWithReplacement(previous.played, actorId, nextPlayed)
+  };
+}
+
+function overlayServerPowerActionState(clientPowerState, serverPowerState, actorParticipantId = "") {
+  const client = normalizeRoomPowerState(clientPowerState) || serverPowerState;
+  const server = normalizeRoomPowerState(serverPowerState);
+  if (!client || !server) {
+    return server || client || null;
+  }
+  const actorId = String(actorParticipantId || "").slice(0, 120);
+  return {
+    ...client,
+    matchId: server.matchId || client.matchId,
+    updatedAt: Math.max(client.updatedAt || 0, server.updatedAt || 0),
+    hands: getRoomPowerStateEntriesWithReplacement(client.hands, actorId, getRoomPowerStateEntry(server.hands, actorId)),
+    played: getRoomPowerStateEntriesWithReplacement(client.played, actorId, getRoomPowerStateEntry(server.played, actorId))
   };
 }
 

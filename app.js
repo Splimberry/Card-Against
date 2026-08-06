@@ -699,7 +699,133 @@ const chaosInfusedPowerOverrides = {
   participation: {
     name: "Participation Award Pro Max",
     short: "+5 streak +15%",
-    description: "You cannot lose points this round. If you lose, gain 5 streak and 15% of first place's total score."
+    description: "You cannot lose points this round. If you lose, gain 5 streak and 15% of first place's final round total.",
+    participationProMax: true,
+    percent: 0.15,
+    streakGain: 5
+  },
+  next_question: {
+    name: "Question Creator",
+    short: "build next",
+    description: "Choose the next question theme, difficulty, and multiple-choice style. Empty choices are randomized.",
+    targeted: false,
+    questionCreator: true
+  },
+  all_out: {
+    name: "Endless Hand",
+    short: "66% refill",
+    description: "Use as many power-ups as you want this round. Every use, including this one, has a 66% chance to add another power-up.",
+    endlessHand: true,
+    extraPowerChance: 0.66
+  },
+  time_bender: {
+    name: "Time Accelerator",
+    short: "others 4x",
+    description: "Everyone else's timer drains 4x faster for this round. Your timer is unaffected.",
+    timerMultiplier: 4
+  },
+  crawler_virus: {
+    name: "Unstable Conduit",
+    short: "40% status roll",
+    description: "For the rest of the game, every round has a 40% chance for every player to receive a random status effect.",
+    unstableConduit: true,
+    statusChance: 0.4
+  },
+  recycle_bin: {
+    name: "4th Slot",
+    short: "+1 slot + last",
+    description: "Permanently add a fourth power-up slot for this match and obtain the last power-up you used.",
+    fourthSlot: true
+  },
+  basic_bounty: {
+    name: "My Bounty",
+    short: "+10% / steal 3",
+    description: "If you win, gain 10% of your current total score and steal 10% from up to 3 random players.",
+    myBounty: true,
+    percent: 0.1,
+    stealPercent: 0.1,
+    maxStealTargets: 3
+  },
+  vending_machine: {
+    name: "Power Tunnelling",
+    short: "free stolen refill",
+    description: "Use unlimited power-ups this round and freely refill every empty slot with a random power stolen from another player.",
+    powerTunnelling: true,
+    freeRefill: true
+  },
+  cocktail_mix: {
+    name: "Molotov Cocktail",
+    short: "burn up to 2",
+    description: "Choose up to 2 players, including yourself. Others burn for 3 rounds, lose 750 points each round, gain a streak, and roll a debuff; you gain a streak and roll a buff.",
+    molotovCocktail: true,
+    targeted: true,
+    immediate: true,
+    burnRounds: 3,
+    burnAmount: 750
+  },
+  afterparty: {
+    name: "Eternal Celebration",
+    short: "win -> chaos",
+    description: "For the rest of the game, winning the previous round grants a 10% score bonus and chaos-infuses a random power after Chaos refresh.",
+    eternalCelebration: true,
+    persistent: true
+  },
+  cheat_sheet: {
+    name: "Third Eye",
+    short: "borrow correct",
+    description: "If anyone answers correctly this round, your answer becomes correct. Otherwise, your own answer is used.",
+    thirdEye: true
+  },
+  xray_hacks: {
+    name: "Mega Hacks",
+    short: "delete 3 powers",
+    description: "Inspect players' hands and delete up to 3 power-ups total from any players this match.",
+    megaHacks: true,
+    maxDeletes: 3
+  },
+  software_downgrade: {
+    name: "Useless Software",
+    short: "block infusion",
+    description: "Choose a player. They cannot gain Chaos Infusion, and all their Common abilities become Dead Weight for the rest of the game.",
+    uselessSoftware: true
+  },
+  virus_factory: {
+    name: "Virus Frenzy",
+    short: "3x 50% debuff",
+    description: "At the start of every round, roll a 50% debuff chance three times on everyone except you.",
+    virusFrenzy: true,
+    rolls: 3,
+    statusChance: 0.5
+  },
+  heavy_bounty: {
+    name: "Free Payload",
+    short: "+3000 now",
+    description: "Immediately gain 3,000 points.",
+    freePayload: true,
+    immediate: true,
+    percent: 0
+  },
+  tax_collector: {
+    name: "Tax Heaven",
+    short: "17.5% ahead",
+    description: "Only usable outside first place. Take 17.5% of every player ahead of you.",
+    taxHeaven: true,
+    stealPercent: 0.175
+  },
+  world_burn: {
+    name: "Reduce to Ashes",
+    short: "streak-scaled drain",
+    description: "For the rest of the game, players ahead of you lose 5% times your streak plus 1 at the start of every round.",
+    reduceToAshes: true,
+    persistent: true
+  },
+  heaven_hell: {
+    name: "Gamble of the Lifetime",
+    short: "double streak / -15%",
+    description: "Win to double your streak and gain 3 more. Lose to lose 15% of your score and suffer Streak Sickness for 3 rounds.",
+    gambleLifetime: true,
+    sicknessRounds: 3,
+    lossPercent: 0.15
   },
   bottom_feeder: {
     name: "Scavenger",
@@ -3321,6 +3447,21 @@ const state = {
   roomMissingSince: 0,
   error404Owners: {},
   error404Schedule: [],
+  unstableConduitOwners: {},
+  fourthSlotOwners: {},
+  endlessHandRounds: {},
+  powerTunnellingRounds: {},
+  molotovBurningMarks: {},
+  eternalCelebrationOwners: {},
+  megaHackUses: {},
+  uselessSoftwareOwners: {},
+  reduceToAshesOwners: {},
+  streakSicknessRounds: {},
+  nextQuestionPreferences: {
+    theme: "",
+    difficulty: "",
+    questionStyle: ""
+  },
   currentRoomStatus: "draft",
   publishedDraftRoomCode: "",
   roomMatchStartGuardUntil: 0,
@@ -13298,6 +13439,16 @@ const roomAbilityEffectMapKeys = [
   "insurancePolicies",
   "virusFactories",
   "error404Owners",
+  "unstableConduitOwners",
+  "fourthSlotOwners",
+  "endlessHandRounds",
+  "powerTunnellingRounds",
+  "molotovBurningMarks",
+  "eternalCelebrationOwners",
+  "megaHackUses",
+  "uselessSoftwareOwners",
+  "reduceToAshesOwners",
+  "streakSicknessRounds",
   "luckRounds",
   "timerPenalties",
   "deadWeightLockedRounds",
@@ -13391,6 +13542,7 @@ function getRoomAbilityEffectStatePayload() {
       loserPenaltyRounds: Math.max(0, Number(state.loserPenaltyRounds) || 0),
       hotPotatoCount: Math.max(0, Number(state.hotPotatoCount) || 0),
       nextPreferredTheme: String(state.nextPreferredTheme || ""),
+      nextQuestionPreferences: cloneRoomAbilitySyncValue(state.nextQuestionPreferences, { theme: "", difficulty: "", questionStyle: "" }),
       roundAmplifiedMultiplier: Math.max(1, Number(state.roundAmplifiedMultiplier) || 1),
       currentTableEvent: cloneRoomAbilitySyncValue(state.currentTableEvent, null)
     }
@@ -13424,6 +13576,16 @@ function applyRoomAbilityEffectStatePayload(effects) {
   }
   if (Object.hasOwn(values, "nextPreferredTheme")) {
     state.nextPreferredTheme = String(values.nextPreferredTheme || "");
+  }
+  if (Object.hasOwn(values, "nextQuestionPreferences")) {
+    const preferences = values.nextQuestionPreferences && typeof values.nextQuestionPreferences === "object"
+      ? values.nextQuestionPreferences
+      : {};
+    state.nextQuestionPreferences = {
+      theme: String(preferences.theme || ""),
+      difficulty: ["easy", "medium", "hard"].includes(String(preferences.difficulty || "")) ? String(preferences.difficulty) : "",
+      questionStyle: [MULTIPLE_CHOICE_STYLE, "standard"].includes(String(preferences.questionStyle || "")) ? String(preferences.questionStyle) : ""
+    };
   }
   if (Object.hasOwn(values, "roundAmplifiedMultiplier")) {
     state.roundAmplifiedMultiplier = Math.max(1, Number(values.roundAmplifiedMultiplier) || 1);
@@ -13781,6 +13943,21 @@ function broadcastRoomPowerState(owner, power, meta = {}) {
     targetParticipantIds: Array.isArray(meta.targetOwners)
       ? meta.targetOwners.map(getRoomParticipantIdForOwner).filter(Boolean)
       : [],
+    action: {
+      version: 1,
+      type: "use",
+      powerId: power.id,
+      actorParticipantId: getRoomParticipantIdForOwner(owner),
+      targetParticipantId: meta.targetOwner ? getRoomParticipantIdForOwner(meta.targetOwner) : "",
+      targetParticipantIds: Array.isArray(meta.targetOwners)
+        ? meta.targetOwners.map(getRoomParticipantIdForOwner).filter(Boolean)
+        : [],
+      matchId: getCurrentRoomMatchId(),
+      round: state.round,
+      meta: {
+        ...meta
+      }
+    },
     deletedPowerId: meta.deletedPowerId || state.playedPowerMeta[owner]?.deletedPowerId || "",
     stolenPowerId: meta.stolenPowerId || state.playedPowerMeta[owner]?.stolenPowerId || "",
     timerAction,
@@ -20503,6 +20680,20 @@ function getProtectedPointLoss(owner, amount, source = "Shield", events = null) 
   if (loss <= 0) {
     return 0;
   }
+
+  // Uno Reverse has priority over every other shield. A reflected loss is a
+  // real score gain, so do not consume a pocket shield or let Ultimatum win
+  // the protection check first.
+  if ((state.freezeReflectionRounds[owner] || 0) > 0) {
+    markAchievementShieldSave(owner);
+    addScore(owner, loss);
+    const messages = [`Blocked ${loss.toLocaleString()} Points`, `+${loss.toLocaleString()} Points`];
+    if (events) {
+      events.push(`${getOwnerLabel(owner)}'s Uno Reverse blocked ${loss.toLocaleString()} points from ${source} and awarded the same amount.`);
+    }
+    queueStatFlash("mixed", "Uno Reverse", messages, { owners: [owner], complex: true, priority: true });
+    return 0;
+  }
   if (!hasImmediateDeductionProtection(owner)) {
     return loss;
   }
@@ -20646,7 +20837,10 @@ function getPowerEventRarity(power) {
 }
 
 function hasAllOut(owner) {
-  return state.allOutRounds[owner] === state.round || isTableEventActive("black_market");
+  return state.allOutRounds[owner] === state.round
+    || state.endlessHandRounds?.[owner] === state.round
+    || state.powerTunnellingRounds?.[owner] === state.round
+    || isTableEventActive("black_market");
 }
 
 function hasPlayedPowerThisRound(owner) {
@@ -20889,18 +21083,86 @@ function getPowerHandLimit(owner) {
   if (player.spectator) {
     return 0;
   }
-  if (Number.isFinite(player.handLimit) && player.handLimit > 0) {
-    return player.handLimit;
+  const baseLimit = Number.isFinite(player.handLimit) && player.handLimit > 0 ? player.handLimit : 0;
+  if (baseLimit > 0) {
+    return baseLimit + (getEffectStackCount(state.fourthSlotOwners?.[owner]) > 0 ? 1 : 0);
   }
   return isBotOwner(owner) ? 3 : 0;
 }
 
 function getVendingMachineRefillCost(owner) {
-  const limit = getPowerHandLimit(owner);
   const hand = state.powerHands[owner] || [];
+  if (hand.some((powerId) => powerId === `${"vending_machine"}${chaosInfusedPowerSuffix}`)
+    || (state.powerTunnellingRounds?.[owner] || 0) === state.round) {
+    return 0;
+  }
+  const limit = getPowerHandLimit(owner);
   const handAfterUse = Math.max(0, hand.length - (hand.includes("vending_machine") ? 1 : 0));
   const slotsToRefill = Math.max(0, limit - handAfterUse);
   return slotsToRefill * 100;
+}
+
+function getRandomStealablePowerEntry(owner) {
+  const candidates = getActiveOwners()
+    .filter((participant) => participant !== owner && (state.powerHands[participant] || []).length > 0);
+  if (!candidates.length) {
+    return null;
+  }
+  const targetOwner = candidates[Math.floor(Math.random() * candidates.length)];
+  const targetHand = [...(state.powerHands[targetOwner] || [])];
+  const index = Math.floor(Math.random() * targetHand.length);
+  const [powerId] = targetHand.splice(index, 1);
+  if (!powerId) {
+    return null;
+  }
+  state.powerHands[targetOwner] = targetHand;
+  setSelectedPowerIds(targetOwner, getSelectedPowerIds(targetOwner).filter((id) => targetHand.includes(id)));
+  return { powerId, targetOwner, index };
+}
+
+function refillPowerSlotFromRandomPlayer(owner, reason = "from Power Tunnelling") {
+  const limit = getPowerHandLimit(owner);
+  const hand = [...(state.powerHands[owner] || [])];
+  if (hand.length >= limit) {
+    return null;
+  }
+  const stolen = getRandomStealablePowerEntry(owner);
+  if (!stolen) {
+    return null;
+  }
+  state.powerHands[owner] = [...hand, stolen.powerId];
+  markFreshPowerUps(owner, [stolen.powerId]);
+  return `${getOwnerLabel(owner)} stole ${getPowerById(stolen.powerId)?.name || "a power-up"} from ${getOwnerLabel(stolen.targetOwner)} ${reason}.`;
+}
+
+function refillPowerTunnellingHand(owner, reason = "from Power Tunnelling") {
+  const events = [];
+  while ((state.powerHands[owner] || []).length < getPowerHandLimit(owner)) {
+    const event = refillPowerSlotFromRandomPlayer(owner, reason);
+    if (!event) {
+      break;
+    }
+    events.push(event);
+  }
+  return events;
+}
+
+function rollChaosRefillAfterPowerUse(owner, power, events = []) {
+  const endless = state.endlessHandRounds?.[owner] === state.round;
+  const tunnelling = state.powerTunnellingRounds?.[owner] === state.round;
+  if (!endless && !tunnelling) {
+    return;
+  }
+  if (tunnelling) {
+    events.push(...refillPowerTunnellingHand(owner));
+    return;
+  }
+  if (Math.random() < 0.66) {
+    const refill = refillPowerSlot(owner, "from Endless Hand");
+    if (refill) {
+      events.push(refill);
+    }
+  }
 }
 
 function markFreshPowerUps(owner, powerIds = [], type = "refill") {
@@ -26299,6 +26561,11 @@ function getDisplayedPowerDescription(power, owner = getCurrentPowerOwner()) {
 
 function consumeImmediatePower(owner, power, meta = {}) {
   const consumedIndex = playPendingPowerUseAnimation(owner, power.id);
+  const previousRoundPower = [...(state.playedPowerStacks[owner] || [])]
+    .reverse()
+    .find((entry) => getBasePowerId(entry.powerId) !== getBasePowerId(power.id))?.powerId
+    || state.lastPlayedPowerUps[owner]
+    || null;
   if (power.type === "speed_answer" && isChaosInfusedPower(power)) {
     state.timerRemaining = Math.max(state.timerRemaining, state.timerSeconds || state.timerRemaining || 0);
     renderTimer();
@@ -26357,8 +26624,16 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "next_question") {
-    const theme = meta.selectedTheme || getEnabledTriviaThemes()[0];
-    state.nextPreferredTheme = theme;
+    if (isChaosInfusedPower(power)) {
+      state.nextQuestionPreferences = {
+        theme: String(meta.selectedTheme || ""),
+        difficulty: ["easy", "medium", "hard"].includes(String(meta.selectedDifficulty || "")) ? String(meta.selectedDifficulty) : "",
+        questionStyle: [MULTIPLE_CHOICE_STYLE, "standard"].includes(String(meta.selectedQuestionStyle || "")) ? String(meta.selectedQuestionStyle) : ""
+      };
+      state.nextPreferredTheme = state.nextQuestionPreferences.theme;
+    } else {
+      state.nextPreferredTheme = meta.selectedTheme || getEnabledTriviaThemes()[0];
+    }
     state.nextSetup = null;
     state.nextSetupPromise = null;
   }
@@ -26489,6 +26764,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "all_out") {
     state.allOutRounds[owner] = state.round;
+    if (isChaosInfusedPower(power)) {
+      state.endlessHandRounds[owner] = state.round;
+    }
   }
 
   if (power.type === "hitman" && isChaosInfusedPower(power)) {
@@ -26626,7 +26904,8 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "recycle_bin") {
-    const restoredPowerId = state.lastPlayedPowerUps[owner];
+    addEffectStack(state.fourthSlotOwners, owner);
+    const restoredPowerId = previousRoundPower || state.lastPlayedPowerUps[owner];
     const restoredPower = getPowerById(restoredPowerId);
     let receivedPowerId = "";
     const hand = state.powerHands[owner] || [];
@@ -26651,9 +26930,15 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "afterparty") {
-    addScore(owner, 250);
-    refillPowerSlot(owner, "from Afterparty");
-    queueStatFlash("positive", power.name, ["+250 Points", "Power Refilled"], { owners: [owner] });
+    if (isChaosInfusedPower(power)) {
+      addEffectStack(state.eternalCelebrationOwners, owner);
+      updateLatestPlayedPowerMeta(owner, { eternalCelebrationArmed: true });
+      queueStatFlash("positive", power.name, ["Eternal Celebration", "Future Wins Empowered"], { owners: [owner], complex: true });
+    } else {
+      addScore(owner, 250);
+      refillPowerSlot(owner, "from Afterparty");
+      queueStatFlash("positive", power.name, ["+250 Points", "Power Refilled"], { owners: [owner] });
+    }
     renderScore();
   }
 
@@ -26668,8 +26953,12 @@ function consumeImmediatePower(owner, power, meta = {}) {
   if (power.type === "xray_hacks") {
     const target = meta.targetOwner;
     const revealed = meta.revealedPowers || (state.powerHands[target] || []).slice();
-    delete state.allOutRounds[owner];
-    state.extraPowerUses[owner] = 0;
+    if (!isChaosInfusedPower(power)) {
+      delete state.allOutRounds[owner];
+      state.extraPowerUses[owner] = 0;
+    } else {
+      state.megaHackUses[owner] = Math.max(0, Number(state.megaHackUses[owner]) || 0);
+    }
     state.playedPowerMeta[owner] = {
       ...(state.playedPowerMeta[owner] || {}),
       targetOwner: target,
@@ -26680,6 +26969,14 @@ function consumeImmediatePower(owner, power, meta = {}) {
   if (power.type === "software_downgrade") {
     const target = meta.targetOwner;
     const deletedPower = target ? deleteHighestRarityPower(target) : null;
+    if (target && isChaosInfusedPower(power)) {
+      addEffectStack(state.uselessSoftwareOwners, target);
+      state.powerHands[target] = (state.powerHands[target] || []).map((powerId) => {
+        const candidate = getPowerById(powerId);
+        return candidate && candidate.rarity === "grey" ? "dead_weight" : powerId;
+      });
+      setSelectedPowerIds(target, getSelectedPowerIds(target).filter((powerId) => state.powerHands[target].includes(powerId)));
+    }
     state.playedPowerMeta[owner] = {
       ...(state.playedPowerMeta[owner] || {}),
       targetOwner: target,
@@ -27007,6 +27304,15 @@ function consumeImmediatePower(owner, power, meta = {}) {
       );
       renderScore();
     }
+  }
+
+  const refillEvents = [];
+  rollChaosRefillAfterPowerUse(owner, power, refillEvents);
+  if (refillEvents.length) {
+    updateLatestPlayedPowerMeta(owner, {
+      refillEvents: [...(state.playedPowerMeta[owner]?.refillEvents || []), ...refillEvents]
+    });
+    queueStatFlash("positive", power.name, `+${refillEvents.length} Stolen Refill${refillEvents.length === 1 ? "" : "s"}`, { owners: [owner], complex: true });
   }
 
   markTargetedPowerAnswerDamage({ owner, power, meta: state.playedPowerMeta[owner] || recordMeta });
@@ -40932,11 +41238,12 @@ function createNoCorrectAward() {
 }
 
 function hasDeductionProtection(owner, playedEntries, freezeSnapshot, permafrostSnapshot) {
-  return playedEntries.some((entry) => (
+  return (state.freezeReflectionRounds[owner] || 0) > 0
+    || playedEntries.some((entry) => (
     entry.owner === owner
     && (entry.power.type === "participation" || entry.power.type === "deep_freeze" || entry.power.type === "permafrost" || entry.power.type === "hoarder")
     && !(hasImpendingDoom(owner) && isPositiveStatusPower(entry.power))
-  ))
+    ))
     || Boolean(state.playedPowerMeta[owner]?.hoarderShield)
     || (state.pocketShieldCharges[owner] || 0) > 0
     || freezeSnapshot[owner] > 0
@@ -40952,8 +41259,10 @@ function applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafr
   getActiveOwners().forEach((owner) => {
     if (deltas[owner] < 0 && hasDeductionProtection(owner, playedEntries, freezeSnapshot, permafrostSnapshot)) {
       const blocked = Math.abs(deltas[owner]);
-      deltas[owner] = hasDeductionReflection(owner, playedEntries) ? blocked : 0;
-      if ((state.pocketShieldCharges[owner] || 0) > 0) {
+      const reflected = hasDeductionReflection(owner, playedEntries)
+        || (state.freezeReflectionRounds[owner] || 0) > 0;
+      deltas[owner] = reflected ? blocked : 0;
+      if (!reflected && (state.pocketShieldCharges[owner] || 0) > 0) {
         const breakThreshold = state.pocketShieldBreakThresholds[owner] || 0;
         if (!breakThreshold || blocked > breakThreshold) {
           state.pocketShieldCharges[owner] = Math.max(0, (state.pocketShieldCharges[owner] || 0) - 1);
@@ -40963,10 +41272,13 @@ function applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafr
         }
       }
       markAchievementShieldSave(owner);
-      queueStatFlash("shield", "Shield", `Blocked ${blocked.toLocaleString()} Points`, { owners: [owner], complex: true });
-      events.push(hasDeductionReflection(owner, playedEntries)
-        ? `${getOwnerLabel(owner)} reversed ${blocked.toLocaleString()} blocked points into a gain.`
-        : `${getOwnerLabel(owner)} blocked ${blocked.toLocaleString()} points of deductions.`);
+      if (reflected) {
+        queueStatFlash("mixed", "Uno Reverse", [`Blocked ${blocked.toLocaleString()} Points`, `+${blocked.toLocaleString()} Points`], { owners: [owner], complex: true, priority: true });
+        events.push(`${getOwnerLabel(owner)}'s Uno Reverse blocked ${blocked.toLocaleString()} points and awarded the same amount.`);
+      } else {
+        queueStatFlash("shield", "Shield", `Blocked ${blocked.toLocaleString()} Points`, { owners: [owner], complex: true });
+        events.push(`${getOwnerLabel(owner)} blocked ${blocked.toLocaleString()} points of deductions.`);
+      }
     }
   });
 }

@@ -51,6 +51,9 @@ ADMIN_TOKEN=replace_with_a_long_random_admin_token
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 SUPABASE_JWT_SECRET=
+# warn accepts legacy power payloads while the server power engine is migrated.
+# Switch to enforce after all power families have server-side rules.
+POWER_AUTH_MODE=warn
 INVENTORY_AUTH_MODE=enforce
 QUESTION_SUBMISSION_AUTH_MODE=enforce
 UPSTASH_REDIS_REST_URL=
