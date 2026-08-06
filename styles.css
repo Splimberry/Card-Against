@@ -11386,6 +11386,9 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .target-panel {
   width: min(100%, 38rem);
+  max-height: min(86vh, 52rem);
+  overflow-x: hidden;
+  overflow-y: auto;
   position: relative;
   isolation: isolate;
   animation: targetPanelIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -11435,6 +11438,17 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .target-list {
   display: grid;
   gap: 0.55rem;
+}
+
+.target-modal[data-mode="player"] .target-list,
+.target-modal[data-mode="multi-player"] .target-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.target-modal[data-mode="player"] .target-option,
+.target-modal[data-mode="multi-player"] .target-option {
+  min-width: 0;
 }
 
 .target-selection-hint {

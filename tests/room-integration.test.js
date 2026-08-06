@@ -3681,6 +3681,85 @@ async function testHostSubmissionAutoSubmitsBotsAndStartsGrading() {
   assert.equal(stored.payload.room.game.answers["bot-client"].autoSubmitted, true);
 }
 
+async function testBotOnlyRoomSkipAutoSubmitsBotsAndStartsGrading() {
+  const code = makeCode(8178);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: false,
+        muted: false,
+        status: "host-disconnected"
+      },
+      {
+        id: "bot-alpha",
+        name: "Bot Alpha",
+        host: false,
+        spectator: false,
+        bot: true,
+        role: "bot",
+        active: true,
+        muted: false,
+        status: "bot"
+      },
+      {
+        id: "bot-beta",
+        name: "Bot Beta",
+        host: false,
+        spectator: false,
+        bot: true,
+        role: "bot",
+        active: true,
+        muted: false,
+        status: "bot"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: {
+        ...makeSetup(1),
+        botAnswerPool: ["Bot answer", "Wrong"],
+        botWrongPool: ["Wrong"]
+      },
+      answers: {},
+      participantTimers: {
+        "bot-alpha": { endsAt: Date.now() + 20000, speedMultiplier: 1, status: "running" },
+        "bot-beta": { endsAt: Date.now() + 20000, speedMultiplier: 1, status: "running" }
+      },
+      gradingForceAt: Date.now() + 22000,
+      updatedAt: Date.now()
+    }
+  }));
+
+  const grading = await roomGradingCommand(code, {
+    participantId: "host-client",
+    hostParticipantId: "host-client",
+    matchId,
+    round: 1,
+    reason: "host-skip"
+  });
+  assert.equal(grading.response.status, 200, grading.payload.error);
+  assert.equal(grading.payload.eventType, "round-grading");
+  assert.equal(grading.payload.grading.submissions.length, 2);
+  assert.deepEqual(new Set(grading.payload.grading.submissions.map((entry) => entry.participantId)), new Set(["bot-alpha", "bot-beta"]));
+  assert.equal(grading.payload.events.filter((event) => event.type === "answer_submitted").length, 2);
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.equal(stored.payload.room.game.status, "grading");
+  assert.equal(stored.payload.room.game.answers["bot-alpha"].autoSubmitted, true);
+  assert.equal(stored.payload.room.game.answers["bot-beta"].autoSubmitted, true);
+  assert.equal(stored.payload.room.events.filter((event) => event.type === "round_grading").length, 1);
+}
+
 async function testPresenceSubmissionCanStartGradingWhenAllSubmitted() {
   const code = makeCode(8177);
   const matchId = `${code}-match`;
@@ -7126,6 +7205,7 @@ async function main() {
   await testHostSubmittedBotAnswerCanStartGrading();
   await testHostLastAfterSubmittedBotsStartsGrading();
   await testHostSubmissionAutoSubmitsBotsAndStartsGrading();
+  await testBotOnlyRoomSkipAutoSubmitsBotsAndStartsGrading();
   await testPresenceSubmissionCanStartGradingWhenAllSubmitted();
   await testResolveAllSubmittedCommandStartsGradingFromAuthoritativeAnswers();
   await testDisconnectedParticipantStatusDoesNotBlockGrading();

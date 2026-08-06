@@ -1076,6 +1076,121 @@ const chaosInfusedPowerOverrides = {
     short: "auto pill",
     description: "Lasts the entire game. At the start of every round, automatically activates Blue Pill.",
     bluePill: true
+  },
+  red_herring: {
+    name: "Smoke Screen",
+    short: "+20% +1000 / hidden",
+    description: "Immediately gain 1,000 points plus 20% of your current total. Hide your score for 3 rounds and become untargetable for the rest of the match.",
+    smokeScreen: true,
+    immediate: true,
+    hiddenRounds: 3,
+    percent: 0.2,
+    flatPoints: 1000
+  },
+  penalty_cloud: {
+    name: "Penalty Storm",
+    short: "losers -5% scaling",
+    description: "For the rest of the match, each loser loses 5% times their previous losses plus 1, and loses an additional Lightning Strike amount before their streak is removed.",
+    penaltyStorm: true,
+    persistent: true
+  },
+  multiple_choice: {
+    name: "50/50",
+    short: "2 choices +50%",
+    description: "Turn the current question into two choices with one correct answer. A correct answer gives 50% more round earnings and one bonus streak.",
+    fiftyFifty: true,
+    immediate: true
+  },
+  insurance_fraud: {
+    name: "Fraud Master",
+    short: "hidden win bonus",
+    description: "Hide your score for the rest of the match. Wins created by copied, auto-filled, multiple-choice, or bribed answers gain 2,000 points plus 10% of your total. After 3 losses, losses receive the same payout.",
+    fraudMaster: true,
+    persistent: true,
+    flatPoints: 2000,
+    percent: 0.1
+  },
+  arsonist: {
+    name: "Fire Extinguisher",
+    short: "target -1 streak",
+    description: "Lasts the entire game. Gain an Extinguish action that can target up to 2 players; targets lose 1 streak immediately and cannot gain streaks for 2 rounds.",
+    fireExtinguisher: true,
+    persistent: true,
+    targeted: true,
+    immediate: true
+  },
+  ultimate_bounty: {
+    name: "Midas' Touch",
+    short: "+50% / +5% stacks",
+    description: "Gain a 50% total-score bonus when you win. Every win adds a permanent stack that grants 5% of your total score at the start of each round.",
+    midasTouch: true,
+    percent: 0.5,
+    stackPercent: 0.05
+  },
+  soul_link: {
+    name: "Parasitic Link",
+    short: "steal 5-15%",
+    description: "Link to up to 3 players for the match. Each link steals 15% from one target, 10% from each of two targets, or 5% from each of three targets at round start.",
+    parasiticLink: true,
+    maxLinks: 3
+  },
+  reverse: {
+    name: "180",
+    short: "gain transfer / guard",
+    description: "Transfer a target's gains to yourself this round. For the next 3 rounds, point losses against you are transferred to that target instead.",
+    reverseGuard: true,
+    guardRounds: 3
+  },
+  monopoly: {
+    name: "Hostile Takeover",
+    short: "gold only / -1000 +10%",
+    description: "Every non-gold power-up has no effect. Take 1,000 points plus 10% of the total score from everyone else who played a power-up this round.",
+    hostileTakeover: true,
+    taxAmount: 1000,
+    taxPercent: 0.1
+  },
+  hoarder: {
+    name: "Time Capsule",
+    short: "+1 permanent slot",
+    description: "Gain a permanent extra power-up slot. That slot always contains the last power-up you used and updates after every use.",
+    timeCapsule: true,
+    persistent: true
+  },
+  permafrost: {
+    name: "Cryo-Stasis",
+    short: "game shield / freeze",
+    description: "Prevent point deductions for the rest of the game. Players whose point loss you block are frozen for 1 round and cannot change streak that round.",
+    cryoStasis: true,
+    persistent: true
+  },
+  eternal_flame: {
+    name: "Phoenix Rebirth",
+    short: "loss -> rebirth",
+    description: "Whenever you lose streak, gain an Arsonist stack and receive double the lost streak as points at the next round start. Gain streak-loss immunity for 1 round.",
+    phoenixRebirth: true,
+    persistent: true
+  },
+  no_one_wins: {
+    name: "Rage Quit",
+    short: "end match",
+    description: "End the match immediately. The result clearly records that Rage Quit ended the game.",
+    rageQuit: true,
+    immediate: true
+  },
+  communism: {
+    name: "Capitalism",
+    short: "+50% earnings",
+    description: "Permanently increase your positive earnings by 50%. This effect stacks.",
+    capitalism: true,
+    stackMultiplier: 0.5,
+    persistent: true
+  },
+  hot_in_here: {
+    name: "Inferno",
+    short: "+1 / others -5%",
+    description: "Lasts the entire game. At the start of every round, gain 1 streak and everyone else loses 5% times your streak.",
+    inferno: true,
+    persistent: true
   }
 };
 
@@ -3459,6 +3574,21 @@ const state = {
   uselessSoftwareOwners: {},
   reduceToAshesOwners: {},
   streakSicknessRounds: {},
+  chaosStatusEffects: {},
+  penaltyStormOwners: {},
+  fraudMasterOwners: {},
+  fireExtinguisherOwners: {},
+  midasTouchOwners: {},
+  reverseGuardRounds: {},
+  reverseGuardTargets: {},
+  timeCapsuleOwners: {},
+  cryoStasisOwners: {},
+  phoenixRebirthOwners: {},
+  capitalismOwners: {},
+  infernoOwners: {},
+  lossesThisMatch: {},
+  roundPositiveGainOwners: {},
+  clusterBombs: [],
   nextQuestionPreferences: {
     theme: "",
     difficulty: "",
@@ -8336,6 +8466,7 @@ function getActiveEffectEntries() {
     const uselessSoftwareStacks = getEffectStackCount(state.uselessSoftwareOwners?.[owner]);
     const reduceToAshesStacks = getEffectStackCount(state.reduceToAshesOwners?.[owner]);
     const streakSicknessRounds = Math.max(0, Number(state.streakSicknessRounds?.[owner]) || 0);
+    const chaosStatuses = getChaosStatus(owner);
     const timeAcceleratorEntries = getPlayedPowerEntries([owner])
       .filter((entry) => entry.power?.type === "time_bender");
     const effects = [
@@ -8409,6 +8540,15 @@ function getActiveEffectEntries() {
       [uselessSoftwareStacks > 0, createActiveEffect(owner, "software_downgrade", `Useless Software${formatStackSuffix(uselessSoftwareStacks)}`, "Cannot gain Chaos Infusion. Common power-ups become Dead Weight for the rest of the match.", { chaosInfused: true })],
       [reduceToAshesStacks > 0, createActiveEffect(owner, "world_burn", `Reduce to Ashes${formatStackSuffix(reduceToAshesStacks)}`, "At each round start, players ahead lose 5% times this player's streak plus 1 per stack.", { chaosInfused: true })],
       [streakSicknessRounds > 0, createActiveEffect(owner, "heaven_hell", `Streak Sickness · ${streakSicknessRounds}r`, "Each current streak costs this player 250 points at round scoring. Streak gain and loss still work normally.")],
+      [chaosStatuses.unstableStreak?.length > 0, createActiveEffect(owner, "cocktail_mix", `Unstable Streak x${chaosStatuses.unstableStreak.length}`, "Each stack rolls a separate temporary -1 to +3 streak bonus at round start for 3 rounds.", { chaosInfused: true })],
+      [chaosStatuses.reflectorShield > 0, createActiveEffect(owner, "deep_freeze", `Reflector Shield x${chaosStatuses.reflectorShield}`, "Blocks point deductions for its remaining rounds and reflects 50% of blocked damage.", { chaosInfused: true })],
+      [chaosStatuses.resistantStreak?.rounds > 0 || chaosStatuses.streakResistance > 0, createActiveEffect(owner, "streak_retainer", `Resistant Streak${formatStackSuffix(chaosStatuses.streakResistance || 0)}${chaosStatuses.resistantStreak?.rounds ? ` · ${chaosStatuses.resistantStreak.rounds}r` : ""}`, "Prevents streak loss briefly and permanently reduces future losses by 2 per stack.", { chaosInfused: true })],
+      [chaosStatuses.chaosDebt > 0, createActiveEffect(owner, "cocktail_mix", `Chaos Debt · ${chaosStatuses.chaosDebt}r`, "Wrong answers cost an additional 10% of this player's total score per stack.", { chaosInfused: true })],
+      [chaosStatuses.streakLossAmplifier > 0, createActiveEffect(owner, "lightning_strike", `Streak Loss Amplifier · ${chaosStatuses.streakLossAmplifier}r`, "Doubles this player's streak losses while active.", { chaosInfused: true })],
+      [chaosStatuses.unluck > 0, createActiveEffect(owner, "reign_chaos", `Unluck · ${chaosStatuses.unluck}r`, "Only 90% of positive points are kept and Chaos Infusion is disabled.", { chaosInfused: true })],
+      [chaosStatuses.sickness > 0, createActiveEffect(owner, "heaven_hell", `Streak Sickness · ${chaosStatuses.sickness}r`, "Streaks are converted into a 250-point penalty instead of helping this player.", { chaosInfused: true })],
+      [chaosStatuses.clusterBombs > 0, createActiveEffect(owner, "time_bomb", `Cluster Bomb x${chaosStatuses.clusterBombs}`, "Detonates next round for 10% score loss, then creates Shrapnel that can explode each round.", { chaosInfused: true })],
+      [chaosStatuses.shrapnel > 0, createActiveEffect(owner, "time_bomb", `Shrapnel x${chaosStatuses.shrapnel}`, "Each shard has a 50% chance each round to remove 2% of this player's score.", { chaosInfused: true })],
       [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", `Impending Doom${formatStackSuffix(doomStacks)}`, "Cannot gain positive status effects. Each stack makes wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
       [getEffectStackCount(state.nullProtocolOwners?.[owner]) > 0, createActiveEffect(owner, "null_protocol", `Null Corruption${formatStackSuffix(getEffectStackCount(state.nullProtocolOwners[owner]))}`, "Cannot gain positive statuses or bonus points. Point gains lose 10%, plus 5% for every wrong answer. Cannot be removed.")],
       [getEffectStackCount(state.targetWipeMarks?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Target Wipe${formatStackSuffix(getEffectStackCount(state.targetWipeMarks[owner]?.count || state.targetWipeMarks[owner]))} · ${state.targetWipeMarks[owner]?.remaining || 0}r`, "If this player wins while marked, they lose 12.5% per stack, lose 2 power-ups per stack, and retain only 75% of their round gain per stack.", { chaosInfused: true })],
@@ -9909,6 +10049,25 @@ function decrementRoundEffectCounters(owners) {
     state.ultimatumRounds[owner] = Math.max(0, (state.ultimatumRounds[owner] || 0) - 1);
     state.doomStreakGuardRounds[owner] = Math.max(0, (state.doomStreakGuardRounds[owner] || 0) - 1);
     state.secretAgentRounds[owner] = Math.max(0, (state.secretAgentRounds[owner] || 0) - 1);
+    const chaosStatus = getChaosStatus(owner);
+    const nextUnstable = (chaosStatus.unstableStreak || [])
+      .map((entry) => ({ ...entry, remaining: Math.max(0, Number(entry.remaining) || 0) - 1 }))
+      .filter((entry) => entry.remaining > 0);
+    const nextResistantRounds = Math.max(0, Number(chaosStatus.resistantStreak?.rounds) || 0) - 1;
+    const nextStatus = {
+      ...chaosStatus,
+      unstableStreak: nextUnstable,
+      unstableBonus: 0,
+      reflectorShield: Math.max(0, Number(chaosStatus.reflectorShield) || 0) - 1,
+      chaosDebt: Math.max(0, Number(chaosStatus.chaosDebt) || 0) - 1,
+      streakLossAmplifier: Math.max(0, Number(chaosStatus.streakLossAmplifier) || 0) - 1,
+      unluck: Math.max(0, Number(chaosStatus.unluck) || 0) - 1,
+      sickness: Math.max(0, Number(chaosStatus.sickness) || 0) - 1,
+      resistantStreak: nextResistantRounds > 0
+        ? { ...chaosStatus.resistantStreak, rounds: nextResistantRounds }
+        : null
+    };
+    updateChaosStatus(owner, nextStatus);
     if ((state.loserTaxCollectors[owner] || 0) > 0) {
       state.loserTaxCollectors[owner] = Math.max(0, (state.loserTaxCollectors[owner] || 0) - 1);
     }
@@ -12595,7 +12754,18 @@ function rememberLocalRoomSubmission(owner, answer, remainingTime = state.answer
 
 function applyLocalRoomSubmission() {
   const localSubmission = state.localRoomSubmission;
-  if (!isRoomMode() || state.isSpectator || !localSubmission || Number(localSubmission.round) !== Number(state.round)) {
+  const currentMatchId = getCurrentRoomMatchId();
+  const localMatchId = String(localSubmission?.matchId || "").trim();
+  if (
+    !isRoomMode()
+    || state.isSpectator
+    || !localSubmission
+    || Number(localSubmission.round) !== Number(state.round)
+    || (localMatchId && currentMatchId && localMatchId !== currentMatchId)
+  ) {
+    if (localSubmission && localMatchId && currentMatchId && localMatchId !== currentMatchId) {
+      clearLocalRoomSubmission();
+    }
     return false;
   }
   const owner = localSubmission.owner || state.currentOwner;
@@ -12860,9 +13030,9 @@ function applyRoomSubmissionStatusSnapshot(payload = {}) {
     if (!participantId) {
       return;
     }
+    const nextStatus = entry.status === "timed_out" ? "timed_out" : entry.status === "submitted" ? "submitted" : "waiting";
     const participant = state.roomParticipants.find((candidate) => candidate.id === participantId);
     if (participant) {
-      const nextStatus = entry.status === "timed_out" ? "timed_out" : entry.status === "submitted" ? "submitted" : "waiting";
       if (nextStatus === "submitted" || nextStatus === "timed_out") {
         participant.status = "submitted";
         participant.submittedRound = round;
@@ -13645,6 +13815,20 @@ const roomAbilityEffectMapKeys = [
   "uselessSoftwareOwners",
   "reduceToAshesOwners",
   "streakSicknessRounds",
+  "chaosStatusEffects",
+  "penaltyStormOwners",
+  "fraudMasterOwners",
+  "fireExtinguisherOwners",
+  "midasTouchOwners",
+  "reverseGuardRounds",
+  "reverseGuardTargets",
+  "timeCapsuleOwners",
+  "cryoStasisOwners",
+  "phoenixRebirthOwners",
+  "capitalismOwners",
+  "infernoOwners",
+  "lossesThisMatch",
+  "roundPositiveGainOwners",
   "luckRounds",
   "timerPenalties",
   "deadWeightLockedRounds",
@@ -13694,7 +13878,8 @@ const roomAbilityEffectArrayKeys = [
   "error404Schedule",
   "pendingDeadWeights",
   "soulLinks",
-  "hotPotatoOwners"
+  "hotPotatoOwners",
+  "clusterBombs"
 ];
 
 function cloneRoomAbilitySyncValue(value, fallback) {
@@ -20355,6 +20540,56 @@ function applyRoundStartEffects() {
   applyCollapsingStarRoundStart(owners, events);
   applyMolotovBurningMarks(owners, events, totalDeltas);
   applyUnstableConduitRoundStart(owners, events);
+  Object.entries({ ...(state.chaosStatusEffects || {}) }).forEach(([owner, status]) => {
+    if (!owners.includes(owner)) {
+      return;
+    }
+    const unstable = Array.isArray(status.unstableStreak) ? status.unstableStreak : [];
+    if (unstable.length) {
+      const bonus = unstable.reduce((total) => total + getRandomInt(-1, 3), 0);
+      updateChaosStatus(owner, { unstableBonus: bonus });
+      events.push(`Unstable Streak rolled ${bonus >= 0 ? "+" : ""}${bonus} temporary streak for ${getOwnerLabel(owner)}.`);
+    }
+  });
+
+  const clusterBombs = (state.clusterBombs || []).filter((bomb) => (Number(bomb.round) || 0) <= state.round);
+  clusterBombs.forEach((bomb) => {
+    if (!owners.includes(bomb.owner)) {
+      return;
+    }
+    const amount = Math.floor(getScore(bomb.owner) * 0.1);
+    const appliedLoss = applyProtectedScoreLoss(bomb.owner, amount, "Cluster Bomb", events);
+    const status = getChaosStatus(bomb.owner);
+    const shrapnel = Math.max(0, Number(status.shrapnel) || 0) + getRandomInt(10, 20);
+    updateChaosStatus(bomb.owner, {
+      clusterBombs: Math.max(0, Number(status.clusterBombs) || 1) - 1,
+      shrapnel
+    });
+    queueStatFlash("bomb", "Cluster Bomb", [formatSignedStat(-appliedLoss, "Point"), `+${shrapnel} Shrapnel`], { owners: [bomb.owner], complex: true });
+    events.push(`Cluster Bomb hit ${getOwnerLabel(bomb.owner)} for ${appliedLoss.toLocaleString()} points and released shrapnel.`);
+  });
+  state.clusterBombs = (state.clusterBombs || []).filter((bomb) => (Number(bomb.round) || 0) > state.round);
+
+  owners.forEach((owner) => {
+    const status = getChaosStatus(owner);
+    const shards = Math.max(0, Number(status.shrapnel) || 0);
+    if (!shards) {
+      return;
+    }
+    let exploded = 0;
+    for (let shard = 0; shard < shards; shard += 1) {
+      if (Math.random() < 0.5) {
+        exploded += 1;
+      }
+    }
+    if (exploded) {
+      const loss = Math.floor(getScore(owner) * 0.02) * exploded;
+      const appliedLoss = applyProtectedScoreLoss(owner, loss, "Shrapnel", events);
+      updateChaosStatus(owner, { shrapnel: shards - exploded });
+      queueStatFlash("bomb", "Shrapnel", formatSignedStat(-appliedLoss, "Point"), { owners: [owner], complex: true });
+      events.push(`Shrapnel exploded ${exploded} time${exploded === 1 ? "" : "s"} on ${getOwnerLabel(owner)} for ${appliedLoss.toLocaleString()} points.`);
+    }
+  });
   getActiveOwners().forEach((owner) => {
     const pendingStreak = state.pendingStreakBonuses[owner] || 0;
     if (pendingStreak > 0) {
@@ -20750,7 +20985,17 @@ function setOwnerStreak(owner, value, options = {}) {
     queueStatFlash("shield", "Freeze Ray", "Streak Locked", { owners: [owner], complex: true });
     return;
   }
-  if (!options.force && value < getOwnerStreak(owner) && (state.streakLossProtectionRounds[owner] || 0) > 0) {
+  const currentStreak = getOwnerStreak(owner);
+  const chaosStatus = getChaosStatus(owner);
+  if (!options.force && value < currentStreak && (chaosStatus.resistantStreak?.rounds || 0) > 0) {
+    queueStatFlash("shield", "Resistant Streak", "Streak Protected", { owners: [owner], complex: true });
+    return;
+  }
+  if (!options.force && value < currentStreak && (Number(chaosStatus.streakResistance) || 0) > 0) {
+    const reducedLoss = Math.max(0, currentStreak - value - (Number(chaosStatus.streakResistance) || 0) * 2);
+    value = currentStreak - reducedLoss;
+  }
+  if (!options.force && value < currentStreak && (state.streakLossProtectionRounds[owner] || 0) > 0) {
     queueStatFlash("shield", "Streak Guard", "Streak Protected", { owners: [owner], complex: true });
     return;
   }
@@ -21146,6 +21391,9 @@ function maybeChaosInfusePowerId(powerId, options = {}) {
   if (options.owner && getEffectStackCount(state.uselessSoftwareOwners?.[options.owner]) > 0) {
     return powerId;
   }
+  if (options.owner && getChaosStatusStackCount(options.owner, "unluck") > 0) {
+    return powerId;
+  }
   if (options.forceChaosInfusion && canPowerBecomeChaosInfused(powerId)) {
     return getChaosInfusedPowerId(powerId);
   }
@@ -21416,7 +21664,9 @@ function getPowerHandLimit(owner) {
   }
   const baseLimit = Number.isFinite(player.handLimit) && player.handLimit > 0 ? player.handLimit : 0;
   if (baseLimit > 0) {
-    return baseLimit + (getEffectStackCount(state.fourthSlotOwners?.[owner]) > 0 ? 1 : 0);
+    return baseLimit
+      + (getEffectStackCount(state.fourthSlotOwners?.[owner]) > 0 ? 1 : 0)
+      + (getEffectStackCount(state.timeCapsuleOwners?.[owner]) > 0 ? 1 : 0);
   }
   return isBotOwner(owner) ? 3 : 0;
 }
@@ -22062,7 +22312,9 @@ function getPowerDrawOptions(owner) {
     owner,
     excludeAi: getPlayer(owner)?.type === "bot",
     minRarity: (state.luckRounds[owner] || 0) > 0 ? "blue" : null,
-    chaosInfusionChance: (state.chaosInfusionBoostRounds[owner] || 0) > 0 ? 0.5 : null,
+    chaosInfusionChance: getChaosStatusStackCount(owner, "unluck") > 0
+      ? 0
+      : (state.chaosInfusionBoostRounds[owner] || 0) > 0 ? 0.5 : null,
     doomChance: getPowerDoomChance(owner)
   };
 }
@@ -25956,6 +26208,153 @@ function getEffectStackCount(value) {
   return 0;
 }
 
+function getChaosStatus(owner) {
+  if (!owner) {
+    return {};
+  }
+  const current = state.chaosStatusEffects?.[owner];
+  return current && typeof current === "object" ? current : {};
+}
+
+function updateChaosStatus(owner, patch = {}) {
+  if (!owner) {
+    return {};
+  }
+  state.chaosStatusEffects = state.chaosStatusEffects || {};
+  const next = { ...getChaosStatus(owner), ...patch };
+  Object.keys(next).forEach((key) => {
+    const value = next[key];
+    if (value === 0 || value === false || value === null || (Array.isArray(value) && !value.length)) {
+      delete next[key];
+    }
+  });
+  if (Object.keys(next).length) {
+    state.chaosStatusEffects[owner] = next;
+  } else {
+    delete state.chaosStatusEffects[owner];
+  }
+  return next;
+}
+
+function getChaosStatusStackCount(owner, key) {
+  const value = getChaosStatus(owner)[key];
+  if (Array.isArray(value)) {
+    return value.length;
+  }
+  return Math.max(0, Number(value) || 0);
+}
+
+function addChaosDuration(owner, key, rounds, amount = 1) {
+  const status = getChaosStatus(owner);
+  const current = Math.max(0, Number(status[key]) || 0);
+  return updateChaosStatus(owner, { [key]: current + Math.max(0, Number(rounds) || 0) * Math.max(1, Number(amount) || 1) })[key] || 0;
+}
+
+function applyChaosFill(owner) {
+  const limit = getPowerHandLimit(owner);
+  const hand = [...(state.powerHands[owner] || [])];
+  if (!limit) {
+    return "Chaos Fill found no power slots";
+  }
+  if (hand.length >= limit) {
+    const upgraded = hand.map((powerId) => canPowerBecomeChaosInfused(powerId) ? getChaosInfusedPowerId(powerId) : powerId);
+    state.powerHands[owner] = upgraded;
+    markPowerHandAnimation(owner, upgraded, "refresh");
+    return "Chaos Fill upgraded the full hand into Chaos Infused powers";
+  }
+  const added = [];
+  while (hand.length + added.length < limit) {
+    const powerId = drawPowerCard([...hand, ...added], {
+      ...getPowerDrawOptions(owner),
+      forceChaosInfusion: true
+    });
+    if (!powerId) {
+      break;
+    }
+    added.push(powerId);
+  }
+  state.powerHands[owner] = [...hand, ...added];
+  markFreshPowerUps(owner, added);
+  return added.length
+    ? `Chaos Fill added ${added.length} Chaos Infused power-up${added.length === 1 ? "" : "s"}`
+    : "Chaos Fill found no available power-up";
+}
+
+function applyChaosBuffRoll(owner) {
+  const roll = getRandomInt(0, 5);
+  if (roll === 0) {
+    const unstable = [...(getChaosStatus(owner).unstableStreak || []), { remaining: 3 }];
+    updateChaosStatus(owner, { unstableStreak: unstable });
+    return `Unstable Streak x${unstable.length}: a random -1 to +3 streak bonus rolls each round`;
+  }
+  if (roll === 1) {
+    const rounds = addChaosDuration(owner, "reflectorShield", 2);
+    return `Reflector Shield armed for ${rounds} rounds`;
+  }
+  if (roll === 2) {
+    const status = getChaosStatus(owner);
+    const rounds = Math.max(0, Number(status.resistantStreak?.rounds) || 0) + 2;
+    const resistance = Math.max(0, Number(status.streakResistance) || 0) + 1;
+    updateChaosStatus(owner, { resistantStreak: { rounds, stacks: resistance }, streakResistance: resistance });
+    return `Resistant Streak: ${rounds} rounds protected, permanent resistance x${resistance}`;
+  }
+  if (roll === 3) {
+    return applyChaosFill(owner);
+  }
+  if (roll === 4) {
+    const percent = getRandomInt(15, 25) / 100;
+    const amount = Math.floor(Math.max(0, getScore(owner)) * percent);
+    addScore(owner, amount);
+    return `Affluence: +${amount.toLocaleString()} points (${Math.round(percent * 100)}%)`;
+  }
+  const amount = getRandomInt(1500, 2500);
+  addScore(owner, amount);
+  return `Chaos Bonus: +${amount.toLocaleString()} points`;
+}
+
+function applyChaosDebuffRoll(owner, source = "Chaos") {
+  const roll = getRandomInt(0, 6);
+  if (roll === 0) {
+    const rounds = addChaosDuration(owner, "chaosDebt", 2);
+    return `Chaos Debt armed for ${rounds} rounds`;
+  }
+  if (roll === 1) {
+    const streaks = getOwnerStreak(owner);
+    const loss = Math.min(streaks, 1);
+    if (loss) {
+      setOwnerStreak(owner, streaks - loss);
+    }
+    const rounds = addChaosDuration(owner, "streakLossAmplifier", 2);
+    return `Streak Loss Amplifier armed for ${rounds} rounds`;
+  }
+  if (roll === 2) {
+    const percent = getRandomInt(10, 15) / 100;
+    const amount = applyProtectedScoreLoss(owner, Math.floor(getScore(owner) * percent), source);
+    return `Chaos Loss: ${formatSignedStat(-amount, "Point")} (${Math.round(percent * 100)}%)`;
+  }
+  if (roll === 3) {
+    const status = getChaosStatus(owner);
+    const clusterBombs = Math.max(0, Number(status.clusterBombs) || 0) + 1;
+    updateChaosStatus(owner, { clusterBombs });
+    state.clusterBombs = [...(state.clusterBombs || []), { owner, round: state.round + 1 }];
+    return `Cluster Bomb armed x${clusterBombs}: detonates next round`;
+  }
+  if (roll === 4) {
+    const amount = applyProtectedScoreLoss(owner, 300 * getOwnerStreak(owner), source);
+    const rounds = addChaosDuration(owner, "sickness", 2);
+    return `Chaos Combustion: ${formatSignedStat(-amount, "Point")}, Streak Sickness ${rounds} rounds`;
+  }
+  if (roll === 5) {
+    const rounds = addChaosDuration(owner, "unluck", 3);
+    return `Unluck armed for ${rounds} rounds`;
+  }
+  const hand = state.powerHands[owner] || [];
+  state.powerHands[owner] = hand.map(() => "dead_weight");
+  setSelectedPowerIds(owner, []);
+  markPowerHandAnimation(owner, state.powerHands[owner], "refresh", { playExit: false });
+  return "DDoS Attack: all power-ups became Dead Weight";
+}
+
 function addEffectStack(store, owner, amount = 1) {
   if (!store || !owner) {
     return 0;
@@ -26175,11 +26574,14 @@ function refillCocktailPowerSlot(owner) {
   return "full hand, gain 1 streak instead";
 }
 
-function applyCocktailBuff(owner) {
+function applyCocktailBuff(owner, options = {}) {
   if (!canGainPositiveStatus(owner)) {
     return "Impending Doom blocked the buff";
   }
   markAchievementBuffDebuff(owner, "buff");
+  if (!options.skipChaosRoll && isMatchModifierEnabled("chaos") && Math.random() < 0.25) {
+    return applyChaosBuffRoll(owner);
+  }
   const roll = Math.floor(Math.random() * 8);
   if (roll === 0) {
     setOwnerStreak(owner, getOwnerStreak(owner) + 1);
@@ -26219,9 +26621,9 @@ function applyRandomStatusEffect(owner, source = "Unstable Conduit", options = {
     return "No valid status target";
   }
   if (Math.random() < 0.5) {
-    return applyCocktailBuff(owner);
+    return applyCocktailBuff(owner, options);
   }
-  return applyRandomDebuff(owner, source, { sourceOwner: options.sourceOwner || "" });
+  return applyRandomDebuff(owner, source, { ...options, sourceOwner: options.sourceOwner || "" });
 }
 
 function consumeDebuffShield(owner, source = "Debuff") {
@@ -26349,6 +26751,10 @@ function applyRandomDebuff(owner, source = "Debuff", options = {}) {
     return "Chaos: answer scrambled for 3 seconds";
   }
 
+  if (!options.skipChaosRoll && isMatchModifierEnabled("chaos") && Math.random() < 0.25) {
+    return applyChaosDebuffRoll(owner, source);
+  }
+
   const roll = Math.floor(Math.random() * 8);
   if (roll === 0) {
     addOwnerDurationRounds(state.cocktailPenaltyRounds, owner, 2);
@@ -26435,6 +26841,20 @@ function removeActiveEffectsForOwner(owner) {
   delete state.insurancePolicies[owner];
   delete state.virusFactories[owner];
   delete state.error404Owners[owner];
+  delete state.chaosStatusEffects[owner];
+  delete state.penaltyStormOwners[owner];
+  delete state.fraudMasterOwners[owner];
+  delete state.fireExtinguisherOwners[owner];
+  delete state.midasTouchOwners[owner];
+  delete state.reverseGuardRounds[owner];
+  delete state.reverseGuardTargets[owner];
+  delete state.timeCapsuleOwners[owner];
+  delete state.cryoStasisOwners[owner];
+  delete state.phoenixRebirthOwners[owner];
+  delete state.capitalismOwners[owner];
+  delete state.infernoOwners[owner];
+  delete state.lossesThisMatch[owner];
+  delete state.roundPositiveGainOwners[owner];
   state.luckRounds[owner] = 0;
   delete state.typhoonOwners[owner];
   delete state.eternalSlumberOwners[owner];
@@ -26457,6 +26877,7 @@ function removeActiveEffectsForOwner(owner) {
   state.timeBombs = state.timeBombs.filter((bomb) => bomb.owner !== owner);
   state.deathMarks = (state.deathMarks || []).filter((mark) => mark.owner !== owner && mark.targetOwner !== owner);
   state.deathBombMarks = (state.deathBombMarks || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
+  state.clusterBombs = (state.clusterBombs || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
   state.wrathBombs = (state.wrathBombs || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
   state.streakLinks = (state.streakLinks || []).filter((link) => link.owner !== owner && link.targetOwner !== owner);
   delete state.eventHorizonMarks[owner];
@@ -28471,7 +28892,7 @@ function renderPowerUps() {
   const label = isDuelMode() ? `${getOwnerLabel(owner)} power-ups` : "Your power-ups";
   const hint = powersBlocked
     ? isClassicModeEnabled() ? "Disabled in Classic." : "Power Outage this round."
-    : isTableEventActive("black_market") ? "Black Market: unlimited use." : "Pick one before locking in.";
+    : isTableEventActive("black_market") ? "Black Market: unlimited use." : hand.length ? "Pick one before locking in." : "";
 
   elements.powerPanel.replaceChildren();
   const header = document.createElement("div");
@@ -35034,6 +35455,21 @@ function resetMatch(mode) {
   state.uselessSoftwareOwners = {};
   state.reduceToAshesOwners = {};
   state.streakSicknessRounds = {};
+  state.chaosStatusEffects = {};
+  state.penaltyStormOwners = {};
+  state.fraudMasterOwners = {};
+  state.fireExtinguisherOwners = {};
+  state.midasTouchOwners = {};
+  state.reverseGuardRounds = {};
+  state.reverseGuardTargets = {};
+  state.timeCapsuleOwners = {};
+  state.cryoStasisOwners = {};
+  state.phoenixRebirthOwners = {};
+  state.capitalismOwners = {};
+  state.infernoOwners = {};
+  state.lossesThisMatch = {};
+  state.roundPositiveGainOwners = {};
+  state.clusterBombs = [];
   state.pendingDeadWeights = [];
   state.deadWeightLockedRounds = {};
   state.chaosInputLockId = "";
@@ -42122,6 +42558,21 @@ function clearProlongedPowerEffects() {
   state.uselessSoftwareOwners = {};
   state.reduceToAshesOwners = {};
   state.streakSicknessRounds = {};
+  state.chaosStatusEffects = {};
+  state.penaltyStormOwners = {};
+  state.fraudMasterOwners = {};
+  state.fireExtinguisherOwners = {};
+  state.midasTouchOwners = {};
+  state.reverseGuardRounds = {};
+  state.reverseGuardTargets = {};
+  state.timeCapsuleOwners = {};
+  state.cryoStasisOwners = {};
+  state.phoenixRebirthOwners = {};
+  state.capitalismOwners = {};
+  state.infernoOwners = {};
+  state.lossesThisMatch = {};
+  state.roundPositiveGainOwners = {};
+  state.clusterBombs = [];
   state.pendingDeadWeights = [];
   state.deadWeightLockedRounds = {};
   state.allOutRounds = {};
