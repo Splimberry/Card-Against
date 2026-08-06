@@ -3578,6 +3578,7 @@ const state = {
   molotovBurningMarks: {},
   molotovOwners: {},
   molotovUsedRounds: {},
+  fireExtinguishedRounds: {},
   eternalCelebrationOwners: {},
   megaHackUses: {},
   uselessSoftwareOwners: {},
@@ -4535,6 +4536,7 @@ const elements = {
   answerForm: document.querySelector("#answerForm"),
   hintButton: document.querySelector("#hintButton"),
   molotovButton: document.querySelector("#molotovButton"),
+  fireExtinguisherButton: document.querySelector("#fireExtinguisherButton"),
   answerInput: document.querySelector("#answerInput"),
   multipleChoiceOptions: document.querySelector("#multipleChoiceOptions"),
   playerTwoInput: document.querySelector("#playerTwoInput"),
@@ -5307,8 +5309,40 @@ function renderMolotovControls() {
   button.setAttribute("aria-label", `Molotov Cocktail. ${tooltip}`);
 }
 
+function renderFireExtinguisherControls() {
+  const button = elements.fireExtinguisherButton;
+  if (!button) {
+    return;
+  }
+  const owner = getCurrentPowerOwner();
+  const stacks = getEffectStackCount(state.fireExtinguisherOwners?.[owner]);
+  const visible = Boolean(
+    stacks > 0
+      && !state.isSpectator
+      && !state.matchEnded
+      && isAnswerInputLive()
+      && elements.verdictPanel.classList.contains("hidden")
+      && elements.endPanel.classList.contains("hidden")
+  );
+  setHidden(button, !visible);
+  if (!visible) {
+    return;
+  }
+  const candidates = getTargetCandidates(owner, getPowerById(`arsonist${chaosInfusedPowerSuffix}`));
+  const used = Number(state.fireExtinguishedRounds?.[owner]?.usedRound) === Number(state.round);
+  const disabled = used || !candidates.length || isClassicModeEnabled() || isTableEventActive("power_outage");
+  button.disabled = disabled;
+  button.classList.toggle("fire-extinguisher-used", used);
+  const tooltip = used
+    ? "Fire Extinguisher already used this round."
+    : "Choose up to 2 players. They lose 1 streak now and cannot gain streak for 2 rounds.";
+  button.dataset.tooltip = tooltip;
+  button.setAttribute("aria-label", `Fire Extinguisher. ${tooltip}`);
+}
+
 function renderHintControls() {
   renderMolotovControls();
+  renderFireExtinguisherControls();
   const button = elements.hintButton;
   if (!button) {
     return;
@@ -6015,6 +6049,50 @@ function isAbortError(error) {
   return error?.name === "AbortError";
 }
 
+function combineAbortSignals(signals = []) {
+  const activeSignals = signals.filter(Boolean);
+  if (!activeSignals.length || typeof AbortController !== "function") {
+    return activeSignals[0] || null;
+  }
+  const controller = new AbortController();
+  const abort = () => {
+    if (!controller.signal.aborted) {
+      controller.abort();
+    }
+  };
+  activeSignals.forEach((signal) => {
+    if (signal.aborted) {
+      abort();
+    } else {
+      signal.addEventListener("abort", abort, { once: true });
+    }
+  });
+  return controller.signal;
+}
+
+async function withAbortableRequestTimeout(promiseFactory, timeoutMs = 10000, options = {}) {
+  const baseSignal = options.signal || null;
+  const timeoutController = typeof AbortController === "function" ? new AbortController() : null;
+  const signal = timeoutController
+    ? combineAbortSignals([baseSignal, timeoutController.signal])
+    : baseSignal;
+  const timeoutId = window.setTimeout(() => {
+    timeoutController?.abort();
+  }, Math.max(1, Number(timeoutMs) || 10000));
+  try {
+    return await promiseFactory(signal);
+  } catch (error) {
+    if (timeoutController?.signal.aborted && !baseSignal?.aborted) {
+      const timeoutError = new Error(options.timeoutMessage || "The request took too long.");
+      timeoutError.name = "TimeoutError";
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 function createAbortError(message = "The active match work was cancelled.") {
   if (typeof DOMException === "function") {
     return new DOMException(message, "AbortError");
@@ -6446,7 +6524,7 @@ function ensureServerMode() {
 
 function normalizeSetupPayload(setup) {
   if (!setup.blackCard) {
-    throw new Error("AI setup response was incomplete.");
+    throw new Error("Question setup response was incomplete.");
   }
   const judge = setup.judge || {
     name: "Trivia Grader",
@@ -6554,7 +6632,7 @@ async function requestRoundSetup(options = {}) {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || `AI setup request failed with status ${response.status}.`);
+      throw new Error(error.error || `Question setup request failed with status ${response.status}.`);
     }
 
     const setup = normalizeSetupPayload(await response.json());
@@ -6868,13 +6946,13 @@ async function requestAiRound(rawInput, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || `AI round request failed with status ${response.status}.`);
+    throw new Error(error.error || `Round grading request failed with status ${response.status}.`);
   }
 
   const result = await response.json();
   const expectedCards = roomMode ? cardOwners.length : duelMode ? 2 : 1 + botOwners.length;
   if (!Array.isArray(result.cards) || result.cards.length !== expectedCards) {
-    throw new Error(`AI round response did not include ${expectedCards} cards.`);
+    throw new Error(`Round grading response did not include ${expectedCards} cards.`);
   }
 
   return {
@@ -6929,6 +7007,75 @@ function createMultipleChoiceRoundResult(rawInput = "") {
     winner: { index: winnerIndex },
     correctIndexes,
     source: "multiple-choice"
+  };
+}
+
+function getClientLocalGradingThreshold(strictness = state.gradingStrictness) {
+  switch (normalizeGradingStrictness(strictness)) {
+    case "forgiving":
+      return 0.78;
+    case "strict":
+      return 0.9;
+    case "exact":
+      return 1;
+    case "normal":
+    default:
+      return 0.82;
+  }
+}
+
+function isExactTriviaAnswerMatch(answer, acceptedAnswers = []) {
+  const normalized = normalizeTriviaAnswer(answer);
+  return Boolean(normalized) && acceptedAnswers
+    .map(normalizeTriviaAnswer)
+    .filter(Boolean)
+    .includes(normalized);
+}
+
+function isExplicitlyRejectedRoundAnswer(answer, rejectedAnswers = []) {
+  const normalized = normalizeTriviaAnswer(answer);
+  if (!normalized) {
+    return false;
+  }
+  return rejectedAnswers
+    .map(normalizeTriviaAnswer)
+    .filter(Boolean)
+    .some((rejected) => (
+      normalized === rejected
+      || scoreAnswerAgainstAcceptedAnswers(answer, [rejected]) >= 0.92
+    ));
+}
+
+function isRoundAnswerCorrectByStrictness(answer, acceptedAnswers = [], strictness = state.gradingStrictness) {
+  const normalizedStrictness = normalizeGradingStrictness(strictness);
+  if (normalizedStrictness === "exact") {
+    return isExactTriviaAnswerMatch(answer, acceptedAnswers);
+  }
+  return scoreAnswerAgainstAcceptedAnswers(answer, acceptedAnswers) >= getClientLocalGradingThreshold(normalizedStrictness);
+}
+
+function createLocalTextRoundResult(rawInput = "") {
+  const cardOwners = prepareRoundCardOwners(rawInput);
+  const cards = cardOwners.map((owner) => getRoundAnswerForOwner(owner));
+  const answerBank = [state.canonicalAnswer, ...state.acceptedAnswers].filter(Boolean);
+  const rejectedAnswers = Array.isArray(state.rejectedAnswers) ? state.rejectedAnswers : [];
+  const correctIndexes = cards
+    .map((card, index) => ({ index, score: scoreAnswerAgainstAcceptedAnswers(card, answerBank) }))
+    .filter((entry) => (
+      !isExplicitlyRejectedRoundAnswer(cards[entry.index], rejectedAnswers)
+      && isRoundAnswerCorrectByStrictness(cards[entry.index], answerBank, state.gradingStrictness)
+    ))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map((entry) => entry.index)
+    .filter((index) => Number.isInteger(index) && index >= 0 && index < cards.length);
+
+  return {
+    cards,
+    winner: { index: correctIndexes[0] ?? 0 },
+    correctIndexes: [...new Set(correctIndexes)],
+    aiReviewedIndexes: [],
+    aiSecondOpinionIndexes: [],
+    source: "client-local-fallback"
   };
 }
 
@@ -8685,6 +8832,7 @@ function getActiveEffectEntries() {
       [state.freezeReflectionRounds[owner] > 0, createActiveEffect(owner, "deep_freeze", `Uno Reverse x${state.freezeReflectionRounds[owner]}`, "Blocked point deductions turn into score gains.", { chaosInfused: true })],
       [state.streakFreezeRounds[owner] > 0, createActiveEffect(owner, "freeze_ray", `Freeze Ray x${state.streakFreezeRounds[owner]}`, "Locks this player's streak gains and losses.")],
       [state.streakLossProtectionRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Streak Guard x${state.streakLossProtectionRounds[owner]}`, "Blocks this player's streak losses.")],
+      [state.fireExtinguishedRounds?.[owner]?.remaining > 0, createActiveEffect(owner, "arsonist", `Extinguished · ${state.fireExtinguishedRounds[owner].remaining}r`, "Loses 1 streak at round start and cannot gain streak while extinguished.", { chaosInfused: true })],
       [(state.debuffShieldCharges[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Antivirus x${state.debuffShieldCharges[owner]}`, "Blocks this player's next debuff.")],
       [(state.debuffShieldRounds[owner] || 0) > 0, createActiveEffect(owner, "antivirus", `Encryption x${state.debuffShieldRounds[owner]}`, "Blocks debuffs on this player for the remaining rounds.", { chaosInfused: true })],
       [state.cocktailPenaltyRounds[owner] > 0, createActiveEffect(owner, "cocktail_mix", `Cocktail Debt x${state.cocktailPenaltyRounds[owner]}`, "Wrong answers cost this player 2.5% of their score.")],
@@ -8771,12 +8919,25 @@ function getActiveEffectEntries() {
       )],
       [thornPercent > 0, createActiveEffect(owner, "thorns", thornPercent > 0.33 ? `Thorns III${formatStackSuffix(Math.round(thornPercent / 0.33))}` : "Thorns", `Reflects ${Math.round(thornPercent * 100)}% of this player's scoring losses to everyone else.`, { chaosInfused: thornPercent > 0.33 })],
       [getEffectStackCount(state.hotInHereOwners[owner]) > 0, createActiveEffect(owner, "hot_in_here", `It's Getting Hot${formatStackSuffix(getEffectStackCount(state.hotInHereOwners[owner]))}`, "At round start, each stack makes everyone else lose 5% x (this player's streak - 1).")],
+      [getEffectStackCount(state.penaltyStormOwners?.[owner]) > 0, createActiveEffect(owner, "penalty_cloud", `Penalty Storm${formatStackSuffix(getEffectStackCount(state.penaltyStormOwners[owner]))}`, "Every loss scales by this player's previous losses and adds Lightning Strike damage.", { chaosInfused: true })],
+      [getEffectStackCount(state.fraudMasterOwners?.[owner]) > 0, createActiveEffect(owner, "insurance_fraud", `Fraud Master${formatStackSuffix(getEffectStackCount(state.fraudMasterOwners[owner]))}`, "Hides this player's score. Assisted wins and later losses can pay a bonus.", { chaosInfused: true })],
+      [getEffectStackCount(state.fireExtinguisherOwners?.[owner]) > 0, createActiveEffect(owner, "arsonist", `Fire Extinguisher${formatStackSuffix(getEffectStackCount(state.fireExtinguisherOwners[owner]))}`, "Choose up to 2 players each round to extinguish their streaks.", { chaosInfused: true })],
+      [getEffectStackCount(state.midasTouchOwners?.[owner]) > 0, createActiveEffect(owner, "ultimate_bounty", `Midas' Touch${formatStackSuffix(getEffectStackCount(state.midasTouchOwners[owner]))}`, "Wins add a permanent stack; each stack pays 5% of current score at round start.", { chaosInfused: true })],
+      [getEffectStackCount(state.capitalismOwners?.[owner]) > 0, createActiveEffect(owner, "communism", `Capitalism${formatStackSuffix(getEffectStackCount(state.capitalismOwners[owner]))}`, "Positive earnings are permanently increased by 50% per stack.", { chaosInfused: true })],
+      [getEffectStackCount(state.infernoOwners?.[owner]) > 0, createActiveEffect(owner, "hot_in_here", `Inferno${formatStackSuffix(getEffectStackCount(state.infernoOwners[owner]))}`, "Gain a streak and burn everyone else for 5% per streak at round start.", { chaosInfused: true })],
       [state.redHerringMasks[owner] && owner === getFocusedOwner(), createActiveEffect(
         owner,
         "red_herring",
         "Red Herring - hover for real score",
         `Only you can see this effect. Your real score is ${getScore(owner).toLocaleString()} points; other score displays show ???.`,
         { private: true }
+      )],
+      [getEffectStackCount(state.fraudMasterOwners?.[owner]) > 0 && owner === getFocusedOwner(), createActiveEffect(
+        owner,
+        "insurance_fraud",
+        "Fraud Master - hover for real score",
+        `Only you can see this effect. Your real score is ${getScore(owner).toLocaleString()} points; other score displays show ???.`,
+        { private: true, chaosInfused: true }
       )]
     ];
 
@@ -9423,7 +9584,7 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
     });
 
   activeEntries
-    .filter((entry) => entry.power.type === "soul_link")
+    .filter((entry) => entry.power.type === "soul_link" && !isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       const target = getEntryTarget(entry);
       if (!target || !getActiveOwners().includes(target)) {
@@ -9435,7 +9596,7 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
     });
 
   activeEntries
-    .filter((entry) => entry.power.type === "arsonist")
+    .filter((entry) => entry.power.type === "arsonist" && !isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       const stacks = addEffectStack(state.arsonists, entry.owner);
       const target = getRandomOtherOwner(entry.owner);
@@ -9482,10 +9643,67 @@ function applyNewPersistentPowerEntries(playedEntries, events) {
     });
 
   activeEntries
-    .filter((entry) => entry.power.type === "hot_in_here")
+    .filter((entry) => entry.power.type === "hot_in_here" && !isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       const stacks = addEffectStack(state.hotInHereOwners, entry.owner);
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} makes everyone else lose 5% x (${getOwnerLabel(entry.owner)}'s streak - 1) at round start.`));
+    });
+
+  activeEntries
+    .filter((entry) => entry.power.type === "penalty_cloud" && isChaosInfusedPower(entry.power))
+    .forEach((entry) => {
+      const stacks = addEffectStack(state.penaltyStormOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will scale every loss by previous losses and add Lightning Strike damage.`));
+    });
+
+  activeEntries
+    .filter((entry) => entry.power.type === "insurance_fraud" && isChaosInfusedPower(entry.power))
+    .forEach((entry) => {
+      const stacks = addEffectStack(state.fraudMasterOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} hid ${getOwnerLabel(entry.owner)}'s score and armed bonus payouts for assisted wins.`));
+    });
+
+  activeEntries
+    .filter((entry) => entry.power.type === "arsonist" && isChaosInfusedPower(entry.power))
+    .forEach((entry) => {
+      const stacks = addEffectStack(state.fireExtinguisherOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} unlocked Fire Extinguisher for ${getOwnerLabel(entry.owner)}.`));
+    });
+
+  activeEntries
+    .filter((entry) => entry.power.type === "ultimate_bounty" && isChaosInfusedPower(entry.power))
+    .forEach((entry) => {
+      const stacks = Math.max(1, getEffectStackCount(state.midasTouchOwners[entry.owner]));
+      state.midasTouchOwners[entry.owner] = stacks;
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} armed a 50% win bonus and ${stacks} permanent start-of-round bonus stack${stacks === 1 ? "" : "s"}.`));
+    });
+
+  activeEntries
+    .filter((entry) => entry.power.type === "soul_link" && isChaosInfusedPower(entry.power))
+    .forEach((entry) => {
+      const targets = getEntryTargets(entry).filter((target) => getActiveOwners().includes(target)).slice(0, 3);
+      if (!targets.length) {
+        return;
+      }
+      const percent = targets.length === 1 ? 0.15 : targets.length === 2 ? 0.1 : 0.05;
+      targets.forEach((targetOwner) => {
+        state.soulLinks = [...(state.soulLinks || []), { owner: entry.owner, targetOwner, parasitic: true, stealPercent: percent }];
+      });
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} linked ${targets.map(getOwnerLabel).join(", ")} for ${Math.round(percent * 100)}% steals at round start.`));
+    });
+
+  activeEntries
+    .filter((entry) => entry.power.type === "communism" && isChaosInfusedPower(entry.power))
+    .forEach((entry) => {
+      const stacks = addEffectStack(state.capitalismOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} permanently increases positive earnings by ${stacks * 50}%.`));
+    });
+
+  activeEntries
+    .filter((entry) => entry.power.type === "hot_in_here" && isChaosInfusedPower(entry.power))
+    .forEach((entry) => {
+      const stacks = addEffectStack(state.infernoOwners, entry.owner);
+      events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} gives ${getOwnerLabel(entry.owner)} a streak and burns everyone else at round start.`));
     });
 
   activeEntries
@@ -9897,7 +10115,10 @@ function resolveInsurancePolicies(losingOwners, deltas, startingScores, events) 
 }
 
 function activateRedHerring(owner) {
-  state.redHerringMasks[owner] = true;
+  const chaos = isMatchModifierEnabled("chaos") || getPlayedPowerEntries([owner]).some((entry) => entry.power.type === "red_herring" && isChaosInfusedPower(entry.power));
+  state.redHerringMasks[owner] = chaos
+    ? { remaining: 3, untargetable: true }
+    : true;
 }
 
 function applyNailInCoffin(playedEntries, deltas, events) {
@@ -10244,6 +10465,13 @@ function applyFinalTableEventGainMultipliers(deltas, owners, events) {
 
 function decrementRoundEffectCounters(owners) {
   owners.forEach((owner) => {
+    const smokeScreen = state.redHerringMasks?.[owner];
+    if (smokeScreen && smokeScreen !== true && Number(smokeScreen.remaining) > 0) {
+      state.redHerringMasks[owner] = {
+        ...smokeScreen,
+        remaining: Math.max(0, Number(smokeScreen.remaining) - 1)
+      };
+    }
     state.streakFreezeRounds[owner] = Math.max(0, (state.streakFreezeRounds[owner] || 0) - 1);
     state.streakLossProtectionRounds[owner] = Math.max(0, (state.streakLossProtectionRounds[owner] || 0) - 1);
     state.cocktailPenaltyRounds[owner] = Math.max(0, (state.cocktailPenaltyRounds[owner] || 0) - 1);
@@ -10255,6 +10483,10 @@ function decrementRoundEffectCounters(owners) {
     state.streakSicknessRounds[owner] = Math.max(0, (state.streakSicknessRounds[owner] || 0) - 1);
     state.ultimatumRounds[owner] = Math.max(0, (state.ultimatumRounds[owner] || 0) - 1);
     state.doomStreakGuardRounds[owner] = Math.max(0, (state.doomStreakGuardRounds[owner] || 0) - 1);
+    state.reverseGuardRounds[owner] = Math.max(0, (state.reverseGuardRounds[owner] || 0) - 1);
+    if (!state.reverseGuardRounds[owner]) {
+      delete state.reverseGuardTargets[owner];
+    }
     state.secretAgentRounds[owner] = Math.max(0, (state.secretAgentRounds[owner] || 0) - 1);
     const chaosStatus = getChaosStatus(owner);
     const nextUnstable = (chaosStatus.unstableStreak || [])
@@ -14017,6 +14249,7 @@ const roomAbilityEffectMapKeys = [
   "molotovBurningMarks",
   "molotovOwners",
   "molotovUsedRounds",
+  "fireExtinguishedRounds",
   "eternalCelebrationOwners",
   "megaHackUses",
   "uselessSoftwareOwners",
@@ -15091,17 +15324,91 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
 }
 
 function maybeResolveRoomSubmissions() {
-  // Multiplayer grading is a server transition. The client may render the
-  // submitted chips, but it must never infer that every participant has
-  // submitted and send a competing grading command. The submit_answer and
-  // timer-expiry commands perform that check against the canonical room state.
-  return false;
+  if (!isRoomMode() || state.isSpectator || state.matchEnded || !isCurrentMatchWork(state.matchWorkToken)) {
+    return false;
+  }
+  const existingResult = getRoomRoundResultForCurrentRound();
+  if (existingResult) {
+    if (!isCurrentHost() || state.joiningRoom) {
+      playSyncedRoomRoundResult(existingResult, getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+    }
+    state.roomRoundResolving = false;
+    return true;
+  }
+  if (isRoomGradingPhaseStarted()) {
+    if (!isCurrentHost() || state.joiningRoom) {
+      waitForRoomRoundResultThenPlay(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+    }
+    return true;
+  }
+  const pendingOwners = getPendingSubmitters();
+  if (pendingOwners.length > 0 && !pendingOwners.every(isBotOwner)) {
+    return false;
+  }
+  if (!isCurrentHost() || state.joiningRoom) {
+    showWaitingForRoomRoundResult();
+    waitForRoomRoundResultThenPlay(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+    return true;
+  }
+  scheduleRoomSubmissionResolveCheck("all-real-submitted", { source: "host-local-check" });
+  return true;
 }
 
 function scheduleRoomSubmissionResolveCheck(reason = "answer-submitted", source = {}) {
-  // Kept as a compatibility no-op for older UI call sites. Normal gameplay
-  // must not schedule a browser-side grading retry.
-  return false;
+  if (!isRoomMode() || state.isSpectator || !isCurrentHost() || state.joiningRoom || state.matchEnded) {
+    return false;
+  }
+  if (isRoomGradingPhaseStarted() || getRoomRoundResultForCurrentRound()) {
+    return true;
+  }
+  const pendingOwners = getPendingSubmitters();
+  if (pendingOwners.length > 0 && !pendingOwners.every(isBotOwner)) {
+    return false;
+  }
+  const roundSyncKey = getCurrentRoomRoundSyncKey();
+  const resolveKey = [roundSyncKey, reason].join("|");
+  if (state.roomSubmissionResolveCheckId && state.roomSubmissionResolveCheckKey === resolveKey) {
+    return true;
+  }
+  if (state.roomSubmissionResolveCheckId) {
+    window.clearTimeout(state.roomSubmissionResolveCheckId);
+  }
+  state.roomSubmissionResolveCheckKey = resolveKey;
+  state.roomSubmissionResolveCheckId = window.setTimeout(() => {
+    state.roomSubmissionResolveCheckId = null;
+    state.roomSubmissionResolveCheckKey = "";
+    if (!isRoomMode() || state.isSpectator || !isCurrentHost() || state.joiningRoom || state.matchEnded || !isCurrentRoomRoundSyncKey(roundSyncKey)) {
+      return;
+    }
+    if (isRoomGradingPhaseStarted() || getRoomRoundResultForCurrentRound()) {
+      return;
+    }
+    const nextPendingOwners = getPendingSubmitters();
+    if (nextPendingOwners.length > 0 && !nextPendingOwners.every(isBotOwner)) {
+      return;
+    }
+    const code = state.roomSettings.code;
+    const clientEventId = createRoomSyncCommandId("resolve-all-submitted", code);
+    void roomSync.sendCommand("resolve_all_submitted", {
+      clientEventId,
+      hostParticipantId: state.clientId,
+      matchId: getCurrentRoomMatchId(),
+      round: state.round,
+      reason,
+      submissions: buildRoundSkipSubmissions(),
+      updatedAt: Date.now()
+    }, {
+      roomCode: code,
+      participantId: state.clientId,
+      clientEventId,
+      timeoutMs: roomRoundCommandTimeoutMs
+    }).then((result) => {
+      if (!result?.ok && result?.pendingParticipantIds?.length) {
+        renderSubmissionStatus();
+      }
+    });
+  }, 60);
+  return true;
 }
 
 function maybeResolveBotSubmissions() {
@@ -20768,6 +21075,29 @@ function applyRoundStartEffects() {
   applyCollapsingStarRoundStart(owners, events);
   applyMolotovBurningMarks(owners, events, totalDeltas);
   applyUnstableConduitRoundStart(owners, events);
+  Object.entries({ ...(state.fireExtinguishedRounds || {}) }).forEach(([target, mark]) => {
+    if (!owners.includes(target) || !mark?.remaining) {
+      if (!owners.includes(target)) {
+        delete state.fireExtinguishedRounds[target];
+      }
+      return;
+    }
+    const appliedLoss = Math.max(0, getOwnerStreak(target)) > 0
+      ? (() => {
+        const before = getOwnerStreak(target);
+        setOwnerStreak(target, Math.max(0, before - 1));
+        return before - getOwnerStreak(target);
+      })()
+      : 0;
+    queueStatFlash(appliedLoss > 0 ? "negative" : "shield", "Fire Extinguisher", appliedLoss > 0 ? "-1 Streak" : "Streak Protected", { owners: [target], complex: true });
+    events.push(`Fire Extinguisher removed ${appliedLoss} streak from ${getOwnerLabel(target)} at round start.`);
+    const remaining = Math.max(0, Number(mark.remaining) - 1);
+    if (remaining > 0) {
+      state.fireExtinguishedRounds[target] = { ...mark, remaining };
+    } else {
+      delete state.fireExtinguishedRounds[target];
+    }
+  });
   Object.entries({ ...(state.chaosStatusEffects || {}) }).forEach(([owner, status]) => {
     if (!owners.includes(owner)) {
       return;
@@ -21213,6 +21543,10 @@ function setOwnerStreak(owner, value, options = {}) {
     queueStatFlash("shield", "Freeze Ray", "Streak Locked", { owners: [owner], complex: true });
     return;
   }
+  if (!options.force && value > getOwnerStreak(owner) && (state.fireExtinguishedRounds?.[owner]?.remaining || 0) > 0) {
+    queueStatFlash("shield", "Fire Extinguisher", "Streak Gain Blocked", { owners: [owner], complex: true });
+    return;
+  }
   const currentStreak = getOwnerStreak(owner);
   const chaosStatus = getChaosStatus(owner);
   if (!options.force && value < currentStreak && (chaosStatus.resistantStreak?.rounds || 0) > 0) {
@@ -21438,7 +21772,14 @@ function getScore(owner) {
 }
 
 function isScoreHidden(owner) {
-  return Boolean(state.redHerringMasks?.[owner]);
+  if (!owner || owner === getFocusedOwner()) {
+    return false;
+  }
+  const mask = state.redHerringMasks?.[owner];
+  return Boolean(
+    (mask && (mask === true || Number(mask.remaining) > 0))
+      || state.fraudMasterOwners?.[owner]
+  );
 }
 
 function getDisplayScoreText(owner) {
@@ -24972,7 +25313,10 @@ function getTargetCandidates(owner, power = null) {
       ? getActiveOwners()
       : getActiveOwners().filter((participant) => participant !== owner);
   const targetableCandidates = candidates.filter((participant) => (
-    participant === owner || !hasDoomShield(participant)
+    participant === owner
+      || (!hasDoomShield(participant)
+        && !state.redHerringMasks?.[participant]?.untargetable)
+        && !state.fraudMasterOwners?.[participant]?.untargetable
   ));
   if (power?.type === "streak_bonus") {
     return targetableCandidates.filter((participant) => getOwnerStreak(participant) > 0 && !hasStreakStealProtection(participant));
@@ -24988,6 +25332,9 @@ function getTargetCandidates(owner, power = null) {
   }
   if (power?.type === "software_downgrade") {
     return targetableCandidates.filter((participant) => (state.powerHands[participant] || []).length > 0);
+  }
+  if (power?.type === "arsonist" && isChaosInfusedPower(power)) {
+    return targetableCandidates.filter((participant) => participant !== owner);
   }
   if (power?.type === "xray_hacks") {
     return targetableCandidates;
@@ -25065,6 +25412,9 @@ function getMultiTargetRequirement(power) {
   }
   if (power?.type === "cocktail_mix" && isChaosInfusedPower(power)) {
     return { min: 1, max: 2, label: "Choose up to 2 players, including yourself" };
+  }
+  if (power?.type === "arsonist" && isChaosInfusedPower(power)) {
+    return { min: 1, max: 2, label: "Choose up to 2 players" };
   }
   return null;
 }
@@ -25167,6 +25517,33 @@ function openMolotovSelector(owner) {
   }
   if (elements.confirmTargetButton) {
     elements.confirmTargetButton.textContent = "Throw Molotov";
+    setHidden(elements.confirmTargetButton, false);
+    elements.confirmTargetButton.disabled = true;
+  }
+}
+
+function openFireExtinguisherSelector(owner) {
+  const powerId = `arsonist${chaosInfusedPowerSuffix}`;
+  const power = getPowerById(powerId);
+  const candidates = getTargetCandidates(owner, power);
+  if (!owner || !power || !candidates.length || Number(state.fireExtinguishedRounds?.[owner]?.usedRound) === Number(state.round)) {
+    return;
+  }
+  openTargetSelector(owner, power, powerId);
+  if (elements.targetModal.classList.contains("hidden")) {
+    return;
+  }
+  elements.targetTitle.textContent = "Fire Extinguisher";
+  elements.targetModal.dataset.mode = "fire-extinguisher";
+  elements.targetModal.dataset.minTargets = "1";
+  elements.targetModal.dataset.maxTargets = "2";
+  elements.targetModal.dataset.selectedTargets = "[]";
+  if (elements.targetSelectionHint) {
+    elements.targetSelectionHint.textContent = "Choose up to 2 players";
+    setHidden(elements.targetSelectionHint, false);
+  }
+  if (elements.confirmTargetButton) {
+    elements.confirmTargetButton.textContent = "Extinguish";
     setHidden(elements.confirmTargetButton, false);
     elements.confirmTargetButton.disabled = true;
   }
@@ -25841,6 +26218,44 @@ function completeMolotovSelection(targetOwnerOrTargets) {
   }
 }
 
+function completeFireExtinguisherSelection(targetOwnerOrTargets) {
+  const owner = elements.targetModal.dataset.owner;
+  const power = getPowerById(elements.targetModal.dataset.power);
+  const targets = [...new Set((Array.isArray(targetOwnerOrTargets) ? targetOwnerOrTargets : [targetOwnerOrTargets]).filter(Boolean))]
+    .filter((target) => getTargetCandidates(owner, power).includes(target))
+    .slice(0, 2);
+  if (!owner || !power || !targets.length || Number(state.fireExtinguishedRounds?.[owner]?.usedRound) === Number(state.round)) {
+    closeTargetSelector();
+    return;
+  }
+  targets.forEach((target) => {
+    const existing = state.fireExtinguishedRounds[target] || { remaining: 0, stacks: 0 };
+    state.fireExtinguishedRounds[target] = {
+      remaining: Math.max(0, Number(existing.remaining) || 0) + 2,
+      stacks: Math.max(0, Number(existing.stacks) || 0) + 1,
+      sourceOwner: owner
+    };
+    setOwnerStreak(target, Math.max(0, getOwnerStreak(target) - 1));
+    queueStatFlash("negative", power.name, "-1 Streak", getTargetedFlashOptions(owner, target, { complex: true }));
+  });
+  state.fireExtinguishedRounds[owner] = {
+    ...(state.fireExtinguishedRounds[owner] || {}),
+    usedRound: state.round
+  };
+  updateLatestPlayedPowerMeta(owner, { targetOwners: targets, targetOwner: targets[0] });
+  queueStatFlash("shield", power.name, `${targets.length} Player${targets.length === 1 ? "" : "s"} Extinguished`, { owners: [owner], complex: true });
+  renderScore();
+  renderHintControls();
+  closeTargetSelector();
+  if (isRoomMode()) {
+    void broadcastRoomEffectState(owner, power.id, {
+      targetOwners: targets,
+      targetOwner: targets[0],
+      fireExtinguishedRound: state.round
+    });
+  }
+}
+
 function completeAnswerChoice(answer) {
   const owner = elements.targetModal.dataset.owner;
   const powerId = elements.targetModal.dataset.power;
@@ -25866,6 +26281,10 @@ function completeTargetSelection(targetOwnerOrTargets) {
   }
   if (mode === "molotov") {
     completeMolotovSelection(targetOwnerOrTargets);
+    return;
+  }
+  if (mode === "fire-extinguisher") {
+    completeFireExtinguisherSelection(targetOwnerOrTargets);
     return;
   }
   const requirement = getMultiTargetRequirement(power);
@@ -27051,7 +27470,11 @@ function removeActiveEffectsForOwner(owner) {
   state.heavenHellCurses[owner] = false;
   state.secretPointBonuses[owner] = 0;
   state.fakePointDebts[owner] = 0;
-  delete state.redHerringMasks[owner];
+  if (state.redHerringMasks[owner]?.untargetable) {
+    state.redHerringMasks[owner] = { ...state.redHerringMasks[owner], remaining: 0 };
+  } else {
+    delete state.redHerringMasks[owner];
+  }
   state.bottomFeederRounds[owner] = 0;
   state.streakFreezeRounds[owner] = 0;
   state.streakLossProtectionRounds[owner] = 0;
@@ -27897,6 +28320,15 @@ function consumeImmediatePower(owner, power, meta = {}) {
     addScore(owner, 3000);
     updateLatestPlayedPowerMeta(owner, { appliedPoints: 3000, immediateResolved: true });
     queueStatFlash("positive", power.name, formatSignedStat(3000, "Point"), { owners: [owner], complex: true });
+    renderScore();
+  }
+
+  if (power.type === "red_herring" && isChaosInfusedPower(power)) {
+    const amount = (power.flatPoints || 1000) + Math.floor(Math.max(0, getScore(owner)) * (power.percent || 0.2));
+    addScore(owner, amount);
+    activateRedHerring(owner);
+    updateLatestPlayedPowerMeta(owner, { appliedPoints: amount, hiddenRounds: 3, untargetable: true });
+    queueStatFlash("positive", power.name, [formatSignedStat(amount, "Point"), "Score Hidden"], { owners: [owner], complex: true });
     renderScore();
   }
 
@@ -35458,7 +35890,7 @@ async function newRound() {
       console.warn(error);
       stopLoadingMessages();
       playSound("error");
-      elements.errorText.textContent = `${error.message} Ask the host to keep the room open and make sure both browsers are on the same local server.`;
+      elements.errorText.textContent = `${error.message} Waiting for the host to sync the question bank card.`;
       setHidden(elements.loadingPanel, true);
       setHidden(elements.errorPanel, false);
     }
@@ -35532,7 +35964,7 @@ async function newRound() {
       console.warn(error);
       stopLoadingMessages();
       playSound("error");
-      elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+      elements.errorText.textContent = `${error.message} The question bank could not prepare the next card.`;
       setHidden(elements.loadingPanel, true);
       setHidden(elements.errorPanel, false);
     }
@@ -35589,7 +36021,7 @@ async function newRound() {
     console.warn(error);
     stopLoadingMessages();
     playSound("error");
-    elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+    elements.errorText.textContent = `${error.message} The question bank could not prepare the next card.`;
     setHidden(elements.loadingPanel, true);
     setHidden(elements.errorPanel, false);
   }
@@ -35678,6 +36110,7 @@ function resetMatch(mode) {
   state.molotovBurningMarks = {};
   state.molotovOwners = {};
   state.molotovUsedRounds = {};
+  state.fireExtinguishedRounds = {};
   state.eternalCelebrationOwners = {};
   state.megaHackUses = {};
   state.uselessSoftwareOwners = {};
@@ -35907,7 +36340,7 @@ async function startGame(mode) {
     console.warn(error);
     stopLoadingMessages();
     playSound("error");
-    elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+    elements.errorText.textContent = `${error.message} The question bank could not prepare the first card.`;
     setHidden(elements.loadingPanel, true);
     setHidden(elements.errorPanel, false);
   }
@@ -41679,7 +42112,14 @@ async function playRound(rawInput, options = {}) {
     try {
       setGradingActive(true);
       try {
-        roundResult = await requestAiRound(rawInput, { signal: roundAbortController.signal });
+        roundResult = await withAbortableRequestTimeout(
+          (signal) => requestAiRound(rawInput, { signal }),
+          isRoomMode() ? 12000 : 18000,
+          {
+            signal: roundAbortController.signal,
+            timeoutMessage: "The answer review took too long."
+          }
+        );
       } finally {
         setGradingActive(false);
         if (state.roundRequestAbortController === roundAbortController) {
@@ -41696,9 +42136,17 @@ async function playRound(rawInput, options = {}) {
         return;
       }
       console.warn(error);
+      if (isRoomMode() && isCurrentHost() && !state.joiningRoom && !isMultipleChoiceRound()) {
+        roundResult = createLocalTextRoundResult(rawInput);
+        addSystemChat("Answer review was slow, so the host used the saved answer key to keep the round moving.", { private: true, sync: false });
+      } else if (!isRoomMode() && !isMultipleChoiceRound()) {
+        roundResult = createLocalTextRoundResult(rawInput);
+      }
+    }
+    if (!roundResult) {
       playSound("error");
       stopLoadingMessages();
-      elements.errorText.textContent = `${error.message} Start the server with npm start and make sure your model settings are valid.`;
+      elements.errorText.textContent = "The answer review paused before results were ready. Please try the round again.";
       elements.answerInput.disabled = false;
       elements.submitButton.disabled = false;
       renderMultipleChoiceOptions();
@@ -42036,7 +42484,7 @@ function applyVultureEntries(playedEntries, winnerSet, deltas, events) {
 
 function armInsuranceFraudEntries(playedEntries, events) {
   playedEntries
-    .filter((entry) => entry.power.type === "insurance_fraud")
+    .filter((entry) => entry.power.type === "insurance_fraud" && !isChaosInfusedPower(entry.power))
     .forEach((entry) => {
       const existing = state.insuranceFrauds[entry.owner] || {};
       const stacks = getEffectStackCount(existing) + 1;
@@ -42155,8 +42603,9 @@ function applyDeathMarkDeltas(deltas, owners, events) {
 function applyRedHerringEntries(playedEntries, startingScores, deltas, events) {
   playedEntries
     .filter((entry) => entry.power.type === "red_herring")
+    .filter((entry) => !isChaosInfusedPower(entry.power) && !isEntryImmediateResolved(entry))
     .forEach((entry) => {
-      const amount = Math.floor(Math.max(0, startingScores[entry.owner] || 0) * 0.1);
+      const amount = Math.floor(Math.max(0, startingScores[entry.owner] || 0) * (entry.power.percent || 0.1));
       deltas[entry.owner] += amount;
       activateRedHerring(entry.owner);
       events.push(createPowerEvent(entry.owner, entry.power, `${getOwnerLabel(entry.owner)} quietly banked ${amount.toLocaleString()} hidden Red Herring points and masked their score.`));
@@ -42752,7 +43201,11 @@ function clearProlongedPowerEffects() {
   state.heavenHellCurses = createOwnerValueMap(false);
   state.secretPointBonuses = createOwnerValueMap(0);
   state.fakePointDebts = createOwnerValueMap(0);
-  state.redHerringMasks = {};
+  state.redHerringMasks = Object.fromEntries(
+    Object.entries(state.redHerringMasks || {})
+      .filter(([, mask]) => mask && typeof mask === "object" && mask.untargetable)
+      .map(([owner, mask]) => [owner, { ...mask, remaining: 0 }])
+  );
   state.bottomFeederRounds = createOwnerValueMap(0);
   state.streakFreezeRounds = createOwnerValueMap(0);
   state.streakLossProtectionRounds = createOwnerValueMap(0);
@@ -42798,6 +43251,7 @@ function clearProlongedPowerEffects() {
   state.molotovBurningMarks = {};
   state.molotovOwners = {};
   state.molotovUsedRounds = {};
+  state.fireExtinguishedRounds = {};
   state.eternalCelebrationOwners = {};
   state.megaHackUses = {};
   state.uselessSoftwareOwners = {};
@@ -44097,6 +44551,12 @@ elements.molotovButton?.addEventListener("click", () => {
   }
   openMolotovSelector(owner);
 });
+elements.fireExtinguisherButton?.addEventListener("click", () => {
+  if (elements.fireExtinguisherButton.disabled) {
+    return;
+  }
+  openFireExtinguisherSelector(getCurrentPowerOwner());
+});
 
 elements.multipleChoiceOptions?.addEventListener("click", (event) => {
   const button = event.target.closest(".multiple-choice-option");
@@ -44608,7 +45068,7 @@ elements.targetModal.addEventListener("click", (event) => {
 
   const option = event.target.closest("[data-target-owner]");
   if (option) {
-    if (!["multi-player", "molotov"].includes(elements.targetModal.dataset.mode)) {
+    if (!["multi-player", "molotov", "fire-extinguisher"].includes(elements.targetModal.dataset.mode)) {
       completeTargetSelection(option.dataset.targetOwner);
       return;
     }
@@ -44641,7 +45101,7 @@ elements.targetModal.addEventListener("click", (event) => {
   }
 });
 elements.confirmTargetButton?.addEventListener("click", () => {
-  if (!["multi-player", "molotov"].includes(elements.targetModal.dataset.mode)) {
+  if (!["multi-player", "molotov", "fire-extinguisher"].includes(elements.targetModal.dataset.mode)) {
     return;
   }
   const selected = JSON.parse(elements.targetModal.dataset.selectedTargets || "[]");

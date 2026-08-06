@@ -433,6 +433,10 @@
                 <span>Molotov</span>
                 <img src="assets/modifiers/flame.svg" alt="" aria-hidden="true">
               </button>
+              <button type="button" class="fire-extinguisher-button hidden" id="fireExtinguisherButton">
+                <span>Extinguish</span>
+                <img src="assets/modifiers/no-stopping.svg" alt="" aria-hidden="true">
+              </button>
             </div>
             <form id="answerForm">
               <div class="input-fields">
@@ -515,8 +519,8 @@
           </section>
 
           <section class="error-panel hidden" id="errorPanel" aria-live="assertive">
-            <p class="eyebrow">AI generation failed</p>
-            <h2>Could not generate this round.</h2>
+            <p class="eyebrow">Round sync</p>
+            <h2>Round paused.</h2>
             <p id="errorText"></p>
             <button type="button" id="retryButton">Try Again</button>
           </section>

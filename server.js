@@ -7706,7 +7706,7 @@ async function handleSetup(req, res) {
     sendJson(res, 200, result);
   } catch (error) {
     console.error(error);
-    sendJson(res, 400, { error: error.message || "Round setup generation failed." });
+    sendJson(res, 400, { error: error.message || "Round setup failed." });
   }
 }
 
@@ -8210,7 +8210,7 @@ async function handleRound(req, res) {
     sendJson(res, 200, result);
   } catch (error) {
     console.error(error);
-    sendJson(res, 400, { error: error.message || "Round generation failed." });
+    sendJson(res, 400, { error: error.message || "Round grading failed." });
   }
 }
 
