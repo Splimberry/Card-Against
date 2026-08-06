@@ -7227,6 +7227,8 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 .room-submit-status {
   grid-column: 1 / -1;
   display: grid;
+  position: relative;
+  z-index: 35;
   gap: 0.45rem;
   max-height: 16rem;
   padding: 0.75rem;
@@ -7234,7 +7236,7 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   border-radius: 8px;
   background: rgba(34, 211, 238, 0.08);
   opacity: 1;
-  overflow: hidden;
+  overflow: visible;
   transform: translateY(0);
   transition:
     max-height 360ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -7255,11 +7257,18 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
 }
 
 .room-submit-actions {
+  position: relative;
+  z-index: 50;
   justify-content: flex-start;
+  overflow: visible;
 }
 
 .room-submit-actions button {
   width: max-content;
+}
+
+.room-submit-actions [data-tooltip]::after {
+  z-index: 240;
 }
 
 .room-submit-status span {
@@ -15491,6 +15500,7 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   padding-bottom: 0;
   border-width: 0;
   opacity: 0;
+  overflow: hidden;
   pointer-events: none;
   transform: translateY(-0.45rem);
 }

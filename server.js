@@ -33,6 +33,7 @@ const roomHostSessionTtlSeconds = 60 * 60 * 12;
 const roomParticipantSessionTtlSeconds = 60 * 60 * 12;
 const maxRoomEvents = 100;
 const roomRequestMaxBytes = 750_000;
+const chaosInfusedPowerSuffix = "__chaos";
 // Keep this list deliberately small while the server power engine is being
 // migrated. Unlisted powers continue through the compatibility path below.
 const serverPowerEngineMigratedIds = new Set([
@@ -6638,8 +6639,19 @@ function getRoomPowerAuthMode() {
   return ["warn", "enforce"].includes(mode) ? mode : "warn";
 }
 
+function getServerBasePowerId(powerId = "") {
+  const normalized = String(powerId || "").trim().toLowerCase();
+  return normalized.endsWith(chaosInfusedPowerSuffix)
+    ? normalized.slice(0, -chaosInfusedPowerSuffix.length)
+    : normalized;
+}
+
+function isServerChaosInfusedPower(powerId = "") {
+  return String(powerId || "").trim().toLowerCase().endsWith(chaosInfusedPowerSuffix);
+}
+
 function isServerPowerEngineMigrated(powerId = "") {
-  return serverPowerEngineMigratedIds.has(String(powerId || "").trim().toLowerCase());
+  return serverPowerEngineMigratedIds.has(getServerBasePowerId(powerId));
 }
 
 function cloneRoomPowerActionMeta(meta) {
@@ -6655,6 +6667,21 @@ function cloneRoomPowerActionMeta(meta) {
     return cloned && typeof cloned === "object" && !Array.isArray(cloned) ? cloned : {};
   } catch {
     return {};
+  }
+}
+
+function cloneServerRoomJson(value, fallback, maxBytes = 120000) {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  try {
+    const serialized = JSON.stringify(value);
+    if (serialized.length > maxBytes) {
+      return fallback;
+    }
+    return JSON.parse(serialized);
+  } catch {
+    return fallback;
   }
 }
 
@@ -6703,6 +6730,183 @@ function getRoomPowerActionPlayedIds(powerState = {}, participantId = "") {
     entry?.primaryPowerId,
     ...(Array.isArray(entry?.stacks) ? entry.stacks.map((stack) => stack?.powerId) : [])
   ].map((powerId) => String(powerId || "").trim()).filter(Boolean));
+}
+
+function getServerPowerPlayerMap(powerState = {}) {
+  const map = new Map();
+  (Array.isArray(powerState?.players) ? powerState.players : []).forEach((entry) => {
+    const participantId = String(entry?.participantId || "").slice(0, 120);
+    if (participantId) {
+      map.set(participantId, entry);
+    }
+  });
+  return map;
+}
+
+function getRoomGameplayParticipantIds(room = {}) {
+  return (Array.isArray(room?.participants) ? room.participants : [])
+    .filter(isGameplayParticipant)
+    .map((participant) => String(participant.id || "").slice(0, 120))
+    .filter(Boolean);
+}
+
+function getServerPowerRuleRequiredPlayerIds(room, powerState, action) {
+  const basePowerId = getServerBasePowerId(action?.powerId);
+  const actorId = String(action?.actorParticipantId || "").slice(0, 120);
+  const targetId = String(action?.targetParticipantId || "").slice(0, 120);
+  const gameplayIds = getRoomGameplayParticipantIds(room);
+  if (!isServerPowerEngineMigrated(action?.powerId)) {
+    return [];
+  }
+  if (basePowerId === "time_bender") {
+    return [];
+  }
+  if (basePowerId === "sin_pride" || basePowerId === "hard_reset") {
+    return gameplayIds;
+  }
+  if ((basePowerId === "lightning_strike" || basePowerId === "zap_strike") && isServerChaosInfusedPower(action?.powerId)) {
+    return gameplayIds;
+  }
+  if (basePowerId === "lightning_strike" || basePowerId === "zap_strike") {
+    return [targetId].filter(Boolean);
+  }
+  if (basePowerId === "shameless") {
+    return [actorId, targetId].filter(Boolean);
+  }
+  return [actorId].filter(Boolean);
+}
+
+function getServerPowerEffectStackCount(value) {
+  if (!value) {
+    return 0;
+  }
+  if (value === true || typeof value === "string") {
+    return 1;
+  }
+  if (typeof value === "number") {
+    return Math.max(0, Math.floor(value));
+  }
+  if (typeof value === "object") {
+    const directCount = Number(value.count ?? value.stacks);
+    if (Number.isFinite(directCount) && directCount > 0) {
+      return Math.floor(directCount);
+    }
+    return Math.max(0, Math.floor(Number(value.normal) || 0))
+      + Math.max(0, Math.floor(Number(value.chaos) || 0));
+  }
+  return 0;
+}
+
+function getServerPowerEffectMaps(effects = {}) {
+  if (!effects || typeof effects !== "object") {
+    return {};
+  }
+  return effects.maps && typeof effects.maps === "object" ? effects.maps : {};
+}
+
+function getServerPowerOwnerEffect(effects, key, owner = "") {
+  const maps = getServerPowerEffectMaps(effects);
+  const map = maps[key] && typeof maps[key] === "object" ? maps[key] : {};
+  return map[String(owner || "")];
+}
+
+function setServerPowerOwnerEffect(effects, key, owner = "", value) {
+  if (!effects || typeof effects !== "object" || !owner) {
+    return;
+  }
+  effects.maps = effects.maps && typeof effects.maps === "object" ? effects.maps : {};
+  effects.maps[key] = effects.maps[key] && typeof effects.maps[key] === "object" ? effects.maps[key] : {};
+  if (value === undefined || value === null || value === false || value === 0) {
+    delete effects.maps[key][owner];
+  } else {
+    effects.maps[key][owner] = value;
+  }
+}
+
+function hasServerPowerOwnerEffect(effects, key, owner = "") {
+  return getServerPowerEffectStackCount(getServerPowerOwnerEffect(effects, key, owner)) > 0;
+}
+
+function hasServerImmediateDeductionProtection(effects, owner = "") {
+  return hasServerPowerOwnerEffect(effects, "ultimatumRounds", owner)
+    || hasServerPowerOwnerEffect(effects, "permafrostProtection", owner)
+    || hasServerPowerOwnerEffect(effects, "freezeProtection", owner)
+    || hasServerPowerOwnerEffect(effects, "pocketShieldCharges", owner);
+}
+
+function applyServerProtectedScoreLoss(playerById, effects, participantId = "", amount = 0) {
+  const player = playerById.get(String(participantId || "").slice(0, 120));
+  if (!player) {
+    return 0;
+  }
+  const owner = String(player.owner || "").slice(0, 80);
+  const loss = Math.max(0, Math.round(Number(amount) || 0));
+  if (loss <= 0) {
+    return 0;
+  }
+  if (owner && hasServerPowerOwnerEffect(effects, "freezeReflectionRounds", owner)) {
+    player.score = Math.max(0, Math.round(Number(player.score) || 0) + loss);
+    return 0;
+  }
+  if (owner && hasServerImmediateDeductionProtection(effects, owner)) {
+    const shieldCharges = getServerPowerEffectStackCount(getServerPowerOwnerEffect(effects, "pocketShieldCharges", owner));
+    if (shieldCharges > 0) {
+      const breakThreshold = getServerPowerEffectStackCount(getServerPowerOwnerEffect(effects, "pocketShieldBreakThresholds", owner));
+      if (!breakThreshold || loss > breakThreshold) {
+        const nextCharges = Math.max(0, shieldCharges - 1);
+        setServerPowerOwnerEffect(effects, "pocketShieldCharges", owner, nextCharges);
+        if (nextCharges <= 0) {
+          setServerPowerOwnerEffect(effects, "pocketShieldBreakThresholds", owner, 0);
+        }
+      }
+    }
+    return 0;
+  }
+  player.score = Math.max(0, Math.round(Number(player.score) || 0) - loss);
+  return loss;
+}
+
+function addServerPowerScore(playerById, participantId = "", amount = 0) {
+  const player = playerById.get(String(participantId || "").slice(0, 120));
+  if (!player) {
+    return;
+  }
+  player.score = Math.max(0, Math.round(Number(player.score) || 0) + Math.round(Number(amount) || 0));
+}
+
+function setServerPowerStreak(playerById, participantId = "", value = 0) {
+  const player = playerById.get(String(participantId || "").slice(0, 120));
+  if (!player) {
+    return;
+  }
+  player.streak = Math.max(0, Math.round(Number(value) || 0));
+}
+
+function canServerReduceStreak(playerById, effects, participantId = "", options = {}) {
+  const player = playerById.get(String(participantId || "").slice(0, 120));
+  const owner = String(player?.owner || "").slice(0, 80);
+  if (!player || !owner) {
+    return false;
+  }
+  if (hasServerPowerOwnerEffect(effects, "ultimatumRounds", owner)
+    || hasServerPowerOwnerEffect(effects, "doomStreakGuardRounds", owner)) {
+    return false;
+  }
+  if (options.force) {
+    return true;
+  }
+  if (hasServerPowerOwnerEffect(effects, "streakSicknessRounds", owner)
+    || hasServerPowerOwnerEffect(effects, "streakFreezeRounds", owner)
+    || hasServerPowerOwnerEffect(effects, "streakLossProtectionRounds", owner)
+    || hasServerPowerOwnerEffect(effects, "eternalFlameProtection", owner)) {
+    return false;
+  }
+  const anchorCharges = getServerPowerEffectStackCount(getServerPowerOwnerEffect(effects, "streakAnchorCharges", owner));
+  if (anchorCharges > 0) {
+    setServerPowerOwnerEffect(effects, "streakAnchorCharges", owner, Math.max(0, anchorCharges - 1));
+    return false;
+  }
+  return true;
 }
 
 function validateRoomPowerActionIntent(room, previousPowerState, action, actorParticipantId = "") {
@@ -6768,6 +6972,32 @@ function validateRoomPowerActionIntent(room, previousPowerState, action, actorPa
   if (getRoomPowerActionPlayedIds(previousPowerState, actorId).has(action.powerId)) {
     return { status: 409, error: "This power has already been used this round.", powerId: action.powerId };
   }
+  if (isServerPowerEngineMigrated(action.powerId)) {
+    const basePowerId = getServerBasePowerId(action.powerId);
+    const chaosInfused = isServerChaosInfusedPower(action.powerId);
+    const requiresTarget = basePowerId === "shameless"
+      || ((basePowerId === "lightning_strike" || basePowerId === "zap_strike") && !chaosInfused)
+      || (basePowerId === "hard_reset" && chaosInfused);
+    if (requiresTarget && !action.targetParticipantId) {
+      return { status: 400, error: "This power needs a valid target.", powerId: action.powerId };
+    }
+    if (basePowerId === "shameless" && action.targetParticipantId === actorId) {
+      return { status: 409, error: "This power must target another player.", powerId: action.powerId };
+    }
+    const playerById = getServerPowerPlayerMap(previousPowerState);
+    const missingPlayerStateId = getServerPowerRuleRequiredPlayerIds(room, previousPowerState, action)
+      .find((participantId) => !playerById.has(participantId));
+    if (missingPlayerStateId) {
+      return { status: 409, error: "The server needs current score and streak state before resolving this power.", powerId: action.powerId };
+    }
+    if (basePowerId === "sin_pride") {
+      const actorPlayer = playerById.get(actorId);
+      const highestScore = Math.max(...[...playerById.values()].map((entry) => Math.max(0, Number(entry.score) || 0)));
+      if (!actorPlayer || Math.max(0, Number(actorPlayer.score) || 0) < highestScore) {
+        return { status: 409, error: "Sin of Pride is only usable from first place.", powerId: action.powerId };
+      }
+    }
+  }
   return null;
 }
 
@@ -6789,12 +7019,131 @@ function applyServerPowerAction(previousPowerState, action, clientEventId = "") 
   };
   const now = Date.now();
   const revealId = `server-${String(clientEventId || `${action.matchId}-${action.round}`).slice(0, 100)}`;
+  const basePowerId = getServerBasePowerId(action.powerId);
+  const chaosInfused = isServerChaosInfusedPower(action.powerId);
+  const nextEffects = cloneServerRoomJson(previous.effects, null);
+  const playerById = new Map(previous.players.map((entry) => [
+    entry.participantId,
+    { ...entry }
+  ]));
+  const originalPlayerSignatures = new Map(previous.players.map((entry) => [
+    entry.participantId,
+    `${Math.max(0, Number(entry.score) || 0)}|${Math.max(0, Number(entry.streak) || 0)}`
+  ]));
+  const markUpdatedPlayer = (participantId) => {
+    const player = playerById.get(String(participantId || "").slice(0, 120));
+    if (player) {
+      player.updatedAt = now;
+    }
+  };
+  const getPlayerScore = (participantId) => Math.max(0, Number(playerById.get(participantId)?.score) || 0);
+  const getPlayerStreak = (participantId) => Math.max(0, Number(playerById.get(participantId)?.streak) || 0);
+  const addScore = (participantId, amount) => {
+    const before = getPlayerScore(participantId);
+    addServerPowerScore(playerById, participantId, amount);
+    if (getPlayerScore(participantId) !== before) {
+      markUpdatedPlayer(participantId);
+    }
+  };
+  const applyLoss = (participantId, amount) => {
+    const before = getPlayerScore(participantId);
+    const appliedLoss = applyServerProtectedScoreLoss(playerById, nextEffects, participantId, amount);
+    if (getPlayerScore(participantId) !== before) {
+      markUpdatedPlayer(participantId);
+    }
+    return appliedLoss;
+  };
+  const setStreak = (participantId, value) => {
+    const before = getPlayerStreak(participantId);
+    setServerPowerStreak(playerById, participantId, value);
+    if (getPlayerStreak(participantId) !== before) {
+      markUpdatedPlayer(participantId);
+    }
+  };
   const nextMeta = {
     ...cloneRoomPowerActionMeta(action.meta),
     serverResolved: true,
     targetParticipantId: action.targetParticipantId,
     targetParticipantIds: action.targetParticipantIds
   };
+  if (basePowerId === "lightning_strike" || basePowerId === "zap_strike") {
+    const affectedParticipantIds = [];
+    let appliedLoss = 0;
+    if (chaosInfused) {
+      const actorStreak = getPlayerStreak(actorId);
+      const amountPerStreak = basePowerId === "lightning_strike" ? 750 : 300;
+      const streakOffset = basePowerId === "lightning_strike" ? 2 : 1;
+      [...playerById.values()]
+        .filter((entry) => entry.participantId !== actorId && getPlayerStreak(entry.participantId) > actorStreak)
+        .forEach((entry) => {
+          const amount = amountPerStreak * (getPlayerStreak(entry.participantId) + streakOffset);
+          const targetLoss = applyLoss(entry.participantId, amount);
+          appliedLoss += targetLoss;
+          affectedParticipantIds.push(entry.participantId);
+        });
+    } else if (action.targetParticipantId && getPlayerStreak(action.targetParticipantId) > 0) {
+      const amount = (basePowerId === "lightning_strike" ? 500 : 250) * (getPlayerStreak(action.targetParticipantId) + 1);
+      appliedLoss = applyLoss(action.targetParticipantId, amount);
+      affectedParticipantIds.push(action.targetParticipantId);
+    }
+    nextMeta.appliedLoss = appliedLoss;
+    nextMeta.affectedParticipantIds = affectedParticipantIds;
+    if (!nextMeta.targetParticipantIds?.length && affectedParticipantIds.length) {
+      nextMeta.targetParticipantIds = affectedParticipantIds;
+    }
+  }
+  if (basePowerId === "shameless") {
+    const targetId = action.targetParticipantId;
+    let stolenAmount = 0;
+    if (targetId && targetId !== actorId) {
+      const amount = Math.floor(getPlayerScore(targetId) * (chaosInfused ? 0.18 : 0.05));
+      stolenAmount = applyLoss(targetId, amount);
+      addScore(actorId, stolenAmount);
+    }
+    nextMeta.stolenAmount = stolenAmount;
+    nextMeta.appliedLoss = stolenAmount;
+  }
+  if (basePowerId === "sin_pride") {
+    const currentStreak = getPlayerStreak(actorId);
+    if (chaosInfused) {
+      setStreak(actorId, currentStreak * 2);
+      nextMeta.previousStreak = currentStreak;
+      nextMeta.nextStreak = getPlayerStreak(actorId);
+    } else {
+      addScore(actorId, 250);
+      setStreak(actorId, currentStreak + 1);
+      nextMeta.appliedPoints = 250;
+      nextMeta.streakGain = 1;
+    }
+  }
+  if (basePowerId === "hard_reset") {
+    const resetParticipantIds = [];
+    const targets = chaosInfused
+      ? [action.targetParticipantId].filter(Boolean)
+      : [...playerById.keys()];
+    targets.forEach((participantId) => {
+      const player = playerById.get(participantId);
+      const owner = String(player?.owner || "").slice(0, 80);
+      if (!player || getPlayerStreak(participantId) <= 0) {
+        return;
+      }
+      if (chaosInfused && owner && hasServerPowerOwnerEffect(nextEffects, "eternalFlameProtection", owner)) {
+        return;
+      }
+      if (!canServerReduceStreak(playerById, nextEffects, participantId, { force: chaosInfused })) {
+        return;
+      }
+      setStreak(participantId, 0);
+      resetParticipantIds.push(participantId);
+    });
+    nextMeta.resetParticipantIds = resetParticipantIds;
+  }
+  const nextPlayers = [...playerById.values()].map((entry) => {
+    const signature = `${Math.max(0, Number(entry.score) || 0)}|${Math.max(0, Number(entry.streak) || 0)}`;
+    return signature === originalPlayerSignatures.get(entry.participantId)
+      ? entry
+      : { ...entry, updatedAt: now };
+  });
   const nextHand = {
     ...previousHand,
     updatedAt: now,
@@ -6816,7 +7165,9 @@ function applyServerPowerAction(previousPowerState, action, clientEventId = "") 
     matchId: action.matchId || previous.matchId,
     updatedAt: now,
     hands: getRoomPowerStateEntriesWithReplacement(previous.hands, actorId, nextHand),
-    played: getRoomPowerStateEntriesWithReplacement(previous.played, actorId, nextPlayed)
+    played: getRoomPowerStateEntriesWithReplacement(previous.played, actorId, nextPlayed),
+    players: nextPlayers,
+    effects: nextEffects
   };
 }
 

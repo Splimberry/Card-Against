@@ -2623,6 +2623,273 @@ async function testServerPowerEngineDerivesActionStateAndIsIdempotent() {
   assert.match(secondUse.payload.error, /authoritative hand|already been used/i);
 }
 
+async function testServerPowerEngineDerivesScoreStealFromStoredPlayers() {
+  const code = makeCode(8182);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "playing"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "playing"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId,
+        updatedAt: Date.now() - 1000,
+        hands: [
+          { participantId: "host-client", owner: "player", hand: ["shameless"], fresh: ["shameless"] },
+          { participantId: "guest-client", owner: "opponent", hand: [], fresh: [] }
+        ],
+        played: [],
+        players: [
+          { participantId: "host-client", owner: "player", score: 1000, streak: 1 },
+          { participantId: "guest-client", owner: "opponent", score: 4000, streak: 2 }
+        ],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const result = await roomPowerStateCommand(code, {
+    clientEventId: "server-engine-shameless-1",
+    matchId,
+    round: 1,
+    powerId: "shameless",
+    actorParticipantId: "host-client",
+    targetParticipantId: "guest-client",
+    action: {
+      version: 1,
+      type: "use",
+      powerId: "shameless",
+      actorParticipantId: "host-client",
+      targetParticipantId: "guest-client",
+      matchId,
+      round: 1
+    },
+    hands: [{ participantId: "host-client", owner: "player", hand: ["forged"], fresh: [] }],
+    played: [],
+    players: [
+      { participantId: "host-client", owner: "player", score: 999999, streak: 99 },
+      { participantId: "guest-client", owner: "opponent", score: 1, streak: 0 }
+    ],
+    effects: { maps: {}, arrays: {}, values: { forged: true } }
+  });
+  assert.equal(result.response.status, 200, result.payload.error);
+  assert.equal(result.payload.serverAuthoritative, true);
+  const hostPlayer = result.payload.powerState.players.find((entry) => entry.participantId === "host-client");
+  const guestPlayer = result.payload.powerState.players.find((entry) => entry.participantId === "guest-client");
+  assert.equal(hostPlayer.score, 1200);
+  assert.equal(guestPlayer.score, 3800);
+  const played = result.payload.powerState.played.find((entry) => entry.participantId === "host-client");
+  assert.equal(played.primaryPowerId, "shameless");
+  assert.equal(played.meta.stolenAmount, 200);
+}
+
+async function testServerPowerEngineCalculatesChaosVariantSeparately() {
+  const code = makeCode(8183);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "playing"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "playing"
+      },
+      {
+        id: "bot-client",
+        name: "Bot",
+        host: false,
+        spectator: false,
+        bot: true,
+        role: "bot",
+        active: true,
+        muted: false,
+        status: "bot"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId,
+        updatedAt: Date.now() - 1000,
+        hands: [
+          { participantId: "host-client", owner: "player", hand: ["lightning_strike__chaos"], fresh: ["lightning_strike__chaos"] },
+          { participantId: "guest-client", owner: "opponent", hand: [], fresh: [] },
+          { participantId: "bot-client", owner: "bot-1", hand: [], fresh: [] }
+        ],
+        played: [],
+        players: [
+          { participantId: "host-client", owner: "player", score: 1000, streak: 1 },
+          { participantId: "guest-client", owner: "opponent", score: 5000, streak: 3 },
+          { participantId: "bot-client", owner: "bot-1", score: 2000, streak: 2 }
+        ],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const result = await roomPowerStateCommand(code, {
+    clientEventId: "server-engine-chaos-lightning-1",
+    matchId,
+    round: 1,
+    powerId: "lightning_strike__chaos",
+    actorParticipantId: "host-client",
+    action: {
+      version: 1,
+      type: "use",
+      powerId: "lightning_strike__chaos",
+      actorParticipantId: "host-client",
+      matchId,
+      round: 1
+    },
+    players: [
+      { participantId: "host-client", owner: "player", score: 999999, streak: 99 },
+      { participantId: "guest-client", owner: "opponent", score: 999999, streak: 99 },
+      { participantId: "bot-client", owner: "bot-1", score: 999999, streak: 99 }
+    ]
+  });
+  assert.equal(result.response.status, 200, result.payload.error);
+  assert.equal(result.payload.serverAuthoritative, true);
+  const hostPlayer = result.payload.powerState.players.find((entry) => entry.participantId === "host-client");
+  const guestPlayer = result.payload.powerState.players.find((entry) => entry.participantId === "guest-client");
+  const botPlayer = result.payload.powerState.players.find((entry) => entry.participantId === "bot-client");
+  assert.equal(hostPlayer.score, 1000);
+  assert.equal(guestPlayer.score, 1250);
+  assert.equal(botPlayer.score, 0);
+  const played = result.payload.powerState.played.find((entry) => entry.participantId === "host-client");
+  assert.equal(played.primaryPowerId, "lightning_strike__chaos");
+  assert.deepEqual(new Set(played.meta.affectedParticipantIds), new Set(["guest-client", "bot-client"]));
+  assert.equal(played.meta.appliedLoss, 6750);
+}
+
+async function testServerPowerEngineHardResetUsesStoredStreakProtections() {
+  const code = makeCode(8184);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "playing"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "playing"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId,
+        updatedAt: Date.now() - 1000,
+        hands: [
+          { participantId: "host-client", owner: "player", hand: ["hard_reset"], fresh: ["hard_reset"] },
+          { participantId: "guest-client", owner: "opponent", hand: [], fresh: [] }
+        ],
+        played: [],
+        players: [
+          { participantId: "host-client", owner: "player", score: 1000, streak: 2 },
+          { participantId: "guest-client", owner: "opponent", score: 1000, streak: 4 }
+        ],
+        effects: {
+          maps: {
+            streakAnchorCharges: { opponent: 1 }
+          },
+          arrays: {},
+          values: {}
+        }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const result = await roomPowerStateCommand(code, {
+    clientEventId: "server-engine-hard-reset-1",
+    matchId,
+    round: 1,
+    powerId: "hard_reset",
+    actorParticipantId: "host-client",
+    action: {
+      version: 1,
+      type: "use",
+      powerId: "hard_reset",
+      actorParticipantId: "host-client",
+      matchId,
+      round: 1
+    },
+    players: [
+      { participantId: "host-client", owner: "player", score: 999999, streak: 99 },
+      { participantId: "guest-client", owner: "opponent", score: 999999, streak: 99 }
+    ]
+  });
+  assert.equal(result.response.status, 200, result.payload.error);
+  const hostPlayer = result.payload.powerState.players.find((entry) => entry.participantId === "host-client");
+  const guestPlayer = result.payload.powerState.players.find((entry) => entry.participantId === "guest-client");
+  assert.equal(hostPlayer.streak, 0);
+  assert.equal(guestPlayer.streak, 4);
+  assert.equal(result.payload.powerState.effects.maps.streakAnchorCharges.opponent, undefined);
+  const played = result.payload.powerState.played.find((entry) => entry.participantId === "host-client");
+  assert.deepEqual(played.meta.resetParticipantIds, ["host-client"]);
+}
+
 async function testStaleRoomRoundResultCannotOverwriteRematch() {
   const code = makeCode(8116);
   await upsertRoom(makeRoom(code, {
@@ -3149,6 +3416,9 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
   });
   assert.equal(first.response.status, 200, first.payload.error);
   assert.equal(first.payload.grading, undefined);
+  assert.deepEqual(first.payload.submissionStatusSnapshot.submittedParticipantIds, ["host-client"]);
+  assert.deepEqual(first.payload.submissionStatusSnapshot.pendingParticipantIds, ["guest-client"]);
+  assert.equal(first.payload.submissionStatusSnapshot.allSubmitted, false);
 
   const second = await roomAnswerCommand(code, {
     participantId: "guest-client",
@@ -3162,6 +3432,9 @@ async function testRoomAnswerEndpointStartsGradingWhenAllSubmitted() {
   assert.equal(second.payload.grading.eventType, "round-grading");
   assert.equal(second.payload.grading.reason, "all-submitted");
   assert.equal(second.payload.grading.submissions.length, 2);
+  assert.deepEqual(new Set(second.payload.submissionStatusSnapshot.submittedParticipantIds), new Set(["host-client", "guest-client"]));
+  assert.deepEqual(second.payload.submissionStatusSnapshot.pendingParticipantIds, []);
+  assert.equal(second.payload.submissionStatusSnapshot.allSubmitted, true);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -3397,6 +3670,9 @@ async function testHostSubmissionAutoSubmitsBotsAndStartsGrading() {
   assert.equal(hostAnswer.payload.events.some((event) => event.type === "answer_submitted" && event.payload.participantId === "bot-client" && event.payload.autoSubmitted === true), true);
   assert.equal(hostAnswer.payload.grading.eventType, "round-grading");
   assert.equal(hostAnswer.payload.grading.submissions.length, 2);
+  assert.deepEqual(new Set(hostAnswer.payload.submissionStatusSnapshot.submittedParticipantIds), new Set(["host-client", "bot-client"]));
+  assert.deepEqual(hostAnswer.payload.submissionStatusSnapshot.pendingParticipantIds, []);
+  assert.equal(hostAnswer.payload.submissionStatusSnapshot.allSubmitted, true);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
@@ -6835,6 +7111,9 @@ async function main() {
   await testRoomPowerStateRejectsInvalidTargetParticipant();
   await testRoomPowerStateTimeBenderUpdatesSharedTimers();
   await testServerPowerEngineDerivesActionStateAndIsIdempotent();
+  await testServerPowerEngineDerivesScoreStealFromStoredPlayers();
+  await testServerPowerEngineCalculatesChaosVariantSeparately();
+  await testServerPowerEngineHardResetUsesStoredStreakProtections();
   await testStaleRoomRoundResultCannotOverwriteRematch();
   await testStaleRoomGameEndCannotCompleteRematch();
   await testRoomReturnToLobbyClearsMatchState();
