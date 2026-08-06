@@ -14665,7 +14665,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
     return Promise.resolve(null);
   }
   const publishKey = getRoomRoundResultPlaybackKey(result);
-  if (state.roomRoundResultPublishKey === publishKey || getRoomRoundResultForCurrentRound(result.round)) {
+  if (state.roomRoundResultPublishKey === publishKey) {
     return Promise.resolve({ ok: true, duplicate: true, roundResult: state.roomRoundResult || result });
   }
   state.roomRoundResultPublishKey = publishKey;
@@ -14696,6 +14696,13 @@ function publishRoomRoundResult(roundResult, options = {}) {
         state.roomRoundResultPublishKey = "";
       }
       state.roomDirectoryOnline = false;
+      if (!options.retrying && isRoomMode() && isCurrentHost() && !state.joiningRoom && !state.matchEnded) {
+        return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
+          ...options,
+          clientEventId,
+          retrying: true
+        }));
+      }
       return null;
     }
     state.roomDirectoryOnline = true;
@@ -14705,6 +14712,13 @@ function publishRoomRoundResult(roundResult, options = {}) {
       state.roomRoundResultPublishKey = "";
     }
     state.roomDirectoryOnline = false;
+    if (!options.retrying && isRoomMode() && isCurrentHost() && !state.joiningRoom && !state.matchEnded) {
+      return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
+        ...options,
+        clientEventId,
+        retrying: true
+      }));
+    }
     return null;
   });
 }
@@ -15316,9 +15330,19 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     timeoutMs: waitTimeout,
     eventTypes: ["round-result", "game-ended", "room-updated"],
     reason: "round-result-wait"
-  }).then((result) => {
+  }).then(async (result) => {
     if (result === "stale") {
       state.roomRoundResolving = false;
+      return;
+    }
+    if (result !== "played" && isCurrentMatchWork(matchToken) && isRoomMode() && !state.matchEnded) {
+      await requestRoomRealtimeCatchup("round-result-wait-timeout", { force: true, snapshot: true });
+      if (!playSyncedResultIfReady() && isCurrentMatchWork(matchToken)) {
+        elements.loadingPanel.dataset.loadingState = "waiting-host";
+        elements.loadingText.textContent = "Still waiting for the host to sync the results...";
+        setHidden(elements.errorPanel, true);
+        setHidden(elements.loadingPanel, false);
+      }
     }
   });
 }
@@ -31088,6 +31112,15 @@ function showWaitingForHostRoundSetup(round = state.round) {
   setHidden(elements.inputPanel, true);
 }
 
+function showRoomRoundSetupSyncWait(message = "Waiting for the room to sync the next question...") {
+  stopLoadingMessages();
+  elements.loadingPanel.dataset.loadingState = "waiting-host";
+  elements.loadingText.textContent = message;
+  setHidden(elements.loadingPanel, false);
+  setHidden(elements.errorPanel, true);
+  setHidden(elements.inputPanel, true);
+}
+
 async function recoverFromStaleRoomRoundSetup(error, context = {}) {
   if (!isRoomMode() || !isStaleRoomSetupError(error)) {
     return false;
@@ -35931,11 +35964,7 @@ async function newRound() {
         return;
       }
       console.warn(error);
-      stopLoadingMessages();
-      playSound("error");
-      elements.errorText.textContent = `${error.message} Ask players to wait while the room keeps its last synced state.`;
-      setHidden(elements.loadingPanel, true);
-      setHidden(elements.errorPanel, false);
+      showRoomRoundSetupSyncWait("Waiting for the room to finish syncing this round...");
     }
     return;
   }
@@ -36335,6 +36364,11 @@ async function startGame(mode) {
     }
     if (mode === "room" && !isCurrentHost()) {
       showWaitingForHostRoundSetup(state.round);
+      return;
+    }
+    if (mode === "room") {
+      console.warn(error);
+      showRoomRoundSetupSyncWait("Waiting for the room to finish syncing the first question...");
       return;
     }
     console.warn(error);

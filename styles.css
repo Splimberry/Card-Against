@@ -1059,6 +1059,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   justify-content: space-between;
   gap: 1rem;
   align-items: flex-start;
+  overflow: visible;
 }
 
 .room-chat-header-meta {
@@ -1068,6 +1069,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   gap: 0.45rem;
   min-width: 0;
   flex-wrap: wrap;
+  overflow: visible;
 }
 
 .room-connection-pill {
@@ -1138,10 +1140,12 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .room-connection-pill[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
+  left: 50%;
   top: calc(100% + 0.55rem);
-  right: 0;
+  right: auto;
+  bottom: auto;
   width: max-content;
-  max-width: min(18rem, 80vw);
+  max-width: min(14rem, calc(100vw - 2rem));
   padding: 0.5rem 0.65rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
@@ -1154,15 +1158,17 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   letter-spacing: 0;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-0.25rem) scale(0.98);
+  text-align: center;
+  transform: translate(-50%, -0.25rem) scale(0.98);
+  transform-origin: 50% 0%;
   transition: opacity 160ms ease, transform 160ms ease;
-  z-index: 10000;
+  z-index: 20000;
 }
 
 .room-connection-pill:hover::after,
 .room-connection-pill:focus-visible::after {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translate(-50%, 0) scale(1);
 }
 
 @keyframes roomConnectionPulse {
