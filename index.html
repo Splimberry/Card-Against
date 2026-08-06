@@ -126,6 +126,7 @@
             <h1 id="roomTitle">CREATE ROOM</h1>
           </div>
           <div class="lobby-actions">
+            <span class="room-connection-pill" id="roomConnectionStatus" data-status="connected" data-tooltip="Room sync is ready.">Connected</span>
             <button type="button" class="icon-button" id="roomSoundToggleButton" aria-pressed="false">Sound On</button>
             <button type="button" class="icon-button" id="backToMenuButton">Back</button>
           </div>
@@ -322,7 +323,10 @@
                 <p class="eyebrow">Room chat</p>
                 <strong id="lobbyRoomCodeLabel">CAI-0000</strong>
               </div>
-              <span id="lobbyRoomVariantLabel">Classic Match</span>
+              <div class="room-chat-header-meta">
+                <span class="room-connection-pill" id="lobbyRoomConnectionStatus" data-status="connected" data-tooltip="Room sync is ready.">Connected</span>
+                <span id="lobbyRoomVariantLabel">Classic Match</span>
+              </div>
             </div>
             <div class="chat-log" id="lobbyChatLog" aria-live="polite"></div>
             <form class="chat-form" id="lobbyChatForm">
@@ -549,7 +553,10 @@
               <p class="eyebrow">Room chat</p>
               <strong id="roomCodeLabel">CAI-0000</strong>
             </div>
-            <span id="roomVariantLabel">Classic Match</span>
+            <div class="room-chat-header-meta">
+              <span class="room-connection-pill" id="gameRoomConnectionStatus" data-status="connected" data-tooltip="Room sync is ready.">Connected</span>
+              <span id="roomVariantLabel">Classic Match</span>
+            </div>
           </div>
           <div class="chat-log" id="chatLog" aria-live="polite"></div>
           <form class="chat-form" id="chatForm">

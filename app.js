@@ -3522,6 +3522,15 @@ const state = {
   roomParticipants: [],
   roomPanelHeightSyncFrame: 0,
   roomDirectoryOnline: true,
+  roomConnectionHealth: {
+    status: "connected",
+    message: "Room sync is ready.",
+    pendingCommands: 0,
+    lastLatencyMs: 0,
+    lastError: "",
+    updatedAt: 0,
+    resetTimerId: null
+  },
   roomGame: null,
   roomRoundTransitionPromise: null,
   roomRoundTransitionKey: "",
@@ -4577,13 +4586,16 @@ const elements = {
   changeModeButton: document.querySelector("#changeModeButton"),
   finalLeaderboard: document.querySelector("#finalLeaderboard"),
   roomChat: document.querySelector("#roomChat"),
+  roomConnectionStatus: document.querySelector("#roomConnectionStatus"),
   roomCodeLabel: document.querySelector("#roomCodeLabel"),
   roomVariantLabel: document.querySelector("#roomVariantLabel"),
+  gameRoomConnectionStatus: document.querySelector("#gameRoomConnectionStatus"),
   chatLog: document.querySelector("#chatLog"),
   chatForm: document.querySelector("#chatForm"),
   chatInput: document.querySelector("#chatInput"),
   lobbyRoomCodeLabel: document.querySelector("#lobbyRoomCodeLabel"),
   lobbyRoomVariantLabel: document.querySelector("#lobbyRoomVariantLabel"),
+  lobbyRoomConnectionStatus: document.querySelector("#lobbyRoomConnectionStatus"),
   lobbyChatLog: document.querySelector("#lobbyChatLog"),
   lobbyChatForm: document.querySelector("#lobbyChatForm"),
   lobbyChatInput: document.querySelector("#lobbyChatInput")
@@ -6052,6 +6064,201 @@ function isStaleRoomSetupError(error) {
     || message.includes("cannot overwrite")
     || message.includes("cannot skip")
     || message.includes("locked round");
+}
+
+function getRoomCommandLabel(commandType = "") {
+  const labels = {
+    add_bot: "Adding bot",
+    create_room: "Creating room",
+    end_game: "Ending game",
+    join_room: "Joining room",
+    leave_room: "Leaving room",
+    moderate_participant: "Updating player",
+    prepare_round: "Preparing question",
+    publish_round_result: "Publishing results",
+    rematch: "Starting rematch",
+    resolve_auto_advance: "Starting next round",
+    resolve_timer_expired: "Resolving timer",
+    return_to_lobby: "Returning to lobby",
+    send_chat: "Sending chat",
+    skip_to_grading: "Starting grading",
+    start_match: "Starting match",
+    start_next_round: "Starting next round",
+    submit_answer: "Submitting answer",
+    transfer_host: "Transferring host",
+    update_answer_draft: "Syncing answer",
+    update_settings: "Saving settings",
+    use_hint: "Using hint",
+    use_power: "Using power"
+  };
+  const normalized = String(commandType || "").trim();
+  if (labels[normalized]) {
+    return labels[normalized];
+  }
+  const words = normalized.replaceAll("_", " ");
+  return words ? `${words[0]?.toUpperCase() || ""}${words.slice(1)}` : "Room sync";
+}
+
+function isRoomBusyMessage(message = "") {
+  const normalized = String(message || "").toLowerCase();
+  return normalized.includes("room is busy processing another command")
+    || normalized.includes("room is syncing another action")
+    || normalized.includes("busy processing another command");
+}
+
+function isRoomTimeoutMessage(message = "") {
+  const normalized = String(message || "").toLowerCase();
+  return normalized.includes("signal is aborted")
+    || normalized.includes("aborterror")
+    || normalized.includes("timed out")
+    || normalized.includes("timeout")
+    || normalized.includes("aborted");
+}
+
+function getFriendlyRoomCommandError(errorOrMessage = "", status = 0, commandType = "") {
+  const payload = errorOrMessage?.payload || errorOrMessage?.data || null;
+  const rawMessage = String(
+    errorOrMessage?.message
+      || errorOrMessage?.error
+      || payload?.error
+      || errorOrMessage
+      || ""
+  );
+  if (isRoomBusyMessage(rawMessage)) {
+    return "Room is syncing another action. Give it a moment, then try again.";
+  }
+  if (isRoomTimeoutMessage(rawMessage) || isAbortError(errorOrMessage)) {
+    return "Connection timed out while syncing. Please try again.";
+  }
+  if (Number(status) === 503 || Number(errorOrMessage?.status) === 503) {
+    return "Room sync is slow right now. Please try again in a moment.";
+  }
+  if (rawMessage.toLowerCase().includes("failed to fetch") || rawMessage.toLowerCase().includes("network")) {
+    return "Connection dropped while syncing. Please try again.";
+  }
+  return rawMessage || `${getRoomCommandLabel(commandType)} failed. Please try again.`;
+}
+
+function getRoomConnectionLabel(status = "connected") {
+  const normalized = String(status || "connected").toLowerCase();
+  if (normalized === "offline") {
+    return "Offline";
+  }
+  if (normalized === "slow") {
+    return "Slow";
+  }
+  if (normalized === "syncing") {
+    return "Syncing";
+  }
+  return "Connected";
+}
+
+function getRoomConnectionMessage(status = "connected", message = "") {
+  if (message) {
+    return message;
+  }
+  const normalized = String(status || "connected").toLowerCase();
+  if (normalized === "offline") {
+    return "Room sync is disconnected. Actions may fail until it reconnects.";
+  }
+  if (normalized === "slow") {
+    return "Room sync is slow. Your action may take a moment.";
+  }
+  if (normalized === "syncing") {
+    return "Room sync is processing your latest action.";
+  }
+  return "Room sync is ready.";
+}
+
+function renderRoomConnectionStatus() {
+  const health = state.roomConnectionHealth || {};
+  const status = String(health.status || "connected").toLowerCase();
+  const label = getRoomConnectionLabel(status);
+  const message = getRoomConnectionMessage(status, health.message);
+  [
+    elements.roomConnectionStatus,
+    elements.lobbyRoomConnectionStatus,
+    elements.gameRoomConnectionStatus
+  ].filter(Boolean).forEach((pill) => {
+    pill.textContent = label;
+    pill.dataset.status = status;
+    pill.dataset.tooltip = message;
+    pill.setAttribute("aria-label", `Room connection: ${label}. ${message}`);
+  });
+}
+
+function setRoomConnectionHealth(status = "connected", options = {}) {
+  const health = state.roomConnectionHealth || {};
+  const nextStatus = String(status || "connected").toLowerCase();
+  if (health.resetTimerId) {
+    window.clearTimeout(health.resetTimerId);
+    health.resetTimerId = null;
+  }
+  state.roomConnectionHealth = {
+    ...health,
+    status: nextStatus,
+    message: getRoomConnectionMessage(nextStatus, options.message || ""),
+    pendingCommands: Math.max(0, Number(options.pendingCommands ?? health.pendingCommands) || 0),
+    lastLatencyMs: Math.max(0, Number(options.latencyMs ?? health.lastLatencyMs) || 0),
+    lastError: String(options.error || (nextStatus === "connected" ? "" : health.lastError || "")).slice(0, 180),
+    updatedAt: Date.now(),
+    resetTimerId: null
+  };
+  renderRoomConnectionStatus();
+  if (options.resetAfterMs && nextStatus !== "connected") {
+    state.roomConnectionHealth.resetTimerId = window.setTimeout(() => {
+      state.roomConnectionHealth.resetTimerId = null;
+      if (state.roomConnectionHealth.pendingCommands > 0) {
+        return;
+      }
+      setRoomConnectionHealth(isRoomRealtimeHealthy() || !state.supabaseEnabled ? "connected" : "slow", {
+        message: isRoomRealtimeHealthy() || !state.supabaseEnabled
+          ? "Room sync is ready."
+          : "Realtime is reconnecting. Commands still sync through the server."
+      });
+    }, Math.max(500, Number(options.resetAfterMs) || 2500));
+  }
+}
+
+function updateRoomConnectionForCommandStart(commandType = "") {
+  const health = state.roomConnectionHealth || {};
+  const pendingCommands = Math.max(0, Number(health.pendingCommands) || 0) + 1;
+  setRoomConnectionHealth("syncing", {
+    pendingCommands,
+    message: `${getRoomCommandLabel(commandType)}...`
+  });
+  return Date.now();
+}
+
+function updateRoomConnectionForCommandEnd(commandType = "", startedAt = 0, result = {}) {
+  const health = state.roomConnectionHealth || {};
+  const pendingCommands = Math.max(0, (Number(health.pendingCommands) || 0) - 1);
+  const latencyMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
+  if (result?.ok) {
+    const slow = latencyMs > 1800 || (!state.realtimeRoomReady && state.supabaseEnabled);
+    setRoomConnectionHealth(pendingCommands > 0 ? "syncing" : slow ? "slow" : "connected", {
+      pendingCommands,
+      latencyMs,
+      message: pendingCommands > 0
+        ? `${pendingCommands} room action${pendingCommands === 1 ? "" : "s"} still syncing...`
+        : slow
+          ? `${getRoomCommandLabel(commandType)} synced, but room updates are slow.`
+          : "Room sync is ready.",
+      resetAfterMs: slow ? 3500 : 0
+    });
+    return;
+  }
+  const status = Number(result?.status) || 0;
+  const friendly = getFriendlyRoomCommandError(result, status, commandType);
+  const busy = isRoomBusyMessage(friendly) || isRoomBusyMessage(result?.error);
+  const timeout = isRoomTimeoutMessage(friendly) || isRoomTimeoutMessage(result?.error);
+  setRoomConnectionHealth(busy ? "syncing" : timeout || status >= 500 || !status ? "slow" : "offline", {
+    pendingCommands,
+    latencyMs,
+    message: friendly,
+    error: friendly,
+    resetAfterMs: busy || timeout || status >= 500 ? 4500 : 0
+  });
 }
 
 function isCurrentMatchWork(token) {
@@ -19569,6 +19776,7 @@ const roomSync = {
       expectedRevision,
       reason: "Room command sent to the server."
     });
+    const commandStartedAt = updateRoomConnectionForCommandStart(commandType);
     try {
       const commandRequest = {
         method: "POST",
@@ -19615,6 +19823,11 @@ const roomSync = {
             expectedRevision,
             reason: `Retrying after transient HTTP ${response.status}; the same client event id will be replayed safely.`
           });
+          setRoomConnectionHealth("slow", {
+            pendingCommands: state.roomConnectionHealth?.pendingCommands || 1,
+            message: `${getRoomCommandLabel(commandType)} is taking longer than usual...`,
+            resetAfterMs: 0
+          });
           await waitForRoomCommandRetry();
         } catch (error) {
           requestError = error;
@@ -19632,6 +19845,12 @@ const roomSync = {
             clientEventId,
             expectedRevision,
             reason: `Retrying after a ${isAbortError(error) ? "timeout" : "network failure"}; the same client event id will be replayed safely.`
+          });
+          setRoomConnectionHealth("slow", {
+            pendingCommands: state.roomConnectionHealth?.pendingCommands || 1,
+            message: `${getRoomCommandLabel(commandType)} is taking longer than usual...`,
+            error: getFriendlyRoomCommandError(error, error?.status, commandType),
+            resetAfterMs: 0
           });
           await waitForRoomCommandRetry();
         }
@@ -19651,10 +19870,11 @@ const roomSync = {
         commandType,
         clientEventId,
         expectedRevision,
-        result: response.ok ? `Returned revision ${data.revision || 0}.` : (data.error || `HTTP ${response.status}`)
+            result: response.ok ? `Returned revision ${data.revision || 0}.` : (data.error || `HTTP ${response.status}`)
       });
       const events = Array.isArray(data.events) ? data.events : [];
       if (!response.ok || data.ok === false) {
+        const friendlyError = getFriendlyRoomCommandError(data, response.status, commandType);
         // Recovery events can be returned with a 409 (for example when shared
         // question setup fails). Apply them before surfacing the command
         // error so the initiating client cannot remain in a stale phase.
@@ -19678,12 +19898,14 @@ const roomSync = {
             recovery: true
           });
         }
-        return {
+        const failedResult = {
           ok: false,
           status: response.status,
-          error: data.error || `Room command failed with HTTP ${response.status}.`,
+          error: friendlyError,
           data
         };
+        updateRoomConnectionForCommandEnd(commandType, commandStartedAt, failedResult);
+        return failedResult;
       }
       events.forEach((event) => {
         try {
@@ -19710,12 +19932,15 @@ const roomSync = {
         clientEventId,
         events
       });
-      return {
+      const successResult = {
         ok: true,
         ...data,
         clientEventId
       };
+      updateRoomConnectionForCommandEnd(commandType, commandStartedAt, successResult);
+      return successResult;
     } catch (error) {
+      const friendlyError = getFriendlyRoomCommandError(error, error?.status, commandType);
       recordRoomDiagnosticEvent("command-error", {
         code: roomCode,
         eventType: commandType,
@@ -19726,12 +19951,15 @@ const roomSync = {
         commandType,
         clientEventId,
         expectedRevision,
-        reason: error?.message || "Room command request failed."
+        reason: friendlyError
       });
-      return {
+      const failedResult = {
         ok: false,
-        error: error?.message || "Room command request failed."
+        status: error?.status || 0,
+        error: friendlyError
       };
+      updateRoomConnectionForCommandEnd(commandType, commandStartedAt, failedResult);
+      return failedResult;
     }
   }
 };
@@ -38510,6 +38738,12 @@ function handleRoomRealtimeStatus(status = "", channel = null) {
     reason: state.realtimeRoomReady ? "Room channel is subscribed." : "Room channel is not subscribed yet."
   });
   if (state.realtimeRoomReady) {
+    setRoomConnectionHealth(state.roomConnectionHealth?.pendingCommands > 0 ? "syncing" : "connected", {
+      pendingCommands: state.roomConnectionHealth?.pendingCommands || 0,
+      message: state.roomConnectionHealth?.pendingCommands > 0
+        ? "Room sync is processing your latest action."
+        : "Realtime room sync is connected."
+    });
     if (state.realtimeRoomReconnectTimerId) {
       window.clearTimeout(state.realtimeRoomReconnectTimerId);
       state.realtimeRoomReconnectTimerId = null;
@@ -38531,7 +38765,18 @@ function handleRoomRealtimeStatus(status = "", channel = null) {
     state.roomRealtimeUnhealthySince = Date.now();
   }
   if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(String(status || "").toUpperCase())) {
+    setRoomConnectionHealth("offline", {
+      pendingCommands: state.roomConnectionHealth?.pendingCommands || 0,
+      message: "Realtime disconnected. Reconnecting...",
+      resetAfterMs: 0
+    });
     scheduleRoomRealtimeReconnect(state.realtimeRoomCode);
+  } else {
+    setRoomConnectionHealth("slow", {
+      pendingCommands: state.roomConnectionHealth?.pendingCommands || 0,
+      message: "Realtime is connecting...",
+      resetAfterMs: 0
+    });
   }
 }
 

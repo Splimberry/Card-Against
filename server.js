@@ -2880,7 +2880,19 @@ async function handleRoomCommand(req, res, code) {
     const command = normalizeRoomCommandBody(body, normalizedCode);
     await enqueueRoomCommand(normalizedCode, () => handleRoomCommandParsed(req, res, normalizedCode, command, body));
   } catch (error) {
-    sendJson(res, 400, { ok: false, error: error.message || "Room command failed." });
+    const message = String(error?.message || "Room command failed.");
+    if (message.toLowerCase().includes("room is busy processing another command")) {
+      sendJson(res, 503, {
+        ok: false,
+        retryable: true,
+        retryAfterMs: 750,
+        error: "Room is syncing another action. Please try again in a moment."
+      }, {
+        "Retry-After": "1"
+      });
+      return;
+    }
+    sendJson(res, 400, { ok: false, error: message });
   }
 }
 
