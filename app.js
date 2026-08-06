@@ -31121,6 +31121,27 @@ function showRoomRoundSetupSyncWait(message = "Waiting for the room to sync the 
   setHidden(elements.inputPanel, true);
 }
 
+function isCurrentRoundVisiblyPlayable() {
+  return Boolean(
+    state.questionId
+      && state.blackCard
+      && elements.gameStage
+      && !elements.gameStage.classList.contains("hidden")
+      && elements.inputPanel
+      && !elements.inputPanel.classList.contains("hidden")
+  );
+}
+
+function clearStaleRoundSetupWaitIfPlayable() {
+  if (!isCurrentRoundVisiblyPlayable()) {
+    return false;
+  }
+  stopLoadingMessages();
+  setHidden(elements.loadingPanel, true);
+  setHidden(elements.errorPanel, true);
+  return true;
+}
+
 async function recoverFromStaleRoomRoundSetup(error, context = {}) {
   if (!isRoomMode() || !isStaleRoomSetupError(error)) {
     return false;
@@ -31286,7 +31307,11 @@ function renderRound() {
   renderHintControls();
   renderScore();
   if (!state.renderingSyncedRoomResume) {
-    publishRoomScoreState("round-start-score");
+    try {
+      void publishRoomScoreState("round-start-score");
+    } catch (error) {
+      console.warn("Round-start score sync failed after render:", error);
+    }
   }
   if (state.isSpectator) {
     stopTimer();
@@ -31424,7 +31449,11 @@ function applyRoundSetup(setup, options = {}) {
   if (!shouldRender) {
     syncCurrentRoundSetupMetadata(setup);
     if (!options.skipPublish) {
-      publishRoomRoundSetup(setup);
+      try {
+        publishRoomRoundSetup(setup);
+      } catch (error) {
+        console.warn("Round setup publish failed during metadata sync:", error);
+      }
     }
     scheduleNextSetupPrefetch();
     return;
@@ -31438,7 +31467,11 @@ function applyRoundSetup(setup, options = {}) {
     state.renderingSyncedRoomResume = wasRenderingSyncedRoomResume;
   }
   if (!options.skipPublish) {
-    publishRoomRoundSetup(setup);
+    try {
+      publishRoomRoundSetup(setup);
+    } catch (error) {
+      console.warn("Round setup publish failed after render:", error);
+    }
   }
   scheduleNextSetupPrefetch();
   playSound("reveal");
@@ -35964,6 +35997,9 @@ async function newRound() {
         return;
       }
       console.warn(error);
+      if (clearStaleRoundSetupWaitIfPlayable()) {
+        return;
+      }
       showRoomRoundSetupSyncWait("Waiting for the room to finish syncing this round...");
     }
     return;
@@ -36368,6 +36404,9 @@ async function startGame(mode) {
     }
     if (mode === "room") {
       console.warn(error);
+      if (clearStaleRoundSetupWaitIfPlayable()) {
+        return;
+      }
       showRoomRoundSetupSyncWait("Waiting for the room to finish syncing the first question...");
       return;
     }
