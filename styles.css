@@ -7027,6 +7027,49 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   color: var(--muted);
 }
 
+.molotov-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-height: 2.15rem;
+  padding: 0.42rem 0.62rem;
+  border: 1px solid rgba(255, 102, 58, 0.48);
+  border-radius: 8px;
+  background: rgba(255, 102, 58, 0.1);
+  color: #ffc1a9;
+  font-weight: 950;
+  line-height: 1;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.molotov-button img {
+  width: 1.05rem;
+  height: 1.05rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.molotov-button:hover:not(:disabled),
+.molotov-button:focus-visible:not(:disabled) {
+  transform: translateY(-2px) scale(1.035);
+  border-color: rgba(255, 170, 132, 0.88);
+  background: rgba(255, 102, 58, 0.18);
+}
+
+.molotov-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+  transform: none;
+}
+
+.molotov-button.molotov-used {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+
 .input-panel h2 {
   max-width: none;
   font-size: clamp(1.05rem, 2vw, 1.45rem);
@@ -11607,6 +11650,42 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   border-left-width: 1px;
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.055);
+}
+
+.xray-power-card:has(.xray-delete-button) {
+  grid-template-columns: 2.55rem minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.xray-delete-button {
+  align-self: center;
+  min-height: 2rem;
+  padding: 0.42rem 0.58rem;
+  border: 1px solid rgba(255, 77, 125, 0.5);
+  border-radius: 7px;
+  background: rgba(255, 77, 125, 0.1);
+  color: #ffb4c7;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 950;
+  cursor: pointer;
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.xray-delete-button:hover,
+.xray-delete-button:focus-visible {
+  transform: translateY(-1px) scale(1.03);
+  border-color: rgba(255, 135, 164, 0.9);
+  background: rgba(255, 77, 125, 0.2);
+  color: #fff0f4;
+}
+
+.xray-delete-button:active {
+  transform: scale(0.98);
 }
 
 .xray-power-card[data-rarity="grey"] {

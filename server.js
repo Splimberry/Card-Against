@@ -35,7 +35,14 @@ const maxRoomEvents = 100;
 const roomRequestMaxBytes = 750_000;
 // Keep this list deliberately small while the server power engine is being
 // migrated. Unlisted powers continue through the compatibility path below.
-const serverPowerEngineMigratedIds = new Set(["time_bender"]);
+const serverPowerEngineMigratedIds = new Set([
+  "time_bender",
+  "lightning_strike",
+  "zap_strike",
+  "shameless",
+  "sin_pride",
+  "hard_reset"
+]);
 const hostReconnectGraceMs = 60 * 1000;
 const participantReconnectGraceMs = 60 * 1000;
 const participantActiveStaleMs = 3 * 60 * 1000;
@@ -3159,6 +3166,12 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
   participant.submittedAt = submittedAt;
   participant.usedHintRound = answerState.usedHint ? currentRound : 0;
 
+  autoSubmitRoomBotsWhenOnlyBotsPending(room, {
+    matchId: currentMatchId,
+    round: currentRound,
+    clientEventId: command.clientEventId
+  });
+  const submissionStatusSnapshot = getRoomSubmissionStatusSnapshot(room, currentMatchId, currentRound);
   stampRoomEvent(room, "answer_submitted", {
     clientEventId: command.clientEventId,
     actorId: participantId,
@@ -3175,12 +3188,8 @@ async function handleRoomCommandSubmitAnswer(req, res, room, command, rawBody = 
     remainingTime,
     submissionStatus: answerStatus,
     autoSubmitted: answerState.autoSubmitted,
-    usedHint: answerState.usedHint
-  });
-  autoSubmitRoomBotsWhenOnlyBotsPending(room, {
-    matchId: currentMatchId,
-    round: currentRound,
-    clientEventId: command.clientEventId
+    usedHint: answerState.usedHint,
+    submissionStatusSnapshot
   });
   startRoomGradingTransition(room, {
     reason: "all-submitted",
@@ -4374,14 +4383,15 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     });
     return;
   }
-  const serverActionPowerState = action
+  const serverActionPowerState = action?.type === "use"
     ? applyServerPowerAction(previousPowerState, action, command.clientEventId)
     : null;
-  const actionPowerState = serverActionPowerState
-    ? isServerPowerEngineMigrated(action.powerId)
+  let actionPowerState = powerState;
+  if (action?.type === "use" && serverActionPowerState) {
+    actionPowerState = isServerPowerEngineMigrated(action.powerId)
       ? serverActionPowerState
-      : overlayServerPowerActionState(powerState, serverActionPowerState, actorParticipantId)
-    : powerState;
+      : overlayServerPowerActionState(powerState, serverActionPowerState, actorParticipantId);
+  }
   const mergedPowerState = stampRoomPowerStateServerRevision(
     previousPowerState,
     actionPowerState,
@@ -4403,8 +4413,16 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
   }
   const timerState = applyRoomTimerAction(
     room,
-    action?.powerId === "time_bender"
-      ? { ...body, powerId: "time_bender", timerAction: { type: "time_bender" }, actorParticipantId }
+    action?.type === "use" && action?.powerId === "time_bender"
+      ? {
+        ...body,
+        powerId: "time_bender",
+        timerAction: {
+          type: "time_bender",
+          multiplier: clampServerNumber(action.meta?.timerMultiplier, 2, 4, 2)
+        },
+        actorParticipantId
+      }
       : body
   );
   const powerEventPayload = {
@@ -4421,7 +4439,7 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     powerState: mergedPowerState,
     timerState,
     action: action || null,
-    serverAuthoritative: Boolean(action && isServerPowerEngineMigrated(action.powerId))
+    serverAuthoritative: Boolean(action?.type === "use" && isServerPowerEngineMigrated(action.powerId))
   };
   const previousHandsSignature = JSON.stringify(previousPowerState?.hands || []);
   const nextHandsSignature = JSON.stringify(mergedPowerState.hands || []);
@@ -4462,7 +4480,7 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     deletedPowerId: String(body.deletedPowerId || "").slice(0, 80),
     stolenPowerId: String(body.stolenPowerId || "").slice(0, 80),
     action: action || null,
-    serverAuthoritative: Boolean(action && isServerPowerEngineMigrated(action.powerId)),
+    serverAuthoritative: Boolean(action?.type === "use" && isServerPowerEngineMigrated(action.powerId)),
     powerState: responsePowerState,
     powerRevision: responsePowerState.revision || 0,
     hands: responsePowerState.hands,
@@ -4851,14 +4869,19 @@ async function handleRoomCommandParticipantPresence(req, res, room, command, raw
     eventPayload.round = clampServerNumber(finalParticipant.submittedRound, 1, 100, activeRoom.game?.round || 1);
     eventPayload.answer = String(finalParticipant.answer || "").slice(0, 500);
     eventPayload.remainingTime = clampServerNumber(finalParticipant.remainingTime, 0, 600, 0);
-  }
-  stampRoomEvent(activeRoom, eventType, eventPayload);
-  if (answerSubmitted) {
     autoSubmitRoomBotsWhenOnlyBotsPending(activeRoom, {
       matchId: eventPayload.matchId,
       round: eventPayload.round,
       clientEventId: command.clientEventId
     });
+    eventPayload.submissionStatusSnapshot = getRoomSubmissionStatusSnapshot(
+      activeRoom,
+      eventPayload.matchId,
+      eventPayload.round
+    );
+  }
+  stampRoomEvent(activeRoom, eventType, eventPayload);
+  if (answerSubmitted) {
     startRoomGradingTransition(activeRoom, {
       reason: "all-submitted",
       force: false,
@@ -5499,6 +5522,12 @@ function applyRoomTimerAction(room = {}, body = {}) {
   }
 
   const now = Date.now();
+  const requestedMultiplier = clampServerNumber(
+    action?.multiplier || body.timerMultiplier,
+    2,
+    4,
+    2
+  );
   const matchSettings = game.matchSettings || room.settings || {};
   const baseDurationMs = clampServerNumber(game.baseDurationMs, 5000, 60000, getRoomBaseTimerDurationMs(matchSettings, room.settings));
   const existingTimers = normalizeRoomParticipantTimers(game.participantTimers);
@@ -5529,13 +5558,13 @@ function applyRoomTimerAction(room = {}, body = {}) {
             status: "running"
           }];
         }
-        if ((Number(timer.speedMultiplier) || 1) >= 2) {
+        if ((Number(timer.speedMultiplier) || 1) >= requestedMultiplier) {
           return [participantId, timer];
         }
         return [participantId, {
           ...timer,
-          endsAt: now + Math.ceil(remainingMs / 2),
-          speedMultiplier: 2,
+          endsAt: now + Math.ceil(remainingMs / requestedMultiplier),
+          speedMultiplier: requestedMultiplier,
           status: "running"
         }];
       })
@@ -5589,6 +5618,42 @@ function getParticipantAnswerStateForRound(participant = {}, answers = {}, match
     remainingTime: clampServerNumber(participant.remainingTime, 0, 600, 0),
     matchId,
     round
+  };
+}
+
+function getRoomSubmissionStatusSnapshot(room = {}, matchId = "", round = 0) {
+  const game = room.game && typeof room.game === "object" ? room.game : {};
+  const normalizedMatchId = String(matchId || game.matchId || "").slice(0, 80);
+  const normalizedRound = clampServerNumber(round || game.round, 0, 100, 0);
+  const answers = normalizeRoomAnswerState(game.answers, normalizedMatchId, normalizedRound);
+  const statuses = getRoomGameplayParticipants(room)
+    .map((participant) => {
+      const participantId = String(participant.id || "").slice(0, 80);
+      if (!participantId) {
+        return null;
+      }
+      const answer = getParticipantAnswerStateForRound(participant, answers, normalizedMatchId, normalizedRound);
+      return {
+        participantId,
+        status: answer ? answer.status : "pending",
+        autoSubmitted: Boolean(answer?.autoSubmitted),
+        remainingTime: answer ? clampServerNumber(answer.remainingTime, 0, 600, 0) : null
+      };
+    })
+    .filter(Boolean);
+  const submittedParticipantIds = statuses
+    .filter((entry) => entry.status === "submitted" || entry.status === "timed_out")
+    .map((entry) => entry.participantId);
+  const pendingParticipantIds = statuses
+    .filter((entry) => entry.status === "pending")
+    .map((entry) => entry.participantId);
+  return {
+    matchId: normalizedMatchId,
+    round: normalizedRound,
+    submittedParticipantIds,
+    pendingParticipantIds,
+    allSubmitted: pendingParticipantIds.length === 0,
+    statuses
   };
 }
 
@@ -6644,8 +6709,26 @@ function validateRoomPowerActionIntent(room, previousPowerState, action, actorPa
   const actorId = String(actorParticipantId || "").trim().slice(0, 120);
   const currentMatchId = String(room?.game?.matchId || "").trim().slice(0, 80);
   const currentRound = clampServerNumber(room?.game?.round, 0, 100, 0);
-  if (!action || action.type !== "use") {
+  if (!action || !["use", "effect_sync"].includes(action.type)) {
     return { status: 400, error: "Power use needs a valid action intent." };
+  }
+  if (action.type === "effect_sync") {
+    if (action.powerId && !action.powerId.includes("cocktail_mix") && !action.powerId.includes("xray_hacks")) {
+      return { status: 400, error: "Effect sync is only available for persistent power effects." };
+    }
+    if (action.actorParticipantId && action.actorParticipantId !== actorId) {
+      return { status: 403, error: "Effect sync actor does not match the authenticated participant." };
+    }
+    if (currentMatchId && action.matchId && action.matchId !== currentMatchId) {
+      return { status: 409, error: "Effect state belongs to a previous match." };
+    }
+    if (currentRound && action.round && action.round !== currentRound) {
+      return { status: 409, error: "Effect state belongs to a different round." };
+    }
+    if (String(room?.game?.status || "") !== "playing") {
+      return { status: 409, error: "Effects cannot be updated outside an active round." };
+    }
+    return null;
   }
   if (!action.powerId) {
     return { status: 400, error: "Power use action is missing a power id." };
@@ -7569,6 +7652,12 @@ async function getSeedQuestionSetup(options = {}) {
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : [];
   const seed = String(options.setupSeed || `${Date.now()}-${Math.random()}`);
   const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || options.language);
+  const preferredDifficulty = ["easy", "medium", "hard"].includes(String(options.preferredDifficulty || ""))
+    ? String(options.preferredDifficulty)
+    : "";
+  const preferredQuestionStyle = ["standard", "multiple-choice"].includes(String(options.preferredQuestionStyle || ""))
+    ? String(options.preferredQuestionStyle)
+    : "";
   const multipleChoiceChancePercent = getMultipleChoiceChancePercent(options.round, options.totalRounds);
   const runtimeQuestionBank = await getRuntimeQuestionBank();
   const languagePool = runtimeQuestionBank.filter((question) => {
@@ -7580,7 +7669,14 @@ async function getSeedQuestionSetup(options = {}) {
     : [];
   const broadPool = languagePool.filter((question) => enabledThemes.includes(question.theme) && !isRepeatedQuestion(question.blackCard, recentBlackCards));
   const fallbackPool = languagePool.filter((question) => enabledThemes.includes(question.theme));
-  const pool = preferredPool.length ? preferredPool : broadPool.length ? broadPool : fallbackPool;
+  const themePool = preferredPool.length ? preferredPool : broadPool.length ? broadPool : fallbackPool;
+  const difficultyPool = preferredDifficulty
+    ? themePool.filter((question) => question.difficulty === preferredDifficulty)
+    : themePool;
+  const stylePool = preferredQuestionStyle
+    ? difficultyPool.filter((question) => (question.questionStyle || "standard") === preferredQuestionStyle)
+    : difficultyPool;
+  const pool = stylePool.length ? stylePool : difficultyPool.length ? difficultyPool : themePool;
   if (!pool.length) {
     return null;
   }
