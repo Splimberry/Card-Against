@@ -31104,6 +31104,9 @@ function resetRoundUiForLoading(options = {}) {
 }
 
 function showWaitingForHostRoundSetup(round = state.round) {
+  if (clearStaleRoundSetupWaitIfPlayable()) {
+    return;
+  }
   stopLoadingMessages();
   elements.loadingPanel.dataset.loadingState = "waiting-host";
   elements.loadingText.textContent = `Waiting for the host to deal round ${round}...`;
@@ -31113,6 +31116,9 @@ function showWaitingForHostRoundSetup(round = state.round) {
 }
 
 function showRoomRoundSetupSyncWait(message = "Waiting for the room to sync the next question...") {
+  if (clearStaleRoundSetupWaitIfPlayable()) {
+    return;
+  }
   stopLoadingMessages();
   elements.loadingPanel.dataset.loadingState = "waiting-host";
   elements.loadingText.textContent = message;
@@ -31127,8 +31133,11 @@ function isCurrentRoundVisiblyPlayable() {
       && state.blackCard
       && elements.gameStage
       && !elements.gameStage.classList.contains("hidden")
-      && elements.inputPanel
-      && !elements.inputPanel.classList.contains("hidden")
+      && (
+        (elements.inputPanel && !elements.inputPanel.classList.contains("hidden"))
+        || (elements.answerProgressPanel && !elements.answerProgressPanel.classList.contains("hidden"))
+        || (elements.powerPanel && !elements.powerPanel.classList.contains("hidden"))
+      )
   );
 }
 
