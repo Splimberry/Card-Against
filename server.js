@@ -2741,7 +2741,7 @@ function getRoomCommandActorId(command = {}) {
   ).slice(0, 120);
 }
 
-function replayRoomCommandIfAlreadyApplied(req, res, room, command, rawBody = {}) {
+async function replayRoomCommandIfAlreadyApplied(req, res, room, command, rawBody = {}) {
   const events = getRoomCommandEventsByClientId(room, command.clientEventId);
   if (!events.length) {
     return false;
@@ -2759,19 +2759,28 @@ function replayRoomCommandIfAlreadyApplied(req, res, room, command, rawBody = {}
   }
 
   const includeSubmittedAnswers = shouldExposeRoomAnswers(room, { includePrivateSecrets: hostAuthenticated });
+  const replayEvents = events.map((event) => sanitizeRoomEventForClient(event, {
+    includeSubmittedAnswers,
+    includePrivateSecrets: hostAuthenticated
+  }));
+  // Persistence and delivery are separate operations. A command can be
+  // committed successfully while the original realtime publish is lost or
+  // while the initiating request times out. Republish the same immutable
+  // event ids on an idempotent retry so subscribers can recover immediately;
+  // their event-id/revision dedupe makes this safe when the first publish did
+  // arrive.
+  const serverBroadcast = await scheduleServerRoomRealtimeBroadcast(room.code, replayEvents, {
+    includeSubmittedAnswers,
+    includePrivateSecrets: hostAuthenticated
+  });
   const response = {
     ok: true,
     roomCode: room.code,
     revision: getRoomRevision(room),
     updatedAt: room.updatedAt,
     duplicate: true,
-    // The event was already published with the original command. The retry
-    // receives it here but must not publish a second realtime delivery.
-    serverBroadcast: true,
-    events: events.map((event) => sanitizeRoomEventForClient(event, {
-      includeSubmittedAnswers,
-      includePrivateSecrets: hostAuthenticated
-    }))
+    serverBroadcast,
+    events: replayEvents
   };
   const participantId = String(command.participantId || "").slice(0, 80);
   if (participantId) {
@@ -2910,7 +2919,7 @@ async function handleRoomCommandParsed(req, res, normalizedCode, command, body) 
     if (!validateRoomCommandEnvelope(command, room, res)) {
       return;
     }
-    if (replayRoomCommandIfAlreadyApplied(req, res, room, command, body)) {
+    if (await replayRoomCommandIfAlreadyApplied(req, res, room, command, body)) {
       return;
     }
 

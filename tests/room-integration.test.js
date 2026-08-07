@@ -427,6 +427,11 @@ function testClientUsesRoomCommandEndpointsForMultiplayerWrites() {
   const legacyWriteEndpointPattern = /\/api\/rooms\/[^"'`]*\/(?:presence|chat|power-state|game|lobby|settings|moderation|answer|round-setup|round-advancing|round-result|grading|round-skip|leave)\b/g;
   const matches = source.match(legacyWriteEndpointPattern) || [];
   assert.deepEqual(matches, [], "app.js should use /api/rooms/:code/commands for multiplayer writes.");
+  assert.equal(
+    source.includes('roomSync.sendCommand("resolve_all_submitted"'),
+    false,
+    "The browser must not infer or race the server-authoritative grading transition."
+  );
 }
 
 function makeQuestion(id, overrides = {}) {
@@ -4250,6 +4255,69 @@ async function testRoomCommandClientEventIdIsIdempotent() {
   );
 }
 
+async function testDuplicateRoomCommandRepublishesPersistedEvents() {
+  const code = makeCode(8195);
+  const clientEventId = `${code}:settings:lost-delivery`;
+  await upsertRoom(makeRoom(code));
+
+  const previousFetch = global.fetch;
+  const previousBroadcastMode = process.env.SERVER_REALTIME_BROADCAST;
+  const broadcasts = [];
+  process.env.SERVER_REALTIME_BROADCAST = "true";
+  global.fetch = async (url, options = {}) => {
+    broadcasts.push({
+      url: String(url),
+      body: JSON.parse(String(options.body || "{}"))
+    });
+    return { ok: true, status: 200 };
+  };
+
+  try {
+    const first = await roomCommand(code, "update_settings", {
+      hostParticipantId: "host-client",
+      status: "lobby",
+      settings: {
+        ...makeRoom(code).settings,
+        timerSeconds: 45
+      }
+    }, {}, { clientEventId });
+    assert.equal(first.response.status, 200, first.payload.error);
+    const firstRevision = first.payload.revision;
+    assert.ok(first.payload.events.some((event) => event.type === "settings_updated"));
+
+    // Simulate the client retrying after the original response or realtime
+    // delivery was lost. The stored command must be replayed to subscribers.
+    broadcasts.length = 0;
+    const retry = await roomCommand(code, "update_settings", {
+      hostParticipantId: "host-client",
+      status: "lobby",
+      settings: {
+        ...makeRoom(code).settings,
+        timerSeconds: 10
+      }
+    }, {}, { clientEventId });
+    assert.equal(retry.response.status, 200, retry.payload.error);
+    assert.equal(retry.payload.duplicate, true);
+    assert.equal(retry.payload.revision, firstRevision);
+    assert.equal(broadcasts.length, 1);
+
+    const roomMessages = broadcasts[0].body.messages.filter((message) => (
+      message.topic === `trivia-against-ai:room:${code}`
+    ));
+    assert.equal(roomMessages.length, 1);
+    assert.equal(roomMessages[0].payload.sourceId, "server");
+    assert.equal(roomMessages[0].payload.payload.clientEventId, clientEventId);
+    assert.equal(roomMessages[0].payload.payload.revision, firstRevision);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousBroadcastMode === undefined) {
+      delete process.env.SERVER_REALTIME_BROADCAST;
+    } else {
+      process.env.SERVER_REALTIME_BROADCAST = previousBroadcastMode;
+    }
+  }
+}
+
 async function testRoomUsesStoredHostQuestionLanguage() {
   const code = makeCode(8143);
   const room = makeRoom(code, {
@@ -7213,6 +7281,7 @@ async function main() {
   await testDuplicateRoomAnswerCanCompleteStuckAllSubmittedRound();
   await testRoomRoundAdvancingEndpointStampsEvent();
   await testRoomCommandClientEventIdIsIdempotent();
+  await testDuplicateRoomCommandRepublishesPersistedEvents();
   await testRoomStartMatchPreservesInitialPowerState();
   await testRoomRoundSetupEndpointCreatesSharedSetup();
   await testRoomRoundSetupRecoversMissingPreparationState();
