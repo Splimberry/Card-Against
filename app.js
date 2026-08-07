@@ -14041,6 +14041,43 @@ function isRoomCurrentRoundGradingLocked(round = state.round, matchId = getCurre
   );
 }
 
+function applyRoomRoundResultScoreState(result = null) {
+  const syncedResult = normalizeRoomRoundResultPayload(result);
+  if (!syncedResult || !isRoomMode()) {
+    return false;
+  }
+  const entriesByParticipant = new Map();
+  const addEntries = (entries = []) => {
+    (Array.isArray(entries) ? entries : []).forEach((entry) => {
+      const participantId = String(entry?.participantId || "").trim();
+      if (participantId) {
+        entriesByParticipant.set(participantId, entry);
+      }
+    });
+  };
+  addEntries(syncedResult.scoreState);
+  addEntries(syncedResult.powerState?.players);
+  addEntries(syncedResult.resultSummary?.leaderboard);
+
+  let changed = false;
+  entriesByParticipant.forEach((entry, participantId) => {
+    const owner = getRoomOwnerForParticipantId(participantId)
+      || (getPlayer(entry.owner)?.participantId === participantId ? entry.owner : "");
+    const player = owner ? getPlayer(owner) : null;
+    if (!player) {
+      return;
+    }
+    const score = Math.max(0, Math.round(Number(entry.score ?? entry.scoreAfter) || 0));
+    const streak = Math.max(0, Math.round(Number(entry.streak ?? entry.streakAfter) || 0));
+    if (player.score !== score || player.streak !== streak) {
+      setScore(owner, score);
+      setOwnerStreak(owner, streak, { force: true });
+      changed = true;
+    }
+  });
+  return changed;
+}
+
 function applyAuthoritativeRoomResultState(result = null, options = {}) {
   const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
   if (!syncedResult || !isRoomMode()) {
@@ -14063,6 +14100,7 @@ function applyAuthoritativeRoomResultState(result = null, options = {}) {
       effects: syncedPowerState.effects
     });
   }
+  applyRoomRoundResultScoreState(syncedResult);
   if (options.render !== false) {
     renderScore();
     renderPowerUps();
@@ -42274,6 +42312,9 @@ async function playRound(rawInput, options = {}) {
     return;
   }
   closeOverlayMenus({ reason: "grading" });
+  // A previous failed request may have left the error panel mounted while the
+  // same round successfully completed through a fallback or synced result.
+  setHidden(elements.errorPanel, true);
   const syncedRoundResult = options.roundResult ? normalizeRoomRoundResultPayload(options.roundResult) : null;
   if (isRoomMode() && (!isCurrentHost() || state.joiningRoom) && !syncedRoundResult) {
     if (!state.roomRoundResolving) {
@@ -42526,6 +42567,7 @@ async function playRound(rawInput, options = {}) {
   }
   animateTableLayoutChange(() => {
     setHidden(elements.verdictPanel, false);
+    setHidden(elements.errorPanel, true);
   });
   restartAnimation(elements.verdictPanel, "revealed");
   elements.nextRoundButton.disabled = false;
