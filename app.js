@@ -8364,6 +8364,16 @@ function updateRatingBadge(badge, rating, reason = "") {
   }
 }
 
+function getBribedGradingReason(payout = {}) {
+  if (payout?.bribedWinner || payout?.tag === "Won by bribing") {
+    return "Won by bribing: the bribe forced this answer to win.";
+  }
+  if (payout?.bribedLoser || payout?.tag === "Lost due to bribe") {
+    return "Lost due to bribe: this correct answer was forced to lose.";
+  }
+  return "";
+}
+
 function shouldShowInlineGradingReason(reason = "") {
   return /^(?:AI reviewed|AI took a second look)/i.test(String(reason || ""));
 }
@@ -8408,7 +8418,7 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
         correct: Boolean(payout.bribedWinner)
       }
       : ratings[cardIndex];
-    const reason = state.currentRoundGradingReasons?.[cardIndex] || "";
+    const reason = getBribedGradingReason(payout) || state.currentRoundGradingReasons?.[cardIndex] || "";
     updateRatingBadge(badge, rating, reason);
     const gradingReason = card.querySelector(".grading-reason");
     updateInlineGradingReason(gradingReason, reason);
@@ -14619,7 +14629,7 @@ function buildRoomRoundResultJudgements(result, cardRatings = state.currentRound
         correct: bribedWinner ? true : bribedLoser ? false : Boolean(rating.correct || correctSet.has(index)),
         tag: String(payout.tag || rating.label || (correctSet.has(index) ? "Correct" : "Incorrect")),
         bonus: Math.round(Number(payout.tagBonus ?? rating.bonus) || 0),
-        reason: gradingReasons[index] || getAnswerGradingReason(answer, rating, result, index),
+        reason: getBribedGradingReason(payout) || gradingReasons[index] || getAnswerGradingReason(answer, rating, result, index),
         aiReviewed: aiReviewedSet.has(index),
         aiSecondOpinion: aiSecondOpinionSet.has(index)
       };
@@ -43379,7 +43389,7 @@ function createNoCorrectAward() {
   playedEntries
     .filter((entry) => entry.power.type === "participation")
     .forEach((entry) => {
-      if (isChaosInfusedPower(entry.power)) {
+      if (isParticipationAwardProMaxEntry(entry)) {
         return;
       }
       deltas[entry.owner] += 100;
@@ -43429,9 +43439,9 @@ function createNoCorrectAward() {
       return !blocked;
     })
     .forEach((entry) => {
-      addOwnerDurationRounds(state.freezeProtection, entry.owner, 2);
+      addOwnerDurationRounds(state.freezeProtection, entry.owner, 3);
       if (isChaosInfusedPower(entry.power)) {
-        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, 2);
+        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, 3);
       }
       queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
@@ -43527,6 +43537,11 @@ function hasDeductionReflection(owner, playedEntries) {
     || playedEntries.some((entry) => entry.owner === owner && entry.power.type === "deep_freeze" && isChaosInfusedPower(entry.power));
 }
 
+function isParticipationAwardProMaxEntry(entry) {
+  return entry?.power?.type === "participation"
+    && Boolean(entry.power.participationProMax || isChaosInfusedPower(entry.power));
+}
+
 function applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events) {
   getActiveOwners().forEach((owner) => {
     if (deltas[owner] < 0 && hasDeductionProtection(owner, playedEntries, freezeSnapshot, permafrostSnapshot)) {
@@ -43588,8 +43603,7 @@ function applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafr
 
 function applyParticipationAwardProMaxEntries(playedEntries, owners, winnerSet, startingScores, deltas, events) {
   const entries = playedEntries.filter((entry) => (
-    entry.power.type === "participation"
-    && isChaosInfusedPower(entry.power)
+    isParticipationAwardProMaxEntry(entry)
     && !winnerSet.has(entry.owner)
   ));
   if (!entries.length) {
@@ -44211,7 +44225,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
     .filter((entry) => entry.power.type === "participation")
     .forEach((entry) => {
       if (!winnerSet.has(entry.owner)) {
-        if (isChaosInfusedPower(entry.power)) {
+        if (isParticipationAwardProMaxEntry(entry)) {
           return;
         }
         deltas[entry.owner] += 100;
@@ -44521,9 +44535,9 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
       return !blocked;
     })
     .forEach((entry) => {
-      addOwnerDurationRounds(state.freezeProtection, entry.owner, 2);
+      addOwnerDurationRounds(state.freezeProtection, entry.owner, 3);
       if (isChaosInfusedPower(entry.power)) {
-        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, 2);
+        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, 3);
       }
       queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
