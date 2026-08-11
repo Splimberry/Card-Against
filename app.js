@@ -472,7 +472,7 @@ const powerDeck = [
   { id: "thermal_scythe", name: "Thermal Scythe", rarity: "doom", short: "streak harvest", description: "Pick a target. Steal up to 3 streak from everyone else, then hit the target for 500 x your streak plus 2% x your streak. Their remaining streak transfers to you, and you gain 3 rounds of immunity to all streak reductions.", type: "thermal_scythe", targeted: true, immediate: true, doom: true },
   { id: "ragnarok_protocol", name: "Ragnarok Protocol", rarity: "doom", short: "rank multiplier", description: "For this round, multiply every player's positive point gain by 50% times their leaderboard position. First place gets 50%; tenth place gets 500%.", type: "ragnarok_protocol", doom: true },
   { id: "collapsing_star", name: "Collapsing Star", rarity: "doom", short: "wipe the room", description: "Immediately mark everyone else with Target Wipe for 3 rounds. After that, every round randomly marks a player ahead of you for 3 rounds. If a marked player wins, they lose 12.5% per stack, lose 2 power-ups per stack, and retain only 75% of their round gain per stack.", type: "collapsing_star", immediate: true, doom: true },
-  { id: "admin_pass", name: "Admin Pass", rarity: "doom", short: "bribe up to 3", description: "Choose up to 3 players. Correct answers from your targets lose this round, and you gain the highest payout they would have earned.", type: "admin_pass", targeted: true, doom: true },
+  { id: "admin_pass", name: "Admin Pass", rarity: "doom", short: "bribe up to 2", description: "Choose up to 2 players. Correct answers from your targets lose this round, and you gain the highest payout they would have earned.", type: "admin_pass", targeted: true, doom: true },
   { id: "null_protocol", name: "Null Protocol", rarity: "doom", short: "null up to 3", description: "Choose up to 3 players. For the rest of the match they cannot gain positive status effects or bonus points, and Null Corruption reduces their point gains by 10% plus 5% for every wrong answer.", type: "null_protocol", targeted: true, immediate: true, doom: true }
 ];
 const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
@@ -25557,7 +25557,13 @@ function chooseTargetOwner(owner, power) {
 }
 
 function getMultiTargetRequirement(power) {
-  if (power?.type === "admin_pass" || power?.type === "null_protocol") {
+  if (power?.type === "admin_pass") {
+    return { min: 1, max: 2, label: "Choose up to 2 players" };
+  }
+  if (power?.type === "null_protocol") {
+    return { min: 1, max: 3, label: "Choose up to 3 players" };
+  }
+  if (power?.type === "soul_link" && isChaosInfusedPower(power)) {
     return { min: 1, max: 3, label: "Choose up to 3 players" };
   }
   if (power?.type === "cocktail_mix" && isChaosInfusedPower(power)) {
@@ -29014,25 +29020,35 @@ function consumeImmediatePower(owner, power, meta = {}) {
       };
     }
     const limit = getPowerHandLimit(owner);
-    const reservedLimit = isChaosInfusedPower(power) ? Math.max(0, limit - 1) : limit;
+    const capsuleState = state.timeCapsuleOwners?.[owner];
+    const capsulePowerId = typeof capsuleState === "object" ? String(capsuleState.powerId || "") : "";
+    const capsulePower = getPowerById(capsulePowerId);
+    const hasPermanentCapsuleSlot = Boolean(capsulePowerId && getEffectStackCount(capsuleState) > 0);
+    const reservedLimit = Math.max(0, limit - (hasPermanentCapsuleSlot ? 1 : 0));
     const hand = [];
-    for (let index = 0; index < reservedLimit; index += 1) {
-      const rarityPool = ["blue", "purple", "gold"];
-      const rarity = rarityPool[Math.floor(Math.random() * rarityPool.length)];
-      const powerId = drawPowerByRarity(rarity, hand, getPowerDrawOptions(owner));
-      if (powerId) {
-        hand.push(powerId);
+    while (hand.length < reservedLimit) {
+      const powerId = drawPowerCard(
+        [...hand, ...(capsulePower ? [capsulePower.id] : [])],
+        { ...getPowerDrawOptions(owner), minRarity: "blue" }
+      );
+      if (!powerId) {
+        break;
       }
+      hand.push(powerId);
     }
-    if (isChaosInfusedPower(power) && previousRoundPower) {
-      hand.push(previousRoundPower);
+    if (hasPermanentCapsuleSlot) {
+      hand.push(capsulePower.id);
       state.timeCapsuleOwners[owner] = {
         count: Math.max(1, getEffectStackCount(state.timeCapsuleOwners[owner])),
-        powerId: previousRoundPower
+        powerId: capsulePower.id
       };
     }
     state.powerHands[owner] = hand;
     markPowerHandAnimation(owner, hand, "refresh");
+    updateLatestPlayedPowerMeta(owner, {
+      refillCount: Math.max(0, hand.length - (hasPermanentCapsuleSlot ? 1 : 0)),
+      preservedTimeCapsule: hasPermanentCapsuleSlot
+    });
   }
 
   if (power.type === "gamblers_dream") {
