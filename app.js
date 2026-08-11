@@ -10127,12 +10127,12 @@ function refillPowerHandToLimit(owner, reason = "to full") {
   const hand = [...(state.powerHands[owner] || [])];
   const added = [];
   while (hand.length < limit) {
-    const powerId = drawPowerCard([...hand, ...added], getPowerDrawOptions(owner));
+    const powerId = drawPowerCard(hand, getPowerDrawOptions(owner));
     if (!powerId) {
       break;
     }
-    added.push(powerId);
     hand.push(powerId);
+    added.push(powerId);
   }
   state.powerHands[owner] = hand;
   markFreshPowerUps(owner, added);
@@ -22439,10 +22439,21 @@ function refillPowerTunnellingHand(owner, reason = "from Power Tunnelling") {
   const events = [];
   while ((state.powerHands[owner] || []).length < getPowerHandLimit(owner)) {
     const event = refillPowerSlotFromRandomPlayer(owner, reason);
-    if (!event) {
+    if (event) {
+      events.push(event);
+      continue;
+    }
+
+    // Power Tunnelling prefers stolen cards, but it still promises to fill the
+    // hand. Use the normal deck only when every other participant is empty.
+    const hand = [...(state.powerHands[owner] || [])];
+    const powerId = drawPowerCard(hand, getPowerDrawOptions(owner));
+    if (!powerId) {
       break;
     }
-    events.push(event);
+    state.powerHands[owner] = [...hand, powerId];
+    markFreshPowerUps(owner, [powerId]);
+    events.push(`${getOwnerLabel(owner)} drew ${getPowerById(powerId)?.name || "a power-up"} ${reason} because no other player had a card to steal.`);
   }
   return events;
 }
