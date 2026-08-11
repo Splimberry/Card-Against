@@ -17494,6 +17494,11 @@ function startSupabaseRealtime() {
   const channel = state.supabaseClient.channel("trivia-against-ai:rooms", {
     config: { broadcast: { self: false } }
   });
+  // Store the channel before subscribing. Supabase can report SUBSCRIBED
+  // synchronously when the socket is already warm; the callback must see the
+  // current channel so it can mark realtime healthy and start room sync.
+  state.realtimeLobbyChannel = channel;
+  state.realtimeLobbyReady = false;
   channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
     handleRealtimeRoomChange(payload || {});
   });
@@ -17519,7 +17524,6 @@ function startSupabaseRealtime() {
       scheduleSupabaseLobbyReconnect();
     }
   });
-  state.realtimeLobbyChannel = channel;
 }
 
 function scheduleSupabaseLobbyReconnect(delayMs = 350) {
@@ -17587,6 +17591,25 @@ function startRoomRealtime(code = state.roomSettings.code) {
     status: "connecting",
     reason: "Subscribing to the room realtime channel."
   });
+}
+
+async function ensureRoomRealtimeReady(code = state.roomSettings.code) {
+  const roomCode = String(code || "").trim().toUpperCase();
+  if (!roomCode || roomCode === "CAI-0000") {
+    return false;
+  }
+  try {
+    // Guests intentionally skip Supabase auth during initial page load, but a
+    // joined room still needs the anonymous client for its room channel.
+    await ensureSupabaseAuthReady({ realtime: true, preserveGuest: true });
+  } catch (error) {
+    console.warn("Room realtime initialization failed:", error?.message || error);
+  }
+  if (!state.supabaseClient) {
+    return false;
+  }
+  startRoomRealtime(roomCode);
+  return Boolean(state.realtimeRoomChannel && state.realtimeRoomCode === roomCode);
 }
 
 function stopRoomRealtime() {
@@ -42458,7 +42481,6 @@ async function joinHostedRoom(code, options = {}) {
 
     state.roomSettings = { ...room.settings };
     syncRoomMatchStateFromSettings(state.roomSettings, { render: false, resetTimer: true });
-    startRoomRealtime(state.roomSettings.code);
     state.joiningRoom = room;
     state.isSpectator = shouldSpectate || (!reconnectAsPlayer && room.status !== "lobby");
     state.roomSessionId += 1;
@@ -42467,12 +42489,18 @@ async function joinHostedRoom(code, options = {}) {
     state.roomClosedNotice = "";
     state.currentOwner = state.isSpectator ? "spectator" : "opponent";
     state.currentRoomStatus = room.status === "lobby" ? "lobby" : "in-progress";
+    state.mode = "room";
     state.roomParticipants = normalizeRoomParticipantsList(room.participants);
+    // Start the guest room channel while the join request is in flight. This
+    // closes the lobby race where a player joined before the host began and
+    // therefore missed the room's first authoritative round event.
+    const roomRealtimePromise = ensureRoomRealtimeReady(state.roomSettings.code);
     const joinedRoom = await syncJoinedRoomPresence(room, state.roomSessionId, {
       roomPassword: typedPassword,
       fullRoomState: state.isSpectator || room.status !== "lobby",
       rejoin: reconnectAsPlayer || canReclaimCurrentTabParticipant
     });
+    await roomRealtimePromise;
     if (!joinedRoom) {
       clearLocalRoomState();
       startSupabaseRealtime();
