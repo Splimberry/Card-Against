@@ -3636,6 +3636,7 @@ const state = {
   lastBroadcastAnswerDraft: "",
   spectatorRoundResultPlaybackKey: "",
   roomRoundResultPlaybackKey: "",
+  roomRoundResultPendingPlayback: null,
   roomRoundResultPublishKey: "",
   roomConnectionNoticeKeys: new Set(),
   renderingSyncedRoomResume: false,
@@ -5549,6 +5550,7 @@ function clearRoundSubmissionState(options = {}) {
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
+  state.roomRoundResultPendingPlayback = null;
   state.roomRoundResultPublishKey = "";
   state.roomBotAnswerSubmissions = {};
   state.roomBotAnswerWaitKey = "";
@@ -14241,6 +14243,10 @@ function applyRealtimeRoomRoundResult(payload = {}) {
     };
   }
   rememberRoomRevisionPayload(payload);
+  // Keep the result available while a joined client's game stage is still
+  // mounting. The result event is authoritative; playback must not be lost
+  // just because it arrived during the setup animation or setup request.
+  state.roomRoundResultPendingPlayback = result;
   applyAuthoritativeRoomResultState(result);
   playSyncedRoomRoundResult(result);
   maybePlaySpectatorRoomRoundResult(result);
@@ -14436,7 +14442,17 @@ function playSyncedRoomRoundResult(result = null, localFallback = "") {
   state.roomRoundResolving = true;
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
-  playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: syncedResult });
+  state.roomRoundResultPendingPlayback = null;
+  void playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: syncedResult })
+    .catch((error) => {
+      // Keep the authoritative result available for the next room resume or
+      // catch-up if presentation is interrupted by a local UI transition.
+      if (state.roomRoundResultPlaybackKey === playbackKey) {
+        state.roomRoundResultPlaybackKey = "";
+        state.roomRoundResultPendingPlayback = syncedResult;
+      }
+      console.warn("Joined-player room result presentation failed:", error);
+    });
   return true;
 }
 
@@ -32743,6 +32759,7 @@ function resetRoundUiForLoading(options = {}) {
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
+  state.roomRoundResultPendingPlayback = null;
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   clearLocalRoomSubmission();
   state.roomSubmissions = {};
@@ -37839,6 +37856,7 @@ function resetMatch(mode) {
     state.joiningRoom = null;
     state.roomParticipants = [];
     state.roomRoundResult = null;
+    state.roomRoundResultPendingPlayback = null;
     state.roomRoundResolving = false;
     state.isSpectator = false;
     setCurrentRoomMatchId("");
@@ -38368,6 +38386,7 @@ function openRoomScreen() {
   state.roomGame = null;
   state.roomMatchId = "";
   state.roomRoundResult = null;
+  state.roomRoundResultPendingPlayback = null;
   resetRoomPowerSyncClocks();
   state.roomEventRevision = 0;
   clearLocalRoomSubmission();
@@ -38652,6 +38671,7 @@ function clearLocalRoomState(options = {}) {
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
+  state.roomRoundResultPendingPlayback = null;
   state.roomMissingSince = 0;
   state.roomExitLeaveSent = false;
   state.publishedDraftRoomCode = "";
@@ -44116,8 +44136,10 @@ async function playRoundInternal(rawInput, options = {}) {
     // the grading wait. Start it from a finally block below so a local effect
     // or animation error cannot strand the room in grading forever.
     try {
+      // The result event already contains the authoritative score and power
+      // state. Keep this as one ordered hand-off so a second command cannot
+      // race the result event or make joined clients wait on a later revision.
       void publishRoomRoundResult(roundResult, publishOptions);
-      void publishRoomScoreState("round-score");
     } catch (error) {
       console.warn("Could not start authoritative round result sync:", error);
     }
