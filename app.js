@@ -76,6 +76,9 @@ const roomPresenceFetchTimeoutMs = 5000;
 const roomLeaveFetchTimeoutMs = 2500;
 const roomPreparingSetupWaitMs = 90000;
 const roomRoundCommandTimeoutMs = roomPreparingSetupWaitMs + 5000;
+const localRoundSetupTimeoutMs = 15000;
+const localRoundSetupRetryDelayMs = 350;
+const localRoundSetupMaxAttempts = 2;
 const profileLoadingSlowWarningMs = 20000;
 const profileHydrationVisibleBudgetMs = 1600;
 const profileHydrationRemoteTimeoutMs = 1800;
@@ -4008,6 +4011,7 @@ const state = {
   gradingActive: false,
   gradingWaiters: [],
   setupVersion: 0,
+  roundSetupRequestId: 0,
   loadingLineId: null,
   blackCard: "",
   questionId: "",
@@ -5959,7 +5963,7 @@ function startWarmSetupPreload(options = {}) {
   state.warmSetup = null;
   state.warmSetupVersion = warmVersion;
   state.warmSetupSignature = signature;
-  const promise = requestRoundSetup({
+  const promise = requestRoundSetupWithTimeout({
     recentBlackCards: state.recentBlackCards,
     enabledThemes,
     preferredTheme: options.preferredTheme || "",
@@ -6025,7 +6029,15 @@ function getWarmSetupPromise(enabledThemes = getEnabledTriviaThemes(), options =
   const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || getCurrentQuestionLanguage());
   const signature = getThemeSignature(enabledThemes, questionLanguage);
   return state.warmSetupPromise && state.warmSetupSignature === signature && getMultipleChoiceChancePercent(options.round, options.totalRounds) > 0
-    ? state.warmSetupPromise
+    // A failed background preload must fall through to the foreground setup
+    // request. Returning the raw rejected promise used to open the error panel
+    // before the normal request had a chance to run.
+    ? state.warmSetupPromise.catch((error) => {
+      if (!isAbortError(error)) {
+        console.warn("Warm question preload was unavailable; loading directly:", error);
+      }
+      return null;
+    })
     : null;
 }
 
@@ -6360,9 +6372,15 @@ function isCurrentMatchWork(token) {
   return token === state.matchWorkToken && !state.matchEnded;
 }
 
+function beginRoundSetupWork() {
+  state.roundSetupRequestId += 1;
+  return state.roundSetupRequestId;
+}
+
 function createRoundSetupWorkContext(extra = {}) {
   return {
     matchToken: state.matchWorkToken,
+    setupRequestId: state.roundSetupRequestId,
     roomCode: state.roomSettings.code || "",
     matchId: getCurrentRoomMatchId(),
     round: Number(state.round) || 0,
@@ -6372,6 +6390,12 @@ function createRoundSetupWorkContext(extra = {}) {
 
 function isCurrentRoundSetupWork(context = {}) {
   if (!isCurrentMatchWork(context.matchToken)) {
+    return false;
+  }
+  if (
+    context.setupRequestId !== undefined
+    && Number(context.setupRequestId) !== Number(state.roundSetupRequestId)
+  ) {
     return false;
   }
   const roomCode = String(context.roomCode || "").trim().toUpperCase();
@@ -6509,6 +6533,7 @@ function canAdoptIncomingRoomGame(game = null, room = null, round = state.round)
 
 function cancelActiveMatchWork(options = {}) {
   state.matchWorkToken += 1;
+  beginRoundSetupWork();
   if (state.roundRequestAbortController) {
     state.roundRequestAbortController.abort();
     state.roundRequestAbortController = null;
@@ -6660,6 +6685,37 @@ async function requestRoundSetup(options = {}) {
       state.setupRequestAbortControllers.delete(controller);
     }
   }
+}
+
+function requestRoundSetupWithTimeout(options = {}) {
+  return withAbortableRequestTimeout(
+    (signal) => requestRoundSetup({ ...options, signal }),
+    localRoundSetupTimeoutMs,
+    {
+      signal: options.signal,
+      timeoutMessage: "The question is taking longer than usual."
+    }
+  );
+}
+
+async function requestLocalRoundSetup(options = {}, context = {}) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= localRoundSetupMaxAttempts; attempt += 1) {
+    if (!isCurrentRoundSetupWork(context)) {
+      throw createAbortError();
+    }
+    try {
+      return await requestRoundSetupWithTimeout(options);
+    } catch (error) {
+      lastError = error;
+      if (isAbortError(error) || !isCurrentRoundSetupWork(context) || attempt >= localRoundSetupMaxAttempts) {
+        throw error;
+      }
+      startLoadingMessages("setup", "The question is taking a moment. Retrying...");
+      await sleep(localRoundSetupRetryDelayMs);
+    }
+  }
+  throw lastError || new Error("Question setup failed.");
 }
 
 async function requestAuthoritativeRoomRoundSetup(options = {}) {
@@ -36027,7 +36083,7 @@ function prefetchNextSetup() {
   const setupVersion = state.setupVersion;
   const matchToken = state.matchWorkToken;
   const questionLanguage = getCurrentQuestionLanguage();
-  const promise = requestRoundSetup({ round: state.round + 1, totalRounds: state.maxRounds, questionLanguage });
+  const promise = requestRoundSetupWithTimeout({ round: state.round + 1, totalRounds: state.maxRounds, questionLanguage });
   state.nextSetupPromise = promise;
   state.nextSetupStatus = "loading";
   promise
@@ -36092,6 +36148,7 @@ function getPendingRoomRoundTransition(round = state.round) {
 
 async function newRound() {
   const matchToken = state.matchWorkToken;
+  const setupRequestId = beginRoundSetupWork();
   const previousBlackCard = state.blackCard;
   clearRoomAutoResolve();
   clearRoomSubmissionResolve();
@@ -36117,7 +36174,7 @@ async function newRound() {
   const preferredTheme = questionPreferences.theme || state.nextPreferredTheme;
   state.nextPreferredTheme = "";
   state.nextQuestionPreferences = { theme: "", difficulty: "", questionStyle: "" };
-  const roomSetupContext = createRoundSetupWorkContext({ matchToken });
+  const roundSetupContext = createRoundSetupWorkContext({ matchToken, setupRequestId });
   const pendingRoomRoundTransition = isRoomMode() && isCurrentHost() && !state.joiningRoom
     ? getPendingRoomRoundTransition(state.round)
     : null;
@@ -36129,15 +36186,15 @@ async function newRound() {
       if (!setup) {
         return;
       }
-      if (isCurrentMatchWork(matchToken)) {
+      if (isCurrentRoundSetupWork(roundSetupContext)) {
         applyRoundSetup(setup);
         applyRoomGamePowerState();
       }
     } catch (error) {
-      if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+      if (isAbortError(error) || !isCurrentRoundSetupWork(roundSetupContext)) {
         return;
       }
-      if (await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
+      if (await recoverFromStaleRoomRoundSetup(error, roundSetupContext)) {
         return;
       }
       if (isRoomMode() && !isCurrentHost()) {
@@ -36177,14 +36234,14 @@ async function newRound() {
       if (!setup) {
         setup = await requestAuthoritativeRoomRoundSetup(setupOptions);
       }
-      if (isCurrentRoundSetupWork(roomSetupContext)) {
+      if (isCurrentRoundSetupWork(roundSetupContext)) {
         applyRoundSetup(setup, { skipPublish: true });
       }
     } catch (error) {
-      if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+      if (isAbortError(error) || !isCurrentRoundSetupWork(roundSetupContext)) {
         return;
       }
-      if (await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
+      if (await recoverFromStaleRoomRoundSetup(error, roundSetupContext)) {
         return;
       }
       console.warn(error);
@@ -36203,18 +36260,18 @@ async function newRound() {
     state.nextSetupStatus = "idle";
     resetRoundUiForLoading({ resetBlackCardTheme: true });
     try {
-      const setup = await requestRoundSetup({
+      const setup = await requestLocalRoundSetup({
         ...(preferredTheme ? getThemeSetupOptions(preferredTheme) : {}),
         questionDifficultyPreference: questionPreferences.difficulty || "",
         questionStylePreference: questionPreferences.questionStyle || "",
         round: state.round,
         totalRounds: state.maxRounds
       });
-      if (isCurrentMatchWork(matchToken)) {
+      if (isCurrentRoundSetupWork(roundSetupContext)) {
         applyRoundSetup(setup);
       }
     } catch (error) {
-      if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+      if (isAbortError(error) || !isCurrentRoundSetupWork(roundSetupContext)) {
         return;
       }
       console.warn(error);
@@ -36251,19 +36308,31 @@ async function newRound() {
     if (pendingSetup) {
       startLoadingMessages("next", "Finishing the next round...");
     }
-    let setup = state.setupStack.length
-      ? state.setupStack.shift()
-      : pendingSetup
-        ? await pendingSetup
-        : await requestRoundSetup();
+    let setup;
+    if (state.setupStack.length) {
+      setup = state.setupStack.shift();
+    } else if (pendingSetup) {
+      try {
+        setup = await pendingSetup;
+      } catch (error) {
+        if (isAbortError(error) && !isCurrentRoundSetupWork(roundSetupContext)) {
+          throw error;
+        }
+        setup = await requestLocalRoundSetup({}, roundSetupContext);
+      }
+    } else {
+      setup = await requestLocalRoundSetup({}, roundSetupContext);
+    }
     if (
       isRepeatedBlackCard(setup, previousBlackCard)
       || !setupMatchesQuestionLanguage(setup, getCurrentQuestionLanguage())
       || !setupMatchesRoundMultipleChoiceChance(setup, { round: state.round, totalRounds: state.maxRounds })
     ) {
-      setup = state.setupStack.length ? state.setupStack.shift() : await requestRoundSetup();
+      setup = state.setupStack.length
+        ? state.setupStack.shift()
+        : await requestLocalRoundSetup({}, roundSetupContext);
     }
-    if (!isCurrentMatchWork(matchToken)) {
+    if (!isCurrentRoundSetupWork(roundSetupContext)) {
       return;
     }
     if (state.nextSetup === setup) {
@@ -36271,7 +36340,7 @@ async function newRound() {
     }
     applyRoundSetup(setup);
   } catch (error) {
-    if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+    if (isAbortError(error) || !isCurrentRoundSetupWork(roundSetupContext)) {
       return;
     }
     console.warn(error);
@@ -36538,7 +36607,7 @@ async function startGame(mode) {
     startRoomPresenceMaintenance();
   }
   resetRoundUiForLoading();
-  const roomSetupContext = mode === "room" ? createRoundSetupWorkContext({ matchToken }) : null;
+  const roundSetupContext = createRoundSetupWorkContext({ matchToken });
   try {
     const enabledThemes = getEnabledTriviaThemes();
     const firstRoundSetupOptions = { round: state.round, totalRounds: state.maxRounds };
@@ -36580,8 +36649,8 @@ async function startGame(mode) {
       || takeReservedSetup(enabledThemes, "", firstRoundSetupOptions)
       || takeWarmSetup(enabledThemes, firstRoundSetupOptions)
       || await getWarmSetupPromise(enabledThemes, firstRoundSetupOptions)
-      || await requestRoundSetup(firstRoundSetupOptions);
-    if (mode === "room" ? !isCurrentRoundSetupWork(roomSetupContext) : !isCurrentMatchWork(matchToken)) {
+      || await requestLocalRoundSetup(firstRoundSetupOptions, roundSetupContext);
+    if (!isCurrentRoundSetupWork(roundSetupContext)) {
       return;
     }
     if (state.warmSetup === firstSetup) {
@@ -36597,10 +36666,10 @@ async function startGame(mode) {
       }
     }
   } catch (error) {
-    if (isAbortError(error) || !isCurrentMatchWork(matchToken)) {
+    if (isAbortError(error) || !isCurrentRoundSetupWork(roundSetupContext)) {
       return;
     }
-    if (roomSetupContext && await recoverFromStaleRoomRoundSetup(error, roomSetupContext)) {
+    if (mode === "room" && await recoverFromStaleRoomRoundSetup(error, roundSetupContext)) {
       return;
     }
     if (mode === "room" && !isCurrentHost()) {
