@@ -7697,6 +7697,7 @@ async function handleSetup(req, res) {
     const questionLanguage = normalizeQuestionLanguage(body.questionLanguage || body.language);
     const baseSeed = String(body.setupSeed || `${Date.now()}-${Math.random()}`).slice(0, 80);
     const backgroundMode = Boolean(body.backgroundMode);
+    const setupMode = body.setupMode === "room" ? "room" : "local";
     const round = clampServerNumber(body.round, 1, 100, 1);
     const totalRounds = clampServerNumber(body.totalRounds, 1, 100, 10);
     const result = await getSeedQuestionSetup({
@@ -7707,7 +7708,10 @@ async function handleSetup(req, res) {
       setupSeed: baseSeed,
       backgroundMode,
       round,
-      totalRounds
+      totalRounds,
+      runtimeQuestionBank: setupMode === "room"
+        ? await getRuntimeQuestionBank()
+        : getFastLocalQuestionBank()
     });
     if (!result) {
       throw new Error("No seed questions are available for the selected themes.");
@@ -7717,6 +7721,23 @@ async function handleSetup(req, res) {
     console.error(error);
     sendJson(res, 400, { error: error.message || "Round setup failed." });
   }
+}
+
+function getFastLocalQuestionBank() {
+  const now = Date.now();
+  if (runtimeQuestionBankCache && runtimeQuestionBankCache.expiresAt > now) {
+    return runtimeQuestionBankCache.questions;
+  }
+
+  // Local matches should not wait for optional persistent question sources.
+  // The bundled bank is complete and is always available in the deployed app;
+  // the normal runtime merge continues in the background for later rooms.
+  if (!runtimeQuestionBankPromise) {
+    void getRuntimeQuestionBank().catch((error) => {
+      console.warn("Could not warm the dynamic question bank:", error.message || error);
+    });
+  }
+  return questionBank;
 }
 
 function normalizeEnabledThemes(themes) {
@@ -8031,7 +8052,9 @@ async function getSeedQuestionSetup(options = {}) {
     ? String(options.preferredQuestionStyle)
     : "";
   const multipleChoiceChancePercent = getMultipleChoiceChancePercent(options.round, options.totalRounds);
-  const runtimeQuestionBank = await getRuntimeQuestionBank();
+  const runtimeQuestionBank = Array.isArray(options.runtimeQuestionBank)
+    ? options.runtimeQuestionBank
+    : await getRuntimeQuestionBank();
   const languagePool = runtimeQuestionBank.filter((question) => {
     const language = normalizeQuestionLanguage(question.language);
     return language === questionLanguage;

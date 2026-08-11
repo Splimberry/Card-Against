@@ -3467,6 +3467,7 @@ const state = {
   botTwoScore: 0,
   randomUsernames: [],
   randomUsernamesPromise: null,
+  localMatchStartPromise: null,
   botSettings: {
     botCount: 2,
     rounds: savedBotRounds,
@@ -6666,6 +6667,7 @@ async function requestRoundSetup(options = {}) {
         preferredDifficulty: questionDifficultyPreference,
         preferredQuestionStyle: questionStylePreference,
         questionLanguage,
+        setupMode: options.setupMode || (isRoomMode() ? "room" : "local"),
         backgroundMode: Boolean(options.backgroundMode),
         setupSeed,
         ...timingOptions
@@ -11578,14 +11580,24 @@ async function loadRandomUsernames() {
 }
 
 async function startBotsGame() {
-  if (!state.randomUsernames.length) {
-    try {
-      await loadRandomUsernames();
-    } catch (error) {
-      console.warn("Username preload failed:", error.message || error);
-    }
+  if (state.localMatchStartPromise) {
+    return state.localMatchStartPromise;
   }
-  startGame("bots");
+  state.localMatchStartPromise = (async () => {
+    if (!state.randomUsernames.length) {
+      try {
+        await loadRandomUsernames();
+      } catch (error) {
+        console.warn("Username preload failed:", error.message || error);
+      }
+    }
+    return startGame("bots");
+  })();
+  try {
+    return await state.localMatchStartPromise;
+  } finally {
+    state.localMatchStartPromise = null;
+  }
 }
 
 function getBotCount() {
@@ -36647,8 +36659,7 @@ async function startGame(mode) {
     firstSetup = firstSetup
       || syncedSetup
       || takeReservedSetup(enabledThemes, "", firstRoundSetupOptions)
-      || takeWarmSetup(enabledThemes, firstRoundSetupOptions)
-      || await getWarmSetupPromise(enabledThemes, firstRoundSetupOptions)
+      || (mode === "room" ? null : takeWarmSetup(enabledThemes, firstRoundSetupOptions))
       || await requestLocalRoundSetup(firstRoundSetupOptions, roundSetupContext);
     if (!isCurrentRoundSetupWork(roundSetupContext)) {
       return;
