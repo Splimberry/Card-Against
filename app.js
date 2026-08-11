@@ -43678,23 +43678,30 @@ async function animateWinnerToBlackCard(winnerIndex, answer, options = {}) {
   const targetCenterX = targetRect.left + targetRect.width / 2;
   const targetCenterY = targetRect.top + targetRect.height / 2;
 
-  await clone.animate(
-    [
+  try {
+    await clone.animate(
+      [
+        {
+          transform: "translate(0, 0) scale(1) rotate(0deg)",
+          opacity: 1
+        },
+        {
+          transform: `translate(${targetCenterX - sourceCenterX}px, ${targetCenterY - sourceCenterY}px) scale(0.52) rotate(-4deg)`,
+          opacity: 0.94
+        }
+      ],
       {
-        transform: "translate(0, 0) scale(1) rotate(0deg)",
-        opacity: 1
-      },
-      {
-        transform: `translate(${targetCenterX - sourceCenterX}px, ${targetCenterY - sourceCenterY}px) scale(0.52) rotate(-4deg)`,
-        opacity: 0.94
+        duration: 780,
+        easing: "cubic-bezier(0.2, 0.9, 0.2, 1)",
+        fill: "forwards"
       }
-    ],
-    {
-      duration: 780,
-      easing: "cubic-bezier(0.2, 0.9, 0.2, 1)",
-      fill: "forwards"
-    }
-  ).finished;
+    ).finished;
+  } catch (error) {
+    // A room update can replace the card while the flight is running. The
+    // result is already authoritative, so a canceled visual must not strand
+    // the grading panel in its loading state.
+    console.warn("Answer reveal animation was interrupted:", error);
+  }
 
   clone.remove();
   winnerCard.classList.remove("launching");
@@ -43729,7 +43736,7 @@ async function revealBlackCardAnswer(completedText) {
   const animation = animateBlackCardToNaturalHeight(blackCard, beforeHeight, { allowShrink: false, durationMs: 560 });
 
   try {
-    await animation?.finished;
+    await (animation?.finished?.catch(() => {}) || undefined);
   } finally {
     resetBlackCardSizing();
   }
@@ -43890,7 +43897,7 @@ function applyThirdEyeCorrectIndexes(correctIndexes = []) {
   return [...new Set(indexes)];
 }
 
-async function playRound(rawInput, options = {}) {
+async function playRoundInternal(rawInput, options = {}) {
   const matchToken = state.matchWorkToken;
   if (!isCurrentMatchWork(matchToken)) {
     state.roomRoundResolving = false;
@@ -44186,6 +44193,134 @@ async function playRound(rawInput, options = {}) {
   elements.nextRoundButton.disabled = false;
   startNextRoundCountdown();
   state.roomRoundResolving = false;
+}
+
+function isCurrentRoomRoundResultForPlayback(result = null) {
+  const syncedResult = normalizeRoomRoundResultPayload(result);
+  if (!syncedResult || !isRoomMode() || state.matchEnded) {
+    return false;
+  }
+  const currentResult = getRoomRoundResultForCurrentRound(Number(syncedResult.round) || state.round);
+  return Boolean(
+    currentResult
+    && Number(currentResult.round) === Number(syncedResult.round)
+    && getRoomRoundResultPlaybackKey(currentResult) === getRoomRoundResultPlaybackKey(syncedResult)
+  );
+}
+
+function recoverRoomRoundResultPlayback(result = null, rawInput = "", error = null) {
+  const syncedResult = normalizeRoomRoundResultPayload(result);
+  if (!isCurrentRoomRoundResultForPlayback(syncedResult)) {
+    return false;
+  }
+  if (error) {
+    console.warn("Room grading presentation failed; completing from the saved result:", error);
+  }
+
+  const correctIndexes = Array.isArray(syncedResult.correctIndexes) ? syncedResult.correctIndexes : [];
+  const cardRatings = getCardRatings(syncedResult.cards, syncedResult.winnerIndex, correctIndexes);
+  const winningOwners = syncedResult.winningParticipantIds
+    .map((participantId) => getOwnerFromRoomRoundParticipantId(participantId))
+    .filter((owner) => owner && getActiveOwners().includes(owner));
+  const fallbackWinningOwners = winningOwners.length
+    ? winningOwners
+    : getUniqueOwnersFromCardIndexes(correctIndexes);
+  const summaryDeltas = Object.fromEntries(
+    (syncedResult.resultSummary?.scoreDeltas || [])
+      .map((entry) => [
+        getRoomOwnerForParticipantId(entry.participantId) || entry.owner,
+        Math.round(Number(entry.delta) || 0)
+      ])
+      .filter(([owner]) => owner)
+  );
+  const awarded = syncedResult.awarded || {
+    winningOwners: fallbackWinningOwners,
+    deltas: summaryDeltas,
+    payoutDetails: {},
+    events: [],
+    noPoints: fallbackWinningOwners.length === 0,
+    noCorrect: fallbackWinningOwners.length === 0,
+    tag: fallbackWinningOwners.length ? "Correct" : "Incorrect"
+  };
+  const winnerOwner = syncedResult.winnerParticipantId
+    ? getOwnerFromRoomRoundParticipantId(syncedResult.winnerParticipantId, syncedResult.winnerIndex)
+    : getOwnerFromCardIndex(syncedResult.winnerIndex);
+
+  state.currentRoundCards = syncedResult.cards;
+  state.currentRoundCardRatings = cardRatings;
+  state.currentRoundCorrectIndexes = correctIndexes;
+  state.currentRoundGradingReasons = mergeRoomRoundResultSummaryReasons(
+    syncedResult,
+    getRoundGradingReasons(syncedResult.cards, cardRatings, syncedResult)
+  );
+  applyAuthoritativeRoomResultState(syncedResult, { render: false });
+
+  try {
+    clearCardBadges();
+    renderAnswerCardLayout(syncedResult.cards, correctIndexes, syncedResult.winnerIndex);
+    fillVisibleAnswerCards(syncedResult.cards, cardRatings);
+    renderCardBadges(syncedResult.cards, syncedResult.winnerIndex, cardRatings, awarded);
+  } catch (renderError) {
+    console.warn("Could not redraw room answer cards from the saved result:", renderError);
+  }
+  try {
+    renderPowerLog(awarded);
+  } catch (renderError) {
+    console.warn("Could not redraw room power results:", renderError);
+  }
+  try {
+    renderRoundRecap(
+      awarded,
+      winnerOwner,
+      cardRatings[syncedResult.winnerIndex] || { label: "Correct", bonus: 0 },
+      syncedResult.resultSummary
+    );
+  } catch (renderError) {
+    console.warn("Could not redraw the room grading leaderboard:", renderError);
+    elements.roundRecap.replaceChildren();
+    setHidden(elements.roundRecap, true);
+  }
+
+  const revealIndex = Number.isInteger(Number(syncedResult.revealAnswerIndex))
+    ? syncedResult.revealAnswerIndex
+    : syncedResult.winnerIndex;
+  elements.blackCardText.textContent = completeBlackCard(syncedResult.cards[revealIndex] || rawInput || "");
+  getBlackCardElement()?.classList.add("completed");
+  setHidden(elements.inputPanel, true);
+  setHidden(elements.answerProgressPanel, true);
+  setHidden(elements.powerPanel, true);
+  setHidden(elements.effectPanel, true);
+  setHidden(elements.loadingPanel, true);
+  setHidden(elements.errorPanel, true);
+  setHidden(elements.cardsArea, false);
+  setHidden(elements.verdictPanel, false);
+  elements.nextRoundButton.disabled = false;
+  updateNextRoundButtonLabel();
+  stopLoadingMessages();
+  state.roomRoundResolving = false;
+  startNextRoundCountdown();
+  return true;
+}
+
+// Keep the authoritative room result as the source of truth even if a local
+// animation or result-only render is interrupted by a realtime update.
+async function playRound(rawInput, options = {}) {
+  try {
+    const result = await playRoundInternal(rawInput, options);
+    if (
+      options.roundResult
+      && isCurrentRoomRoundResultForPlayback(options.roundResult)
+      && elements.verdictPanel.classList.contains("hidden")
+    ) {
+      recoverRoomRoundResultPlayback(options.roundResult, rawInput);
+    }
+    return result;
+  } catch (error) {
+    if (options.roundResult && recoverRoomRoundResultPlayback(options.roundResult, rawInput, error)) {
+      return;
+    }
+    throw error;
+  }
 }
 
 function getOwnerLabel(owner) {
