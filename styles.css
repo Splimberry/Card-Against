@@ -12318,6 +12318,21 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   outline-offset: 3px;
 }
 
+.ability-mutation-toggle {
+  border-color: rgb(250 204 21 / 0.38);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 6px),
+    linear-gradient(110deg, rgb(64 222 164 / 0.12), rgb(250 204 21 / 0.14));
+}
+
+.ability-mutation-toggle:has(input:checked) {
+  border-color: rgb(250 204 21 / 0.62);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 6px),
+    linear-gradient(110deg, rgb(64 222 164 / 0.18), rgb(250 204 21 / 0.2));
+  box-shadow: 0 0 1rem rgb(250 204 21 / 0.14);
+}
+
 .ability-chaos-toggle span {
   white-space: nowrap;
 }
@@ -12668,9 +12683,24 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .ability-card[data-kind="permanent-mutation"] {
+  --power-category-icon: url("assets/overlays/biohazard.svg");
+  --power-category-icon-size: min(40%, 4rem);
+  --power-category-rgb: 250 204 21;
+  border-color: rgb(250 204 21 / 0.72);
   background:
+    repeating-linear-gradient(0deg, rgb(250 204 21 / 0.035) 0 1px, transparent 1px 7px),
+    radial-gradient(circle at 88% 42%, rgb(250 204 21 / 0.13), transparent 42%),
     linear-gradient(135deg, rgb(64 222 164 / 0.12), transparent 62%),
     rgba(255, 255, 255, 0.045);
+  box-shadow:
+    inset 0 0 1rem rgb(250 204 21 / 0.06),
+    0 0 1rem rgb(64 222 164 / 0.1);
+  animation: permanentMutationViewerPulse 2600ms ease-in-out infinite;
+}
+
+.ability-card[data-kind="permanent-mutation"] strong {
+  color: #facc15;
+  text-shadow: 0 0 0.65rem rgb(250 204 21 / 0.42);
 }
 
 .ability-card[data-kind="table"] {
@@ -12730,6 +12760,23 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .ability-card.chaos-infused[data-rarity="doom"] {
   --chaos-rarity-rgb: 255 28 76;
+}
+
+@keyframes permanentMutationViewerPulse {
+  0%, 100% {
+    filter: brightness(1) saturate(1.02);
+    box-shadow:
+      inset 0 0 1rem rgb(250 204 21 / 0.06),
+      0 0 1rem rgb(64 222 164 / 0.1);
+  }
+
+  50% {
+    filter: brightness(1.06) saturate(1.08);
+    box-shadow:
+      inset 0 0 1.2rem rgb(250 204 21 / 0.1),
+      0 0 1.4rem rgb(64 222 164 / 0.18),
+      0 0 2rem rgb(250 204 21 / 0.08);
+  }
 }
 
 @keyframes doomAbilityViewerGlitch {

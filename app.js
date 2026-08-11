@@ -4470,6 +4470,7 @@ const elements = {
   abilitiesModal: document.querySelector("#abilitiesModal"),
   closeAbilitiesButton: document.querySelector("#closeAbilitiesButton"),
   abilityChaosPreviewToggle: document.querySelector("#abilityChaosPreviewToggle"),
+  abilityMutationPreviewToggle: document.querySelector("#abilityMutationPreviewToggle"),
   abilityLibrary: document.querySelector("#abilityLibrary"),
   achievementsModal: document.querySelector("#achievementsModal"),
   closeAchievementsButton: document.querySelector("#closeAchievementsButton"),
@@ -11018,18 +11019,6 @@ function getStatusEffectLibraryEntries() {
     .filter(Boolean);
 }
 
-function getMutationEffectLibraryEntries() {
-  return mutationStatusDefinitions
-    .filter((definition) => definition.pool === "mutation")
-    .map((definition) => getLibraryDefinitionEntry(definition, {
-      category: "mutation",
-      rarity: "gold",
-      libraryKind: "mutation",
-      short: definition.short || "Per-round Mutation",
-      description: definition.description || "A legacy Mutation effect rolled for 2 to 3 rounds. Trigger-once effects disappear after resolving."
-    }));
-}
-
 function getPermanentMutationLibraryEntries() {
   return permanentMutationDefinitions.map((mutation) => ({
     name: mutation.name,
@@ -11055,6 +11044,7 @@ function getTableEventLibraryEntries() {
 
 function renderAbilityLibrary() {
   const chaosPreview = Boolean(elements.abilityChaosPreviewToggle?.checked);
+  const mutationPreview = Boolean(elements.abilityMutationPreviewToggle?.checked);
   const rarityOrder = chaosPreview
     ? ["grey", "blue", "purple", "gold", "doom"]
     : ["grey", "blue", "purple", "gold"];
@@ -11124,35 +11114,29 @@ function renderAbilityLibrary() {
     }));
   });
 
-  const statusEntries = getStatusEffectLibraryEntries();
-  ["defense", "boost", "risk", "disruption", "target", "time", "chaos", "doom"].forEach((category) => {
-    const entries = statusEntries.filter((entry) => entry.category === category);
-    if (!entries.length) {
-      return;
-    }
-    const info = powerCategoryInfo[category] || {};
-    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
-      title: `Status Effects · ${info.label || category}`,
-      rarity: category === "doom" ? "doom" : category === "risk" || category === "disruption" ? "debuff" : "blue",
-      kind: "status",
-      sectionIcon: info.icon,
-      entries
-    }));
-  });
-
-  elements.abilityLibrary.appendChild(createAbilityLibrarySection({
-    title: "Mutation Effects · Legacy Round Rolls",
-    rarity: "gold",
-    kind: "mutation",
-    sectionIcon: powerCategoryInfo.mutation.icon,
-    entries: getMutationEffectLibraryEntries()
-  }));
+  if (mutationPreview) {
+    const statusEntries = getStatusEffectLibraryEntries();
+    ["defense", "boost", "risk", "disruption", "target", "time", "chaos", "doom"].forEach((category) => {
+      const entries = statusEntries.filter((entry) => entry.category === category);
+      if (!entries.length) {
+        return;
+      }
+      const info = powerCategoryInfo[category] || {};
+      elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+        title: `Status Effects · ${info.label || category}`,
+        rarity: category === "doom" ? "doom" : category === "risk" || category === "disruption" ? "debuff" : "blue",
+        kind: "status",
+        sectionIcon: info.icon,
+        entries
+      }));
+    });
+  }
 
   elements.abilityLibrary.appendChild(createAbilityLibrarySection({
     title: "Permanent Mutations",
     rarity: "gold",
     kind: "permanent-mutation",
-    sectionIcon: powerCategoryInfo.mutation.icon,
+    sectionIcon: "assets/overlays/biohazard.svg",
     entries: getPermanentMutationLibraryEntries()
   }));
 
@@ -28023,93 +28007,7 @@ function applyCocktailBuff(owner, options = {}) {
   return `gain ${amount.toLocaleString()} points`;
 }
 
-function createMutationRoundRuleCleanup(rule, mutationId, owner, extra = {}) {
-  return {
-    kind: "roundRule",
-    rule,
-    mutationId,
-    owner,
-    ...extra
-  };
-}
-
-// Mutation effects may reuse the same state stores as power-ups, but every
-// grant is recorded separately so temporary rolls expire without changing
-// normal-mode behavior. They remain a separate viewer category from statuses.
 const mutationStatusDefinitions = Object.freeze([
-  {
-    id: "mutation_bounty", pool: "mutation", name: "Bounty", short: "win bonus", description: "If the owner wins, add 5% of their starting score to the round gain.", powerId: "basic_bounty", category: "boost", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("bounty", mutationId, owner, { percent: 0.05 })
-  },
-  {
-    id: "mutation_double_jeopardy", pool: "mutation", name: "Double Jeopardy", short: "double win / loss", description: "Double positive gains when the owner wins; a loss costs 10% of the starting score.", powerId: "double_jeopardy", category: "risk", negative: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("doubleJeopardy", mutationId, owner, { losePercent: 0.1 })
-  },
-  {
-    id: "mutation_sabotage", pool: "mutation", name: "Sabotage", short: "target win cut", description: "A random opponent loses 500 points from a winning payout and loses the streak gained from that win.", powerId: "big_sabotage", category: "target", negative: true,
-    apply: (owner, rounds, mutationId) => {
-      const targetOwner = getMutationRandomOtherOwner(owner);
-      return targetOwner ? createMutationRoundRuleCleanup("sabotage", mutationId, owner, { targetOwner, amount: 500, blockStreak: true }) : null;
-    }
-  },
-  {
-    id: "mutation_reverse_verdict", pool: "mutation", name: "Reverse Verdict", short: "steal target gains", description: "A random opponent's positive round gains transfer to the owner.", powerId: "reverse", category: "target", positive: true,
-    apply: (owner, rounds, mutationId) => {
-      const targetOwner = getMutationRandomOtherOwner(owner);
-      return targetOwner ? createMutationRoundRuleCleanup("reverseVerdict", mutationId, owner, { targetOwner }) : null;
-    }
-  },
-  {
-    id: "mutation_participation", pool: "mutation", name: "Participation Award", short: "loss insurance", description: "When the owner loses, cancel their point loss and give them 100 points and 1 streak.", powerId: "participation", category: "defense", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("participation", mutationId, owner)
-  },
-  {
-    id: "mutation_sin_wrath", pool: "mutation", name: "Sin of Wrath", short: "loss retaliation", description: "When the owner loses, a random opponent loses 350 points per starting streak; a win adds 1 streak.", powerId: "sin_wrath", category: "target", negative: true,
-    apply: (owner, rounds, mutationId) => {
-      const targetOwner = getMutationRandomOtherOwner(owner);
-      return targetOwner ? createMutationRoundRuleCleanup("sinWrath", mutationId, owner, { targetOwner }) : null;
-    }
-  },
-  {
-    id: "mutation_nail_coffin", pool: "mutation", name: "Nail in the Coffin", short: "double losses", description: "Doubles point losses caused during the round.", powerId: "nail_coffin", category: "risk", negative: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("nailCoffin", mutationId, owner)
-  },
-  {
-    id: "mutation_communism", pool: "mutation", name: "Communism", short: "pool gains", description: "Pools positive points, splits them equally, and gives the owner 10% of the pool.", powerId: "communism", category: "boost", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("communism", mutationId, owner)
-  },
-  {
-    id: "mutation_monopoly", pool: "mutation", name: "Monopoly", short: "tax power users", description: "Take 500 points from every other player who used a power this round.", powerId: "monopoly", category: "risk", negative: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("monopoly", mutationId, owner)
-  },
-  {
-    id: "mutation_speed_demon", pool: "mutation", name: "Speed Demon", short: "time payout", description: "If the owner wins, add 20 points for every second remaining on their answer timer.", powerId: "speed_answer", category: "time", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("speedAnswer", mutationId, owner)
-  },
-  {
-    id: "mutation_last_chance", pool: "mutation", name: "Last Laugh", short: "last-place x2", description: "In the final round, double the owner's positive gains while they are in last place.", powerId: "last_chance", category: "boost", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("lastChance", mutationId, owner)
-  },
-  {
-    id: "mutation_loose_cannon", pool: "mutation", name: "Loose Cannon", short: "random -10%", description: "A random active player loses 10% of their current score each round.", powerId: "loose_cannon", category: "risk", negative: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("looseCannon", mutationId, owner)
-  },
-  {
-    id: "mutation_magic_eight", pool: "mutation", name: "Magic 8", short: "+888 if 8", description: "If the owner's current score contains an 8, add 888 points at round resolution.", powerId: "magic_8", category: "boost", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("magicEight", mutationId, owner)
-  },
-  {
-    id: "mutation_bribe", pool: "mutation", name: "Side Pot Bribe", short: "33% biggest win", description: "Take 33% of the largest positive winner payout at round resolution.", powerId: "bribe", category: "boost", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("bribe", mutationId, owner)
-  },
-  {
-    id: "mutation_robin_hood", pool: "mutation", name: "Score Heist", short: "steal and share", description: "Steal 2.5% of the highest score and share it among the table.", powerId: "robin_hood", category: "target", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("robinHood", mutationId, owner)
-  },
-  {
-    id: "mutation_tax_collector", pool: "mutation", name: "Tax Collector", short: "take 15% ahead", description: "Take 15% from the highest-scoring opponent.", powerId: "tax_collector", category: "target", positive: true,
-    apply: (owner, rounds, mutationId) => createMutationRoundRuleCleanup("taxCollector", mutationId, owner)
-  },
   {
     id: "deep_freeze", effectKey: "freezeProtection", pool: "normal", name: "Deep Freeze", powerId: "deep_freeze", category: "defense", positive: true,
     apply: (owner, rounds) => { addOwnerDurationRounds(state.freezeProtection, owner, rounds); return { kind: "counter", key: "freezeProtection" }; }
@@ -28340,26 +28238,6 @@ const mutationStatusDefinitions = Object.freeze([
   {
     id: "doom_streak_guard", pool: "doom", name: "Doom Streak Guard", powerId: "ultimatum", category: "doom", positive: true,
     apply: (owner, rounds) => { addOwnerDurationRounds(state.doomStreakGuardRounds, owner, rounds); return { kind: "counter", key: "doomStreakGuardRounds" }; }
-  },
-  {
-    id: "mutation_arsonist", pool: "mutation", name: "Arsonist", powerId: "arsonist", category: "mutation", positive: true,
-    apply: (owner) => { addEffectStack(state.arsonists, owner); return { kind: "stack", key: "arsonists" }; }
-  },
-  {
-    id: "mutation_blessing", pool: "mutation", name: "Divine Blessing", powerId: "blessing", category: "mutation", positive: true,
-    apply: (owner) => { addEffectStack(state.divineBlessingOwners, owner); return { kind: "stack", key: "divineBlessingOwners" }; }
-  },
-  {
-    id: "mutation_typhoon", pool: "mutation", name: "Typhoon Season", powerId: "typhoon_season", category: "mutation", negative: true,
-    apply: (owner) => { addModeEffectStack(state.typhoonOwners, owner); return { kind: "modeStack", key: "typhoonOwners" }; }
-  },
-  {
-    id: "mutation_slumber", pool: "mutation", name: "Eternal Slumber", powerId: "sin_sloth", category: "mutation", negative: true,
-    apply: (owner) => { addEffectStack(state.eternalSlumberOwners, owner); return { kind: "stack", key: "eternalSlumberOwners" }; }
-  },
-  {
-    id: "mutation_virus_factory", pool: "mutation", name: "Virus Factory", powerId: "virus_factory", category: "mutation", negative: true,
-    apply: (owner) => { addEffectStack(state.virusFactories, owner); return { kind: "stack", key: "virusFactories" }; }
   },
   {
     id: "antivirus_charge", pool: "normal", name: "Antivirus", powerId: "antivirus", category: "defense", positive: true, triggerOnce: true,
@@ -29536,6 +29414,12 @@ function pruneMutationStatuses() {
     const active = [];
     const expired = [];
     (Array.isArray(records) ? records : []).forEach((status) => {
+      // Discard records from the removed legacy Mutation roll system when a
+      // room or local match is resumed from an older state snapshot.
+      if (!getMutationDefinitionForStatus(status)) {
+        cleanupMutationStatusRecord(status, []);
+        return;
+      }
       // The expiry round is still active. This matters for trigger-once
       // statuses whose scheduled action runs at the start of that round.
       if ((Number(status.expiresAt) || 0) < state.round || isMutationStatusTriggered(status)) {
@@ -29597,34 +29481,14 @@ function applyMutationStatus(owner, definition, rounds) {
   return status;
 }
 
-function getActiveMutationRuleEntries(rule, owners = getActiveOwners()) {
-  const ownerSet = new Set(owners);
-  return Object.entries(state.mutationStatuses || {}).flatMap(([sourceOwner, records]) => (
-    (Array.isArray(records) ? records : [])
-      .filter((status) => (
-        ownerSet.has(sourceOwner)
-        && !status.triggered
-        && getMutationStatusRemaining(status) > 0
-        && status.cleanup?.kind === "roundRule"
-        && status.cleanup.rule === rule
-      ))
-      .map((status) => ({
-        status,
-        sourceOwner,
-        targetOwner: status.cleanup.targetOwner || status.targetOwner || ""
-      }))
-  ));
-}
-
-// Legacy Mutation rolls are temporary Mutation effects. Permanent Mutation
-// traits are handled separately below; both systems intentionally coexist with
-// the player Status Effects registry used by the viewer.
-function applyMutationRoundStart() {
+// Mutation mode rolls temporary normal Status Effects at the start of each
+// round. Permanent Mutation traits are handled separately below.
+function applyMutationStatusRoundStart() {
   if (!isMatchModifierEnabled("mutation")) {
     return;
   }
   pruneMutationStatuses();
-  const pool = mutationStatusDefinitions.filter((definition) => definition.pool);
+  const pool = mutationStatusDefinitions.filter((definition) => definition.pool === "normal");
   const summaries = [];
   getActiveOwners().forEach((owner) => {
     const activeEffectKeys = new Set(
@@ -29650,196 +29514,6 @@ function applyMutationRoundStart() {
     queueStatFlash("chaos", "Mutation Status Roll", summaries, { owners: [], iconKey: "mode:mutation", complex: true, priority: true });
     renderScore();
   }
-}
-
-function applyMutationRoundRules(deltas, owners, winnerSet, startingScores, startingStreaks, events) {
-  const winners = winnerSet instanceof Set ? winnerSet : new Set(winnerSet || []);
-  const currentTotal = (owner) => Math.max(0, Number(startingScores[owner] || 0) + Number(deltas[owner] || 0));
-  const addEvent = (entry, text) => events.push(createPowerEvent(
-    entry.sourceOwner,
-    getPowerById(entry.status.powerId),
-    `Mutation ${entry.status.name}: ${text}`
-  ));
-
-  getActiveMutationRuleEntries("bounty", owners).forEach((entry) => {
-    if (!winners.has(entry.sourceOwner)) {
-      return;
-    }
-    const amount = Math.floor(Math.max(0, startingScores[entry.sourceOwner] || 0) * (entry.status.cleanup.percent || 0.05));
-    deltas[entry.sourceOwner] += amount;
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} gained ${amount.toLocaleString()} bonus points.`);
-  });
-
-  getActiveMutationRuleEntries("doubleJeopardy", owners).forEach((entry) => {
-    const owner = entry.sourceOwner;
-    if (winners.has(owner)) {
-      const gained = Math.max(0, deltas[owner] || 0);
-      deltas[owner] += gained;
-      addEvent(entry, `${getOwnerLabel(owner)} doubled ${gained.toLocaleString()} positive points.`);
-      return;
-    }
-    const loss = Math.floor(Math.max(0, startingScores[owner] || 0) * (entry.status.cleanup.losePercent || 0.1));
-    deltas[owner] -= loss;
-    addEvent(entry, `${getOwnerLabel(owner)} lost ${loss.toLocaleString()} points.`);
-  });
-
-  getActiveMutationRuleEntries("sabotage", owners).forEach((entry) => {
-    const target = entry.targetOwner;
-    if (!target || !winners.has(target) || !owners.includes(target)) {
-      return;
-    }
-    const amount = Math.max(0, Number(entry.status.cleanup.amount) || 500);
-    deltas[target] -= amount;
-    if (entry.status.cleanup.blockStreak) {
-      setOwnerStreak(target, Math.max(0, getOwnerStreak(target) - 1), { force: true });
-    }
-    addEvent(entry, `${getOwnerLabel(target)} lost ${amount.toLocaleString()} from the winning payout.`);
-  });
-
-  getActiveMutationRuleEntries("reverseVerdict", owners).forEach((entry) => {
-    const target = entry.targetOwner;
-    const amount = target && owners.includes(target) ? Math.max(0, deltas[target] || 0) : 0;
-    if (amount <= 0) {
-      return;
-    }
-    deltas[target] -= amount;
-    deltas[entry.sourceOwner] += amount;
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} took ${amount.toLocaleString()} positive points from ${getOwnerLabel(target)}.`);
-  });
-
-  getActiveMutationRuleEntries("participation", owners).forEach((entry) => {
-    const owner = entry.sourceOwner;
-    if (winners.has(owner) || (deltas[owner] || 0) >= 0) {
-      return;
-    }
-    deltas[owner] = 100;
-    setOwnerStreak(owner, getOwnerStreak(owner) + 1);
-    addEvent(entry, `${getOwnerLabel(owner)} avoided their loss and gained 100 points and 1 streak.`);
-  });
-
-  getActiveMutationRuleEntries("sinWrath", owners).forEach((entry) => {
-    const owner = entry.sourceOwner;
-    if (winners.has(owner)) {
-      setOwnerStreak(owner, getOwnerStreak(owner) + 1);
-      addEvent(entry, `${getOwnerLabel(owner)} gained 1 extra streak.`);
-      return;
-    }
-    const target = entry.targetOwner;
-    const amount = target && owners.includes(target) ? 350 * Math.max(0, Number(startingStreaks[owner]) || 0) : 0;
-    if (amount > 0) {
-      deltas[target] -= amount;
-      addEvent(entry, `${getOwnerLabel(target)} lost ${amount.toLocaleString()} points in retaliation.`);
-    }
-  });
-
-  const nailCoffinEntries = getActiveMutationRuleEntries("nailCoffin", owners);
-  if (nailCoffinEntries.length) {
-    const multiplier = 2 ** nailCoffinEntries.length;
-    owners.forEach((owner) => {
-      if ((deltas[owner] || 0) < 0) {
-        deltas[owner] *= multiplier;
-      }
-    });
-    addEvent(nailCoffinEntries[0], `all point losses were multiplied by ${multiplier}.`);
-  }
-
-  getActiveMutationRuleEntries("communism", owners).forEach((entry) => {
-    const positivePool = owners.reduce((sum, owner) => sum + Math.max(0, deltas[owner] || 0), 0);
-    const share = Math.floor(positivePool / Math.max(1, owners.length));
-    const bonus = Math.floor(positivePool * 0.1);
-    owners.forEach((owner) => {
-      deltas[owner] -= Math.max(0, deltas[owner] || 0);
-      deltas[owner] += share;
-    });
-    deltas[entry.sourceOwner] += bonus;
-    addEvent(entry, `split ${positivePool.toLocaleString()} points and added ${bonus.toLocaleString()} extra points.`);
-  });
-
-  getActiveMutationRuleEntries("monopoly", owners).forEach((entry) => {
-    const taxed = owners.filter((owner) => (
-      owner !== entry.sourceOwner
-      && getPlayedPowerEntries([owner]).some((playedEntry) => playedEntry.power)
-    ));
-    taxed.forEach((owner) => {
-      deltas[owner] -= 500;
-      deltas[entry.sourceOwner] += 500;
-    });
-    if (taxed.length) {
-      addEvent(entry, `collected 500 points from ${taxed.map(getOwnerLabel).join(", ")}.`);
-    }
-  });
-
-  getActiveMutationRuleEntries("speedAnswer", owners).forEach((entry) => {
-    if (!winners.has(entry.sourceOwner)) {
-      return;
-    }
-    const seconds = Math.max(0, Number(state.answerRemainingTimes?.[entry.sourceOwner]) || 0);
-    const amount = seconds * 20;
-    deltas[entry.sourceOwner] += amount;
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} gained ${amount.toLocaleString()} points from ${seconds} seconds remaining.`);
-  });
-
-  getActiveMutationRuleEntries("lastChance", owners).forEach((entry) => {
-    if (!isFinalRound() || winners.has(entry.sourceOwner) || !isLastPlace(entry.sourceOwner)) {
-      return;
-    }
-    const gained = Math.max(0, deltas[entry.sourceOwner] || 0);
-    deltas[entry.sourceOwner] += gained;
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} doubled ${gained.toLocaleString()} last-place gains.`);
-  });
-
-  getActiveMutationRuleEntries("looseCannon", owners).forEach((entry) => {
-    const target = getRandomActiveOwner();
-    if (!target) {
-      return;
-    }
-    const amount = Math.floor(currentTotal(target) * 0.1);
-    deltas[target] -= amount;
-    addEvent(entry, `${getOwnerLabel(target)} lost ${amount.toLocaleString()} points.`);
-  });
-
-  getActiveMutationRuleEntries("magicEight", owners).forEach((entry) => {
-    if (!String(Math.max(0, startingScores[entry.sourceOwner] || 0)).includes("8")) {
-      return;
-    }
-    deltas[entry.sourceOwner] += 888;
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} gained 888 points.`);
-  });
-
-  getActiveMutationRuleEntries("bribe", owners).forEach((entry) => {
-    const largestPayout = Math.max(0, ...owners.map((owner) => Math.max(0, deltas[owner] || 0)));
-    const amount = Math.floor(largestPayout * 0.33);
-    deltas[entry.sourceOwner] += amount;
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} skimmed ${amount.toLocaleString()} points.`);
-  });
-
-  getActiveMutationRuleEntries("robinHood", owners).forEach((entry) => {
-    const leader = owners
-      .filter((owner) => owner !== entry.sourceOwner)
-      .sort((a, b) => (startingScores[b] || 0) - (startingScores[a] || 0))[0];
-    if (!leader) {
-      return;
-    }
-    const otherCount = Math.max(1, owners.length - 1);
-    const stolen = Math.floor((startingScores[leader] || 0) * 0.025 * otherCount);
-    const share = Math.floor(stolen / otherCount);
-    deltas[leader] -= stolen;
-    owners.filter((owner) => owner !== leader).forEach((owner) => { deltas[owner] += share; });
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} redistributed ${stolen.toLocaleString()} points from ${getOwnerLabel(leader)}.`);
-  });
-
-  getActiveMutationRuleEntries("taxCollector", owners).forEach((entry) => {
-    const target = owners
-      .filter((owner) => owner !== entry.sourceOwner && (startingScores[owner] || 0) > (startingScores[entry.sourceOwner] || 0))
-      .sort((a, b) => (startingScores[b] || 0) - (startingScores[a] || 0))[0];
-    if (!target) {
-      return;
-    }
-    const amount = Math.floor((startingScores[target] || 0) * 0.15);
-    deltas[target] -= amount;
-    deltas[entry.sourceOwner] += amount;
-    addEvent(entry, `${getOwnerLabel(entry.sourceOwner)} collected ${amount.toLocaleString()} points from ${getOwnerLabel(target)}.`);
-  });
 }
 
 function applyRandomStatusEffect(owner, source = "Unstable Conduit", options = {}) {
@@ -33944,7 +33618,7 @@ function renderRound() {
   elements.playerTwoInput.disabled = false;
   elements.submitButton.disabled = state.isSpectator;
   if (!state.renderingSyncedRoomResume) {
-    applyMutationRoundStart();
+    applyMutationStatusRoundStart();
     const permanentMutationEvents = [];
     applyPermanentMutationRoundStart(getActiveOwners(), permanentMutationEvents);
     if (permanentMutationEvents.length) {
@@ -46279,7 +45953,6 @@ function createNoCorrectAward() {
   applyReverseGuardDeltas(deltas, owners, events);
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   applyParticipationAwardProMaxEntries(playedEntries, owners, new Set(), startingScores, deltas, events);
-  applyMutationRoundRules(deltas, owners, new Set(), startingScores, startingStreaks, events);
   applyPermanentMutationDeltaModifiers(deltas, owners, startingScores, new Set(owners), events);
   applyPositiveGainModifiers(deltas, owners, events, { startingScores });
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
@@ -47431,7 +47104,6 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   applyReverseGuardDeltas(deltas, owners, events);
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   applyParticipationAwardProMaxEntries(playedEntries, owners, winnerSet, startingScores, deltas, events);
-  applyMutationRoundRules(deltas, owners, winnerSet, startingScores, startingStreaks, events);
   applyPermanentMutationDeltaModifiers(
     deltas,
     owners,
@@ -48298,6 +47970,10 @@ elements.powerLogToggle.addEventListener("click", () => {
 });
 elements.closeAbilitiesButton.addEventListener("click", closeAbilities);
 elements.abilityChaosPreviewToggle?.addEventListener("change", () => {
+  renderAbilityLibrary();
+  playSound("click");
+});
+elements.abilityMutationPreviewToggle?.addEventListener("change", () => {
   renderAbilityLibrary();
   playSound("click");
 });
