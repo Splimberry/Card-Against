@@ -3595,6 +3595,17 @@ const state = {
   chaosStatusEffects: {},
   mutationStatuses: {},
   mutationStatusSequence: 0,
+  permanentMutations: {},
+  permanentMutationState: {
+    secondGrantRound: 0,
+    secondGrantComplete: false,
+    roundStartAppliedRound: 0,
+    cellularCollapseStacks: {},
+    degenerativePending: {},
+    symbiosisTargets: {},
+    mitosisSplitsByRound: {},
+    pendingMitosisExpiries: {}
+  },
   penaltyStormOwners: {},
   fraudMasterOwners: {},
   fireExtinguisherOwners: {},
@@ -9123,6 +9134,23 @@ function getActiveEffectEntries() {
         entries.push(entry);
       }
     });
+    getPermanentMutations(owner).forEach((mutationId) => {
+      const mutation = getPermanentMutationDefinition(mutationId);
+      if (!mutation) {
+        return;
+      }
+      const symbiosisTarget = getPermanentMutationState().symbiosisTargets?.[owner];
+      const description = mutation.id === "unstable_symbiosis" && symbiosisTarget
+        ? `${mutation.description} Linked to ${getOwnerLabel(symbiosisTarget)}.`
+        : mutation.description;
+      entries.push(createActiveEffect(
+        owner,
+        mutation.powerId,
+        `Mutation · ${mutation.name}`,
+        description,
+        { chaosInfused: mutation.category === "chaos" }
+      ));
+    });
     getMutationStatusEntries(owner)
       .filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0)
       .forEach((status) => {
@@ -9721,9 +9749,15 @@ function applyPlayedPowerDisables(playedEntries, events) {
 }
 
 function applyNewPersistentPowerEntries(playedEntries, events) {
-  const blockedEntries = playedEntries.filter((entry) => blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry)));
+  const blockedEntries = playedEntries.filter((entry) => (
+    blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry))
+    || blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry))
+  ));
   blockedEntries.forEach((entry) => {
-    events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} was blocked by Impending Doom.`));
+    const meta = getEntryMeta(entry);
+    events.push(createPowerEvent(entry.owner, entry.power, meta.blockedByMutationStabilizer
+      ? `${entry.power.name} was blocked by Mutation Stabilizer.`
+      : `${entry.power.name} was blocked by Impending Doom.`));
   });
   const activeEntries = playedEntries.filter((entry) => !blockedEntries.includes(entry));
 
@@ -10693,6 +10727,18 @@ function applyFinalTableEventGainMultipliers(deltas, owners, events) {
 
 function decrementRoundEffectCounters(owners) {
   owners.forEach((owner) => {
+    const expiredTemporaryStatuses = [];
+    const queueCounterExpiry = (store, definitionId) => {
+      if ((Number(store?.[owner]) || 0) === 1) {
+        const definition = getMutationDefinitionForStatus({ id: definitionId });
+        if (definition) {
+          expiredTemporaryStatuses.push({
+            id: definition.id,
+            name: definition.name
+          });
+        }
+      }
+    };
     const smokeScreen = state.redHerringMasks?.[owner];
     if (smokeScreen && smokeScreen !== true && Number(smokeScreen.remaining) > 0) {
       state.redHerringMasks[owner] = {
@@ -10700,6 +10746,17 @@ function decrementRoundEffectCounters(owners) {
         remaining: Math.max(0, Number(smokeScreen.remaining) - 1)
       };
     }
+    queueCounterExpiry(state.streakFreezeRounds, "freeze_ray");
+    queueCounterExpiry(state.streakLossProtectionRounds, "streak_guard");
+    queueCounterExpiry(state.cocktailPenaltyRounds, "cocktail_debt");
+    queueCounterExpiry(state.debuffShieldRounds, "encryption");
+    queueCounterExpiry(state.timeDilationRounds, "time_dilation");
+    queueCounterExpiry(state.luckRounds, "lucky_side");
+    queueCounterExpiry(state.chaosInfusionBoostRounds, "four_leaf_clover");
+    queueCounterExpiry(state.freezeReflectionRounds, "uno_reverse");
+    queueCounterExpiry(state.streakSicknessRounds, "streak_sickness");
+    queueCounterExpiry(state.ultimatumRounds, "doom_shield");
+    queueCounterExpiry(state.doomStreakGuardRounds, "doom_streak_guard");
     state.streakFreezeRounds[owner] = Math.max(0, (state.streakFreezeRounds[owner] || 0) - 1);
     state.streakLossProtectionRounds[owner] = Math.max(0, (state.streakLossProtectionRounds[owner] || 0) - 1);
     state.cocktailPenaltyRounds[owner] = Math.max(0, (state.cocktailPenaltyRounds[owner] || 0) - 1);
@@ -10717,10 +10774,23 @@ function decrementRoundEffectCounters(owners) {
     }
     state.secretAgentRounds[owner] = Math.max(0, (state.secretAgentRounds[owner] || 0) - 1);
     const chaosStatus = getChaosStatus(owner);
+    const unstableBefore = Array.isArray(chaosStatus.unstableStreak) ? chaosStatus.unstableStreak.length : 0;
     const nextUnstable = (chaosStatus.unstableStreak || [])
       .map((entry) => ({ ...entry, remaining: Math.max(0, Number(entry.remaining) || 0) - 1 }))
       .filter((entry) => entry.remaining > 0);
     const nextResistantRounds = Math.max(0, Number(chaosStatus.resistantStreak?.rounds) || 0) - 1;
+    if (unstableBefore > 0 && nextUnstable.length === 0) {
+      const definition = getMutationDefinitionForStatus({ id: "unstable_streak" });
+      if (definition) {
+        expiredTemporaryStatuses.push({ id: definition.id, name: definition.name });
+      }
+    }
+    if (Number(chaosStatus.resistantStreak?.rounds) > 0 && nextResistantRounds <= 0) {
+      const definition = getMutationDefinitionForStatus({ id: "resistant_streak" });
+      if (definition) {
+        expiredTemporaryStatuses.push({ id: definition.id, name: definition.name });
+      }
+    }
     const nextStatus = {
       ...chaosStatus,
       unstableStreak: nextUnstable,
@@ -10736,7 +10806,15 @@ function decrementRoundEffectCounters(owners) {
     };
     updateChaosStatus(owner, nextStatus);
     if ((state.loserTaxCollectors[owner] || 0) > 0) {
+      queueCounterExpiry(state.loserTaxCollectors, "loser_tax");
       state.loserTaxCollectors[owner] = Math.max(0, (state.loserTaxCollectors[owner] || 0) - 1);
+    }
+    if (hasPermanentMutation(owner, "mitosis") && expiredTemporaryStatuses.length) {
+      const stateStore = getPermanentMutationState();
+      stateStore.pendingMitosisExpiries[owner] = [
+        ...(stateStore.pendingMitosisExpiries[owner] || []),
+        ...expiredTemporaryStatuses
+      ];
     }
   });
   pruneMutationStatuses();
@@ -10879,6 +10957,14 @@ function getStatusEffectLibraryEntries() {
     ["Typhoon Season", "Lightning rolls", "Each stack rolls a chance to trigger a lightning loss at round start.", "typhoon_season", "mutation"],
     ["Eternal Slumber", "Streak cap", "Prevents players from keeping a streak above the owner's streak.", "sin_sloth", "mutation"],
     ["Virus Factory", "Debuff rolls", "Each stack rolls a separate debuff chance for every player at round start.", "virus_factory", "mutation"],
+    ...permanentMutationDefinitions.map((mutation) => [
+      `Permanent Mutation: ${mutation.name}`,
+      mutation.short,
+      `${mutation.description} Lasts for the entire match and can only be changed by a future mutation power-up.`,
+      mutation.powerId,
+      "mutation",
+      false
+    ]),
     ...mutationStatusDefinitions
       .filter((definition) => (
         !["mutation_arsonist", "mutation_blessing", "mutation_typhoon", "mutation_slumber", "mutation_virus_factory"].includes(definition.id)
@@ -14665,6 +14751,8 @@ const roomAbilityEffectMapKeys = [
   "streakSicknessRounds",
   "chaosStatusEffects",
   "mutationStatuses",
+  "permanentMutations",
+  "permanentMutationState",
   "penaltyStormOwners",
   "fraudMasterOwners",
   "fireExtinguisherOwners",
@@ -22269,12 +22357,19 @@ function setScore(owner, value) {
   syncLegacyScoresFromPlayers();
 }
 
-function addScore(owner, amount) {
+function addScore(owner, amount, options = {}) {
   markAchievementPointLoss(owner, amount);
   if ((Number(amount) || 0) > 0) {
     incrementAchievementProgress(owner, "pointsGainedTotal", amount);
   }
   setScore(owner, getScore(owner) + amount);
+  if (!options.skipSymbiosis && (Number(amount) || 0) > 0) {
+    applyPermanentMutationSymbiosis(owner, Number(amount) || 0);
+  }
+}
+
+function getPermanentMutationPointLossMultiplier(owner) {
+  return hasPermanentMutation(owner, "adaptive_metabolism") ? 0.9 : 1;
 }
 
 function hasImmediateDeductionProtection(owner) {
@@ -22294,7 +22389,7 @@ function consumeImmediateDeductionProtection(owner) {
 }
 
 function getProtectedPointLoss(owner, amount, source = "Shield", events = null) {
-  const loss = Math.max(0, Math.round(amount));
+  const loss = Math.max(0, Math.round(amount * getPermanentMutationPointLossMultiplier(owner)));
   if (loss <= 0) {
     return 0;
   }
@@ -22492,11 +22587,18 @@ function hasPowerDebugUnlimitedUse(owner) {
   );
 }
 
-function canPlayPower(owner) {
+function canPlayPower(owner, power = null) {
   if (isClassicModeEnabled() || isTableEventActive("power_outage")) {
     return false;
   }
   if (hasPowerDebugUnlimitedUse(owner)) {
+    return true;
+  }
+  // Recycle Bin is the hand-capacity power itself. It remains usable after
+  // another power has been played so it can add the fourth slot at any point
+  // in the round; an empty previous-power record simply yields no returned
+  // card.
+  if (power?.type === "recycle_bin") {
     return true;
   }
   return !hasPlayedPowerThisRound(owner) || hasAllOut(owner) || (state.extraPowerUses[owner] || 0) > 0;
@@ -27457,20 +27559,26 @@ function applyChaosFill(owner) {
     : "Chaos Fill found no available power-up";
 }
 
-function applyChaosBuffRoll(owner) {
+function applyChaosBuffRoll(owner, options = {}) {
+  if (!options.skipMutationStabilizer && shouldBlockPermanentMutationStatus(owner, { positive: true })) {
+    return "Mutation Stabilizer blocked the Chaos buff";
+  }
   const roll = getRandomInt(0, 5);
   if (roll === 0) {
-    const unstable = [...(getChaosStatus(owner).unstableStreak || []), { remaining: 3 }];
+    const rounds = getNextPositiveStatusRounds(owner, 3);
+    const unstable = [...(getChaosStatus(owner).unstableStreak || []), { remaining: rounds }];
     updateChaosStatus(owner, { unstableStreak: unstable });
-    return `Unstable Streak x${unstable.length}: a random -1 to +3 streak bonus rolls each round`;
+    return `Unstable Streak x${unstable.length}: a random -1 to +3 streak bonus rolls each round for ${rounds} rounds`;
   }
   if (roll === 1) {
-    const rounds = addChaosDuration(owner, "reflectorShield", 2);
-    return `Reflector Shield armed for ${rounds} rounds`;
+    const rounds = getNextPositiveStatusRounds(owner, 2);
+    const totalRounds = addChaosDuration(owner, "reflectorShield", rounds);
+    return `Reflector Shield armed for ${totalRounds} rounds`;
   }
   if (roll === 2) {
     const status = getChaosStatus(owner);
-    const rounds = Math.max(0, Number(status.resistantStreak?.rounds) || 0) + 2;
+    const addedRounds = getNextPositiveStatusRounds(owner, 2);
+    const rounds = Math.max(0, Number(status.resistantStreak?.rounds) || 0) + addedRounds;
     const resistance = Math.max(0, Number(status.streakResistance) || 0) + 1;
     updateChaosStatus(owner, { resistantStreak: { rounds, stacks: resistance }, streakResistance: resistance });
     return `Resistant Streak: ${rounds} rounds protected, permanent resistance x${resistance}`;
@@ -27752,12 +27860,15 @@ function refillCocktailPowerSlot(owner) {
 }
 
 function applyCocktailBuff(owner, options = {}) {
+  if (shouldBlockPermanentMutationStatus(owner, { positive: true })) {
+    return "Mutation Stabilizer blocked the buff";
+  }
   if (!canGainPositiveStatus(owner)) {
     return "Impending Doom blocked the buff";
   }
   markAchievementBuffDebuff(owner, "buff");
   if (!options.skipChaosRoll && isMatchModifierEnabled("chaos") && Math.random() < 0.25) {
-    return applyChaosBuffRoll(owner);
+    return applyChaosBuffRoll(owner, { skipMutationStabilizer: true });
   }
   const roll = Math.floor(Math.random() * 8);
   if (roll === 0) {
@@ -27765,11 +27876,11 @@ function applyCocktailBuff(owner, options = {}) {
     return "gain 1 streak";
   }
   if (roll === 1) {
-    addOwnerDurationRounds(state.freezeProtection, owner, 2);
+    addPositiveStatusDurationRounds(state.freezeProtection, owner, 2, { skipMutationStabilizer: true });
     return "Point Shield Armed\n2 Rounds";
   }
   if (roll === 2) {
-    addOwnerDurationRounds(state.streakLossProtectionRounds, owner, 2);
+    addPositiveStatusDurationRounds(state.streakLossProtectionRounds, owner, 2, { skipMutationStabilizer: true });
     return "Streak Guard Armed\n2 Rounds";
   }
   if (roll === 3) {
@@ -27785,7 +27896,7 @@ function applyCocktailBuff(owner, options = {}) {
     return `Rich Gets Richer: gain ${amount.toLocaleString()} points (${Math.round(percent * 100)}%)`;
   }
   if (roll === 6) {
-    grantTimeDilation(owner);
+    grantTimeDilation(owner, { skipMutationStabilizer: true });
     return "Time Dilation: +10 seconds for 3 rounds";
   }
   const amount = getRandomInt(300, 500);
@@ -28426,6 +28537,230 @@ const mutationStatusDefinitions = Object.freeze([
   }
 ]);
 
+const permanentMutationDefinitions = Object.freeze([
+  { id: "adaptive_metabolism", name: "Adaptive Metabolism", short: "-10% losses", description: "Reduces this player's point losses by 10%.", powerId: "deep_freeze", category: "defense" },
+  { id: "volatile_genome", name: "Volatile Genome", short: "+20% gains / +10% wrong", description: "Positive point gains increase by 20%, but wrong answers cost an additional 10% of score.", powerId: "double_jeopardy", category: "risk" },
+  { id: "apex_mutation", name: "Apex Mutation", short: "+15% below 1st", description: "Correct positive gains increase by 15% while this player is below first place.", powerId: "basic_bounty", category: "boost" },
+  { id: "recessive_trait", name: "Recessive Trait", short: "-15% in 1st", description: "Positive gains decrease by 15% while this player is in first place.", powerId: "reign_chaos", category: "risk" },
+  { id: "genetic_drift", name: "Genetic Drift", short: "-5% to +10%", description: "At round start, this player's score randomly shifts between -5% and +10%.", powerId: "roulette", category: "chaos" },
+  { id: "status_mimicry", name: "Status Mimicry", short: "copy a status", description: "At round start, copies one random active temporary status from another player for this round.", powerId: "cocktail_mix", category: "chaos" },
+  { id: "parasitic_growth", name: "Parasitic Growth", short: "steal 5%", description: "At round start, steals 5% of a random player's score.", powerId: "robin_hood", category: "target" },
+  { id: "viral_spread", name: "Viral Spread", short: "transfer a debuff", description: "When this player answers correctly, one of their negative temporary statuses transfers to another player.", powerId: "virus_factory", category: "target" },
+  { id: "mitosis", name: "Mitosis", short: "expired status splits", description: "When a temporary status expires, it has a 50% chance to split into two random one-round statuses.", powerId: "mutation", category: "mutation" },
+  { id: "dominant_gene", name: "Dominant Gene", short: "+1 status round", description: "Positive temporary statuses gained by this player last one additional round.", powerId: "blessing", category: "boost" },
+  { id: "degenerative_gene", name: "Degenerative Gene", short: "next status -1r", description: "The next positive temporary status gained by this player lasts one fewer round.", powerId: "fire_extinguisher", category: "risk" },
+  { id: "chimera", name: "Chimera", short: "replace a status", description: "At round start, replaces one of this player's temporary statuses with one copied from an opponent.", powerId: "chaos_infuser", category: "chaos" },
+  { id: "evolutionary_comeback", name: "Evolutionary Comeback", short: "last-place buff", description: "If this player loses while in last place, they gain a random buff.", powerId: "cocktail_mix", category: "boost" },
+  { id: "cellular_collapse", name: "Cellular Collapse", short: "3 wrongs -> -10%", description: "Wrong answers add stacks. At three stacks, this player loses 10% of score and the stacks clear.", powerId: "nail_coffin", category: "risk" },
+  { id: "mutation_stabilizer", name: "Mutation Stabilizer", short: "25% status block", description: "Each incoming status effect independently has a 25% chance to be blocked.", powerId: "antivirus", category: "defense" },
+  { id: "unstable_symbiosis", name: "Unstable Symbiosis", short: "share 5% gains", description: "Links to a random player. Whenever either player gains points, the other receives 5% of that gain.", powerId: "soul_link", category: "target" }
+]);
+
+function getPermanentMutationDefinition(id) {
+  return permanentMutationDefinitions.find((definition) => definition.id === id) || null;
+}
+
+function getPermanentMutations(owner) {
+  return Array.isArray(state.permanentMutations?.[owner])
+    ? state.permanentMutations[owner]
+    : [];
+}
+
+function hasPermanentMutation(owner, id) {
+  return getPermanentMutations(owner).includes(id);
+}
+
+function getPermanentMutationState() {
+  if (!state.permanentMutationState || typeof state.permanentMutationState !== "object") {
+    state.permanentMutationState = {
+      secondGrantRound: 0,
+      secondGrantComplete: false,
+      roundStartAppliedRound: 0,
+      cellularCollapseStacks: {},
+      degenerativePending: {},
+      symbiosisTargets: {},
+      mitosisSplitsByRound: {},
+      pendingMitosisExpiries: {}
+    };
+  }
+  const mutationState = state.permanentMutationState;
+  mutationState.cellularCollapseStacks ||= {};
+  mutationState.degenerativePending ||= {};
+  mutationState.symbiosisTargets ||= {};
+  mutationState.mitosisSplitsByRound ||= {};
+  mutationState.pendingMitosisExpiries ||= {};
+  return state.permanentMutationState;
+}
+
+function getMutationThresholdRound(maxRounds = state.maxRounds) {
+  // The requested examples are round 3 of 5 and round 5 of 10.
+  return Math.max(2, Math.ceil(Math.max(1, Number(maxRounds) || 1) / 2));
+}
+
+function shuffleMutationValues(values) {
+  const next = [...values];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  }
+  return next;
+}
+
+function initializePermanentMutations(owners = getActiveOwners()) {
+  if (!isMatchModifierEnabled("mutation") || !owners.length) {
+    return false;
+  }
+  const activeOwners = [...new Set(owners)].filter(Boolean);
+  const existingOwners = Object.keys(state.permanentMutations || {});
+  if (existingOwners.some((owner) => activeOwners.includes(owner) && getPermanentMutations(owner).length > 0)) {
+    return false;
+  }
+  state.permanentMutations = {};
+  const stateStore = getPermanentMutationState();
+  stateStore.secondGrantRound = getMutationThresholdRound(state.maxRounds);
+  stateStore.secondGrantComplete = false;
+  stateStore.roundStartAppliedRound = 0;
+  stateStore.cellularCollapseStacks = {};
+  stateStore.degenerativePending = {};
+  stateStore.symbiosisTargets = {};
+  stateStore.mitosisSplitsByRound = {};
+  stateStore.pendingMitosisExpiries = {};
+  const shuffled = shuffleMutationValues(permanentMutationDefinitions);
+  activeOwners.forEach((owner, index) => {
+    const mutation = shuffled[index % shuffled.length];
+    state.permanentMutations[owner] = mutation ? [mutation.id] : [];
+    if (mutation?.id === "degenerative_gene") {
+      stateStore.degenerativePending[owner] = true;
+    }
+  });
+  activeOwners.forEach((owner) => {
+    if (!hasPermanentMutation(owner, "unstable_symbiosis")) {
+      return;
+    }
+    const candidates = activeOwners.filter((target) => target !== owner);
+    if (candidates.length) {
+      stateStore.symbiosisTargets[owner] = candidates[Math.floor(Math.random() * candidates.length)];
+    }
+  });
+  return true;
+}
+
+function grantMidMatchPermanentMutations(owners = getActiveOwners(), events = []) {
+  if (!isMatchModifierEnabled("mutation")) {
+    return false;
+  }
+  const stateStore = getPermanentMutationState();
+  const threshold = Number(stateStore.secondGrantRound) || getMutationThresholdRound(state.maxRounds);
+  if (stateStore.secondGrantComplete || state.round < threshold) {
+    return false;
+  }
+  const activeOwners = [...new Set(owners)].filter(Boolean);
+  const available = shuffleMutationValues(permanentMutationDefinitions);
+  activeOwners.forEach((owner) => {
+    const current = getPermanentMutations(owner);
+    const next = available.find((definition) => !current.includes(definition.id));
+    if (!next) {
+      return;
+    }
+    state.permanentMutations[owner] = [...current, next.id];
+    if (next.id === "degenerative_gene") {
+      stateStore.degenerativePending[owner] = true;
+    }
+    if (next.id === "unstable_symbiosis" && !stateStore.symbiosisTargets[owner]) {
+      const candidates = activeOwners.filter((target) => target !== owner);
+      if (candidates.length) {
+        stateStore.symbiosisTargets[owner] = candidates[Math.floor(Math.random() * candidates.length)];
+      }
+    }
+    events.push(`${getOwnerLabel(owner)} evolved a second permanent mutation: ${next.name}.`);
+  });
+  stateStore.secondGrantComplete = true;
+  return true;
+}
+
+function getPermanentMutationStatusRounds(owner, definition, rounds) {
+  let nextRounds = Math.max(1, Number(rounds) || 1);
+  if (definition?.positive && hasPermanentMutation(owner, "dominant_gene")) {
+    nextRounds += 1;
+  }
+  if (definition?.positive && getPermanentMutationState().degenerativePending?.[owner]) {
+    nextRounds = Math.max(1, nextRounds - 1);
+  }
+  return nextRounds;
+}
+
+function getNextPositiveStatusRounds(owner, rounds) {
+  const effectiveRounds = getPermanentMutationStatusRounds(owner, { positive: true }, rounds);
+  consumeDegenerativeGene(owner, { positive: true });
+  return effectiveRounds;
+}
+
+function addPositiveStatusDurationRounds(store, owner, rounds, options = {}) {
+  if (!store || !owner) {
+    return 0;
+  }
+  if (!options.skipMutationStabilizer && shouldBlockPermanentMutationStatus(owner, { positive: true })) {
+    return 0;
+  }
+  const effectiveRounds = getNextPositiveStatusRounds(owner, rounds);
+  const result = addOwnerDurationRounds(store, owner, effectiveRounds);
+  return result;
+}
+
+function consumeDegenerativeGene(owner, definition) {
+  if (!definition?.positive || !getPermanentMutationState().degenerativePending?.[owner]) {
+    return;
+  }
+  getPermanentMutationState().degenerativePending[owner] = false;
+}
+
+function shouldBlockPermanentMutationStatus(owner, options = {}) {
+  if (!hasPermanentMutation(owner, "mutation_stabilizer") || Math.random() >= 0.25) {
+    return false;
+  }
+  queueStatFlash("shield", "Mutation Stabilizer", "Status Blocked", { owners: [owner], complex: true });
+  return true;
+}
+
+const mutationStabilizedPowerTypes = new Set([
+  "shield",
+  "streak_retainer",
+  "world_burn",
+  "law_mower",
+  "soul_link",
+  "arsonist",
+  "bartender",
+  "typhoon_season",
+  "thorns",
+  "hot_in_here",
+  "deep_freeze",
+  "permafrost",
+  "eternal_flame",
+  "insurance",
+  "all_out",
+  "antivirus",
+  "lucky_side",
+  "rocket",
+  "virus_factory",
+  "sin_sloth",
+  "blessing"
+]);
+
+function blockPowerStatusIfStabilized(owner, power, meta = {}) {
+  if (!power || !mutationStabilizedPowerTypes.has(power.type)) {
+    return false;
+  }
+  if (!shouldBlockPermanentMutationStatus(owner, { positive: true })) {
+    return false;
+  }
+  updateLatestPlayedPowerMeta(owner, {
+    ...meta,
+    blockedByMutationStabilizer: true
+  });
+  queueStatFlash("shield", "Mutation Stabilizer", `${power.name} Blocked`, { owners: [owner], complex: true });
+  return true;
+}
+
 function getMutationRandomOtherOwner(owner) {
   const candidates = getActiveOwners().filter((participant) => participant !== owner);
   return candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : "";
@@ -28433,6 +28768,412 @@ function getMutationRandomOtherOwner(owner) {
 
 function getMutationStatusEntries(owner) {
   return Array.isArray(state.mutationStatuses?.[owner]) ? state.mutationStatuses[owner] : [];
+}
+
+function getDedicatedTemporaryStatusEntries(owner) {
+  const entries = [];
+  const addCounter = (store, definitionId) => {
+    const remaining = Math.max(0, Number(store?.[owner]) || 0);
+    if (remaining <= 0) {
+      return;
+    }
+    const definition = getMutationDefinitionForStatus({ id: definitionId });
+    if (!definition) {
+      return;
+    }
+    entries.push({
+      id: definition.id,
+      owner,
+      targetOwner: owner,
+      name: definition.name,
+      powerId: definition.powerId,
+      category: definition.category,
+      triggerOnce: Boolean(definition.triggerOnce),
+      triggered: false,
+      rounds: remaining,
+      expiresAt: state.round + remaining - 1,
+      synthetic: true
+    });
+  };
+
+  const addDurationObject = (store, definitionId) => {
+    const record = store?.[owner];
+    const remaining = Math.max(0, Number(record?.remaining) || 0);
+    if (!record || remaining <= 0) {
+      return;
+    }
+    const definition = getMutationDefinitionForStatus({ id: definitionId });
+    if (!definition) {
+      return;
+    }
+    entries.push({
+      id: definition.id,
+      owner,
+      targetOwner: owner,
+      name: definition.name,
+      powerId: definition.powerId,
+      category: definition.category,
+      triggerOnce: Boolean(definition.triggerOnce),
+      triggered: false,
+      rounds: remaining,
+      expiresAt: state.round + remaining - 1,
+      synthetic: true
+    });
+  };
+
+  // These stores are the regular power/status system. Including them here
+  // lets Mutation traits interact with temporary statuses granted by powers,
+  // not only statuses rolled by Mutation itself.
+  addCounter(state.freezeReflectionRounds, "uno_reverse");
+  addCounter(state.freezeProtection, "deep_freeze");
+  addCounter(state.streakLossProtectionRounds, "streak_guard");
+  addCounter(state.streakFreezeRounds, "freeze_ray");
+  addCounter(state.debuffShieldRounds, "encryption");
+  addCounter(state.cocktailPenaltyRounds, "cocktail_debt");
+  addCounter(state.timeDilationRounds, "time_dilation");
+  addCounter(state.luckRounds, "lucky_side");
+  addCounter(state.streakSicknessRounds, "streak_sickness");
+  addCounter(state.loserTaxCollectors, "loser_tax");
+  addCounter(state.doomStreakGuardRounds, "doom_streak_guard");
+
+  addDurationObject(state.redHerringMasks, "red_herring_status");
+  addDurationObject(state.molotovBurningMarks, "molotov_burning");
+  addDurationObject(state.fireExtinguishedRounds, "mutation_extinguished");
+  addDurationObject(state.insurancePolicies, "insurance_policy");
+  addDurationObject(state.insuranceFrauds, "insurance_fraud_status");
+
+  const chaosStatus = getChaosStatus(owner);
+  [
+    ["chaosDebt", "chaos_debt"],
+    ["streakLossAmplifier", "streak_loss_amplifier"],
+    ["unluck", "unluck"],
+    ["sickness", "chaos_sickness"],
+    ["reflectorShield", "reflector_shield"]
+  ].forEach(([key, definitionId]) => addCounter({ [owner]: chaosStatus[key] }, definitionId));
+  if (Number(chaosStatus.resistantStreak?.rounds) > 0) {
+    addCounter({ [owner]: chaosStatus.resistantStreak.rounds }, "resistant_streak");
+  }
+  if (Array.isArray(chaosStatus.unstableStreak) && chaosStatus.unstableStreak.length) {
+    addCounter({ [owner]: Math.max(...chaosStatus.unstableStreak.map((entry) => Number(entry.remaining) || 0)) }, "unstable_streak");
+  }
+  return entries;
+}
+
+function getCopyableActiveStatusEntries(owner) {
+  const mutationEntries = getMutationStatusEntries(owner);
+  const existingIds = new Set(mutationEntries.map((status) => status.id));
+  return [
+    ...mutationEntries,
+    ...getDedicatedTemporaryStatusEntries(owner).filter((status) => !existingIds.has(status.id))
+  ];
+}
+
+function getMutationDefinitionForStatus(status) {
+  return mutationStatusDefinitions.find((definition) => definition.id === status?.id) || null;
+}
+
+function removeMutationStatusRecord(owner, mutationId) {
+  const records = getMutationStatusEntries(owner);
+  const status = records.find((entry) => entry.mutationId === mutationId);
+  if (!status) {
+    return null;
+  }
+  cleanupMutationStatusRecord(status, records.filter((entry) => entry.mutationId !== mutationId));
+  const remaining = records.filter((entry) => entry.mutationId !== mutationId);
+  if (remaining.length) {
+    state.mutationStatuses[owner] = remaining;
+  } else {
+    delete state.mutationStatuses[owner];
+  }
+  return status;
+}
+
+function removeDedicatedTemporaryStatus(owner, status) {
+  if (!owner || !status?.synthetic) {
+    return false;
+  }
+  const clearCounter = (store) => {
+    if (!store) {
+      return;
+    }
+    store[owner] = 0;
+  };
+  switch (status.id) {
+    case "uno_reverse":
+      clearCounter(state.freezeReflectionRounds);
+      clearCounter(state.freezeProtection);
+      return true;
+    case "deep_freeze":
+      clearCounter(state.freezeProtection);
+      return true;
+    case "streak_guard":
+      clearCounter(state.streakLossProtectionRounds);
+      return true;
+    case "freeze_ray":
+      clearCounter(state.streakFreezeRounds);
+      return true;
+    case "encryption":
+      clearCounter(state.debuffShieldRounds);
+      return true;
+    case "cocktail_debt":
+      clearCounter(state.cocktailPenaltyRounds);
+      return true;
+    case "time_dilation":
+      clearCounter(state.timeDilationRounds);
+      return true;
+    case "lucky_side":
+      clearCounter(state.luckRounds);
+      return true;
+    case "streak_sickness":
+      clearCounter(state.streakSicknessRounds);
+      return true;
+    case "loser_tax":
+      clearCounter(state.loserTaxCollectors);
+      return true;
+    case "doom_streak_guard":
+      clearCounter(state.doomStreakGuardRounds);
+      return true;
+    case "chaos_debt":
+      updateChaosStatus(owner, { chaosDebt: 0 });
+      return true;
+    case "streak_loss_amplifier":
+      updateChaosStatus(owner, { streakLossAmplifier: 0 });
+      return true;
+    case "unluck":
+      updateChaosStatus(owner, { unluck: 0 });
+      return true;
+    case "chaos_sickness":
+      updateChaosStatus(owner, { sickness: 0 });
+      return true;
+    case "reflector_shield":
+      updateChaosStatus(owner, { reflectorShield: 0 });
+      return true;
+    case "resistant_streak":
+      updateChaosStatus(owner, { resistantStreak: null });
+      return true;
+    case "unstable_streak":
+      updateChaosStatus(owner, { unstableStreak: [] });
+      return true;
+    case "red_herring_status":
+      delete state.redHerringMasks[owner];
+      return true;
+    case "molotov_burning":
+      delete state.molotovBurningMarks[owner];
+      return true;
+    case "mutation_extinguished":
+      delete state.fireExtinguishedRounds[owner];
+      return true;
+    case "insurance_policy":
+      delete state.insurancePolicies[owner];
+      return true;
+    case "insurance_fraud_status":
+      delete state.insuranceFrauds[owner];
+      return true;
+    default:
+      return false;
+  }
+}
+
+function removeAnyCopyableStatus(owner, status) {
+  if (!status) {
+    return false;
+  }
+  return status.synthetic
+    ? removeDedicatedTemporaryStatus(owner, status)
+    : Boolean(removeMutationStatusRecord(owner, status.mutationId));
+}
+
+function copyMutationStatusToOwner(sourceStatus, targetOwner, rounds = 1) {
+  const definition = getMutationDefinitionForStatus(sourceStatus);
+  if (!definition || !targetOwner) {
+    return null;
+  }
+  return applyMutationStatus(targetOwner, definition, rounds);
+}
+
+function transferMutationStatus(sourceOwner, targetOwner, status) {
+  if (!sourceOwner || !targetOwner || !status || sourceOwner === targetOwner) {
+    return null;
+  }
+  const remaining = Math.max(1, getMutationStatusRemaining(status));
+  const copied = copyMutationStatusToOwner(status, targetOwner, remaining);
+  if (!copied) {
+    return null;
+  }
+  removeAnyCopyableStatus(sourceOwner, status);
+  return copied;
+}
+
+function getRandomCopyableMutationStatus(owners, excludedOwner) {
+  const candidates = owners.flatMap((owner) => getCopyableActiveStatusEntries(owner)
+    .filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0)
+    .map((status) => ({ owner, status }))
+  ).filter((entry) => entry.owner !== excludedOwner);
+  return candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+}
+
+function applyPermanentMutationRoundStart(owners = getActiveOwners(), events = []) {
+  if (!isMatchModifierEnabled("mutation")) {
+    return;
+  }
+  const activeOwners = [...new Set(owners)].filter(Boolean);
+  grantMidMatchPermanentMutations(activeOwners, events);
+  const stateStore = getPermanentMutationState();
+  if (stateStore.roundStartAppliedRound === state.round) {
+    return;
+  }
+  stateStore.roundStartAppliedRound = state.round;
+
+  const pendingMitosis = stateStore.pendingMitosisExpiries || {};
+  stateStore.pendingMitosisExpiries = {};
+  Object.entries(pendingMitosis).forEach(([owner, statuses]) => {
+    if (activeOwners.includes(owner) && Array.isArray(statuses) && statuses.length) {
+      applyMitosisSplits(owner, statuses);
+    }
+  });
+
+  activeOwners.forEach((owner) => {
+    if (hasPermanentMutation(owner, "genetic_drift")) {
+      const percent = getRandomInt(-5, 10) / 100;
+      const amount = Math.floor(Math.max(0, getScore(owner)) * Math.abs(percent));
+      if (percent < 0) {
+        const appliedLoss = applyProtectedScoreLoss(owner, amount, "Genetic Drift", events);
+        events.push(`${getOwnerLabel(owner)}'s Genetic Drift shifted their score by ${formatSignedStat(-appliedLoss, "Point")}.`);
+      } else if (amount > 0) {
+        addScore(owner, amount);
+        events.push(`${getOwnerLabel(owner)}'s Genetic Drift shifted their score by ${formatSignedStat(amount, "Point")}.`);
+      }
+    }
+    if (hasPermanentMutation(owner, "parasitic_growth")) {
+      const targets = activeOwners.filter((target) => target !== owner);
+      const target = targets.length ? targets[Math.floor(Math.random() * targets.length)] : "";
+      const amount = target ? Math.floor(Math.max(0, getScore(target)) * 0.05) : 0;
+      if (target && amount > 0) {
+        const appliedLoss = applyProtectedScoreLoss(target, amount, "Parasitic Growth", events);
+        addScore(owner, appliedLoss);
+        events.push(`${getOwnerLabel(owner)}'s Parasitic Growth stole ${appliedLoss.toLocaleString()} points from ${getOwnerLabel(target)}.`);
+      }
+    }
+  });
+
+  activeOwners.forEach((owner) => {
+    if (hasPermanentMutation(owner, "status_mimicry")) {
+      const copied = getRandomCopyableMutationStatus(activeOwners, owner);
+      if (copied) {
+        const applied = copyMutationStatusToOwner(copied.status, owner, 1);
+        if (applied) {
+          events.push(`${getOwnerLabel(owner)}'s Status Mimicry copied ${applied.name} from ${getOwnerLabel(copied.owner)} for this round.`);
+        }
+      }
+    }
+    if (hasPermanentMutation(owner, "chimera")) {
+      const ownStatuses = getCopyableActiveStatusEntries(owner).filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0);
+      const copied = getRandomCopyableMutationStatus(activeOwners, owner);
+      if (ownStatuses.length && copied) {
+        const removed = ownStatuses[Math.floor(Math.random() * ownStatuses.length)];
+        const replacement = copyMutationStatusToOwner(copied.status, owner, getMutationStatusRemaining(copied.status));
+        // Chimera copies the opponent's effect while leaving the opponent
+        // intact, then replaces one of the owner's own temporary effects.
+        if (replacement) {
+          removeAnyCopyableStatus(owner, removed);
+          events.push(`${getOwnerLabel(owner)}'s Chimera replaced ${removed.name} with ${replacement.name} from ${getOwnerLabel(copied.owner)}.`);
+        }
+      }
+    }
+  });
+
+  // Keep the per-round mitosis guard bounded while allowing split statuses to
+  // expire and split again on a later round.
+  Object.keys(stateStore.mitosisSplitsByRound || {}).forEach((round) => {
+    if (Number(round) < state.round - 1) {
+      delete stateStore.mitosisSplitsByRound[round];
+    }
+  });
+}
+
+function applyPermanentMutationAnswerEffects(owners, winners, correctOwners, events) {
+  if (!isMatchModifierEnabled("mutation")) {
+    return;
+  }
+  const winnerSet = winners instanceof Set ? winners : new Set(winners || []);
+  const correctSet = correctOwners instanceof Set ? correctOwners : new Set(correctOwners || []);
+  owners.forEach((owner) => {
+    if (hasPermanentMutation(owner, "viral_spread") && correctSet.has(owner)) {
+      const negativeStatuses = getCopyableActiveStatusEntries(owner).filter((status) => (
+        !status.triggered
+        && getMutationStatusRemaining(status) > 0
+        && getMutationDefinitionForStatus(status)?.negative
+      ));
+      const targets = owners.filter((target) => target !== owner);
+      if (negativeStatuses.length && targets.length) {
+        const status = negativeStatuses[Math.floor(Math.random() * negativeStatuses.length)];
+        const target = targets[Math.floor(Math.random() * targets.length)];
+        const transferred = transferMutationStatus(owner, target, status);
+        if (transferred) {
+          events.push(`${getOwnerLabel(owner)}'s Viral Spread transferred ${transferred.name} to ${getOwnerLabel(target)}.`);
+        }
+      }
+    }
+    if (hasPermanentMutation(owner, "evolutionary_comeback") && !winnerSet.has(owner) && isLastPlace(owner)) {
+      const result = applyCocktailBuff(owner, { buffsOnly: true, skipChaosRoll: true });
+      events.push(`${getOwnerLabel(owner)}'s Evolutionary Comeback granted a buff: ${result}.`);
+    }
+  });
+}
+
+function applyPermanentMutationDeltaModifiers(deltas, owners, startingScores, wrongOwners, events) {
+  if (!isMatchModifierEnabled("mutation")) {
+    return;
+  }
+  const stateStore = getPermanentMutationState();
+  const wrongSet = wrongOwners instanceof Set ? wrongOwners : new Set(wrongOwners || []);
+  owners.forEach((owner) => {
+    if (hasPermanentMutation(owner, "volatile_genome") && wrongSet.has(owner)) {
+      const projected = Math.max(0, Number(startingScores[owner] || 0) + Number(deltas[owner] || 0));
+      const amount = Math.floor(projected * 0.1);
+      if (amount > 0) {
+        deltas[owner] -= amount;
+        events.push(`${getOwnerLabel(owner)}'s Volatile Genome added a ${amount.toLocaleString()} wrong-answer loss.`);
+      }
+    }
+    if (hasPermanentMutation(owner, "cellular_collapse") && wrongSet.has(owner)) {
+      const nextStacks = Math.max(0, Number(stateStore.cellularCollapseStacks?.[owner]) || 0) + 1;
+      stateStore.cellularCollapseStacks[owner] = nextStacks >= 3 ? 0 : nextStacks;
+      if (nextStacks >= 3) {
+        const projected = Math.max(0, Number(startingScores[owner] || 0) + Number(deltas[owner] || 0));
+        const amount = Math.floor(projected * 0.1);
+        deltas[owner] -= amount;
+        events.push(`${getOwnerLabel(owner)}'s Cellular Collapse triggered at 3 stacks and cost ${amount.toLocaleString()} points.`);
+      }
+    }
+  });
+}
+
+function applyPermanentMutationSymbiosis(owner, amount) {
+  if (!amount || amount <= 0 || !isMatchModifierEnabled("mutation")) {
+    return;
+  }
+  const activeOwners = new Set(getActiveOwners());
+  const linkedOwners = new Set();
+  Object.entries(getPermanentMutationState().symbiosisTargets || {}).forEach(([sourceOwner, targetOwner]) => {
+    if (!activeOwners.has(sourceOwner) || !activeOwners.has(targetOwner)) {
+      return;
+    }
+    if (sourceOwner === owner) {
+      linkedOwners.add(targetOwner);
+    } else if (targetOwner === owner) {
+      linkedOwners.add(sourceOwner);
+    }
+  });
+  if (!linkedOwners.size) {
+    return;
+  }
+  const linkedGain = Math.floor(amount * 0.05);
+  if (linkedGain > 0) {
+    linkedOwners.forEach((targetOwner) => {
+      addScore(targetOwner, linkedGain, { skipSymbiosis: true });
+    });
+  }
 }
 
 function markMutationStatusTriggered(owner, statusId, mutationId = "") {
@@ -28644,6 +29385,33 @@ function isMutationStatusTriggered(status) {
   return false;
 }
 
+function applyMitosisSplits(owner, expiredStatuses = []) {
+  if (!hasPermanentMutation(owner, "mitosis") || !expiredStatuses.length) {
+    return;
+  }
+  const stateStore = getPermanentMutationState();
+  const roundKey = String(state.round);
+  let splitBudget = Math.max(0, 8 - (Number(stateStore.mitosisSplitsByRound?.[roundKey]) || 0));
+  for (const expiredStatus of expiredStatuses) {
+    if (splitBudget < 2 || Math.random() >= 0.5) {
+      continue;
+    }
+    const pool = mutationStatusDefinitions.filter((definition) => definition.id !== expiredStatus.id);
+    const splitDefinitions = shuffleMutationValues(pool).slice(0, 2);
+    let appliedCount = 0;
+    splitDefinitions.forEach((definition) => {
+      if (applyMutationStatus(owner, definition, 1)) {
+        appliedCount += 1;
+      }
+    });
+    if (appliedCount) {
+      splitBudget -= appliedCount;
+      stateStore.mitosisSplitsByRound[roundKey] = 8 - splitBudget;
+      queueStatFlash("mutation", "Mitosis", [`${expiredStatus.name || "Status"} split`, `${appliedCount} new status${appliedCount === 1 ? "" : "es"}`], { owners: [owner], complex: true });
+    }
+  }
+}
+
 function pruneMutationStatuses() {
   Object.entries(state.mutationStatuses || {}).forEach(([owner, records]) => {
     const active = [];
@@ -28663,6 +29431,9 @@ function pruneMutationStatuses() {
     } else {
       delete state.mutationStatuses[owner];
     }
+    if (hasPermanentMutation(owner, "mitosis") && expired.length) {
+      applyMitosisSplits(owner, expired);
+    }
   });
 }
 
@@ -28670,15 +29441,20 @@ function applyMutationStatus(owner, definition, rounds) {
   if (!definition || (definition.positive && !canGainPositiveStatus(owner))) {
     return null;
   }
+  if (shouldBlockPermanentMutationStatus(owner, { positive: Boolean(definition.positive), negative: Boolean(definition.negative) })) {
+    return null;
+  }
   if (definition.negative && consumeDebuffShield(owner, "Mutation")) {
     return null;
   }
+  const effectiveRounds = getPermanentMutationStatusRounds(owner, definition, rounds);
   state.mutationStatusSequence = Math.max(0, Number(state.mutationStatusSequence) || 0) + 1;
   const mutationId = `mutation-${state.round}-${state.mutationStatusSequence}`;
-  const cleanup = definition.apply(owner, rounds, mutationId);
+  const cleanup = definition.apply(owner, effectiveRounds, mutationId);
   if (!cleanup) {
     return null;
   }
+  consumeDegenerativeGene(owner, definition);
   const status = {
     id: definition.id,
     owner,
@@ -28690,8 +29466,8 @@ function applyMutationStatus(owner, definition, rounds) {
     triggerOnce: Boolean(definition.triggerOnce),
     triggerOnApply: Boolean(definition.triggerOnApply),
     mutationId,
-    rounds,
-    expiresAt: state.round + rounds - 1,
+    rounds: effectiveRounds,
+    expiresAt: state.round + effectiveRounds - 1,
     cleanup,
     source: "Mutation"
   };
@@ -28700,39 +29476,6 @@ function applyMutationStatus(owner, definition, rounds) {
     markMutationStatusTriggered(owner, status.id, status.mutationId);
   }
   return status;
-}
-
-function applyMutationRoundStart() {
-  if (!isMatchModifierEnabled("mutation")) {
-    return;
-  }
-  pruneMutationStatuses();
-  const pool = mutationStatusDefinitions.filter((definition) => definition.pool);
-  const summaries = [];
-  getActiveOwners().forEach((owner) => {
-    const activeEffectKeys = new Set(
-      getMutationStatusEntries(owner)
-        .filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0)
-        .map((status) => status.effectKey || status.id)
-    );
-    const available = pool.filter((definition) => !activeEffectKeys.has(definition.effectKey || definition.id));
-    const count = getRandomInt(1, 3);
-    const applied = [];
-    while (available.length && applied.length < count) {
-      const definition = available.splice(Math.floor(Math.random() * available.length), 1)[0];
-      const status = applyMutationStatus(owner, definition, getRandomInt(2, 3));
-      if (status) {
-        applied.push(`${status.name} · ${status.rounds}r`);
-      }
-    }
-    if (applied.length) {
-      summaries.push(`${getOwnerLabel(owner)}: ${applied.join(", ")}`);
-    }
-  });
-  if (summaries.length) {
-    queueStatFlash("chaos", "Mutation", summaries, { owners: [], iconKey: "mode:mutation", complex: true, priority: true });
-    renderScore();
-  }
 }
 
 function getActiveMutationRuleEntries(rule, owners = getActiveOwners()) {
@@ -29069,6 +29812,9 @@ function applyRandomDebuff(owner, source = "Debuff", options = {}) {
   if (!owner) {
     return "";
   }
+  if (shouldBlockPermanentMutationStatus(owner, { negative: true })) {
+    return "Mutation Stabilizer blocked the debuff";
+  }
   if (!options.ignoreShield && consumeDebuffShield(owner, source)) {
     return `Antivirus blocked ${source}`;
   }
@@ -29119,9 +29865,9 @@ function applyRandomDebuff(owner, source = "Debuff", options = {}) {
   return "Chaos: answer scrambled for 3 seconds";
 }
 
-function grantTimeDilation(owner) {
-  addOwnerDurationRounds(state.timeDilationRounds, owner, 3);
-  if (owner === getFocusedOwner() && state.timerId && isAnswerInputLive()) {
+function grantTimeDilation(owner, options = {}) {
+  const addedRounds = addPositiveStatusDurationRounds(state.timeDilationRounds, owner, 3, options);
+  if (addedRounds > 0 && owner === getFocusedOwner() && state.timerId && isAnswerInputLive()) {
     state.timerRemaining = Math.min(99, state.timerRemaining + 10);
     renderTimer();
   }
@@ -29333,8 +30079,8 @@ function applyEveryCocktailBuff(owner) {
   const results = [];
   setOwnerStreak(owner, getOwnerStreak(owner) + 1);
   results.push("gain 1 streak");
-  addOwnerDurationRounds(state.freezeProtection, owner, 2);
-  addOwnerDurationRounds(state.streakLossProtectionRounds, owner, 2);
+  addPositiveStatusDurationRounds(state.freezeProtection, owner, 2);
+  addPositiveStatusDurationRounds(state.streakLossProtectionRounds, owner, 2);
   results.push("point shield");
   results.push("streak guard");
   results.push(upgradeRandomPowerRarity(owner));
@@ -29901,7 +30647,7 @@ function getDisplayedPowerDescription(power, owner = getCurrentPowerOwner()) {
     description = `${description} Current cost: ${getVendingMachineRefillCost(owner).toLocaleString()} points.`;
   }
   if (power.type === "recycle_bin" && owner && !state.lastPlayedPowerUps[owner]) {
-    description = `${description} You need to have used a power-up earlier in this match.`;
+    description = `${description} No stored power yet; the extra slot is still added immediately.`;
   }
   return description.trim();
 }
@@ -30074,7 +30820,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
     const before = Object.fromEntries(getActiveOwners().map((participant) => [participant, getOwnerStreak(participant)]));
     let cappedOwners = [];
     if (isChaosInfusedPower(power)) {
-      addEffectStack(state.eternalSlumberOwners, owner);
+      if (!blockPowerStatusIfStabilized(owner, power, meta)) {
+        addEffectStack(state.eternalSlumberOwners, owner);
+      }
       cappedOwners = enforceEternalSlumberStreakCaps();
     } else {
       cappedOwners = [...new Set([...capStreaksToOwner(owner), ...enforceEternalSlumberStreakCaps()])];
@@ -30094,7 +30842,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "antivirus") {
-    if (isChaosInfusedPower(power)) {
+    if (blockPowerStatusIfStabilized(owner, power, meta)) {
+      updateLatestPlayedPowerMeta(owner, { blockedByMutationStabilizer: true });
+    } else if (isChaosInfusedPower(power)) {
       addOwnerDurationRounds(state.debuffShieldRounds, owner, power.rounds || 5);
       queueStatFlash("shield", power.name, "5 Rounds Encrypted", { owners: [owner], complex: true });
     } else {
@@ -30155,9 +30905,11 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "all_out") {
-    state.allOutRounds[owner] = state.round;
-    if (isChaosInfusedPower(power)) {
-      state.endlessHandRounds[owner] = state.round;
+    if (!blockPowerStatusIfStabilized(owner, power, meta)) {
+      state.allOutRounds[owner] = state.round;
+      if (isChaosInfusedPower(power)) {
+        state.endlessHandRounds[owner] = state.round;
+      }
     }
   }
 
@@ -30224,7 +30976,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "streak_retainer" && isChaosInfusedPower(power)) {
     const target = meta.targetOwner;
-    if (target && getActiveOwners().includes(target)) {
+    if (!blockPowerStatusIfStabilized(owner, power, meta) && target && getActiveOwners().includes(target)) {
       setOwnerStreak(owner, getOwnerStreak(target), { force: true });
       state.streakLinks = [
         ...(state.streakLinks || []),
@@ -30270,7 +31022,7 @@ function consumeImmediatePower(owner, power, meta = {}) {
   if (power.type === "blessing") {
     const isPersistentBlessing = isChaosInfusedPower(power);
     const amount = 500 + Math.floor(Math.max(0, getScore(owner)) * (isPersistentBlessing ? power.percent || 0.05 : 0.1));
-    if (isPersistentBlessing) {
+    if (isPersistentBlessing && !blockPowerStatusIfStabilized(owner, power, meta)) {
       const stacks = addEffectStack(state.divineBlessingOwners, owner);
       updateLatestPlayedPowerMeta(owner, { blessingStacks: stacks, blessingAmount: amount });
     } else {
@@ -30407,9 +31159,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
 
   if (power.type === "lucky_side") {
     const rounds = isChaosInfusedPower(power) ? power.rounds || 5 : 3;
-    addOwnerDurationRounds(state.luckRounds, owner, rounds);
+    addPositiveStatusDurationRounds(state.luckRounds, owner, rounds);
     if (isChaosInfusedPower(power)) {
-      addOwnerDurationRounds(state.chaosInfusionBoostRounds, owner, rounds);
+      addPositiveStatusDurationRounds(state.chaosInfusionBoostRounds, owner, rounds);
     }
     queueStatFlash("positive", power.name, `${rounds} Rounds of Buff Luck`, { owners: [owner], complex: true });
     renderScore();
@@ -30428,7 +31180,9 @@ function consumeImmediatePower(owner, power, meta = {}) {
   }
 
   if (power.type === "insurance") {
-    const insuranceCost = armInsurancePolicy(owner, power);
+    const insuranceCost = blockPowerStatusIfStabilized(owner, power, meta)
+      ? 0
+      : armInsurancePolicy(owner, power);
     updateLatestPlayedPowerMeta(owner, { insuranceCost });
     renderScore();
   }
@@ -30890,7 +31644,7 @@ function applyRoomRoundStartModifiers() {
         enabled: "mutation",
         kind: "chaos",
         title: "Mutation",
-        detail: "Random statuses\nevery round",
+        detail: "Permanent mutation\nat match start",
         iconKey: "mode:mutation",
         durationMs: 1200
       }
@@ -31290,6 +32044,7 @@ function appendPowerSuggestionBubble(button, suggestion) {
 function renderPowerUps() {
   const owner = getCurrentPowerOwner();
   const hand = state.powerHands[owner] || [];
+  elements.powerPanel.dataset.handSize = String(hand.length);
   const freshIds = [...(state.freshPowerUps[owner] || [])];
   const panelVisible = !elements.powerPanel.classList.contains("hidden");
   const beforeHeight = getPowerPanelHeightForAnimation();
@@ -31319,12 +32074,18 @@ function renderPowerUps() {
 
   const renderEntries = getPowerHandRenderEntries(owner, hand);
   const holdingExitLayout = renderEntries.some((entry) => entry.exiting);
+  const renderedHandSize = Math.max(
+    hand.length,
+    renderEntries.filter((entry) => !entry.exiting).length
+  );
+  elements.powerPanel.dataset.handSize = String(renderedHandSize);
 
   if (!hand.length && !renderEntries.length) {
     const empty = document.createElement("p");
     empty.className = "power-empty";
     empty.textContent = "No power-ups left.";
     elements.powerPanel.appendChild(empty);
+    elements.powerPanel.dataset.handSize = "0";
     animatePowerPanelHeightChange(beforeHeight);
     return;
   }
@@ -31364,7 +32125,7 @@ function renderPowerUps() {
     button.classList.toggle("chaos-infused", chaosInfused && !animateChaosInfusion);
     button.classList.toggle("chaos-infuse-pending", animateChaosInfusion);
     const description = getDisplayedPowerDescription(power, owner);
-    const hasUseAvailable = canPlayPower(owner);
+    const hasUseAvailable = canPlayPower(owner, power);
     const usable = hasUseAvailable && isPowerUsable(power, owner);
     button.dataset.usable = String(usable);
     const unavailableReason = getPowerUnavailableReason(power, hasUseAvailable);
@@ -31459,7 +32220,7 @@ function selectPowerUp(powerId) {
   if (state.chaosInputLockId && owner === getFocusedOwner()) {
     return;
   }
-  if (!canPlayPower(owner)) {
+  if (!canPlayPower(owner, power)) {
     return;
   }
 
@@ -31588,8 +32349,7 @@ function isPowerUsable(power, owner) {
   }
 
   if (power.type === "recycle_bin") {
-    const copied = getPowerById(state.lastPlayedPowerUps[owner]);
-    return Boolean(copied && copied.type !== "recycle_bin");
+    return true;
   }
 
   if (power.type === "dead_weight" && isDeadWeightLockedThisRound(owner)) {
@@ -33029,7 +33789,11 @@ function renderRound() {
   elements.playerTwoInput.disabled = false;
   elements.submitButton.disabled = state.isSpectator;
   if (!state.renderingSyncedRoomResume) {
-    applyMutationRoundStart();
+    const permanentMutationEvents = [];
+    applyPermanentMutationRoundStart(getActiveOwners(), permanentMutationEvents);
+    if (permanentMutationEvents.length) {
+      queueStatFlash("mutation", "Permanent Mutations", permanentMutationEvents, { owners: [], complex: true });
+    }
     applyRoundStartEffects();
     // Round-start bombs and other trigger-once statuses resolve inside the
     // shared effect pass. Remove their Mutation records after that pass so
@@ -37971,6 +38735,17 @@ function resetMatch(mode) {
   state.chaosStatusEffects = {};
   state.mutationStatuses = {};
   state.mutationStatusSequence = 0;
+  state.permanentMutations = {};
+  state.permanentMutationState = {
+    secondGrantRound: 0,
+    secondGrantComplete: false,
+    roundStartAppliedRound: 0,
+    cellularCollapseStacks: {},
+    degenerativePending: {},
+    symbiosisTargets: {},
+    mitosisSplitsByRound: {},
+    pendingMitosisExpiries: {}
+  };
   state.penaltyStormOwners = {};
   state.fraudMasterOwners = {};
   state.fireExtinguisherOwners = {};
@@ -38110,6 +38885,10 @@ async function startGame(mode) {
       setCurrentRoomMatchId(syncedRoomGame.matchId);
     }
     applyRoomGamePowerState(syncedRoomGame);
+  }
+  if (isMatchModifierEnabled("mutation") && (mode !== "room" || isCurrentHost())
+    && !getActiveOwners().some((owner) => getPermanentMutations(owner).length)) {
+    initializePermanentMutations();
   }
   const matchToken = state.matchWorkToken;
   setHidden(elements.modeScreen, true);
@@ -42016,6 +42795,7 @@ async function beginRoomMatch() {
   setCurrentRoomMatchId(createRoomMatchId());
   resetRoomPowerSyncClocks();
   applyRandomRoomModifiersForMatch();
+  initializePermanentMutations();
   setupPowerHands();
   const initialPowerState = getRoomPowerStatePayload();
   addSystemChat("The host started the match.");
@@ -44756,7 +45536,11 @@ function applyFraudMasterPayouts(playedEntries, winnerSet, owners, startingScore
     });
 }
 
-function applyPositiveGainModifiers(deltas, owners, events) {
+function applyPositiveGainModifiers(deltas, owners, events, options = {}) {
+  const winningOwners = new Set(options.winningOwners || []);
+  const correctOwners = new Set(options.correctOwners || options.winningOwners || []);
+  const startingScores = options.startingScores || Object.fromEntries(owners.map((owner) => [owner, getScore(owner)]));
+  const highScore = Math.max(0, ...owners.map((owner) => Number(startingScores[owner]) || 0));
   owners.forEach((owner) => {
     const positive = Math.max(0, Number(deltas[owner]) || 0);
     if (positive <= 0) {
@@ -44764,7 +45548,19 @@ function applyPositiveGainModifiers(deltas, owners, events) {
     }
     const capitalismStacks = Math.max(0, getEffectStackCount(state.capitalismOwners?.[owner]));
     const unluckActive = getChaosStatusStackCount(owner, "unluck") > 0;
-    const multiplier = (1 + (capitalismStacks * 0.5)) * (unluckActive ? 0.9 : 1);
+    let multiplier = (1 + (capitalismStacks * 0.5)) * (unluckActive ? 0.9 : 1);
+    if (hasPermanentMutation(owner, "volatile_genome")) {
+      multiplier *= 1.2;
+    }
+    if (hasPermanentMutation(owner, "apex_mutation")
+      && correctOwners.has(owner)
+      && (Number(startingScores[owner]) || 0) < highScore) {
+      multiplier *= 1.15;
+    }
+    if (hasPermanentMutation(owner, "recessive_trait")
+      && (Number(startingScores[owner]) || 0) >= highScore) {
+      multiplier *= 0.85;
+    }
     if (multiplier === 1) {
       return;
     }
@@ -45020,6 +45816,7 @@ function createNoCorrectAward() {
 
   playedEntries
     .filter((entry) => entry.power.type === "eternal_flame" && !isChaosInfusedPower(entry.power))
+    .filter((entry) => !blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry)))
     .forEach((entry) => {
       const stacks = addEffectStack(state.eternalFlameProtection, entry.owner);
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} now blocks ${getOwnerLabel(entry.owner)}'s streak losses for the rest of the match.`));
@@ -45027,6 +45824,7 @@ function createNoCorrectAward() {
 
   playedEntries
     .filter((entry) => entry.power.type === "eternal_flame" && isChaosInfusedPower(entry.power))
+    .filter((entry) => !blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry)))
     .forEach((entry) => {
       const stacks = addEffectStack(state.phoenixRebirthOwners, entry.owner);
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will convert future streak losses into next-round points and Arsonist stacks.`));
@@ -45048,6 +45846,7 @@ function createNoCorrectAward() {
 
   applyNewPersistentPowerEntries(playedEntries, events);
   applyPreGradeSinGluttony(playedEntries, startingScores, startingStreaks, deltas, events);
+  applyPermanentMutationAnswerEffects(owners, new Set(), new Set(), events);
 
   recordRoundLosses(owners);
   applyPenaltyStormLosses(owners, startingScores, startingStreaks, deltas, events);
@@ -45245,6 +46044,16 @@ function createNoCorrectAward() {
 
   owners.forEach((participant) => {
     if (freezeSnapshot[participant] > 0) {
+      if (freezeSnapshot[participant] === 1 && hasPermanentMutation(participant, "mitosis")) {
+        const definition = getMutationDefinitionForStatus({ id: "deep_freeze" });
+        if (definition) {
+          const stateStore = getPermanentMutationState();
+          stateStore.pendingMitosisExpiries[participant] = [
+            ...(stateStore.pendingMitosisExpiries[participant] || []),
+            { id: definition.id, name: definition.name }
+          ];
+        }
+      }
       state.freezeProtection[participant] = Math.max(0, freezeSnapshot[participant] - 1);
     }
   });
@@ -45252,16 +46061,21 @@ function createNoCorrectAward() {
   playedEntries
     .filter((entry) => entry.power.type === "deep_freeze")
     .filter((entry) => {
-      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry));
+      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry))
+        || blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry));
       if (blocked) {
-        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} was blocked by Impending Doom.`));
+        const meta = getEntryMeta(entry);
+        events.push(createPowerEvent(entry.owner, entry.power, meta.blockedByMutationStabilizer
+          ? `${entry.power.name} was blocked by Mutation Stabilizer.`
+          : `${entry.power.name} was blocked by Impending Doom.`));
       }
       return !blocked;
     })
     .forEach((entry) => {
-      addOwnerDurationRounds(state.freezeProtection, entry.owner, 3);
+      const protectionRounds = getNextPositiveStatusRounds(entry.owner, 3);
+      addOwnerDurationRounds(state.freezeProtection, entry.owner, protectionRounds);
       if (isChaosInfusedPower(entry.power)) {
-        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, 3);
+        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, protectionRounds);
       }
       queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
@@ -45272,9 +46086,13 @@ function createNoCorrectAward() {
   playedEntries
     .filter((entry) => entry.power.type === "permafrost")
     .filter((entry) => {
-      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry));
+      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry))
+        || blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry));
       if (blocked) {
-        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} was blocked by Impending Doom.`));
+        const meta = getEntryMeta(entry);
+        events.push(createPowerEvent(entry.owner, entry.power, meta.blockedByMutationStabilizer
+          ? `${entry.power.name} was blocked by Mutation Stabilizer.`
+          : `${entry.power.name} was blocked by Impending Doom.`));
       }
       return !blocked;
     })
@@ -45301,7 +46119,8 @@ function createNoCorrectAward() {
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   applyParticipationAwardProMaxEntries(playedEntries, owners, new Set(), startingScores, deltas, events);
   applyMutationRoundRules(deltas, owners, new Set(), startingScores, startingStreaks, events);
-  applyPositiveGainModifiers(deltas, owners, events);
+  applyPermanentMutationDeltaModifiers(deltas, owners, startingScores, new Set(owners), events);
+  applyPositiveGainModifiers(deltas, owners, events, { startingScores });
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   armReverseGuards(playedEntries, owners, events);
   const hasPointChanges = Object.values(deltas).some((amount) => amount !== 0);
@@ -45674,6 +46493,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   playedEntries
     .filter((entry) => entry.power.type === "eternal_flame" && !isChaosInfusedPower(entry.power))
+    .filter((entry) => !blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry)))
     .forEach((entry) => {
       const stacks = addEffectStack(state.eternalFlameProtection, entry.owner);
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} now blocks ${getOwnerLabel(entry.owner)}'s streak losses for the rest of the match.`));
@@ -45681,6 +46501,7 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   playedEntries
     .filter((entry) => entry.power.type === "eternal_flame" && isChaosInfusedPower(entry.power))
+    .filter((entry) => !blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry)))
     .forEach((entry) => {
       const stacks = addEffectStack(state.phoenixRebirthOwners, entry.owner);
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} stack ${stacks} will convert future streak losses into next-round points and Arsonist stacks.`));
@@ -45700,6 +46521,12 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   applyNewPersistentPowerEntries(playedEntries, events);
   applyPreGradeSinGluttony(playedEntries, startingScores, startingStreaks, deltas, events);
+  applyPermanentMutationAnswerEffects(
+    owners,
+    winnerSet,
+    new Set(owners.filter(isCorrectAnswerOwner)),
+    events
+  );
 
   const losingOwners = owners.filter((participant) => !winnerSet.has(participant));
   recordRoundLosses(losingOwners);
@@ -45758,6 +46585,17 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   playedEntries
     .filter((entry) => entry.power.type === "rocket")
     .filter((entry) => !isChaosInfusedPower(entry.power))
+    .filter((entry) => {
+      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry))
+        || blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry));
+      if (blocked) {
+        const meta = getEntryMeta(entry);
+        events.push(createPowerEvent(entry.owner, entry.power, meta.blockedByMutationStabilizer
+          ? `${entry.power.name} was blocked by Mutation Stabilizer.`
+          : `${entry.power.name} was blocked by Impending Doom.`));
+      }
+      return !blocked;
+    })
     .forEach((entry) => {
       state.pendingStreakBonuses[entry.owner] = (state.pendingStreakBonuses[entry.owner] || 0) + 3;
       events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} will give ${getOwnerLabel(entry.owner)} 3 streak at the start of next round.`));
@@ -46346,6 +47184,16 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
 
   owners.forEach((participant) => {
     if (freezeSnapshot[participant] > 0) {
+      if (freezeSnapshot[participant] === 1 && hasPermanentMutation(participant, "mitosis")) {
+        const definition = getMutationDefinitionForStatus({ id: "deep_freeze" });
+        if (definition) {
+          const stateStore = getPermanentMutationState();
+          stateStore.pendingMitosisExpiries[participant] = [
+            ...(stateStore.pendingMitosisExpiries[participant] || []),
+            { id: definition.id, name: definition.name }
+          ];
+        }
+      }
       state.freezeProtection[participant] = Math.max(0, freezeSnapshot[participant] - 1);
     }
   });
@@ -46353,16 +47201,21 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   playedEntries
     .filter((entry) => entry.power.type === "deep_freeze")
     .filter((entry) => {
-      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry));
+      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry))
+        || blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry));
       if (blocked) {
-        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} was blocked by Impending Doom.`));
+        const meta = getEntryMeta(entry);
+        events.push(createPowerEvent(entry.owner, entry.power, meta.blockedByMutationStabilizer
+          ? `${entry.power.name} was blocked by Mutation Stabilizer.`
+          : `${entry.power.name} was blocked by Impending Doom.`));
       }
       return !blocked;
     })
     .forEach((entry) => {
-      addOwnerDurationRounds(state.freezeProtection, entry.owner, 3);
+      const protectionRounds = getNextPositiveStatusRounds(entry.owner, 3);
+      addOwnerDurationRounds(state.freezeProtection, entry.owner, protectionRounds);
       if (isChaosInfusedPower(entry.power)) {
-        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, 3);
+        addOwnerDurationRounds(state.freezeReflectionRounds, entry.owner, protectionRounds);
       }
       queueStatFlash("shield", entry.power.name, "Point Shield Armed", { owners: [entry.owner], complex: true });
       events.push(createPowerEvent(entry.owner, entry.power, isChaosInfusedPower(entry.power)
@@ -46373,9 +47226,13 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   playedEntries
     .filter((entry) => entry.power.type === "permafrost")
     .filter((entry) => {
-      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry));
+      const blocked = blockPositiveStatusPowerIfDoomed(entry.owner, entry.power, getEntryMeta(entry))
+        || blockPowerStatusIfStabilized(entry.owner, entry.power, getEntryMeta(entry));
       if (blocked) {
-        events.push(createPowerEvent(entry.owner, entry.power, `${entry.power.name} was blocked by Impending Doom.`));
+        const meta = getEntryMeta(entry);
+        events.push(createPowerEvent(entry.owner, entry.power, meta.blockedByMutationStabilizer
+          ? `${entry.power.name} was blocked by Mutation Stabilizer.`
+          : `${entry.power.name} was blocked by Impending Doom.`));
       }
       return !blocked;
     })
@@ -46414,7 +47271,18 @@ function awardPoints(owner, rating = { label: "Correct", bonus: 50 }, winningOwn
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   applyParticipationAwardProMaxEntries(playedEntries, owners, winnerSet, startingScores, deltas, events);
   applyMutationRoundRules(deltas, owners, winnerSet, startingScores, startingStreaks, events);
-  applyPositiveGainModifiers(deltas, owners, events);
+  applyPermanentMutationDeltaModifiers(
+    deltas,
+    owners,
+    startingScores,
+    new Set(owners.filter((participant) => !isCorrectAnswerOwner(participant))),
+    events
+  );
+  applyPositiveGainModifiers(deltas, owners, events, {
+    winningOwners: winnerSet,
+    correctOwners: new Set(owners.filter(isCorrectAnswerOwner)),
+    startingScores
+  });
   applyDeductionProtection(deltas, playedEntries, freezeSnapshot, permafrostSnapshot, events);
   armReverseGuards(playedEntries, owners, events);
   total = Math.max(0, deltas[payoutOwner] || 0);
@@ -47457,7 +48325,7 @@ elements.powerPanel.addEventListener("click", (event) => {
 
   const owner = getCurrentPowerOwner();
   const power = getPowerById(button.dataset.power);
-  if (power?.immediate && canPlayPower(owner) && state.powerHands[owner]?.includes(power.id) && isPowerUsable(power, owner)) {
+  if (power?.immediate && canPlayPower(owner, power) && state.powerHands[owner]?.includes(power.id) && isPowerUsable(power, owner)) {
     capturePowerUseAnimation(button);
   }
   selectPowerUp(button.dataset.power);

@@ -5343,6 +5343,16 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   min-height: calc(var(--power-card-min-height) + 1.95rem);
 }
 
+/* A fourth hand slot stays on the same line instead of forcing the room
+   surface to grow and move the answer controls. */
+.power-panel[data-hand-size="4"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.power-panel[data-hand-size="5"] {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .power-panel-header,
 .power-empty {
   grid-column: 1 / -1;
@@ -5660,6 +5670,13 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   --power-category-icon: url("assets/modifiers/dice.svg");
   --power-category-icon-size: min(30%, 3.1rem);
   --power-category-rgb: 168 85 247;
+}
+
+.power-card[data-category="mutation"],
+.ability-card[data-category="mutation"] {
+  --power-category-icon: url("assets/overlays/coronavirus.svg");
+  --power-category-icon-size: min(38%, 3.8rem);
+  --power-category-rgb: 64 222 164;
 }
 
 .power-card[data-category="time"],
@@ -16895,6 +16912,36 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   .cards-area,
   .power-panel {
     grid-template-columns: 1fr;
+  }
+
+  .power-panel[data-hand-size="4"],
+  .power-panel[data-hand-size="5"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.38rem;
+  }
+
+  .power-panel[data-hand-size="5"] {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .power-panel[data-hand-size="4"] .power-card,
+  .power-panel[data-hand-size="5"] .power-card {
+    min-width: 0;
+    padding: 0.42rem 0.28rem;
+  }
+
+  .power-panel[data-hand-size="4"] .power-card strong,
+  .power-panel[data-hand-size="5"] .power-card strong {
+    font-size: clamp(0.68rem, 2.45vw, 0.92rem);
+    overflow-wrap: anywhere;
+  }
+
+  .power-panel[data-hand-size="4"] .power-card span,
+  .power-panel[data-hand-size="4"] .power-card small,
+  .power-panel[data-hand-size="5"] .power-card span,
+  .power-panel[data-hand-size="5"] .power-card small {
+    font-size: 0.54rem;
+    overflow-wrap: anywhere;
   }
 
   .power-suggestion-bubble,

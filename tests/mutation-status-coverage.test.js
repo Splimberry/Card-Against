@@ -23,9 +23,38 @@ const mutationRuleIds = [
   "mutation_tax_collector"
 ];
 
+const permanentMutationIds = [
+  "adaptive_metabolism",
+  "volatile_genome",
+  "apex_mutation",
+  "recessive_trait",
+  "genetic_drift",
+  "status_mimicry",
+  "parasitic_growth",
+  "viral_spread",
+  "mitosis",
+  "dominant_gene",
+  "degenerative_gene",
+  "chimera",
+  "evolutionary_comeback",
+  "cellular_collapse",
+  "mutation_stabilizer",
+  "unstable_symbiosis"
+];
+
 mutationRuleIds.forEach((id) => {
   assert.match(appSource, new RegExp(`id: "${id}"`), `Mutation registry is missing ${id}`);
 });
+
+permanentMutationIds.forEach((id) => {
+  assert.match(appSource, new RegExp(`id: "${id}"`), `Permanent Mutation registry is missing ${id}`);
+});
+
+assert.doesNotMatch(
+  appSource,
+  /applyMutationRoundStart\(/,
+  "Legacy per-round random Mutation status generation must not be active"
+);
 
 assert.match(
   appSource,
