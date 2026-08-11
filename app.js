@@ -26126,7 +26126,7 @@ function openTargetSelector(owner, power, powerId) {
     const player = getPlayer(targetOwner);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "target-option";
+    button.className = "target-option profile-card";
     button.dataset.targetOwner = targetOwner;
     if (requirement) {
       button.setAttribute("aria-pressed", "false");
@@ -26365,7 +26365,7 @@ function openTableSabotageSelector(owner) {
     const player = getPlayer(targetOwner);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "target-option";
+    button.className = "target-option profile-card";
     button.dataset.targetOwner = targetOwner;
     const avatar = document.createElement("span");
     avatar.className = "room-player-avatar";
@@ -26628,7 +26628,7 @@ function renderXrayResult(owner, targetOwner, powerEntries) {
       const player = getPlayer(participant);
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "target-option xray-target-option";
+      button.className = "target-option profile-card xray-target-option";
       button.dataset.targetOwner = participant;
       const isViewing = participant === targetOwner;
       button.classList.toggle("active", isViewing);

@@ -11627,6 +11627,17 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   text-align: left;
 }
 
+/* Target choices reuse the profile-card surface rules for every theme,
+   pattern, and effect. Reset only the profile card's menu-grid placement so
+   the shared visual layers do not change the target picker layout. */
+.target-option.profile-card {
+  grid-column: auto;
+  grid-row: auto;
+  justify-self: stretch;
+  width: 100%;
+  margin: 0;
+}
+
 .target-modal[data-mode="theme"] .target-option {
   grid-template-columns: minmax(0, 1fr);
   min-height: 2.45rem;
@@ -12099,10 +12110,10 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   isolation: isolate;
   overflow: visible;
   border-color: var(--custom-card-rim, rgba(255, 255, 255, 0.24));
-  background: var(--custom-card-bg, rgba(255, 255, 255, 0.07));
+  background: var(--custom-card-active-bg, var(--custom-card-bg, rgba(255, 255, 255, 0.07)));
   box-shadow:
-    0 0.7rem 1.4rem rgba(0, 0, 0, 0.2),
-    0 0 1rem rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.16);
+    0 1rem 2rem rgba(0, 0, 0, 0.26),
+    0 0 1.35rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.2);
 }
 
 .target-option[data-card-custom="true"] > * {
@@ -12114,25 +12125,25 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   border-color: transparent;
   background-color: #08090d;
   background-image:
-    var(--custom-card-bg, #101019),
-    var(--custom-card-rim-gradient, linear-gradient(180deg, var(--accent-2), var(--accent)));
+    var(--custom-card-active-bg, var(--custom-card-bg, #101019)),
+    var(--custom-card-active-rim-gradient, var(--custom-card-rim-gradient, linear-gradient(180deg, var(--accent-2), var(--accent))));
   background-origin: padding-box, border-box;
   background-clip: padding-box, border-box;
 }
 
 .target-option[data-card-custom="true"][data-card-effects~="neon"] {
   box-shadow:
-    0 0.7rem 1.4rem rgba(0, 0, 0, 0.22),
-    0 0 1.25rem rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.4),
-    0 0 2.1rem rgb(var(--custom-card-secondary-rgb, 255 77 125) / 0.16);
+    0 1rem 2rem rgba(0, 0, 0, 0.3),
+    0 0 1.45rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.44),
+    0 0 2.8rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.18);
 }
 
 .target-option[data-card-custom="true"][data-card-effects~="text-glow"] .name-with-title-text,
 .target-option[data-card-custom="true"][data-card-effects~="text-glow"] small {
   text-shadow:
-    0 0 0.45rem rgba(255, 255, 255, 0.34),
-    0 0 0.9rem rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.44),
-    0 0 1.35rem rgb(var(--custom-card-secondary-rgb, 255 77 125) / 0.22);
+    0 0 0.4rem rgba(255, 255, 255, 0.34),
+    0 0 0.95rem rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.42),
+    0 0 1.6rem rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.22);
 }
 
 .target-option[data-card-custom="true"][data-card-effects~="metallic"]::after {
@@ -12142,7 +12153,9 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   z-index: 1;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(110deg, transparent 0 20%, rgb(var(--custom-card-rim-rgb, 34 211 238) / 0.22) 34%, rgba(255, 255, 255, 0.34) 44%, transparent 64%);
+  clip-path: inset(0 round 8px);
+  background:
+    linear-gradient(110deg, transparent 0 18%, rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.28) 32%, rgba(255, 255, 255, 0.42) 43%, rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.18) 54%, transparent 68%);
   background-size: 180% 100%;
   background-position: -120% 0;
   mix-blend-mode: screen;
