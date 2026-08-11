@@ -15723,8 +15723,11 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     if (!result) {
       return false;
     }
-    playSyncedRoomRoundResult(result, localFallback);
-    return true;
+    // A result can arrive while the joined game stage is still mounting. Do
+    // not finish the wait until the presenter actually accepts the result;
+    // otherwise the only authoritative event is consumed and the player can
+    // remain on the waiting screen indefinitely.
+    return Boolean(playSyncedRoomRoundResult(result, localFallback));
   };
   if (playSyncedResultIfReady()) {
     return;
@@ -17254,7 +17257,24 @@ async function ensureSupabaseAuthReady(options = {}) {
     return state.supabaseAuthPromise;
   }
   if (state.supabaseAuthResolved && !options.force) {
-    if (options.realtime && state.supabaseClient) {
+    if (options.realtime && !state.supabaseClient) {
+      // Guest players do not have a stored auth session, so the startup
+      // optimisation deliberately skips creating a Supabase client. A room
+      // still needs that client for realtime broadcasts, even when no one is
+      // signed in. Initialise it when a room explicitly asks for realtime.
+      try {
+        const client = await ensureSupabaseClient();
+        if (client) {
+          startSupabaseRealtime();
+          if (hasActiveRoomContext()) {
+            startRoomRealtime(state.roomSettings.code);
+          }
+        }
+      } catch (error) {
+        console.warn("Guest realtime init failed:", error.message || error);
+        state.supabaseAuthError = error.message || "Could not connect to room realtime.";
+      }
+    } else if (options.realtime) {
       startSupabaseRealtime();
       if (hasActiveRoomContext()) {
         startRoomRealtime(state.roomSettings.code);
@@ -17461,14 +17481,18 @@ function startRoomRealtime(code = state.roomSettings.code) {
   const channel = state.supabaseClient.channel(`trivia-against-ai:room:${roomCode}`, {
     config: { broadcast: { self: false } }
   });
-  channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
-    handleRealtimeRoomChange(payload || {});
-  });
-  channel.subscribe((status) => handleRoomRealtimeStatus(status, channel));
+  // Publish the channel reference before subscribing. Supabase can invoke a
+  // subscription callback immediately when its socket is already connected;
+  // status handling must see this channel as current or it will discard the
+  // SUBSCRIBED state and leave the player permanently marked slow.
   state.realtimeRoomChannel = channel;
   state.realtimeRoomCode = roomCode;
   state.roomRealtimeStatus = "connecting";
   state.realtimeRoomReady = false;
+  channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
+    handleRealtimeRoomChange(payload || {});
+  });
+  channel.subscribe((status) => handleRoomRealtimeStatus(status, channel));
   recordRoomDiagnosticEvent("realtime-start", { code: roomCode }, {
     source: "client",
     eventType: "room-realtime",

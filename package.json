@@ -9,6 +9,7 @@
     "test:grading": "node tests/answer-grading.test.js",
     "test:client-timeout": "node tests/client-timeout.test.js",
     "test:mutation": "node tests/mutation-status-coverage.test.js",
+    "test:realtime-client": "node tests/realtime-client.test.js",
     "test:rooms": "node tests/room-integration.test.js && node tests/multiplayer-contexts.test.js",
     "test:multiplayer": "node tests/multiplayer-contexts.test.js"
   }
