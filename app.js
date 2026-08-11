@@ -24890,7 +24890,7 @@ function getDisplayTitleIdForPlayer(player) {
   return player.equippedTitleId || "";
 }
 
-function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
+function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "", options = {}) {
   if (!element) {
     return;
   }
@@ -24901,7 +24901,7 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "") {
   const title = getEquippedAchievementTitle(getDisplayTitleIdForPlayer(player));
   element.replaceChildren();
   element.classList.add("name-with-title");
-  if (title && !(player?.owner && isSecretAgentMaskedOwner(player.owner))) {
+  if (title && !options.hideTitle && !(player?.owner && isSecretAgentMaskedOwner(player.owner))) {
     element.appendChild(createEquippedTitlePill(title, getTitlePillCustomization(player)));
   }
   const name = document.createElement("span");
@@ -26091,7 +26091,7 @@ function createTargetPlayerCopy(player, owner, metaText) {
   const copy = document.createElement("span");
   copy.className = "target-player-copy";
   const name = document.createElement("strong");
-  renderPlayerNameWithTitle(name, player || owner, getOwnerLabel(owner));
+  renderPlayerNameWithTitle(name, player || owner, getOwnerLabel(owner), { hideTitle: true });
   const meta = document.createElement("small");
   meta.textContent = metaText;
   copy.append(name, meta);
@@ -26136,7 +26136,7 @@ function openTargetSelector(owner, power, powerId) {
     renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
     const copy = createTargetPlayerCopy(player, targetOwner, `${getDisplayScoreText(targetOwner)} - ${getOwnerStreak(targetOwner)}x streak`);
     button.append(avatar, copy);
-    applyPlayerCustomizationSurface(button, player);
+    applyOwnerCustomizationSurface(button, targetOwner);
     elements.targetList.appendChild(button);
   });
 
@@ -26372,7 +26372,7 @@ function openTableSabotageSelector(owner) {
     renderAvatar(avatar, player || { label: getOwnerLabel(targetOwner) });
     const copy = createTargetPlayerCopy(player, targetOwner, `${getDisplayScoreText(targetOwner)} - random debuff`);
     button.append(avatar, copy);
-    applyPlayerCustomizationSurface(button, player);
+    applyOwnerCustomizationSurface(button, targetOwner);
     elements.targetList.appendChild(button);
   });
   elements.targetModal.dataset.owner = owner;
@@ -26640,7 +26640,7 @@ function renderXrayResult(owner, targetOwner, powerEntries) {
       renderAvatar(avatar, player || { label: getOwnerLabel(participant) });
       const copy = createTargetPlayerCopy(player, participant, isViewing ? "Viewing now" : "Click to reveal");
       button.append(avatar, copy);
-      applyPlayerCustomizationSurface(button, player);
+      applyOwnerCustomizationSurface(button, participant);
       targetGrid.appendChild(button);
     });
   targetSection.append(targetLabel, targetGrid);

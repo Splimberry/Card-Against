@@ -12063,17 +12063,23 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .target-option .target-player-copy {
   display: grid;
   min-width: 0;
+  overflow: hidden;
   gap: 0.18rem;
 }
 
 .target-option .target-player-copy > .name-with-title {
-  width: max-content;
+  display: flex;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .target-option .target-player-copy .name-with-title-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .target-option .target-player-copy :is(.bot-player-badge, .host-player-badge, .special-player-badge) {
