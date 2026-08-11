@@ -12433,6 +12433,10 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   text-transform: uppercase;
 }
 
+.ability-section-toggle.has-section-icon h3 {
+  padding-inline-start: 1.55rem;
+}
+
 .ability-section-body {
   display: grid;
   grid-template-rows: 0fr;
@@ -12524,30 +12528,6 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   border: 1px solid rgba(180, 187, 198, 0.35);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.055);
-}
-
-.ability-card[data-kind="status"] {
-  background:
-    linear-gradient(135deg, rgb(34 211 238 / 0.09), transparent 58%),
-    rgba(255, 255, 255, 0.045);
-}
-
-.ability-card[data-kind="mutation"] {
-  background:
-    linear-gradient(135deg, rgb(250 204 21 / 0.12), transparent 62%),
-    rgba(255, 255, 255, 0.045);
-}
-
-.ability-card[data-kind="permanent-mutation"] {
-  background:
-    linear-gradient(135deg, rgb(64 222 164 / 0.12), transparent 62%),
-    rgba(255, 255, 255, 0.045);
-}
-
-.ability-card[data-kind="table"] {
-  background:
-    linear-gradient(135deg, rgb(240 184 110 / 0.1), transparent 62%),
-    rgba(255, 255, 255, 0.045);
 }
 
 .ability-card span {
@@ -12672,6 +12652,31 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .ability-card[data-rarity="debuff"] strong {
   color: #ff7aa0;
+}
+
+/* Keep catalog group surfaces stronger than their default rarity wash. */
+.ability-card[data-kind="status"] {
+  background:
+    linear-gradient(135deg, rgb(34 211 238 / 0.09), transparent 58%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.ability-card[data-kind="mutation"] {
+  background:
+    linear-gradient(135deg, rgb(250 204 21 / 0.12), transparent 62%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.ability-card[data-kind="permanent-mutation"] {
+  background:
+    linear-gradient(135deg, rgb(64 222 164 / 0.12), transparent 62%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.ability-card[data-kind="table"] {
+  background:
+    linear-gradient(135deg, rgb(240 184 110 / 0.1), transparent 62%),
+    rgba(255, 255, 255, 0.045);
 }
 
 .ability-card.chaos-infused {

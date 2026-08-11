@@ -10832,6 +10832,7 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false, kin
   toggle.className = "ability-section-toggle";
   toggle.setAttribute("aria-expanded", String(open));
   if (sectionIcon) {
+    toggle.classList.add("has-section-icon");
     toggle.style.setProperty("--section-icon", `url("${sectionIcon}")`);
   }
   const heading = document.createElement("h3");
