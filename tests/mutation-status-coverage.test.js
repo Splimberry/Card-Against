@@ -3,6 +3,13 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const appSource = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
+const statusViewerStart = appSource.indexOf("function getStatusEffectLibraryEntries()");
+const statusViewerEnd = appSource.indexOf("function getMutationEffectLibraryEntries()");
+assert.ok(statusViewerStart >= 0 && statusViewerEnd > statusViewerStart, "Status viewer registry function must exist");
+const statusViewerSource = appSource.slice(statusViewerStart, statusViewerEnd);
+const statusRegistryStart = appSource.indexOf("const statusEffectLibraryIds");
+const statusRegistryEnd = appSource.indexOf("const statusEffectLibraryCopy");
+const statusRegistrySource = appSource.slice(statusRegistryStart, statusRegistryEnd);
 
 const mutationRuleIds = [
   "mutation_bounty",
@@ -50,16 +57,39 @@ permanentMutationIds.forEach((id) => {
   assert.match(appSource, new RegExp(`id: "${id}"`), `Permanent Mutation registry is missing ${id}`);
 });
 
-assert.doesNotMatch(
+assert.match(
   appSource,
-  /applyMutationRoundStart\(/,
-  "Legacy per-round random Mutation status generation must not be active"
+  /function applyMutationRoundStart\(/,
+  "Legacy per-round random Mutation status generation must remain available"
+);
+assert.match(
+  appSource,
+  /if \(!state\.renderingSyncedRoomResume\) \{[\s\S]{0,120}applyMutationRoundStart\(\);/,
+  "Legacy Mutation statuses must roll during local round setup"
 );
 
 assert.match(
   appSource,
-  /`Mutation: \$\{definition\.name\}`/,
-  "Mutation status definitions must be included in the status viewer"
+  /function getMutationEffectLibraryEntries\(\)/,
+  "Legacy Mutation effects must have their own viewer section"
+);
+assert.match(
+  appSource,
+  /const statusEffectLibraryIds = Object\.freeze\(\[/,
+  "Status viewer must use an explicit status registry"
+);
+assert.match(statusRegistrySource, /"target_wipe_status"/, "Target Wipe must be listed as a status");
+assert.doesNotMatch(statusRegistrySource, /collapsing_star_status/, "Collapsing Star must remain an ability source, not a status");
+assert.doesNotMatch(statusRegistrySource, /mutation_bounty|mutation_blessing/, "Instant Mutation rules must remain outside the status registry");
+assert.doesNotMatch(
+  statusViewerSource,
+  /collapsing_star_status|collapsing_star/,
+  "Collapsing Star source ability must not be presented as a status effect"
+);
+assert.doesNotMatch(
+  statusViewerSource,
+  /tableEvents/,
+  "Table events must not be included in the status effect viewer"
 );
 assert.match(
   appSource,

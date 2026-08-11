@@ -10820,16 +10820,20 @@ function decrementRoundEffectCounters(owners) {
   pruneMutationStatuses();
 }
 
-function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
+function createAbilityLibrarySection({ title, rarity, entries, open = false, kind = "library", sectionIcon = "" }) {
   const section = document.createElement("section");
   section.className = "ability-section";
   section.dataset.rarity = rarity;
+  section.dataset.kind = kind;
   section.dataset.open = String(open);
 
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "ability-section-toggle";
   toggle.setAttribute("aria-expanded", String(open));
+  if (sectionIcon) {
+    toggle.style.setProperty("--section-icon", `url("${sectionIcon}")`);
+  }
   const heading = document.createElement("h3");
   heading.textContent = title;
   const count = document.createElement("span");
@@ -10853,6 +10857,7 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
     const card = document.createElement("article");
     card.className = "ability-card";
     card.dataset.rarity = entry.rarity || rarity;
+    card.dataset.kind = entry.libraryKind || kind;
     card.dataset.description = entry.description;
     const category = entry.category || (entry.powerId ? getPowerCategory(entry.powerId) : "");
     if (category && powerCategoryInfo[category]) {
@@ -10864,7 +10869,13 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
       card.dataset.tooltip = entry.description;
       card.tabIndex = 0;
     }
-    card.innerHTML = `<span>${entry.name}</span><strong>${entry.short}</strong><small>${entry.description}</small>`;
+    const name = document.createElement("span");
+    name.textContent = entry.name;
+    const short = document.createElement("strong");
+    short.textContent = entry.short;
+    const description = document.createElement("small");
+    description.textContent = entry.description;
+    card.append(name, short, description);
     grid.appendChild(card);
   });
   body.appendChild(grid);
@@ -10872,119 +10883,172 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false }) {
   return section;
 }
 
-function getStatusEffectLibraryEntries() {
-  return [
-    ...tableEvents.map((event) => [
-      `Mutation Table: ${event.name}`,
-      "1 round table effect",
-      `${event.description} Mutation can force this effect at the start of a round.`,
-      event.id,
-      "mutation",
-      false
-    ]),
-    ["Pocket Shield", "Point shield", "Blocks the next point deduction, then consumes one charge.", "shield", "defense"],
-    ["Deep Freeze", "Round shield", "Blocks point deductions for its remaining round duration.", "deep_freeze", "defense"],
-    ["Uno Reverse", "Block -> gain", "Blocks point deductions and awards the blocked amount as score.", "deep_freeze", "defense", true],
-    ["Permafrost", "Match shield", "Blocks point deductions for the rest of the match.", "permafrost", "defense"],
-    ["Streak Guard", "Streak shield", "Blocks streak loss while its duration is active.", "cocktail_mix", "defense"],
-    ["Freeze Ray", "Streak lock", "Prevents streak gain and streak loss while active.", "freeze_ray", "disruption"],
-    ["Time Dilation", "+10 seconds", "Adds 10 seconds to the player's timer for the current and future affected rounds.", "cocktail_mix", "time"],
-    ["Burning", "Round burn", "Loses 750 points per stack at the start of each round until it expires.", "cocktail_mix", "chaos", true],
-    ["Cocktail Debt", "Wrong tax", "Wrong answers cost 2.5% of total score while active.", "cocktail_mix", "risk"],
-    ["Time Bomb", "Delayed loss", "Explodes after its timer and removes 10% of the affected score per stack.", "time_bomb", "risk"],
-    ["Explosive", "Wrong bomb", "Wrong answers lose 10% of total score per stack. Doom effects cannot be removed.", "ultimatum", "doom"],
-    ["Impending Doom", "Permanent doom", "Cannot gain positive statuses. Wrong answers lose 1,000 plus 10% per stack.", "red_button", "doom"],
-    ["Null Corruption", "Permanent null", "Blocks positive statuses and bonus points. Point gains are reduced by 10% plus 5% per wrong answer.", "null_protocol", "doom"],
-    ["Target Wipe", "Winner punish", "If the marked player wins, they lose score, lose power-ups, and keep only part of their round gain.", "collapsing_star", "doom"],
-    ["Ultimatum", "Unbreakable shield", "Blocks point loss, debuffs, streak loss, and targeting for 3 rounds.", "ultimatum", "doom"],
-    ["Streak Sickness", "Streak penalty", "Each current streak costs 250 points during round scoring while active.", "heaven_hell", "risk", true],
-    ["Chaos", "Input glitch", "Temporarily scrambles and locks the answer box.", "crawler_virus", "chaos"],
-    ["Dead Weight", "Dead slot", "Occupies a power-up slot and cannot be used for value.", "dead_weight", "disruption"],
-    ["Burning", "Round burn", "Loses 750 points per stack at round start while the burn lasts.", "cocktail_mix", "risk"],
-    ["Extinguished", "Streak drain", "Loses 1 streak at round start and cannot gain streak while active.", "arsonist", "disruption", true],
-    ["Red Herring", "Hidden score", "Hides the owner's displayed score and stores a hidden point gain.", "red_herring", "disruption"],
-    ["Cryo-Stasis", "Permanent freeze shield", "Blocks point deductions and freezes attackers when it blocks a targeted loss.", "permafrost", "defense", true],
-    ["Phoenix Rebirth", "Loss conversion", "Converts lost streak into next-round points and Arsonist stacks.", "eternal_flame", "boost", true],
-    ["Antivirus", "Debuff shield", "Blocks one incoming debuff.", "antivirus", "defense"],
-    ["Encryption", "Round debuff shield", "Blocks debuffs for its remaining rounds.", "antivirus", "defense", true],
-    ["Streak Anchor", "Streak shield", "Blocks one streak loss.", "streak_retainer", "defense"],
-    ["Lucky Side", "Lucky rolls", "Buff-biased rolls and Rare-or-better power-up draws for its remaining rounds.", "lucky_side", "boost"],
-    ["Failed Investment", "Payout tax", "The next correct payout is reduced by 20% per stack.", "cocktail_mix", "risk"],
-    ["Bottom Feeder", "Loss payout", "Pays 100 points after a loss per stack.", "bottom_feeder", "boost"],
-    ["Debuff Time Bomb", "Delayed self-loss", "Explodes after its timer for 10% of the owner's score.", "cocktail_mix", "risk"],
-    ["Insurance", "Loss payout", "Pays a percentage of total score after a loss before its duration expires.", "small_insurance", "risk"],
-    ["Insurance Fraud", "Loss streak payout", "Pays after three losses and disappears when triggered or expired.", "insurance_fraud", "risk"],
-    ["Resistant Shield", "Break threshold", "A shield remains active until it blocks more than its break threshold.", "shield", "defense", true],
-    ["Four Leaf Clover", "Chaos luck", "Improves buff rolls, draw rarity, and Chaos Infusion odds for its duration.", "lucky_side", "boost", true],
-    ["Let the World Burn", "Leader burn", "First place loses 5% at each round start per stack.", "world_burn", "risk"],
-    ["Lawn Mower", "Ahead penalty", "Players ahead lose a percentage of the owner's score at round end.", "law_mower", "target"],
-    ["Bartender", "Automatic mix", "Activates Cocktail Mix for the owner at each round start.", "bartender", "boost"],
-    ["Molotov Cocktail", "Targeted burn", "Burns up to two targets for several rounds, or grants the owner a buff when self-targeted.", "cocktail_mix", "target", true],
-    ["Unstable Conduit", "Random status rolls", "Each stack rolls a separate chance for every player to receive a random status.", "crawler_virus", "chaos", true],
-    ["Error 404", "Chaos ticks", "Can scramble players at random timer moments during each round.", "crawler_virus", "chaos"],
-    ["Explosive Temper", "Loss bomb", "When the owner loses, plants a next-round bomb on another player.", "sin_wrath", "risk", true],
-    ["Divine Blessing", "Round points", "Adds 500 points plus 5% of current score at round start.", "blessing", "boost", true],
-    ["Super Fuel", "Future streak", "Adds another future streak gain per stack.", "rocket", "boost", true],
-    ["Vulture Swarm", "Loss cash", "Pays 500 points per previous loss at each round start.", "vulture", "boost", true],
-    ["Chaos Infusioner", "Chaos refresh", "Turns future hand refreshes into Chaos Infused powers.", "reign_chaos", "chaos", true],
-    ["Permanent Death Mark", "Loss multiplier", "Increases point losses for the marked player per stack.", "time_bomb", "risk", true],
-    ["Virus Corruption", "Wrong-answer drain", "Drains everyone based on the owner's wrong-answer count at round start.", "sin_envy", "chaos", true],
-    ["Scavenger", "Loss feeder", "Adds Bottom Feeder stacks after each round.", "bottom_feeder", "boost", true],
-    ["Debt Collector", "Loser tax", "Collects 350 points from each other loser for its remaining rounds.", "loser_tax", "target", true],
-    ["4th Slot", "Extra slot", "Adds a permanent power-up slot for the match.", "recycle_bin", "boost"],
-    ["Time Capsule", "Stored power", "Keeps the last used power in an extra slot.", "hoarder", "boost", true],
-    ["Endless Hand", "Unlimited uses", "Allows repeated power-up use this round with a chance to refill.", "all_out", "chaos", true],
-    ["Power Tunnelling", "Free refills", "Allows repeated power-up use and refills empty slots with stolen powers.", "vending_machine", "chaos", true],
-    ["Eternal Celebration", "Victory chain", "Rewards wins and chaos-infuses a future refresh.", "afterparty", "boost", true],
-    ["Mega Hacks", "Hand deletion", "Reveals and deletes up to three power-ups from other players.", "xray_hacks", "target", true],
-    ["Useless Software", "Power corruption", "Blocks Chaos Infusion and turns Common powers into Dead Weight.", "software_downgrade", "disruption", true],
-    ["Reduce to Ashes", "Ahead drain", "Players ahead lose 5% times the owner's streak plus one per stack.", "world_burn", "target", true],
-    ["Time Accelerator", "Fast timer", "Everyone else loses time faster while the owner's timer is unaffected.", "time_bender", "time", true],
-    ["Thorns", "Reflected loss", "Reflects a percentage of the owner's scoring losses to everyone else.", "thorns", "target"],
-    ["Penalty Storm", "Scaling loss", "Scales future losses with previous losses and streak lightning.", "penalty_cloud", "risk", true],
-    ["Fraud Master", "Assisted payout", "Pays after an assisted win or a long loss streak.", "insurance_fraud", "boost", true],
-    ["Midas' Touch", "Round bonus", "Adds 5% of current score at each round start per stack.", "ultimate_bounty", "boost", true],
-    ["Chaos Debt", "Chaos wrong-answer tax", "Wrong answers lose an additional 10% while active.", "cocktail_mix", "chaos", true],
-    ["Streak Loss Amplifier", "Double streak loss", "Doubles streak losses while active.", "lightning_strike", "chaos", true],
-    ["Unluck", "Reduced gains", "Keeps only 90% of positive points and blocks Chaos Infusion.", "reign_chaos", "chaos", true],
-    ["Reflector Shield", "Reflect damage", "Blocks point loss and reflects half of blocked damage.", "deep_freeze", "chaos", true],
-    ["Resistant Streak", "Reduced streak loss", "Temporarily protects streaks and reduces later losses.", "streak_retainer", "chaos", true],
-    ["Unstable Streak", "Random streak", "Rolls a temporary -1 to +3 streak value at round start.", "cocktail_mix", "chaos", true],
-    ["Cluster Bomb", "Delayed chaos bomb", "Detonates once for 10% score loss, then leaves Shrapnel.", "time_bomb", "chaos", true],
-    ["Shrapnel", "Repeated fragments", "Each fragment has a chance to remove 2% score at round start.", "time_bomb", "chaos", true],
-    ["Arsonist", "Streak spread", "Gives the owner and a random other player one streak at round start.", "arsonist", "mutation"],
-    ["Divine Blessing", "Round points", "Adds 500 points plus 5% of current score at round start.", "blessing", "mutation"],
-    ["Typhoon Season", "Lightning rolls", "Each stack rolls a chance to trigger a lightning loss at round start.", "typhoon_season", "mutation"],
-    ["Eternal Slumber", "Streak cap", "Prevents players from keeping a streak above the owner's streak.", "sin_sloth", "mutation"],
-    ["Virus Factory", "Debuff rolls", "Each stack rolls a separate debuff chance for every player at round start.", "virus_factory", "mutation"],
-    ...permanentMutationDefinitions.map((mutation) => [
-      `Permanent Mutation: ${mutation.name}`,
-      mutation.short,
-      `${mutation.description} Lasts for the entire match and can only be changed by a future mutation power-up.`,
-      mutation.powerId,
-      "mutation",
-      false
-    ]),
-    ...mutationStatusDefinitions
-      .filter((definition) => (
-        !["mutation_arsonist", "mutation_blessing", "mutation_typhoon", "mutation_slumber", "mutation_virus_factory"].includes(definition.id)
-      ))
-      .map((definition) => [
-        `Mutation: ${definition.name}`,
-        definition.short || `${definition.pool} pool`,
-        definition.description || `Mutation grants this status for 2 to 3 rounds. Trigger-once statuses disappear after triggering.`,
-        definition.powerId,
-        definition.category,
-        definition.category === "chaos"
-      ])
-  ].map(([name, short, description, powerId, category, chaosInfused]) => ({
-    name,
-    short,
-    description,
-    powerId,
+const statusEffectLibraryIds = Object.freeze([
+  "deep_freeze", "pocket_shield", "permafrost", "eternal_flame", "streak_anchor", "streak_guard",
+  "freeze_ray", "encryption", "cocktail_debt", "time_dilation", "failed_investment", "lucky_side",
+  "uno_reverse", "heaven_hell_curse", "bottom_feeder", "time_bomb", "debuff_time_bomb", "chaos_debt",
+  "streak_loss_amplifier", "unluck", "chaos_sickness", "reflector_shield", "resistant_streak",
+  "unstable_streak", "cluster_bomb", "world_burn", "lawn_mower", "bartender", "hot_in_here",
+  "penalty_storm", "fraud_master", "fire_extinguisher", "midas_touch", "cryo_stasis", "phoenix_rebirth",
+  "capitalism", "inferno", "super_fuel", "vulture_swarm", "virus_corruption", "scavenger", "chaos_infuser",
+  "reduce_to_ashes", "useless_software", "loser_tax", "streak_sickness", "four_leaf_clover", "doom_shield",
+  "impending_doom", "explosive_doom", "null_corruption", "doom_streak_guard", "antivirus_charge", "rocket_fuel",
+  "resistant_shield", "mutation_extinguished", "red_herring_status", "insurance_policy", "insurance_fraud_status",
+  "molotov_burning", "unstable_conduit", "error_404", "explosive_temper", "thorns", "permanent_death_mark_status",
+  "soul_link_status", "streak_link_status", "death_mark_status", "death_bomb_status", "wrath_bomb_status",
+  "skill_issue_status", "hot_potato_status", "penalty_cloud_status", "eternal_celebration_status", "mega_hacks_status",
+  "time_accelerator_status", "shrapnel_status", "overachiever_status", "reverse_guard_status", "event_horizon_status",
+  "ultimatum_bomb_status", "target_wipe_status", "secret_agent_status"
+]);
+
+const statusEffectLibraryCopy = Object.freeze({
+  deep_freeze: ["Point shield", "Blocks point losses for its remaining rounds."],
+  pocket_shield: ["Next-loss shield", "Blocks the next point deduction, then consumes one charge."],
+  permafrost: ["Permanent point shield", "Blocks point deductions for the rest of the match."],
+  eternal_flame: ["Streak shield", "Prevents streak loss for the rest of the match."],
+  streak_anchor: ["Next-streak shield", "Blocks the next streak loss, then consumes one charge."],
+  streak_guard: ["Streak shield", "Blocks streak losses for its remaining rounds."],
+  freeze_ray: ["Streak lock", "Prevents streak gains and streak losses while active."],
+  encryption: ["Debuff shield", "Blocks incoming debuffs for its remaining rounds."],
+  cocktail_debt: ["Wrong-answer tax", "Wrong answers cost an additional 2.5% of total score."],
+  time_dilation: ["Timer extension", "Adds 10 seconds to the affected player's timer."],
+  failed_investment: ["Payout reduction", "The next correct payout is reduced by 20% per stack."],
+  lucky_side: ["Lucky rolls", "Favors buffs and Rare-or-better power-up draws while active."],
+  uno_reverse: ["Block and gain", "Blocked point deductions become score gains instead."],
+  heaven_hell_curse: ["Streak tax", "Removes 250 points per current streak at round scoring."],
+  bottom_feeder: ["Loss payout", "Pays 100 points after a loss per active stack."],
+  time_bomb: ["Delayed score loss", "Explodes after its timer and removes 10% of score per stack."],
+  debuff_time_bomb: ["Delayed self-loss", "Explodes after its timer for 10% of score per stack."],
+  chaos_debt: ["Chaos wrong-answer tax", "Wrong answers lose an additional 10% of total score."],
+  streak_loss_amplifier: ["Amplified streak loss", "Doubles streak losses while active."],
+  unluck: ["Reduced gains", "Keeps only 90% of positive points and blocks Chaos Infusion."],
+  chaos_sickness: ["Streak sickness", "Streak changes become a point penalty while active."],
+  reflector_shield: ["Reflective shield", "Blocks point loss and reflects half of blocked damage."],
+  resistant_streak: ["Streak resistance", "Temporarily protects streaks and reduces later losses."],
+  unstable_streak: ["Unstable streak", "Rolls a temporary -1 to +3 streak value at round start."],
+  cluster_bomb: ["Delayed chaos bomb", "Detonates once for 10% score loss, then leaves Shrapnel."],
+  world_burn: ["Leader burn", "Players in first place lose 5% at round start per stack."],
+  lawn_mower: ["Ahead penalty", "Players ahead lose a percentage of the owner's score."],
+  bartender: ["Automatic Cocktail Mix", "Activates Cocktail Mix for the owner at each round start."],
+  hot_in_here: ["Streak burn", "At round start, burns everyone else based on the owner's streak."],
+  penalty_storm: ["Scaling loss", "Scales future losses and adds Lightning Strike damage."],
+  fraud_master: ["Assisted payout", "Pays after assisted wins or a long loss streak."],
+  fire_extinguisher: ["Streak extinguisher", "Allows the owner to extinguish up to two players each round."],
+  midas_touch: ["Round score bonus", "Each stack pays 5% of current score at round start."],
+  cryo_stasis: ["Permanent freeze shield", "Blocks point deductions and freezes attackers when it blocks a targeted loss."],
+  phoenix_rebirth: ["Loss conversion", "Converts lost streaks into future points and Arsonist stacks."],
+  capitalism: ["Positive gain multiplier", "Permanently increases positive earnings per stack."],
+  inferno: ["Streak burn aura", "Gains a streak and burns everyone else at round start."],
+  super_fuel: ["Future streak bonus", "Adds another future streak gain per stack."],
+  vulture_swarm: ["Loss cash", "Pays 500 points per previous loss at round start."],
+  virus_corruption: ["Wrong-answer drain", "Drains the table based on the owner's wrong-answer count."],
+  scavenger: ["Loss feeder", "Adds Bottom Feeder stacks after each round."],
+  chaos_infuser: ["Chaos refresh", "Turns future hand refreshes into Chaos Infused power-ups."],
+  reduce_to_ashes: ["Ahead drain", "Players ahead lose 5% times the owner's streak plus one per stack."],
+  useless_software: ["Power corruption", "Blocks Chaos Infusion and turns Common powers into Dead Weight."],
+  loser_tax: ["Loser tax", "Collects 350 points from each other loser for its remaining rounds."],
+  streak_sickness: ["Streak penalty", "Locks streak changes and charges 250 points per current streak."],
+  four_leaf_clover: ["Chaos luck", "Improves buff rolls, draw rarity, and Chaos Infusion odds."],
+  doom_shield: ["Unbreakable shield", "Blocks point loss, debuffs, streak loss, and targeting."],
+  impending_doom: ["Doom curse", "Blocks positive statuses; wrong answers lose 1,000 plus 10% per stack."],
+  explosive_doom: ["Explosive", "Wrong answers lose 10% of score per stack. Cannot be removed."],
+  null_corruption: ["Null curse", "Blocks positive statuses and bonus points; gains are reduced by 10% plus wrong-answer penalties."],
+  doom_streak_guard: ["Doom streak shield", "Blocks streak reductions while active."],
+  antivirus_charge: ["Next-debuff shield", "Blocks the next incoming debuff, then consumes one charge."],
+  rocket_fuel: ["Stored streak", "Adds three streaks at the next round start."],
+  resistant_shield: ["Break-threshold shield", "Stays active until it blocks more than its damage threshold."],
+  mutation_extinguished: ["Extinguished", "Loses a streak at round start and cannot gain streak while active."],
+  red_herring_status: ["Hidden score", "Hides the owner's displayed score from other players."],
+  insurance_policy: ["Loss insurance", "Pays a percentage of total score after a loss before expiry."],
+  insurance_fraud_status: ["Loss streak payout", "Pays after three losses, then disappears when triggered or expired."],
+  molotov_burning: ["Burning", "Loses 750 points per stack at round start until it expires."],
+  unstable_conduit: ["Random debuff rolls", "Each stack independently rolls random debuffs for the table."],
+  error_404: ["Chaos ticks", "Can scramble players at random timer moments each round."],
+  explosive_temper: ["Loss bomb", "When the owner loses, plants a bomb on another player."],
+  thorns: ["Reflected loss", "Reflects a percentage of scoring losses to everyone else."],
+  permanent_death_mark_status: ["Permanent loss mark", "Increases point losses for the marked player per stack."],
+  soul_link_status: ["Score link", "Links the owner to a random player for shared score changes."],
+  streak_link_status: ["Streak link", "Links the owner's streak to a random player's streak."],
+  death_mark_status: ["Death mark", "Doubles point losses and triggers a delayed score penalty."],
+  death_bomb_status: ["Death bomb", "A wrong answer triggers a large loss and a permanent Death Mark."],
+  wrath_bomb_status: ["Wrath bomb", "Explodes for 10% of score when its timer ends."],
+  skill_issue_status: ["Skill issue", "A marked target loses points and the owner gains streak on resolution."],
+  hot_potato_status: ["Hot Potato", "Hits a random player when its duration ends."],
+  penalty_cloud_status: ["Penalty cloud", "Losers lose 5% of current total for the remaining rounds."],
+  eternal_celebration_status: ["Victory chain", "Rewards wins and Chaos Infuses a future refresh."],
+  mega_hacks_status: ["Hand deletion", "Reveals and deletes up to three power-ups from other players."],
+  time_accelerator_status: ["Fast timer", "Everyone else drains time faster while the owner's timer is unaffected."],
+  shrapnel_status: ["Repeated fragments", "Each fragment can remove 2% of score at round start."],
+  overachiever_status: ["Delayed reward", "A high round score banks points and a Cocktail Mix buff for next round."],
+  reverse_guard_status: ["Loss transfer", "Redirects point losses against the owner to another player."],
+  event_horizon_status: ["Void mark", "Strips active effects and a power-up after the target loses."],
+  ultimatum_bomb_status: ["Wrong-answer bomb", "A wrong answer triggers a 10% score loss. Cannot be removed."],
+  target_wipe_status: ["Winner punishment", "A marked winner loses score, power-ups, and part of the round gain."],
+  secret_agent_status: ["Identity scramble", "Scrambles visible identities and style for its remaining rounds."]
+});
+
+function getLibraryDefinitionEntry(definition, options = {}) {
+  if (!definition) {
+    return null;
+  }
+  const copy = statusEffectLibraryCopy[definition.id] || [];
+  const category = options.category || definition.category || "utility";
+  return {
+    name: options.name || definition.name,
+    short: options.short || definition.short || copy[0] || `${category} effect`,
+    description: options.description || definition.description || copy[1] || "A temporary effect that changes future round resolution.",
+    powerId: definition.powerId,
     category,
-    rarity: category === "doom" ? "doom" : category === "mutation" ? "gold" : category === "risk" || category === "disruption" ? "debuff" : "blue",
-    chaosInfused: Boolean(chaosInfused)
+    rarity: options.rarity || (category === "doom" ? "doom" : category === "risk" || category === "disruption" ? "debuff" : "blue"),
+    chaosInfused: Boolean(options.chaosInfused),
+    libraryKind: options.libraryKind || "status"
+  };
+}
+
+function getStatusEffectLibraryEntries() {
+  const definitions = new Map(mutationStatusDefinitions.map((definition) => [definition.id, definition]));
+  return statusEffectLibraryIds
+    .map((id) => {
+      const definition = definitions.get(id);
+      return getLibraryDefinitionEntry(definition, {
+        chaosInfused: definition?.pool === "chaos"
+      });
+    })
+    .filter(Boolean);
+}
+
+function getMutationEffectLibraryEntries() {
+  return mutationStatusDefinitions
+    .filter((definition) => definition.pool === "mutation")
+    .map((definition) => getLibraryDefinitionEntry(definition, {
+      category: "mutation",
+      rarity: "gold",
+      libraryKind: "mutation",
+      short: definition.short || "Per-round Mutation",
+      description: definition.description || "A legacy Mutation effect rolled for 2 to 3 rounds. Trigger-once effects disappear after resolving."
+    }));
+}
+
+function getPermanentMutationLibraryEntries() {
+  return permanentMutationDefinitions.map((mutation) => ({
+    name: mutation.name,
+    short: mutation.short,
+    description: `${mutation.description} Lasts for the entire match and is separate from temporary Status Effects.`,
+    powerId: mutation.powerId,
+    category: mutation.category,
+    rarity: "gold",
+    libraryKind: "permanent-mutation"
+  }));
+}
+
+function getTableEventLibraryEntries() {
+  return tableEvents.map((event) => ({
+    name: event.name,
+    short: event.short,
+    description: `${event.description} This changes the table for a round; it is not a player Status Effect.`,
+    category: "utility",
+    rarity: event.id === "sudden_death" || event.id === "no_mercy" || event.id === "sabotage" ? "debuff" : "gold",
+    libraryKind: "table"
   }));
 }
 
@@ -11004,6 +11068,7 @@ function renderAbilityLibrary() {
     elements.abilityLibrary.appendChild(createAbilityLibrarySection({
       title: `${rarityInfo[rarity].label} abilities`,
       rarity,
+      kind: "ability",
       open: index === 0,
       entries: powers.map((power) => ({
         ...getAbilityLibraryPowerPreview(power, chaosPreview)
@@ -11046,30 +11111,56 @@ function renderAbilityLibrary() {
     elements.abilityLibrary.appendChild(createAbilityLibrarySection({
       title: rollSection.title,
       rarity: rollSection.rarity,
+      kind: "roll",
+      sectionIcon: powerCategoryInfo[rollSection.rarity === "debuff" ? "risk" : "defense"]?.icon,
       entries: rollSection.entries.map(([name, description]) => ({
         name,
         short: "Roll effect",
         description,
-        rarity: rollSection.rarity
+        rarity: rollSection.rarity,
+        libraryKind: "roll"
       }))
     }));
   });
 
+  const statusEntries = getStatusEffectLibraryEntries();
+  ["defense", "boost", "risk", "disruption", "target", "time", "chaos", "doom"].forEach((category) => {
+    const entries = statusEntries.filter((entry) => entry.category === category);
+    if (!entries.length) {
+      return;
+    }
+    const info = powerCategoryInfo[category] || {};
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: `Status Effects · ${info.label || category}`,
+      rarity: category === "doom" ? "doom" : category === "risk" || category === "disruption" ? "debuff" : "blue",
+      kind: "status",
+      sectionIcon: info.icon,
+      entries
+    }));
+  });
+
   elements.abilityLibrary.appendChild(createAbilityLibrarySection({
-    title: "Status effects",
-    rarity: "blue",
-    entries: getStatusEffectLibraryEntries()
+    title: "Mutation Effects · Legacy Round Rolls",
+    rarity: "gold",
+    kind: "mutation",
+    sectionIcon: powerCategoryInfo.mutation.icon,
+    entries: getMutationEffectLibraryEntries()
+  }));
+
+  elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+    title: "Permanent Mutations",
+    rarity: "gold",
+    kind: "permanent-mutation",
+    sectionIcon: powerCategoryInfo.mutation.icon,
+    entries: getPermanentMutationLibraryEntries()
   }));
 
   elements.abilityLibrary.appendChild(createAbilityLibrarySection({
     title: "Table events",
     rarity: "gold",
-    entries: tableEvents.map((event) => ({
-      name: event.name,
-      short: event.short,
-      description: event.description,
-      rarity: event.id === "sudden_death" || event.id === "no_mercy" || event.id === "sabotage" ? "debuff" : "gold"
-    }))
+    kind: "table",
+    sectionIcon: powerCategoryInfo.utility.icon,
+    entries: getTableEventLibraryEntries()
   }));
 }
 
@@ -11081,6 +11172,7 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
       description: getDisplayedPowerDescription(power, null),
       rarity: power.rarity,
       powerId: power.id,
+      libraryKind: "ability",
       doom: true
     };
   }
@@ -11091,7 +11183,8 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
       short: power.short,
       description: getDisplayedPowerDescription(power, null),
       rarity: power.rarity,
-      powerId: power.id
+      powerId: power.id,
+      libraryKind: "ability"
     };
   }
 
@@ -11102,6 +11195,7 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
       description: "This ability does not have a chaos infusion.",
       rarity: power.rarity,
       powerId: power.id,
+      libraryKind: "ability",
       chaosUnavailable: true
     };
   }
@@ -11113,6 +11207,7 @@ function getAbilityLibraryPowerPreview(power, chaosPreview = false) {
     description: getDisplayedPowerDescription(chaosPower, null),
     rarity: chaosPower.rarity,
     powerId: chaosPower.id,
+    libraryKind: "ability",
     chaosInfused: true
   };
 }
@@ -27937,9 +28032,9 @@ function createMutationRoundRuleCleanup(rule, mutationId, owner, extra = {}) {
   };
 }
 
-// Mutation uses the same status stores as power-ups, but records every grant
-// separately so normally permanent effects can expire without changing their
-// normal-mode behavior.
+// Mutation effects may reuse the same state stores as power-ups, but every
+// grant is recorded separately so temporary rolls expire without changing
+// normal-mode behavior. They remain a separate viewer category from statuses.
 const mutationStatusDefinitions = Object.freeze([
   {
     id: "mutation_bounty", pool: "mutation", name: "Bounty", short: "win bonus", description: "If the owner wins, add 5% of their starting score to the round gain.", powerId: "basic_bounty", category: "boost", positive: true,
@@ -29518,6 +29613,42 @@ function getActiveMutationRuleEntries(rule, owners = getActiveOwners()) {
         targetOwner: status.cleanup.targetOwner || status.targetOwner || ""
       }))
   ));
+}
+
+// Legacy Mutation rolls are temporary Mutation effects. Permanent Mutation
+// traits are handled separately below; both systems intentionally coexist with
+// the player Status Effects registry used by the viewer.
+function applyMutationRoundStart() {
+  if (!isMatchModifierEnabled("mutation")) {
+    return;
+  }
+  pruneMutationStatuses();
+  const pool = mutationStatusDefinitions.filter((definition) => definition.pool);
+  const summaries = [];
+  getActiveOwners().forEach((owner) => {
+    const activeEffectKeys = new Set(
+      getMutationStatusEntries(owner)
+        .filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0)
+        .map((status) => status.effectKey || status.id)
+    );
+    const available = pool.filter((definition) => !activeEffectKeys.has(definition.effectKey || definition.id));
+    const count = getRandomInt(1, 3);
+    const applied = [];
+    while (available.length && applied.length < count) {
+      const definition = available.splice(Math.floor(Math.random() * available.length), 1)[0];
+      const status = applyMutationStatus(owner, definition, getRandomInt(2, 3));
+      if (status) {
+        applied.push(`${status.name} · ${status.rounds}r`);
+      }
+    }
+    if (applied.length) {
+      summaries.push(`${getOwnerLabel(owner)}: ${applied.join(", ")}`);
+    }
+  });
+  if (summaries.length) {
+    queueStatFlash("chaos", "Mutation Status Roll", summaries, { owners: [], iconKey: "mode:mutation", complex: true, priority: true });
+    renderScore();
+  }
 }
 
 function applyMutationRoundRules(deltas, owners, winnerSet, startingScores, startingStreaks, events) {
@@ -31667,7 +31798,7 @@ function applyRoomRoundStartModifiers() {
         enabled: "mutation",
         kind: "chaos",
         title: "Mutation",
-        detail: "Permanent mutation\nat match start",
+        detail: "Statuses every round\nPermanent traits evolve",
         iconKey: "mode:mutation",
         durationMs: 1200
       }
@@ -33812,6 +33943,7 @@ function renderRound() {
   elements.playerTwoInput.disabled = false;
   elements.submitButton.disabled = state.isSpectator;
   if (!state.renderingSyncedRoomResume) {
+    applyMutationRoundStart();
     const permanentMutationEvents = [];
     applyPermanentMutationRoundStart(getActiveOwners(), permanentMutationEvents);
     if (permanentMutationEvents.length) {
