@@ -31400,6 +31400,27 @@ function clearStaleRoundSetupWaitIfPlayable() {
   setHidden(elements.errorPanel, true);
   return true;
 }
+function showLocalRoundSetupFailure(error, context = {}, message = "The question could not be loaded.") {
+  // Setup and rendering share an async boundary. A late failure from that
+  // boundary must not replace a round that has already rendered and is ready
+  // for answers.
+  if (!isCurrentRoundSetupWork(context)) {
+    return false;
+  }
+  if (isCurrentRoundVisiblyPlayable()) {
+    clearStaleRoundSetupWaitIfPlayable();
+    return false;
+  }
+
+  console.warn(error);
+  stopLoadingMessages();
+  playSound("error");
+  elements.errorText.textContent = `${error?.message || "The question setup failed."} ${message}`;
+  setHidden(elements.loadingPanel, true);
+  setHidden(elements.errorPanel, false);
+  return true;
+}
+
 
 async function recoverFromStaleRoomRoundSetup(error, context = {}) {
   if (!isRoomMode() || !isStaleRoomSetupError(error)) {
@@ -36278,7 +36299,7 @@ async function newRound() {
         questionStylePreference: questionPreferences.questionStyle || "",
         round: state.round,
         totalRounds: state.maxRounds
-      });
+      }, roundSetupContext);
       if (isCurrentRoundSetupWork(roundSetupContext)) {
         applyRoundSetup(setup);
       }
@@ -36286,12 +36307,7 @@ async function newRound() {
       if (isAbortError(error) || !isCurrentRoundSetupWork(roundSetupContext)) {
         return;
       }
-      console.warn(error);
-      stopLoadingMessages();
-      playSound("error");
-      elements.errorText.textContent = `${error.message} The question bank could not prepare the next card.`;
-      setHidden(elements.loadingPanel, true);
-      setHidden(elements.errorPanel, false);
+      showLocalRoundSetupFailure(error, roundSetupContext, "The question bank could not prepare the next card.");
     }
     return;
   }
@@ -36355,12 +36371,7 @@ async function newRound() {
     if (isAbortError(error) || !isCurrentRoundSetupWork(roundSetupContext)) {
       return;
     }
-    console.warn(error);
-    stopLoadingMessages();
-    playSound("error");
-    elements.errorText.textContent = `${error.message} The question bank could not prepare the next card.`;
-    setHidden(elements.loadingPanel, true);
-    setHidden(elements.errorPanel, false);
+    showLocalRoundSetupFailure(error, roundSetupContext, "The question bank could not prepare the next card.");
   }
 }
 
@@ -36695,12 +36706,7 @@ async function startGame(mode) {
       showRoomRoundSetupSyncWait("Waiting for the room to finish syncing the first question...");
       return;
     }
-    console.warn(error);
-    stopLoadingMessages();
-    playSound("error");
-    elements.errorText.textContent = `${error.message} The question bank could not prepare the first card.`;
-    setHidden(elements.loadingPanel, true);
-    setHidden(elements.errorPanel, false);
+    showLocalRoundSetupFailure(error, roundSetupContext, "The question bank could not prepare the first card.");
   }
 }
 
