@@ -12117,6 +12117,24 @@ function isCurrentHost() {
   );
 }
 
+// The participant role is authoritative for gameplay. `joiningRoom` is a
+// screen/session detail and can briefly remain populated while a host resumes
+// a match, so it must not decide who grades or publishes the result.
+function isAuthoritativeRoomHost() {
+  if (!isRoomMode() || state.isSpectator) {
+    return false;
+  }
+  const roomCode = String(state.roomSettings.code || "").trim().toUpperCase();
+  const knownHostId = state.roomParticipants.find((participant) => (
+    isRoomParticipantActive(participant) && isRoomParticipantHost(participant)
+  ))?.id
+    || (state.joiningRoom?.code === roomCode ? state.joiningRoom.host?.id : "")
+    || state.hostedRooms.find((room) => room.code === roomCode)?.host?.id;
+  return knownHostId
+    ? knownHostId === state.clientId
+    : isCurrentHost();
+}
+
 function getExpectedRoomCurrentOwner() {
   if (state.isSpectator) {
     return "spectator";
@@ -14227,7 +14245,7 @@ function playSyncedRoomRoundResult(result = null, localFallback = "") {
   if (!isRoomMode() || state.isSpectator || state.matchEnded || elements.gameStage.classList.contains("hidden")) {
     return false;
   }
-  if (isCurrentHost() && !state.joiningRoom) {
+  if (isAuthoritativeRoomHost()) {
     return false;
   }
   const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
@@ -14659,7 +14677,7 @@ function getRoomRoundStartPowerStatePayload(owners = getActiveOwners()) {
 }
 
 function publishRoomScoreState(reason = "score") {
-  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator) {
+  if (!isRoomMode() || !isAuthoritativeRoomHost()) {
     return Promise.resolve(null);
   }
   const players = getActiveOwners()
@@ -14870,7 +14888,7 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
 }
 
 function publishRoomRoundResult(roundResult, options = {}) {
-  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator) {
+  if (!isAuthoritativeRoomHost()) {
     return Promise.resolve(null);
   }
   const result = buildRoomRoundResultPayload(roundResult, options);
@@ -14909,7 +14927,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
         state.roomRoundResultPublishKey = "";
       }
       state.roomDirectoryOnline = false;
-      if (!options.retrying && isRoomMode() && isCurrentHost() && !state.joiningRoom && !state.matchEnded) {
+      if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
         return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
           ...options,
           clientEventId,
@@ -14925,7 +14943,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
       state.roomRoundResultPublishKey = "";
     }
     state.roomDirectoryOnline = false;
-    if (!options.retrying && isRoomMode() && isCurrentHost() && !state.joiningRoom && !state.matchEnded) {
+    if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
       return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
         ...options,
         clientEventId,
@@ -15493,7 +15511,7 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   }
   const existingResult = getRoomRoundResultForCurrentRound();
   if (existingResult) {
-    if (!isCurrentHost() || state.joiningRoom) {
+    if (!isAuthoritativeRoomHost()) {
       playSyncedRoomRoundResult(existingResult, localFallback);
     }
     state.roomRoundResolving = false;
@@ -15507,7 +15525,7 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   }
   commitWaitingPhasePowerUpForOwner(state.currentOwner);
   state.roomRoundResolving = true;
-  if (!isCurrentHost() || state.joiningRoom) {
+  if (!isAuthoritativeRoomHost()) {
     showWaitingForRoomRoundResult();
     waitForRoomRoundResultThenPlay(localFallback, matchToken);
     return true;
@@ -15776,8 +15794,7 @@ function applyRoomTimerStatePayload(payload = {}) {
     renderTimer();
   }
   if (
-    isCurrentHost()
-    && !state.joiningRoom
+    isAuthoritativeRoomHost()
     && state.roomGame?.status === "playing"
     && (timerChanged || !state.roomAutoResolveId)
   ) {
@@ -15872,7 +15889,7 @@ function isRoomGradingPhaseStarted() {
 }
 
 function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
-  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || state.isSpectator || state.matchEnded) {
+  if (!isAuthoritativeRoomHost() || state.matchEnded) {
     return false;
   }
   const deadlineKey = [
@@ -15907,8 +15924,7 @@ function scheduleHostRoomSubmissionDeadline(matchToken = state.matchWorkToken) {
         Number(state.round) || 0
       ].join("|")
       || !isRoomMode()
-      || !isCurrentHost()
-      || state.joiningRoom
+      || !isAuthoritativeRoomHost()
       || state.roomRoundResolving
       || state.matchEnded
       || elements.inputPanel.classList.contains("hidden")
@@ -16064,9 +16080,17 @@ function applyRealtimeRoomGrading(payload = {}) {
     return false;
   }
   const wasGradingPhaseStarted = isRoomGradingPhaseStarted();
+  const hasActiveLocalGradingRequest = Boolean(
+    state.roundRequestAbortController
+    || state.gradingActive
+  );
   if (
     isRoomSubmissionResolveStale()
-    || (isCurrentHost() && !state.joiningRoom && state.roomRoundResolving && !wasGradingPhaseStarted)
+    || (
+      state.roomRoundResolving
+      && !wasGradingPhaseStarted
+      && !hasActiveLocalGradingRequest
+    )
   ) {
     state.roomRoundResolving = false;
   }
@@ -16205,7 +16229,7 @@ function applyRealtimeRoomGrading(payload = {}) {
     applyAuthoritativeRoomResultState(existingResult);
     if (state.isSpectator) {
       maybePlaySpectatorRoomRoundResult(existingResult);
-    } else if (!isCurrentHost() || state.joiningRoom) {
+    } else if (!isAuthoritativeRoomHost()) {
       playSyncedRoomRoundResult(existingResult, getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
     }
     return true;
@@ -16219,7 +16243,7 @@ function applyRealtimeRoomGrading(payload = {}) {
     return true;
   }
   state.roomRoundResolving = true;
-  if (!isCurrentHost() || state.joiningRoom) {
+  if (!isAuthoritativeRoomHost()) {
     waitForRoomRoundResultThenPlay(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
   } else {
     playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
@@ -16232,7 +16256,7 @@ function forceRoomRoundToGrading(payload = {}) {
 }
 
 function publishRoomRoundSkip(payload = {}) {
-  if (!isRoomMode() || !isCurrentHost() || state.joiningRoom || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
+  if (!isAuthoritativeRoomHost() || !state.roomSettings.code || state.roomSettings.code === "CAI-0000") {
     return Promise.resolve(null);
   }
   const code = state.roomSettings.code;
@@ -18793,7 +18817,20 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     if (!appliedDelta && (normalizedPayload.eventType === "room-updated" || normalizedPayload.eventType === "room-created" || normalizedPayload.eventType === "round-started" || normalizedPayload.eventType === "participant-left") && normalizedPayload.room) {
       appliedDelta = applyRealtimeRoomPayload(normalizedPayload.room);
     }
-    const completeHandledEvent = handledRoomEventTypes.includes(normalizedPayload.eventType)
+    // A complete payload is not proof that its phase transition was applied.
+    // Grading and result events must pass through their dedicated handlers so
+    // a transient match/context mismatch can trigger revision recovery instead
+    // of silently leaving a client in the grading spinner.
+    const requiresPhaseHandler = [
+      "round-advancing",
+      "round-started",
+      "round-grading",
+      "round-result",
+      "round-skipped",
+      "game-ended"
+    ].includes(normalizedPayload.eventType);
+    const completeHandledEvent = !requiresPhaseHandler
+      && handledRoomEventTypes.includes(normalizedPayload.eventType)
       && !isIncompleteRoomRealtimePayload(normalizedPayload);
     if ((appliedDelta || completeHandledEvent) && handledRoomEventTypes.includes(normalizedPayload.eventType)) {
       return true;
@@ -21126,7 +21163,7 @@ function renderSubmissionStatus() {
     chipRow.appendChild(chip);
   });
   elements.roomSubmitStatus.append(title, chipRow);
-  if (isRoomMode() && pending.length > 0 && isCurrentHost() && !state.joiningRoom && !state.roomRoundResolving) {
+  if (isRoomMode() && pending.length > 0 && isAuthoritativeRoomHost() && !state.roomRoundResolving) {
     const actions = document.createElement("div");
     actions.className = "room-submit-actions";
     const skipButton = document.createElement("button");
@@ -42439,7 +42476,7 @@ async function playRound(rawInput, options = {}) {
   // same round successfully completed through a fallback or synced result.
   setHidden(elements.errorPanel, true);
   const syncedRoundResult = options.roundResult ? normalizeRoomRoundResultPayload(options.roundResult) : null;
-  if (isRoomMode() && (!isCurrentHost() || state.joiningRoom) && !syncedRoundResult) {
+  if (isRoomMode() && !isAuthoritativeRoomHost() && !syncedRoundResult) {
     if (!state.roomRoundResolving) {
       state.roomRoundResolving = true;
     }
@@ -42503,7 +42540,7 @@ async function playRound(rawInput, options = {}) {
         return;
       }
       console.warn(error);
-      if (isRoomMode() && isCurrentHost() && !state.joiningRoom && !isMultipleChoiceRound()) {
+      if (isAuthoritativeRoomHost() && !isMultipleChoiceRound()) {
         roundResult = createSafeLocalTextRoundResult(rawInput);
         addSystemChat("Answer review was slow, so the host used the saved answer key to keep the round moving.", { private: true, sync: false });
       } else if (!isRoomMode() && !isMultipleChoiceRound()) {
@@ -42620,24 +42657,52 @@ async function playRound(rawInput, options = {}) {
     winnerOwner = winningOwners[0] || winnerOwner;
     hasCorrectAnswer = winningOwners.length > 0;
   }
-  decorateAwardWithAnswerDamage(awarded);
-  awardRoundCoins(winningOwners, awarded);
-  recordRoundResult(winnerOwner, awarded, roundResult.cards[winner.index], winningOwners);
-  renderScore();
-  animateScorePop(winnerOwner, awarded);
-  if (isRoomMode() && isCurrentHost() && !state.joiningRoom && !syncedRoundResult) {
-    void publishRoomRoundResult(roundResult, {
+  const publishHostRoundResult = () => {
+    if (!isAuthoritativeRoomHost() || syncedRoundResult) {
+      return;
+    }
+    let damagedParticipantIds = awarded?.damagedParticipantIds || [];
+    try {
+      damagedParticipantIds = damagedParticipantIds.length
+        ? damagedParticipantIds
+        : getDamagedAnswerParticipantIds();
+    } catch (error) {
+      console.warn("Could not collect answer damage for the room result:", error);
+    }
+    const publishOptions = {
       winnerIndex: winner.index,
       revealAnswerIndex,
       winningParticipantIds: winningOwners.map(getRoomParticipantIdForOwner).filter(Boolean),
-      damagedParticipantIds: awarded.damagedParticipantIds || getDamagedAnswerParticipantIds(),
+      damagedParticipantIds,
       awarded,
       cardRatings,
       gradingReasons: state.currentRoundGradingReasons,
       scoreBefore: scoreBeforeAward,
       streakBefore: streakBeforeAward
-    });
-    void publishRoomScoreState("round-score");
+    };
+    // The server result is the hand-off that releases every other client from
+    // the grading wait. Start it from a finally block below so a local effect
+    // or animation error cannot strand the room in grading forever.
+    try {
+      void publishRoomRoundResult(roundResult, publishOptions);
+      void publishRoomScoreState("round-score");
+    } catch (error) {
+      console.warn("Could not start authoritative round result sync:", error);
+    }
+  };
+  try {
+    decorateAwardWithAnswerDamage(awarded);
+    awardRoundCoins(winningOwners, awarded);
+    recordRoundResult(winnerOwner, awarded, roundResult.cards[winner.index], winningOwners);
+    renderScore();
+    animateScorePop(winnerOwner, awarded);
+  } catch (error) {
+    console.warn("Local round scoring presentation failed; keeping the authoritative result sync alive:", error);
+    if (!awarded) {
+      awarded = createNoCorrectAward();
+    }
+  } finally {
+    publishHostRoundResult();
   }
   if (awarded?.rageQuit) {
     state.roomRoundResolving = false;
