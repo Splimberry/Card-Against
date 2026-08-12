@@ -1486,6 +1486,7 @@ const loserBadgeTiers = [
 ];
 const MULTIPLE_CHOICE_STYLE = "multiple-choice";
 const QUESTION_DEBUG_PASSED_IDS_KEY = "cards-against-ai:question-debug:passed-new-questions";
+const QUESTION_DEBUG_LAST_PASSED_IDS_KEY = "cards-against-ai:question-debug:last-passed-new-questions";
 const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
 const gradingStrictnessLabels = {
   forgiving: "Forgiving",
@@ -4369,6 +4370,7 @@ const elements = {
   devQuestionTypeFilter: null,
   devQuestionLanguageFilter: null,
   devQuestionPassNewButton: null,
+  devQuestionUndoNewButton: null,
   devQuestionCounts: null,
   devQuestionResults: null,
   devQuestionCounter: null,
@@ -34085,6 +34087,7 @@ function buildDevToolScreen() {
           <button type="button" class="icon-button" id="devQuestionLeastSeenButton">Least Seen</button>
           <button type="button" class="icon-button" id="devQuestionMostRepeatedButton">Most Repeated</button>
           <button type="button" class="icon-button" id="devQuestionPassNewButton">Pass New Batch</button>
+          <button type="button" class="icon-button" id="devQuestionUndoNewButton">Undo New Batch</button>
         </div>
         <div class="debug-status" id="devQuestionToolsStatus">Question tools ready.</div>
         <div class="dev-question-tool-results" id="devQuestionToolsResults"></div>
@@ -34418,6 +34421,7 @@ function buildDevToolScreen() {
   elements.devQuestionTypeFilter = screen.querySelector("#devQuestionTypeFilter");
   elements.devQuestionLanguageFilter = screen.querySelector("#devQuestionLanguageFilter");
   elements.devQuestionPassNewButton = screen.querySelector("#devQuestionPassNewButton");
+  elements.devQuestionUndoNewButton = screen.querySelector("#devQuestionUndoNewButton");
   elements.devQuestionCounts = screen.querySelector("#devQuestionCounts");
   elements.devQuestionResults = screen.querySelector("#devQuestionResults");
   elements.devQuestionCounter = screen.querySelector("#devQuestionCounter");
@@ -34567,6 +34571,7 @@ function bindDevToolEvents() {
   elements.devQuestionLeastSeenButton.addEventListener("click", () => renderQuestionUsageReport("least"));
   elements.devQuestionMostRepeatedButton.addEventListener("click", () => renderQuestionUsageReport("most"));
   elements.devQuestionPassNewButton.addEventListener("click", passNewQuestionBatch);
+  elements.devQuestionUndoNewButton.addEventListener("click", undoLastQuestionBatch);
   elements.devQuestionToolsResults.addEventListener("click", (event) => {
     const button = event.target.closest("[data-question-tool-focus]");
     if (button) {
@@ -36751,6 +36756,39 @@ function saveQuestionDebugPassedIds(ids) {
   }
 }
 
+function getQuestionDebugLastPassedIds() {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(QUESTION_DEBUG_LAST_PASSED_IDS_KEY) || "[]");
+    return new Set(Array.isArray(stored) ? stored.map((id) => String(id || "").trim()).filter(Boolean) : []);
+  } catch (error) {
+    console.warn("Could not read last passed question debug state:", error);
+    return new Set();
+  }
+}
+
+function saveQuestionDebugLastPassedIds(ids) {
+  try {
+    window.localStorage.setItem(QUESTION_DEBUG_LAST_PASSED_IDS_KEY, JSON.stringify([...ids]));
+    return true;
+  } catch (error) {
+    console.warn("Could not save last passed question debug state:", error);
+    return false;
+  }
+}
+
+function getQuestionDebugUndoIds() {
+  const passedIds = getQuestionDebugPassedIds();
+  const lastPassedIds = getQuestionDebugLastPassedIds();
+  if (lastPassedIds.size) {
+    return new Set([...lastPassedIds].filter((id) => passedIds.has(id)));
+  }
+  const debugBatches = [...new Set(state.questionDebugBank.map((question) => question.debugBatch).filter(Boolean))];
+  const latestBatch = debugBatches.at(-1);
+  return new Set(state.questionDebugBank
+    .filter((question) => question.debugBatch === latestBatch && passedIds.has(String(question.id)))
+    .map((question) => String(question.id)));
+}
+
 function isQuestionDebugNew(question, passedIds = getQuestionDebugPassedIds()) {
   return Boolean(question?.debugBatch) && !passedIds.has(String(question.id || ""));
 }
@@ -36763,6 +36801,9 @@ function updateQuestionDebugPassButton() {
   const count = state.questionDebugBank.filter((question) => isQuestionDebugNew(question, passedIds)).length;
   elements.devQuestionPassNewButton.disabled = count === 0;
   elements.devQuestionPassNewButton.textContent = count ? `Pass New Batch (${count})` : "New Batch Passed";
+  if (elements.devQuestionUndoNewButton) {
+    elements.devQuestionUndoNewButton.disabled = getQuestionDebugUndoIds().size === 0;
+  }
 }
 
 function passNewQuestionBatch() {
@@ -36778,7 +36819,27 @@ function passNewQuestionBatch() {
     elements.devQuestionToolsStatus.textContent = "Could not save the passed-question list in this browser.";
     return;
   }
+  saveQuestionDebugLastPassedIds(newQuestions.map((question) => String(question.id)));
   elements.devQuestionToolsStatus.textContent = `Passed ${newQuestions.length} newly added question${newQuestions.length === 1 ? "" : "s"}. They are hidden from the Newly added view in this browser.`;
+  updateQuestionDebugPassButton();
+  filterQuestionDebugBank();
+}
+
+function undoLastQuestionBatch() {
+  const passedIds = getQuestionDebugPassedIds();
+  const undoableIds = getQuestionDebugUndoIds();
+  if (!undoableIds.size) {
+    elements.devQuestionToolsStatus.textContent = "There is no newly passed batch to undo.";
+    updateQuestionDebugPassButton();
+    return;
+  }
+  undoableIds.forEach((id) => passedIds.delete(id));
+  if (!saveQuestionDebugPassedIds(passedIds)) {
+    elements.devQuestionToolsStatus.textContent = "Could not save the passed-question list in this browser.";
+    return;
+  }
+  saveQuestionDebugLastPassedIds([]);
+  elements.devQuestionToolsStatus.textContent = `Unpassed ${undoableIds.size} newly added question${undoableIds.size === 1 ? "" : "s"}. They are visible again in the Newly added view in this browser.`;
   updateQuestionDebugPassButton();
   filterQuestionDebugBank();
 }

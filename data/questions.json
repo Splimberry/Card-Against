@@ -27364,7 +27364,7 @@
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "easy",
-    "question": "In The Hunger Games, what is the name of the televised competition where tributes are forced to fight?",
+    "question": "Which film series is set in the dystopian nation of Panem, where teenagers are selected to compete in a televised survival event?",
     "canonicalAnswer": "The Hunger Games",
     "multipleChoiceOptions": [
       "The Hunger Games",
@@ -27380,7 +27380,7 @@
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "easy",
-    "question": "Which sitcom follows a mismatched study group at Greendale Community College?",
+    "question": "Which sitcom follows an unlikely group of students whose friendships grow out of a Spanish study group?",
     "canonicalAnswer": "Community",
     "multipleChoiceOptions": [
       "Community",
