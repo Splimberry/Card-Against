@@ -27357,5 +27357,1605 @@
       "最安静的乐器"
     ],
     "debugBatch": "zh-hans-text-mcq-2026-08-03"
+  },
+  {
+    "id": "popculture-mcq-hunger-games-arena",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "In The Hunger Games, what is the name of the televised competition where tributes are forced to fight?",
+    "canonicalAnswer": "The Hunger Games",
+    "multipleChoiceOptions": [
+      "The Hunger Games",
+      "The Purge",
+      "The Maze Trial",
+      "The Reckoning"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-greendale-study-group",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which sitcom follows a mismatched study group at Greendale Community College?",
+    "canonicalAnswer": "Community",
+    "multipleChoiceOptions": [
+      "Community",
+      "Parks and Recreation",
+      "Brooklyn Nine-Nine",
+      "New Girl"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-upside-down-dimension",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "In Stranger Things, what is the shadowy parallel dimension connected to Hawkins called?",
+    "canonicalAnswer": "The Upside Down",
+    "multipleChoiceOptions": [
+      "The Upside Down",
+      "The Further",
+      "The Nether",
+      "The Darkhold"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-jack-sparrow-actor",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "Which actor is best known for playing Captain Jack Sparrow in the Pirates of the Caribbean films?",
+    "canonicalAnswer": "Johnny Depp",
+    "multipleChoiceOptions": [
+      "Johnny Depp",
+      "Orlando Bloom",
+      "Hugh Jackman",
+      "Robert Downey Jr."
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-princess-bride-word",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In The Princess Bride, what word does Vizzini keep saying before Inigo questions whether it means what he thinks?",
+    "canonicalAnswer": "Inconceivable",
+    "multipleChoiceOptions": [
+      "Inconceivable",
+      "Unthinkable",
+      "Impossible",
+      "Preposterous"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-xfiles-truth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which television series made the tagline The truth is out there famous?",
+    "canonicalAnswer": "The X-Files",
+    "multipleChoiceOptions": [
+      "The X-Files",
+      "Fringe",
+      "Twin Peaks",
+      "Lost"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-mean-girls-october",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "In Mean Girls, what date becomes memorable because Aaron Samuels asks Cady what day it is?",
+    "canonicalAnswer": "October 3rd",
+    "multipleChoiceOptions": [
+      "October 3rd",
+      "September 1st",
+      "November 5th",
+      "April 25th"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-peter-parker-newspaper",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which fictional newspaper employs Peter Parker as a photographer in many Spider-Man stories?",
+    "canonicalAnswer": "Daily Bugle",
+    "multipleChoiceOptions": [
+      "Daily Bugle",
+      "Daily Planet",
+      "Gotham Gazette",
+      "New York Bulletin"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-blade-runner-replicants",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In Blade Runner, which company manufactures the bioengineered replicants?",
+    "canonicalAnswer": "Tyrell Corporation",
+    "multipleChoiceOptions": [
+      "Tyrell Corporation",
+      "Weyland-Yutani",
+      "Omni Consumer Products",
+      "Cyberdyne Systems"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-mcq-truman-show-town",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "In The Truman Show, what is the name of the artificial hometown where Truman Burbank lives?",
+    "canonicalAnswer": "Seahaven",
+    "multipleChoiceOptions": [
+      "Seahaven",
+      "Pleasantville",
+      "Twin Peaks",
+      "Summerisle"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-stardew-valley-town",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "In Stardew Valley, what is the name of the small town near the player's farm?",
+    "canonicalAnswer": "Pelican Town",
+    "multipleChoiceOptions": [
+      "Pelican Town",
+      "Mineral Town",
+      "Clock Town",
+      "Portia"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-master-sword-series",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "Which video game series is most closely associated with the Master Sword?",
+    "canonicalAnswer": "The Legend of Zelda",
+    "multipleChoiceOptions": [
+      "The Legend of Zelda",
+      "Final Fantasy",
+      "Dragon Quest",
+      "Fire Emblem"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-fall-guys-prize",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "In Fall Guys, what wearable prize represents victory in a show?",
+    "canonicalAnswer": "Crown",
+    "multipleChoiceOptions": [
+      "Crown",
+      "Medal",
+      "Bean Pass",
+      "Golden Egg"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-portal-device-game",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "Which Valve puzzle game is built around using a handheld device to create linked doorways?",
+    "canonicalAnswer": "Portal",
+    "multipleChoiceOptions": [
+      "Portal",
+      "Half-Life 2",
+      "The Talos Principle",
+      "Quantum Conundrum"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-hollow-knight-kingdom",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Hollow Knight, what is the ruined underground kingdom explored by the player called?",
+    "canonicalAnswer": "Hallownest",
+    "multipleChoiceOptions": [
+      "Hallownest",
+      "Drangleic",
+      "Boletaria",
+      "Hyrule"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-mass-effect-ship",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Mass Effect, what is the name shared by Commander Shepard's famous starship line?",
+    "canonicalAnswer": "Normandy",
+    "multipleChoiceOptions": [
+      "Normandy",
+      "Pillar of Autumn",
+      "Ishimura",
+      "Nostromo"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-final-fantasy-vii-corporation",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Final Fantasy VII, which megacorporation drains mako energy and controls Midgar?",
+    "canonicalAnswer": "Shinra",
+    "multipleChoiceOptions": [
+      "Shinra",
+      "Arasaka",
+      "Aperture Science",
+      "Black Mesa"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-league-standard-map",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In League of Legends, what is the standard five-versus-five map called?",
+    "canonicalAnswer": "Summoner's Rift",
+    "multipleChoiceOptions": [
+      "Summoner's Rift",
+      "Twisted Treeline",
+      "Howling Abyss",
+      "Crystal Scar"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-chrono-trigger-prehistoric-party",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Chrono Trigger, which prehistoric warrior joins the party after encounters in 65,000,000 BC?",
+    "canonicalAnswer": "Ayla",
+    "multipleChoiceOptions": [
+      "Ayla",
+      "Marle",
+      "Lucca",
+      "Faris"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "gaming-mcq-metal-gear-mind-reader",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "In Metal Gear Solid, which FOXHOUND member is famous for reading Snake's mind?",
+    "canonicalAnswer": "Psycho Mantis",
+    "multipleChoiceOptions": [
+      "Psycho Mantis",
+      "Revolver Ocelot",
+      "Vulcan Raven",
+      "Sniper Wolf"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-abu-simbel-ruler",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "Which Egyptian pharaoh ordered the construction of the massive temples at Abu Simbel?",
+    "canonicalAnswer": "Ramesses II",
+    "multipleChoiceOptions": [
+      "Ramesses II",
+      "Akhenaten",
+      "Hatshepsut",
+      "Thutmose III"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-eastern-roman-name",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "What name is commonly used for the eastern Roman Empire that survived for centuries after Rome fell?",
+    "canonicalAnswer": "Byzantine Empire",
+    "multipleChoiceOptions": [
+      "Byzantine Empire",
+      "Ottoman Empire",
+      "Holy Roman Empire",
+      "Seleucid Empire"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-istanbul-strait",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "Which narrow strait runs through Istanbul and separates European Turkey from Asian Turkey?",
+    "canonicalAnswer": "Bosporus Strait",
+    "multipleChoiceOptions": [
+      "Bosporus Strait",
+      "Strait of Hormuz",
+      "Bering Strait",
+      "Dover Strait"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-russian-empress-great",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "Which empress expanded Russia in the 18th century and is commonly called the Great?",
+    "canonicalAnswer": "Catherine the Great",
+    "multipleChoiceOptions": [
+      "Catherine the Great",
+      "Elizabeth Bathory",
+      "Maria Theresa",
+      "Anne of Austria"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-1066-william-harold",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which 1066 battle saw William of Normandy defeat King Harold II of England?",
+    "canonicalAnswer": "Battle of Hastings",
+    "multipleChoiceOptions": [
+      "Battle of Hastings",
+      "Battle of Agincourt",
+      "Battle of Bosworth Field",
+      "Battle of Stamford Bridge"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-napoleon-postwar-congress",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which diplomatic meeting redrew much of Europe after Napoleon's defeat?",
+    "canonicalAnswer": "Congress of Vienna",
+    "multipleChoiceOptions": [
+      "Congress of Vienna",
+      "Berlin Conference",
+      "Yalta Conference",
+      "Diet of Worms"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-russia-long-railway",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which railway links Moscow with the Russian Far East across Siberia?",
+    "canonicalAnswer": "Trans-Siberian Railway",
+    "multipleChoiceOptions": [
+      "Trans-Siberian Railway",
+      "Orient Express",
+      "Canadian Pacific Railway",
+      "Qinghai-Tibet Railway"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-peru-desert-geoglyphs",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "What are the huge ancient geoglyphs etched into the desert of southern Peru called?",
+    "canonicalAnswer": "Nazca Lines",
+    "multipleChoiceOptions": [
+      "Nazca Lines",
+      "Atacama Marks",
+      "Paracas Spirals",
+      "Moche Roads"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-prague-window-event",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which event in 1618, involving officials thrown from a Prague Castle window, helped trigger the Thirty Years' War?",
+    "canonicalAnswer": "Defenestration of Prague",
+    "multipleChoiceOptions": [
+      "Defenestration of Prague",
+      "Prague Spring",
+      "Diet of Augsburg",
+      "Peace of Westphalia"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "geohistory-mcq-ming-treasure-voyages",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which Ming admiral led large treasure voyages across the Indian Ocean in the early 1400s?",
+    "canonicalAnswer": "Zheng He",
+    "multipleChoiceOptions": [
+      "Zheng He",
+      "Kublai Khan",
+      "Sun Yat-sen",
+      "Li Bai"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-water-shooting-fish",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which fish is known for shooting jets of water to knock insects from branches above the surface?",
+    "canonicalAnswer": "Archerfish",
+    "multipleChoiceOptions": [
+      "Archerfish",
+      "Clownfish",
+      "Pufferfish",
+      "Lionfish"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-eight-arms-color-change",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which marine invertebrate has eight arms and is well known for changing color and texture?",
+    "canonicalAnswer": "Octopus",
+    "multipleChoiceOptions": [
+      "Octopus",
+      "Jellyfish",
+      "Lobster",
+      "Sea star"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-honey-producer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which insect is best known for producing honey from flower nectar?",
+    "canonicalAnswer": "Honeybee",
+    "multipleChoiceOptions": [
+      "Honeybee",
+      "Dragonfly",
+      "Termite",
+      "Mantis"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-shell-withdraw-head",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "Which reptile is known for having a protective shell and often being able to pull its head inside?",
+    "canonicalAnswer": "Turtle",
+    "multipleChoiceOptions": [
+      "Turtle",
+      "Iguana",
+      "Gecko",
+      "Crocodile"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-dawn-dusk-active",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What term describes animals that are most active around dawn and dusk?",
+    "canonicalAnswer": "Crepuscular",
+    "multipleChoiceOptions": [
+      "Crepuscular",
+      "Nocturnal",
+      "Diurnal",
+      "Aposematic"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-hammer-shaped-head-shark",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which shark is named for its wide, flattened, hammer-shaped head?",
+    "canonicalAnswer": "Hammerhead Shark",
+    "multipleChoiceOptions": [
+      "Hammerhead Shark",
+      "Mako Shark",
+      "Tiger Shark",
+      "Basking Shark"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-fungus-farming-ants",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which ants are famous for cutting pieces of leaves to cultivate fungus as food?",
+    "canonicalAnswer": "Leafcutter ant",
+    "multipleChoiceOptions": [
+      "Leafcutter ant",
+      "Army ant",
+      "Fire ant",
+      "Carpenter ant"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-reptile-scent-organ",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What scent-detecting organ do many snakes use along with tongue flicking?",
+    "canonicalAnswer": "Jacobson's organ",
+    "multipleChoiceOptions": [
+      "Jacobson's organ",
+      "Lateral line",
+      "Swim bladder",
+      "Crop"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-brood-parasite-bird",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Which bird is especially associated with laying eggs in other birds' nests, a behavior called brood parasitism?",
+    "canonicalAnswer": "Cuckoo",
+    "multipleChoiceOptions": [
+      "Cuckoo",
+      "Kingfisher",
+      "Puffin",
+      "Heron"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "animals-mcq-shark-egg-case",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "What nickname is commonly given to the tough egg case laid by some sharks and rays?",
+    "canonicalAnswer": "Mermaid's purse",
+    "multipleChoiceOptions": [
+      "Mermaid's purse",
+      "Pearl basket",
+      "Coral pouch",
+      "Tide capsule"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-parsley-bulgur-salad",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Which Middle Eastern salad is usually made with parsley, bulgur, tomatoes, mint, and lemon?",
+    "canonicalAnswer": "Tabbouleh",
+    "multipleChoiceOptions": [
+      "Tabbouleh",
+      "Fattoush",
+      "Baba ganoush",
+      "Tzatziki"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-spiced-indian-tea",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "What spiced tea drink is commonly made with black tea, milk, sugar, and warming spices in India?",
+    "canonicalAnswer": "Masala chai",
+    "multipleChoiceOptions": [
+      "Masala chai",
+      "Matcha latte",
+      "Thai iced tea",
+      "Yerba mate"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-avocado-mexican-sauce",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Which Mexican dip or sauce is traditionally made mainly from mashed avocados?",
+    "canonicalAnswer": "Guacamole",
+    "multipleChoiceOptions": [
+      "Guacamole",
+      "Mole poblano",
+      "Pico de gallo",
+      "Salsa verde"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-basil-pine-nut-sauce",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Which green Italian sauce is usually made with basil, garlic, pine nuts, Parmesan, and olive oil?",
+    "canonicalAnswer": "Pesto",
+    "multipleChoiceOptions": [
+      "Pesto",
+      "Romesco",
+      "Chimichurri",
+      "Bechamel"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-fermented-soybean-paste",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which fermented soybean paste gives the classic Japanese soup of the same name its flavor?",
+    "canonicalAnswer": "Miso",
+    "multipleChoiceOptions": [
+      "Miso",
+      "Tahini",
+      "Harissa",
+      "Gochugaru"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-onion-carrot-celery-base",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "In French cooking, what is the flavor base of diced onion, carrot, and celery called?",
+    "canonicalAnswer": "Mirepoix",
+    "multipleChoiceOptions": [
+      "Mirepoix",
+      "Sofrito",
+      "Roux",
+      "Bouquet garni"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-stock-stirred-rice-dish",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which Italian rice dish is cooked by gradually adding stock while stirring until creamy?",
+    "canonicalAnswer": "Risotto",
+    "multipleChoiceOptions": [
+      "Risotto",
+      "Polenta",
+      "Orzo",
+      "Ribollita"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-campari-gin-vermouth",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which cocktail is traditionally made with equal parts gin, Campari, and sweet vermouth?",
+    "canonicalAnswer": "Negroni",
+    "multipleChoiceOptions": [
+      "Negroni",
+      "Manhattan",
+      "Boulevardier",
+      "Aperol Spritz"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-maillard-sugar-partner",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "In the Maillard reaction, amino acids react with what kind of sugar to create browning flavors?",
+    "canonicalAnswer": "Reducing sugars",
+    "multipleChoiceOptions": [
+      "Reducing sugars",
+      "Invert syrup",
+      "Sugar alcohols",
+      "Caramel crystals"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "fooddrinks-mcq-mold-miso-sake",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "What Japanese fermentation starter, grown with Aspergillus oryzae, is used for foods such as miso and sake?",
+    "canonicalAnswer": "Koji",
+    "multipleChoiceOptions": [
+      "Koji",
+      "Natto",
+      "Dashi",
+      "Mirin"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-volleyball-touch-limit",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In volleyball, what is the maximum number of team touches normally allowed before the ball must be sent over the net?",
+    "canonicalAnswer": "Three touches",
+    "multipleChoiceOptions": [
+      "Three touches",
+      "Two touches",
+      "Four touches",
+      "Five touches"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-boxing-count-finish",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In boxing, what result occurs when a fighter cannot continue before the referee finishes the count?",
+    "canonicalAnswer": "Knockout",
+    "multipleChoiceOptions": [
+      "Knockout",
+      "Submission",
+      "False start",
+      "Technical foul"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-shuttlecock-racket-sport",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "Which racket sport is played with a shuttlecock instead of a ball?",
+    "canonicalAnswer": "Badminton",
+    "multipleChoiceOptions": [
+      "Badminton",
+      "Squash",
+      "Pickleball",
+      "Racquetball"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-soccer-sideline-restart",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "In soccer, what restart is awarded when the ball fully crosses the sideline?",
+    "canonicalAnswer": "Throw-in",
+    "multipleChoiceOptions": [
+      "Throw-in",
+      "Corner kick",
+      "Goal kick",
+      "Drop ball"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-baseball-four-balls",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In baseball, what is awarded to a batter who receives four balls during an at-bat?",
+    "canonicalAnswer": "Walk",
+    "multipleChoiceOptions": [
+      "Walk",
+      "Balk",
+      "Sacrifice",
+      "Ground rule double"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-cricket-boundary-no-bounce",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In cricket, how many runs are scored when the batter hits the ball over the boundary without it bouncing?",
+    "canonicalAnswer": "Six runs",
+    "multipleChoiceOptions": [
+      "Six runs",
+      "Four runs",
+      "One run",
+      "No-ball run"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-tennis-after-deuce",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In tennis, what score state comes after a player wins the next point from deuce?",
+    "canonicalAnswer": "Tennis advantage",
+    "multipleChoiceOptions": [
+      "Tennis advantage",
+      "Break point",
+      "Love",
+      "Set point"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-football-safety-points",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In American football, how many points is a safety worth?",
+    "canonicalAnswer": "Two points",
+    "multipleChoiceOptions": [
+      "Two points",
+      "One point",
+      "Three points",
+      "Six points"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-rugby-minor-infringement-set-piece",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In rugby union, what set piece commonly restarts play after a minor infringement or knock-on?",
+    "canonicalAnswer": "Scrum",
+    "multipleChoiceOptions": [
+      "Scrum",
+      "Lineout",
+      "Ruck",
+      "Maul"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "sports-mcq-cycling-main-group",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In road cycling, what is the main group of riders in a race called?",
+    "canonicalAnswer": "Peloton",
+    "multipleChoiceOptions": [
+      "Peloton",
+      "Breakaway",
+      "Pace car",
+      "Domestique"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-read-without-posting",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "What term describes someone who reads online discussions but rarely or never posts?",
+    "canonicalAnswer": "Lurker",
+    "multipleChoiceOptions": [
+      "Lurker",
+      "Moderator",
+      "Seeder",
+      "Influencer"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-looping-image-format",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "Which image file format is strongly associated with short looping animations online?",
+    "canonicalAnswer": "GIF",
+    "multipleChoiceOptions": [
+      "GIF",
+      "PDF",
+      "TXT",
+      "RAW"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-reddit-ama-expanded",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "On Reddit and similar sites, what does AMA usually stand for?",
+    "canonicalAnswer": "Ask Me Anything",
+    "multipleChoiceOptions": [
+      "Ask Me Anything",
+      "Auto Message Alert",
+      "Anonymous Media Archive",
+      "All Mods Approved"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-negative-engagement-ratio",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "What is a post often said to have received when negative replies or quote posts overwhelm its likes?",
+    "canonicalAnswer": "Ratio",
+    "multipleChoiceOptions": [
+      "Ratio",
+      "Boost",
+      "Embed",
+      "Whitelist"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-viral-dancing-baby",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What was the common name of the early viral 3D animation of a dancing infant?",
+    "canonicalAnswer": "Dancing Baby",
+    "multipleChoiceOptions": [
+      "Dancing Baby",
+      "Keyboard Cat",
+      "Peanut Butter Jelly Time",
+      "Nyan Cat"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-i-can-has-cheezburger-style",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "The phrase I Can Has Cheezburger? is most closely tied to which internet meme style?",
+    "canonicalAnswer": "LOLcats",
+    "multipleChoiceOptions": [
+      "LOLcats",
+      "Advice Animals",
+      "Creepypasta",
+      "Doge speak"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-provocative-posting",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What term describes posting deliberately provocative messages online to upset or bait people?",
+    "canonicalAnswer": "Trolling",
+    "multipleChoiceOptions": [
+      "Trolling",
+      "Mirroring",
+      "Caching",
+      "Threading"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-all-caps-meaning",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "In online writing, typing a whole sentence in all capital letters is often interpreted as what?",
+    "canonicalAnswer": "Shouting",
+    "multipleChoiceOptions": [
+      "Shouting",
+      "Quoting",
+      "Spoiling",
+      "Fact-checking"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-wrong-on-internet-webcomic",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "Which webcomic is known for the line Someone is wrong on the Internet?",
+    "canonicalAnswer": "xkcd",
+    "multipleChoiceOptions": [
+      "xkcd",
+      "Penny Arcade",
+      "The Oatmeal",
+      "Homestuck"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "internet-mcq-traffic-flood-attack",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "What term describes a coordinated flood of traffic meant to overwhelm a website or online service?",
+    "canonicalAnswer": "DDoS attack",
+    "multipleChoiceOptions": [
+      "DDoS attack",
+      "Phishing attack",
+      "SQL injection",
+      "Man-in-the-middle attack"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-positive-atom-particle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "Which subatomic particle in an atom has a positive electric charge?",
+    "canonicalAnswer": "Proton",
+    "multipleChoiceOptions": [
+      "Proton",
+      "Electron",
+      "Neutron",
+      "Photon"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-photosynthesis-gas-absorbed",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "What gas do plants take in from the air during photosynthesis?",
+    "canonicalAnswer": "Carbon dioxide",
+    "multipleChoiceOptions": [
+      "Carbon dioxide",
+      "Nitrogen",
+      "Helium",
+      "Methane"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-planets-orbit-force",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "What fundamental force keeps planets in orbit around the Sun?",
+    "canonicalAnswer": "Gravity",
+    "multipleChoiceOptions": [
+      "Gravity",
+      "Friction",
+      "Magnetism",
+      "Buoyancy"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-air-pressure-instrument",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "Which instrument is used to measure atmospheric pressure?",
+    "canonicalAnswer": "Barometer",
+    "multipleChoiceOptions": [
+      "Barometer",
+      "Hygrometer",
+      "Seismometer",
+      "Calorimeter"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-electromagnetic-force-particle",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "In particle physics, which particle is associated with carrying the electromagnetic force?",
+    "canonicalAnswer": "Photon",
+    "multipleChoiceOptions": [
+      "Photon",
+      "Gluon",
+      "Muon",
+      "Neutrino"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-ph-above-seven",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "A solution with a pH above 7 is generally described as what?",
+    "canonicalAnswer": "Alkaline",
+    "multipleChoiceOptions": [
+      "Alkaline",
+      "Acidic",
+      "Neutral",
+      "Radioactive"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-ozone-layer-atmosphere",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which layer of Earth's atmosphere contains most of the ozone layer?",
+    "canonicalAnswer": "Stratosphere",
+    "multipleChoiceOptions": [
+      "Stratosphere",
+      "Troposphere",
+      "Mesosphere",
+      "Exosphere"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-pressure-volume-law",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which gas law states that pressure and volume are inversely related when temperature is constant?",
+    "canonicalAnswer": "Boyle's law",
+    "multipleChoiceOptions": [
+      "Boyle's law",
+      "Charles's law",
+      "Hooke's law",
+      "Ohm's law"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-hydrogen-two-neutrons",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Which isotope of hydrogen has one proton and two neutrons?",
+    "canonicalAnswer": "Tritium",
+    "multipleChoiceOptions": [
+      "Tritium",
+      "Deuterium",
+      "Protium",
+      "Helium-3"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "science-mcq-nucleus-splitting-process",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "What process splits a heavy atomic nucleus into lighter nuclei while releasing energy?",
+    "canonicalAnswer": "Nuclear fission",
+    "multipleChoiceOptions": [
+      "Nuclear fission",
+      "Nuclear fusion",
+      "Beta decay",
+      "Ionization"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-greek-hunt-goddess",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Which Greek goddess is associated with the hunt, wild animals, and the moon?",
+    "canonicalAnswer": "Artemis",
+    "multipleChoiceOptions": [
+      "Artemis",
+      "Aphrodite",
+      "Demeter",
+      "Hestia"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-norse-rainbow-guardian",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Which Norse god guards the rainbow bridge to Asgard?",
+    "canonicalAnswer": "Heimdall",
+    "multipleChoiceOptions": [
+      "Heimdall",
+      "Baldr",
+      "Tyr",
+      "Njord"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-egyptian-cat-goddess",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Which Egyptian goddess is commonly associated with cats, protection, and the home?",
+    "canonicalAnswer": "Bastet",
+    "multipleChoiceOptions": [
+      "Bastet",
+      "Hathor",
+      "Nephthys",
+      "Nut"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-roman-smith-god",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Which Roman god of fire and metalworking is the counterpart of the Greek Hephaestus?",
+    "canonicalAnswer": "Vulcan",
+    "multipleChoiceOptions": [
+      "Vulcan",
+      "Mars",
+      "Mercury",
+      "Janus"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-underworld-forgetfulness-river",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Greek myth, which river of the underworld is associated with forgetfulness?",
+    "canonicalAnswer": "Lethe",
+    "multipleChoiceOptions": [
+      "Lethe",
+      "Styx",
+      "Acheron",
+      "Pactolus"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-midgard-asgard-bridge",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "In Norse mythology, what rainbow bridge connects Midgard and Asgard?",
+    "canonicalAnswer": "Bifrost",
+    "multipleChoiceOptions": [
+      "Bifrost",
+      "Gjallarhorn",
+      "Jormungandr",
+      "Niflheim"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-hindu-remover-obstacles",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Hindu deity is widely known as the remover of obstacles?",
+    "canonicalAnswer": "Ganesha",
+    "multipleChoiceOptions": [
+      "Ganesha",
+      "Agni",
+      "Varuna",
+      "Indra"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-minotaur-slayer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Greek hero is famous for entering the Labyrinth and slaying the Minotaur?",
+    "canonicalAnswer": "Theseus",
+    "multipleChoiceOptions": [
+      "Theseus",
+      "Perseus",
+      "Jason",
+      "Bellerophon"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-mesopotamian-underworld-descent",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Which Mesopotamian goddess of love and war is the subject of a famous descent into the underworld?",
+    "canonicalAnswer": "Inanna",
+    "multipleChoiceOptions": [
+      "Inanna",
+      "Isis",
+      "Hecate",
+      "Rhea"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "mythology-mcq-ulster-warp-spasm-hero",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Which hero of the Irish Ulster Cycle is famous for a terrifying battle frenzy called the warp-spasm?",
+    "canonicalAnswer": "Cu Chulainn",
+    "multipleChoiceOptions": [
+      "Cu Chulainn",
+      "Finn MacCool",
+      "Diarmuid Ua Duibhne",
+      "Bran the Blessed"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-monet-water-lilies-movement",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which art movement is associated with Claude Monet's water lilies and visible brushwork capturing light?",
+    "canonicalAnswer": "Impressionism",
+    "multipleChoiceOptions": [
+      "Impressionism",
+      "Surrealism",
+      "Baroque",
+      "Constructivism"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-four-seasons-composer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which composer wrote the violin concertos known as The Four Seasons?",
+    "canonicalAnswer": "Vivaldi",
+    "multipleChoiceOptions": [
+      "Vivaldi",
+      "Brahms",
+      "Mahler",
+      "Debussy"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-single-reed-woodwind",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which single-reed woodwind instrument is common in jazz, orchestras, and marching bands?",
+    "canonicalAnswer": "Clarinet",
+    "multipleChoiceOptions": [
+      "Clarinet",
+      "Oboe",
+      "Bassoon",
+      "Flute"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-person-painting-term",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "What is the general term for a painting, drawing, or photograph of a person?",
+    "canonicalAnswer": "Portrait",
+    "multipleChoiceOptions": [
+      "Portrait",
+      "Still life",
+      "Landscape",
+      "Triptych"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-persistence-memory-artist",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which artist painted The Persistence of Memory, the famous work with melting clocks?",
+    "canonicalAnswer": "Salvador Dali",
+    "multipleChoiceOptions": [
+      "Salvador Dali",
+      "Pablo Picasso",
+      "Joan Miro",
+      "Rene Magritte"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-eight-note-interval",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "In music theory, what interval spans eight scale degrees?",
+    "canonicalAnswer": "Octave",
+    "multipleChoiceOptions": [
+      "Octave",
+      "Fifth",
+      "Tritone",
+      "Cadence"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-pointed-arches-style",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which architectural style is known for pointed arches, ribbed vaults, and flying buttresses?",
+    "canonicalAnswer": "Gothic architecture",
+    "multipleChoiceOptions": [
+      "Gothic architecture",
+      "Bauhaus",
+      "Rococo",
+      "Brutalism"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-japanese-printing-influence",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Japanese woodblock print tradition strongly influenced many European modern artists?",
+    "canonicalAnswer": "Ukiyo-e",
+    "multipleChoiceOptions": [
+      "Ukiyo-e",
+      "Kintsugi",
+      "Ikebana",
+      "Raku"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-unaccompanied-singing",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "What term describes singing performed without instrumental accompaniment?",
+    "canonicalAnswer": "A cappella",
+    "multipleChoiceOptions": [
+      "A cappella",
+      "Sforzando",
+      "Ostinato",
+      "Glissando"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
+  },
+  {
+    "id": "artmusic-mcq-florence-dome-designer",
+    "type": "text",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Which Renaissance architect engineered the famous dome of Florence Cathedral?",
+    "canonicalAnswer": "Brunelleschi",
+    "multipleChoiceOptions": [
+      "Brunelleschi",
+      "Bernini",
+      "Borromini",
+      "Palladio"
+    ],
+    "debugBatch": "en-text-mcq-2026-08-12"
   }
 ]
