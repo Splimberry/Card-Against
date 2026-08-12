@@ -32857,5 +32857,4505 @@
       "source": "https://commons.wikimedia.org/wiki/File:Filippo%20Brunelleschi%2C%20cutaway%20of%20the%20Dome%20of%20Florence%20Cathedral%20(Santa%20Maria%20del%20Fiore).JPG"
     },
     "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-rami-malek",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which actor won the Academy Award for portraying Freddie Mercury in Bohemian Rhapsody?",
+    "canonicalAnswer": "Rami Malek",
+    "multipleChoiceOptions": [
+      "Rami Malek",
+      "Taron Egerton",
+      "Andrew Garfield",
+      "Mahershala Ali"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/77/Rami_Malek_in_2015_%28portrait_crop%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Rami%20Malek%20in%202015%20(portrait%20crop).jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-rami-malek",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪位演员因在《波希米亚狂想曲》中饰演弗雷迪·默丘里而获得奥斯卡？",
+    "canonicalAnswer": "拉米·马雷克",
+    "multipleChoiceOptions": [
+      "拉米·马雷克",
+      "塔伦·埃哲顿",
+      "安德鲁·加菲尔德",
+      "马赫沙拉·阿里"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/77/Rami_Malek_in_2015_%28portrait_crop%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Rami%20Malek%20in%202015%20(portrait%20crop).jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-taylor-1989",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which singer released the 2014 album 1989, named after her birth year?",
+    "canonicalAnswer": "Taylor Swift",
+    "multipleChoiceOptions": [
+      "Taylor Swift",
+      "Katy Perry",
+      "Selena Gomez",
+      "Miley Cyrus"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png/960px-Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Taylor%20Swift%20at%20the%202024%20Golden%20Globes%20(2).png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-taylor-1989",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪位歌手发行了以其出生年份命名的 2014 年专辑《1989》？",
+    "canonicalAnswer": "泰勒·斯威夫特",
+    "multipleChoiceOptions": [
+      "泰勒·斯威夫特",
+      "凯蒂·佩里",
+      "赛琳娜·戈麦斯",
+      "麦莉·赛勒斯"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png/960px-Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Taylor%20Swift%20at%20the%202024%20Golden%20Globes%20(2).png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-film-score",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What is music written specifically to accompany a film usually called?",
+    "canonicalAnswer": "Film score",
+    "multipleChoiceOptions": [
+      "Film score",
+      "Sound effect",
+      "Theme park",
+      "Newsreel"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Prague_recording_session%2C_June_2004.jpg/960px-Prague_recording_session%2C_June_2004.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Prague%20recording%20session%2C%20June%202004.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-film-score",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "专门为电影创作、用于配合画面的音乐通常叫什么？",
+    "canonicalAnswer": "电影配乐",
+    "multipleChoiceOptions": [
+      "电影配乐",
+      "音效",
+      "主题公园",
+      "新闻片"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Prague_recording_session%2C_June_2004.jpg/960px-Prague_recording_session%2C_June_2004.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Prague%20recording%20session%2C%20June%202004.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-academy-award",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which award is presented by the Academy of Motion Picture Arts and Sciences?",
+    "canonicalAnswer": "Academy Award",
+    "multipleChoiceOptions": [
+      "Academy Award",
+      "Grammy Award",
+      "Tony Award",
+      "Emmy Award"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/14/James_stewart_receives_academy_award_1941.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:James%20stewart%20receives%20academy%20award%201941.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-academy-award",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "美国电影艺术与科学学院颁发哪种奖项？",
+    "canonicalAnswer": "奥斯卡金像奖",
+    "multipleChoiceOptions": [
+      "奥斯卡金像奖",
+      "格莱美奖",
+      "托尼奖",
+      "艾美奖"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/14/James_stewart_receives_academy_award_1941.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:James%20stewart%20receives%20academy%20award%201941.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-stop-motion",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which animation method creates movement by photographing a physical model one frame at a time?",
+    "canonicalAnswer": "Stop-motion",
+    "multipleChoiceOptions": [
+      "Stop-motion",
+      "Rotoscoping",
+      "Motion capture",
+      "Live action"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png/960px-Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Armature%20Puppet%20%E2%80%93%20Winder%20System%20Tiny%20XY%20Axis%20V2%20Aluminium%202021.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-stop-motion",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪种动画方法通过逐帧拍摄实体模型来制造运动效果？",
+    "canonicalAnswer": "定格动画",
+    "multipleChoiceOptions": [
+      "定格动画",
+      "转描动画",
+      "动作捕捉",
+      "真人实拍"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png/960px-Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Armature%20Puppet%20%E2%80%93%20Winder%20System%20Tiny%20XY%20Axis%20V2%20Aluminium%202021.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-carrie-fisher",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which actor played Princess Leia in the original Star Wars trilogy?",
+    "canonicalAnswer": "Carrie Fisher",
+    "multipleChoiceOptions": [
+      "Carrie Fisher",
+      "Sigourney Weaver",
+      "Jodie Foster",
+      "Glenn Close"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg/960px-Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Actress%20Carrie%20Fisher%20%C2%A9%20Riccardo%20Ghilardi%20photographer.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-carrie-fisher",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪位演员在最初的《星球大战》三部曲中饰演莱娅公主？",
+    "canonicalAnswer": "凯丽·费雪",
+    "multipleChoiceOptions": [
+      "凯丽·费雪",
+      "西格妮·韦弗",
+      "朱迪·福斯特",
+      "格伦·克洛斯"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg/960px-Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Actress%20Carrie%20Fisher%20%C2%A9%20Riccardo%20Ghilardi%20photographer.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-binge-watching",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What term describes watching many episodes of a series in one extended session?",
+    "canonicalAnswer": "Binge-watching",
+    "multipleChoiceOptions": [
+      "Binge-watching",
+      "Channel surfing",
+      "Video dubbing",
+      "Frame skipping"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Family_watching_television_1958.jpg/960px-Family_watching_television_1958.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Family%20watching%20television%201958.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-binge-watching",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "连续一次观看剧集的许多集通常称为什么？",
+    "canonicalAnswer": "追剧",
+    "multipleChoiceOptions": [
+      "追剧",
+      "换台浏览",
+      "视频配音",
+      "跳帧"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Family_watching_television_1958.jpg/960px-Family_watching_television_1958.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Family%20watching%20television%201958.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-knight",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which chess piece moves in an L-shaped pattern and can jump over pieces?",
+    "canonicalAnswer": "Knight",
+    "multipleChoiceOptions": [
+      "Knight",
+      "Bishop",
+      "Rook",
+      "Queen"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Chess_piece_-_White_knight.JPG/960px-Chess_piece_-_White_knight.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Chess%20piece%20-%20White%20knight.JPG"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-knight",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪种国际象棋棋子以 L 形移动，并且可以跳过其他棋子？",
+    "canonicalAnswer": "马",
+    "multipleChoiceOptions": [
+      "马",
+      "象",
+      "车",
+      "后"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Chess_piece_-_White_knight.JPG/960px-Chess_piece_-_White_knight.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Chess%20piece%20-%20White%20knight.JPG"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-famicom",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What was the original Japanese name of the console released internationally as the NES?",
+    "canonicalAnswer": "Famicom",
+    "multipleChoiceOptions": [
+      "Famicom",
+      "Dreamcast",
+      "PC Engine",
+      "Mega Drive"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Nintendo-Super-Famicom-Console-BR.jpg/960px-Nintendo-Super-Famicom-Console-BR.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Super-Famicom-Console-BR.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-famicom",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在国际市场称为 NES 的任天堂主机原本在日本叫什么？",
+    "canonicalAnswer": "红白机",
+    "multipleChoiceOptions": [
+      "红白机",
+      "Dreamcast",
+      "PC Engine",
+      "Mega Drive"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Nintendo-Super-Famicom-Console-BR.jpg/960px-Nintendo-Super-Famicom-Console-BR.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Super-Famicom-Console-BR.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-rts",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which game genre asks players to manage resources and units in real time?",
+    "canonicalAnswer": "Real-time strategy",
+    "multipleChoiceOptions": [
+      "Real-time strategy",
+      "Turn-based RPG",
+      "Visual novel",
+      "Rhythm game"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/BOSscreen.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:BOSscreen.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-rts",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪种游戏类型要求玩家实时管理资源和单位？",
+    "canonicalAnswer": "即时战略",
+    "multipleChoiceOptions": [
+      "即时战略",
+      "回合制角色扮演游戏",
+      "视觉小说",
+      "节奏游戏"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/BOSscreen.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:BOSscreen.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-hit-points",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In many role-playing games, what do hit points measure?",
+    "canonicalAnswer": "Character health",
+    "multipleChoiceOptions": [
+      "Character health",
+      "Movement speed",
+      "Inventory space",
+      "Weapon range"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Hoja_del_Aventurero.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hoja%20del%20Aventurero.JPG"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-hit-points",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在许多角色扮演游戏中，生命值衡量的是什么？",
+    "canonicalAnswer": "角色健康状态",
+    "multipleChoiceOptions": [
+      "角色健康状态",
+      "移动速度",
+      "物品栏空间",
+      "武器射程"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Hoja_del_Aventurero.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hoja%20del%20Aventurero.JPG"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-tas",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What abbreviation describes a speedrun created with tools that allow frame-by-frame precision?",
+    "canonicalAnswer": "TAS",
+    "multipleChoiceOptions": [
+      "TAS",
+      "DLC",
+      "NPC",
+      "FPS"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/TAS-italiano.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:TAS-italiano.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-tas",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "用能实现逐帧精确操作的工具制作的速通通常用什么缩写表示？",
+    "canonicalAnswer": "TAS",
+    "multipleChoiceOptions": [
+      "TAS",
+      "DLC",
+      "NPC",
+      "FPS"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/TAS-italiano.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:TAS-italiano.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-catan-wheat",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Catan, which resource is represented by fields of golden grain?",
+    "canonicalAnswer": "Wheat",
+    "multipleChoiceOptions": [
+      "Wheat",
+      "Ore",
+      "Brick",
+      "Wool"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg/960px-Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Gen%20Con%20-%2020030724%20-%20Giant%20Settlers%20of%20Catan%20Game.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-catan-wheat",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《卡坦岛》中，金色谷物田代表哪种资源？",
+    "canonicalAnswer": "麦子",
+    "multipleChoiceOptions": [
+      "麦子",
+      "矿石",
+      "砖块",
+      "羊毛"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg/960px-Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Gen%20Con%20-%2020030724%20-%20Giant%20Settlers%20of%20Catan%20Game.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-miyamoto",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which Nintendo designer is closely associated with Mario, Zelda, and Donkey Kong?",
+    "canonicalAnswer": "Shigeru Miyamoto",
+    "multipleChoiceOptions": [
+      "Shigeru Miyamoto",
+      "Hideo Kojima",
+      "Satoru Iwata",
+      "Masahiro Sakurai"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Takashi_Tezuka%2C_Shigeru_Miyamoto_and_K%C5%8Dji_Kond%C5%8D.jpg/960px-Takashi_Tezuka%2C_Shigeru_Miyamoto_and_K%C5%8Dji_Kond%C5%8D.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Takashi%20Tezuka%2C%20Shigeru%20Miyamoto%20and%20K%C5%8Dji%20Kond%C5%8D.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-miyamoto",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪位任天堂设计师与马里奥、《塞尔达传说》和《大金刚》密切相关？",
+    "canonicalAnswer": "宫本茂",
+    "multipleChoiceOptions": [
+      "宫本茂",
+      "小岛秀夫",
+      "岩田聪",
+      "樱井政博"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Takashi_Tezuka%2C_Shigeru_Miyamoto_and_K%C5%8Dji_Kond%C5%8D.jpg/960px-Takashi_Tezuka%2C_Shigeru_Miyamoto_and_K%C5%8Dji_Kond%C5%8D.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Takashi%20Tezuka%2C%20Shigeru%20Miyamoto%20and%20K%C5%8Dji%20Kond%C5%8D.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-haptic",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What technology lets a game controller simulate taps, impacts, or vibration?",
+    "canonicalAnswer": "Haptic feedback",
+    "multipleChoiceOptions": [
+      "Haptic feedback",
+      "Ray tracing",
+      "Voice synthesis",
+      "Cloud rendering"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Dreamcast_VibrationPak.jpg/960px-Dreamcast_VibrationPak.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Dreamcast%20VibrationPak.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-haptic",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪种技术能让游戏手柄模拟敲击、碰撞或震动？",
+    "canonicalAnswer": "触觉反馈",
+    "multipleChoiceOptions": [
+      "触觉反馈",
+      "光线追踪",
+      "语音合成",
+      "云渲染"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Dreamcast_VibrationPak.jpg/960px-Dreamcast_VibrationPak.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Dreamcast%20VibrationPak.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-hieroglyphs",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which ancient Egyptian writing system was helped by the Rosetta Stone?",
+    "canonicalAnswer": "Hieroglyphs",
+    "multipleChoiceOptions": [
+      "Hieroglyphs",
+      "Cuneiform",
+      "Linear B",
+      "Sanskrit"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/Rosetta_stone.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Rosetta%20stone.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-hieroglyphs",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪种古埃及文字系统的破译得到了罗塞塔石碑的帮助？",
+    "canonicalAnswer": "象形文字",
+    "multipleChoiceOptions": [
+      "象形文字",
+      "楔形文字",
+      "线形文字 B",
+      "梵文"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/Rosetta_stone.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Rosetta%20stone.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-roman-empire",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which empire built an extensive road network centered on the Mediterranean?",
+    "canonicalAnswer": "Roman Empire",
+    "multipleChoiceOptions": [
+      "Roman Empire",
+      "Mali Empire",
+      "Inca Empire",
+      "Mughal Empire"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Roman_Ruins%5E_-_geograph.org.uk_-_64169.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Roman%20Ruins%5E%20-%20geograph.org.uk%20-%2064169.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-roman-empire",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪个帝国建造了以地中海为中心的庞大道路网络？",
+    "canonicalAnswer": "罗马帝国",
+    "multipleChoiceOptions": [
+      "罗马帝国",
+      "马里帝国",
+      "印加帝国",
+      "莫卧儿帝国"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Roman_Ruins%5E_-_geograph.org.uk_-_64169.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Roman%20Ruins%5E%20-%20geograph.org.uk%20-%2064169.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-versailles",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which treaty formally ended the First World War between Germany and the Allied powers?",
+    "canonicalAnswer": "Treaty of Versailles",
+    "multipleChoiceOptions": [
+      "Treaty of Versailles",
+      "Treaty of Tordesillas",
+      "Treaty of Utrecht",
+      "Treaty of Ghent"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg/960px-Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Treaty%20of%20Versailles%20Signing%2C%20Hall%20of%20Mirrors.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-versailles",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪项条约正式结束了德国与协约国之间的第一次世界大战？",
+    "canonicalAnswer": "《凡尔赛条约》",
+    "multipleChoiceOptions": [
+      "《凡尔赛条约》",
+      "《托尔德西利亚斯条约》",
+      "《乌得勒支条约》",
+      "《根特条约》"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg/960px-Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Treaty%20of%20Versailles%20Signing%2C%20Hall%20of%20Mirrors.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-victoria-falls",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which waterfall lies on the border between Zambia and Zimbabwe?",
+    "canonicalAnswer": "Victoria Falls",
+    "multipleChoiceOptions": [
+      "Victoria Falls",
+      "Angel Falls",
+      "Iguazu Falls",
+      "Niagara Falls"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/38/Victoria_Falls_aerial_view_September_2003.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Victoria%20Falls%20aerial%20view%20September%202003.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-victoria-falls",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪座瀑布位于赞比亚和津巴布韦边界？",
+    "canonicalAnswer": "维多利亚瀑布",
+    "multipleChoiceOptions": [
+      "维多利亚瀑布",
+      "安赫尔瀑布",
+      "伊瓜苏瀑布",
+      "尼亚加拉瀑布"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/38/Victoria_Falls_aerial_view_September_2003.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Victoria%20Falls%20aerial%20view%20September%202003.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-equator",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "What line of latitude is defined as 0 degrees?",
+    "canonicalAnswer": "Equator",
+    "multipleChoiceOptions": [
+      "Equator",
+      "Prime Meridian",
+      "Tropic of Cancer",
+      "Arctic Circle"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg/960px-Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Equator%20Line%20Monument%2C%20Macap%C3%A1%20city%2C%20Brazil.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-equator",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪条纬线被定义为 0 度？",
+    "canonicalAnswer": "赤道",
+    "multipleChoiceOptions": [
+      "赤道",
+      "本初子午线",
+      "北回归线",
+      "北极圈"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg/960px-Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Equator%20Line%20Monument%2C%20Macap%C3%A1%20city%2C%20Brazil.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-venice",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which Italian city is famous for canals instead of conventional streets through much of its historic center?",
+    "canonicalAnswer": "Venice",
+    "multipleChoiceOptions": [
+      "Venice",
+      "Florence",
+      "Naples",
+      "Turin"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg/960px-Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Canal%20Grande%20Chiesa%20della%20Salute%20e%20Dogana%20dal%20ponte%20dell%20Accademia.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-venice",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪座意大利城市的历史中心大部分以运河而非普通街道闻名？",
+    "canonicalAnswer": "威尼斯",
+    "multipleChoiceOptions": [
+      "威尼斯",
+      "佛罗伦萨",
+      "那不勒斯",
+      "都灵"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg/960px-Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Canal%20Grande%20Chiesa%20della%20Salute%20e%20Dogana%20dal%20ponte%20dell%20Accademia.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-elcano",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which navigator completed Magellan's expedition and is credited with the first circumnavigation?",
+    "canonicalAnswer": "Juan Sebastian Elcano",
+    "multipleChoiceOptions": [
+      "Juan Sebastian Elcano",
+      "Vasco da Gama",
+      "James Cook",
+      "Amerigo Vespucci"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg/960px-Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Statue%20of%20Juan%20Sebasti%C3%A1n%20Elcano%2C%20Getaria%20(Carlos%20Palao)%202024%20-%201.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-elcano",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪位航海家完成了麦哲伦的远征，并被认为完成了首次环球航行？",
+    "canonicalAnswer": "胡安·塞巴斯蒂安·埃尔卡诺",
+    "multipleChoiceOptions": [
+      "胡安·塞巴斯蒂安·埃尔卡诺",
+      "瓦斯科·达·伽马",
+      "詹姆斯·库克",
+      "亚美利哥·韦斯普奇"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg/960px-Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Statue%20of%20Juan%20Sebasti%C3%A1n%20Elcano%2C%20Getaria%20(Carlos%20Palao)%202024%20-%201.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-alexandria",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which ancient Egyptian city was home to a legendary library and a famous lighthouse?",
+    "canonicalAnswer": "Alexandria",
+    "multipleChoiceOptions": [
+      "Alexandria",
+      "Thebes",
+      "Memphis",
+      "Giza"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Alexandria_-_Roman_Amphitheater_-_view_of_ruins_around_amphitheater.JPG/960px-Alexandria_-_Roman_Amphitheater_-_view_of_ruins_around_amphitheater.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Alexandria%20-%20Roman%20Amphitheater%20-%20view%20of%20ruins%20around%20amphitheater.JPG"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-alexandria",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪座古埃及城市拥有传说中的图书馆和著名灯塔？",
+    "canonicalAnswer": "亚历山大城",
+    "multipleChoiceOptions": [
+      "亚历山大城",
+      "底比斯",
+      "孟菲斯",
+      "吉萨"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Alexandria_-_Roman_Amphitheater_-_view_of_ruins_around_amphitheater.JPG/960px-Alexandria_-_Roman_Amphitheater_-_view_of_ruins_around_amphitheater.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Alexandria%20-%20Roman%20Amphitheater%20-%20view%20of%20ruins%20around%20amphitheater.JPG"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-kilimanjaro",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which mountain is the highest point in Africa?",
+    "canonicalAnswer": "Mount Kilimanjaro",
+    "multipleChoiceOptions": [
+      "Mount Kilimanjaro",
+      "Mount Kenya",
+      "Mount Elgon",
+      "Atlas Mountain"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Mt._Kilimanjaro_12.2006.jpg/960px-Mt._Kilimanjaro_12.2006.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Mt.%20Kilimanjaro%2012.2006.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-kilimanjaro",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪座山是非洲最高点？",
+    "canonicalAnswer": "乞力马扎罗山",
+    "multipleChoiceOptions": [
+      "乞力马扎罗山",
+      "肯尼亚山",
+      "埃尔贡山",
+      "阿特拉斯山"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Mt._Kilimanjaro_12.2006.jpg/960px-Mt._Kilimanjaro_12.2006.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Mt.%20Kilimanjaro%2012.2006.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-geohistory-mcq-suez",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which canal connects the Mediterranean Sea with the Red Sea?",
+    "canonicalAnswer": "Suez Canal",
+    "multipleChoiceOptions": [
+      "Suez Canal",
+      "Panama Canal",
+      "Kiel Canal",
+      "Corinth Canal"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Suez_Canal%2C_Port_Said_-_ISS.jpg/960px-Suez_Canal%2C_Port_Said_-_ISS.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Suez%20Canal%2C%20Port%20Said%20-%20ISS.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-geohistory-mcq-suez",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪条运河连接地中海和红海？",
+    "canonicalAnswer": "苏伊士运河",
+    "multipleChoiceOptions": [
+      "苏伊士运河",
+      "巴拿马运河",
+      "基尔运河",
+      "科林斯运河"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Suez_Canal%2C_Port_Said_-_ISS.jpg/960px-Suez_Canal%2C_Port_Said_-_ISS.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Suez%20Canal%2C%20Port%20Said%20-%20ISS.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-echidna",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which egg-laying mammal has a long snout and spines?",
+    "canonicalAnswer": "Echidna",
+    "multipleChoiceOptions": [
+      "Echidna",
+      "Wombat",
+      "Numbat",
+      "Quoll"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Echidna_nebulosa_close_up_in_kona.jpg/960px-Echidna_nebulosa_close_up_in_kona.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Echidna%20nebulosa%20close%20up%20in%20kona.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-echidna",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "哪种产卵哺乳动物有长吻和刺？",
+    "canonicalAnswer": "针鼹",
+    "multipleChoiceOptions": [
+      "针鼹",
+      "袋熊",
+      "袋食蚁兽",
+      "袋猫"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Echidna_nebulosa_close_up_in_kona.jpg/960px-Echidna_nebulosa_close_up_in_kona.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Echidna%20nebulosa%20close%20up%20in%20kona.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-hemocyanin",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which copper-based pigment makes the blood of horseshoe crabs appear blue?",
+    "canonicalAnswer": "Hemocyanin",
+    "multipleChoiceOptions": [
+      "Hemocyanin",
+      "Hemoglobin",
+      "Melanin",
+      "Keratin"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Limules.jpg/960px-Limules.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Limules.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-hemocyanin",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "哪种含铜色素使鲎的血液呈蓝色？",
+    "canonicalAnswer": "血蓝蛋白",
+    "multipleChoiceOptions": [
+      "血蓝蛋白",
+      "血红蛋白",
+      "黑色素",
+      "角蛋白"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Limules.jpg/960px-Limules.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Limules.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-ibis",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which wading bird uses a long curved bill to probe mud for food?",
+    "canonicalAnswer": "Ibis",
+    "multipleChoiceOptions": [
+      "Ibis",
+      "Heron",
+      "Pelican",
+      "Cormorant"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Hadeda_Ibis_Portrait.jpg/960px-Hadeda_Ibis_Portrait.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hadeda%20Ibis%20Portrait.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-ibis",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "哪种涉禽会用长而弯曲的喙在泥中探寻食物？",
+    "canonicalAnswer": "鹮",
+    "multipleChoiceOptions": [
+      "鹮",
+      "鹭",
+      "鹈鹕",
+      "鸬鹚"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Hadeda_Ibis_Portrait.jpg/960px-Hadeda_Ibis_Portrait.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hadeda%20Ibis%20Portrait.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-chiroptera",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What is the scientific order that contains all bats?",
+    "canonicalAnswer": "Chiroptera",
+    "multipleChoiceOptions": [
+      "Chiroptera",
+      "Carnivora",
+      "Rodentia",
+      "Primates"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Haeckel_Chiroptera.jpg/960px-Haeckel_Chiroptera.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Haeckel%20Chiroptera.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-chiroptera",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "包含所有蝙蝠的科学分类目叫什么？",
+    "canonicalAnswer": "翼手目",
+    "multipleChoiceOptions": [
+      "翼手目",
+      "食肉目",
+      "啮齿目",
+      "灵长目"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Haeckel_Chiroptera.jpg/960px-Haeckel_Chiroptera.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Haeckel%20Chiroptera.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-termite-queen",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "In a termite colony, which individual is primarily responsible for laying eggs?",
+    "canonicalAnswer": "Queen",
+    "multipleChoiceOptions": [
+      "Queen",
+      "Worker",
+      "Soldier",
+      "Nymph"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Termite_Colony_in_Nepal.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Termite%20Colony%20in%20Nepal.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-termite-queen",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "在白蚁群体中，主要负责产卵的是哪种个体？",
+    "canonicalAnswer": "蚁后",
+    "multipleChoiceOptions": [
+      "蚁后",
+      "工蚁",
+      "兵蚁",
+      "若虫"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Termite_Colony_in_Nepal.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Termite%20Colony%20in%20Nepal.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-electric-eel",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which fish is famous for producing powerful electric discharges?",
+    "canonicalAnswer": "Electric eel",
+    "multipleChoiceOptions": [
+      "Electric eel",
+      "Moray eel",
+      "Stingray",
+      "Pufferfish"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Electric_Eel.jpg/960px-Electric_Eel.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Electric%20Eel.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-electric-eel",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "哪种鱼以能产生强大的电击而闻名？",
+    "canonicalAnswer": "电鳗",
+    "multipleChoiceOptions": [
+      "电鳗",
+      "海鳝",
+      "魟鱼",
+      "河豚"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Electric_Eel.jpg/960px-Electric_Eel.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Electric%20Eel.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-arctic-hare",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Why can an Arctic hare's coat become white in winter?",
+    "canonicalAnswer": "Seasonal camouflage",
+    "multipleChoiceOptions": [
+      "Seasonal camouflage",
+      "Mating display",
+      "Sun protection",
+      "Warning coloration"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/39/Hare_and_Creag_Uchdag_-_geograph.org.uk_-_97553.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hare%20and%20Creag%20Uchdag%20-%20geograph.org.uk%20-%2097553.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-arctic-hare",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "北极兔的毛色为什么会在冬天变白？",
+    "canonicalAnswer": "季节性伪装",
+    "multipleChoiceOptions": [
+      "季节性伪装",
+      "求偶展示",
+      "防晒",
+      "警戒色"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/39/Hare_and_Creag_Uchdag_-_geograph.org.uk_-_97553.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hare%20and%20Creag%20Uchdag%20-%20geograph.org.uk%20-%2097553.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-ostrich",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which flightless bird is the fastest runner among living birds?",
+    "canonicalAnswer": "Ostrich",
+    "multipleChoiceOptions": [
+      "Ostrich",
+      "Emu",
+      "Cassowary",
+      "Rhea"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Amorous_Ostrich_-_geograph.org.uk_-_870193.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Amorous%20Ostrich%20-%20geograph.org.uk%20-%20870193.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-ostrich",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "哪种不会飞的鸟是现存鸟类中奔跑最快的？",
+    "canonicalAnswer": "鸵鸟",
+    "multipleChoiceOptions": [
+      "鸵鸟",
+      "鸸鹋",
+      "食火鸡",
+      "美洲鸵"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Amorous_Ostrich_-_geograph.org.uk_-_870193.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Amorous%20Ostrich%20-%20geograph.org.uk%20-%20870193.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-rumen",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What is the first major chamber of a cow's four-part stomach called?",
+    "canonicalAnswer": "Rumen",
+    "multipleChoiceOptions": [
+      "Rumen",
+      "Abomasum",
+      "Cecum",
+      "Gizzard"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Cow_grazing_in_France.jpg/960px-Cow_grazing_in_France.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Cow%20grazing%20in%20France.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-rumen",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "牛的四室胃中第一个主要胃室叫什么？",
+    "canonicalAnswer": "瘤胃",
+    "multipleChoiceOptions": [
+      "瘤胃",
+      "皱胃",
+      "盲肠",
+      "砂囊"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Cow_grazing_in_France.jpg/960px-Cow_grazing_in_France.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Cow%20grazing%20in%20France.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-animals-mcq-sea-anemone",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which invertebrate provides shelter to clownfish in a well-known mutualism?",
+    "canonicalAnswer": "Sea anemone",
+    "multipleChoiceOptions": [
+      "Sea anemone",
+      "Coral",
+      "Sponge",
+      "Jellyfish"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg/960px-Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Amphiprion%20ocellaris%20(Clown%20anemonefish)%20in%20Heteractis%20magnifica%20(Sea%20anemone).jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-animals-mcq-sea-anemone",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "在著名的互利共生关系中，哪种无脊椎动物为小丑鱼提供庇护？",
+    "canonicalAnswer": "海葵",
+    "multipleChoiceOptions": [
+      "海葵",
+      "珊瑚",
+      "海绵",
+      "水母"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg/960px-Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Amphiprion%20ocellaris%20(Clown%20anemonefish)%20in%20Heteractis%20magnifica%20(Sea%20anemone).jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-glutamate",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which amino acid is strongly associated with the savory taste called umami?",
+    "canonicalAnswer": "Glutamate",
+    "multipleChoiceOptions": [
+      "Glutamate",
+      "Lactose",
+      "Fructose",
+      "Citric acid"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Consom%C3%A9_con_picatostes_de_pan_frito.jpg/960px-Consom%C3%A9_con_picatostes_de_pan_frito.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Consom%C3%A9%20con%20picatostes%20de%20pan%20frito.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-glutamate",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "哪种氨基酸与鲜味密切相关？",
+    "canonicalAnswer": "谷氨酸",
+    "multipleChoiceOptions": [
+      "谷氨酸",
+      "乳糖",
+      "果糖",
+      "柠檬酸"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Consom%C3%A9_con_picatostes_de_pan_frito.jpg/960px-Consom%C3%A9_con_picatostes_de_pan_frito.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Consom%C3%A9%20con%20picatostes%20de%20pan%20frito.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-al-dente",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What Italian phrase describes pasta cooked firm enough to retain some bite?",
+    "canonicalAnswer": "Al dente",
+    "multipleChoiceOptions": [
+      "Al dente",
+      "A la carte",
+      "Dolce vita",
+      "Mise en place"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Shrimp_primavera_pasta_cooking_food_dinner.jpg/960px-Shrimp_primavera_pasta_cooking_food_dinner.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Shrimp%20primavera%20pasta%20cooking%20food%20dinner.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-al-dente",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "哪个意大利短语形容煮到仍有一定嚼劲的意大利面？",
+    "canonicalAnswer": "Al dente（有嚼劲）",
+    "multipleChoiceOptions": [
+      "Al dente（有嚼劲）",
+      "A la carte（单点）",
+      "Dolce vita（甜蜜生活）",
+      "Mise en place（备料）"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Shrimp_primavera_pasta_cooking_food_dinner.jpg/960px-Shrimp_primavera_pasta_cooking_food_dinner.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Shrimp%20primavera%20pasta%20cooking%20food%20dinner.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-bechamel",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which classic French mother sauce is made from milk thickened with a roux?",
+    "canonicalAnswer": "Bechamel",
+    "multipleChoiceOptions": [
+      "Bechamel",
+      "Hollandaise",
+      "Veloute",
+      "Espagnole"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/B%C3%A9chamel_on_moussaka.jpg/960px-B%C3%A9chamel_on_moussaka.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:B%C3%A9chamel%20on%20moussaka.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-bechamel",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "哪种法国母酱由牛奶和面糊调制而成？",
+    "canonicalAnswer": "白酱",
+    "multipleChoiceOptions": [
+      "白酱",
+      "荷兰酱",
+      "丝绒酱",
+      "西班牙酱"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/B%C3%A9chamel_on_moussaka.jpg/960px-B%C3%A9chamel_on_moussaka.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:B%C3%A9chamel%20on%20moussaka.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-coffee-cherry",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "The beans used to make coffee are actually the seeds of what fruit?",
+    "canonicalAnswer": "Coffee cherry",
+    "multipleChoiceOptions": [
+      "Coffee cherry",
+      "Cocoa pod",
+      "Date",
+      "Olive"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Coffee-cherries-afternoon-in-san-marcos-tarrazu-costa-rica.jpg/960px-Coffee-cherries-afternoon-in-san-marcos-tarrazu-costa-rica.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Coffee-cherries-afternoon-in-san-marcos-tarrazu-costa-rica.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-coffee-cherry",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "用于制作咖啡的咖啡豆实际上是哪种水果的种子？",
+    "canonicalAnswer": "咖啡樱桃",
+    "multipleChoiceOptions": [
+      "咖啡樱桃",
+      "可可荚",
+      "枣",
+      "橄榄"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Coffee-cherries-afternoon-in-san-marcos-tarrazu-costa-rica.jpg/960px-Coffee-cherries-afternoon-in-san-marcos-tarrazu-costa-rica.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Coffee-cherries-afternoon-in-san-marcos-tarrazu-costa-rica.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-rennet",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which enzyme is traditionally used to coagulate milk when making many cheeses?",
+    "canonicalAnswer": "Rennet",
+    "multipleChoiceOptions": [
+      "Rennet",
+      "Amylase",
+      "Lipase",
+      "Pectin"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Cheese_curds_3.jpg/960px-Cheese_curds_3.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Cheese%20curds%203.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-rennet",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "制作许多奶酪时，传统上用哪种酶使牛奶凝固？",
+    "canonicalAnswer": "凝乳酶",
+    "multipleChoiceOptions": [
+      "凝乳酶",
+      "淀粉酶",
+      "脂肪酶",
+      "果胶"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Cheese_curds_3.jpg/960px-Cheese_curds_3.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Cheese%20curds%203.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-nori",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What dried seaweed is commonly wrapped around sushi rolls?",
+    "canonicalAnswer": "Nori",
+    "multipleChoiceOptions": [
+      "Nori",
+      "Kombu",
+      "Wakame",
+      "Dulse"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Nori.jpg/960px-Nori.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Nori.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-nori",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "寿司卷外层通常包裹哪种干海藻？",
+    "canonicalAnswer": "海苔",
+    "multipleChoiceOptions": [
+      "海苔",
+      "昆布",
+      "裙带菜",
+      "掌状红皮藻"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Nori.jpg/960px-Nori.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Nori.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-maillard",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which chemical reaction creates much of the browned flavor on seared meat and toasted bread?",
+    "canonicalAnswer": "Maillard reaction",
+    "multipleChoiceOptions": [
+      "Maillard reaction",
+      "Krebs cycle",
+      "Osmosis",
+      "Saponification"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Brown_bread_crust.jpg/960px-Brown_bread_crust.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Brown%20bread%20crust.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-maillard",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "煎肉和烤面包表面的褐色风味主要由哪种化学反应产生？",
+    "canonicalAnswer": "美拉德反应",
+    "multipleChoiceOptions": [
+      "美拉德反应",
+      "克雷布斯循环",
+      "渗透作用",
+      "皂化反应"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Brown_bread_crust.jpg/960px-Brown_bread_crust.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Brown%20bread%20crust.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-greek-yogurt",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What process makes Greek yogurt thicker than regular yogurt?",
+    "canonicalAnswer": "Straining",
+    "multipleChoiceOptions": [
+      "Straining",
+      "Freezing",
+      "Smoking",
+      "Carbonation"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Hangop_bord.jpg/960px-Hangop_bord.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hangop%20bord.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-greek-yogurt",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "什么工艺使希腊酸奶比普通酸奶更浓稠？",
+    "canonicalAnswer": "过滤",
+    "multipleChoiceOptions": [
+      "过滤",
+      "冷冻",
+      "熏制",
+      "碳酸化"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Hangop_bord.jpg/960px-Hangop_bord.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hangop%20bord.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-nixtamalization",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What ancient process treats maize with an alkaline solution before it is made into masa?",
+    "canonicalAnswer": "Nixtamalization",
+    "multipleChoiceOptions": [
+      "Nixtamalization",
+      "Distillation",
+      "Pickling",
+      "Tempering"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Totopodemaiz.jpg/960px-Totopodemaiz.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Totopodemaiz.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-nixtamalization",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "在玉米制成玉米面团前，用碱性溶液处理玉米的古老工艺叫什么？",
+    "canonicalAnswer": "石灰浸泡法",
+    "multipleChoiceOptions": [
+      "石灰浸泡法",
+      "蒸馏",
+      "腌制",
+      "调温"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Totopodemaiz.jpg/960px-Totopodemaiz.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Totopodemaiz.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-fooddrinks-mcq-oolong",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which tea is partially oxidized, placing it between green tea and black tea?",
+    "canonicalAnswer": "Oolong",
+    "multipleChoiceOptions": [
+      "Oolong",
+      "White tea",
+      "Rooibos",
+      "Pu-erh"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Oolong_tea_leaf.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Oolong%20tea%20leaf.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mcq-oolong",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "哪种茶经过部分氧化，介于绿茶和红茶之间？",
+    "canonicalAnswer": "乌龙茶",
+    "multipleChoiceOptions": [
+      "乌龙茶",
+      "白茶",
+      "路易波士茶",
+      "普洱茶"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Oolong_tea_leaf.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Oolong%20tea%20leaf.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-hat-trick",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What is it called when one player scores three times in a single match?",
+    "canonicalAnswer": "Hat-trick",
+    "multipleChoiceOptions": [
+      "Hat-trick",
+      "Brace",
+      "Shutout",
+      "Double play"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Football_pictogram.svg/960px-Football_pictogram.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Football%20pictogram.svg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-hat-trick",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "一名球员在同一场比赛中得分三次叫什么？",
+    "canonicalAnswer": "帽子戏法",
+    "multipleChoiceOptions": [
+      "帽子戏法",
+      "梅开二度",
+      "零封",
+      "双杀"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Football_pictogram.svg/960px-Football_pictogram.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Football%20pictogram.svg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-perfect-game",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In baseball, how many opposing batters must a pitcher retire for a perfect game?",
+    "canonicalAnswer": "27",
+    "multipleChoiceOptions": [
+      "27",
+      "21",
+      "24",
+      "30"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Pitcher_field_of_baseball_field_in_T%C5%99eb%C3%AD%C4%8D%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg/960px-Pitcher_field_of_baseball_field_in_T%C5%99eb%C3%AD%C4%8D%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Pitcher%20field%20of%20baseball%20field%20in%20T%C5%99eb%C3%AD%C4%8D%2C%20T%C5%99eb%C3%AD%C4%8D%20District.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-perfect-game",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "在棒球中，投手要完成完美比赛必须让多少名对方击球手出局？",
+    "canonicalAnswer": "27",
+    "multipleChoiceOptions": [
+      "27",
+      "21",
+      "24",
+      "30"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Pitcher_field_of_baseball_field_in_T%C5%99eb%C3%AD%C4%8D%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg/960px-Pitcher_field_of_baseball_field_in_T%C5%99eb%C3%AD%C4%8D%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Pitcher%20field%20of%20baseball%20field%20in%20T%C5%99eb%C3%AD%C4%8D%2C%20T%C5%99eb%C3%AD%C4%8D%20District.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-birdie",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In golf, what is a score of one stroke under par on a hole called?",
+    "canonicalAnswer": "Birdie",
+    "multipleChoiceOptions": [
+      "Birdie",
+      "Bogey",
+      "Eagle",
+      "Albatross"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg/960px-Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Barack%20Obama%20%26%20Joe%20Biden%20on%20White%20House%20putting%20green%204-24-09.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-birdie",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "在高尔夫球中，一洞低于标准杆一杆叫什么？",
+    "canonicalAnswer": "小鸟球",
+    "multipleChoiceOptions": [
+      "小鸟球",
+      "柏忌",
+      "老鹰球",
+      "信天翁"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg/960px-Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Barack%20Obama%20%26%20Joe%20Biden%20on%20White%20House%20putting%20green%204-24-09.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-marathon",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What is the official distance of a marathon in kilometers?",
+    "canonicalAnswer": "42.195 kilometers",
+    "multipleChoiceOptions": [
+      "42.195 kilometers",
+      "40 kilometers",
+      "41.5 kilometers",
+      "45 kilometers"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Berlin-Marathon_2015_Runners_14.jpg/960px-Berlin-Marathon_2015_Runners_14.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Berlin-Marathon%202015%20Runners%2014.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-marathon",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "马拉松的正式距离是多少公里？",
+    "canonicalAnswer": "42.195 公里",
+    "multipleChoiceOptions": [
+      "42.195 公里",
+      "40 公里",
+      "41.5 公里",
+      "45 公里"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Berlin-Marathon_2015_Runners_14.jpg/960px-Berlin-Marathon_2015_Runners_14.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Berlin-Marathon%202015%20Runners%2014.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-volleyball-six",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "How many players from one team are on the court during an indoor volleyball rally?",
+    "canonicalAnswer": "Six",
+    "multipleChoiceOptions": [
+      "Six",
+      "Five",
+      "Seven",
+      "Eight"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/AG_23_Indoor_Volleyball_15.jpg/960px-AG_23_Indoor_Volleyball_15.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:AG%2023%20Indoor%20Volleyball%2015.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-volleyball-six",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "室内排球比赛中，一队在回合进行时有多少名球员在场上？",
+    "canonicalAnswer": "六名",
+    "multipleChoiceOptions": [
+      "六名",
+      "五名",
+      "七名",
+      "八名"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/AG_23_Indoor_Volleyball_15.jpg/960px-AG_23_Indoor_Volleyball_15.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:AG%2023%20Indoor%20Volleyball%2015.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-pit-stop",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What is the brief service stop in a Formula One race called?",
+    "canonicalAnswer": "Pit stop",
+    "multipleChoiceOptions": [
+      "Pit stop",
+      "Grid walk",
+      "Safety lap",
+      "Warm-up run"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Toyota_pit_stop_Monza_2008.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota%20pit%20stop%20Monza%202008.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-pit-stop",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "一级方程式比赛中的短暂停车维修叫什么？",
+    "canonicalAnswer": "进站",
+    "multipleChoiceOptions": [
+      "进站",
+      "发车位巡场",
+      "安全圈",
+      "热身跑"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Toyota_pit_stop_Monza_2008.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota%20pit%20stop%20Monza%202008.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-pommel-horse",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Which gymnastics apparatus has two handles and is used in a men's artistic event?",
+    "canonicalAnswer": "Pommel horse",
+    "multipleChoiceOptions": [
+      "Pommel horse",
+      "Balance beam",
+      "Uneven bars",
+      "Vault"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/2018-10-11_Gymnastics_at_2018_Summer_Youth_Olympics_%E2%80%93_Boys%27_Artistic_Gymnastics_%E2%80%93_All-around_final_%E2%80%93_Pommel_horse_%28Martin_Rulsch%29_1032.jpg/960px-2018-10-11_Gymnastics_at_2018_Summer_Youth_Olympics_%E2%80%93_Boys%27_Artistic_Gymnastics_%E2%80%93_All-around_final_%E2%80%93_Pommel_horse_%28Martin_Rulsch%29_1032.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:2018-10-11%20Gymnastics%20at%202018%20Summer%20Youth%20Olympics%20%E2%80%93%20Boys'%20Artistic%20Gymnastics%20%E2%80%93%20All-around%20final%20%E2%80%93%20Pommel%20horse%20(Martin%20Rulsch)%201032.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-pommel-horse",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "哪种体操器械带有两个把手，并用于男子竞技体操项目？",
+    "canonicalAnswer": "鞍马",
+    "multipleChoiceOptions": [
+      "鞍马",
+      "平衡木",
+      "高低杠",
+      "跳马"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/2018-10-11_Gymnastics_at_2018_Summer_Youth_Olympics_%E2%80%93_Boys%27_Artistic_Gymnastics_%E2%80%93_All-around_final_%E2%80%93_Pommel_horse_%28Martin_Rulsch%29_1032.jpg/960px-2018-10-11_Gymnastics_at_2018_Summer_Youth_Olympics_%E2%80%93_Boys%27_Artistic_Gymnastics_%E2%80%93_All-around_final_%E2%80%93_Pommel_horse_%28Martin_Rulsch%29_1032.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:2018-10-11%20Gymnastics%20at%202018%20Summer%20Youth%20Olympics%20%E2%80%93%20Boys'%20Artistic%20Gymnastics%20%E2%80%93%20All-around%20final%20%E2%80%93%20Pommel%20horse%20(Martin%20Rulsch)%201032.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-dns",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which system translates human-readable domain names into IP addresses?",
+    "canonicalAnswer": "DNS",
+    "multipleChoiceOptions": [
+      "DNS",
+      "HTML",
+      "USB",
+      "JPEG"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Conceptual_-_UK_implemented_DNS_Assisted_URL_Filtering%283%29.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Conceptual%20-%20UK%20implemented%20DNS%20Assisted%20URL%20Filtering(3).png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-dns",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "哪个系统把人类可读的域名转换为 IP 地址？",
+    "canonicalAnswer": "DNS",
+    "multipleChoiceOptions": [
+      "DNS",
+      "HTML",
+      "USB",
+      "JPEG"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Conceptual_-_UK_implemented_DNS_Assisted_URL_Filtering%283%29.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Conceptual%20-%20UK%20implemented%20DNS%20Assisted%20URL%20Filtering(3).png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-git",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which version-control system is represented by the branching code-project diagram?",
+    "canonicalAnswer": "Git",
+    "multipleChoiceOptions": [
+      "Git",
+      "Excel",
+      "SMTP",
+      "CUDA"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Git_operations.svg/960px-Git_operations.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Git%20operations.svg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-git",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "这种代码项目分支图代表哪种版本控制系统？",
+    "canonicalAnswer": "Git",
+    "multipleChoiceOptions": [
+      "Git",
+      "Excel",
+      "SMTP",
+      "CUDA"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Git_operations.svg/960px-Git_operations.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Git%20operations.svg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-404",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which HTTP status code normally means that a requested page was not found?",
+    "canonicalAnswer": "404",
+    "multipleChoiceOptions": [
+      "404",
+      "200",
+      "301",
+      "503"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/White_House.gov_404_error_1-20-09.JPG/960px-White_House.gov_404_error_1-20-09.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:White%20House.gov%20404%20error%201-20-09.JPG"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-404",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "哪个 HTTP 状态码通常表示请求的页面未找到？",
+    "canonicalAnswer": "404",
+    "multipleChoiceOptions": [
+      "404",
+      "200",
+      "301",
+      "503"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/White_House.gov_404_error_1-20-09.JPG/960px-White_House.gov_404_error_1-20-09.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:White%20House.gov%20404%20error%201-20-09.JPG"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-two-factor",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What security practice asks for a password plus a separate code or device?",
+    "canonicalAnswer": "Two-factor authentication",
+    "multipleChoiceOptions": [
+      "Two-factor authentication",
+      "Data mining",
+      "Content caching",
+      "Screen mirroring"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Authentication_devices.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Authentication%20devices.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-two-factor",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "要求密码加上独立验证码或设备的安全做法叫什么？",
+    "canonicalAnswer": "双重身份验证",
+    "multipleChoiceOptions": [
+      "双重身份验证",
+      "数据挖掘",
+      "内容缓存",
+      "屏幕镜像"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Authentication_devices.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Authentication%20devices.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-wpa2",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which standard is commonly used to help secure a wireless home network?",
+    "canonicalAnswer": "WPA2",
+    "multipleChoiceOptions": [
+      "WPA2",
+      "HTML5",
+      "MIDI",
+      "ASCII"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg/960px-3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:3Com%20OfficeConnect%20ADSL%20Wireless%2011g%20Firewall%20Router%202012-10-28-0869.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-wpa2",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "哪种标准通常用于帮助保护家庭无线网络？",
+    "canonicalAnswer": "WPA2",
+    "multipleChoiceOptions": [
+      "WPA2",
+      "HTML5",
+      "MIDI",
+      "ASCII"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg/960px-3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:3Com%20OfficeConnect%20ADSL%20Wireless%2011g%20Firewall%20Router%202012-10-28-0869.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-pagerank",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which algorithm originally helped Google rank pages using the link structure of the web?",
+    "canonicalAnswer": "PageRank",
+    "multipleChoiceOptions": [
+      "PageRank",
+      "MapReduce",
+      "BitTorrent",
+      "AutoComplete"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Top_3_search_results_with_thumbnails.jpg/960px-Top_3_search_results_with_thumbnails.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Top%203%20search%20results%20with%20thumbnails.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-pagerank",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "谷歌最初用哪种算法根据网页链接结构帮助排列网页排名？",
+    "canonicalAnswer": "PageRank",
+    "multipleChoiceOptions": [
+      "PageRank",
+      "MapReduce",
+      "BitTorrent",
+      "自动完成"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Top_3_search_results_with_thumbnails.jpg/960px-Top_3_search_results_with_thumbnails.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Top%203%20search%20results%20with%20thumbnails.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-chlorophyll",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which pigment allows plants to absorb much of the light used in photosynthesis?",
+    "canonicalAnswer": "Chlorophyll",
+    "multipleChoiceOptions": [
+      "Chlorophyll",
+      "Keratin",
+      "Collagen",
+      "Melanin"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg/960px-Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Leaves%20-%20Photo%20by%20Giovanni%20Ussi%20-%20Foglie%201.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-chlorophyll",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "哪种色素帮助植物吸收光合作用所需的大部分光？",
+    "canonicalAnswer": "叶绿素",
+    "multipleChoiceOptions": [
+      "叶绿素",
+      "角蛋白",
+      "胶原蛋白",
+      "黑色素"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg/960px-Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Leaves%20-%20Photo%20by%20Giovanni%20Ussi%20-%20Foglie%201.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-mars",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Olympus Mons, the largest volcano in the Solar System, is on which planet?",
+    "canonicalAnswer": "Mars",
+    "multipleChoiceOptions": [
+      "Mars",
+      "Venus",
+      "Mercury",
+      "Jupiter"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Olympus_Mons_alt.jpg/960px-Olympus_Mons_alt.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Olympus%20Mons%20alt.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-mars",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "太阳系最大的火山奥林帕斯山位于哪颗行星？",
+    "canonicalAnswer": "火星",
+    "multipleChoiceOptions": [
+      "火星",
+      "金星",
+      "水星",
+      "木星"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Olympus_Mons_alt.jpg/960px-Olympus_Mons_alt.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Olympus%20Mons%20alt.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-erythrocyte",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which blood cell carries oxygen using hemoglobin?",
+    "canonicalAnswer": "Erythrocyte",
+    "multipleChoiceOptions": [
+      "Erythrocyte",
+      "Platelet",
+      "Neuron",
+      "Leukocyte"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Osmotic_pressure_on_blood_cells_diagram.svg/960px-Osmotic_pressure_on_blood_cells_diagram.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Osmotic%20pressure%20on%20blood%20cells%20diagram.svg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-erythrocyte",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "哪种血细胞利用血红蛋白运输氧气？",
+    "canonicalAnswer": "红细胞",
+    "multipleChoiceOptions": [
+      "红细胞",
+      "血小板",
+      "神经元",
+      "白细胞"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Osmotic_pressure_on_blood_cells_diagram.svg/960px-Osmotic_pressure_on_blood_cells_diagram.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Osmotic%20pressure%20on%20blood%20cells%20diagram.svg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-acidic",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "A solution with a pH below 7 is described as what?",
+    "canonicalAnswer": "Acidic",
+    "multipleChoiceOptions": [
+      "Acidic",
+      "Alkaline",
+      "Neutral",
+      "Isotonic"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Indicateurs_color%C3%A9s_de_pH.jpg/960px-Indicateurs_color%C3%A9s_de_pH.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Indicateurs%20color%C3%A9s%20de%20pH.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-acidic",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "pH 值低于 7 的溶液被称为什么？",
+    "canonicalAnswer": "酸性",
+    "multipleChoiceOptions": [
+      "酸性",
+      "碱性",
+      "中性",
+      "等渗"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Indicateurs_color%C3%A9s_de_pH.jpg/960px-Indicateurs_color%C3%A9s_de_pH.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Indicateurs%20color%C3%A9s%20de%20pH.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-adenine",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which DNA base pairs with thymine in the double helix?",
+    "canonicalAnswer": "Adenine",
+    "multipleChoiceOptions": [
+      "Adenine",
+      "Cytosine",
+      "Guanine",
+      "Uracil"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/DNA_Structure%2BKey%2BLabelled.png/960px-DNA_Structure%2BKey%2BLabelled.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:DNA%20Structure%2BKey%2BLabelled.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-adenine",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "在 DNA 双螺旋中，哪种碱基与胸腺嘧啶配对？",
+    "canonicalAnswer": "腺嘌呤",
+    "multipleChoiceOptions": [
+      "腺嘌呤",
+      "胞嘧啶",
+      "鸟嘌呤",
+      "尿嘧啶"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/DNA_Structure%2BKey%2BLabelled.png/960px-DNA_Structure%2BKey%2BLabelled.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:DNA%20Structure%2BKey%2BLabelled.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-mid-ocean-ridge",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Where does new oceanic crust form as tectonic plates move apart?",
+    "canonicalAnswer": "Mid-ocean ridge",
+    "multipleChoiceOptions": [
+      "Mid-ocean ridge",
+      "Ocean trench",
+      "Hot spot",
+      "Transform fault"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Ridge_render-sv.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Ridge%20render-sv.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-mid-ocean-ridge",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "构造板块分离时，新的洋壳在哪里形成？",
+    "canonicalAnswer": "洋中脊",
+    "multipleChoiceOptions": [
+      "洋中脊",
+      "海沟",
+      "热点",
+      "转换断层"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Ridge_render-sv.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Ridge%20render-sv.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-hertz",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which SI unit measures frequency?",
+    "canonicalAnswer": "Hertz",
+    "multipleChoiceOptions": [
+      "Hertz",
+      "Tesla",
+      "Ohm",
+      "Coulomb"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Frequency_modulation.png/960px-Frequency_modulation.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Frequency%20modulation.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-hertz",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "哪种国际单位制单位用于测量频率？",
+    "canonicalAnswer": "赫兹",
+    "multipleChoiceOptions": [
+      "赫兹",
+      "特斯拉",
+      "欧姆",
+      "库仑"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Frequency_modulation.png/960px-Frequency_modulation.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Frequency%20modulation.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-photon",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What is the name of a discrete packet of electromagnetic energy?",
+    "canonicalAnswer": "Photon",
+    "multipleChoiceOptions": [
+      "Photon",
+      "Proton",
+      "Muon",
+      "Positron"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fluence_%C3%A9lec.jpg/960px-Fluence_%C3%A9lec.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Fluence%20%C3%A9lec.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-photon",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "离散的电磁能量包叫什么？",
+    "canonicalAnswer": "光子",
+    "multipleChoiceOptions": [
+      "光子",
+      "质子",
+      "缪子",
+      "正电子"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fluence_%C3%A9lec.jpg/960px-Fluence_%C3%A9lec.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Fluence%20%C3%A9lec.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-continental-drift",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which scientist proposed the early theory that continents move over time?",
+    "canonicalAnswer": "Alfred Wegener",
+    "multipleChoiceOptions": [
+      "Alfred Wegener",
+      "Charles Lyell",
+      "James Hutton",
+      "Gregor Mendel"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Kontinenternas_vandringar_Trias_o_Krita.PNG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Kontinenternas%20vandringar%20Trias%20o%20Krita.PNG"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-continental-drift",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "哪位科学家提出了大陆会随时间移动的早期理论？",
+    "canonicalAnswer": "阿尔弗雷德·魏格纳",
+    "multipleChoiceOptions": [
+      "阿尔弗雷德·魏格纳",
+      "查尔斯·莱尔",
+      "詹姆斯·赫顿",
+      "格雷戈尔·孟德尔"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Kontinenternas_vandringar_Trias_o_Krita.PNG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Kontinenternas%20vandringar%20Trias%20o%20Krita.PNG"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-charon",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which figure ferried the dead across the rivers of the Greek underworld?",
+    "canonicalAnswer": "Charon",
+    "multipleChoiceOptions": [
+      "Charon",
+      "Orpheus",
+      "Tiresias",
+      "Midas"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Adolf_Hiremy-Hirschl%2C_Die_Seelen_des_Acheron.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Adolf%20Hiremy-Hirschl%2C%20Die%20Seelen%20des%20Acheron.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-charon",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位人物把亡者渡过希腊冥界的河流？",
+    "canonicalAnswer": "卡戎",
+    "multipleChoiceOptions": [
+      "卡戎",
+      "俄耳甫斯",
+      "忒瑞西阿斯",
+      "迈达斯"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Adolf_Hiremy-Hirschl%2C_Die_Seelen_des_Acheron.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Adolf%20Hiremy-Hirschl%2C%20Die%20Seelen%20des%20Acheron.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-ra",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Egyptian deity is commonly depicted with a falcon head and a sun disk?",
+    "canonicalAnswer": "Ra",
+    "multipleChoiceOptions": [
+      "Ra",
+      "Osiris",
+      "Ptah",
+      "Khnum"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/64/Louxor_Amon_Ra_Alexandre.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Louxor%20Amon%20Ra%20Alexandre.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-ra",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位埃及神祇通常被描绘为鹰头并戴着太阳圆盘？",
+    "canonicalAnswer": "拉",
+    "multipleChoiceOptions": [
+      "拉",
+      "奥西里斯",
+      "卜塔",
+      "克努姆"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/64/Louxor_Amon_Ra_Alexandre.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Louxor%20Amon%20Ra%20Alexandre.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-cupid",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Roman god is traditionally shown as a winged child carrying a bow?",
+    "canonicalAnswer": "Cupid",
+    "multipleChoiceOptions": [
+      "Cupid",
+      "Mercury",
+      "Saturn",
+      "Vulcan"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg/960px-Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Fragment%20of%20Cupid%20statue-MHL%20on%20display%204-P4140236-black.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-cupid",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位罗马神祇传统上被描绘成手持弓箭的有翼孩童？",
+    "canonicalAnswer": "丘比特",
+    "multipleChoiceOptions": [
+      "丘比特",
+      "墨丘利",
+      "萨图恩",
+      "伏尔甘"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg/960px-Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Fragment%20of%20Cupid%20statue-MHL%20on%20display%204-P4140236-black.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-amaterasu",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Japanese sun goddess is central to the imperial mythology of Japan?",
+    "canonicalAnswer": "Amaterasu",
+    "multipleChoiceOptions": [
+      "Amaterasu",
+      "Izanami",
+      "Konohanasakuya",
+      "Benzaiten"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG/960px-Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Amaterasu-sume%C5%8Dkami%20Kawasaki%2002.JPG"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-amaterasu",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位日本太阳女神在日本皇室神话中占有核心地位？",
+    "canonicalAnswer": "天照大神",
+    "multipleChoiceOptions": [
+      "天照大神",
+      "伊邪那美",
+      "木花咲耶姬",
+      "弁才天"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG/960px-Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Amaterasu-sume%C5%8Dkami%20Kawasaki%2002.JPG"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-ganesha",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Hindu deity is commonly represented with an elephant head?",
+    "canonicalAnswer": "Ganesha",
+    "multipleChoiceOptions": [
+      "Ganesha",
+      "Vishnu",
+      "Hanuman",
+      "Indra"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/A_ganesha_statue_in_kantharmadam_ganesh_temple.JPG/960px-A_ganesha_statue_in_kantharmadam_ganesh_temple.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:A%20ganesha%20statue%20in%20kantharmadam%20ganesh%20temple.JPG"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-ganesha",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位印度教神祇通常被描绘为象头？",
+    "canonicalAnswer": "象头神",
+    "multipleChoiceOptions": [
+      "象头神",
+      "毗湿奴",
+      "哈奴曼",
+      "因陀罗"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/A_ganesha_statue_in_kantharmadam_ganesh_temple.JPG/960px-A_ganesha_statue_in_kantharmadam_ganesh_temple.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:A%20ganesha%20statue%20in%20kantharmadam%20ganesh%20temple.JPG"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-cuchulainn",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which legendary Irish hero is associated with the Ulster Cycle?",
+    "canonicalAnswer": "Cuchulainn",
+    "multipleChoiceOptions": [
+      "Cuchulainn",
+      "Fionn mac Cumhaill",
+      "Branwen",
+      "Lugh"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/C%C3%BAchulainn_statue.jpg/960px-C%C3%BAchulainn_statue.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:C%C3%BAchulainn%20statue.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-cuchulainn",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位爱尔兰传奇英雄与阿尔斯特传说循环有关？",
+    "canonicalAnswer": "库丘林",
+    "multipleChoiceOptions": [
+      "库丘林",
+      "芬恩·麦克库尔",
+      "布兰温",
+      "卢"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/C%C3%BAchulainn_statue.jpg/960px-C%C3%BAchulainn_statue.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:C%C3%BAchulainn%20statue.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-excalibur",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What is the name of King Arthur's famous sword?",
+    "canonicalAnswer": "Excalibur",
+    "multipleChoiceOptions": [
+      "Excalibur",
+      "Durandal",
+      "Hrunting",
+      "Caladbolg"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Excalibur_the_Sword%2C_Howard_Pyle_1902.jpg/960px-Excalibur_the_Sword%2C_Howard_Pyle_1902.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Excalibur%20the%20Sword%2C%20Howard%20Pyle%201902.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-excalibur",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "亚瑟王著名的宝剑叫什么？",
+    "canonicalAnswer": "Excalibur（石中剑）",
+    "multipleChoiceOptions": [
+      "Excalibur（石中剑）",
+      "杜兰达尔",
+      "赫伦廷",
+      "卡拉德博尔格"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Excalibur_the_Sword%2C_Howard_Pyle_1902.jpg/960px-Excalibur_the_Sword%2C_Howard_Pyle_1902.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Excalibur%20the%20Sword%2C%20Howard%20Pyle%201902.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-quetzalcoatl",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Mesoamerican deity is often represented as a feathered serpent?",
+    "canonicalAnswer": "Quetzalcoatl",
+    "multipleChoiceOptions": [
+      "Quetzalcoatl",
+      "Tezcatlipoca",
+      "Tlaloc",
+      "Huitzilopochtli"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Bulletin_%281964%29_%2820417057842%29.jpg/960px-Bulletin_%281964%29_%2820417057842%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Bulletin%20(1964)%20(20417057842).jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-quetzalcoatl",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位中部美洲神祇常被表现为羽蛇？",
+    "canonicalAnswer": "羽蛇神",
+    "multipleChoiceOptions": [
+      "羽蛇神",
+      "特斯卡特利波卡",
+      "特拉洛克",
+      "维齐洛波奇特利"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Bulletin_%281964%29_%2820417057842%29.jpg/960px-Bulletin_%281964%29_%2820417057842%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Bulletin%20(1964)%20(20417057842).jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-baba-yaga",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Slavic folklore figure is famous for living in a house on chicken legs?",
+    "canonicalAnswer": "Baba Yaga",
+    "multipleChoiceOptions": [
+      "Baba Yaga",
+      "Koschei",
+      "Rusalka",
+      "Morana"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Page_52_illustration_in_The_Red_Fairy_Book.png/960px-Page_52_illustration_in_The_Red_Fairy_Book.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Page%2052%20illustration%20in%20The%20Red%20Fairy%20Book.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-baba-yaga",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位斯拉夫民间传说人物以住在鸡脚屋中而闻名？",
+    "canonicalAnswer": "芭芭雅嘎",
+    "multipleChoiceOptions": [
+      "芭芭雅嘎",
+      "科谢伊",
+      "露莎卡",
+      "莫拉娜"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Page_52_illustration_in_The_Red_Fairy_Book.png/960px-Page_52_illustration_in_The_Red_Fairy_Book.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Page%2052%20illustration%20in%20The%20Red%20Fairy%20Book.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-sfumato",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which painting technique softens outlines through subtle transitions between tones?",
+    "canonicalAnswer": "Sfumato",
+    "multipleChoiceOptions": [
+      "Sfumato",
+      "Impasto",
+      "Fresco",
+      "Grisaille"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Hans_Holbein_d._J._013.jpg/960px-Hans_Holbein_d._J._013.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hans%20Holbein%20d.%20J.%20013.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-sfumato",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪种绘画技法通过色调的细微过渡柔化轮廓？",
+    "canonicalAnswer": "晕涂法",
+    "multipleChoiceOptions": [
+      "晕涂法",
+      "厚涂法",
+      "湿壁画",
+      "单色画法"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Hans_Holbein_d._J._013.jpg/960px-Hans_Holbein_d._J._013.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hans%20Holbein%20d.%20J.%20013.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-vivaldi",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Baroque composer wrote The Four Seasons?",
+    "canonicalAnswer": "Antonio Vivaldi",
+    "multipleChoiceOptions": [
+      "Antonio Vivaldi",
+      "George Handel",
+      "Johann Pachelbel",
+      "Domenico Scarlatti"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Antonio_Vivaldi.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Antonio%20Vivaldi.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-vivaldi",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪位巴洛克作曲家创作了《四季》？",
+    "canonicalAnswer": "安东尼奥·维瓦尔第",
+    "multipleChoiceOptions": [
+      "安东尼奥·维瓦尔第",
+      "乔治·亨德尔",
+      "约翰·帕赫贝尔",
+      "多梅尼科·斯卡拉蒂"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Antonio_Vivaldi.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Antonio%20Vivaldi.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-twelve-bar-blues",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which repeating harmonic pattern is a foundation of traditional blues?",
+    "canonicalAnswer": "Twelve-bar blues",
+    "multipleChoiceOptions": [
+      "Twelve-bar blues",
+      "Eight-bar waltz",
+      "Thirty-two-bar rondo",
+      "Five-tone scale"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/95/Buddy_Guy_Liri_Blues_1989.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Buddy%20Guy%20Liri%20Blues%201989.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-twelve-bar-blues",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪种反复和声结构是传统布鲁斯音乐的基础？",
+    "canonicalAnswer": "十二小节布鲁斯",
+    "multipleChoiceOptions": [
+      "十二小节布鲁斯",
+      "八小节华尔兹",
+      "三十二小节回旋曲",
+      "五声音阶"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/95/Buddy_Guy_Liri_Blues_1989.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Buddy%20Guy%20Liri%20Blues%201989.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-aperture",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which camera control changes the opening through which light enters the lens?",
+    "canonicalAnswer": "Aperture",
+    "multipleChoiceOptions": [
+      "Aperture",
+      "Shutter speed",
+      "White balance",
+      "Focal length"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Lens_aperture_side.jpg/960px-Lens_aperture_side.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Lens%20aperture%20side.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-aperture",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪种相机控制项会改变光线进入镜头的开口大小？",
+    "canonicalAnswer": "光圈",
+    "multipleChoiceOptions": [
+      "光圈",
+      "快门速度",
+      "白平衡",
+      "焦距"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Lens_aperture_side.jpg/960px-Lens_aperture_side.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Lens%20aperture%20side.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-cubism",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which art movement is associated with fragmented geometric views of subjects?",
+    "canonicalAnswer": "Cubism",
+    "multipleChoiceOptions": [
+      "Cubism",
+      "Surrealism",
+      "Impressionism",
+      "Romanticism"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Waliszewski_Cubist_still_life.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Waliszewski%20Cubist%20still%20life.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-cubism",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪种艺术运动以把对象分解成几何视角而闻名？",
+    "canonicalAnswer": "立体主义",
+    "multipleChoiceOptions": [
+      "立体主义",
+      "超现实主义",
+      "印象主义",
+      "浪漫主义"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Waliszewski_Cubist_still_life.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Waliszewski%20Cubist%20still%20life.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-lost-wax",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which casting process uses a wax model that is melted away before metal is poured?",
+    "canonicalAnswer": "Lost-wax casting",
+    "multipleChoiceOptions": [
+      "Lost-wax casting",
+      "Sand casting",
+      "Die casting",
+      "Slip casting"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Lost_Wax-Model_of_apple_in_wax.jpg/960px-Lost_Wax-Model_of_apple_in_wax.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Lost%20Wax-Model%20of%20apple%20in%20wax.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-lost-wax",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪种铸造工艺会在浇注金属前熔掉蜡制模型？",
+    "canonicalAnswer": "失蜡铸造",
+    "multipleChoiceOptions": [
+      "失蜡铸造",
+      "砂型铸造",
+      "压铸",
+      "注浆成型"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Lost_Wax-Model_of_apple_in_wax.jpg/960px-Lost_Wax-Model_of_apple_in_wax.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Lost%20Wax-Model%20of%20apple%20in%20wax.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-piano-dynamic",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "In written music, which dynamic marking means soft?",
+    "canonicalAnswer": "Piano",
+    "multipleChoiceOptions": [
+      "Piano",
+      "Forte",
+      "Crescendo",
+      "Sforzando"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Chopin_polonaise_Op._53.jpg/960px-Chopin_polonaise_Op._53.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Chopin%20polonaise%20Op.%2053.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-piano-dynamic",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "在乐谱中，哪个力度记号表示轻柔地演奏？",
+    "canonicalAnswer": "弱（Piano）",
+    "multipleChoiceOptions": [
+      "弱（Piano）",
+      "强",
+      "渐强",
+      "突强"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Chopin_polonaise_Op._53.jpg/960px-Chopin_polonaise_Op._53.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Chopin%20polonaise%20Op.%2053.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-bauhaus",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which design school is associated with Walter Gropius and modernist functionalism?",
+    "canonicalAnswer": "Bauhaus",
+    "multipleChoiceOptions": [
+      "Bauhaus",
+      "Art Nouveau",
+      "De Stijl",
+      "Arts and Crafts"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Dessau_Bauhaus-Geb%C3%A4ude_asv2024-06_img1.jpg/960px-Dessau_Bauhaus-Geb%C3%A4ude_asv2024-06_img1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Dessau%20Bauhaus-Geb%C3%A4ude%20asv2024-06%20img1.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-bauhaus",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪所设计学校与沃尔特·格罗皮乌斯和现代主义功能主义有关？",
+    "canonicalAnswer": "包豪斯",
+    "multipleChoiceOptions": [
+      "包豪斯",
+      "新艺术运动",
+      "风格派",
+      "工艺美术运动"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Dessau_Bauhaus-Geb%C3%A4ude_asv2024-06_img1.jpg/960px-Dessau_Bauhaus-Geb%C3%A4ude_asv2024-06_img1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Dessau%20Bauhaus-Geb%C3%A4ude%20asv2024-06%20img1.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-complementary",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "On a traditional color wheel, which relationship describes colors opposite one another?",
+    "canonicalAnswer": "Complementary",
+    "multipleChoiceOptions": [
+      "Complementary",
+      "Monochromatic",
+      "Analogous",
+      "Achromatic"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/3f/CMYK_color_wheel-es.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:CMYK%20color%20wheel-es.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-complementary",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "在传统色轮上，彼此相对的颜色属于哪种关系？",
+    "canonicalAnswer": "互补色",
+    "multipleChoiceOptions": [
+      "互补色",
+      "单色",
+      "类似色",
+      "无彩色"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/3f/CMYK_color_wheel-es.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:CMYK%20color%20wheel-es.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-nolan",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which director is known for nonlinear films such as Memento and Inception?",
+    "canonicalAnswer": "Christopher Nolan",
+    "multipleChoiceOptions": [
+      "Christopher Nolan",
+      "Steven Spielberg",
+      "Greta Gerwig",
+      "James Cameron"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/ChristopherNolan-byPhilipRomano3.jpg/960px-ChristopherNolan-byPhilipRomano3.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:ChristopherNolan-byPhilipRomano3.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-nolan",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "以《记忆碎片》和《盗梦空间》等非线性电影闻名的导演是哪位？",
+    "canonicalAnswer": "克里斯托弗·诺兰",
+    "multipleChoiceOptions": [
+      "克里斯托弗·诺兰",
+      "史蒂文·斯皮尔伯格",
+      "格蕾塔·葛韦格",
+      "詹姆斯·卡梅隆"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/ChristopherNolan-byPhilipRomano3.jpg/960px-ChristopherNolan-byPhilipRomano3.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:ChristopherNolan-byPhilipRomano3.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-gotham",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What is the fictional city most closely associated with Batman?",
+    "canonicalAnswer": "Gotham City",
+    "multipleChoiceOptions": [
+      "Gotham City",
+      "Metropolis",
+      "Star City",
+      "Central City"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg/960px-Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Batman%20moto%2C%20MA%20Paris%202022%20-%20Dark%20Knight%20-%20Gotham%20City%20-%200067.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-gotham",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "蝙蝠侠最密切相关的虚构城市叫什么？",
+    "canonicalAnswer": "哥谭市",
+    "multipleChoiceOptions": [
+      "哥谭市",
+      "大都会",
+      "星城",
+      "中心城"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg/960px-Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Batman%20moto%2C%20MA%20Paris%202022%20-%20Dark%20Knight%20-%20Gotham%20City%20-%200067.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-mcq-indiana-jones",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which film series follows an archaeologist through quests for ancient artifacts?",
+    "canonicalAnswer": "Indiana Jones",
+    "multipleChoiceOptions": [
+      "Indiana Jones",
+      "The Mummy",
+      "National Treasure",
+      "Tomb Raider"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Indy4.png/960px-Indy4.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Indy4.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-popculture-mcq-indiana-jones",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪部电影系列讲述一名考古学家围绕古代文物展开冒险？",
+    "canonicalAnswer": "《夺宝奇兵》",
+    "multipleChoiceOptions": [
+      "《夺宝奇兵》",
+      "《木乃伊》",
+      "《国家宝藏》",
+      "《古墓丽影》"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Indy4.png/960px-Indy4.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Indy4.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-tetromino",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What is the name for each geometric piece made of four squares in Tetris?",
+    "canonicalAnswer": "Tetromino",
+    "multipleChoiceOptions": [
+      "Tetromino",
+      "Hexagon",
+      "Domino",
+      "Voxel"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Tetromino_I.svg/960px-Tetromino_I.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Tetromino%20I.svg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-tetromino",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《俄罗斯方块》中每个由四个方格组成的几何方块叫什么？",
+    "canonicalAnswer": "四连方块",
+    "multipleChoiceOptions": [
+      "四连方块",
+      "六边形",
+      "多米诺骨牌",
+      "体素"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Tetromino_I.svg/960px-Tetromino_I.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Tetromino%20I.svg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-gaming-mcq-python",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which programming language takes its name from a British comedy troupe?",
+    "canonicalAnswer": "Python",
+    "multipleChoiceOptions": [
+      "Python",
+      "Ruby",
+      "Swift",
+      "Java"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/960px-Python-logo-notext.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Python-logo-notext.svg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-gaming-mcq-python",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪种编程语言的名称来自一个英国喜剧团体？",
+    "canonicalAnswer": "Python",
+    "multipleChoiceOptions": [
+      "Python",
+      "Ruby",
+      "Swift",
+      "Java"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/960px-Python-logo-notext.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Python-logo-notext.svg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-love",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In tennis scoring, what word represents a score of zero?",
+    "canonicalAnswer": "Love",
+    "multipleChoiceOptions": [
+      "Love",
+      "Nil",
+      "Blank",
+      "Void"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Table-tennis-match-karlskrona-idrottshall.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Table-tennis-match-karlskrona-idrottshall.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-love",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "在网球计分中，哪个词代表零分？",
+    "canonicalAnswer": "Love（零分）",
+    "multipleChoiceOptions": [
+      "Love（零分）",
+      "Nil",
+      "Blank",
+      "Void"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Table-tennis-match-karlskrona-idrottshall.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Table-tennis-match-karlskrona-idrottshall.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-breaststroke",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Which swimming stroke uses a frog-like kick and simultaneous arm movement?",
+    "canonicalAnswer": "Breaststroke",
+    "multipleChoiceOptions": [
+      "Breaststroke",
+      "Backstroke",
+      "Butterfly",
+      "Freestyle"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/Swimming.breaststroke.arp.750pix.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Swimming.breaststroke.arp.750pix.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-breaststroke",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "哪种游泳姿势使用类似青蛙的踢腿和同步的手臂动作？",
+    "canonicalAnswer": "蛙泳",
+    "multipleChoiceOptions": [
+      "蛙泳",
+      "仰泳",
+      "蝶泳",
+      "自由泳"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/Swimming.breaststroke.arp.750pix.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Swimming.breaststroke.arp.750pix.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-sports-mcq-try",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In rugby union, what is the main scoring action of grounding the ball in the in-goal area?",
+    "canonicalAnswer": "Try",
+    "multipleChoiceOptions": [
+      "Try",
+      "Drop",
+      "Mark",
+      "Serve"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Percy_try_against_samoa.jpg/960px-Percy_try_against_samoa.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Percy%20try%20against%20samoa.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-sports-mcq-try",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "在英式橄榄球联盟中，把球按在对方端区内的主要得分动作叫什么？",
+    "canonicalAnswer": "达阵",
+    "multipleChoiceOptions": [
+      "达阵",
+      "落踢",
+      "标记",
+      "发球"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Percy_try_against_samoa.jpg/960px-Percy_try_against_samoa.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Percy%20try%20against%20samoa.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-tls",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which security protocol helps encrypt the connection represented by HTTPS?",
+    "canonicalAnswer": "TLS",
+    "multipleChoiceOptions": [
+      "TLS",
+      "FTP",
+      "DNS",
+      "RSS"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/OOjs_UI_icon_lock.svg/960px-OOjs_UI_icon_lock.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:OOjs%20UI%20icon%20lock.svg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-tls",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "哪种安全协议有助于加密 HTTPS 所代表的连接？",
+    "canonicalAnswer": "TLS",
+    "multipleChoiceOptions": [
+      "TLS",
+      "FTP",
+      "DNS",
+      "RSS"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/OOjs_UI_icon_lock.svg/960px-OOjs_UI_icon_lock.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:OOjs%20UI%20icon%20lock.svg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-smtp",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which protocol is commonly used to send email between servers?",
+    "canonicalAnswer": "SMTP",
+    "multipleChoiceOptions": [
+      "SMTP",
+      "IMAP",
+      "SSH",
+      "NTP"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Melbourne_Mail_Exchange_building.jpg/960px-Melbourne_Mail_Exchange_building.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Melbourne%20Mail%20Exchange%20building.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-smtp",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "哪种协议通常用于在服务器之间发送电子邮件？",
+    "canonicalAnswer": "SMTP",
+    "multipleChoiceOptions": [
+      "SMTP",
+      "IMAP",
+      "SSH",
+      "NTP"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Melbourne_Mail_Exchange_building.jpg/960px-Melbourne_Mail_Exchange_building.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Melbourne%20Mail%20Exchange%20building.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-cookie",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What small browser-stored data file can remember preferences for a website?",
+    "canonicalAnswer": "Cookie",
+    "multipleChoiceOptions": [
+      "Cookie",
+      "Kernel",
+      "Pixel",
+      "Packet"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cookie-cooking.svg/960px-Cookie-cooking.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Cookie-cooking.svg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-cookie",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "哪种储存在浏览器中的小型数据文件可以记住网站偏好？",
+    "canonicalAnswer": "Cookie（网络 Cookie）",
+    "multipleChoiceOptions": [
+      "Cookie（网络 Cookie）",
+      "内核",
+      "像素",
+      "数据包"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cookie-cooking.svg/960px-Cookie-cooking.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Cookie-cooking.svg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-internet-mcq-png",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which image format is commonly associated with lossless compression and transparent backgrounds?",
+    "canonicalAnswer": "PNG",
+    "multipleChoiceOptions": [
+      "PNG",
+      "MP3",
+      "MPEG",
+      "WAV"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Leek_on_transparent_background_-_0947.png/960px-Leek_on_transparent_background_-_0947.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Leek%20on%20transparent%20background%20-%200947.png"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-internet-mcq-png",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "哪种图像格式常与无损压缩和透明背景相关？",
+    "canonicalAnswer": "PNG",
+    "multipleChoiceOptions": [
+      "PNG",
+      "MP3",
+      "MPEG",
+      "WAV"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Leek_on_transparent_background_-_0947.png/960px-Leek_on_transparent_background_-_0947.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Leek%20on%20transparent%20background%20-%200947.png"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-science-mcq-newton",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which SI unit measures force?",
+    "canonicalAnswer": "Newton",
+    "multipleChoiceOptions": [
+      "Newton",
+      "Joule",
+      "Pascal",
+      "Watt"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Sir_Isaac_Newton_by_Sir_Godfrey_Kneller%2C_Bt.jpg/960px-Sir_Isaac_Newton_by_Sir_Godfrey_Kneller%2C_Bt.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Sir%20Isaac%20Newton%20by%20Sir%20Godfrey%20Kneller%2C%20Bt.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-science-mcq-newton",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "哪种国际单位制单位用于测量力？",
+    "canonicalAnswer": "牛顿",
+    "multipleChoiceOptions": [
+      "牛顿",
+      "焦耳",
+      "帕斯卡",
+      "瓦特"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Sir_Isaac_Newton_by_Sir_Godfrey_Kneller%2C_Bt.jpg/960px-Sir_Isaac_Newton_by_Sir_Godfrey_Kneller%2C_Bt.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Sir%20Isaac%20Newton%20by%20Sir%20Godfrey%20Kneller%2C%20Bt.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-mythology-mcq-bifrost",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What is the rainbow bridge connecting realms in Norse mythology called?",
+    "canonicalAnswer": "Bifrost",
+    "multipleChoiceOptions": [
+      "Bifrost",
+      "Yggdrasil",
+      "Valhalla",
+      "Ragnarok"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Heimdall_an_der_Himmelsbr%C3%BCcke.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Heimdall%20an%20der%20Himmelsbr%C3%BCcke.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-mythology-mcq-bifrost",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "北欧神话中连接各个世界的桥叫什么？",
+    "canonicalAnswer": "彩虹桥",
+    "multipleChoiceOptions": [
+      "彩虹桥",
+      "世界之树",
+      "英灵殿",
+      "诸神黄昏"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Heimdall_an_der_Himmelsbr%C3%BCcke.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Heimdall%20an%20der%20Himmelsbr%C3%BCcke.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-artmusic-mcq-oboe",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which orchestral instrument is a double-reed woodwind?",
+    "canonicalAnswer": "Oboe",
+    "multipleChoiceOptions": [
+      "Oboe",
+      "Flute",
+      "Clarinet",
+      "Bassoon"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Oboj.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Oboj.jpg"
+    },
+    "debugBatch": "en-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "zh-hans-artmusic-mcq-oboe",
+    "type": "image",
+    "questionStyle": "multiple-choice",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "哪种管弦乐器属于双簧片木管乐器？",
+    "canonicalAnswer": "双簧管",
+    "multipleChoiceOptions": [
+      "双簧管",
+      "长笛",
+      "单簧管",
+      "巴松管"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Oboj.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Oboj.jpg"
+    },
+    "language": "zh-Hans",
+    "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
   }
 ]
