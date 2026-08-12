@@ -12207,6 +12207,30 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   animation: cardMetallicShine 5200ms ease-in-out infinite;
 }
 
+/* Grading rows use foreground glows on names, badges, and avatars. Keep the
+   row itself open so those shadows are not cut into rectangular patches, and
+   keep the theme rim as the final metallic layer after result-state rules. */
+:is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"] {
+  overflow: visible;
+}
+
+:is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]
+  :is(.leaderboard-name, .leaderboard-rank, .leaderboard-streak, .name-with-title, .name-with-title-text, .special-player-badge, .bot-player-badge, .host-player-badge, .spectator-player-badge, .disconnected-player-badge, .leaderboard-avatar, .result-player-avatar, .final-leaderboard-avatar) {
+  overflow: visible;
+}
+
+/* The result-row correctness styles are declared later than the shared card
+   themes and otherwise replace the metallic three-layer background. */
+:is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-effects~="metallic"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(115deg, rgb(var(--custom-card-active-rim-rgb, var(--custom-card-rim-rgb, 34 211 238)) / 0.16) 0 8%, rgba(255, 255, 255, 0.13) 13%, transparent 24% 38%, rgb(var(--custom-card-active-secondary-rgb, var(--custom-card-secondary-rgb, 255 77 125)) / 0.08) 48%, transparent 62%, rgba(255, 255, 255, 0.11) 76%, transparent 90%),
+    var(--custom-card-metallic-surface, var(--custom-card-active-bg, var(--custom-card-bg))),
+    var(--custom-card-metallic-rim-gradient, var(--custom-card-active-rim-gradient, var(--custom-card-rim-gradient)));
+  background-origin: padding-box, padding-box, border-box;
+  background-clip: padding-box, padding-box, border-box;
+}
+
 .confirm-panel p:not(.eyebrow) {
   margin: 0.6rem 0 1rem;
   color: var(--muted);

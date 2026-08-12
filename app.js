@@ -45080,6 +45080,11 @@ async function playRoundInternal(rawInput, options = {}) {
   animateTableLayoutChange(() => {
     setHidden(elements.loadingPanel, true);
     setHidden(elements.answerProgressPanel, true);
+    // The recap is authoritative as soon as grading has been calculated.
+    // Reveal it before the optional winner-card flight so the leaderboard does
+    // not make players wait for a presentation animation.
+    setHidden(elements.verdictPanel, false);
+    setHidden(elements.errorPanel, true);
   });
   stopLoadingMessages();
   if (hasCorrectAnswer) {
