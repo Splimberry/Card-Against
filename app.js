@@ -3438,6 +3438,20 @@ const tableEvents = [
 ];
 const tableEventMap = Object.fromEntries(tableEvents.map((event) => [event.id, event]));
 
+// Mutation rolls a shared one-round table effect, not a table-event action.
+// These effects intentionally use the same resolution ids as the scoring
+// engine, while remaining a separate registry and state field from normal
+// Black Market/Sabotage/table-event interactions.
+const mutationTableEffects = Object.freeze([
+  { id: "double_bounty", name: "Double Bounty", short: "positive gains x2", description: "Every positive final point gain is doubled this round.", overlayKind: "bounty", detail: "Final Gains x2", soundName: "bountyRound" },
+  { id: "jackpot_round", name: "Jackpot Round", short: "correct +15%", description: "Correct players gain 15% of their projected end-of-round score.", overlayKind: "bounty", detail: "Correct Players +15%", soundName: "bountyRound" },
+  { id: "sudden_death", name: "Sudden Death", short: "losers -25%", description: "Losing costs 25% of the projected end-of-round score.", overlayKind: "sudden-death", detail: "Losers Lose 25%", soundName: "suddenDeath" },
+  { id: "power_outage", name: "Power Outage", short: "no powers", description: "No power-ups can be used this round.", overlayKind: "outage", detail: "Power-Ups Offline", soundName: "lightOff" },
+  { id: "no_mercy", name: "No Mercy", short: "losers -15%", description: "Losing costs 15% of the projected end-of-round score.", overlayKind: "no-mercy", detail: "Losers Lose 15%", soundName: "noMercy" },
+  { id: "gamblers_dice", name: "Gambler's Dice", short: "everyone rolls", description: "Every player receives a Gambler's Dice roll this round.", overlayKind: "casino", detail: "Everyone Rolls", soundName: "dice" },
+  { id: "coin_shower", name: "Coin Shower", short: "coins x2", description: "Coins earned from correct answers are doubled this round.", overlayKind: "coin", detail: "Bonus Round", soundName: "bountyRound" }
+]);
+
 const soundState = {
   ctx: null,
   musicAudio: null,
@@ -3910,6 +3924,7 @@ const state = {
     mutation: false
   },
   currentTableEvent: null,
+  currentMutationTableEffect: null,
   tableEventSabotageUsed: {},
   blackMarketPurchases: {},
   freshPowerUps: {},
@@ -5593,6 +5608,7 @@ function clearRoomMatchPowerState() {
   state.forcedWinnerOwner = null;
   state.roundAmplifiedMultiplier = 1;
   state.currentTableEvent = null;
+  state.currentMutationTableEffect = null;
   state.tableEventSabotageUsed = {};
   state.blackMarketPurchases = {};
 }
@@ -8971,7 +8987,9 @@ function createActiveEffect(owner, powerId, name, description, options = {}) {
     rarity: power?.rarity || "grey",
     powerId: effectPowerId,
     chaosInfused: Boolean(options.chaosInfused || isChaosInfusedPower(effectPowerId)),
-    private: Boolean(options.private)
+    private: Boolean(options.private),
+    statusPill: Boolean(options.statusPill),
+    statusMeta: String(options.statusMeta || "")
   };
 }
 
@@ -9152,24 +9170,38 @@ function getActiveEffectEntries() {
         { chaosInfused: mutation.category === "chaos" }
       ));
     });
+    const mutationStatusGroups = new Map();
     getMutationStatusEntries(owner)
       .filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0)
       .forEach((status) => {
-        const remaining = getMutationStatusRemaining(status);
         const statusOwner = status.targetOwner || status.owner;
-        const targetText = status.targetOwner && status.targetOwner !== status.owner
-          ? ` Target: ${getOwnerLabel(status.targetOwner)}.`
-          : "";
-        entries.push(createActiveEffect(
-          statusOwner,
-          status.powerId,
-          `Mutation · ${status.name} · ${remaining}r`,
-          status.triggerOnce
-            ? `Granted by Mutation. Expires in ${remaining} round${remaining === 1 ? "" : "s"} or immediately after its trigger.${targetText}`
-            : `Granted by Mutation for ${remaining} round${remaining === 1 ? "" : "s"}.${targetText}`,
-          { chaosInfused: status.category === "chaos" }
-        ));
+        const key = `${statusOwner}|${status.id}`;
+        const group = mutationStatusGroups.get(key) || [];
+        group.push(status);
+        mutationStatusGroups.set(key, group);
       });
+    mutationStatusGroups.forEach((statuses) => {
+      const status = statuses[0];
+      const remaining = Math.max(...statuses.map(getMutationStatusRemaining));
+      const stacks = statuses.length;
+      const targetText = status.targetOwner && status.targetOwner !== status.owner
+        ? ` Target: ${getOwnerLabel(status.targetOwner)}.`
+        : "";
+      const description = status.description
+        || statusEffectLibraryCopy[status.id]?.[1]
+        || `Granted by Mutation for ${remaining} round${remaining === 1 ? "" : "s"}.${targetText}`;
+      entries.push(createActiveEffect(
+        statusOwner,
+        status.powerId,
+        status.name,
+        `${description}${targetText}`,
+        {
+          chaosInfused: status.category === "chaos",
+          statusPill: true,
+          statusMeta: `${stacks}x | ${remaining} round${remaining === 1 ? "" : "s"}`
+        }
+      ));
+    });
   });
 
   if (isMatchModifierEnabled("wildFire")) {
@@ -9305,7 +9337,7 @@ function getActiveEffectEntries() {
     entries.push(createActiveEffect("table", "penalty_cloud", `Penalty Cloud x${state.loserPenaltyRounds}`, "Losers lose 5% of their current total for the remaining rounds."));
   }
 
-  const mutationTableEvent = isMatchModifierEnabled("mutation") ? getCurrentTableEvent() : null;
+  const mutationTableEvent = getCurrentMutationTableEffect();
   if (mutationTableEvent) {
     entries.push(createActiveEffect(
       "table",
@@ -9363,7 +9395,18 @@ function renderEffectPanel() {
     badge.dataset.rarity = entry.rarity;
     badge.dataset.description = entry.description;
     badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
-    badge.innerHTML = `<strong>${entry.label}</strong> ${entry.name}`;
+    const label = document.createElement("strong");
+    label.textContent = entry.label;
+    const name = document.createElement("span");
+    name.textContent = entry.name;
+    badge.append(label, " ", name);
+    if (entry.statusPill && entry.statusMeta) {
+      const meta = document.createElement("small");
+      meta.className = "effect-badge-meta";
+      meta.textContent = entry.statusMeta;
+      badge.append(" ", meta);
+    }
+    attachFloatingDescriptionTooltip(badge);
     elements.effectPanel.appendChild(badge);
   });
 }
@@ -10662,7 +10705,7 @@ function applyOverachieverRewards(playedEntries, deltas, events, ratingsByOwner 
 }
 
 function applyTableEventLoserDeltas(deltas, owners, winnerSet, startingScores, events) {
-  const event = getCurrentTableEvent();
+  const event = getActiveTableEffect();
   if (!event || !["sudden_death", "no_mercy"].includes(event.id)) {
     return;
   }
@@ -10684,7 +10727,7 @@ function getProjectedRoundTotal(owner, startingScores, deltas) {
 }
 
 function applyTableEventWinnerDeltas(deltas, owners, winnerSet, startingScores, events) {
-  const event = getCurrentTableEvent();
+  const event = getActiveTableEffect();
   if (!event || event.id !== "jackpot_round") {
     return;
   }
@@ -10700,7 +10743,7 @@ function applyTableEventWinnerDeltas(deltas, owners, winnerSet, startingScores, 
 }
 
 function applyFinalTableEventGainMultipliers(deltas, owners, events) {
-  const event = getCurrentTableEvent();
+  const event = getActiveTableEffect();
   if (!event) {
     return;
   }
@@ -10898,7 +10941,9 @@ const statusEffectLibraryIds = Object.freeze([
   "resistant_shield", "mutation_extinguished", "red_herring_status", "insurance_policy", "insurance_fraud_status",
   "molotov_burning", "unstable_conduit", "error_404", "explosive_temper", "thorns", "permanent_death_mark_status",
   "soul_link_status", "streak_link_status", "death_mark_status", "death_bomb_status", "wrath_bomb_status",
-  "skill_issue_status", "hot_potato_status", "penalty_cloud_status", "eternal_celebration_status", "mega_hacks_status",
+  "skill_issue_status", "hot_potato_status", "molotov_cocktail", "chaos_glitch_status", "penalty_cloud_status",
+  "fourth_slot_status", "time_capsule_status", "endless_hand_status", "power_tunnelling_status",
+  "eternal_celebration_status", "mega_hacks_status",
   "time_accelerator_status", "shrapnel_status", "overachiever_status", "reverse_guard_status", "event_horizon_status",
   "ultimatum_bomb_status", "target_wipe_status", "secret_agent_status"
 ]);
@@ -10976,7 +11021,13 @@ const statusEffectLibraryCopy = Object.freeze({
   wrath_bomb_status: ["Wrath bomb", "Explodes for 10% of score when its timer ends."],
   skill_issue_status: ["Skill issue", "A marked target loses points and the owner gains streak on resolution."],
   hot_potato_status: ["Hot Potato", "Hits a random player when its duration ends."],
+  molotov_cocktail: ["Molotov Cocktail", "Choose targets each round to apply Burning or gain a buff on yourself."],
+  chaos_glitch_status: ["Chaos glitch", "Scrambles and temporarily locks the affected player's answer input."],
   penalty_cloud_status: ["Penalty cloud", "Losers lose 5% of current total for the remaining rounds."],
+  fourth_slot_status: ["Fourth slot", "Adds a permanent power-up slot for this match."],
+  time_capsule_status: ["Time capsule", "Adds a slot containing the last power used."],
+  endless_hand_status: ["Endless hand", "Power-ups can be used repeatedly this round."],
+  power_tunnelling_status: ["Power tunnelling", "Power-ups can be used repeatedly and empty slots refill for free this round."],
   eternal_celebration_status: ["Victory chain", "Rewards wins and Chaos Infuses a future refresh."],
   mega_hacks_status: ["Hand deletion", "Reveals and deletes up to three power-ups from other players."],
   time_accelerator_status: ["Fast timer", "Everyone else drains time faster while the owner's timer is unaffected."],
@@ -12627,8 +12678,18 @@ function getCurrentTableEvent() {
   return state.currentTableEvent?.id ? state.currentTableEvent : null;
 }
 
+function getCurrentMutationTableEffect() {
+  return isMatchModifierEnabled("mutation") && state.currentMutationTableEffect?.id
+    ? state.currentMutationTableEffect
+    : null;
+}
+
 function isTableEventActive(eventId) {
-  return getCurrentTableEvent()?.id === eventId;
+  return getActiveTableEffect()?.id === eventId;
+}
+
+function getActiveTableEffect() {
+  return getCurrentTableEvent() || getCurrentMutationTableEffect();
 }
 
 function getTableEventOverlayDetail(event) {
@@ -12652,7 +12713,7 @@ function queueTableEventOverlay(event, options = {}) {
 }
 
 function applyTableEventStageClasses() {
-  const event = getCurrentTableEvent();
+  const event = getActiveTableEffect();
   const eventClasses = [
     "table-event-double-bounty",
     "table-event-power-outage",
@@ -12697,18 +12758,21 @@ function resolveRolledTableEvent(eligible) {
 
 function rollRoundTableEvent() {
   state.currentTableEvent = null;
+  state.currentMutationTableEffect = null;
   state.tableEventSabotageUsed = {};
   state.blackMarketPurchases = {};
   applyTableEventStageClasses();
   if (isMatchModifierEnabled("mutation")) {
-    const eligible = getEligibleTableEvents();
-    if (eligible.length) {
-      const event = { ...eligible[getRoundRandomIndex(eligible.length, "mutation-table-event")] };
+    const eligibleIds = new Set(getEligibleTableEvents().map((event) => event.id));
+    const eligible = mutationTableEffects.filter((event) => eligibleIds.has(event.id));
+    const effect = eligible[getRoundRandomIndex(eligible.length, "mutation-table-effect")];
+    if (effect) {
+      const event = { ...effect };
       if (event.id === "roulette") {
         const owners = getActiveOwners().sort();
         event.targetOwner = owners[getRoundRandomIndex(owners.length, "mutation-roulette-target")];
       }
-      state.currentTableEvent = event;
+      state.currentMutationTableEffect = event;
       applyTableEventStageClasses();
       queueTableEventOverlay(event, { priority: true });
     }
@@ -12735,7 +12799,7 @@ function rollRoundTableEvent() {
 }
 
 function applyRoundStartTableEventEffects() {
-  const event = getCurrentTableEvent();
+  const event = getActiveTableEffect();
   if (event?.id === "gamblers_dice") {
     const sourcePower = { id: "table_gamblers_dice", name: "Gambler's Dice", type: "gamblers_dice", tableEvent: true };
     getActiveOwners().forEach((owner) => {
@@ -14944,7 +15008,8 @@ function getRoomAbilityEffectStatePayload() {
       nextQuestionPreferences: cloneRoomAbilitySyncValue(state.nextQuestionPreferences, { theme: "", difficulty: "", questionStyle: "" }),
       roundAmplifiedMultiplier: Math.max(1, Number(state.roundAmplifiedMultiplier) || 1),
       mutationStatusSequence: Math.max(0, Number(state.mutationStatusSequence) || 0),
-      currentTableEvent: cloneRoomAbilitySyncValue(state.currentTableEvent, null)
+      currentTableEvent: cloneRoomAbilitySyncValue(state.currentTableEvent, null),
+      currentMutationTableEffect: cloneRoomAbilitySyncValue(state.currentMutationTableEffect, null)
     }
   };
 }
@@ -14998,8 +15063,13 @@ function applyRoomAbilityEffectStatePayload(effects) {
       ? cloneRoomAbilitySyncValue(values.currentTableEvent, null)
       : null;
   }
+  if (Object.hasOwn(values, "currentMutationTableEffect")) {
+    state.currentMutationTableEffect = values.currentMutationTableEffect && typeof values.currentMutationTableEffect === "object"
+      ? cloneRoomAbilitySyncValue(values.currentMutationTableEffect, null)
+      : null;
+  }
   const changed = previousSignature !== getRoomSyncSignature(getRoomAbilityEffectStatePayload());
-  if (changed && Object.hasOwn(values, "currentTableEvent")) {
+  if (changed && (Object.hasOwn(values, "currentTableEvent") || Object.hasOwn(values, "currentMutationTableEffect"))) {
     applyTableEventStageClasses();
     renderTableEventControls();
   }
@@ -28527,10 +28597,6 @@ const mutationStatusDefinitions = Object.freeze([
       scheduleSecretAgentSwap(owner);
       return { kind: "counter", key: "secretAgentRounds" };
     }
-  },
-  {
-    id: "collapsing_star_status", pool: "doom", name: "Collapsing Star", powerId: "collapsing_star", category: "doom", negative: true,
-    apply: (owner) => { addEffectStack(state.collapsingStarOwners, owner); return { kind: "stack", key: "collapsingStarOwners" }; }
   }
 ]);
 
@@ -29471,6 +29537,8 @@ function applyMutationStatus(owner, definition, rounds) {
     mutationId,
     rounds: effectiveRounds,
     expiresAt: state.round + effectiveRounds - 1,
+    short: definition.short || "",
+    description: definition.description || "",
     cleanup,
     source: "Mutation"
   };
@@ -29488,19 +29556,21 @@ function applyMutationStatusRoundStart() {
     return;
   }
   pruneMutationStatuses();
-  const pool = mutationStatusDefinitions.filter((definition) => definition.pool === "normal");
+  // Mutation rolls temporary statuses from the normal and Chaos status
+  // registries. Doom statuses stay exclusive to Doom power-ups; permanent
+  // Mutation traits are stored in permanentMutations and are never rolled.
+  const pool = mutationStatusDefinitions.filter((definition) => definition.pool !== "doom");
   const summaries = [];
   getActiveOwners().forEach((owner) => {
-    const activeEffectKeys = new Set(
-      getMutationStatusEntries(owner)
-        .filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0)
-        .map((status) => status.effectKey || status.id)
-    );
-    const available = pool.filter((definition) => !activeEffectKeys.has(definition.effectKey || definition.id));
+    // A status already active on a player may be rolled again in a later
+    // round. The status implementation owns its stacking rules; the pool
+    // only prevents the same definition from being selected twice in one
+    // three-status roll.
+    const available = shuffleMutationValues(pool);
     const count = getRandomInt(1, 3);
     const applied = [];
     while (available.length && applied.length < count) {
-      const definition = available.splice(Math.floor(Math.random() * available.length), 1)[0];
+      const definition = available.shift();
       const status = applyMutationStatus(owner, definition, getRandomInt(2, 3));
       if (status) {
         applied.push(`${status.name} · ${status.rounds}r`);
@@ -33378,6 +33448,7 @@ function resetRoundUiForLoading(options = {}) {
   state.roomSubmissions = {};
   resetPlayedPowersForRound();
   state.currentTableEvent = null;
+  state.currentMutationTableEffect = null;
   state.tableEventSabotageUsed = {};
   state.blackMarketPurchases = {};
   state.roundAmplifiedMultiplier = 1;
@@ -33605,6 +33676,7 @@ function renderRound() {
   resetPlayedPowersForRound();
   if (state.renderingSyncedRoomResume) {
     state.currentTableEvent = null;
+    state.currentMutationTableEffect = null;
     state.tableEventSabotageUsed = {};
     state.blackMarketPurchases = {};
     applyTableEventStageClasses();
@@ -38615,6 +38687,7 @@ function resetMatch(mode) {
   state.forcedWinnerOwner = null;
   state.roundAmplifiedMultiplier = 1;
   state.currentTableEvent = null;
+  state.currentMutationTableEffect = null;
   state.tableEventSabotageUsed = {};
   state.blackMarketPurchases = {};
   state.round = 1;

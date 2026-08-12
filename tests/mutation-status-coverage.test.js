@@ -44,7 +44,13 @@ assert.match(
   /if \(!state\.renderingSyncedRoomResume\) \{[\s\S]{0,120}applyMutationStatusRoundStart\(\);/,
   "Mutation statuses must roll during local round setup"
 );
-assert.match(appSource, /definition\.pool === "normal"/, "Mutation mode must roll normal temporary statuses");
+assert.match(
+  appSource,
+  /const pool = mutationStatusDefinitions\.filter\(\(definition\) => definition\.pool !== "doom"\)/,
+  "Mutation mode must roll temporary normal and Chaos statuses"
+);
+assert.match(appSource, /currentMutationTableEffect/, "Mutation table effects must use dedicated state");
+assert.match(appSource, /const mutationTableEffects = Object\.freeze/, "Mutation mode must have a dedicated table-effect pool");
 assert.doesNotMatch(appSource, /pool: "mutation"/, "Obsolete legacy Mutation roll definitions must be removed");
 assert.doesNotMatch(appSource, /applyMutationRoundRules|getActiveMutationRuleEntries/, "Obsolete Mutation round-rule path must be removed");
 assert.match(appSource, /abilityMutationPreviewToggle/, "Mutation viewer toggle must be wired");
