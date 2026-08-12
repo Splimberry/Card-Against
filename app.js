@@ -4115,6 +4115,8 @@ const state = {
   realtimeRoomChannel: null,
   realtimeRoomCode: "",
   realtimeLobbyReady: false,
+  realtimeLobbyReadyPromise: null,
+  realtimeLobbyReadyResolve: null,
   realtimeRoomReady: false,
   realtimeLobbyReconnectTimerId: null,
   realtimeRoomReconnectTimerId: null,
@@ -14418,10 +14420,14 @@ function applyRealtimeRoomRoundResult(payload = {}) {
     return false;
   }
   const incomingRound = Number(result.round || incomingGame?.round) || 0;
+  const completeAuthoritativeResult = isCompleteAuthoritativeRoomPhasePayload(payload, "round-result");
   const canAdoptIncomingResult = Boolean(
     incomingGame
       && incomingRound >= Number(state.round || 0)
-      && canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, incomingRound)
+      && (
+        canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, incomingRound)
+        || completeAuthoritativeResult
+      )
   );
   if (!roomPayloadMatchesCurrentMatch(payload) && !canAdoptIncomingResult) {
     return false;
@@ -14451,12 +14457,27 @@ function applyRealtimeRoomRoundResult(payload = {}) {
       }
     }
   }
+  // A result event is also a complete room snapshot for the current round.
+  // If the player missed round-started or still has the previous match id,
+  // adopt the server's setup before presenting the result instead of leaving
+  // the player in a local waiting state.
+  if (incomingGame?.setup && completeAuthoritativeResult) {
+    try {
+      const setup = normalizeSetupPayload(incomingGame.setup);
+      if (!state.questionId || state.questionId !== setup.id || getCurrentRoomMatchId() !== (incomingGame.matchId || result.matchId || getCurrentRoomMatchId())) {
+        applyRoundSetup(setup, { skipPublish: true, resumeSyncedRoom: true });
+      }
+    } catch {
+      return false;
+    }
+  }
   state.roomRoundResult = result;
   if (result.matchId) {
     setCurrentRoomMatchId(result.matchId);
   }
   state.roomGame = {
-    ...(state.roomGame || payload.game || {}),
+    ...(state.roomGame || {}),
+    ...(incomingGame || {}),
     matchId: getCurrentRoomMatchId(),
     status: "grading",
     round: result.round,
@@ -16534,13 +16555,17 @@ function applyRealtimeRoomGrading(payload = {}) {
       ? payload.room.game
       : null;
   const round = Number(payload.round || incomingGame?.round) || state.round;
+  const completeAuthoritativeGrading = isCompleteAuthoritativeRoomPhasePayload(payload, "round-grading");
   const incomingGameMatches = incomingGame
     ? roomPayloadMatchesCurrentMatch({ ...payload, game: incomingGame })
     : roomPayloadMatchesCurrentMatch(payload);
   const canAdoptIncomingGradingGame = Boolean(
     incomingGame
     && Number(round || 0) >= Number(state.round || 0)
-    && canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, round)
+    && (
+      canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, round)
+      || completeAuthoritativeGrading
+    )
   );
   if (!incomingGameMatches && !canAdoptIncomingGradingGame) {
     return false;
@@ -16569,6 +16594,16 @@ function applyRealtimeRoomGrading(payload = {}) {
       } catch {
         return false;
       }
+    }
+  }
+  if (incomingGame?.setup && completeAuthoritativeGrading) {
+    try {
+      const setup = normalizeSetupPayload(incomingGame.setup);
+      if (!state.questionId || state.questionId !== setup.id) {
+        applyRoundSetup(setup, { skipPublish: true, resumeSyncedRoom: true });
+      }
+    } catch {
+      return false;
     }
   }
   if (incomingGame) {
@@ -17649,6 +17684,9 @@ function startSupabaseRealtime() {
   // current channel so it can mark realtime healthy and start room sync.
   state.realtimeLobbyChannel = channel;
   state.realtimeLobbyReady = false;
+  state.realtimeLobbyReadyPromise = new Promise((resolve) => {
+    state.realtimeLobbyReadyResolve = resolve;
+  });
   channel.on("broadcast", { event: "room-change" }, ({ payload }) => {
     handleRealtimeRoomChange(payload || {});
   });
@@ -17658,6 +17696,8 @@ function startSupabaseRealtime() {
     }
     state.realtimeLobbyReady = status === "SUBSCRIBED";
     if (state.realtimeLobbyReady) {
+      state.realtimeLobbyReadyResolve?.(true);
+      state.realtimeLobbyReadyResolve = null;
       if (state.realtimeLobbyReconnectTimerId) {
         window.clearTimeout(state.realtimeLobbyReconnectTimerId);
         state.realtimeLobbyReconnectTimerId = null;
@@ -17671,6 +17711,8 @@ function startSupabaseRealtime() {
       }
       syncUserQuestionSubmissionPolling();
     } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(String(status || "").toUpperCase())) {
+      state.realtimeLobbyReadyResolve?.(false);
+      state.realtimeLobbyReadyResolve = null;
       scheduleSupabaseLobbyReconnect();
     }
   });
@@ -17709,6 +17751,19 @@ function stopSupabaseRealtime() {
   }
   state.realtimeLobbyChannel = null;
   state.realtimeLobbyReady = false;
+  state.realtimeLobbyReadyResolve?.(false);
+  state.realtimeLobbyReadyResolve = null;
+  state.realtimeLobbyReadyPromise = null;
+}
+
+function waitForSupabaseLobbyRealtime() {
+  if (state.realtimeLobbyReady) {
+    return Promise.resolve(true);
+  }
+  if (!state.realtimeLobbyChannel || !state.realtimeLobbyReadyPromise) {
+    return Promise.resolve(false);
+  }
+  return state.realtimeLobbyReadyPromise;
 }
 
 function startRoomRealtime(code = state.roomSettings.code) {
@@ -18850,7 +18905,10 @@ function canApplyRoomEventForCurrentMatch(payload = {}) {
       && ["round-advancing", "round-started", "round-grading", "round-result", "game-ended"].includes(eventType)
       && Number(round || 0) >= Number(state.round || 0)
       && String(incomingGame.status || payload.status || "").toLowerCase() !== "complete"
-      && canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, round)
+      && (
+        canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, round)
+        || isCompleteAuthoritativeRoomPhasePayload(payload, eventType)
+      )
   );
   const canAdoptNewRoomGame = eventType === "round-started"
     && incomingGame
@@ -18859,6 +18917,24 @@ function canApplyRoomEventForCurrentMatch(payload = {}) {
     && getRoomMatchIdFromPayload(payload)
     && (isRematch || isJoinedRoomWaitingForSyncedSetup(round));
   return Boolean(isRematch || authoritativePhaseAdvance || canAdoptNewRoomGame || canAdoptRoundAdvance);
+}
+
+function isCompleteAuthoritativeRoomPhasePayload(payload = {}, eventType = "") {
+  const normalizedType = normalizeRoomEventType(eventType || payload.eventType || payload.type || "");
+  if (
+    payload.sourceId !== "server"
+    || !["round-advancing", "round-started", "round-grading", "round-result", "game-ended"].includes(normalizedType)
+  ) {
+    return false;
+  }
+  const incomingGame = payload.game || payload.room?.game || null;
+  if (!incomingGame || typeof incomingGame !== "object") {
+    return false;
+  }
+  if (normalizedType === "round-result") {
+    return Boolean(payload.roundResult || incomingGame.roundResult || payload.room?.game?.roundResult);
+  }
+  return Boolean(incomingGame.setup || normalizedType === "game-ended");
 }
 
 function isOlderRoomRoundEvent(payload = {}) {
@@ -19205,7 +19281,11 @@ function applyRoomEventPayload(payload = {}, source = {}) {
             ? applyRealtimeRoomSettings(normalizedPayload)
             : false;
     applied = applied || appliedJoinDelta;
-    if (!appliedJoinDelta && (!normalizedPayload.room || !applyRealtimeRoomPayload(normalizedPayload.room))) {
+    const appliedRoomSnapshot = !appliedJoinDelta && normalizedPayload.room
+      ? applyRealtimeRoomPayload(normalizedPayload.room)
+      : false;
+    applied = applied || appliedRoomSnapshot;
+    if (!appliedJoinDelta && !appliedRoomSnapshot) {
       scheduleRealtimeJoinRefresh();
     }
   }
@@ -19380,6 +19460,12 @@ function flushRoomServerEventBuffer(code = "") {
     return false;
   }
   let flushed = false;
+  const knownRevision = getKnownRoomRevision(roomCode);
+  Object.keys(buffer).forEach((revision) => {
+    if (Number(revision) <= knownRevision) {
+      delete buffer[revision];
+    }
+  });
   while (true) {
     const expectedRevision = getKnownRoomRevision(roomCode) + 1;
     const queued = buffer[expectedRevision];
@@ -19416,9 +19502,18 @@ function applyRoomServerEvent(event = {}, source = {}) {
   const options = normalizeRoomApplySource(source);
   const code = getRoomServerEventCode(event);
   const revision = Number(event.revision) || Number(event.payload?.revision) || 0;
+  const eventType = normalizeRoomEventType(event.type || event.payload?.eventType || "");
+  const completeAuthoritativePhase = isCompleteAuthoritativeRoomPhasePayload({
+    ...(event.payload && typeof event.payload === "object" ? event.payload : {}),
+    sourceId: event.sourceId || event.payload?.sourceId || "server"
+  }, eventType);
   if (code && revision) {
     const knownRevision = getKnownRoomRevision(code);
-    if (revision > knownRevision + 1) {
+    // A complete phase payload includes the authoritative game and result.
+    // It can safely repair a client that missed an earlier delta; holding it
+    // behind the contiguous revision buffer would leave that client waiting
+    // for an event that is no longer needed to render the phase.
+    if (revision > knownRevision + 1 && !completeAuthoritativePhase) {
       queueRoomServerEvent(event, options);
       if (options.source !== "server-events" && hasActiveRoomContext() && code === state.roomSettings.code) {
         void requestRoomRealtimeCatchup("revision-gap", {
@@ -20490,6 +20585,7 @@ function applyRoomEvent(event = {}, source = {}) {
   const payload = normalizeRoomEventPayload(event, options);
   const payloadRevision = getRoomPayloadRevision(payload);
   const previousRevision = Number(state.roomEventRevision) || 0;
+  const completeAuthoritativePhase = isCompleteAuthoritativeRoomPhasePayload(payload, payload.eventType);
   if (hasAppliedRoomPayloadEvent(payload, {
     authoritative: options.source === "realtime" && payload.sourceId === "server"
       || ["server-event", "server-events", "command-response"].includes(String(options.source || "").toLowerCase()),
@@ -20522,7 +20618,12 @@ function applyRoomEvent(event = {}, source = {}) {
       });
     }
   }
-  const stalePayload = isStaleActiveRoomRealtimePayload(payload, previousRevision);
+  // Realtime delivery is not guaranteed to preserve order across the room
+  // and lobby channels. A complete server phase payload carries the full
+  // authoritative game state, so an older revision must not hide the current
+  // grading/result transition behind a missing unrelated delta.
+  const stalePayload = !completeAuthoritativePhase
+    && isStaleActiveRoomRealtimePayload(payload, previousRevision);
   const outOfMatch = !canApplyRoomEventForCurrentMatch(payload);
   const olderRound = isOlderRoomRoundEvent(payload);
   if (
@@ -39565,7 +39666,6 @@ function focusInvitePasswordField() {
 }
 
 function openJoinScreen(options = {}) {
-  void ensureSupabaseAuthReady({ realtime: true });
   if (options.inviteCode) {
     setJoinInviteMode(true, { code: options.inviteCode, checked: options.checked });
   } else {
@@ -39579,6 +39679,21 @@ function openJoinScreen(options = {}) {
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.gameStage, true);
   setHidden(elements.joinScreen, false);
+  // The directory is a live view, including for guests who have no stored
+  // Supabase session. Start the anonymous lobby channel as soon as this view
+  // opens so room-created broadcasts are not missed while the initial list
+  // request is running.
+  void ensureSupabaseAuthReady({ realtime: true, preserveGuest: true })
+    .then(() => waitForSupabaseLobbyRealtime())
+    .then((ready) => {
+      if (ready && !state.roomInvite.active && !elements.joinScreen.classList.contains("hidden")) {
+        // The initial directory request may have completed before the live
+        // channel subscribed. Reconcile once at subscription time so the
+        // first room-created event cannot leave the list stale.
+        return refreshHostedRoomsAndRender({ force: true });
+      }
+      return null;
+    });
   if (!state.roomInvite.active) {
     refreshHostedRoomsAndRender({ force: true });
   }

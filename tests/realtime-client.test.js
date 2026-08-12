@@ -144,6 +144,39 @@ function testLobbyChannelIsReadyBeforeSubscribeCallback() {
   assert.equal(state.realtimeLobbyReady, true);
 }
 
+function testCompleteAuthoritativePhasePayloadCanRepairMissedRevision() {
+  const functionSource = getFunctionSource("isCompleteAuthoritativeRoomPhasePayload", "isOlderRoomRoundEvent");
+  const context = {
+    normalizeRoomEventType(type) {
+      return String(type || "").replaceAll("_", "-");
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.isCompleteAuthoritativeRoomPhasePayload = isCompleteAuthoritativeRoomPhasePayload;`, context);
+
+  const resultPayload = {
+    sourceId: "server",
+    eventType: "round-result",
+    game: {
+      status: "grading",
+      setup: { id: "question-1" },
+      roundResult: { round: 1, cards: ["answer"] }
+    }
+  };
+  assert.equal(context.isCompleteAuthoritativeRoomPhasePayload(resultPayload), true);
+  assert.equal(context.isCompleteAuthoritativeRoomPhasePayload({ ...resultPayload, sourceId: "client" }), false);
+  assert.equal(context.isCompleteAuthoritativeRoomPhasePayload({
+    sourceId: "server",
+    eventType: "round-grading",
+    game: { status: "grading", setup: { id: "question-1" } }
+  }), true);
+  assert.equal(context.isCompleteAuthoritativeRoomPhasePayload({
+    sourceId: "server",
+    eventType: "round-result",
+    game: { status: "grading" }
+  }), false);
+}
+
 async function testRejectedResultDoesNotFinishTheWait() {
   const functionSource = getFunctionSource("waitForRoomRoundResultThenPlay", "maybeResolveRoomSubmissions");
   let waitedForSyncEvent = false;
@@ -188,6 +221,7 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testRoomChannelIsReadyBeforeSubscribeCallback();
   await testGuestRoomJoinInitializesRealtimeWithoutAuth();
   testLobbyChannelIsReadyBeforeSubscribeCallback();
+  testCompleteAuthoritativePhasePayloadCanRepairMissedRevision();
   await testRejectedResultDoesNotFinishTheWait();
   console.log("Realtime client synchronization tests passed.");
 })().catch((error) => {
