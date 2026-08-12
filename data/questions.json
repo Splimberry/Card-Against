@@ -28957,8 +28957,8 @@
       "Palladio"
     ],
     "debugBatch": "en-text-mcq-2026-08-12"
-  }
-  ,{
+  },
+  {
     "id": "zh-hans-popculture-mcq-hunger-games-arena",
     "type": "text",
     "questionStyle": "multiple-choice",
@@ -28967,7 +28967,12 @@
     "difficulty": "easy",
     "question": "哪个电影系列以反乌托邦国家帕纳姆为背景，青少年会被选中参加电视直播的生存赛事？",
     "canonicalAnswer": "《饥饿游戏》",
-    "multipleChoiceOptions": ["《饥饿游戏》", "《人类清除计划》", "《移动迷宫试炼》", "《清算》"],
+    "multipleChoiceOptions": [
+      "《饥饿游戏》",
+      "《人类清除计划》",
+      "《移动迷宫试炼》",
+      "《清算》"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -28979,7 +28984,12 @@
     "difficulty": "easy",
     "question": "哪部情景喜剧讲述一群性格迥异的学生因西班牙语学习小组而成为朋友？",
     "canonicalAnswer": "《废柴联盟》",
-    "multipleChoiceOptions": ["《废柴联盟》", "《公园与游憩》", "《神烦警探》", "《俏妞报到》"],
+    "multipleChoiceOptions": [
+      "《废柴联盟》",
+      "《公园与游憩》",
+      "《神烦警探》",
+      "《俏妞报到》"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -28991,7 +29001,12 @@
     "difficulty": "easy",
     "question": "在《怪奇物语》中，与霍金斯相连的阴暗平行世界叫什么？",
     "canonicalAnswer": "颠倒世界",
-    "multipleChoiceOptions": ["颠倒世界", "阴间", "下界", "黑暗魔典"],
+    "multipleChoiceOptions": [
+      "颠倒世界",
+      "阴间",
+      "下界",
+      "黑暗魔典"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29003,7 +29018,12 @@
     "difficulty": "easy",
     "question": "哪位演员因在《加勒比海盗》系列电影中饰演杰克·斯派罗船长而广为人知？",
     "canonicalAnswer": "约翰尼·德普",
-    "multipleChoiceOptions": ["约翰尼·德普", "奥兰多·布鲁姆", "休·杰克曼", "基努·里维斯"],
+    "multipleChoiceOptions": [
+      "约翰尼·德普",
+      "奥兰多·布鲁姆",
+      "休·杰克曼",
+      "基努·里维斯"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29015,7 +29035,12 @@
     "difficulty": "medium",
     "question": "在《公主新娘》中，维齐尼反复说哪个词，后来伊尼戈质疑他是否真的明白这个词的含义？",
     "canonicalAnswer": "难以置信",
-    "multipleChoiceOptions": ["难以置信", "不可避免", "无可匹敌", "不可饶恕"],
+    "multipleChoiceOptions": [
+      "难以置信",
+      "不可避免",
+      "无可匹敌",
+      "不可饶恕"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29027,7 +29052,12 @@
     "difficulty": "medium",
     "question": "哪部电视剧让“真相就在外面”这句标语广为人知？",
     "canonicalAnswer": "《X档案》",
-    "multipleChoiceOptions": ["《X档案》", "《迷失》", "《危机边缘》", "《黑镜》"],
+    "multipleChoiceOptions": [
+      "《X档案》",
+      "《迷失》",
+      "《危机边缘》",
+      "《黑镜》"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29039,7 +29069,12 @@
     "difficulty": "medium",
     "question": "在《贱女孩》中，艾伦·萨缪尔斯问凯蒂那天是几号，这个日期后来为什么令人难忘？",
     "canonicalAnswer": "10月3日",
-    "multipleChoiceOptions": ["10月3日", "2月14日", "4月1日", "6月13日"],
+    "multipleChoiceOptions": [
+      "10月3日",
+      "2月14日",
+      "4月1日",
+      "6月13日"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29051,7 +29086,12 @@
     "difficulty": "medium",
     "question": "在许多《蜘蛛侠》故事中，彼得·帕克作为摄影师供职于哪家虚构报纸？",
     "canonicalAnswer": "《号角日报》",
-    "multipleChoiceOptions": ["《号角日报》", "《星球日报》", "《每日先驱报》", "《纽约邮报》"],
+    "multipleChoiceOptions": [
+      "《号角日报》",
+      "《星球日报》",
+      "《每日先驱报》",
+      "《纽约邮报》"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29063,7 +29103,12 @@
     "difficulty": "hard",
     "question": "在《银翼杀手》中，哪家公司制造了生物工程复制人？",
     "canonicalAnswer": "泰瑞尔公司",
-    "multipleChoiceOptions": ["泰瑞尔公司", "韦兰公司", "奥斯科普公司", "Cyberdyne系统公司"],
+    "multipleChoiceOptions": [
+      "泰瑞尔公司",
+      "韦兰公司",
+      "奥斯科普公司",
+      "Cyberdyne系统公司"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29075,7 +29120,12 @@
     "difficulty": "hard",
     "question": "在《楚门的世界》中，楚门·伯班克居住的人工小镇叫什么？",
     "canonicalAnswer": "海景镇",
-    "multipleChoiceOptions": ["海景镇", "阳光镇", "桃源镇", "天堂港"],
+    "multipleChoiceOptions": [
+      "海景镇",
+      "阳光镇",
+      "桃源镇",
+      "天堂港"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29087,7 +29137,12 @@
     "difficulty": "easy",
     "question": "在《星露谷物语》中，玩家农场附近的小镇叫什么？",
     "canonicalAnswer": "鹈鹕镇",
-    "multipleChoiceOptions": ["鹈鹕镇", "星尘镇", "橡树镇", "河谷镇"],
+    "multipleChoiceOptions": [
+      "鹈鹕镇",
+      "星尘镇",
+      "橡树镇",
+      "河谷镇"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29099,7 +29154,12 @@
     "difficulty": "easy",
     "question": "哪款电子游戏系列与大师之剑的联系最为密切？",
     "canonicalAnswer": "《塞尔达传说》",
-    "multipleChoiceOptions": ["《塞尔达传说》", "《最终幻想》", "《王国之心》", "《黑暗之魂》"],
+    "multipleChoiceOptions": [
+      "《塞尔达传说》",
+      "《最终幻想》",
+      "《王国之心》",
+      "《黑暗之魂》"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29111,7 +29171,12 @@
     "difficulty": "easy",
     "question": "在《糖豆人》中，代表赢得节目胜利的可穿戴奖励是什么？",
     "canonicalAnswer": "皇冠",
-    "multipleChoiceOptions": ["皇冠", "奖牌", "王冠斗篷", "金色翅膀"],
+    "multipleChoiceOptions": [
+      "皇冠",
+      "奖牌",
+      "王冠斗篷",
+      "金色翅膀"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29123,7 +29188,12 @@
     "difficulty": "easy",
     "question": "哪款Valve解谜游戏的核心玩法是使用手持装置创造相互连接的空间通道？",
     "canonicalAnswer": "《传送门》",
-    "multipleChoiceOptions": ["《传送门》", "《半条命》", "《量子破碎》", "《反恐精英》"],
+    "multipleChoiceOptions": [
+      "《传送门》",
+      "《半条命》",
+      "《量子破碎》",
+      "《反恐精英》"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29135,7 +29205,12 @@
     "difficulty": "medium",
     "question": "在《空洞骑士》中，玩家探索的毁灭地下王国叫什么？",
     "canonicalAnswer": "圣巢",
-    "multipleChoiceOptions": ["圣巢", "灰烬谷", "深岩城", "虫巢遗迹"],
+    "multipleChoiceOptions": [
+      "圣巢",
+      "灰烬谷",
+      "深岩城",
+      "虫巢遗迹"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29147,7 +29222,12 @@
     "difficulty": "medium",
     "question": "在《质量效应》中，指挥官谢帕德著名的星舰系列都使用哪个名字？",
     "canonicalAnswer": "诺曼底号",
-    "multipleChoiceOptions": ["诺曼底号", "曙光号", "远征号", "弥赛亚号"],
+    "multipleChoiceOptions": [
+      "诺曼底号",
+      "曙光号",
+      "远征号",
+      "弥赛亚号"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29159,7 +29239,12 @@
     "difficulty": "medium",
     "question": "在《最终幻想VII》中，哪家巨型企业抽取魔晄能源并控制着米德加？",
     "canonicalAnswer": "神罗公司",
-    "multipleChoiceOptions": ["神罗公司", "阿瓦隆集团", "尼布尔海姆工业", "盖亚联合企业"],
+    "multipleChoiceOptions": [
+      "神罗公司",
+      "阿瓦隆集团",
+      "尼布尔海姆工业",
+      "盖亚联合企业"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29171,7 +29256,12 @@
     "difficulty": "medium",
     "question": "在《英雄联盟》中，标准的五对五地图叫什么？",
     "canonicalAnswer": "召唤师峡谷",
-    "multipleChoiceOptions": ["召唤师峡谷", "扭曲丛林", "嚎哭深渊", "水晶之痕"],
+    "multipleChoiceOptions": [
+      "召唤师峡谷",
+      "扭曲丛林",
+      "嚎哭深渊",
+      "水晶之痕"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29183,7 +29273,12 @@
     "difficulty": "hard",
     "question": "在《时空之轮》中，玩家在公元前65000000年的冒险后会遇到哪位史前战士并邀请她加入队伍？",
     "canonicalAnswer": "艾拉",
-    "multipleChoiceOptions": ["艾拉", "玛尔", "露卡", "莎拉"],
+    "multipleChoiceOptions": [
+      "艾拉",
+      "玛尔",
+      "露卡",
+      "莎拉"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29195,7 +29290,12 @@
     "difficulty": "hard",
     "question": "在《合金装备》中，哪位FOXHOUND成员以能够读取蛇的思想而闻名？",
     "canonicalAnswer": "心灵螳螂",
-    "multipleChoiceOptions": ["心灵螳螂", "狙击狼", "液体蛇", "火焰人"],
+    "multipleChoiceOptions": [
+      "心灵螳螂",
+      "狙击狼",
+      "液体蛇",
+      "火焰人"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29207,7 +29307,12 @@
     "difficulty": "easy",
     "question": "哪位埃及法老下令建造了阿布辛贝神庙群？",
     "canonicalAnswer": "拉美西斯二世",
-    "multipleChoiceOptions": ["拉美西斯二世", "图坦卡蒙", "胡夫", "阿肯那顿"],
+    "multipleChoiceOptions": [
+      "拉美西斯二世",
+      "图坦卡蒙",
+      "胡夫",
+      "阿肯那顿"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29219,7 +29324,12 @@
     "difficulty": "easy",
     "question": "东罗马帝国在罗马衰落后仍延续数百年，通常被称为什么？",
     "canonicalAnswer": "拜占庭帝国",
-    "multipleChoiceOptions": ["拜占庭帝国", "神圣罗马帝国", "塞尔柱帝国", "拉丁帝国"],
+    "multipleChoiceOptions": [
+      "拜占庭帝国",
+      "神圣罗马帝国",
+      "塞尔柱帝国",
+      "拉丁帝国"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29231,7 +29341,12 @@
     "difficulty": "easy",
     "question": "哪条狭窄海峡穿过伊斯坦布尔，并把土耳其的欧洲部分与亚洲部分分隔开？",
     "canonicalAnswer": "博斯普鲁斯海峡",
-    "multipleChoiceOptions": ["博斯普鲁斯海峡", "达达尼尔海峡", "直布罗陀海峡", "霍尔木兹海峡"],
+    "multipleChoiceOptions": [
+      "博斯普鲁斯海峡",
+      "达达尼尔海峡",
+      "直布罗陀海峡",
+      "霍尔木兹海峡"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29243,7 +29358,12 @@
     "difficulty": "easy",
     "question": "哪位18世纪的女皇扩张了俄罗斯，并通常被称为“大帝”？",
     "canonicalAnswer": "叶卡捷琳娜大帝",
-    "multipleChoiceOptions": ["叶卡捷琳娜大帝", "伊丽莎白一世", "安娜女皇", "玛丽亚·特蕾莎"],
+    "multipleChoiceOptions": [
+      "叶卡捷琳娜大帝",
+      "伊丽莎白一世",
+      "安娜女皇",
+      "玛丽亚·特蕾莎"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29255,7 +29375,12 @@
     "difficulty": "medium",
     "question": "1066年，诺曼底的威廉击败英格兰国王哈罗德二世的战役是哪一场？",
     "canonicalAnswer": "黑斯廷斯战役",
-    "multipleChoiceOptions": ["黑斯廷斯战役", "阿金库尔战役", "博斯沃思战役", "图尔战役"],
+    "multipleChoiceOptions": [
+      "黑斯廷斯战役",
+      "阿金库尔战役",
+      "博斯沃思战役",
+      "图尔战役"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29267,7 +29392,12 @@
     "difficulty": "medium",
     "question": "拿破仑战败后，哪次外交会议重新划分了欧洲的大部分地区？",
     "canonicalAnswer": "维也纳会议",
-    "multipleChoiceOptions": ["维也纳会议", "凡尔赛会议", "亚琛会议", "柏林会议"],
+    "multipleChoiceOptions": [
+      "维也纳会议",
+      "凡尔赛会议",
+      "亚琛会议",
+      "柏林会议"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29279,7 +29409,12 @@
     "difficulty": "medium",
     "question": "哪条铁路横跨西伯利亚，连接莫斯科与俄罗斯远东地区？",
     "canonicalAnswer": "西伯利亚大铁路",
-    "multipleChoiceOptions": ["西伯利亚大铁路", "东方快线", "欧亚大陆铁路", "贝加尔环线"],
+    "multipleChoiceOptions": [
+      "西伯利亚大铁路",
+      "东方快线",
+      "欧亚大陆铁路",
+      "贝加尔环线"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29291,7 +29426,12 @@
     "difficulty": "medium",
     "question": "秘鲁南部沙漠中刻画的巨大古代地画被称为什么？",
     "canonicalAnswer": "纳斯卡线",
-    "multipleChoiceOptions": ["纳斯卡线", "阿塔卡马图形", "印加道路", "安第斯符号"],
+    "multipleChoiceOptions": [
+      "纳斯卡线",
+      "阿塔卡马图形",
+      "印加道路",
+      "安第斯符号"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29303,7 +29443,12 @@
     "difficulty": "hard",
     "question": "1618年，官员被从布拉格城堡窗口扔出，这一事件帮助引发了哪场战争？",
     "canonicalAnswer": "布拉格掷出窗外事件",
-    "multipleChoiceOptions": ["布拉格掷出窗外事件", "波士顿倾茶事件", "第二次布拉格保卫战", "白山起义"],
+    "multipleChoiceOptions": [
+      "布拉格掷出窗外事件",
+      "波士顿倾茶事件",
+      "第二次布拉格保卫战",
+      "白山起义"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29315,7 +29460,12 @@
     "difficulty": "hard",
     "question": "15世纪初，哪位明朝太监率领大型宝船队航行于印度洋？",
     "canonicalAnswer": "郑和",
-    "multipleChoiceOptions": ["郑和", "戚继光", "张骞", "徐霞客"],
+    "multipleChoiceOptions": [
+      "郑和",
+      "戚继光",
+      "张骞",
+      "徐霞客"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29327,7 +29477,12 @@
     "difficulty": "easy",
     "question": "哪种鱼会向水面上方的树枝喷水，把昆虫击落？",
     "canonicalAnswer": "射水鱼",
-    "multipleChoiceOptions": ["射水鱼", "飞鱼", "弓鳍鱼", "银龙鱼"],
+    "multipleChoiceOptions": [
+      "射水鱼",
+      "飞鱼",
+      "弓鳍鱼",
+      "银龙鱼"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29339,7 +29494,12 @@
     "difficulty": "easy",
     "question": "哪种海洋无脊椎动物有八条腕，并且以能够改变颜色和纹理而闻名？",
     "canonicalAnswer": "章鱼",
-    "multipleChoiceOptions": ["章鱼", "鱿鱼", "海星", "水母"],
+    "multipleChoiceOptions": [
+      "章鱼",
+      "鱿鱼",
+      "海星",
+      "水母"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29351,7 +29511,12 @@
     "difficulty": "easy",
     "question": "哪种昆虫最为人熟知的特点是把花蜜加工成蜂蜜？",
     "canonicalAnswer": "蜜蜂",
-    "multipleChoiceOptions": ["蜜蜂", "黄蜂", "蝴蝶", "蚂蚁"],
+    "multipleChoiceOptions": [
+      "蜜蜂",
+      "黄蜂",
+      "蝴蝶",
+      "蚂蚁"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29363,7 +29528,12 @@
     "difficulty": "easy",
     "question": "哪种爬行动物有保护性的硬壳，并且通常能把头缩进壳里？",
     "canonicalAnswer": "龟",
-    "multipleChoiceOptions": ["龟", "蜥蜴", "鳄鱼", "蛇"],
+    "multipleChoiceOptions": [
+      "龟",
+      "蜥蜴",
+      "鳄鱼",
+      "蛇"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29375,7 +29545,12 @@
     "difficulty": "medium",
     "question": "形容动物主要在黎明和黄昏前后最活跃的术语是什么？",
     "canonicalAnswer": "晨昏性",
-    "multipleChoiceOptions": ["晨昏性", "昼行性", "夜行性", "季节性"],
+    "multipleChoiceOptions": [
+      "晨昏性",
+      "昼行性",
+      "夜行性",
+      "季节性"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29387,7 +29562,12 @@
     "difficulty": "medium",
     "question": "哪种鲨鱼因拥有宽而扁平、形似锤子的头部而得名？",
     "canonicalAnswer": "双髻鲨",
-    "multipleChoiceOptions": ["双髻鲨", "虎鲨", "姥鲨", "护士鲨"],
+    "multipleChoiceOptions": [
+      "双髻鲨",
+      "虎鲨",
+      "姥鲨",
+      "护士鲨"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29399,7 +29579,12 @@
     "difficulty": "medium",
     "question": "哪类蚂蚁以切下叶片来培育真菌、把真菌当作食物而闻名？",
     "canonicalAnswer": "切叶蚁",
-    "multipleChoiceOptions": ["切叶蚁", "织叶蚁", "火蚁", "子弹蚁"],
+    "multipleChoiceOptions": [
+      "切叶蚁",
+      "织叶蚁",
+      "火蚁",
+      "子弹蚁"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29411,7 +29596,12 @@
     "difficulty": "medium",
     "question": "许多蛇会配合吐舌动作使用哪种嗅觉器官来探测气味？",
     "canonicalAnswer": "犁鼻器",
-    "multipleChoiceOptions": ["犁鼻器", "耳蜗", "松果体", "侧线器官"],
+    "multipleChoiceOptions": [
+      "犁鼻器",
+      "耳蜗",
+      "松果体",
+      "侧线器官"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29423,7 +29613,12 @@
     "difficulty": "hard",
     "question": "哪种鸟最常与把蛋产在其他鸟巢中的巢寄生行为联系在一起？",
     "canonicalAnswer": "杜鹃",
-    "multipleChoiceOptions": ["杜鹃", "知更鸟", "信天翁", "啄木鸟"],
+    "multipleChoiceOptions": [
+      "杜鹃",
+      "知更鸟",
+      "信天翁",
+      "啄木鸟"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29435,7 +29630,12 @@
     "difficulty": "hard",
     "question": "一些鲨鱼和鳐鱼产下的坚韧卵囊通常被称为什么？",
     "canonicalAnswer": "美人鱼钱包",
-    "multipleChoiceOptions": ["美人鱼钱包", "海巫斗篷", "鲨鱼手提袋", "魔鬼面具"],
+    "multipleChoiceOptions": [
+      "美人鱼钱包",
+      "海巫斗篷",
+      "鲨鱼手提袋",
+      "魔鬼面具"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29447,7 +29647,12 @@
     "difficulty": "easy",
     "question": "哪种中东沙拉通常由欧芹、碎小麦、番茄、薄荷和柠檬制成？",
     "canonicalAnswer": "塔布勒沙拉",
-    "multipleChoiceOptions": ["塔布勒沙拉", "法塔沙拉", "希腊沙拉", "尼斯沙拉"],
+    "multipleChoiceOptions": [
+      "塔布勒沙拉",
+      "法塔沙拉",
+      "希腊沙拉",
+      "尼斯沙拉"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29459,7 +29664,12 @@
     "difficulty": "easy",
     "question": "印度常用红茶、牛奶、糖和温暖香料调制的香料茶饮叫什么？",
     "canonicalAnswer": "印度奶茶",
-    "multipleChoiceOptions": ["印度奶茶", "抹茶", "阿萨姆冰茶", "土耳其咖啡"],
+    "multipleChoiceOptions": [
+      "印度奶茶",
+      "抹茶",
+      "阿萨姆冰茶",
+      "土耳其咖啡"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29471,7 +29681,12 @@
     "difficulty": "easy",
     "question": "哪种墨西哥蘸酱或酱汁传统上主要由捣碎的鳄梨制成？",
     "canonicalAnswer": "鳄梨酱",
-    "multipleChoiceOptions": ["鳄梨酱", "莎莎酱", "摩尔酱", "辣椒酱"],
+    "multipleChoiceOptions": [
+      "鳄梨酱",
+      "莎莎酱",
+      "摩尔酱",
+      "辣椒酱"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29483,7 +29698,12 @@
     "difficulty": "easy",
     "question": "哪种绿色意大利酱汁通常由罗勒、大蒜、松子、帕玛森奶酪和橄榄油制成？",
     "canonicalAnswer": "香蒜酱",
-    "multipleChoiceOptions": ["香蒜酱", "阿尔弗雷多酱", "肉酱", "番茄沙司"],
+    "multipleChoiceOptions": [
+      "香蒜酱",
+      "阿尔弗雷多酱",
+      "肉酱",
+      "番茄沙司"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29495,7 +29715,12 @@
     "difficulty": "medium",
     "question": "哪种发酵大豆酱为同名日本汤品提供了经典风味？",
     "canonicalAnswer": "味噌",
-    "multipleChoiceOptions": ["味噌", "纳豆", "豆瓣酱", "照烧酱"],
+    "multipleChoiceOptions": [
+      "味噌",
+      "纳豆",
+      "豆瓣酱",
+      "照烧酱"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29507,7 +29732,12 @@
     "difficulty": "medium",
     "question": "在法国烹饪中，洋葱、胡萝卜和芹菜切丁组成的风味基础叫什么？",
     "canonicalAnswer": "米尔普瓦",
-    "multipleChoiceOptions": ["米尔普瓦", "浓汤底", "拉图尔", "香草束"],
+    "multipleChoiceOptions": [
+      "米尔普瓦",
+      "浓汤底",
+      "拉图尔",
+      "香草束"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29519,7 +29749,12 @@
     "difficulty": "medium",
     "question": "哪种意大利米饭料理需要边搅拌边逐渐加入高汤，直到变得奶油般浓稠？",
     "canonicalAnswer": "意大利烩饭",
-    "multipleChoiceOptions": ["意大利烩饭", "西班牙海鲜饭", "意大利面", "玉米粥"],
+    "multipleChoiceOptions": [
+      "意大利烩饭",
+      "西班牙海鲜饭",
+      "意大利面",
+      "玉米粥"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29531,7 +29766,12 @@
     "difficulty": "medium",
     "question": "哪种鸡尾酒传统上由等量金酒、金巴利和甜味美思酒调成？",
     "canonicalAnswer": "尼格罗尼",
-    "multipleChoiceOptions": ["尼格罗尼", "马提尼", "曼哈顿", "内格罗尼萨巴利亚"],
+    "multipleChoiceOptions": [
+      "尼格罗尼",
+      "马提尼",
+      "曼哈顿",
+      "内格罗尼萨巴利亚"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29543,7 +29783,12 @@
     "difficulty": "hard",
     "question": "在美拉德反应中，氨基酸会与哪类糖反应，产生褐变风味？",
     "canonicalAnswer": "还原糖",
-    "multipleChoiceOptions": ["还原糖", "蔗糖", "糖醇", "淀粉糖"],
+    "multipleChoiceOptions": [
+      "还原糖",
+      "蔗糖",
+      "糖醇",
+      "淀粉糖"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29555,7 +29800,12 @@
     "difficulty": "hard",
     "question": "哪种日本发酵引子可用于制作味噌和清酒？",
     "canonicalAnswer": "曲",
-    "multipleChoiceOptions": ["曲", "酵母", "乳酸菌", "醋母"],
+    "multipleChoiceOptions": [
+      "曲",
+      "酵母",
+      "乳酸菌",
+      "醋母"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29567,7 +29817,12 @@
     "difficulty": "easy",
     "question": "在排球比赛中，球队通常最多可以触球几次，之后必须把球击过球网？",
     "canonicalAnswer": "3次",
-    "multipleChoiceOptions": ["3次", "2次", "4次", "5次"],
+    "multipleChoiceOptions": [
+      "3次",
+      "2次",
+      "4次",
+      "5次"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29579,7 +29834,12 @@
     "difficulty": "easy",
     "question": "在拳击比赛中，如果一名拳手在裁判数完之前无法继续比赛，会判定为什么结果？",
     "canonicalAnswer": "技术性击倒",
-    "multipleChoiceOptions": ["技术性击倒", "平局", "犯规判负", "读秒胜利"],
+    "multipleChoiceOptions": [
+      "技术性击倒",
+      "平局",
+      "犯规判负",
+      "读秒胜利"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29591,7 +29851,12 @@
     "difficulty": "easy",
     "question": "哪种球拍运动使用一种带羽毛的飞行器，而不是普通的球？",
     "canonicalAnswer": "羽毛球",
-    "multipleChoiceOptions": ["羽毛球", "网球", "壁球", "乒乓球"],
+    "multipleChoiceOptions": [
+      "羽毛球",
+      "网球",
+      "壁球",
+      "乒乓球"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29603,7 +29868,12 @@
     "difficulty": "easy",
     "question": "在足球比赛中，当球完全越过边线时，比赛会用什么方式重新开始？",
     "canonicalAnswer": "界外球",
-    "multipleChoiceOptions": ["界外球", "角球", "球门球", "任意球"],
+    "multipleChoiceOptions": [
+      "界外球",
+      "角球",
+      "球门球",
+      "任意球"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29615,7 +29885,12 @@
     "difficulty": "medium",
     "question": "在棒球比赛中，击球员在一次打席中获得四个坏球后会得到什么？",
     "canonicalAnswer": "四坏球保送",
-    "multipleChoiceOptions": ["四坏球保送", "一次盗垒", "自动得分", "两次好球"],
+    "multipleChoiceOptions": [
+      "四坏球保送",
+      "一次盗垒",
+      "自动得分",
+      "两次好球"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29627,7 +29902,12 @@
     "difficulty": "medium",
     "question": "在板球比赛中，击球员将球直接击过边界且球没有落地，会得到多少分？",
     "canonicalAnswer": "6分",
-    "multipleChoiceOptions": ["6分", "4分", "5分", "8分"],
+    "multipleChoiceOptions": [
+      "6分",
+      "4分",
+      "5分",
+      "8分"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29639,7 +29919,12 @@
     "difficulty": "medium",
     "question": "在网球比赛中，平分后某位球员赢下下一分，比分状态会变成什么？",
     "canonicalAnswer": "占先",
-    "multipleChoiceOptions": ["占先", "局点", "破发完成", "再度平分"],
+    "multipleChoiceOptions": [
+      "占先",
+      "局点",
+      "破发完成",
+      "再度平分"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29651,7 +29936,12 @@
     "difficulty": "medium",
     "question": "在美式足球中，一次安全分值多少分？",
     "canonicalAnswer": "2分",
-    "multipleChoiceOptions": ["2分", "1分", "3分", "6分"],
+    "multipleChoiceOptions": [
+      "2分",
+      "1分",
+      "3分",
+      "6分"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29663,7 +29953,12 @@
     "difficulty": "hard",
     "question": "在英式橄榄球中，轻微犯规或向前掉球后通常用哪种阵式重新开始比赛？",
     "canonicalAnswer": "争球",
-    "multipleChoiceOptions": ["争球", "边线球", "自由踢", "达阵"],
+    "multipleChoiceOptions": [
+      "争球",
+      "边线球",
+      "自由踢",
+      "达阵"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29675,7 +29970,12 @@
     "difficulty": "hard",
     "question": "在公路自行车赛中，比赛里的主要车手群体通常被称为什么？",
     "canonicalAnswer": "大集团",
-    "multipleChoiceOptions": ["大集团", "领骑组", "冲刺队列", "追击组"],
+    "multipleChoiceOptions": [
+      "大集团",
+      "领骑组",
+      "冲刺队列",
+      "追击组"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29687,7 +29987,12 @@
     "difficulty": "easy",
     "question": "形容经常阅读网上讨论、却很少或从不发帖的人，通常用什么词？",
     "canonicalAnswer": "潜水者",
-    "multipleChoiceOptions": ["潜水者", "版主", "搬运工", "管理员"],
+    "multipleChoiceOptions": [
+      "潜水者",
+      "版主",
+      "搬运工",
+      "管理员"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29699,7 +30004,12 @@
     "difficulty": "easy",
     "question": "哪种图像文件格式与网上的短循环动画密切相关？",
     "canonicalAnswer": "GIF",
-    "multipleChoiceOptions": ["GIF", "TIFF", "BMP", "RAW"],
+    "multipleChoiceOptions": [
+      "GIF",
+      "TIFF",
+      "BMP",
+      "RAW"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29711,7 +30021,12 @@
     "difficulty": "easy",
     "question": "在Reddit等网站上，AMA通常是哪个英文短语的缩写？",
     "canonicalAnswer": "问我任何事",
-    "multipleChoiceOptions": ["问我任何事", "所有人都同意", "匿名媒体档案", "请再发一次"],
+    "multipleChoiceOptions": [
+      "问我任何事",
+      "所有人都同意",
+      "匿名媒体档案",
+      "请再发一次"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29723,7 +30038,12 @@
     "difficulty": "easy",
     "question": "当一篇帖子的负面回复或引用远远超过点赞时，人们通常会说它遭遇了什么？",
     "canonicalAnswer": "被负评压过",
-    "multipleChoiceOptions": ["被负评压过", "被置顶", "被认证", "被限流"],
+    "multipleChoiceOptions": [
+      "被负评压过",
+      "被置顶",
+      "被认证",
+      "被限流"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29735,7 +30055,12 @@
     "difficulty": "medium",
     "question": "早期网上那个跳舞婴儿的3D动画通常叫什么？",
     "canonicalAnswer": "跳舞宝宝",
-    "multipleChoiceOptions": ["跳舞宝宝", "3D婴儿", "数字小孩", "婴儿舞王"],
+    "multipleChoiceOptions": [
+      "跳舞宝宝",
+      "3D婴儿",
+      "数字小孩",
+      "婴儿舞王"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29747,7 +30072,12 @@
     "difficulty": "medium",
     "question": "“I Can Has Cheezburger?”这句话最常与哪种网络迷因风格联系在一起？",
     "canonicalAnswer": "猫咪配字",
-    "multipleChoiceOptions": ["猫咪配字", "反应视频", "故障艺术", "像素画"],
+    "multipleChoiceOptions": [
+      "猫咪配字",
+      "反应视频",
+      "故障艺术",
+      "像素画"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29759,7 +30089,12 @@
     "difficulty": "medium",
     "question": "故意在网上发布挑衅性消息、以激怒或引诱他人的行为叫什么？",
     "canonicalAnswer": "钓鱼",
-    "multipleChoiceOptions": ["钓鱼", "冲浪", "潜水", "洗版"],
+    "multipleChoiceOptions": [
+      "钓鱼",
+      "冲浪",
+      "潜水",
+      "洗版"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29771,7 +30106,12 @@
     "difficulty": "medium",
     "question": "在网络文字中，把整句话都打成大写通常会被理解为什么？",
     "canonicalAnswer": "喊叫或强烈强调",
-    "multipleChoiceOptions": ["喊叫或强烈强调", "表示悄悄话", "表示引用来源", "表示文字已加密"],
+    "multipleChoiceOptions": [
+      "喊叫或强烈强调",
+      "表示悄悄话",
+      "表示引用来源",
+      "表示文字已加密"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29783,7 +30123,12 @@
     "difficulty": "hard",
     "question": "哪部网络漫画以“有人在互联网上错了”这句台词而闻名？",
     "canonicalAnswer": "xkcd",
-    "multipleChoiceOptions": ["xkcd", "SMBC", "牙买加", "呆伯特"],
+    "multipleChoiceOptions": [
+      "xkcd",
+      "SMBC",
+      "牙买加",
+      "呆伯特"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29795,7 +30140,12 @@
     "difficulty": "hard",
     "question": "协调大量流量来压垮网站或在线服务的攻击叫什么？",
     "canonicalAnswer": "分布式拒绝服务攻击",
-    "multipleChoiceOptions": ["分布式拒绝服务攻击", "中间人攻击", "网络钓鱼", "端口扫描"],
+    "multipleChoiceOptions": [
+      "分布式拒绝服务攻击",
+      "中间人攻击",
+      "网络钓鱼",
+      "端口扫描"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29807,7 +30157,12 @@
     "difficulty": "easy",
     "question": "原子中哪种亚原子粒子带有正电荷？",
     "canonicalAnswer": "质子",
-    "multipleChoiceOptions": ["质子", "电子", "中子", "光子"],
+    "multipleChoiceOptions": [
+      "质子",
+      "电子",
+      "中子",
+      "光子"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29819,7 +30174,12 @@
     "difficulty": "easy",
     "question": "植物在光合作用过程中从空气中吸收哪种气体？",
     "canonicalAnswer": "二氧化碳",
-    "multipleChoiceOptions": ["二氧化碳", "氧气", "氮气", "氢气"],
+    "multipleChoiceOptions": [
+      "二氧化碳",
+      "氧气",
+      "氮气",
+      "氢气"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29831,7 +30191,12 @@
     "difficulty": "easy",
     "question": "哪种基本力使行星保持在围绕太阳的轨道上？",
     "canonicalAnswer": "引力",
-    "multipleChoiceOptions": ["引力", "电磁力", "强核力", "摩擦力"],
+    "multipleChoiceOptions": [
+      "引力",
+      "电磁力",
+      "强核力",
+      "摩擦力"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29843,7 +30208,12 @@
     "difficulty": "easy",
     "question": "哪种仪器用于测量大气压？",
     "canonicalAnswer": "气压计",
-    "multipleChoiceOptions": ["气压计", "温度计", "湿度计", "风速计"],
+    "multipleChoiceOptions": [
+      "气压计",
+      "温度计",
+      "湿度计",
+      "风速计"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29855,7 +30225,12 @@
     "difficulty": "medium",
     "question": "在粒子物理学中，哪种粒子被认为携带电磁力？",
     "canonicalAnswer": "光子",
-    "multipleChoiceOptions": ["光子", "胶子", "希格斯玻色子", "中微子"],
+    "multipleChoiceOptions": [
+      "光子",
+      "胶子",
+      "希格斯玻色子",
+      "中微子"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29867,7 +30242,12 @@
     "difficulty": "medium",
     "question": "pH高于7的溶液通常被称为什么？",
     "canonicalAnswer": "碱性",
-    "multipleChoiceOptions": ["碱性", "酸性", "中性", "放射性"],
+    "multipleChoiceOptions": [
+      "碱性",
+      "酸性",
+      "中性",
+      "放射性"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29879,7 +30259,12 @@
     "difficulty": "medium",
     "question": "地球大气层的哪一层含有大部分臭氧层？",
     "canonicalAnswer": "平流层",
-    "multipleChoiceOptions": ["平流层", "对流层", "中间层", "热层"],
+    "multipleChoiceOptions": [
+      "平流层",
+      "对流层",
+      "中间层",
+      "热层"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29891,7 +30276,12 @@
     "difficulty": "medium",
     "question": "在温度保持不变时，哪条气体定律说明压强和体积成反比？",
     "canonicalAnswer": "波义耳定律",
-    "multipleChoiceOptions": ["波义耳定律", "查理定律", "盖-吕萨克定律", "阿伏伽德罗定律"],
+    "multipleChoiceOptions": [
+      "波义耳定律",
+      "查理定律",
+      "盖-吕萨克定律",
+      "阿伏伽德罗定律"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29903,7 +30293,12 @@
     "difficulty": "hard",
     "question": "哪种氢同位素含有一个质子和两个中子？",
     "canonicalAnswer": "氚",
-    "multipleChoiceOptions": ["氚", "氕", "氘", "氦-3"],
+    "multipleChoiceOptions": [
+      "氚",
+      "氕",
+      "氘",
+      "氦-3"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29915,7 +30310,12 @@
     "difficulty": "hard",
     "question": "将重原子核分裂成较轻原子核并释放能量的过程叫什么？",
     "canonicalAnswer": "核裂变",
-    "multipleChoiceOptions": ["核裂变", "核聚变", "放射性衰变", "电子俘获"],
+    "multipleChoiceOptions": [
+      "核裂变",
+      "核聚变",
+      "放射性衰变",
+      "电子俘获"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29927,7 +30327,12 @@
     "difficulty": "easy",
     "question": "哪位希腊女神与狩猎、野生动物和月亮有关？",
     "canonicalAnswer": "阿耳忒弥斯",
-    "multipleChoiceOptions": ["阿耳忒弥斯", "雅典娜", "赫拉", "德墨忒尔"],
+    "multipleChoiceOptions": [
+      "阿耳忒弥斯",
+      "雅典娜",
+      "赫拉",
+      "德墨忒尔"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29939,7 +30344,12 @@
     "difficulty": "easy",
     "question": "哪位北欧神祇守护通往阿斯加德的彩虹桥？",
     "canonicalAnswer": "海姆达尔",
-    "multipleChoiceOptions": ["海姆达尔", "洛基", "巴尔德尔", "提尔"],
+    "multipleChoiceOptions": [
+      "海姆达尔",
+      "洛基",
+      "巴尔德尔",
+      "提尔"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29951,7 +30361,12 @@
     "difficulty": "easy",
     "question": "哪位埃及女神通常与猫、保护和家庭有关？",
     "canonicalAnswer": "芭丝特",
-    "multipleChoiceOptions": ["芭丝特", "伊西斯", "奈芙蒂斯", "塞赫麦特"],
+    "multipleChoiceOptions": [
+      "芭丝特",
+      "伊西斯",
+      "奈芙蒂斯",
+      "塞赫麦特"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29963,7 +30378,12 @@
     "difficulty": "easy",
     "question": "哪位罗马火神和金属工艺之神是希腊赫淮斯托斯的对应神祇？",
     "canonicalAnswer": "伏尔甘",
-    "multipleChoiceOptions": ["伏尔甘", "玛尔斯", "墨丘利", "尼普顿"],
+    "multipleChoiceOptions": [
+      "伏尔甘",
+      "玛尔斯",
+      "墨丘利",
+      "尼普顿"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29975,7 +30395,12 @@
     "difficulty": "medium",
     "question": "在希腊神话中，冥界哪条河与遗忘有关？",
     "canonicalAnswer": "勒忒河",
-    "multipleChoiceOptions": ["勒忒河", "斯堤克斯河", "阿刻戎河", "珀里弗勒戈同河"],
+    "multipleChoiceOptions": [
+      "勒忒河",
+      "斯堤克斯河",
+      "阿刻戎河",
+      "珀里弗勒戈同河"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29987,7 +30412,12 @@
     "difficulty": "medium",
     "question": "在北欧神话中，连接中庭和阿斯加德的桥叫什么？",
     "canonicalAnswer": "比弗罗斯特",
-    "multipleChoiceOptions": ["比弗罗斯特", "彩虹桥", "世界之树", "英灵殿门"],
+    "multipleChoiceOptions": [
+      "比弗罗斯特",
+      "彩虹桥",
+      "世界之树",
+      "英灵殿门"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -29999,7 +30429,12 @@
     "difficulty": "medium",
     "question": "哪位印度教神祇广为人知的称号是“障碍的移除者”？",
     "canonicalAnswer": "象头神",
-    "multipleChoiceOptions": ["象头神", "湿婆", "毗湿奴", "因陀罗"],
+    "multipleChoiceOptions": [
+      "象头神",
+      "湿婆",
+      "毗湿奴",
+      "因陀罗"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30011,7 +30446,12 @@
     "difficulty": "medium",
     "question": "哪位希腊英雄因进入迷宫并杀死米诺陶洛斯而闻名？",
     "canonicalAnswer": "忒修斯",
-    "multipleChoiceOptions": ["忒修斯", "珀耳修斯", "赫拉克勒斯", "俄耳甫斯"],
+    "multipleChoiceOptions": [
+      "忒修斯",
+      "珀耳修斯",
+      "赫拉克勒斯",
+      "俄耳甫斯"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30023,7 +30463,12 @@
     "difficulty": "hard",
     "question": "哪位美索不达米亚爱与战争女神的故事以降临冥界而闻名？",
     "canonicalAnswer": "伊南娜",
-    "multipleChoiceOptions": ["伊南娜", "伊什塔尔", "宁胡尔萨格", "埃列什基伽勒"],
+    "multipleChoiceOptions": [
+      "伊南娜",
+      "伊什塔尔",
+      "宁胡尔萨格",
+      "埃列什基伽勒"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30035,7 +30480,12 @@
     "difficulty": "hard",
     "question": "哪位爱尔兰阿尔斯特英雄以一种名为“战斗痉挛”的可怕狂暴状态而闻名？",
     "canonicalAnswer": "库丘林",
-    "multipleChoiceOptions": ["库丘林", "芬恩·麦克库尔", "康纳尔", "迪尔姆德"],
+    "multipleChoiceOptions": [
+      "库丘林",
+      "芬恩·麦克库尔",
+      "康纳尔",
+      "迪尔姆德"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30047,7 +30497,12 @@
     "difficulty": "easy",
     "question": "哪个艺术流派与克劳德·莫奈的《睡莲》以及捕捉光线的可见笔触有关？",
     "canonicalAnswer": "印象主义",
-    "multipleChoiceOptions": ["印象主义", "表现主义", "超现实主义", "立体主义"],
+    "multipleChoiceOptions": [
+      "印象主义",
+      "表现主义",
+      "超现实主义",
+      "立体主义"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30059,7 +30514,12 @@
     "difficulty": "easy",
     "question": "哪位作曲家创作了被称为《四季》的小提琴协奏曲？",
     "canonicalAnswer": "维瓦尔第",
-    "multipleChoiceOptions": ["维瓦尔第", "巴赫", "莫扎特", "肖邦"],
+    "multipleChoiceOptions": [
+      "维瓦尔第",
+      "巴赫",
+      "莫扎特",
+      "肖邦"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30071,7 +30531,12 @@
     "difficulty": "easy",
     "question": "哪种单簧片木管乐器常见于爵士乐、管弦乐队和行进乐队？",
     "canonicalAnswer": "单簧管",
-    "multipleChoiceOptions": ["单簧管", "双簧管", "巴松管", "长笛"],
+    "multipleChoiceOptions": [
+      "单簧管",
+      "双簧管",
+      "巴松管",
+      "长笛"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30083,7 +30548,12 @@
     "difficulty": "easy",
     "question": "描绘人物的绘画、素描或照片通常统称为什么？",
     "canonicalAnswer": "肖像",
-    "multipleChoiceOptions": ["肖像", "静物", "风景", "三联画"],
+    "multipleChoiceOptions": [
+      "肖像",
+      "静物",
+      "风景",
+      "三联画"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30095,7 +30565,12 @@
     "difficulty": "medium",
     "question": "画出著名的融化时钟作品《记忆的永恒》的艺术家是谁？",
     "canonicalAnswer": "萨尔瓦多·达利",
-    "multipleChoiceOptions": ["萨尔瓦多·达利", "巴勃罗·毕加索", "胡安·米罗", "勒内·马格利特"],
+    "multipleChoiceOptions": [
+      "萨尔瓦多·达利",
+      "巴勃罗·毕加索",
+      "胡安·米罗",
+      "勒内·马格利特"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30107,7 +30582,12 @@
     "difficulty": "medium",
     "question": "在乐理中，跨越八个音阶级数的音程叫什么？",
     "canonicalAnswer": "八度",
-    "multipleChoiceOptions": ["八度", "五度", "三全音", "终止式"],
+    "multipleChoiceOptions": [
+      "八度",
+      "五度",
+      "三全音",
+      "终止式"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30119,7 +30599,12 @@
     "difficulty": "medium",
     "question": "哪种建筑风格以尖拱、肋架拱顶和飞扶壁为特征？",
     "canonicalAnswer": "哥特式建筑",
-    "multipleChoiceOptions": ["哥特式建筑", "包豪斯", "洛可可", "粗野主义"],
+    "multipleChoiceOptions": [
+      "哥特式建筑",
+      "包豪斯",
+      "洛可可",
+      "粗野主义"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30131,7 +30616,12 @@
     "difficulty": "medium",
     "question": "哪种日本木版画传统对许多欧洲现代艺术家产生了重要影响？",
     "canonicalAnswer": "浮世绘",
-    "multipleChoiceOptions": ["浮世绘", "金缮", "插花", "乐烧"],
+    "multipleChoiceOptions": [
+      "浮世绘",
+      "金缮",
+      "插花",
+      "乐烧"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30143,7 +30633,12 @@
     "difficulty": "hard",
     "question": "没有乐器伴奏的歌唱通常称为什么？",
     "canonicalAnswer": "无伴奏合唱",
-    "multipleChoiceOptions": ["无伴奏合唱", "渐强演奏", "固定音型", "滑音"],
+    "multipleChoiceOptions": [
+      "无伴奏合唱",
+      "渐强演奏",
+      "固定音型",
+      "滑音"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
   },
   {
@@ -30155,7 +30650,2212 @@
     "difficulty": "hard",
     "question": "哪位文艺复兴时期的建筑师设计并建造了佛罗伦萨大教堂著名的穹顶？",
     "canonicalAnswer": "布鲁内莱斯基",
-    "multipleChoiceOptions": ["布鲁内莱斯基", "贝尔尼尼", "博罗米尼", "帕拉迪奥"],
+    "multipleChoiceOptions": [
+      "布鲁内莱斯基",
+      "贝尔尼尼",
+      "博罗米尼",
+      "帕拉迪奥"
+    ],
     "debugBatch": "zh-hans-text-mcq-2026-08-12"
+  },
+  {
+    "id": "popculture-image-meryl-streep",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which actress played Miranda Priestly in The Devil Wears Prada?",
+    "canonicalAnswer": "Meryl Streep",
+    "acceptedAnswers": [
+      "Meryl Streep"
+    ],
+    "botCards": [
+      "Glenn Close",
+      "Judi Dench"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Meryl_Streep_by_Lincoln_Townley.JPG/960px-Meryl_Streep_by_Lincoln_Townley.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Meryl%20Streep%20by%20Lincoln%20Townley.JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-beyonce-album",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which singer released the visual album Lemonade in 2016?",
+    "canonicalAnswer": "Beyonce",
+    "acceptedAnswers": [
+      "Beyonce"
+    ],
+    "botCards": [
+      "Rihanna",
+      "Alicia Keys"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Beyonce_Knowles_Hat.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Beyonce%20Knowles%20Hat.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-robin-williams-genie",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which actor provided the voice of the Genie in Disney's animated Aladdin?",
+    "canonicalAnswer": "Robin Williams",
+    "acceptedAnswers": [
+      "Robin Williams"
+    ],
+    "botCards": [
+      "Billy Crystal",
+      "Eddie Murphy"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Robin_williams_1990.jpg/960px-Robin_williams_1990.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Robin%20williams%201990.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-miyazaki",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which Japanese director co-founded Studio Ghibli and directed Spirited Away?",
+    "canonicalAnswer": "Hayao Miyazaki",
+    "acceptedAnswers": [
+      "Hayao Miyazaki"
+    ],
+    "botCards": [
+      "Satoshi Kon",
+      "Mamoru Hosoda"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/ef/Hayao_Miyazaki.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Hayao%20Miyazaki.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-tilda-swinton",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which actor played the Ancient One in the 2016 Doctor Strange film?",
+    "canonicalAnswer": "Tilda Swinton",
+    "acceptedAnswers": [
+      "Tilda Swinton"
+    ],
+    "botCards": [
+      "Michelle Yeoh",
+      "Cate Blanchett"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Tilda_Swinton_Paris_Fashion_Week_Spring_Summer_2019.jpg/960px-Tilda_Swinton_Paris_Fashion_Week_Spring_Summer_2019.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Tilda%20Swinton%20Paris%20Fashion%20Week%20Spring%20Summer%202019.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-stan-lee",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which comic-book publisher is most associated with Stan Lee's superhero creations?",
+    "canonicalAnswer": "Marvel Comics",
+    "acceptedAnswers": [
+      "Marvel Comics"
+    ],
+    "botCards": [
+      "DC Comics",
+      "Dark Horse Comics"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Magnetic_Man_-_Mind_Force_-_Stan_Lee%27s_Superhumans_-_Portrait.jpg/960px-Magnetic_Man_-_Mind_Force_-_Stan_Lee%27s_Superhumans_-_Portrait.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Magnetic%20Man%20-%20Mind%20Force%20-%20Stan%20Lee's%20Superhumans%20-%20Portrait.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-chess-castling",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which chess move allows a king and a rook to move in the same turn?",
+    "canonicalAnswer": "Castling",
+    "acceptedAnswers": [
+      "Castling"
+    ],
+    "botCards": [
+      "En passant",
+      "Promotion"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Chess_and_playing_cards_%281898%29_%2814598051340%29.jpg/960px-Chess_and_playing_cards_%281898%29_%2814598051340%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Chess%20and%20playing%20cards%20(1898)%20(14598051340).jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-rubiks-inventor",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What is the surname of the Hungarian architect who invented the famous twisty puzzle cube?",
+    "canonicalAnswer": "Rubik",
+    "acceptedAnswers": [
+      "Rubik"
+    ],
+    "botCards": [
+      "Erdos",
+      "Bartok"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Rubiks_cube_by_keqs.jpg/960px-Rubiks_cube_by_keqs.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Rubiks%20cube%20by%20keqs.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-dungeons-dragons-d20",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "In Dungeons & Dragons, which die is commonly used for attack rolls and saving throws?",
+    "canonicalAnswer": "D20",
+    "acceptedAnswers": [
+      "D20"
+    ],
+    "botCards": [
+      "D6",
+      "D8"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/DnD_Dice_Set.jpg/960px-DnD_Dice_Set.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:DnD%20Dice%20Set.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-game-boy",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which Nintendo handheld introduced Tetris to a huge audience through its bundled game?",
+    "canonicalAnswer": "Game Boy",
+    "acceptedAnswers": [
+      "Game Boy"
+    ],
+    "botCards": [
+      "Nintendo DS",
+      "Game Gear"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Game-Boy-Original.jpg/960px-Game-Boy-Original.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Game-Boy-Original.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-arcade-pacman",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which arcade game's ghosts include Blinky, Pinky, Inky, and Clyde?",
+    "canonicalAnswer": "Pac-Man",
+    "acceptedAnswers": [
+      "Pac-Man"
+    ],
+    "botCards": [
+      "Frogger",
+      "Q*bert"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Mus%C3%A9e_M%C3%A9canique_183.JPG/960px-Mus%C3%A9e_M%C3%A9canique_183.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Mus%C3%A9e%20M%C3%A9canique%20183.JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-raspberry-pi",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which small computer family was created to encourage children to learn programming?",
+    "canonicalAnswer": "Raspberry Pi",
+    "acceptedAnswers": [
+      "Raspberry Pi"
+    ],
+    "botCards": [
+      "Arduino",
+      "Amiga"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/RaspberryPi.jpg/960px-RaspberryPi.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:RaspberryPi.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-tabletop-dice",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What term describes a role-playing game played around a table with dice and character sheets?",
+    "canonicalAnswer": "Tabletop RPG",
+    "acceptedAnswers": [
+      "tabletop RPG"
+    ],
+    "botCards": [
+      "Real-time strategy",
+      "Visual novel"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Role_playing_gamers.jpg/960px-Role_playing_gamers.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Role%20playing%20gamers.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-nes-controller",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which Nintendo console popularized the directional pad and two-button gamepad design shown here?",
+    "canonicalAnswer": "Nintendo Entertainment System",
+    "acceptedAnswers": [
+      "Nintendo Entertainment System"
+    ],
+    "botCards": [
+      "Super Nintendo",
+      "Nintendo 64"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Nintendo-Entertainment-System-NES-Controller-FL.jpg/960px-Nintendo-Entertainment-System-NES-Controller-FL.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Entertainment-System-NES-Controller-FL.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-cosplay",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What hobby involves creating and wearing costumes based on fictional characters?",
+    "canonicalAnswer": "Cosplay",
+    "acceptedAnswers": [
+      "cosplay"
+    ],
+    "botCards": [
+      "LARPing",
+      "Speedrunning"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Quidditch_team_cosplay_at_Hynes_Convention_Center%2C_Boston%2C_2010.jpg/960px-Quidditch_team_cosplay_at_Hynes_Convention_Center%2C_Boston%2C_2010.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Quidditch%20team%20cosplay%20at%20Hynes%20Convention%20Center%2C%20Boston%2C%202010.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-machu-picchu",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which civilization built the 15th-century citadel shown in the Andes?",
+    "canonicalAnswer": "Inca",
+    "acceptedAnswers": [
+      "Inca"
+    ],
+    "botCards": [
+      "Maya",
+      "Aztec"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Machu-picchu-c12.jpg/960px-Machu-picchu-c12.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Machu-picchu-c12.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-colosseum",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which ancient civilization built the amphitheater shown in central Rome?",
+    "canonicalAnswer": "Romans",
+    "acceptedAnswers": [
+      "Romans"
+    ],
+    "botCards": [
+      "Greeks",
+      "Etruscans"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Colosseum_in_Rome%2C_Italy_-_April_2007.jpg/960px-Colosseum_in_Rome%2C_Italy_-_April_2007.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Colosseum%20in%20Rome%2C%20Italy%20-%20April%202007.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-moai",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "On which Pacific island are the monumental stone figures known as moai found?",
+    "canonicalAnswer": "Easter Island",
+    "acceptedAnswers": [
+      "Easter Island"
+    ],
+    "botCards": [
+      "Samoa",
+      "Tahiti"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Moai_Rano_raraku.jpg/960px-Moai_Rano_raraku.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Moai%20Rano%20raraku.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-silk-road",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "What trade network connected China with the Mediterranean across much of Eurasia?",
+    "canonicalAnswer": "Silk Road",
+    "acceptedAnswers": [
+      "Silk Road"
+    ],
+    "botCards": [
+      "Amber Road",
+      "Royal Road"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Silk-Road_course.jpg/960px-Silk-Road_course.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Silk-Road%20course.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-constantinople",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "What was Istanbul called before the Ottoman conquest?",
+    "canonicalAnswer": "Constantinople",
+    "acceptedAnswers": [
+      "Constantinople"
+    ],
+    "botCards": [
+      "Antioch",
+      "Smyrna"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/The_Fall_of_Constantinople%2C.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:The%20Fall%20of%20Constantinople%2C.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-viking-ship",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which seafaring people used longships to raid and trade across northern Europe?",
+    "canonicalAnswer": "Vikings",
+    "acceptedAnswers": [
+      "Vikings"
+    ],
+    "botCards": [
+      "Franks",
+      "Huns"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Roskilde_Wiking02.jpg/960px-Roskilde_Wiking02.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Roskilde%20Wiking02.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-terracotta-army",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which Chinese emperor's mausoleum is guarded by the famous terracotta army?",
+    "canonicalAnswer": "Qin Shi Huang",
+    "acceptedAnswers": [
+      "Qin Shi Huang"
+    ],
+    "botCards": [
+      "Kublai Khan",
+      "Emperor Wu of Han"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Terracotta_Army%2C_View_of_Pit_1.jpg/960px-Terracotta_Army%2C_View_of_Pit_1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Terracotta%20Army%2C%20View%20of%20Pit%201.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-magna-carta",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which 1215 document limited the powers of the English king John?",
+    "canonicalAnswer": "Magna Carta",
+    "acceptedAnswers": [
+      "Magna Carta"
+    ],
+    "botCards": [
+      "Domesday Book",
+      "Act of Settlement"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Magna_Carta_%28British_Library_Cotton_MS_Augustus_II.106%29.jpg/960px-Magna_Carta_%28British_Library_Cotton_MS_Augustus_II.106%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Magna%20Carta%20(British%20Library%20Cotton%20MS%20Augustus%20II.106).jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-berlin-wall",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which barrier divided East and West Berlin during the Cold War?",
+    "canonicalAnswer": "Berlin Wall",
+    "acceptedAnswers": [
+      "Berlin Wall"
+    ],
+    "botCards": [
+      "Iron Curtain",
+      "Inner German Border"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Berlinermauer.jpg/960px-Berlinermauer.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Berlinermauer.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "geohistory-image-rosa-parks",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which civil-rights activist's refusal to surrender her bus seat helped spark the Montgomery Bus Boycott?",
+    "canonicalAnswer": "Rosa Parks",
+    "acceptedAnswers": [
+      "Rosa Parks"
+    ],
+    "botCards": [
+      "Ella Baker",
+      "Dorothy Height"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Sampson_Smith_w-_Rosa_McCauley_Parks_LCCN2015647353.jpg/960px-Sampson_Smith_w-_Rosa_McCauley_Parks_LCCN2015647353.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Sampson%20Smith%20w-%20Rosa%20McCauley%20Parks%20LCCN2015647353.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-chameleon",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which type of specialized skin cells helps chameleons change their visible colors?",
+    "canonicalAnswer": "Chromatophores",
+    "acceptedAnswers": [
+      "chromatophores"
+    ],
+    "botCards": [
+      "Osteocytes",
+      "Alveoli"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Parson%27s_Chameleon_close_up_%289553583793%29.jpg/960px-Parson%27s_Chameleon_close_up_%289553583793%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Parson's%20Chameleon%20close%20up%20(9553583793).jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-platypus",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which unusual mammal lays eggs and uses electroreception while hunting?",
+    "canonicalAnswer": "Platypus",
+    "acceptedAnswers": [
+      "platypus"
+    ],
+    "botCards": [
+      "Otter",
+      "Beaver"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Platypus_BrokenRiver_QLD_Australia.jpg/960px-Platypus_BrokenRiver_QLD_Australia.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Platypus%20BrokenRiver%20QLD%20Australia.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-octopus",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What structure does an octopus use to expel water for jet propulsion?",
+    "canonicalAnswer": "Siphon",
+    "acceptedAnswers": [
+      "siphon"
+    ],
+    "botCards": [
+      "Gills",
+      "Mantle"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Octopus_marginatus.jpg/960px-Octopus_marginatus.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Octopus%20marginatus.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-bat",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What biological navigation system do many bats use to hunt in darkness?",
+    "canonicalAnswer": "Echolocation",
+    "acceptedAnswers": [
+      "echolocation"
+    ],
+    "botCards": [
+      "Magnetoreception",
+      "Infrared vision"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Haeckel_Chiroptera.jpg/960px-Haeckel_Chiroptera.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Haeckel%20Chiroptera.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-pangolin",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What are the overlapping protective body coverings of a pangolin made from?",
+    "canonicalAnswer": "Keratin",
+    "acceptedAnswers": [
+      "keratin"
+    ],
+    "botCards": [
+      "Calcium carbonate",
+      "Chitin"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Taxidermied_Pangolin%2C_held_by_Polish_customs_authorities%2C_Warsaw_Chopin_Airport%2C_April%2C_2019.jpg/960px-Taxidermied_Pangolin%2C_held_by_Polish_customs_authorities%2C_Warsaw_Chopin_Airport%2C_April%2C_2019.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Taxidermied%20Pangolin%2C%20held%20by%20Polish%20customs%20authorities%2C%20Warsaw%20Chopin%20Airport%2C%20April%2C%202019.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-axolotl",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which amphibian is famous for retaining larval features and regenerating limbs?",
+    "canonicalAnswer": "Axolotl",
+    "acceptedAnswers": [
+      "axolotl"
+    ],
+    "botCards": [
+      "Salamander",
+      "Newt"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Aquarium_for_axolotls.jpg/960px-Aquarium_for_axolotls.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Aquarium%20for%20axolotls.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-honeybee",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What waggle-based behavior helps honeybees communicate the location of food?",
+    "canonicalAnswer": "Waggle dance",
+    "acceptedAnswers": [
+      "waggle dance"
+    ],
+    "botCards": [
+      "Circle dance",
+      "Pheromone trail"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/European_honey_bee_extracts_nectar.jpg/960px-European_honey_bee_extracts_nectar.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:European%20honey%20bee%20extracts%20nectar.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-capybara",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "Which South American rodent is the world's largest living rodent?",
+    "canonicalAnswer": "Capybara",
+    "acceptedAnswers": [
+      "capybara"
+    ],
+    "botCards": [
+      "Beaver",
+      "Agouti"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Cattle_tyrant_%28Machetornis_rixosa%29_on_Capybara.jpg/960px-Cattle_tyrant_%28Machetornis_rixosa%29_on_Capybara.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Cattle%20tyrant%20(Machetornis%20rixosa)%20on%20Capybara.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-narwhal",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What is the long spiral structure projecting from the front of many male narwhals?",
+    "canonicalAnswer": "A tusk",
+    "acceptedAnswers": [
+      "tusk"
+    ],
+    "botCards": [
+      "A horn",
+      "A tooth comb"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/%D0%9D%D0%B0%D1%80%D0%B2%D0%B0%D0%BB_%D0%B2_%D0%90%D1%80%D0%BA%D1%82%D0%B8%D0%BA%D0%B5.jpg/960px-%D0%9D%D0%B0%D1%80%D0%B2%D0%B0%D0%BB_%D0%B2_%D0%90%D1%80%D0%BA%D1%82%D0%B8%D0%BA%D0%B5.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:%D0%9D%D0%B0%D1%80%D0%B2%D0%B0%D0%BB%20%D0%B2%20%D0%90%D1%80%D0%BA%D1%82%D0%B8%D0%BA%D0%B5.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "animals-image-komodo-dragon",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "On which Indonesian island group is the Komodo dragon native?",
+    "canonicalAnswer": "Lesser Sunda Islands",
+    "acceptedAnswers": [
+      "Lesser Sunda Islands"
+    ],
+    "botCards": [
+      "Galapagos Islands",
+      "Aleutian Islands"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Komodo_dragon_Varanus_komodoensis_Ragunan_Zoo_2.JPG/960px-Komodo_dragon_Varanus_komodoensis_Ragunan_Zoo_2.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Komodo%20dragon%20Varanus%20komodoensis%20Ragunan%20Zoo%202.JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-saffron",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which spice comes from the dried stigmas of a crocus flower and is prized for its color?",
+    "canonicalAnswer": "Saffron",
+    "acceptedAnswers": [
+      "saffron"
+    ],
+    "botCards": [
+      "Turmeric",
+      "Paprika"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Saffran_crocus_sativus_moist.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Saffran%20crocus%20sativus%20moist.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-cocoa-pod",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What is the main processed ingredient obtained from the seeds inside this tropical fruit?",
+    "canonicalAnswer": "Cocoa",
+    "acceptedAnswers": [
+      "cocoa"
+    ],
+    "botCards": [
+      "Vanilla",
+      "Coffee"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Theobroma_cacao_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-136.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Theobroma%20cacao%20-%20K%C3%B6hler%E2%80%93s%20Medizinal-Pflanzen-136.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-sourdough",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which microorganisms provide the rise and tang in a traditional sourdough starter?",
+    "canonicalAnswer": "Wild yeast and lactic-acid bacteria",
+    "acceptedAnswers": [
+      "wild yeast and lactic-acid bacteria"
+    ],
+    "botCards": [
+      "Molds and acetobacter",
+      "Baker's yeast only"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Home_made_sourdough_cob.jpg/960px-Home_made_sourdough_cob.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Home%20made%20sourdough%20cob.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-olive-oil",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which Mediterranean oil is graded partly by acidity and production method?",
+    "canonicalAnswer": "Olive oil",
+    "acceptedAnswers": [
+      "olive oil"
+    ],
+    "botCards": [
+      "Grapeseed oil",
+      "Sesame oil"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Modern_olive_oil_mill.jpg/960px-Modern_olive_oil_mill.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Modern%20olive%20oil%20mill.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-mozzarella",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which Italian cheese is traditionally made using the pasta filata stretching method?",
+    "canonicalAnswer": "Mozzarella",
+    "acceptedAnswers": [
+      "mozzarella"
+    ],
+    "botCards": [
+      "Gorgonzola",
+      "Pecorino"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Caprese-1.jpg/960px-Caprese-1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Caprese-1.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-tea-plant",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which beverage is made by processing the leaves of Camellia sinensis?",
+    "canonicalAnswer": "Tea",
+    "acceptedAnswers": [
+      "tea"
+    ],
+    "botCards": [
+      "Rooibos",
+      "Cocoa"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Tea_plants.jpg/960px-Tea_plants.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Tea%20plants.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-baguette",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which French bread is defined by its long, narrow shape and crisp crust?",
+    "canonicalAnswer": "Baguette",
+    "acceptedAnswers": [
+      "baguette"
+    ],
+    "botCards": [
+      "Brioche",
+      "Fougasse"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/97/Nl-baguettes2.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Nl-baguettes2.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-fermentation",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What process converts sugars into alcohol or acids through microorganisms?",
+    "canonicalAnswer": "Fermentation",
+    "acceptedAnswers": [
+      "fermentation"
+    ],
+    "botCards": [
+      "Emulsification",
+      "Caramelization"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Levain.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Levain.JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-sushi",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "What type of Japanese vinegar-seasoned rice is the foundation of sushi?",
+    "canonicalAnswer": "Sumeshi",
+    "acceptedAnswers": [
+      "sumeshi"
+    ],
+    "botCards": [
+      "Mochi",
+      "Gohan"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/17/MakisuMats.Japan.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:MakisuMats.Japan.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "food-image-truffle",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which subterranean fungus is prized for its intense aroma in European cuisine?",
+    "canonicalAnswer": "Truffle",
+    "acceptedAnswers": [
+      "truffle"
+    ],
+    "botCards": [
+      "Morel",
+      "Chanterelle"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Tuber_melanosporum_spore.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Tuber%20melanosporum%20spore.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-cycling-peloton",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What is the main group of riders in a road cycling race called?",
+    "canonicalAnswer": "Peloton",
+    "acceptedAnswers": [
+      "peloton"
+    ],
+    "botCards": [
+      "Breakaway",
+      "Paceline"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Tour_of_Britain_peloton_leaving_Glasgow_Road%2C_Strathaven_-_geograph.org.uk_-_228170.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Tour%20of%20Britain%20peloton%20leaving%20Glasgow%20Road%2C%20Strathaven%20-%20geograph.org.uk%20-%20228170.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-cricket-wicket",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In cricket, what three-stump target does the bowler try to hit?",
+    "canonicalAnswer": "Wicket",
+    "acceptedAnswers": [
+      "wicket"
+    ],
+    "botCards": [
+      "Crease",
+      "Boundary"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Wicket_at_Lewes_Priory_Cricket_Club.jpg/960px-Wicket_at_Lewes_Priory_Cricket_Club.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Wicket%20at%20Lewes%20Priory%20Cricket%20Club.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-fencing",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Which fencing weapon has the largest valid target area, including the entire body?",
+    "canonicalAnswer": "Epee",
+    "acceptedAnswers": [
+      "epee"
+    ],
+    "botCards": [
+      "Foil",
+      "Sabre"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Final_Trophee_Monal_2012_n08.jpg/960px-Final_Trophee_Monal_2012_n08.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Final%20Trophee%20Monal%202012%20n08.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-curling",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What is the target area called that curling teams aim to reach with their stones?",
+    "canonicalAnswer": "House",
+    "acceptedAnswers": [
+      "house"
+    ],
+    "botCards": [
+      "Circle",
+      "Button"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Curling_House_at_Craigie.JPG/960px-Curling_House_at_Craigie.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Curling%20House%20at%20Craigie.JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-basketball-hoop",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "How high is a regulation basketball rim above the court?",
+    "canonicalAnswer": "10 feet",
+    "acceptedAnswers": [
+      "10 feet"
+    ],
+    "botCards": [
+      "8 feet",
+      "9 feet"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/2011-06-07_Basketball_in_hoop_still_shot.jpg/960px-2011-06-07_Basketball_in_hoop_still_shot.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:2011-06-07%20Basketball%20in%20hoop%20still%20shot.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-golf-green",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What is the area of closely mown grass surrounding a golf hole called?",
+    "canonicalAnswer": "Putting green",
+    "acceptedAnswers": [
+      "putting green"
+    ],
+    "botCards": [
+      "Fairway",
+      "Rough"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg/960px-Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Barack%20Obama%20%26%20Joe%20Biden%20on%20White%20House%20putting%20green%204-24-09.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-rugby-scrum",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Which rugby set piece restarts play after a minor infringement such as a knock-on?",
+    "canonicalAnswer": "Scrum",
+    "acceptedAnswers": [
+      "scrum"
+    ],
+    "botCards": [
+      "Maul",
+      "Ruck"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/23/Women%27s_Rugby_Scrum_1.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Women's%20Rugby%20Scrum%201.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-baseball-diamond",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "How many bases must a baseball runner touch to score a home run?",
+    "canonicalAnswer": "Four",
+    "acceptedAnswers": [
+      "four"
+    ],
+    "botCards": [
+      "Three",
+      "Five"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Baseball_diamond_marines.jpg/960px-Baseball_diamond_marines.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Baseball%20diamond%20marines.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-ski-jump",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "Which winter sport awards distance and style points for launching from a large ramp?",
+    "canonicalAnswer": "Ski jumping",
+    "acceptedAnswers": [
+      "ski jumping"
+    ],
+    "botCards": [
+      "Biathlon",
+      "Alpine skiing"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Canada_Olympic_Park_2006_Dec_10_-_8.jpg/960px-Canada_Olympic_Park_2006_Dec_10_-_8.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Canada%20Olympic%20Park%202006%20Dec%2010%20-%208.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-wikipedia-globe",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which online encyclopedia is represented by the puzzle-globe logo shown here?",
+    "canonicalAnswer": "Wikipedia",
+    "acceptedAnswers": [
+      "Wikipedia"
+    ],
+    "botCards": [
+      "Britannica",
+      "Wikileaks"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Wikipedia_puzzle_globe_on_the_wall_of_the_Wikimedia_Foundation%2C_2010-10-26.jpg/960px-Wikipedia_puzzle_globe_on_the_wall_of_the_Wikimedia_Foundation%2C_2010-10-26.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Wikipedia%20puzzle%20globe%20on%20the%20wall%20of%20the%20Wikimedia%20Foundation%2C%202010-10-26.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-qr-code",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What type of machine-readable pattern can store a URL in a square grid?",
+    "canonicalAnswer": "QR code",
+    "acceptedAnswers": [
+      "QR code"
+    ],
+    "botCards": [
+      "Barcode",
+      "Captcha"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/SaniSale.com_Quick_Response_code%2C_Groningen_%282019%29_01.jpg/960px-SaniSale.com_Quick_Response_code%2C_Groningen_%282019%29_01.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:SaniSale.com%20Quick%20Response%20code%2C%20Groningen%20(2019)%2001.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-captcha",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What online test is designed to distinguish humans from automated bots?",
+    "canonicalAnswer": "CAPTCHA",
+    "acceptedAnswers": [
+      "CAPTCHA"
+    ],
+    "botCards": [
+      "Cookie",
+      "Firewall"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/43/Gimpy-r_CAPTCHA.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Gimpy-r%20CAPTCHA.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-web-browser",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What kind of software interprets HTML and displays web pages?",
+    "canonicalAnswer": "Web browser",
+    "acceptedAnswers": [
+      "web browser"
+    ],
+    "botCards": [
+      "Compiler",
+      "Database"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/13/Min_%28web_browser%29_1.5.1_in_blank_tab_page_screenshot.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Min%20(web%20browser)%201.5.1%20in%20blank%20tab%20page%20screenshot.png"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-cloud-computing",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What term describes storing data and running services on remote internet-connected servers?",
+    "canonicalAnswer": "Cloud computing",
+    "acceptedAnswers": [
+      "cloud computing"
+    ],
+    "botCards": [
+      "Edge printing",
+      "Local hosting"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Sch%C3%A9ma-Cloud-Computing.png/960px-Sch%C3%A9ma-Cloud-Computing.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Sch%C3%A9ma-Cloud-Computing.png"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-open-source",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What development model makes source code available for inspection and modification?",
+    "canonicalAnswer": "Open source",
+    "acceptedAnswers": [
+      "open source"
+    ],
+    "botCards": [
+      "Shareware",
+      "Freeware"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Digital_Data_Software_LLC_Offices_Location.jpg/960px-Digital_Data_Software_LLC_Offices_Location.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Digital%20Data%20Software%20LLC%20Offices%20Location.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-bitcoin",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What technology records cryptocurrency transactions in a distributed chain of linked blocks?",
+    "canonicalAnswer": "Blockchain",
+    "acceptedAnswers": [
+      "blockchain"
+    ],
+    "botCards": [
+      "Hash table",
+      "Cloud ledger"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Blockchain_Illustration_3.jpg/960px-Blockchain_Illustration_3.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Blockchain%20Illustration%203.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-microscope",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which instrument uses lenses to magnify specimens too small to see clearly with the naked eye?",
+    "canonicalAnswer": "Microscope",
+    "acceptedAnswers": [
+      "microscope"
+    ],
+    "botCards": [
+      "Telescope",
+      "Spectrometer"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Optical_stereo_microscope_nikon_smz10.jpg/960px-Optical_stereo_microscope_nikon_smz10.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Optical%20stereo%20microscope%20nikon%20smz10.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-volcano",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What type of rock forms when molten material cools and solidifies?",
+    "canonicalAnswer": "Igneous rock",
+    "acceptedAnswers": [
+      "igneous rock"
+    ],
+    "botCards": [
+      "Sedimentary rock",
+      "Metamorphic rock"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/93/Stromboli_Eruption.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Stromboli%20Eruption.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-moon",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What is the name of the Moon phase when its sunlit side is fully visible from Earth?",
+    "canonicalAnswer": "Full moon",
+    "acceptedAnswers": [
+      "full moon"
+    ],
+    "botCards": [
+      "New moon",
+      "First quarter"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Full_Moon_Luc_Viatour.jpg/960px-Full_Moon_Luc_Viatour.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Full%20Moon%20Luc%20Viatour.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-dna",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which molecule stores the hereditary instructions used by living organisms?",
+    "canonicalAnswer": "DNA",
+    "acceptedAnswers": [
+      "DNA"
+    ],
+    "botCards": [
+      "RNA",
+      "ATP"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/50/DNA_Model_Crick-Watson.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:DNA%20Model%20Crick-Watson.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-aurora",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What interaction with Earth's magnetic field produces the colored lights seen near the poles?",
+    "canonicalAnswer": "Charged solar particles",
+    "acceptedAnswers": [
+      "charged solar particles"
+    ],
+    "botCards": [
+      "Ocean tides",
+      "Volcanic ash"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Aurora_borealis_over_Eielson_Air_Force_Base%2C_Alaska.jpg/960px-Aurora_borealis_over_Eielson_Air_Force_Base%2C_Alaska.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Aurora%20borealis%20over%20Eielson%20Air%20Force%20Base%2C%20Alaska.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-fossil",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What is the preserved imprint or remains of an ancient organism called?",
+    "canonicalAnswer": "Fossil",
+    "acceptedAnswers": [
+      "fossil"
+    ],
+    "botCards": [
+      "Mineral vein",
+      "Crystal"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Ammonite_section.JPG/960px-Ammonite_section.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Ammonite%20section.JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-telescope",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which space telescope produced deep-field images that revealed very distant galaxies?",
+    "canonicalAnswer": "Hubble Space Telescope",
+    "acceptedAnswers": [
+      "Hubble Space Telescope"
+    ],
+    "botCards": [
+      "Spitzer Space Telescope",
+      "Kepler Space Telescope"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Starburst_in_NGC_4449_%28captured_by_the_Hubble_Space_Telescope%29.jpg/960px-Starburst_in_NGC_4449_%28captured_by_the_Hubble_Space_Telescope%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Starburst%20in%20NGC%204449%20(captured%20by%20the%20Hubble%20Space%20Telescope).jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-coral",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What microscopic organisms build the calcium-carbonate structures that form coral reefs?",
+    "canonicalAnswer": "Coral polyps",
+    "acceptedAnswers": [
+      "coral polyps"
+    ],
+    "botCards": [
+      "Diatoms",
+      "Krill"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Coral_reef_PloS.jpg/960px-Coral_reef_PloS.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Coral%20reef%20PloS.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-galaxy",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What type of galaxy is the Milky Way, based on its central bar and spiral arms?",
+    "canonicalAnswer": "Barred spiral galaxy",
+    "acceptedAnswers": [
+      "barred spiral galaxy"
+    ],
+    "botCards": [
+      "Elliptical galaxy",
+      "Irregular galaxy"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Labeled_Illustration_of_Primordial_Stellar_Stream_near_Milky_Way_%28noirlab2201b%29.jpg/960px-Labeled_Illustration_of_Primordial_Stellar_Stream_near_Milky_Way_%28noirlab2201b%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Labeled%20Illustration%20of%20Primordial%20Stellar%20Stream%20near%20Milky%20Way%20(noirlab2201b).jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-athena",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Greek goddess is traditionally associated with wisdom and strategic warfare?",
+    "canonicalAnswer": "Athena",
+    "acceptedAnswers": [
+      "Athena"
+    ],
+    "botCards": [
+      "Aphrodite",
+      "Hestia"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ACMA_625_Athena_Endoios.JPG/960px-ACMA_625_Athena_Endoios.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:ACMA%20625%20Athena%20Endoios.JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-thor-hammer",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What is the name of Thor's enchanted hammer in Norse mythology?",
+    "canonicalAnswer": "Mjolnir",
+    "acceptedAnswers": [
+      "Mjolnir"
+    ],
+    "botCards": [
+      "Gungnir",
+      "Gram"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Thor%2C_siddende%2C_st%C3%B8ttet_til_sin_hammer.jpg/960px-Thor%2C_siddende%2C_st%C3%B8ttet_til_sin_hammer.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Thor%2C%20siddende%2C%20st%C3%B8ttet%20til%20sin%20hammer.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-isis",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Egyptian goddess is the mother of Horus and wife of Osiris?",
+    "canonicalAnswer": "Isis",
+    "acceptedAnswers": [
+      "Isis"
+    ],
+    "botCards": [
+      "Hathor",
+      "Bastet"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Philae_Temple_Egypt_Goddess_Isis_As_Angel_Mural_Artwork_2004-10-11.jpg/960px-Philae_Temple_Egypt_Goddess_Isis_As_Angel_Mural_Artwork_2004-10-11.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Philae%20Temple%20Egypt%20Goddess%20Isis%20As%20Angel%20Mural%20Artwork%202004-10-11.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-minotaur",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Greek hero entered the labyrinth to defeat the Minotaur?",
+    "canonicalAnswer": "Theseus",
+    "acceptedAnswers": [
+      "Theseus"
+    ],
+    "botCards": [
+      "Perseus",
+      "Jason"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Theseus_Minotaur_Louvre_F33.jpg/960px-Theseus_Minotaur_Louvre_F33.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Theseus%20Minotaur%20Louvre%20F33.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-anubis",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Egyptian deity with a jackal's head was associated with funerary rites?",
+    "canonicalAnswer": "Anubis",
+    "acceptedAnswers": [
+      "Anubis"
+    ],
+    "botCards": [
+      "Ra",
+      "Thoth"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Statue_of_Anubis_%289174777788%29.jpg/960px-Statue_of_Anubis_%289174777788%29.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Statue%20of%20Anubis%20(9174777788).jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-medusa",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What happened to people who met the gaze of the Gorgon Medusa?",
+    "canonicalAnswer": "They were turned to stone",
+    "acceptedAnswers": [
+      "turned to stone"
+    ],
+    "botCards": [
+      "They fell asleep",
+      "They became invisible"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Medusa_Bernini_Musei_Capitolini_MC1166_n2.jpg/960px-Medusa_Bernini_Musei_Capitolini_MC1166_n2.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Medusa%20Bernini%20Musei%20Capitolini%20MC1166%20n2.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-yggdrasil",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What kind of cosmic structure is Yggdrasil in Norse mythology?",
+    "canonicalAnswer": "A world tree",
+    "acceptedAnswers": [
+      "world tree"
+    ],
+    "botCards": [
+      "A rainbow bridge",
+      "A sea serpent"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/The_Tree_of_Yggdrasil.jpg/960px-The_Tree_of_Yggdrasil.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:The%20Tree%20of%20Yggdrasil.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-orpheus",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What musical talent allowed Orpheus to charm people, animals, and even stones?",
+    "canonicalAnswer": "Playing the lyre",
+    "acceptedAnswers": [
+      "playing the lyre"
+    ],
+    "botCards": [
+      "Playing the flute",
+      "Singing opera"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/ba/Christ-Orpheus_from_Rome_catacombe.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Christ-Orpheus%20from%20Rome%20catacombe.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-sphinx",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What creature in Greek mythology challenged travelers with a famous riddle?",
+    "canonicalAnswer": "Sphinx",
+    "acceptedAnswers": [
+      "Sphinx"
+    ],
+    "botCards": [
+      "Chimera",
+      "Harpy"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Marble_Sphinx_Acropolis_Museum_630.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Marble%20Sphinx%20Acropolis%20Museum%20630.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-monet",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which art movement is associated with Monet's emphasis on changing light and visible brushstrokes?",
+    "canonicalAnswer": "Impressionism",
+    "acceptedAnswers": [
+      "Impressionism"
+    ],
+    "botCards": [
+      "Cubism",
+      "Dada"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Claude_Monet_023.jpg/960px-Claude_Monet_023.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Claude%20Monet%20023.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-van-gogh",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Dutch painter created The Starry Night?",
+    "canonicalAnswer": "Vincent van Gogh",
+    "acceptedAnswers": [
+      "Vincent van Gogh"
+    ],
+    "botCards": [
+      "Paul Gauguin",
+      "Edvard Munch"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Girl_in_White_by_Vincent_Van_Gogh_-_NGA.jpg/960px-Girl_in_White_by_Vincent_Van_Gogh_-_NGA.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Girl%20in%20White%20by%20Vincent%20Van%20Gogh%20-%20NGA.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-beethoven",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which composer continued to write major works after losing much of his hearing?",
+    "canonicalAnswer": "Ludwig van Beethoven",
+    "acceptedAnswers": [
+      "Ludwig van Beethoven"
+    ],
+    "botCards": [
+      "Franz Schubert",
+      "Joseph Haydn"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Beethoven.jpg/960px-Beethoven.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Beethoven.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-saxophone",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which instrument was invented by Adolphe Sax and became central to jazz?",
+    "canonicalAnswer": "Saxophone",
+    "acceptedAnswers": [
+      "saxophone"
+    ],
+    "botCards": [
+      "Clarinet",
+      "Oboe"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f7/JayCEastonSaxFamily_cropped.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:JayCEastonSaxFamily%20cropped.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-gothic-cathedral",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which architectural style is associated with flying buttresses and pointed arches?",
+    "canonicalAnswer": "Gothic",
+    "acceptedAnswers": [
+      "Gothic"
+    ],
+    "botCards": [
+      "Baroque",
+      "Romanesque"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Winchester_cathedral_flags.jpg/960px-Winchester_cathedral_flags.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Winchester%20cathedral%20flags.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-picasso-guernica",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Spanish artist painted the anti-war work Guernica?",
+    "canonicalAnswer": "Pablo Picasso",
+    "acceptedAnswers": [
+      "Pablo Picasso"
+    ],
+    "botCards": [
+      "Joan Miro",
+      "Salvador Dali"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/93/Bildnis_pablo_picasso.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Bildnis%20pablo%20picasso.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-jazz-trumpet",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which brass instrument changes pitch with three valves and is prominent in jazz?",
+    "canonicalAnswer": "Trumpet",
+    "acceptedAnswers": [
+      "trumpet"
+    ],
+    "botCards": [
+      "Trombone",
+      "French horn"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Fredi_Stanisavljevic_Unterfahrt_2010-04-26-004.jpg/960px-Fredi_Stanisavljevic_Unterfahrt_2010-04-26-004.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Fredi%20Stanisavljevic%20Unterfahrt%202010-04-26-004.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-ukiyo-e",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Japanese woodblock-print tradition influenced European artists in the late 19th century?",
+    "canonicalAnswer": "Ukiyo-e",
+    "acceptedAnswers": [
+      "Ukiyo-e"
+    ],
+    "botCards": [
+      "Kintsugi",
+      "Ikebana"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Toshusai_Sharaku-_Otani_Oniji%2C_1794.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Toshusai%20Sharaku-%20Otani%20Oniji%2C%201794.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-ballet",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "What performance art combines choreographed movement with music and theatrical staging?",
+    "canonicalAnswer": "Ballet",
+    "acceptedAnswers": [
+      "ballet"
+    ],
+    "botCards": [
+      "Opera",
+      "Mime"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Royal_Ballet_School_curtain_call.jpg/960px-Royal_Ballet_School_curtain_call.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Royal%20Ballet%20School%20curtain%20call.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-daniel-craig",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which actor played James Bond in Casino Royale and Skyfall?",
+    "canonicalAnswer": "Daniel Craig",
+    "acceptedAnswers": [
+      "Daniel Craig"
+    ],
+    "botCards": [
+      "Mads Mikkelsen",
+      "Pierce Brosnan"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Daniel_Craig_McCallum_by_The_Brady_National_Photographic_Art_Gallery.jpg/960px-Daniel_Craig_McCallum_by_The_Brady_National_Photographic_Art_Gallery.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Daniel%20Craig%20McCallum%20by%20The%20Brady%20National%20Photographic%20Art%20Gallery.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-david-bowie-alter-ego",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What was the name of David Bowie's flamboyant alien rock-star persona?",
+    "canonicalAnswer": "Ziggy Stardust",
+    "acceptedAnswers": [
+      "Ziggy Stardust"
+    ],
+    "botCards": [
+      "Major Tom",
+      "The Thin White Duke"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1e/David-Bowie_Early.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:David-Bowie%20Early.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-keanu-neo",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What is the hacker alias of Keanu Reeves's character in The Matrix?",
+    "canonicalAnswer": "Neo",
+    "acceptedAnswers": [
+      "Neo"
+    ],
+    "botCards": [
+      "Trinity",
+      "Morpheus"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Flickr_-_Bucajack_-_Keanu_Reeves_-_TIFF_09.jpg/960px-Flickr_-_Bucajack_-_Keanu_Reeves_-_TIFF_09.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Flickr%20-%20Bucajack%20-%20Keanu%20Reeves%20-%20TIFF%2009.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "popculture-image-adele-album",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which Adele album takes its title from the singer's age when it was recorded?",
+    "canonicalAnswer": "21",
+    "acceptedAnswers": [
+      "21"
+    ],
+    "botCards": [
+      "19",
+      "25"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Adele_2016.jpg/960px-Adele_2016.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Adele%202016.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "gaming-image-computer-mouse",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which computer input device was named for the cable that originally resembled a tail?",
+    "canonicalAnswer": "Mouse",
+    "acceptedAnswers": [
+      "Mouse"
+    ],
+    "botCards": [
+      "Joystick",
+      "Trackball"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/2023_Mysz_komputerowa_Logitech_G903_Lightspeed.jpg/960px-2023_Mysz_komputerowa_Logitech_G903_Lightspeed.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:2023%20Mysz%20komputerowa%20Logitech%20G903%20Lightspeed.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "sports-image-rowing-eight",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What is the crew size of an Olympic sweep-rowing boat that includes a coxswain?",
+    "canonicalAnswer": "Eight",
+    "acceptedAnswers": [
+      "eight"
+    ],
+    "botCards": [
+      "Six",
+      "Seven"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Rowing_mens_eight_USA_1900.jpg/960px-Rowing_mens_eight_USA_1900.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Rowing%20mens%20eight%20USA%201900.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-hashtag",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What symbol is placed before a word to create a searchable topic label on many social platforms?",
+    "canonicalAnswer": "Hashtag",
+    "acceptedAnswers": [
+      "hashtag"
+    ],
+    "botCards": [
+      "Mention",
+      "Permalink"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Number_sign.svg/960px-Number_sign.svg.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Number%20sign.svg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-keyboard",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "On macOS, which key joins Cmd to load a page anew?",
+    "canonicalAnswer": "R",
+    "acceptedAnswers": [
+      "R"
+    ],
+    "botCards": [
+      "F",
+      "P"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/9f/Qwerty.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Qwerty.png"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "internet-image-email",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Which protocol is commonly used to retrieve email from a server while keeping messages synchronized?",
+    "canonicalAnswer": "IMAP",
+    "acceptedAnswers": [
+      "IMAP"
+    ],
+    "botCards": [
+      "FTP",
+      "SMTP"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Android_Email_4.4_Icon.png",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Android%20Email%204.4%20Icon.png"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "science-image-atom-model",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which subatomic particle determines an element's atomic number?",
+    "canonicalAnswer": "Proton",
+    "acceptedAnswers": [
+      "proton"
+    ],
+    "botCards": [
+      "Electron",
+      "Neutron"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/17/Bohr_atom_animation_2.gif",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Bohr%20atom%20animation%202.gif"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "mythology-image-icarus",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What material did Daedalus use to make wings for himself and Icarus?",
+    "canonicalAnswer": "Feathers and wax",
+    "acceptedAnswers": [
+      "feathers and wax"
+    ],
+    "botCards": [
+      "Leather and rope",
+      "Bronze and silk"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Pieter_Thijs_-_Daedalus_fixing_wings_onto_the_shoulders_of_Icarus.jpg/960px-Pieter_Thijs_-_Daedalus_fixing_wings_onto_the_shoulders_of_Icarus.jpg",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Pieter%20Thijs%20-%20Daedalus%20fixing%20wings%20onto%20the%20shoulders%20of%20Icarus.jpg"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
+  },
+  {
+    "id": "artmusic-image-renaissance-dome",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which architect engineered the famous dome of Florence Cathedral?",
+    "canonicalAnswer": "Filippo Brunelleschi",
+    "acceptedAnswers": [
+      "Filippo Brunelleschi"
+    ],
+    "botCards": [
+      "Leon Battista Alberti",
+      "Andrea Palladio"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/52/Filippo_Brunelleschi%2C_cutaway_of_the_Dome_of_Florence_Cathedral_%28Santa_Maria_del_Fiore%29.JPG",
+      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "credit": "Wikimedia Commons",
+      "source": "https://commons.wikimedia.org/wiki/File:Filippo%20Brunelleschi%2C%20cutaway%20of%20the%20Dome%20of%20Florence%20Cathedral%20(Santa%20Maria%20del%20Fiore).JPG"
+    },
+    "debugBatch": "en-image-medium-2026-08-12"
   }
 ]
