@@ -32868,9 +32868,9 @@
     "canonicalAnswer": "Rami Malek",
     "multipleChoiceOptions": [
       "Rami Malek",
-      "Taron Egerton",
-      "Andrew Garfield",
-      "Mahershala Ali"
+      "Christian Bale",
+      "Joaquin Phoenix",
+      "Eddie Redmayne"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/7/77/Rami_Malek_in_2015_%28portrait_crop%29.jpg",
@@ -32890,9 +32890,9 @@
     "canonicalAnswer": "拉米·马雷克",
     "multipleChoiceOptions": [
       "拉米·马雷克",
-      "塔伦·埃哲顿",
-      "安德鲁·加菲尔德",
-      "马赫沙拉·阿里"
+      "克里斯蒂安·贝尔",
+      "华金·菲尼克斯",
+      "埃迪·雷德梅恩"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/7/77/Rami_Malek_in_2015_%28portrait_crop%29.jpg",
@@ -32913,9 +32913,9 @@
     "canonicalAnswer": "Taylor Swift",
     "multipleChoiceOptions": [
       "Taylor Swift",
-      "Katy Perry",
-      "Selena Gomez",
-      "Miley Cyrus"
+      "Adele",
+      "Beyonce",
+      "Lady Gaga"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png/960px-Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png",
@@ -32935,9 +32935,9 @@
     "canonicalAnswer": "泰勒·斯威夫特",
     "multipleChoiceOptions": [
       "泰勒·斯威夫特",
-      "凯蒂·佩里",
-      "赛琳娜·戈麦斯",
-      "麦莉·赛勒斯"
+      "阿黛尔",
+      "碧昂丝",
+      "Lady Gaga"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png/960px-Taylor_Swift_at_the_2024_Golden_Globes_%282%29.png",
@@ -32954,13 +32954,13 @@
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "medium",
-    "question": "What is music written specifically to accompany a film usually called?",
+    "question": "What term usually refers to instrumental music composed for a film's scenes?",
     "canonicalAnswer": "Film score",
     "multipleChoiceOptions": [
       "Film score",
-      "Sound effect",
-      "Theme park",
-      "Newsreel"
+      "Soundtrack album",
+      "Incidental music",
+      "Source music"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Prague_recording_session%2C_June_2004.jpg/960px-Prague_recording_session%2C_June_2004.jpg",
@@ -32976,13 +32976,13 @@
     "questionStyle": "multiple-choice",
     "theme": "Pop Culture",
     "difficulty": "medium",
-    "question": "专门为电影创作、用于配合画面的音乐通常叫什么？",
+    "question": "通常将为电影场景创作的器乐称为什么？",
     "canonicalAnswer": "电影配乐",
     "multipleChoiceOptions": [
       "电影配乐",
-      "音效",
-      "主题公园",
-      "新闻片"
+      "电影原声专辑",
+      "场景音乐",
+      "源音乐"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Prague_recording_session%2C_June_2004.jpg/960px-Prague_recording_session%2C_June_2004.jpg",
@@ -33003,9 +33003,9 @@
     "canonicalAnswer": "Academy Award",
     "multipleChoiceOptions": [
       "Academy Award",
-      "Grammy Award",
-      "Tony Award",
-      "Emmy Award"
+      "Golden Globe Award",
+      "BAFTA Award",
+      "Critics Choice Award"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/1/14/James_stewart_receives_academy_award_1941.jpg",
@@ -33025,9 +33025,9 @@
     "canonicalAnswer": "奥斯卡金像奖",
     "multipleChoiceOptions": [
       "奥斯卡金像奖",
-      "格莱美奖",
-      "托尼奖",
-      "艾美奖"
+      "金球奖",
+      "英国电影学院奖",
+      "评论家选择奖"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/1/14/James_stewart_receives_academy_award_1941.jpg",
@@ -33050,7 +33050,7 @@
       "Stop-motion",
       "Rotoscoping",
       "Motion capture",
-      "Live action"
+      "Traditional cel animation"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png/960px-Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png",
@@ -33072,7 +33072,7 @@
       "定格动画",
       "转描动画",
       "动作捕捉",
-      "真人实拍"
+      "传统赛璐珞动画"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png/960px-Armature_Puppet_%E2%80%93_Winder_System_Tiny_XY_Axis_V2_Aluminium_2021.png",
@@ -33093,9 +33093,9 @@
     "canonicalAnswer": "Carrie Fisher",
     "multipleChoiceOptions": [
       "Carrie Fisher",
-      "Sigourney Weaver",
-      "Jodie Foster",
-      "Glenn Close"
+      "Mark Hamill",
+      "Daisy Ridley",
+      "Natalie Portman"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg/960px-Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg",
@@ -33115,9 +33115,9 @@
     "canonicalAnswer": "凯丽·费雪",
     "multipleChoiceOptions": [
       "凯丽·费雪",
-      "西格妮·韦弗",
-      "朱迪·福斯特",
-      "格伦·克洛斯"
+      "马克·哈米尔",
+      "黛西·雷德利",
+      "娜塔莉·波特曼"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg/960px-Actress_Carrie_Fisher_%C2%A9_Riccardo_Ghilardi_photographer.jpg",
@@ -33139,8 +33139,8 @@
     "multipleChoiceOptions": [
       "Binge-watching",
       "Channel surfing",
-      "Video dubbing",
-      "Frame skipping"
+      "On-demand viewing",
+      "Scheduled viewing"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Family_watching_television_1958.jpg/960px-Family_watching_television_1958.jpg",
@@ -33161,8 +33161,8 @@
     "multipleChoiceOptions": [
       "追剧",
       "换台浏览",
-      "视频配音",
-      "跳帧"
+      "点播观看",
+      "按节目表观看"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Family_watching_television_1958.jpg/960px-Family_watching_television_1958.jpg",
@@ -33201,7 +33201,7 @@
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "medium",
-    "question": "哪种国际象棋棋子以 L 形移动，并且可以跳过其他棋子？",
+    "question": "在西洋棋中，哪种棋子以 L 形移动，并且可以跳过其他棋子？",
     "canonicalAnswer": "马",
     "multipleChoiceOptions": [
       "马",
@@ -33228,15 +33228,15 @@
     "canonicalAnswer": "Famicom",
     "multipleChoiceOptions": [
       "Famicom",
-      "Dreamcast",
-      "PC Engine",
-      "Mega Drive"
+      "Super Famicom",
+      "Nintendo 64",
+      "Sega Saturn"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Nintendo-Super-Famicom-Console-BR.jpg/960px-Nintendo-Super-Famicom-Console-BR.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Nintendo-Famicom-Console-Set-FL.png/960px-Nintendo-Famicom-Console-Set-FL.png",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Super-Famicom-Console-BR.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Famicom-Console-Set-FL.png"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -33250,15 +33250,15 @@
     "canonicalAnswer": "红白机",
     "multipleChoiceOptions": [
       "红白机",
-      "Dreamcast",
-      "PC Engine",
-      "Mega Drive"
+      "超级任天堂",
+      "任天堂 64",
+      "世嘉土星"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Nintendo-Super-Famicom-Console-BR.jpg/960px-Nintendo-Super-Famicom-Console-BR.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Nintendo-Famicom-Console-Set-FL.png/960px-Nintendo-Famicom-Console-Set-FL.png",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Super-Famicom-Console-BR.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Nintendo-Famicom-Console-Set-FL.png"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -33273,9 +33273,9 @@
     "canonicalAnswer": "Real-time strategy",
     "multipleChoiceOptions": [
       "Real-time strategy",
-      "Turn-based RPG",
-      "Visual novel",
-      "Rhythm game"
+      "Turn-based strategy",
+      "4X strategy",
+      "Grand strategy"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/BOSscreen.png",
@@ -33295,9 +33295,9 @@
     "canonicalAnswer": "即时战略",
     "multipleChoiceOptions": [
       "即时战略",
-      "回合制角色扮演游戏",
-      "视觉小说",
-      "节奏游戏"
+      "回合制战略",
+      "4X 策略",
+      "大战略"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/BOSscreen.png",
@@ -33318,9 +33318,9 @@
     "canonicalAnswer": "Character health",
     "multipleChoiceOptions": [
       "Character health",
-      "Movement speed",
-      "Inventory space",
-      "Weapon range"
+      "Character level",
+      "Armor rating",
+      "Stamina"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Hoja_del_Aventurero.JPG",
@@ -33340,9 +33340,9 @@
     "canonicalAnswer": "角色健康状态",
     "multipleChoiceOptions": [
       "角色健康状态",
-      "移动速度",
-      "物品栏空间",
-      "武器射程"
+      "角色等级",
+      "护甲等级",
+      "耐力"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Hoja_del_Aventurero.JPG",
@@ -33368,10 +33368,10 @@
       "FPS"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/TAS-italiano.png",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/TASInput.png",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:TAS-italiano.png"
+      "source": "https://commons.wikimedia.org/wiki/File:TASInput.png"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -33390,10 +33390,10 @@
       "FPS"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/TAS-italiano.png",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/TASInput.png",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:TAS-italiano.png"
+      "source": "https://commons.wikimedia.org/wiki/File:TASInput.png"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -33408,9 +33408,9 @@
     "canonicalAnswer": "Wheat",
     "multipleChoiceOptions": [
       "Wheat",
-      "Ore",
-      "Brick",
-      "Wool"
+      "Coins",
+      "Gold ore",
+      "Dye"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg/960px-Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg",
@@ -33430,9 +33430,9 @@
     "canonicalAnswer": "麦子",
     "multipleChoiceOptions": [
       "麦子",
-      "矿石",
-      "砖块",
-      "羊毛"
+      "金币",
+      "金矿石",
+      "染料"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg/960px-Gen_Con_-_20030724_-_Giant_Settlers_of_Catan_Game.jpg",
@@ -33494,13 +33494,13 @@
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "medium",
-    "question": "What technology lets a game controller simulate taps, impacts, or vibration?",
+    "question": "What broad technology gives a game controller tactile sensations such as taps, impacts, or vibration?",
     "canonicalAnswer": "Haptic feedback",
     "multipleChoiceOptions": [
       "Haptic feedback",
-      "Ray tracing",
-      "Voice synthesis",
-      "Cloud rendering"
+      "Adaptive triggers",
+      "Motion sensing",
+      "Audio feedback"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Dreamcast_VibrationPak.jpg/960px-Dreamcast_VibrationPak.jpg",
@@ -33516,13 +33516,13 @@
     "questionStyle": "multiple-choice",
     "theme": "Gaming and Geek Culture",
     "difficulty": "medium",
-    "question": "哪种技术能让游戏手柄模拟敲击、碰撞或震动？",
+    "question": "哪种广义技术能让游戏手柄产生点击、撞击或振动等触觉感受？",
     "canonicalAnswer": "触觉反馈",
     "multipleChoiceOptions": [
       "触觉反馈",
-      "光线追踪",
-      "语音合成",
-      "云渲染"
+      "自适应扳机",
+      "动作感应",
+      "音频反馈"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Dreamcast_VibrationPak.jpg/960px-Dreamcast_VibrationPak.jpg",
@@ -33543,9 +33543,9 @@
     "canonicalAnswer": "Hieroglyphs",
     "multipleChoiceOptions": [
       "Hieroglyphs",
-      "Cuneiform",
-      "Linear B",
-      "Sanskrit"
+      "Demotic",
+      "Coptic",
+      "Hieratic"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/Rosetta_stone.jpg",
@@ -33565,9 +33565,9 @@
     "canonicalAnswer": "象形文字",
     "multipleChoiceOptions": [
       "象形文字",
-      "楔形文字",
-      "线形文字 B",
-      "梵文"
+      "世俗体",
+      "科普特语",
+      "僧侣体"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/Rosetta_stone.jpg",
@@ -33588,9 +33588,9 @@
     "canonicalAnswer": "Roman Empire",
     "multipleChoiceOptions": [
       "Roman Empire",
-      "Mali Empire",
-      "Inca Empire",
-      "Mughal Empire"
+      "Byzantine Empire",
+      "Persian Empire",
+      "Carthaginian Empire"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Roman_Ruins%5E_-_geograph.org.uk_-_64169.jpg",
@@ -33610,9 +33610,9 @@
     "canonicalAnswer": "罗马帝国",
     "multipleChoiceOptions": [
       "罗马帝国",
-      "马里帝国",
-      "印加帝国",
-      "莫卧儿帝国"
+      "拜占庭帝国",
+      "波斯帝国",
+      "迦太基帝国"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Roman_Ruins%5E_-_geograph.org.uk_-_64169.jpg",
@@ -33633,9 +33633,9 @@
     "canonicalAnswer": "Treaty of Versailles",
     "multipleChoiceOptions": [
       "Treaty of Versailles",
-      "Treaty of Tordesillas",
-      "Treaty of Utrecht",
-      "Treaty of Ghent"
+      "Treaty of Brest-Litovsk",
+      "Treaty of Saint-Germain",
+      "Treaty of Neuilly"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg/960px-Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg",
@@ -33655,9 +33655,9 @@
     "canonicalAnswer": "《凡尔赛条约》",
     "multipleChoiceOptions": [
       "《凡尔赛条约》",
-      "《托尔德西利亚斯条约》",
-      "《乌得勒支条约》",
-      "《根特条约》"
+      "《布列斯特-立陶夫斯克条约》",
+      "《圣日耳曼条约》",
+      "《纳伊条约》"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg/960px-Treaty_of_Versailles_Signing%2C_Hall_of_Mirrors.jpg",
@@ -33725,7 +33725,7 @@
       "Equator",
       "Prime Meridian",
       "Tropic of Cancer",
-      "Arctic Circle"
+      "Tropic of Capricorn"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg/960px-Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg",
@@ -33747,7 +33747,7 @@
       "赤道",
       "本初子午线",
       "北回归线",
-      "北极圈"
+      "南回归线"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg/960px-Equator_Line_Monument%2C_Macap%C3%A1_city%2C_Brazil.jpg",
@@ -33768,9 +33768,9 @@
     "canonicalAnswer": "Venice",
     "multipleChoiceOptions": [
       "Venice",
-      "Florence",
-      "Naples",
-      "Turin"
+      "Amsterdam",
+      "Bruges",
+      "Stockholm"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg/960px-Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg",
@@ -33790,9 +33790,9 @@
     "canonicalAnswer": "威尼斯",
     "multipleChoiceOptions": [
       "威尼斯",
-      "佛罗伦萨",
-      "那不勒斯",
-      "都灵"
+      "阿姆斯特丹",
+      "布鲁日",
+      "斯德哥尔摩"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg/960px-Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg",
@@ -33815,7 +33815,7 @@
       "Juan Sebastian Elcano",
       "Vasco da Gama",
       "James Cook",
-      "Amerigo Vespucci"
+      "Francis Drake"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg/960px-Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg",
@@ -33837,7 +33837,7 @@
       "胡安·塞巴斯蒂安·埃尔卡诺",
       "瓦斯科·达·伽马",
       "詹姆斯·库克",
-      "亚美利哥·韦斯普奇"
+      "弗朗西斯·德雷克"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg/960px-Statue_of_Juan_Sebasti%C3%A1n_Elcano%2C_Getaria_%28Carlos_Palao%29_2024_-_1.jpg",
@@ -33905,7 +33905,7 @@
       "Mount Kilimanjaro",
       "Mount Kenya",
       "Mount Elgon",
-      "Atlas Mountain"
+      "Mount Stanley"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Mt._Kilimanjaro_12.2006.jpg/960px-Mt._Kilimanjaro_12.2006.jpg",
@@ -33927,7 +33927,7 @@
       "乞力马扎罗山",
       "肯尼亚山",
       "埃尔贡山",
-      "阿特拉斯山"
+      "斯坦利山"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Mt._Kilimanjaro_12.2006.jpg/960px-Mt._Kilimanjaro_12.2006.jpg",
@@ -33993,15 +33993,15 @@
     "canonicalAnswer": "Echidna",
     "multipleChoiceOptions": [
       "Echidna",
-      "Wombat",
+      "Platypus",
       "Numbat",
-      "Quoll"
+      "Porcupine"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Echidna_nebulosa_close_up_in_kona.jpg/960px-Echidna_nebulosa_close_up_in_kona.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Wild_shortbeak_echidna.jpg",
+      "alt": "A short-beaked echidna foraging in the wild",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Echidna%20nebulosa%20close%20up%20in%20kona.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Wild_shortbeak_echidna.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -34015,15 +34015,15 @@
     "canonicalAnswer": "针鼹",
     "multipleChoiceOptions": [
       "针鼹",
-      "袋熊",
+      "鸭嘴兽",
       "袋食蚁兽",
-      "袋猫"
+      "豪猪"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Echidna_nebulosa_close_up_in_kona.jpg/960px-Echidna_nebulosa_close_up_in_kona.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Wild_shortbeak_echidna.jpg",
+      "alt": "A short-beaked echidna foraging in the wild",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Echidna%20nebulosa%20close%20up%20in%20kona.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Wild_shortbeak_echidna.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -34039,8 +34039,8 @@
     "multipleChoiceOptions": [
       "Hemocyanin",
       "Hemoglobin",
-      "Melanin",
-      "Keratin"
+      "Myoglobin",
+      "Chlorocruorin"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Limules.jpg/960px-Limules.jpg",
@@ -34061,8 +34061,8 @@
     "multipleChoiceOptions": [
       "血蓝蛋白",
       "血红蛋白",
-      "黑色素",
-      "角蛋白"
+      "肌红蛋白",
+      "绿血蛋白"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Limules.jpg/960px-Limules.jpg",
@@ -34084,8 +34084,8 @@
     "multipleChoiceOptions": [
       "Ibis",
       "Heron",
-      "Pelican",
-      "Cormorant"
+      "Stork",
+      "Spoonbill"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Hadeda_Ibis_Portrait.jpg/960px-Hadeda_Ibis_Portrait.jpg",
@@ -34106,8 +34106,8 @@
     "multipleChoiceOptions": [
       "鹮",
       "鹭",
-      "鹈鹕",
-      "鸬鹚"
+      "鹳",
+      "琵鹭"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Hadeda_Ibis_Portrait.jpg/960px-Hadeda_Ibis_Portrait.jpg",
@@ -34175,13 +34175,13 @@
       "Queen",
       "Worker",
       "Soldier",
-      "Nymph"
+      "Alate"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Termite_Colony_in_Nepal.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/CSIRO_ScienceImage_1201_Termite_Eggs_and_the_Queen.jpg",
+      "alt": "A termite queen beside a cluster of eggs",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Termite%20Colony%20in%20Nepal.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:CSIRO%20ScienceImage%201201%20Termite%20Eggs%20and%20the%20Queen.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -34197,13 +34197,13 @@
       "蚁后",
       "工蚁",
       "兵蚁",
-      "若虫"
+      "有翅成虫"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Termite_Colony_in_Nepal.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/CSIRO_ScienceImage_1201_Termite_Eggs_and_the_Queen.jpg",
+      "alt": "A termite queen beside a cluster of eggs",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Termite%20Colony%20in%20Nepal.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:CSIRO%20ScienceImage%201201%20Termite%20Eggs%20and%20the%20Queen.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -34219,7 +34219,7 @@
     "multipleChoiceOptions": [
       "Electric eel",
       "Moray eel",
-      "Stingray",
+      "Electric ray",
       "Pufferfish"
     ],
     "image": {
@@ -34241,7 +34241,7 @@
     "multipleChoiceOptions": [
       "电鳗",
       "海鳝",
-      "魟鱼",
+      "电鳐",
       "河豚"
     ],
     "image": {
@@ -34263,9 +34263,9 @@
     "canonicalAnswer": "Seasonal camouflage",
     "multipleChoiceOptions": [
       "Seasonal camouflage",
-      "Mating display",
-      "Sun protection",
-      "Warning coloration"
+      "Seasonal molt",
+      "Thermal insulation",
+      "Predator warning"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/3/39/Hare_and_Creag_Uchdag_-_geograph.org.uk_-_97553.jpg",
@@ -34285,9 +34285,9 @@
     "canonicalAnswer": "季节性伪装",
     "multipleChoiceOptions": [
       "季节性伪装",
-      "求偶展示",
-      "防晒",
-      "警戒色"
+      "季节性换毛",
+      "保温",
+      "捕食者警示"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/3/39/Hare_and_Creag_Uchdag_-_geograph.org.uk_-_97553.jpg",
@@ -34354,8 +34354,8 @@
     "multipleChoiceOptions": [
       "Rumen",
       "Abomasum",
-      "Cecum",
-      "Gizzard"
+      "Reticulum",
+      "Omasum"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Cow_grazing_in_France.jpg/960px-Cow_grazing_in_France.jpg",
@@ -34376,8 +34376,8 @@
     "multipleChoiceOptions": [
       "瘤胃",
       "皱胃",
-      "盲肠",
-      "砂囊"
+      "网胃",
+      "瓣胃"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Cow_grazing_in_France.jpg/960px-Cow_grazing_in_France.jpg",
@@ -34400,7 +34400,7 @@
       "Sea anemone",
       "Coral",
       "Sponge",
-      "Jellyfish"
+      "Hydra"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg/960px-Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg",
@@ -34422,7 +34422,7 @@
       "海葵",
       "珊瑚",
       "海绵",
-      "水母"
+      "水螅"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg/960px-Amphiprion_ocellaris_%28Clown_anemonefish%29_in_Heteractis_magnifica_%28Sea_anemone%29.jpg",
@@ -34443,15 +34443,15 @@
     "canonicalAnswer": "Glutamate",
     "multipleChoiceOptions": [
       "Glutamate",
-      "Lactose",
-      "Fructose",
-      "Citric acid"
+      "Aspartate",
+      "Glycine",
+      "Glutamine"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Consom%C3%A9_con_picatostes_de_pan_frito.jpg/960px-Consom%C3%A9_con_picatostes_de_pan_frito.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Monosodium_glutamate_crystals.jpg/960px-Monosodium_glutamate_crystals.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Consom%C3%A9%20con%20picatostes%20de%20pan%20frito.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Monosodium_glutamate_crystals.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -34465,15 +34465,15 @@
     "canonicalAnswer": "谷氨酸",
     "multipleChoiceOptions": [
       "谷氨酸",
-      "乳糖",
-      "果糖",
-      "柠檬酸"
+      "天冬氨酸",
+      "甘氨酸",
+      "谷氨酰胺"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Consom%C3%A9_con_picatostes_de_pan_frito.jpg/960px-Consom%C3%A9_con_picatostes_de_pan_frito.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Monosodium_glutamate_crystals.jpg/960px-Monosodium_glutamate_crystals.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Consom%C3%A9%20con%20picatostes%20de%20pan%20frito.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Monosodium_glutamate_crystals.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -34623,9 +34623,9 @@
     "canonicalAnswer": "Rennet",
     "multipleChoiceOptions": [
       "Rennet",
+      "Pepsin",
       "Amylase",
-      "Lipase",
-      "Pectin"
+      "Lipase"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Cheese_curds_3.jpg/960px-Cheese_curds_3.jpg",
@@ -34645,9 +34645,9 @@
     "canonicalAnswer": "凝乳酶",
     "multipleChoiceOptions": [
       "凝乳酶",
+      "胃蛋白酶",
       "淀粉酶",
-      "脂肪酶",
-      "果胶"
+      "脂肪酶"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Cheese_curds_3.jpg/960px-Cheese_curds_3.jpg",
@@ -34713,9 +34713,9 @@
     "canonicalAnswer": "Maillard reaction",
     "multipleChoiceOptions": [
       "Maillard reaction",
-      "Krebs cycle",
-      "Osmosis",
-      "Saponification"
+      "Caramelization",
+      "Fermentation",
+      "Oxidation"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Brown_bread_crust.jpg/960px-Brown_bread_crust.jpg",
@@ -34735,9 +34735,9 @@
     "canonicalAnswer": "美拉德反应",
     "multipleChoiceOptions": [
       "美拉德反应",
-      "克雷布斯循环",
-      "渗透作用",
-      "皂化反应"
+      "焦糖化",
+      "发酵",
+      "氧化"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Brown_bread_crust.jpg/960px-Brown_bread_crust.jpg",
@@ -34758,9 +34758,9 @@
     "canonicalAnswer": "Straining",
     "multipleChoiceOptions": [
       "Straining",
-      "Freezing",
-      "Smoking",
-      "Carbonation"
+      "Culturing",
+      "Homogenizing",
+      "Evaporating"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Hangop_bord.jpg/960px-Hangop_bord.jpg",
@@ -34780,9 +34780,9 @@
     "canonicalAnswer": "过滤",
     "multipleChoiceOptions": [
       "过滤",
-      "冷冻",
-      "熏制",
-      "碳酸化"
+      "培养发酵",
+      "均质化",
+      "蒸发浓缩"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Hangop_bord.jpg/960px-Hangop_bord.jpg",
@@ -34844,12 +34844,12 @@
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "Which tea is partially oxidized, placing it between green tea and black tea?",
+    "question": "Which tea is typically produced with oxidation between minimally oxidized and fully oxidized teas?",
     "canonicalAnswer": "Oolong",
     "multipleChoiceOptions": [
       "Oolong",
       "White tea",
-      "Rooibos",
+      "Black tea",
       "Pu-erh"
     ],
     "image": {
@@ -34866,12 +34866,12 @@
     "questionStyle": "multiple-choice",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "哪种茶经过部分氧化，介于绿茶和红茶之间？",
+    "question": "哪种茶的氧化程度通常介于低度氧化茶和完全氧化茶之间？",
     "canonicalAnswer": "乌龙茶",
     "multipleChoiceOptions": [
       "乌龙茶",
       "白茶",
-      "路易波士茶",
+      "红茶",
       "普洱茶"
     ],
     "image": {
@@ -34894,14 +34894,14 @@
     "multipleChoiceOptions": [
       "Hat-trick",
       "Brace",
-      "Shutout",
-      "Double play"
+      "Poker",
+      "Double hat-trick"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Football_pictogram.svg/960px-Football_pictogram.svg.png",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Faz_v_Galway_2.JPG/960px-Faz_v_Galway_2.JPG",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Football%20pictogram.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Faz_v_Galway_2.JPG"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -34916,14 +34916,14 @@
     "multipleChoiceOptions": [
       "帽子戏法",
       "梅开二度",
-      "零封",
-      "双杀"
+      "四球",
+      "双帽子戏法"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Football_pictogram.svg/960px-Football_pictogram.svg.png",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Faz_v_Galway_2.JPG/960px-Faz_v_Galway_2.JPG",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Football%20pictogram.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Faz_v_Galway_2.JPG"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -34979,13 +34979,13 @@
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "medium",
-    "question": "In golf, what is a score of one stroke under par on a hole called?",
+    "question": "In golf, what is a score one stroke below the number set for a hole called?",
     "canonicalAnswer": "Birdie",
     "multipleChoiceOptions": [
       "Birdie",
       "Bogey",
       "Eagle",
-      "Albatross"
+      "Par"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg/960px-Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg",
@@ -35001,13 +35001,13 @@
     "questionStyle": "multiple-choice",
     "theme": "Sports",
     "difficulty": "medium",
-    "question": "在高尔夫球中，一洞低于标准杆一杆叫什么？",
+    "question": "在高尔夫球中，某洞比该洞规定杆数少一杆的成绩叫什么？",
     "canonicalAnswer": "小鸟球",
     "multipleChoiceOptions": [
       "小鸟球",
       "柏忌",
       "老鹰球",
-      "信天翁"
+      "标准杆"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg/960px-Barack_Obama_%26_Joe_Biden_on_White_House_putting_green_4-24-09.jpg",
@@ -35075,7 +35075,7 @@
       "Six",
       "Five",
       "Seven",
-      "Eight"
+      "Nine"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/AG_23_Indoor_Volleyball_15.jpg/960px-AG_23_Indoor_Volleyball_15.jpg",
@@ -35097,7 +35097,7 @@
       "六名",
       "五名",
       "七名",
-      "八名"
+      "九名"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/AG_23_Indoor_Volleyball_15.jpg/960px-AG_23_Indoor_Volleyball_15.jpg",
@@ -35118,9 +35118,9 @@
     "canonicalAnswer": "Pit stop",
     "multipleChoiceOptions": [
       "Pit stop",
-      "Grid walk",
-      "Safety lap",
-      "Warm-up run"
+      "Drive-through penalty",
+      "Formation lap",
+      "Safety-car period"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Toyota_pit_stop_Monza_2008.jpg",
@@ -35140,9 +35140,9 @@
     "canonicalAnswer": "进站",
     "multipleChoiceOptions": [
       "进站",
-      "发车位巡场",
-      "安全圈",
-      "热身跑"
+      "通过维修区处罚",
+      "编队圈",
+      "安全车阶段"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Toyota_pit_stop_Monza_2008.jpg",
@@ -35163,8 +35163,8 @@
     "canonicalAnswer": "Pommel horse",
     "multipleChoiceOptions": [
       "Pommel horse",
-      "Balance beam",
-      "Uneven bars",
+      "Still rings",
+      "Parallel bars",
       "Vault"
     ],
     "image": {
@@ -35185,8 +35185,8 @@
     "canonicalAnswer": "鞍马",
     "multipleChoiceOptions": [
       "鞍马",
-      "平衡木",
-      "高低杠",
+      "吊环",
+      "双杠",
       "跳马"
     ],
     "image": {
@@ -35208,15 +35208,15 @@
     "canonicalAnswer": "DNS",
     "multipleChoiceOptions": [
       "DNS",
-      "HTML",
-      "USB",
-      "JPEG"
+      "DHCP",
+      "BGP",
+      "ARP"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Conceptual_-_UK_implemented_DNS_Assisted_URL_Filtering%283%29.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Domain_name_space.svg",
+      "alt": "A diagram showing the hierarchy of domain names",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Conceptual%20-%20UK%20implemented%20DNS%20Assisted%20URL%20Filtering(3).png"
+      "source": "https://commons.wikimedia.org/wiki/File:Domain%20name%20space.svg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35230,15 +35230,15 @@
     "canonicalAnswer": "DNS",
     "multipleChoiceOptions": [
       "DNS",
-      "HTML",
-      "USB",
-      "JPEG"
+      "DHCP",
+      "BGP",
+      "ARP"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Conceptual_-_UK_implemented_DNS_Assisted_URL_Filtering%283%29.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Domain_name_space.svg",
+      "alt": "A diagram showing the hierarchy of domain names",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Conceptual%20-%20UK%20implemented%20DNS%20Assisted%20URL%20Filtering(3).png"
+      "source": "https://commons.wikimedia.org/wiki/File:Domain%20name%20space.svg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -35253,9 +35253,9 @@
     "canonicalAnswer": "Git",
     "multipleChoiceOptions": [
       "Git",
-      "Excel",
-      "SMTP",
-      "CUDA"
+      "Mercurial",
+      "Subversion",
+      "Perforce"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Git_operations.svg/960px-Git_operations.svg.png",
@@ -35275,9 +35275,9 @@
     "canonicalAnswer": "Git",
     "multipleChoiceOptions": [
       "Git",
-      "Excel",
-      "SMTP",
-      "CUDA"
+      "Mercurial",
+      "Subversion",
+      "Perforce"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Git_operations.svg/960px-Git_operations.svg.png",
@@ -35298,15 +35298,15 @@
     "canonicalAnswer": "404",
     "multipleChoiceOptions": [
       "404",
-      "200",
-      "301",
-      "503"
+      "403",
+      "410",
+      "500"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/White_House.gov_404_error_1-20-09.JPG/960px-White_House.gov_404_error_1-20-09.JPG",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/23/Min_%28web_browser%29_1.5.1_in_offline_error_page_screenshot.png",
+      "alt": "A web browser displaying an offline error page",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:White%20House.gov%20404%20error%201-20-09.JPG"
+      "source": "https://commons.wikimedia.org/wiki/File:Min%20(web%20browser)%201.5.1%20in%20offline%20error%20page%20screenshot.png"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35320,15 +35320,15 @@
     "canonicalAnswer": "404",
     "multipleChoiceOptions": [
       "404",
-      "200",
-      "301",
-      "503"
+      "403",
+      "410",
+      "500"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/White_House.gov_404_error_1-20-09.JPG/960px-White_House.gov_404_error_1-20-09.JPG",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/23/Min_%28web_browser%29_1.5.1_in_offline_error_page_screenshot.png",
+      "alt": "A web browser displaying an offline error page",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:White%20House.gov%20404%20error%201-20-09.JPG"
+      "source": "https://commons.wikimedia.org/wiki/File:Min%20(web%20browser)%201.5.1%20in%20offline%20error%20page%20screenshot.png"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -35343,9 +35343,9 @@
     "canonicalAnswer": "Two-factor authentication",
     "multipleChoiceOptions": [
       "Two-factor authentication",
-      "Data mining",
-      "Content caching",
-      "Screen mirroring"
+      "Single sign-on",
+      "Public-key encryption",
+      "Biometric login"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Authentication_devices.jpg",
@@ -35365,9 +35365,9 @@
     "canonicalAnswer": "双重身份验证",
     "multipleChoiceOptions": [
       "双重身份验证",
-      "数据挖掘",
-      "内容缓存",
-      "屏幕镜像"
+      "单点登录",
+      "公钥加密",
+      "生物识别登录"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Authentication_devices.jpg",
@@ -35388,15 +35388,15 @@
     "canonicalAnswer": "WPA2",
     "multipleChoiceOptions": [
       "WPA2",
-      "HTML5",
-      "MIDI",
-      "ASCII"
+      "WPA3",
+      "WEP",
+      "802.1X"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg/960px-3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/53/Wi-fi_router.jpg",
+      "alt": "A wireless router used in a home network",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:3Com%20OfficeConnect%20ADSL%20Wireless%2011g%20Firewall%20Router%202012-10-28-0869.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Wi-fi%20router.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35410,15 +35410,15 @@
     "canonicalAnswer": "WPA2",
     "multipleChoiceOptions": [
       "WPA2",
-      "HTML5",
-      "MIDI",
-      "ASCII"
+      "WPA3",
+      "WEP",
+      "802.1X"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg/960px-3Com_OfficeConnect_ADSL_Wireless_11g_Firewall_Router_2012-10-28-0869.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/53/Wi-fi_router.jpg",
+      "alt": "A wireless router used in a home network",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:3Com%20OfficeConnect%20ADSL%20Wireless%2011g%20Firewall%20Router%202012-10-28-0869.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Wi-fi%20router.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -35433,9 +35433,9 @@
     "canonicalAnswer": "PageRank",
     "multipleChoiceOptions": [
       "PageRank",
-      "MapReduce",
-      "BitTorrent",
-      "AutoComplete"
+      "HITS",
+      "TrustRank",
+      "Hilltop"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Top_3_search_results_with_thumbnails.jpg/960px-Top_3_search_results_with_thumbnails.jpg",
@@ -35455,9 +35455,9 @@
     "canonicalAnswer": "PageRank",
     "multipleChoiceOptions": [
       "PageRank",
-      "MapReduce",
-      "BitTorrent",
-      "自动完成"
+      "HITS",
+      "TrustRank",
+      "Hilltop"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Top_3_search_results_with_thumbnails.jpg/960px-Top_3_search_results_with_thumbnails.jpg",
@@ -35478,9 +35478,9 @@
     "canonicalAnswer": "Chlorophyll",
     "multipleChoiceOptions": [
       "Chlorophyll",
-      "Keratin",
-      "Collagen",
-      "Melanin"
+      "Carotenoid",
+      "Anthocyanin",
+      "Xanthophyll"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg/960px-Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg",
@@ -35500,9 +35500,9 @@
     "canonicalAnswer": "叶绿素",
     "multipleChoiceOptions": [
       "叶绿素",
-      "角蛋白",
-      "胶原蛋白",
-      "黑色素"
+      "类胡萝卜素",
+      "花青素",
+      "叶黄素"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg/960px-Leaves_-_Photo_by_Giovanni_Ussi_-_Foglie_1.jpg",
@@ -35525,7 +35525,7 @@
       "Mars",
       "Venus",
       "Mercury",
-      "Jupiter"
+      "Earth"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Olympus_Mons_alt.jpg/960px-Olympus_Mons_alt.jpg",
@@ -35547,7 +35547,7 @@
       "火星",
       "金星",
       "水星",
-      "木星"
+      "地球"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Olympus_Mons_alt.jpg/960px-Olympus_Mons_alt.jpg",
@@ -35569,14 +35569,14 @@
     "multipleChoiceOptions": [
       "Erythrocyte",
       "Platelet",
-      "Neuron",
-      "Leukocyte"
+      "Leukocyte",
+      "Neutrophil"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Osmotic_pressure_on_blood_cells_diagram.svg/960px-Osmotic_pressure_on_blood_cells_diagram.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Red_Blood_Cells_Under_Microscope.jpg",
+      "alt": "Red blood cells viewed under a microscope",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Osmotic%20pressure%20on%20blood%20cells%20diagram.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Red%20Blood%20Cells%20Under%20Microscope.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35591,14 +35591,14 @@
     "multipleChoiceOptions": [
       "红细胞",
       "血小板",
-      "神经元",
-      "白细胞"
+      "白细胞",
+      "中性粒细胞"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Osmotic_pressure_on_blood_cells_diagram.svg/960px-Osmotic_pressure_on_blood_cells_diagram.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Red_Blood_Cells_Under_Microscope.jpg",
+      "alt": "Red blood cells viewed under a microscope",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Osmotic%20pressure%20on%20blood%20cells%20diagram.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Red%20Blood%20Cells%20Under%20Microscope.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -35615,7 +35615,7 @@
       "Acidic",
       "Alkaline",
       "Neutral",
-      "Isotonic"
+      "Basic salt"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Indicateurs_color%C3%A9s_de_pH.jpg/960px-Indicateurs_color%C3%A9s_de_pH.jpg",
@@ -35637,7 +35637,7 @@
       "酸性",
       "碱性",
       "中性",
-      "等渗"
+      "碱式盐"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Indicateurs_color%C3%A9s_de_pH.jpg/960px-Indicateurs_color%C3%A9s_de_pH.jpg",
@@ -35663,10 +35663,10 @@
       "Uracil"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/DNA_Structure%2BKey%2BLabelled.png/960px-DNA_Structure%2BKey%2BLabelled.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c4/DNA_double_helix_horizontal.png",
+      "alt": "A molecular model of a DNA double helix",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:DNA%20Structure%2BKey%2BLabelled.png"
+      "source": "https://commons.wikimedia.org/wiki/File:DNA%20double%20helix%20horizontal.png"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35685,10 +35685,10 @@
       "尿嘧啶"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/DNA_Structure%2BKey%2BLabelled.png/960px-DNA_Structure%2BKey%2BLabelled.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c4/DNA_double_helix_horizontal.png",
+      "alt": "A molecular model of a DNA double helix",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:DNA%20Structure%2BKey%2BLabelled.png"
+      "source": "https://commons.wikimedia.org/wiki/File:DNA%20double%20helix%20horizontal.png"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -35793,15 +35793,15 @@
     "canonicalAnswer": "Photon",
     "multipleChoiceOptions": [
       "Photon",
-      "Proton",
+      "Electron",
       "Muon",
       "Positron"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fluence_%C3%A9lec.jpg/960px-Fluence_%C3%A9lec.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Photon_particle.gif",
+      "alt": "An animation illustrating a photon as an electromagnetic particle",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Fluence%20%C3%A9lec.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Photon_particle.gif"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35815,15 +35815,15 @@
     "canonicalAnswer": "光子",
     "multipleChoiceOptions": [
       "光子",
-      "质子",
+      "电子",
       "缪子",
       "正电子"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fluence_%C3%A9lec.jpg/960px-Fluence_%C3%A9lec.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Photon_particle.gif",
+      "alt": "An animation illustrating a photon as an electromagnetic particle",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Fluence%20%C3%A9lec.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Photon_particle.gif"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -35840,7 +35840,7 @@
       "Alfred Wegener",
       "Charles Lyell",
       "James Hutton",
-      "Gregor Mendel"
+      "Harry Hess"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Kontinenternas_vandringar_Trias_o_Krita.PNG",
@@ -35862,7 +35862,7 @@
       "阿尔弗雷德·魏格纳",
       "查尔斯·莱尔",
       "詹姆斯·赫顿",
-      "格雷戈尔·孟德尔"
+      "哈里·赫斯"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Kontinenternas_vandringar_Trias_o_Krita.PNG",
@@ -35885,7 +35885,7 @@
       "Charon",
       "Orpheus",
       "Tiresias",
-      "Midas"
+      "Hermes"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Adolf_Hiremy-Hirschl%2C_Die_Seelen_des_Acheron.jpg",
@@ -35907,7 +35907,7 @@
       "卡戎",
       "俄耳甫斯",
       "忒瑞西阿斯",
-      "迈达斯"
+      "赫尔墨斯"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Adolf_Hiremy-Hirschl%2C_Die_Seelen_des_Acheron.jpg",
@@ -35928,15 +35928,15 @@
     "canonicalAnswer": "Ra",
     "multipleChoiceOptions": [
       "Ra",
+      "Horus",
       "Osiris",
-      "Ptah",
-      "Khnum"
+      "Thoth"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/6/64/Louxor_Amon_Ra_Alexandre.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/23/Ra_%28God%29.png",
+      "alt": "An Egyptian depiction of the god Ra",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Louxor%20Amon%20Ra%20Alexandre.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Ra%20(God).png"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35950,15 +35950,15 @@
     "canonicalAnswer": "拉",
     "multipleChoiceOptions": [
       "拉",
+      "荷鲁斯",
       "奥西里斯",
-      "卜塔",
-      "克努姆"
+      "托特"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/6/64/Louxor_Amon_Ra_Alexandre.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/23/Ra_%28God%29.png",
+      "alt": "An Egyptian depiction of the god Ra",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Louxor%20Amon%20Ra%20Alexandre.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Ra%20(God).png"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -35974,14 +35974,14 @@
     "multipleChoiceOptions": [
       "Cupid",
       "Mercury",
-      "Saturn",
+      "Mars",
       "Vulcan"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg/960px-Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Cupid_Carving_His_Bow_-_Parmigianino.jpg",
+      "alt": "A painting of Cupid carving his bow",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Fragment%20of%20Cupid%20statue-MHL%20on%20display%204-P4140236-black.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Cupid%20Carving%20His%20Bow%20-%20Parmigianino.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -35996,14 +35996,14 @@
     "multipleChoiceOptions": [
       "丘比特",
       "墨丘利",
-      "萨图恩",
+      "玛尔斯",
       "伏尔甘"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg/960px-Fragment_of_Cupid_statue-MHL_on_display_4-P4140236-black.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d5/Cupid_Carving_His_Bow_-_Parmigianino.jpg",
+      "alt": "A painting of Cupid carving his bow",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Fragment%20of%20Cupid%20statue-MHL%20on%20display%204-P4140236-black.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Cupid%20Carving%20His%20Bow%20-%20Parmigianino.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -36019,14 +36019,14 @@
     "multipleChoiceOptions": [
       "Amaterasu",
       "Izanami",
-      "Konohanasakuya",
-      "Benzaiten"
+      "Tsukuyomi",
+      "Inari"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG/960px-Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Amaterasu_appearing_from_the_cave..jpg",
+      "alt": "An artwork depicting Amaterasu emerging from a cave",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Amaterasu-sume%C5%8Dkami%20Kawasaki%2002.JPG"
+      "source": "https://commons.wikimedia.org/wiki/File:Amaterasu%20appearing%20from%20the%20cave..jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -36041,14 +36041,14 @@
     "multipleChoiceOptions": [
       "天照大神",
       "伊邪那美",
-      "木花咲耶姬",
-      "弁才天"
+      "月读命",
+      "稻荷神"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG/960px-Amaterasu-sume%C5%8Dkami_Kawasaki_02.JPG",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Amaterasu_appearing_from_the_cave..jpg",
+      "alt": "An artwork depicting Amaterasu emerging from a cave",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Amaterasu-sume%C5%8Dkami%20Kawasaki%2002.JPG"
+      "source": "https://commons.wikimedia.org/wiki/File:Amaterasu%20appearing%20from%20the%20cave..jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -36109,8 +36109,8 @@
     "multipleChoiceOptions": [
       "Cuchulainn",
       "Fionn mac Cumhaill",
-      "Branwen",
-      "Lugh"
+      "Lugh",
+      "Diarmaid"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/C%C3%BAchulainn_statue.jpg/960px-C%C3%BAchulainn_statue.jpg",
@@ -36131,8 +36131,8 @@
     "multipleChoiceOptions": [
       "库丘林",
       "芬恩·麦克库尔",
-      "布兰温",
-      "卢"
+      "卢",
+      "迪尔穆德"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/C%C3%BAchulainn_statue.jpg/960px-C%C3%BAchulainn_statue.jpg",
@@ -36203,10 +36203,10 @@
       "Huitzilopochtli"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Bulletin_%281964%29_%2820417057842%29.jpg/960px-Bulletin_%281964%29_%2820417057842%29.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Feathered_Serpent_Head_%28DSC07988a%29.jpg/960px-Feathered_Serpent_Head_%28DSC07988a%29.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Bulletin%20(1964)%20(20417057842).jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Feathered_Serpent_Head_(DSC07988a).jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -36225,10 +36225,10 @@
       "维齐洛波奇特利"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Bulletin_%281964%29_%2820417057842%29.jpg/960px-Bulletin_%281964%29_%2820417057842%29.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Feathered_Serpent_Head_%28DSC07988a%29.jpg/960px-Feathered_Serpent_Head_%28DSC07988a%29.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Bulletin%20(1964)%20(20417057842).jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Feathered_Serpent_Head_(DSC07988a).jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -36289,14 +36289,14 @@
     "multipleChoiceOptions": [
       "Sfumato",
       "Impasto",
-      "Fresco",
+      "Chiaroscuro",
       "Grisaille"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Hans_Holbein_d._J._013.jpg/960px-Hans_Holbein_d._J._013.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/960px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Hans%20Holbein%20d.%20J.%20013.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -36311,14 +36311,14 @@
     "multipleChoiceOptions": [
       "晕涂法",
       "厚涂法",
-      "湿壁画",
+      "明暗对照法",
       "单色画法"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Hans_Holbein_d._J._013.jpg/960px-Hans_Holbein_d._J._013.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/960px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Hans%20Holbein%20d.%20J.%20013.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -36335,7 +36335,7 @@
       "Antonio Vivaldi",
       "George Handel",
       "Johann Pachelbel",
-      "Domenico Scarlatti"
+      "Arcangelo Corelli"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Antonio_Vivaldi.jpg",
@@ -36357,7 +36357,7 @@
       "安东尼奥·维瓦尔第",
       "乔治·亨德尔",
       "约翰·帕赫贝尔",
-      "多梅尼科·斯卡拉蒂"
+      "阿尔坎杰洛·科雷利"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Antonio_Vivaldi.jpg",
@@ -36378,9 +36378,9 @@
     "canonicalAnswer": "Twelve-bar blues",
     "multipleChoiceOptions": [
       "Twelve-bar blues",
-      "Eight-bar waltz",
-      "Thirty-two-bar rondo",
-      "Five-tone scale"
+      "Eight-bar blues",
+      "Thirty-two-bar form",
+      "Twelve-tone row"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/9/95/Buddy_Guy_Liri_Blues_1989.jpg",
@@ -36400,9 +36400,9 @@
     "canonicalAnswer": "十二小节布鲁斯",
     "multipleChoiceOptions": [
       "十二小节布鲁斯",
-      "八小节华尔兹",
-      "三十二小节回旋曲",
-      "五声音阶"
+      "八小节布鲁斯",
+      "三十二小节曲式",
+      "十二音列"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/9/95/Buddy_Guy_Liri_Blues_1989.jpg",
@@ -36424,7 +36424,7 @@
     "multipleChoiceOptions": [
       "Aperture",
       "Shutter speed",
-      "White balance",
+      "ISO",
       "Focal length"
     ],
     "image": {
@@ -36446,7 +36446,7 @@
     "multipleChoiceOptions": [
       "光圈",
       "快门速度",
-      "白平衡",
+      "ISO 感光度",
       "焦距"
     ],
     "image": {
@@ -36469,8 +36469,8 @@
     "multipleChoiceOptions": [
       "Cubism",
       "Surrealism",
-      "Impressionism",
-      "Romanticism"
+      "Futurism",
+      "Expressionism"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Waliszewski_Cubist_still_life.jpg",
@@ -36491,8 +36491,8 @@
     "multipleChoiceOptions": [
       "立体主义",
       "超现实主义",
-      "印象主义",
-      "浪漫主义"
+      "未来主义",
+      "表现主义"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Waliszewski_Cubist_still_life.jpg",
@@ -36559,8 +36559,8 @@
     "multipleChoiceOptions": [
       "Piano",
       "Forte",
-      "Crescendo",
-      "Sforzando"
+      "Mezzo-forte",
+      "Crescendo"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Chopin_polonaise_Op._53.jpg/960px-Chopin_polonaise_Op._53.jpg",
@@ -36581,8 +36581,8 @@
     "multipleChoiceOptions": [
       "弱（Piano）",
       "强",
-      "渐强",
-      "突强"
+      "中强",
+      "渐强"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Chopin_polonaise_Op._53.jpg/960px-Chopin_polonaise_Op._53.jpg",
@@ -36650,7 +36650,7 @@
       "Complementary",
       "Monochromatic",
       "Analogous",
-      "Achromatic"
+      "Split-complementary"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/3/3f/CMYK_color_wheel-es.png",
@@ -36672,7 +36672,7 @@
       "互补色",
       "单色",
       "类似色",
-      "无彩色"
+      "分裂互补色"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/3/3f/CMYK_color_wheel-es.png",
@@ -36693,9 +36693,9 @@
     "canonicalAnswer": "Christopher Nolan",
     "multipleChoiceOptions": [
       "Christopher Nolan",
-      "Steven Spielberg",
-      "Greta Gerwig",
-      "James Cameron"
+      "David Fincher",
+      "Denis Villeneuve",
+      "Paul Thomas Anderson"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/ChristopherNolan-byPhilipRomano3.jpg/960px-ChristopherNolan-byPhilipRomano3.jpg",
@@ -36715,9 +36715,9 @@
     "canonicalAnswer": "克里斯托弗·诺兰",
     "multipleChoiceOptions": [
       "克里斯托弗·诺兰",
-      "史蒂文·斯皮尔伯格",
-      "格蕾塔·葛韦格",
-      "詹姆斯·卡梅隆"
+      "大卫·芬奇",
+      "丹尼斯·维伦纽瓦",
+      "保罗·托马斯·安德森"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/ChristopherNolan-byPhilipRomano3.jpg/960px-ChristopherNolan-byPhilipRomano3.jpg",
@@ -36743,10 +36743,10 @@
       "Central City"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg/960px-Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/92/Adam_West_as_Batman_in_TV_series.JPG",
+      "alt": "Adam West in costume as Batman",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Batman%20moto%2C%20MA%20Paris%202022%20-%20Dark%20Knight%20-%20Gotham%20City%20-%200067.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Adam%20West%20as%20Batman%20in%20TV%20series.JPG"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -36765,10 +36765,10 @@
       "中心城"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg/960px-Batman_moto%2C_MA_Paris_2022_-_Dark_Knight_-_Gotham_City_-_0067.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/92/Adam_West_as_Batman_in_TV_series.JPG",
+      "alt": "Adam West in costume as Batman",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Batman%20moto%2C%20MA%20Paris%202022%20-%20Dark%20Knight%20-%20Gotham%20City%20-%200067.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Adam%20West%20as%20Batman%20in%20TV%20series.JPG"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -36828,9 +36828,9 @@
     "canonicalAnswer": "Tetromino",
     "multipleChoiceOptions": [
       "Tetromino",
-      "Hexagon",
-      "Domino",
-      "Voxel"
+      "Triomino",
+      "Pentomino",
+      "Polyomino"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Tetromino_I.svg/960px-Tetromino_I.svg.png",
@@ -36850,9 +36850,9 @@
     "canonicalAnswer": "四连方块",
     "multipleChoiceOptions": [
       "四连方块",
-      "六边形",
-      "多米诺骨牌",
-      "体素"
+      "三连方块",
+      "五连方块",
+      "多连方块"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Tetromino_I.svg/960px-Tetromino_I.svg.png",
@@ -36874,14 +36874,14 @@
     "multipleChoiceOptions": [
       "Python",
       "Ruby",
-      "Swift",
+      "Perl",
       "Java"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/960px-Python-logo-notext.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/All_six_members_of_Monty_Python_in_1978.jpg",
+      "alt": "The six members of the Monty Python comedy troupe in 1978",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Python-logo-notext.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:All%20six%20members%20of%20Monty%20Python%20in%201978.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -36896,14 +36896,14 @@
     "multipleChoiceOptions": [
       "Python",
       "Ruby",
-      "Swift",
+      "Perl",
       "Java"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/960px-Python-logo-notext.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/All_six_members_of_Monty_Python_in_1978.jpg",
+      "alt": "The six members of the Monty Python comedy troupe in 1978",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Python-logo-notext.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:All%20six%20members%20of%20Monty%20Python%20in%201978.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -36918,15 +36918,15 @@
     "canonicalAnswer": "Love",
     "multipleChoiceOptions": [
       "Love",
-      "Nil",
-      "Blank",
-      "Void"
+      "Deuce",
+      "Advantage",
+      "All"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Table-tennis-match-karlskrona-idrottshall.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/YOG_2018_Tennis_-_Match_CHN-BLR_12.jpg/960px-YOG_2018_Tennis_-_Match_CHN-BLR_12.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Table-tennis-match-karlskrona-idrottshall.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:YOG_2018_Tennis_-_Match_CHN-BLR_12.jpg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -36940,15 +36940,15 @@
     "canonicalAnswer": "Love（零分）",
     "multipleChoiceOptions": [
       "Love（零分）",
-      "Nil",
-      "Blank",
-      "Void"
+      "平分",
+      "占先",
+      "全胜"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Table-tennis-match-karlskrona-idrottshall.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/YOG_2018_Tennis_-_Match_CHN-BLR_12.jpg/960px-YOG_2018_Tennis_-_Match_CHN-BLR_12.jpg",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Table-tennis-match-karlskrona-idrottshall.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:YOG_2018_Tennis_-_Match_CHN-BLR_12.jpg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -36965,7 +36965,7 @@
       "Breaststroke",
       "Backstroke",
       "Butterfly",
-      "Freestyle"
+      "Sidestroke"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/Swimming.breaststroke.arp.750pix.jpg",
@@ -36987,7 +36987,7 @@
       "蛙泳",
       "仰泳",
       "蝶泳",
-      "自由泳"
+      "侧泳"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/Swimming.breaststroke.arp.750pix.jpg",
@@ -37008,9 +37008,9 @@
     "canonicalAnswer": "Try",
     "multipleChoiceOptions": [
       "Try",
-      "Drop",
-      "Mark",
-      "Serve"
+      "Drop goal",
+      "Penalty goal",
+      "Conversion"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Percy_try_against_samoa.jpg/960px-Percy_try_against_samoa.jpg",
@@ -37030,9 +37030,9 @@
     "canonicalAnswer": "达阵",
     "multipleChoiceOptions": [
       "达阵",
-      "落踢",
-      "标记",
-      "发球"
+      "落踢得分",
+      "罚踢得分",
+      "附加踢"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Percy_try_against_samoa.jpg/960px-Percy_try_against_samoa.jpg",
@@ -37053,15 +37053,15 @@
     "canonicalAnswer": "TLS",
     "multipleChoiceOptions": [
       "TLS",
-      "FTP",
-      "DNS",
-      "RSS"
+      "SSL",
+      "IPsec",
+      "SSH"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/OOjs_UI_icon_lock.svg/960px-OOjs_UI_icon_lock.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/34/Handshake_TLS.png",
+      "alt": "A diagram of a TLS handshake between a client and server",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:OOjs%20UI%20icon%20lock.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Handshake_TLS.png"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -37075,15 +37075,15 @@
     "canonicalAnswer": "TLS",
     "multipleChoiceOptions": [
       "TLS",
-      "FTP",
-      "DNS",
-      "RSS"
+      "SSL",
+      "IPsec",
+      "SSH"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/OOjs_UI_icon_lock.svg/960px-OOjs_UI_icon_lock.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/34/Handshake_TLS.png",
+      "alt": "A diagram of a TLS handshake between a client and server",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:OOjs%20UI%20icon%20lock.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Handshake_TLS.png"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -37099,14 +37099,14 @@
     "multipleChoiceOptions": [
       "SMTP",
       "IMAP",
-      "SSH",
-      "NTP"
+      "POP3",
+      "MAPI"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Melbourne_Mail_Exchange_building.jpg/960px-Melbourne_Mail_Exchange_building.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Server-email-relay.svg",
+      "alt": "A diagram showing email being relayed between servers",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Melbourne%20Mail%20Exchange%20building.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Server-email-relay.svg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -37121,14 +37121,14 @@
     "multipleChoiceOptions": [
       "SMTP",
       "IMAP",
-      "SSH",
-      "NTP"
+      "POP3",
+      "MAPI"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Melbourne_Mail_Exchange_building.jpg/960px-Melbourne_Mail_Exchange_building.jpg",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Server-email-relay.svg",
+      "alt": "A diagram showing email being relayed between servers",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Melbourne%20Mail%20Exchange%20building.jpg"
+      "source": "https://commons.wikimedia.org/wiki/File:Server-email-relay.svg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -37143,15 +37143,15 @@
     "canonicalAnswer": "Cookie",
     "multipleChoiceOptions": [
       "Cookie",
-      "Kernel",
-      "Pixel",
-      "Packet"
+      "Session token",
+      "Cache entry",
+      "Local-storage item"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cookie-cooking.svg/960px-Cookie-cooking.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/24/Browser_Wars_%28en%29.svg",
+      "alt": "A diagram comparing web browsers",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Cookie-cooking.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Browser_Wars_(en).svg"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -37165,15 +37165,15 @@
     "canonicalAnswer": "Cookie（网络 Cookie）",
     "multipleChoiceOptions": [
       "Cookie（网络 Cookie）",
-      "内核",
-      "像素",
-      "数据包"
+      "会话令牌",
+      "缓存条目",
+      "本地存储项"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cookie-cooking.svg/960px-Cookie-cooking.svg.png",
-      "alt": "A Wikimedia Commons image providing visual context for this question",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/24/Browser_Wars_%28en%29.svg",
+      "alt": "A diagram comparing web browsers",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Cookie-cooking.svg"
+      "source": "https://commons.wikimedia.org/wiki/File:Browser_Wars_(en).svg"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -37188,15 +37188,15 @@
     "canonicalAnswer": "PNG",
     "multipleChoiceOptions": [
       "PNG",
-      "MP3",
-      "MPEG",
-      "WAV"
+      "GIF",
+      "WebP",
+      "TIFF"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Leek_on_transparent_background_-_0947.png/960px-Leek_on_transparent_background_-_0947.png",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Leek%20on%20transparent%20background%20-%200947.png"
+      "source": "https://commons.wikimedia.org/wiki/File:PNG_transparency_demonstration_1.png"
     },
     "debugBatch": "en-image-mcq-medium-2026-08-12"
   },
@@ -37210,15 +37210,15 @@
     "canonicalAnswer": "PNG",
     "multipleChoiceOptions": [
       "PNG",
-      "MP3",
-      "MPEG",
-      "WAV"
+      "GIF",
+      "WebP",
+      "TIFF"
     ],
     "image": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Leek_on_transparent_background_-_0947.png/960px-Leek_on_transparent_background_-_0947.png",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png",
       "alt": "A Wikimedia Commons image providing visual context for this question",
       "credit": "Wikimedia Commons",
-      "source": "https://commons.wikimedia.org/wiki/File:Leek%20on%20transparent%20background%20-%200947.png"
+      "source": "https://commons.wikimedia.org/wiki/File:PNG_transparency_demonstration_1.png"
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
@@ -37280,7 +37280,7 @@
       "Bifrost",
       "Yggdrasil",
       "Valhalla",
-      "Ragnarok"
+      "Gjallarhorn"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Heimdall_an_der_Himmelsbr%C3%BCcke.jpg",
@@ -37302,7 +37302,7 @@
       "彩虹桥",
       "世界之树",
       "英灵殿",
-      "诸神黄昏"
+      "加拉尔号角"
     ],
     "image": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Heimdall_an_der_Himmelsbr%C3%BCcke.jpg",
