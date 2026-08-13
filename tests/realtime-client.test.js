@@ -208,30 +208,6 @@ function testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge() {
   assert.equal(context.isCurrentHost(), false);
 }
 
-function testJoinedClientUsesAuthoritativeHostWhenOwnerMarkerIsStale() {
-  const functionSource = getFunctionSource("isJoinedRoomClient", "getExpectedRoomCurrentOwner");
-  const context = {
-    state: {
-      clientId: "joined-client",
-      isSpectator: false,
-      currentOwner: "player",
-      joiningRoom: null
-    },
-    isRoomMode() {
-      return true;
-    },
-    getAuthoritativeRoomHostId() {
-      return "host-client";
-    }
-  };
-  vm.createContext(context);
-  vm.runInContext(`${functionSource}\nthis.isJoinedRoomClient = isJoinedRoomClient;`, context);
-
-  assert.equal(context.isJoinedRoomClient(), true);
-  context.state.clientId = "host-client";
-  assert.equal(context.isJoinedRoomClient(), false);
-}
-
 function testJoinedGradingWaitUsesJoinedOwner() {
   const gradingSource = getFunctionSource("applyRealtimeRoomGrading", "forceRoomRoundToGrading");
   const resolveSource = getFunctionSource("resolveRoomSubmissionsNow", "waitForRoomRoundResultThenPlay");
@@ -254,11 +230,32 @@ function testJoinedGradingWaitUsesJoinedOwner() {
   assert.doesNotMatch(waitSource, /playSyncedRoomRoundResult\(result, localFallback\)/);
 }
 
-function testRoundResultTransportDoesNotDependOnStaleHostSnapshot() {
+function testRoundResultTransportRequiresAuthoritativeHost() {
   const functionSource = getFunctionSource("publishRoomRoundResult", "getImmediatePowerAffectedOwners");
-  assert.match(functionSource, /if \(!isRoomMode\(\) \|\| state\.isSpectator\)/);
-  assert.match(functionSource, /!options\.retrying && isRoomMode\(\) && !state\.isSpectator && !state\.matchEnded/);
-  assert.doesNotMatch(functionSource, /!options\.retrying && isAuthoritativeRoomHost\(\)/);
+  assert.match(functionSource, /if \(!isAuthoritativeRoomHost\(\)\)/);
+  assert.match(functionSource, /!options\.retrying && isAuthoritativeRoomHost\(\) && !state\.matchEnded/);
+}
+
+function testJoinedRoleDoesNotDependOnHostIdentity() {
+  const functionSource = getFunctionSource("isJoinedRoomClient", "getExpectedRoomCurrentOwner");
+  const context = {
+    state: {
+      isSpectator: false,
+      currentOwner: "opponent",
+      joiningRoom: null
+    },
+    isRoomMode() {
+      return true;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.isJoinedRoomClient = isJoinedRoomClient;`, context);
+
+  assert.equal(context.isJoinedRoomClient(), true);
+  context.state.currentOwner = "player";
+  assert.equal(context.isJoinedRoomClient(), false);
+  context.state.joiningRoom = { code: "CAI-1234" };
+  assert.equal(context.isJoinedRoomClient(), false);
 }
 
 function testAutoAdvanceUsesTheManualRoundTransitionCommand() {
@@ -551,9 +548,9 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testLobbyChannelIsReadyBeforeSubscribeCallback();
   testCompleteAuthoritativePhasePayloadCanRepairMissedRevision();
   testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge();
-  testJoinedClientUsesAuthoritativeHostWhenOwnerMarkerIsStale();
   testJoinedGradingWaitUsesJoinedOwner();
-  testRoundResultTransportDoesNotDependOnStaleHostSnapshot();
+  testRoundResultTransportRequiresAuthoritativeHost();
+  testJoinedRoleDoesNotDependOnHostIdentity();
   testAutoAdvanceUsesTheManualRoundTransitionCommand();
   testSetupPreservesOnlyCurrentRoomResult();
   await testPendingResultWaitsForJoinedStage();

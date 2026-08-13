@@ -12695,15 +12695,10 @@ function isJoinedRoomClient() {
   if (!isRoomMode() || state.isSpectator) {
     return false;
   }
-  // A joined player must continue consuming the host's authoritative phase
-  // events even if an in-flight snapshot briefly resets its local owner. The
-  // room host id is the stable source for this distinction; the owner marker
-  // is only a fallback while the initial join snapshot is still arriving.
-  const hostId = getAuthoritativeRoomHostId();
-  if (hostId) {
-    return hostId !== state.clientId;
-  }
-  return Boolean(state.joiningRoom);
+  // This tracks how the local tab entered the room, not who is currently the
+  // host. Host authority is determined separately by isAuthoritativeRoomHost.
+  return state.currentOwner === "opponent"
+    || Boolean(state.joiningRoom && state.currentOwner !== "player");
 }
 
 function getExpectedRoomCurrentOwner() {
@@ -15638,10 +15633,7 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
 }
 
 function publishRoomRoundResult(roundResult, options = {}) {
-  // The server authenticates this command as the host. Do not make transport
-  // depend on a possibly stale client-side host snapshot after grading has
-  // already completed locally.
-  if (!isRoomMode() || state.isSpectator) {
+  if (!isAuthoritativeRoomHost()) {
     return Promise.resolve(null);
   }
   const result = buildRoomRoundResultPayload(roundResult, options);
@@ -45545,10 +45537,7 @@ async function playRoundInternal(rawInput, options = {}) {
     hasCorrectAnswer = winningOwners.length > 0;
   }
   const publishHostRoundResult = () => {
-    // This function is only reached from the local host grading path. Let the
-    // server decide whether the caller is authorized instead of dropping the
-    // result when the browser's room snapshot is briefly stale.
-    if (!isRoomMode() || state.isSpectator || syncedRoundResult) {
+    if (!isAuthoritativeRoomHost() || syncedRoundResult) {
       return;
     }
     let damagedParticipantIds = awarded?.damagedParticipantIds || [];
