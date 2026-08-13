@@ -7765,7 +7765,7 @@ function playNextStatFlash() {
     next.onTextChange(next.detail);
   }
   flash.style.setProperty("--stat-flash-duration", `${next.durationMs}ms`);
-  flash.classList.remove("positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin", "ultimatum", "hidden", "stat-flash-playing");
+  flash.classList.remove("positive", "negative", "mixed", "mutation", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin", "ultimatum", "hidden", "stat-flash-playing");
   void flash.offsetWidth;
   flash.classList.add(next.kind, "stat-flash-playing");
   if (next.overlayVariant) {
@@ -7825,7 +7825,7 @@ function clearStatFlashes(options = {}) {
   const flash = document.querySelector("#statFlash");
   if (flash) {
     flash.classList.add("hidden");
-    flash.classList.remove("stat-flash-playing", "positive", "negative", "mixed", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin", "ultimatum");
+    flash.classList.remove("stat-flash-playing", "positive", "negative", "mixed", "mutation", "shield", "chaos", "burning", "lightning", "bomb", "bounty", "sudden-death", "outage", "no-mercy", "black-market", "casino", "doom", "sabotage", "coin", "ultimatum");
   }
 }
 
