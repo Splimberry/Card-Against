@@ -30,9 +30,50 @@ const permanentMutationIds = [
   "unstable_symbiosis"
 ];
 
+const mutationPowerIds = [
+  "mutation_duration_extender",
+  "mutation_bug_fix",
+  "mutation_catalyst",
+  "mutation_potency_amplifier",
+  "mutation_evolutionary_leap",
+  "mutation_positive_infuser",
+  "mutation_negative_extractor",
+  "mutation_immunity",
+  "mutation_bonus",
+  "mutation_broken_test_tube",
+  "mutation_contagion",
+  "mutation_chain_reaction",
+  "mutation_quarantine",
+  "mutation_status_inversion",
+  "mutation_catalyst_epic",
+  "mutation_overclock",
+  "mutation_patient_zero",
+  "mutation_gamble_mutagen",
+  "mutation_sovereign",
+  "mutation_ultimate"
+];
+
 permanentMutationIds.forEach((id) => {
   assert.match(appSource, new RegExp(`id: "${id}"`), `Permanent Mutation registry is missing ${id}`);
 });
+
+const mutationDeckStart = appSource.indexOf("const mutationPowerDeck = Object.freeze([");
+const mutationDeckEnd = appSource.indexOf("const powerMap =", mutationDeckStart);
+assert.ok(mutationDeckStart >= 0 && mutationDeckEnd > mutationDeckStart, "Mutation power deck must exist");
+const mutationDeckSource = appSource.slice(mutationDeckStart, mutationDeckEnd);
+assert.equal((mutationDeckSource.match(/mutationPower: true/g) || []).length, 20, "Mutation deck must contain exactly 20 status-focused powers");
+mutationPowerIds.forEach((id) => {
+  assert.match(mutationDeckSource, new RegExp(`id: "${id}"`), `Mutation power deck is missing ${id}`);
+});
+assert.match(appSource, /function getActivePowerDeck\(\) \{[\s\S]{0,120}isMutationPowerMatch\(\) \? mutationPowerDeck : powerDeck/, "Mutation matches must select the dedicated Mutation deck");
+assert.match(appSource, /function setupPowerHands\(\) \{[\s\S]{0,1100}drawPowerHand\(3, getPowerDrawOptions\("player"\)\)[\s\S]{0,180}drawPowerHand\(3, getPowerDrawOptions\("opponent"\)\)/, "Local player and opponent hands must use Mutation-aware draw options");
+assert.match(appSource, /function setupPowerHands\(\) \{[\s\S]{0,1500}drawPowerHand\(getPowerHandLimit\(owner\), getPowerDrawOptions\(owner\)\)/, "Local bot hands must use Mutation-aware draw options");
+assert.match(appSource, /id: "mutation_bug_fix"[\s\S]{0,240}type: "bug_fix"/, "Bug Fix must use the dedicated status selector type");
+assert.match(appSource, /id: "mutation_potency_amplifier"[\s\S]{0,260}type: "potency_amplifier"/, "Potency Amplifier must use the dedicated status selector type");
+assert.match(appSource, /if \(power\.mutationPower && \(power\.type === "bug_fix" \|\| power\.type === "potency_amplifier"\)\) \{[\s\S]{0,180}if \(openMutationStatusSelector\(owner, power, powerId\)\) \{[\s\S]{0,80}return;[\s\S]{0,80}\}\s*return;/, "Mutation status selectors must not fall back to generic player targeting");
+assert.match(appSource, /function getMutationStatusSelectionId\(status\)[\s\S]{0,220}synthetic:\$\{status\.id\}/, "Inherited status effects need stable selector identifiers");
+assert.match(appSource, /function getMutationStatusBySelection\(owner, selectionId\)/, "Mutation selector choices must resolve both rolled and inherited statuses");
+assert.match(appSource, /power\?\.mutationPower && \(power\.type === "bug_fix" \|\| power\.type === "potency_amplifier"\)[\s\S]{0,680}getMutationStatusSelectionId\(selectedStatus\)/, "Bots must resolve Mutation status selectors without using player targets");
 
 assert.match(
   appSource,

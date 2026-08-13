@@ -478,7 +478,32 @@ const powerDeck = [
   { id: "admin_pass", name: "Admin Pass", rarity: "doom", short: "bribe up to 2", description: "Choose up to 2 players. Correct answers from your targets lose this round, and you gain the highest payout they would have earned.", type: "admin_pass", targeted: true, doom: true },
   { id: "null_protocol", name: "Null Protocol", rarity: "doom", short: "null up to 3", description: "Choose up to 3 players. For the rest of the match they cannot gain positive status effects or bonus points, and Null Corruption reduces their point gains by 10% plus 5% for every wrong answer.", type: "null_protocol", targeted: true, immediate: true, doom: true }
 ];
-const powerMap = Object.fromEntries(powerDeck.map((power) => [power.id, power]));
+// Mutation matches use a separate, status-focused hand. Keeping these cards
+// out of the traditional deck prevents normal, Chaos, and Doom rules from
+// leaking into Mutation while preserving the existing power lifecycle.
+const mutationPowerDeck = Object.freeze([
+  { id: "mutation_duration_extender", name: "Duration Extender", rarity: "grey", short: "+1 round", description: "Extend every active Status Effect you have by 1 round immediately.", type: "duration_extender", mutationPower: true, immediate: true },
+  { id: "mutation_bug_fix", name: "Bug Fix", rarity: "grey", short: "cleanse +500", description: "Remove one negative Status Effect and gain 500 points for each round it had remaining.", type: "bug_fix", mutationPower: true, targeted: true, immediate: true },
+  { id: "mutation_catalyst", name: "Catalyst", rarity: "grey", short: "next roll x2", description: "The Status Effect you gain next round is applied at 2 stacks.", type: "catalyst", mutationPower: true, immediate: true },
+  { id: "mutation_potency_amplifier", name: "Potency Amplifier", rarity: "grey", short: "double stacks", description: "Choose a stackable Status Effect. Its current stack count is doubled immediately.", type: "potency_amplifier", mutationPower: true, targeted: true, immediate: true },
+  { id: "mutation_evolutionary_leap", name: "Evolutionary Leap", rarity: "grey", short: "reroll mutations", description: "Replace your permanent Mutations with new permanent Mutations immediately.", type: "evolutionary_leap", mutationPower: true, immediate: true },
+  { id: "mutation_positive_infuser", name: "Positive Energy Infuser", rarity: "blue", short: "+1 positive", description: "Immediately gain a random positive Status Effect for 3 rounds.", type: "positive_infuser", mutationPower: true, immediate: true },
+  { id: "mutation_negative_extractor", name: "Negative Energy Extractor", rarity: "blue", short: "steal debuff", description: "Choose a target. Remove a random negative Status Effect from yourself and give it to that target with its remaining duration and stacks.", type: "negative_extractor", mutationPower: true, targeted: true, immediate: true },
+  { id: "mutation_immunity", name: "Immunity", rarity: "blue", short: "positive only", description: "Gain Immunity for 3 rounds. You can gain positive Status Effects, but negative Status Effects are blocked.", type: "immunity_power", mutationPower: true, immediate: true },
+  { id: "mutation_bonus", name: "Bonus", rarity: "blue", short: "3-5 next roll", description: "Next round, roll 3 to 5 Status Effects instead of 1 to 3.", type: "bonus_roll", mutationPower: true, immediate: true },
+  { id: "mutation_broken_test_tube", name: "Broken Test Tube", rarity: "blue", short: "+1 mutation", description: "Immediately gain a new permanent Mutation.", type: "broken_test_tube", mutationPower: true, immediate: true },
+  { id: "mutation_contagion", name: "Contagion", rarity: "purple", short: "copy debuffs", description: "Choose up to 3 players and copy all of your negative Status Effects to them.", type: "contagion", mutationPower: true, targeted: true, immediate: true, maxTargets: 3 },
+  { id: "mutation_chain_reaction", name: "Chain Reaction", rarity: "purple", short: "trigger x2", description: "Immediately trigger all of your trigger-based Status Effects at double potency.", type: "chain_reaction", mutationPower: true, immediate: true },
+  { id: "mutation_quarantine", name: "Quarantine", rarity: "purple", short: "block transfers", description: "Gain Quarantine for 3 rounds. Incoming Status Effect transfers and applications are blocked.", type: "quarantine", mutationPower: true, immediate: true },
+  { id: "mutation_status_inversion", name: "Status Inversion", rarity: "purple", short: "negative -> positive", description: "Reverse your negative Status Effects into their positive counterparts and invert future negative rolls while active.", type: "status_inversion", mutationPower: true, immediate: true },
+  { id: "mutation_catalyst_epic", name: "Mutation Catalyst", rarity: "purple", short: "mutations x2", description: "Double the potency of your permanent Mutation effects for the rest of the match.", type: "mutation_catalyst", mutationPower: true, immediate: true },
+  { id: "mutation_overclock", name: "Overclock Protocol", rarity: "gold", short: "positive x3 / -3r", description: "Triple the potency of all your positive Status Effects, then reduce their remaining durations by 3 rounds.", type: "overclock_protocol", mutationPower: true, immediate: true },
+  { id: "mutation_patient_zero", name: "Patient Zero", rarity: "gold", short: "steal all buffs", description: "Steal one random positive Status Effect from every opponent. Each stolen copy lasts 3 rounds at 1 stack.", type: "patient_zero", mutationPower: true, immediate: true },
+  { id: "mutation_gamble_mutagen", name: "Gamble of the Mutagen", rarity: "gold", short: "5 permanent SE", description: "Roll 5 random Status Effects and make them permanent at 1 stack. Trigger-based effects reset after triggering.", type: "gamble_mutagen", mutationPower: true, immediate: true },
+  { id: "mutation_sovereign", name: "Sovereign", rarity: "gold", short: "share first place", description: "For 3 rounds, gain positive effects first place gains and transfer negative effects to first place. If you lead, transfer them to everyone else.", type: "sovereign", mutationPower: true, immediate: true },
+  { id: "mutation_ultimate", name: "Ultimate Mutation", rarity: "gold", short: "+2 mutations", description: "Immediately gain two permanent positive Mutations.", type: "ultimate_mutation", mutationPower: true, immediate: true }
+]);
+const powerMap = Object.fromEntries([...powerDeck, ...mutationPowerDeck].map((power) => [power.id, power]));
 const chaosInfusedPowerSuffix = "__chaos";
 const chaosInfusionChance = 0.2;
 const powerCategoryInfo = Object.freeze({
@@ -533,6 +558,9 @@ function getPowerCategory(powerOrId) {
     : powerOrId;
   if (power?.rarity === "doom" || power?.doom) {
     return "doom";
+  }
+  if (power?.mutationPower) {
+    return "mutation";
   }
   const type = String(power?.type || "");
   if (powerCategoryOverrides[type]) {
@@ -1791,7 +1819,7 @@ function getPublicCatalogCachePayload() {
         unlockType: item.unlockType || "",
         rarity: item.rarity || ""
       })),
-      powerUps: powerDeck.map((power) => power.id),
+      powerUps: [...powerDeck, ...mutationPowerDeck].map((power) => power.id),
       themes: [...triviaThemes]
     }
   };
@@ -3597,6 +3625,17 @@ const state = {
   mutationStatuses: {},
   mutationRoundFeed: {},
   mutationStatusSequence: 0,
+  mutationNextRollCount: {},
+  mutationNextRollStackMultiplier: {},
+  mutationImmunityRounds: {},
+  mutationQuarantineRounds: {},
+  mutationStatusInversionRounds: {},
+  mutationPositivePotencyMultiplier: {},
+  mutationPermanentPotencyMultiplier: {},
+  mutationSovereignRounds: {},
+  mutationChainReactionMultiplier: {},
+  mutationChainReactionPending: {},
+  mutationOverclockPending: {},
   permanentMutations: {},
   permanentMutationState: {
     secondGrantRound: 0,
@@ -6623,7 +6662,7 @@ function normalizeSetupPayload(setup) {
     questionStyle: setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
     language: normalizeQuestionLanguage(setup.language),
     gradingStrictness: normalizeGradingStrictness(setup.gradingStrictness),
-    difficulty: ["easy", "medium", "hard"].includes(String(setup.difficulty || "").toLowerCase())
+    difficulty: ["easy", "medium", "hard", "brutal"].includes(String(setup.difficulty || "").toLowerCase())
       ? String(setup.difficulty).toLowerCase()
       : "medium",
     triviaTheme,
@@ -11284,7 +11323,7 @@ function renderAbilityLibrary() {
     }
   ];
 
-  rollSections.forEach((rollSection) => {
+  if (!mutationPreview) rollSections.forEach((rollSection) => {
     elements.abilityLibrary.appendChild(createAbilityLibrarySection({
       title: rollSection.title,
       rarity: rollSection.rarity,
@@ -11302,24 +11341,21 @@ function renderAbilityLibrary() {
   });
 
   if (mutationPreview) {
-    const statusEntries = getStatusEffectLibraryEntries();
-    ["defense", "boost", "risk", "disruption", "target", "chaos", "doom"].forEach((category) => {
-      const entries = statusEntries.filter((entry) => entry.category === category);
-      if (!entries.length) {
-        return;
-      }
-      const info = powerCategoryInfo[category] || {};
-      elements.abilityLibrary.appendChild(createAbilityLibrarySection({
-        title: `Status Effects · ${info.label || category}`,
-        rarity: category === "doom" ? "doom" : category === "risk" || category === "disruption" ? "debuff" : "blue",
-        kind: "status",
-        sectionIcon: info.icon,
-        entries
-      }));
-    });
-  }
-
-  if (mutationPreview) {
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: "Mutation abilities",
+      rarity: "blue",
+      kind: "mutation-power",
+      open: true,
+      sectionIcon: powerCategoryInfo.mutation.icon,
+      entries: mutationPowerLibraryEntries
+    }));
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: "Mutation Status Effects",
+      rarity: "blue",
+      kind: "status",
+      sectionIcon: powerCategoryInfo.mutation.icon,
+      entries: getStatusEffectLibraryEntries()
+    }));
     elements.abilityLibrary.appendChild(createAbilityLibrarySection({
       title: "Permanent Mutations",
       rarity: "gold",
@@ -15219,6 +15255,17 @@ const roomAbilityEffectMapKeys = [
   "chaosStatusEffects",
   "mutationStatuses",
   "mutationRoundFeed",
+  "mutationNextRollCount",
+  "mutationNextRollStackMultiplier",
+  "mutationImmunityRounds",
+  "mutationQuarantineRounds",
+  "mutationStatusInversionRounds",
+  "mutationPositivePotencyMultiplier",
+  "mutationPermanentPotencyMultiplier",
+  "mutationSovereignRounds",
+  "mutationChainReactionMultiplier",
+  "mutationChainReactionPending",
+  "mutationOverclockPending",
   "permanentMutations",
   "permanentMutationState",
   "penaltyStormOwners",
@@ -15374,7 +15421,7 @@ function applyRoomAbilityEffectStatePayload(effects) {
       : {};
     state.nextQuestionPreferences = {
       theme: String(preferences.theme || ""),
-      difficulty: ["easy", "medium", "hard"].includes(String(preferences.difficulty || "")) ? String(preferences.difficulty) : "",
+      difficulty: ["easy", "medium", "hard", "brutal"].includes(String(preferences.difficulty || "")) ? String(preferences.difficulty) : "",
       questionStyle: [MULTIPLE_CHOICE_STYLE, "standard"].includes(String(preferences.questionStyle || "")) ? String(preferences.questionStyle) : ""
     };
   }
@@ -22955,7 +23002,8 @@ function addScore(owner, amount, options = {}) {
 }
 
 function getPermanentMutationPointLossMultiplier(owner) {
-  return hasPermanentMutation(owner, "adaptive_metabolism") ? 0.9 : 1;
+  const potency = getPermanentMutationPotency(owner);
+  return hasPermanentMutation(owner, "adaptive_metabolism") ? Math.max(0, 1 - (0.1 * potency)) : 1;
 }
 
 function hasImmediateDeductionProtection(owner) {
@@ -23093,6 +23141,14 @@ function getPowerById(powerId) {
       : null;
   }
   return powerMap[id] || null;
+}
+
+function isMutationPowerMatch() {
+  return isMatchModifierEnabled("mutation");
+}
+
+function getActivePowerDeck() {
+  return isMutationPowerMatch() ? mutationPowerDeck : powerDeck;
 }
 
 function getBasePowerId(powerId) {
@@ -24025,7 +24081,10 @@ function giveDeadWeightToOwner(owner) {
 }
 
 function drawPowerCard(existing = [], options = {}) {
-  const allowedDeck = powerDeck.filter((power) => {
+  const allowedDeck = getActivePowerDeck().filter((power) => {
+    if (isMutationPowerMatch() && !power.mutationPower) {
+      return false;
+    }
     if (power.rarity === "doom" && !options.allowDoom) {
       return false;
     }
@@ -24089,6 +24148,7 @@ function drawPowerHand(count, options = {}) {
 function getPowerDrawOptions(owner) {
   return {
     owner,
+    mutationPower: isMutationPowerMatch(),
     excludeAi: getPlayer(owner)?.type === "bot",
     minRarity: (state.luckRounds[owner] || 0) > 0 ? "blue" : null,
     chaosInfusionChance: getChaosStatusStackCount(owner, "unluck") > 0
@@ -26508,7 +26568,7 @@ function drawPowerByRarity(rarity, existing = [], options = {}) {
   const actualRarity = options.minRarity && getRarityRank(rarity) < getRarityRank(options.minRarity)
     ? options.minRarity
     : rarity;
-  const pool = powerDeck.filter((power) => power.rarity === actualRarity && !hasEquivalentPowerId(existing, power.id) && !(options.excludeAi && power.id === "ai_answer"));
+  const pool = getActivePowerDeck().filter((power) => power.rarity === actualRarity && !hasEquivalentPowerId(existing, power.id) && !(options.excludeAi && power.id === "ai_answer"));
   if (!pool.length) {
     return null;
   }
@@ -26550,6 +26610,10 @@ function getTargetCandidates(owner, power = null) {
     return targetableCandidates;
   }
   if (power?.type === "admin_pass" || power?.type === "null_protocol") {
+    return targetableCandidates;
+  }
+  if (power?.type === "negative_extractor" || power?.type === "contagion"
+    || power?.type === "mutation_negative_extractor" || power?.type === "mutation_contagion") {
     return targetableCandidates;
   }
   if (power?.type === "lawsuit") {
@@ -26617,6 +26681,9 @@ function chooseTargetOwner(owner, power) {
 }
 
 function getMultiTargetRequirement(power) {
+  if (power?.type === "contagion" || power?.type === "mutation_contagion") {
+    return { min: 1, max: 3, label: "Choose up to 3 players" };
+  }
   if (power?.type === "admin_pass") {
     return { min: 1, max: 2, label: "Choose up to 2 players" };
   }
@@ -26831,7 +26898,7 @@ function openQuestionCreatorSelector(owner, power, powerId) {
   elements.targetModal.dataset.powerRarity = power.rarity || "grey";
   elements.targetList.replaceChildren(
     selectField("Theme", "theme", themeOptions),
-    selectField("Difficulty", "difficulty", ["", "easy", "medium", "hard"]),
+    selectField("Difficulty", "difficulty", ["", "easy", "medium", "hard", "brutal"]),
     selectField("Question style", "questionStyle", ["", "standard", MULTIPLE_CHOICE_STYLE])
   );
   const confirm = document.createElement("button");
@@ -27051,11 +27118,13 @@ function resolveRevealedPower(powerEntry) {
   if (directPower) {
     return directPower;
   }
-  const basePower = powerDeck.find((power) => power.name === value);
+  const basePower = getActivePowerDeck().find((power) => power.name === value)
+    || powerDeck.find((power) => power.name === value);
   if (basePower) {
     return basePower;
   }
-  const chaosPower = powerDeck.find((power) => chaosInfusedPowerOverrides[power.id]?.name === value);
+  const chaosPower = getActivePowerDeck().find((power) => chaosInfusedPowerOverrides[power.id]?.name === value)
+    || powerDeck.find((power) => chaosInfusedPowerOverrides[power.id]?.name === value);
   return chaosPower ? getPowerById(getChaosInfusedPowerId(chaosPower.id)) : null;
 }
 
@@ -27493,6 +27562,14 @@ function completeTargetSelection(targetOwnerOrTargets) {
   const powerId = elements.targetModal.dataset.power;
   const power = getPowerById(powerId);
   const mode = elements.targetModal.dataset.mode;
+  if (mode === "mutation-status") {
+    const status = getMutationStatusByMutationId(owner, targetOwnerOrTargets);
+    if (status && power) {
+      closeTargetSelector();
+      consumeImmediatePower(owner, power, { mutationStatusId: status.mutationId });
+    }
+    return;
+  }
   if (mode === "table-sabotage") {
     completeTableSabotageSelection(targetOwnerOrTargets);
     return;
@@ -29014,6 +29091,18 @@ const mutationStatusDefinitions = Object.freeze([
       scheduleSecretAgentSwap(owner);
       return { kind: "counter", key: "secretAgentRounds" };
     }
+  },
+  {
+    id: "mutation_immunity_status", pool: "normal", name: "Immunity", description: "Only positive Status Effects can be gained for the remaining rounds.", powerId: "mutation_immunity", category: "defense", positive: true,
+    apply: (owner, rounds) => { addOwnerDurationRounds(state.mutationImmunityRounds, owner, rounds); return { kind: "counter", key: "mutationImmunityRounds" }; }
+  },
+  {
+    id: "quarantine_status", pool: "normal", name: "Quarantine", description: "Status Effect transfers and incoming applications are blocked for the remaining rounds.", powerId: "mutation_quarantine", category: "defense", positive: true,
+    apply: (owner, rounds) => { addOwnerDurationRounds(state.mutationQuarantineRounds, owner, rounds); return { kind: "counter", key: "mutationQuarantineRounds" }; }
+  },
+  {
+    id: "status_inversion_status", pool: "normal", name: "Status Inversion", description: "Negative Status Effects are resolved as positive effects for the remaining rounds.", powerId: "mutation_status_inversion", category: "boost", positive: true,
+    apply: (owner, rounds) => { addOwnerDurationRounds(state.mutationStatusInversionRounds, owner, rounds); return { kind: "counter", key: "mutationStatusInversionRounds" }; }
   }
 ]);
 
@@ -29188,13 +29277,18 @@ function grantMidMatchPermanentMutations(owners = getActiveOwners(), events = []
 
 function getPermanentMutationStatusRounds(owner, definition, rounds) {
   let nextRounds = Math.max(1, Number(rounds) || 1);
+  const potency = getPermanentMutationPotency(owner);
   if (definition?.positive && hasPermanentMutation(owner, "dominant_gene")) {
-    nextRounds += 1;
+    nextRounds += potency;
   }
   if (definition?.positive && getPermanentMutationState().degenerativePending?.[owner]) {
-    nextRounds = Math.max(1, nextRounds - 1);
+    nextRounds = Math.max(1, nextRounds - potency);
   }
   return nextRounds;
+}
+
+function getPermanentMutationPotency(owner) {
+  return Math.max(1, Number(state.mutationPermanentPotencyMultiplier?.[owner]) || 1);
 }
 
 function getNextPositiveStatusRounds(owner, rounds) {
@@ -29223,7 +29317,8 @@ function consumeDegenerativeGene(owner, definition) {
 }
 
 function shouldBlockPermanentMutationStatus(owner, options = {}) {
-  if (!hasPermanentMutation(owner, "mutation_stabilizer") || Math.random() >= 0.25) {
+  const blockChance = Math.min(0.95, 0.25 * getPermanentMutationPotency(owner));
+  if (!hasPermanentMutation(owner, "mutation_stabilizer") || Math.random() >= blockChance) {
     return false;
   }
   queueStatFlash("shield", "Mutation Stabilizer", "Status Blocked", { owners: [owner], complex: true });
@@ -29414,7 +29509,7 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
     }
     const key = String(status.id || definition.id);
     const group = grouped.get(key) || { status, definition, count: 0, remaining: 0 };
-    group.count += 1;
+    group.count += Math.max(1, Number(status.stacks) || 1);
     group.remaining = Math.max(group.remaining, getMutationStatusRemaining(status));
     grouped.set(key, group);
   };
@@ -29579,12 +29674,22 @@ function removeAnyCopyableStatus(owner, status) {
     : Boolean(removeMutationStatusRecord(owner, status.mutationId));
 }
 
-function copyMutationStatusToOwner(sourceStatus, targetOwner, rounds = 1) {
+function copyMutationStatusToOwner(sourceStatus, targetOwner, rounds = 1, options = {}) {
   const definition = getMutationDefinitionForStatus(sourceStatus);
   if (!definition || !targetOwner) {
     return null;
   }
-  return applyMutationStatus(targetOwner, definition, rounds);
+  const copied = applyMutationStatus(targetOwner, definition, rounds, {
+    transferred: true,
+    sourceOwner: sourceStatus.owner,
+    stackMultiplier: Math.max(1, Number(options.stackMultiplier) || getMutationStatusStackCount(sourceStatus)),
+    preserveDuration: Boolean(options.preserveDuration),
+    skipSovereign: Boolean(options.skipSovereign)
+  });
+  if (copied && sourceStatus.targetOwner === sourceStatus.owner) {
+    copied.targetOwner = targetOwner;
+  }
+  return copied;
 }
 
 function transferMutationStatus(sourceOwner, targetOwner, status) {
@@ -29592,7 +29697,9 @@ function transferMutationStatus(sourceOwner, targetOwner, status) {
     return null;
   }
   const remaining = Math.max(1, getMutationStatusRemaining(status));
-  const copied = copyMutationStatusToOwner(status, targetOwner, remaining);
+  const copied = copyMutationStatusToOwner(status, targetOwner, remaining, {
+    preserveDuration: true
+  });
   if (!copied) {
     return null;
   }
@@ -29630,7 +29737,8 @@ function applyPermanentMutationRoundStart(owners = getActiveOwners(), events = [
 
   activeOwners.forEach((owner) => {
     if (hasPermanentMutation(owner, "genetic_drift")) {
-      const percent = getRandomInt(-5, 10) / 100;
+      const potency = getPermanentMutationPotency(owner);
+      const percent = getRandomInt(-5 * potency, 10 * potency) / 100;
       const amount = Math.floor(Math.max(0, getScore(owner)) * Math.abs(percent));
       if (percent < 0) {
         const appliedLoss = applyProtectedScoreLoss(owner, amount, "Genetic Drift", events);
@@ -29643,7 +29751,7 @@ function applyPermanentMutationRoundStart(owners = getActiveOwners(), events = [
     if (hasPermanentMutation(owner, "parasitic_growth")) {
       const targets = activeOwners.filter((target) => target !== owner);
       const target = targets.length ? targets[Math.floor(Math.random() * targets.length)] : "";
-      const amount = target ? Math.floor(Math.max(0, getScore(target)) * 0.05) : 0;
+      const amount = target ? Math.floor(Math.max(0, getScore(target)) * 0.05 * getPermanentMutationPotency(owner)) : 0;
       if (target && amount > 0) {
         const appliedLoss = applyProtectedScoreLoss(target, amount, "Parasitic Growth", events);
         addScore(owner, appliedLoss);
@@ -29656,7 +29764,7 @@ function applyPermanentMutationRoundStart(owners = getActiveOwners(), events = [
     if (hasPermanentMutation(owner, "status_mimicry")) {
       const copied = getRandomCopyableMutationStatus(activeOwners, owner);
       if (copied) {
-        const applied = copyMutationStatusToOwner(copied.status, owner, 1);
+        const applied = copyMutationStatusToOwner(copied.status, owner, 1, { preserveDuration: true });
         if (applied) {
           events.push(`${getOwnerLabel(owner)}'s Status Mimicry copied ${applied.name} from ${getOwnerLabel(copied.owner)} for this round.`);
         }
@@ -29726,7 +29834,7 @@ function applyPermanentMutationDeltaModifiers(deltas, owners, startingScores, wr
   owners.forEach((owner) => {
     if (hasPermanentMutation(owner, "volatile_genome") && wrongSet.has(owner)) {
       const projected = Math.max(0, Number(startingScores[owner] || 0) + Number(deltas[owner] || 0));
-      const amount = Math.floor(projected * 0.1);
+      const amount = Math.floor(projected * 0.1 * getPermanentMutationPotency(owner));
       if (amount > 0) {
         deltas[owner] -= amount;
         events.push(`${getOwnerLabel(owner)}'s Volatile Genome added a ${amount.toLocaleString()} wrong-answer loss.`);
@@ -29737,7 +29845,7 @@ function applyPermanentMutationDeltaModifiers(deltas, owners, startingScores, wr
       stateStore.cellularCollapseStacks[owner] = nextStacks >= 3 ? 0 : nextStacks;
       if (nextStacks >= 3) {
         const projected = Math.max(0, Number(startingScores[owner] || 0) + Number(deltas[owner] || 0));
-        const amount = Math.floor(projected * 0.1);
+        const amount = Math.floor(projected * 0.1 * getPermanentMutationPotency(owner));
         deltas[owner] -= amount;
         events.push(`${getOwnerLabel(owner)}'s Cellular Collapse triggered at 3 stacks and cost ${amount.toLocaleString()} points.`);
       }
@@ -29764,7 +29872,7 @@ function applyPermanentMutationSymbiosis(owner, amount) {
   if (!linkedOwners.size) {
     return;
   }
-  const linkedGain = Math.floor(amount * 0.05);
+  const linkedGain = Math.floor(amount * 0.05 * getPermanentMutationPotency(owner));
   if (linkedGain > 0) {
     linkedOwners.forEach((targetOwner) => {
       addScore(targetOwner, linkedGain, { skipSymbiosis: true });
@@ -29785,9 +29893,29 @@ function markMutationStatusTriggered(owner, statusId, mutationId = "") {
   if (index < 0) {
     return false;
   }
+  const triggeredStatus = records[index];
   state.mutationStatuses[owner] = records.map((status, recordIndex) => (
     recordIndex === index ? { ...status, triggered: true } : status
   ));
+  if (triggeredStatus.permanentStatus) {
+    const definition = getMutationDefinitionForStatus(triggeredStatus);
+    const remaining = records.filter((status, recordIndex) => recordIndex !== index);
+    // Permanent Mutagen effects consume their current charge, clean up the
+    // old backing state, then re-arm as the same permanent status.
+    cleanupMutationStatusRecord({ ...triggeredStatus, triggered: false }, remaining);
+    const cleanup = definition?.apply(owner, 1, triggeredStatus.mutationId);
+    if (cleanup) {
+      const rearmed = {
+        ...triggeredStatus,
+        cleanup,
+        triggered: false,
+        rounds: Number.MAX_SAFE_INTEGER,
+        expiresAt: Number.MAX_SAFE_INTEGER
+      };
+      state.mutationStatuses[owner] = [...remaining, rearmed];
+      return true;
+    }
+  }
   pruneMutationStatuses();
   return true;
 }
@@ -29816,6 +29944,584 @@ function getMutationTierOdds(owner) {
     chaos: Math.min(0.7, 0.2 + (lucky * 0.08) + (chaosLucky * 0.15)),
     doom: Math.min(0.2, 0.025 + (lucky * 0.01) + (chaosLucky * 0.025))
   };
+}
+
+function getMutationStatusPotency(owner, definition = null) {
+  const multiplier = Math.max(1, Number(state.mutationPositivePotencyMultiplier?.[owner]) || 1);
+  if (definition?.positive) {
+    return multiplier;
+  }
+  return 1;
+}
+
+function isMutationStatusBlocked(owner, definition, options = {}) {
+  if (!owner || !definition) {
+    return true;
+  }
+  if (state.mutationQuarantineRounds?.[owner] > 0 && options.transferred) {
+    return true;
+  }
+  if (definition.negative && state.mutationImmunityRounds?.[owner] > 0) {
+    return true;
+  }
+  if (definition.positive && !canGainPositiveStatus(owner)) {
+    return true;
+  }
+  return false;
+}
+
+function getMutationStatusPoolForRoll(owner) {
+  return getMutationEligibleStatusDefinitions();
+}
+
+function getMutationRollCount(owner) {
+  const override = Number(state.mutationNextRollCount?.[owner]);
+  if (override > 0) {
+    delete state.mutationNextRollCount[owner];
+    return getRandomInt(override, override + 2);
+  }
+  return getRandomInt(1, 3);
+}
+
+function addMutationDurationToStatus(status, rounds) {
+  if (!status || !Number.isFinite(Number(rounds))) {
+    return false;
+  }
+  status.expiresAt = Math.max(Number(status.expiresAt) || state.round, Number(status.expiresAt) || state.round) + Math.max(0, Number(rounds) || 0);
+  status.rounds = Math.max(1, Number(status.expiresAt) - state.round + 1);
+  return true;
+}
+
+function multiplyMutationStatusStacks(status, multiplier = 2) {
+  if (!status) {
+    return false;
+  }
+  const nextMultiplier = Math.max(1, Number(multiplier) || 1);
+  if (status.synthetic) {
+    const definition = getMutationDefinitionForStatus(status);
+    return Boolean(definition && applyMutationStatus(
+      status.owner,
+      definition,
+      getMutationStatusRemaining(status),
+      { stackMultiplier: nextMultiplier }
+    ));
+  }
+  const cleanup = status.cleanup;
+  if (!cleanup) {
+    status.potencyMultiplier = Math.max(1, Number(status.potencyMultiplier) || 1) * nextMultiplier;
+    status.stacks = Math.max(1, Number(status.stacks) || 1) * nextMultiplier;
+    return true;
+  }
+  if (cleanup.kind === "stack") {
+    const store = state[cleanup.key];
+    const current = getEffectStackCount(store?.[status.owner]);
+    if (current <= 0) return false;
+    store[status.owner] = { count: current * nextMultiplier };
+  } else if (cleanup.kind === "counter") {
+    const store = state[cleanup.key];
+    const current = Math.max(0, Number(store?.[status.owner]) || 0);
+    if (current <= 0) return false;
+    store[status.owner] = current * nextMultiplier;
+  } else {
+    status.potencyMultiplier = Math.max(1, Number(status.potencyMultiplier) || 1) * nextMultiplier;
+  }
+  status.stacks = Math.max(1, Number(status.stacks) || 1) * nextMultiplier;
+  cleanup.stackMultiplier = Math.max(1, Number(cleanup.stackMultiplier) || 1) * nextMultiplier;
+  return true;
+}
+
+function isMutationStatusStackable(status) {
+  if (!status || status.triggered || status.permanentStatus) {
+    return false;
+  }
+  return !["mutationOnly", "globalCounter"].includes(status.cleanup?.kind);
+}
+
+function getMutationStatusStackCount(status) {
+  if (!status) {
+    return 0;
+  }
+  if (Number(status.stacks) > 0) {
+    return Math.max(1, Number(status.stacks));
+  }
+  const cleanup = status.cleanup || {};
+  if (cleanup.kind === "stack") {
+    return Math.max(0, getEffectStackCount(state[cleanup.key]?.[status.owner]));
+  }
+  return 1;
+}
+
+function reduceMutationStatusDuration(status, rounds = 3) {
+  if (!status) {
+    return false;
+  }
+  const amount = Math.max(0, Number(rounds) || 0);
+  if (amount <= 0) {
+    return false;
+  }
+  status.expiresAt = Math.max(state.round - 1, (Number(status.expiresAt) || state.round) - amount);
+  status.rounds = Math.max(0, status.expiresAt - state.round + 1);
+  const cleanup = status.cleanup || {};
+  if (cleanup.kind === "counter") {
+    state[cleanup.key][status.owner] = Math.max(0, (Number(state[cleanup.key]?.[status.owner]) || 0) - amount);
+  } else if (cleanup.kind === "chaosCounter") {
+    updateChaosStatus(status.owner, {
+      [cleanup.key]: Math.max(0, (Number(getChaosStatus(status.owner)[cleanup.key]) || 0) - amount)
+    });
+  } else if (cleanup.kind === "chaosArray") {
+    const next = (getChaosStatus(status.owner)[cleanup.key] || [])
+      .map((entry) => entry.mutationId === status.mutationId
+        ? { ...entry, remaining: Math.max(0, (Number(entry.remaining) || 0) - amount) }
+        : entry)
+      .filter((entry) => entry.remaining > 0);
+    updateChaosStatus(status.owner, { [cleanup.key]: next });
+  } else if (cleanup.kind === "arrayEntry") {
+    state[cleanup.key] = (state[cleanup.key] || [])
+      .map((entry) => {
+        if (entry.mutationId !== status.mutationId) {
+          return entry;
+        }
+        if (Number.isFinite(Number(entry.remaining))) {
+          return { ...entry, remaining: Math.max(0, Number(entry.remaining) - amount) };
+        }
+        if (Number.isFinite(Number(entry.round))) {
+          return { ...entry, round: Math.min(state.round, Number(entry.round)) };
+        }
+        return entry;
+      })
+      .filter((entry) => !Number.isFinite(Number(entry.remaining)) || entry.remaining > 0);
+  }
+  return true;
+}
+
+function applyMutationOverclockAtTurnEnd(owner) {
+  if (!owner || !state.mutationOverclockPending?.[owner]) {
+    return 0;
+  }
+  const statuses = getCopyableActiveStatusEntries(owner)
+    .filter((status) => !status.triggered
+      && getMutationStatusRemaining(status) > 0
+      && getMutationDefinitionForStatus(status)?.positive);
+  statuses.forEach((status) => reduceMutationStatusDuration(status, 3));
+  delete state.mutationOverclockPending[owner];
+  delete state.mutationPositivePotencyMultiplier[owner];
+  pruneMutationStatuses();
+  return statuses.length;
+}
+
+function resolveMutationChainReaction(owner, status, events = []) {
+  const definition = getMutationDefinitionForStatus(status);
+  const cleanup = status?.cleanup || {};
+  const multiplier = 2;
+  if (!definition || !status?.triggerOnce || status.triggered) {
+    return false;
+  }
+  const targetOwner = cleanup.targetOwner || status.targetOwner || owner;
+  const loss = (target, percent, source) => {
+    const amount = Math.floor(Math.max(0, getScore(target)) * percent * multiplier);
+    const applied = applyProtectedScoreLoss(target, amount, source, events);
+    if (applied > 0) {
+      queueStatFlash("bomb", source, formatSignedStat(-applied, "Point"), { owners: [target], complex: true });
+    }
+    return applied;
+  };
+  if (definition.id === "time_bomb") {
+    const ownerScore = getScore(owner);
+    getActiveOwners()
+      .filter((target) => target !== owner && getScore(target) > ownerScore)
+      .forEach((target) => loss(target, 0.1, "Chain Reaction · Time Bomb"));
+  } else if (definition.id === "debuff_time_bomb") {
+    loss(owner, 0.1, "Chain Reaction · Debuff Time Bomb");
+  } else if (definition.id === "cluster_bomb") {
+    loss(owner, 0.1, "Chain Reaction · Cluster Bomb");
+    const shrapnel = getRandomInt(10, 20) * multiplier;
+    updateChaosStatus(owner, { shrapnel: Math.max(0, Number(getChaosStatus(owner).shrapnel) || 0) + shrapnel });
+    queueStatFlash("bomb", "Chain Reaction · Cluster Bomb", `+${shrapnel} Shrapnel`, { owners: [owner], complex: true });
+  } else if (definition.id === "hot_potato_status") {
+    const target = getRandomActiveOwner();
+    if (target) {
+      const deltas = Object.fromEntries(getActiveOwners().map((candidate) => [candidate, 0]));
+      applyHotPotatoHit(target, deltas, events, owner, 0.4, "Chain Reaction · Hot Potato");
+      if (deltas[target] < 0) addScore(target, deltas[target]);
+    }
+  } else if (definition.id === "death_bomb_status") {
+    if (targetOwner && getActiveOwners().includes(targetOwner)) {
+      loss(targetOwner, 0.2, "Chain Reaction · Death Bomb");
+      state.deathMarks = [...(state.deathMarks || []), {
+        owner,
+        targetOwner,
+        remaining: Math.max(1, Number(cleanup.deathMarkRounds) || 2),
+        mutation: true
+      }];
+    }
+  } else if (definition.id === "wrath_bomb_status") {
+    if (targetOwner && getActiveOwners().includes(targetOwner)) {
+      loss(targetOwner, 0.1, "Chain Reaction · Wrath Bomb");
+    }
+  } else {
+    return false;
+  }
+  markMutationStatusTriggered(owner, status.id, status.mutationId);
+  return true;
+}
+
+function getMutationStatusEntriesForOwner(owner, predicate = () => true) {
+  return getCopyableActiveStatusEntries(owner)
+    .filter((status) => !status.triggered && getMutationStatusRemaining(status) > 0 && predicate(status));
+}
+
+function getMutationStatusDefinitionOpposite(definition) {
+  const oppositeIds = {
+    cocktail_debt: "lucky_side",
+    failed_investment: "capitalism",
+    freeze_ray: "deep_freeze",
+    time_bomb: "pocket_shield",
+    debuff_time_bomb: "encryption",
+    chaos_debt: "reflector_shield",
+    streak_loss_amplifier: "streak_guard",
+    unluck: "lucky_side",
+    chaos_sickness: "resistant_streak",
+    cluster_bomb: "pocket_shield",
+    world_burn: "deep_freeze",
+    lawn_mower: "deep_freeze",
+    hot_in_here: "deep_freeze",
+    inferno: "deep_freeze",
+    reduce_to_ashes: "deep_freeze",
+    unstable_conduit: "lucky_side",
+    error_404: "encryption",
+    explosive_temper: "deep_freeze",
+    penalty_cloud_status: "deep_freeze",
+    event_horizon_status: "encryption",
+    death_mark_status: "streak_guard",
+    death_bomb_status: "pocket_shield",
+    hot_potato_status: "lucky_side",
+    molotov_burning: "deep_freeze",
+    virus_corruption: "capitalism",
+    penalty_storm: "streak_guard",
+    target_wipe_status: "pocket_shield"
+  };
+  const wanted = oppositeIds[definition?.id];
+  if (wanted) {
+    return getMutationDefinitionForStatus({ id: wanted });
+  }
+  return getMutationEligibleStatusDefinitions().find((candidate) => candidate.positive && candidate.category === definition?.category)
+    || getMutationEligibleStatusDefinitions().find((candidate) => candidate.positive)
+    || null;
+}
+
+function getMutationStatusMultiplier(owner, status) {
+  const base = Math.max(1, Number(status?.stacks) || 1);
+  return base * Math.max(1, Number(status?.potencyMultiplier) || 1);
+}
+
+function addPermanentMutation(owner, options = {}) {
+  const current = getPermanentMutations(owner);
+  const available = shuffleMutationValues(permanentMutationDefinitions)
+    .filter((mutation) => !current.includes(mutation.id))
+    .filter((mutation) => !options.positiveOnly || isPositivePermanentMutation(mutation));
+  const count = Math.max(1, Number(options.count) || 1);
+  const added = available.slice(0, count);
+  if (!added.length) {
+    return [];
+  }
+  state.permanentMutations[owner] = [...current, ...added.map((mutation) => mutation.id)];
+  const stateStore = getPermanentMutationState();
+  added.forEach((mutation) => {
+    if (mutation.id === "degenerative_gene") {
+      stateStore.degenerativePending[owner] = true;
+    }
+    if (mutation.id === "unstable_symbiosis" && !stateStore.symbiosisTargets[owner]) {
+      const targets = getActiveOwners().filter((target) => target !== owner);
+      if (targets.length) {
+        stateStore.symbiosisTargets[owner] = targets[Math.floor(Math.random() * targets.length)];
+      }
+    }
+  });
+  return added;
+}
+
+const positivePermanentMutationIds = new Set([
+  "adaptive_metabolism", "apex_mutation", "status_mimicry", "parasitic_growth", "viral_spread",
+  "mitosis", "dominant_gene", "chimera", "evolutionary_comeback", "mutation_stabilizer", "unstable_symbiosis"
+]);
+
+function isPositivePermanentMutation(mutation) {
+  return Boolean(mutation && positivePermanentMutationIds.has(mutation.id));
+}
+
+function replacePermanentMutations(owner) {
+  const count = Math.max(1, getPermanentMutations(owner).length);
+  state.permanentMutations[owner] = [];
+  const added = addPermanentMutation(owner, { count });
+  if (!added.length) {
+    return false;
+  }
+  const stateStore = getPermanentMutationState();
+  delete stateStore.symbiosisTargets[owner];
+  if (added.some((mutation) => mutation.id === "unstable_symbiosis")) {
+    const targets = getActiveOwners().filter((target) => target !== owner);
+    if (targets.length) {
+      stateStore.symbiosisTargets[owner] = targets[Math.floor(Math.random() * targets.length)];
+    }
+  }
+  return true;
+}
+
+function openMutationStatusSelector(owner, power, powerId) {
+  const negativeOnly = power.type === "bug_fix";
+  const stackableOnly = power.type === "potency_amplifier";
+  const statuses = getMutationStatusEntriesForOwner(owner, (status) => {
+    const definition = getMutationDefinitionForStatus(status);
+    return definition
+      && (!negativeOnly || definition.negative)
+      && (!stackableOnly || isMutationStatusStackable(status));
+  });
+  if (!statuses.length) {
+    return false;
+  }
+  elements.targetTitle.textContent = power.name;
+  elements.targetModal.dataset.mode = "mutation-status";
+  elements.targetModal.dataset.owner = owner;
+  elements.targetModal.dataset.power = powerId;
+  elements.targetList.replaceChildren();
+  [...new Map(statuses.map((status) => [status.id, status])).values()].forEach((status) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "target-option mutation-status-option";
+    button.dataset.mutationStatusId = getMutationStatusSelectionId(status);
+    button.innerHTML = `<span><strong>${status.name}</strong><small>${Math.max(1, Number(status.stacks) || 1)}x | ${getMutationStatusRemaining(status)} round${getMutationStatusRemaining(status) === 1 ? "" : "s"}</small></span>`;
+    elements.targetList.appendChild(button);
+  });
+  setHidden(elements.targetModal, false);
+  playSound("click");
+  return true;
+}
+
+function getMutationStatusSelectionId(status) {
+  if (!status) {
+    return "";
+  }
+  return status.synthetic ? `synthetic:${status.id}` : String(status.mutationId || "");
+}
+
+function getMutationStatusBySelection(owner, selectionId) {
+  return getMutationStatusEntriesForOwner(owner).find((status) => (
+    getMutationStatusSelectionId(status) === String(selectionId || "")
+  )) || null;
+}
+
+function queueMutationPowerResult(owner, power, details, kind = "mutation") {
+  queueStatFlash(kind, power.name, details, { owners: [owner], complex: true, priority: true });
+}
+
+function extendMutationStatuses(owner, rounds = 1) {
+  let extended = 0;
+  getMutationStatusEntries(owner).forEach((status) => {
+    if (status.permanentStatus || status.triggered || getMutationStatusRemaining(status) <= 0) return;
+    if (addMutationDurationToStatus(status, rounds)) extended += 1;
+  });
+  return extended;
+}
+
+function removeMutationStatusAndReward(owner, status) {
+  if (!status) return 0;
+  const reward = Math.max(0, getMutationStatusRemaining(status)) * 500;
+  removeAnyCopyableStatus(owner, status);
+  addScore(owner, reward);
+  return reward;
+}
+
+function chooseRandomMutationStatus(owner, predicate = () => true) {
+  const statuses = getMutationStatusEntriesForOwner(owner, predicate);
+  return statuses.length ? statuses[Math.floor(Math.random() * statuses.length)] : null;
+}
+
+function applyMutationPower(owner, power, meta = {}) {
+  if (!isMutationPowerMatch() || !power?.mutationPower) {
+    return false;
+  }
+  const statusById = (id) => getMutationDefinitionForStatus({ id });
+  const addRandomStatus = (positiveOnly = false, rounds = 3, targetOwner = owner, options = {}) => {
+    const pool = getMutationEligibleStatusDefinitions().filter((definition) => !positiveOnly || definition.positive);
+    const definition = pickWeightedMutationStatus(pool, targetOwner);
+    return definition ? applyMutationStatus(targetOwner, definition, rounds, options) : null;
+  };
+
+  switch (power.type) {
+    case "duration_extender": {
+      const count = extendMutationStatuses(owner, 1);
+      queueMutationPowerResult(owner, power, count ? `${count} Status Effect${count === 1 ? "" : "s"} extended · +1 round` : "No active Status Effects");
+      break;
+    }
+    case "bug_fix": {
+      const status = getMutationStatusBySelection(owner, meta.mutationStatusId)
+        || chooseRandomMutationStatus(owner, (entry) => getMutationDefinitionForStatus(entry)?.negative);
+      const reward = removeMutationStatusAndReward(owner, status);
+      queueMutationPowerResult(owner, power, status ? [`${status.name} removed`, `+${reward.toLocaleString()} Points`] : "No negative Status Effect");
+      break;
+    }
+    case "catalyst":
+      state.mutationNextRollStackMultiplier[owner] = 2;
+      queueMutationPowerResult(owner, power, "Next round: every rolled Status Effect at 2x stacks");
+      break;
+    case "potency_amplifier": {
+      const status = getMutationStatusBySelection(owner, meta.mutationStatusId)
+        || chooseRandomMutationStatus(owner, (entry) => Boolean(entry.stacks || entry.cleanup?.kind === "stack"));
+      const amplified = status && multiplyMutationStatusStacks(status, 2);
+      queueMutationPowerResult(owner, power, amplified ? `${status.name} stacks doubled` : "No stackable Status Effect");
+      break;
+    }
+    case "evolutionary_leap": {
+      const changed = replacePermanentMutations(owner);
+      queueMutationPowerResult(owner, power, changed ? "Permanent Mutations evolved" : "No new Mutation available");
+      break;
+    }
+    case "positive_infuser": {
+      const status = addRandomStatus(true, 3);
+      queueMutationPowerResult(owner, power, status ? `${status.name} · ${status.rounds} rounds` : "No positive Status Effect available");
+      break;
+    }
+    case "negative_extractor": {
+      const source = chooseRandomMutationStatus(owner, (entry) => getMutationDefinitionForStatus(entry)?.negative);
+      const target = meta.targetOwner;
+      const copied = source && target
+        ? copyMutationStatusToOwner(source, target, getMutationStatusRemaining(source), {
+          stackMultiplier: getMutationStatusStackCount(source),
+          preserveDuration: true
+        })
+        : null;
+      if (copied) removeAnyCopyableStatus(owner, source);
+      queueMutationPowerResult(owner, power, copied ? `${source.name} moved to ${getOwnerLabel(target)}` : "No transferable negative Status Effect");
+      break;
+    }
+    case "immunity_power": {
+      applyMutationStatus(owner, statusById("mutation_immunity_status"), 3);
+      queueMutationPowerResult(owner, power, "Immunity · 3 rounds");
+      break;
+    }
+    case "bonus_roll":
+      state.mutationNextRollCount[owner] = 3;
+      queueMutationPowerResult(owner, power, "Next round: 3-5 Status Effects");
+      break;
+    case "broken_test_tube": {
+      const added = addPermanentMutation(owner);
+      queueMutationPowerResult(owner, power, added.length ? added[0].name : "No new Mutation available");
+      break;
+    }
+    case "contagion": {
+      const targets = [...new Set((meta.targetOwners || [meta.targetOwner]).filter(Boolean))].slice(0, 3);
+      const negatives = getCopyableActiveStatusEntries(owner).filter((entry) => (
+        !entry.triggered && getMutationStatusRemaining(entry) > 0 && getMutationDefinitionForStatus(entry)?.negative
+      ));
+      let copied = 0;
+      targets.forEach((target) => negatives.forEach((status) => {
+        if (copyMutationStatusToOwner(status, target, getMutationStatusRemaining(status), {
+          stackMultiplier: getMutationStatusStackCount(status),
+          preserveDuration: true
+        })) copied += 1;
+      }));
+      queueMutationPowerResult(owner, power, copied ? `${copied} negative Status Effect${copied === 1 ? "" : "s"} spread` : "No negative Status Effects to spread");
+      break;
+    }
+    case "chain_reaction": {
+      state.mutationChainReactionMultiplier[owner] = 2;
+      const triggerable = getCopyableActiveStatusEntries(owner).filter((entry) => (
+        !entry.triggered && getMutationStatusRemaining(entry) > 0 && Boolean(entry.triggerOnce)
+      ));
+      const events = [];
+      const triggered = triggerable.filter((status) => resolveMutationChainReaction(owner, status, events)).length;
+      delete state.mutationChainReactionMultiplier[owner];
+      delete state.mutationChainReactionPending[owner];
+      if (events.length) {
+        queueMutationPowerResult(owner, power, events.slice(0, 2));
+      }
+      queueMutationPowerResult(owner, power, triggered ? `${triggered} Status Effect${triggered === 1 ? "" : "s"} triggered at 2x potency` : "No trigger-based Status Effects");
+      break;
+    }
+    case "quarantine":
+      applyMutationStatus(owner, statusById("quarantine_status"), 3);
+      queueMutationPowerResult(owner, power, "Quarantine · 3 rounds");
+      break;
+    case "status_inversion": {
+      applyMutationStatus(owner, statusById("status_inversion_status"), 3);
+      const negatives = getMutationStatusEntriesForOwner(owner, (entry) => getMutationDefinitionForStatus(entry)?.negative);
+      let inverted = 0;
+      negatives.forEach((status) => {
+        const definition = getMutationStatusDefinitionOpposite(getMutationDefinitionForStatus(status));
+        const remaining = getMutationStatusRemaining(status);
+        if (definition && removeAnyCopyableStatus(owner, status) && applyMutationStatus(owner, definition, remaining, {
+          stackMultiplier: getMutationStatusStackCount(status),
+          preserveDuration: true,
+          resolvingInversion: true
+        })) inverted += 1;
+      });
+      queueMutationPowerResult(owner, power, inverted ? `${inverted} Status Effect${inverted === 1 ? "" : "s"} inverted` : "No negative Status Effects");
+      break;
+    }
+    case "mutation_catalyst":
+      state.mutationPermanentPotencyMultiplier[owner] = Math.max(2, Number(state.mutationPermanentPotencyMultiplier[owner]) || 1);
+      queueMutationPowerResult(owner, power, "Permanent Mutation potency doubled");
+      break;
+    case "overclock_protocol": {
+      state.mutationPositivePotencyMultiplier[owner] = Math.max(3, Number(state.mutationPositivePotencyMultiplier[owner]) || 1);
+      const positive = getMutationStatusEntriesForOwner(owner, (entry) => getMutationDefinitionForStatus(entry)?.positive);
+      positive.forEach((status) => {
+        multiplyMutationStatusStacks(status, 3);
+      });
+      state.mutationOverclockPending[owner] = true;
+      queueMutationPowerResult(owner, power, [`${positive.length} positive Status Effect${positive.length === 1 ? "" : "s"} overclocked`, "Durations reduced by 3 rounds"]);
+      break;
+    }
+    case "patient_zero": {
+      let stolen = 0;
+      getActiveOwners().filter((target) => target !== owner).forEach((target) => {
+        const source = chooseRandomMutationStatus(target, (entry) => getMutationDefinitionForStatus(entry)?.positive);
+        const copied = source && copyMutationStatusToOwner(source, owner, 3, {
+          stackMultiplier: 1,
+          preserveDuration: true,
+          skipSovereign: true
+        });
+        if (copied) {
+          copied.stacks = 1;
+          copied.potencyMultiplier = 1;
+          removeAnyCopyableStatus(target, source);
+          stolen += 1;
+        }
+      });
+      queueMutationPowerResult(owner, power, `${stolen} positive Status Effect${stolen === 1 ? "" : "s"} stolen`);
+      break;
+    }
+    case "gamble_mutagen": {
+      const pool = shuffleMutationValues(getMutationEligibleStatusDefinitions()
+        .filter((definition) => !definition.triggerOnApply)).slice(0, 5);
+      let gained = 0;
+      pool.forEach((definition) => {
+        const status = applyMutationStatus(owner, definition, 1, { permanentStatus: true, stackMultiplier: 1 });
+        if (status) {
+          status.potencyMultiplier = 1;
+          status.stacks = 1;
+          gained += 1;
+        }
+      });
+      queueMutationPowerResult(owner, power, `${gained} Status Effect${gained === 1 ? "" : "s"} became permanent`);
+      break;
+    }
+    case "sovereign":
+      state.mutationSovereignRounds[owner] = Math.max(Number(state.mutationSovereignRounds[owner]) || 0, 3);
+      queueMutationPowerResult(owner, power, "Sovereign · 3 rounds");
+      break;
+    case "ultimate_mutation": {
+      const added = addPermanentMutation(owner, { count: 2, positiveOnly: true });
+      queueMutationPowerResult(owner, power, added.length ? added.map((mutation) => mutation.name) : "No new Mutation available");
+      break;
+    }
+    default:
+      return false;
+  }
+  renderScore();
+  renderPowerUps();
+  renderMutationSummary();
+  return true;
 }
 
 function pickWeightedMutationStatus(definitions, owner) {
@@ -30060,7 +30766,7 @@ function pruneMutationStatuses() {
       }
       // The expiry round is still active. This matters for trigger-once
       // statuses whose scheduled action runs at the start of that round.
-      if ((Number(status.expiresAt) || 0) < state.round || isMutationStatusTriggered(status)) {
+      if ((Number(status.expiresAt) || 0) < state.round || (isMutationStatusTriggered(status) && !status.permanentStatus)) {
         expired.push(status);
       } else {
         active.push(status);
@@ -30078,8 +30784,37 @@ function pruneMutationStatuses() {
   });
 }
 
-function applyMutationStatus(owner, definition, rounds) {
-  if (!definition || !isMutationStatusEligible(definition) || definition.category === "time" || (definition.positive && !canGainPositiveStatus(owner))) {
+function applyMutationStatus(owner, definition, rounds, options = {}) {
+  if (definition?.negative
+    && !options.resolvingInversion
+    && (state.mutationStatusInversionRounds?.[owner] || 0) > 0) {
+    const opposite = getMutationStatusDefinitionOpposite(definition);
+    if (opposite) {
+      return applyMutationStatus(owner, opposite, rounds, {
+        ...options,
+        resolvingInversion: true,
+        stackMultiplier: Math.max(1, Number(options.stackMultiplier) || 1)
+      });
+    }
+  }
+  if (definition?.negative && !options.skipSovereign && (state.mutationSovereignRounds?.[owner] || 0) > 0) {
+    const leaders = getLeaders();
+    const redirectedOwners = isFirstPlace(owner)
+      ? getActiveOwners().filter((target) => target !== owner)
+      : leaders.filter((target) => target !== owner);
+    const redirected = redirectedOwners
+      .map((target) => applyMutationStatus(target, definition, rounds, {
+        ...options,
+        skipSovereign: true,
+        redirectedBySovereign: true
+      }))
+      .find(Boolean) || null;
+    if (redirected) {
+      queueStatFlash("mutation", "Sovereign", "Negative Status Redirected", { owners: [owner, ...redirectedOwners], complex: true });
+    }
+    return redirected;
+  }
+  if (!definition || !isMutationStatusEligible(definition) || definition.category === "time" || isMutationStatusBlocked(owner, definition, options)) {
     return null;
   }
   if (shouldBlockPermanentMutationStatus(owner, { positive: Boolean(definition.positive), negative: Boolean(definition.negative) })) {
@@ -30088,12 +30823,25 @@ function applyMutationStatus(owner, definition, rounds) {
   if (definition.negative && consumeDebuffShield(owner, "Mutation")) {
     return null;
   }
-  const effectiveRounds = getPermanentMutationStatusRounds(owner, definition, rounds);
+  const effectiveRounds = options.preserveDuration
+    ? Math.max(1, Number(rounds) || 1)
+    : getPermanentMutationStatusRounds(owner, definition, rounds);
+  const stackMultiplier = Math.max(1, Number(options.stackMultiplier) || 1)
+    * getMutationStatusPotency(owner, definition);
   state.mutationStatusSequence = Math.max(0, Number(state.mutationStatusSequence) || 0) + 1;
   const mutationId = `mutation-${state.round}-${state.mutationStatusSequence}`;
   const cleanup = definition.apply(owner, effectiveRounds, mutationId);
   if (!cleanup) {
     return null;
+  }
+  if (stackMultiplier > 1) {
+    cleanup.stackMultiplier = stackMultiplier;
+    if (cleanup.kind === "stack") {
+      addEffectStack(state[cleanup.key], owner, stackMultiplier - 1);
+    } else if (cleanup.kind === "counter") {
+      const current = Math.max(0, Number(state[cleanup.key]?.[owner]) || 0);
+      addOwnerDurationRounds(state[cleanup.key], owner, current * (stackMultiplier - 1));
+    }
   }
   consumeDegenerativeGene(owner, definition);
   const status = {
@@ -30106,13 +30854,15 @@ function applyMutationStatus(owner, definition, rounds) {
     effectKey: definition.effectKey || definition.id,
     triggerOnce: Boolean(definition.triggerOnce),
     triggerOnApply: Boolean(definition.triggerOnApply),
+    stacks: stackMultiplier,
     mutationId,
-    rounds: effectiveRounds,
-    expiresAt: state.round + effectiveRounds - 1,
+    rounds: options.permanentStatus ? Number.MAX_SAFE_INTEGER : effectiveRounds,
+    expiresAt: options.permanentStatus ? Number.MAX_SAFE_INTEGER : state.round + effectiveRounds - 1,
     short: definition.short || "",
     description: definition.description || "",
     cleanup,
-    source: "Mutation"
+    source: "Mutation",
+    permanentStatus: Boolean(options.permanentStatus)
   };
   state.mutationStatuses[owner] = [...getMutationStatusEntries(owner), status];
   const affectedOwner = status.targetOwner || status.owner;
@@ -30128,6 +30878,17 @@ function applyMutationStatus(owner, definition, rounds) {
   ];
   if (status.triggerOnApply) {
     markMutationStatusTriggered(owner, status.id, status.mutationId);
+  }
+  if (definition.positive && !options.skipSovereign && isFirstPlace(owner)) {
+    Object.entries(state.mutationSovereignRounds || {})
+      .filter(([sovereignOwner, remaining]) => sovereignOwner !== owner && Number(remaining) > 0 && getActiveOwners().includes(sovereignOwner))
+      .forEach(([sovereignOwner]) => {
+        copyMutationStatusToOwner(status, sovereignOwner, getMutationStatusRemaining(status), {
+          stackMultiplier: getMutationStatusStackCount(status),
+          preserveDuration: true,
+          skipSovereign: true
+        });
+      });
   }
   return status;
 }
@@ -30148,18 +30909,20 @@ function applyMutationStatusRoundStart() {
     // round. The status implementation owns its stacking rules; the pool
     // only prevents the same definition from being selected twice in one
     // three-status roll.
-    const count = getRandomInt(1, 3);
+    const count = getMutationRollCount(owner);
+    const stackMultiplier = Math.max(1, Number(state.mutationNextRollStackMultiplier?.[owner]) || 1);
+    delete state.mutationNextRollStackMultiplier[owner];
     const applied = [];
-    const available = [...pool];
+    const available = [...getMutationStatusPoolForRoll(owner)];
     while (available.length && applied.length < count) {
       const definition = pickWeightedMutationStatus(available, owner);
       if (!definition) {
         break;
       }
       available.splice(available.indexOf(definition), 1);
-      const status = applyMutationStatus(owner, definition, getRandomInt(2, 3));
+      const status = applyMutationStatus(owner, definition, getRandomInt(2, 3), { stackMultiplier });
       if (status) {
-        applied.push(`${status.name} · ${status.rounds}r`);
+        applied.push(`${status.name}${stackMultiplier > 1 ? ` x${stackMultiplier}` : ""} · ${status.rounds}r`);
       }
     }
     if (applied.length) {
@@ -30518,7 +31281,7 @@ function playRolledPower(owner, picked, sourcePower) {
 }
 
 function playRandomPowerFromDeck(owner, sourcePower, usedPowerIds = new Set()) {
-  const options = powerDeck
+  const options = getActivePowerDeck()
     .filter((power) => power.id !== sourcePower.id && power.type !== "gamblers_dice" && !usedPowerIds.has(power.id))
     .filter((power) => !sourcePower.forceChaosRolls || canPowerBecomeChaosInfused(power))
     .map((power) => sourcePower.forceChaosRolls ? getPowerById(getChaosInfusedPowerId(power.id)) : power)
@@ -31234,11 +31997,18 @@ function consumeImmediatePower(owner, power, meta = {}) {
     return;
   }
 
+  if (isMutationPowerMatch() && power.mutationPower) {
+    applyMutationPower(owner, power, meta);
+    markTargetedPowerAnswerDamage({ owner, power, meta: state.playedPowerMeta[owner] || recordMeta });
+    broadcastRoomPowerState(owner, power, state.playedPowerMeta[owner] || recordMeta);
+    return;
+  }
+
   if (power.type === "next_question") {
     if (isChaosInfusedPower(power)) {
       state.nextQuestionPreferences = {
         theme: String(meta.selectedTheme || ""),
-        difficulty: ["easy", "medium", "hard"].includes(String(meta.selectedDifficulty || "")) ? String(meta.selectedDifficulty) : "",
+        difficulty: ["easy", "medium", "hard", "brutal"].includes(String(meta.selectedDifficulty || "")) ? String(meta.selectedDifficulty) : "",
         questionStyle: [MULTIPLE_CHOICE_STYLE, "standard"].includes(String(meta.selectedQuestionStyle || "")) ? String(meta.selectedQuestionStyle) : ""
       };
       state.nextPreferredTheme = state.nextQuestionPreferences.theme;
@@ -32057,13 +32827,13 @@ function setupPowerHands() {
   } else {
     state.powerHands = isDuelMode()
     ? {
-      player: drawPowerHand(3),
-      opponent: drawPowerHand(3),
+      player: drawPowerHand(3, getPowerDrawOptions("player")),
+      opponent: drawPowerHand(3, getPowerDrawOptions("opponent")),
       bot1: [],
       bot2: []
     }
     : {
-      player: drawPowerHand(3),
+      player: drawPowerHand(3, getPowerDrawOptions("player")),
       opponent: [],
       ...Object.fromEntries(getActiveBotOwners().map((owner) => [
         owner,
@@ -32717,6 +33487,13 @@ function selectPowerUp(powerId) {
     return;
   }
 
+  if (power.mutationPower && (power.type === "bug_fix" || power.type === "potency_amplifier")) {
+    if (openMutationStatusSelector(owner, power, powerId)) {
+      return;
+    }
+    return;
+  }
+
   if (power.type === "ai_answer") {
     elements.answerInput.value = generateAutoAnswer(owner, { correctChance: isChaosInfusedPower(power) ? 0.9 : undefined });
     elements.answerInput.focus();
@@ -32731,7 +33508,7 @@ function selectPowerUp(powerId) {
       consumeImmediatePower(owner, power, isChaosInfusedPower(power)
         ? {
           selectedTheme: Math.random() < 0.5 ? "" : themes[Math.floor(Math.random() * themes.length)],
-          selectedDifficulty: Math.random() < 0.5 ? "" : ["easy", "medium", "hard"][Math.floor(Math.random() * 3)],
+          selectedDifficulty: Math.random() < 0.5 ? "" : ["easy", "medium", "hard", "brutal"][Math.floor(Math.random() * 4)],
           selectedQuestionStyle: Math.random() < 0.5 ? "" : (Math.random() < 0.5 ? "standard" : MULTIPLE_CHOICE_STYLE)
         }
         : { selectedTheme: themes[Math.floor(Math.random() * themes.length)] });
@@ -32819,6 +33596,16 @@ function isPowerUsable(power, owner) {
 
   if (isPowerDisabledByQuestionStyle(power)) {
     return false;
+  }
+
+  if (power.mutationPower && power.type === "bug_fix") {
+    return getMutationStatusEntriesForOwner(owner, (status) => (
+      Boolean(getMutationDefinitionForStatus(status)?.negative)
+    )).length > 0;
+  }
+
+  if (power.mutationPower && power.type === "potency_amplifier") {
+    return getMutationStatusEntriesForOwner(owner, isMutationStatusStackable).length > 0;
   }
 
   if (power.type === "last_chance") {
@@ -33242,6 +34029,19 @@ function commitSingleBotPowerUp(owner, options = {}) {
   }
 
   const power = getPowerById(powerId);
+  if (power?.mutationPower && (power.type === "bug_fix" || power.type === "potency_amplifier")) {
+    const selectorStatuses = getMutationStatusEntriesForOwner(owner, (status) => (
+      power.type === "bug_fix"
+        ? Boolean(getMutationDefinitionForStatus(status)?.negative)
+        : isMutationStatusStackable(status)
+    ));
+    const selectedStatus = selectorStatuses[Math.floor(Math.random() * selectorStatuses.length)];
+    if (!selectedStatus) {
+      return false;
+    }
+    consumeImmediatePower(owner, power, { mutationStatusId: getMutationStatusSelectionId(selectedStatus) });
+    return true;
+  }
   if (power?.type === "ai_answer") {
     lockRoundAnswer(owner, generateAutoAnswer(owner, { correctChance: isChaosInfusedPower(power) ? 0.9 : undefined }));
     consumeImmediatePower(owner, power);
@@ -34854,7 +35654,7 @@ function buildDevToolScreen() {
         <form class="dev-create-form" id="devQuestionCreateForm">
           <div class="dev-create-grid dev-create-meta-grid">
             <label><span>Theme</span><select id="devCreateTheme"></select></label>
-            <label><span>Difficulty</span><select id="devCreateDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+            <label><span>Difficulty</span><select id="devCreateDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="brutal">Brutal</option></select></label>
             <label><span>Question type</span><select id="devCreateType"><option value="text">Text</option><option value="image">Image</option></select></label>
             <label><span>Question style</span><select id="devCreateQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
             <label><span>Card language</span><select id="devCreateLanguage"><option value="en">English cards</option><option value="zh-Hans">Chinese cards</option></select></label>
@@ -35210,7 +36010,7 @@ function buildUserQuestionScreen() {
       <form class="dev-create-form" id="userQuestionForm">
         <div class="dev-create-grid dev-create-meta-grid">
           <label><span>Theme</span><select id="userQuestionTheme"></select></label>
-          <label><span>Difficulty</span><select id="userQuestionDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+          <label><span>Difficulty</span><select id="userQuestionDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="brutal">Brutal</option></select></label>
           <label><span>Question type</span><select id="userQuestionType"><option value="text">Text</option><option value="image">Image</option></select></label>
           <label><span>Question style</span><select id="userQuestionStyle"><option value="standard">Standard</option><option value="multiple-choice">Multiple choice</option></select></label>
           <label><span>Strictness</span><select id="userQuestionStrictness"><option value="normal">Normal</option><option value="forgiving">Forgiving</option><option value="strict">Strict</option><option value="exact">Exact</option></select></label>
@@ -35976,7 +36776,7 @@ function createDevSubmissionCard(submission) {
   grid.className = "dev-submission-edit-grid";
   grid.append(
     createReviewSelect("theme", "Theme", triviaThemes, question.theme || triviaThemes[0]),
-    createReviewSelect("difficulty", "Difficulty", ["easy", "medium", "hard"], normalizeDifficulty(question.difficulty)),
+    createReviewSelect("difficulty", "Difficulty", ["easy", "medium", "hard", "brutal"], normalizeDifficulty(question.difficulty)),
     createReviewSelect("type", "Type", ["text", "image"], question.type === "image" ? "image" : "text"),
     createReviewSelect("questionStyle", "Style", ["standard", "multiple-choice"], question.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard"),
     createReviewSelect("gradingStrictness", "Strictness", gradingStrictnessOptions, normalizeGradingStrictness(question.gradingStrictness)),
@@ -36441,7 +37241,7 @@ function renderPowerDebugPowerOptions(scope = "dev") {
   const selected = refs.powerSelect.value || "small_bounty";
   const searchText = String(refs.searchInput?.value || "").trim().toLowerCase();
   const showChaosVersions = Boolean(refs.chaosToggle?.checked);
-  const optionPowers = powerDeck
+  const optionPowers = getActivePowerDeck()
     .flatMap((power) => {
       const chaosPower = canPowerBecomeChaosInfused(power.id)
         ? getPowerById(getChaosInfusedPowerId(power.id))
@@ -39288,6 +40088,17 @@ function resetMatch(mode) {
   state.mutationStatuses = {};
   state.mutationRoundFeed = {};
   state.mutationStatusSequence = 0;
+  state.mutationNextRollCount = {};
+  state.mutationNextRollStackMultiplier = {};
+  state.mutationImmunityRounds = {};
+  state.mutationQuarantineRounds = {};
+  state.mutationStatusInversionRounds = {};
+  state.mutationPositivePotencyMultiplier = {};
+  state.mutationPermanentPotencyMultiplier = {};
+  state.mutationSovereignRounds = {};
+  state.mutationChainReactionMultiplier = {};
+  state.mutationChainReactionPending = {};
+  state.mutationOverclockPending = {};
   state.permanentMutations = {};
   state.permanentMutationState = {
     secondGrantRound: 0,
@@ -41626,7 +42437,7 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
     nextRound: Number(round) || state.round,
     fromRound: Number(state.round) || 0,
     reason: options.autoAdvance ? "auto-advance" : "",
-    nextRoundAt: options.autoAdvance ? Math.max(0, Number(getRoomRoundResultForCurrentRound()?.nextRoundAt) || 0) : 0,
+    nextRoundAt: 0,
     matchId,
     matchSettings,
     questionLanguage: matchSettings.questionLanguage,
@@ -44912,9 +45723,7 @@ async function advanceAfterVerdict(options = {}) {
       // The server may have committed the transition even when the response
       // was lost, so retry the idempotent command once before leaving the host
       // on the loading screen. Normal transitions still use one request.
-      const retry = publishRoomRoundAdvancing(nextRound, {
-        autoAdvance: Boolean(options.autoAdvance)
-      });
+      const retry = publishRoomRoundAdvancing(nextRound);
       advance = await retry;
       if (advance?.ok) {
         void newRound();
@@ -46185,16 +46994,16 @@ function applyPositiveGainModifiers(deltas, owners, events, options = {}) {
     const unluckActive = getChaosStatusStackCount(owner, "unluck") > 0;
     let multiplier = (1 + (capitalismStacks * 0.5)) * (unluckActive ? 0.9 : 1);
     if (hasPermanentMutation(owner, "volatile_genome")) {
-      multiplier *= 1.2;
+      multiplier *= 1 + (0.2 * getPermanentMutationPotency(owner));
     }
     if (hasPermanentMutation(owner, "apex_mutation")
       && correctOwners.has(owner)
       && (Number(startingScores[owner]) || 0) < highScore) {
-      multiplier *= 1.15;
+      multiplier *= 1 + (0.15 * getPermanentMutationPotency(owner));
     }
     if (hasPermanentMutation(owner, "recessive_trait")
       && (Number(startingScores[owner]) || 0) >= highScore) {
-      multiplier *= 0.85;
+      multiplier *= Math.max(0, 1 - (0.15 * getPermanentMutationPotency(owner)));
     }
     if (multiplier === 1) {
       return;
@@ -48923,6 +49732,12 @@ elements.targetModal.addEventListener("click", (event) => {
     if (elements.targetSelectionHint && requirement) {
       elements.targetSelectionHint.textContent = `${requirement.label} · ${nextSelected.length}/${requirement.max}`;
     }
+  }
+
+  const mutationStatusOption = event.target.closest("[data-mutation-status-id]");
+  if (mutationStatusOption) {
+    completeTargetSelection(mutationStatusOption.dataset.mutationStatusId);
+    return;
   }
 
   const xrayDeleteButton = event.target.closest("[data-xray-delete-power]");
