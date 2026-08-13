@@ -489,11 +489,11 @@ const mutationPowerDeck = Object.freeze([
   { id: "mutation_potency_amplifier", name: "Potency Amplifier", rarity: "grey", short: "double stacks", description: "Choose a stackable Status Effect. Its current stack count is doubled immediately.", type: "potency_amplifier", mutationPower: true, targeted: true, immediate: true },
   { id: "mutation_evolutionary_leap", name: "Evolutionary Leap", rarity: "grey", short: "reroll mutations", description: "Replace your permanent Mutations with new permanent Mutations immediately.", type: "evolutionary_leap", mutationPower: true, immediate: true },
   { id: "mutation_positive_infuser", name: "Positive Energy Infuser", rarity: "blue", short: "+1 positive", description: "Immediately gain a random positive Status Effect for 3 rounds.", type: "positive_infuser", mutationPower: true, immediate: true },
-  { id: "mutation_negative_extractor", name: "Negative Energy Extractor", rarity: "blue", short: "steal debuff", description: "Choose a target. Remove a random negative Status Effect from yourself and give it to that target with its remaining duration and stacks.", type: "negative_extractor", mutationPower: true, targeted: true, immediate: true },
+  { id: "mutation_negative_extractor", name: "Negative Energy Extractor", rarity: "blue", short: "pass debuff", description: "Choose a target. Remove a random negative Status Effect from yourself and give it to that target with its remaining duration and stacks.", type: "negative_extractor", mutationPower: true, targeted: true, immediate: true },
   { id: "mutation_immunity", name: "Immunity", rarity: "blue", short: "positive only", description: "Gain Immunity for 3 rounds. You can gain positive Status Effects, but negative Status Effects are blocked.", type: "immunity_power", mutationPower: true, immediate: true },
   { id: "mutation_bonus", name: "Bonus", rarity: "blue", short: "3-5 next roll", description: "Next round, roll 3 to 5 Status Effects instead of 1 to 3.", type: "bonus_roll", mutationPower: true, immediate: true },
   { id: "mutation_broken_test_tube", name: "Broken Test Tube", rarity: "blue", short: "+1 mutation", description: "Immediately gain a new permanent Mutation.", type: "broken_test_tube", mutationPower: true, immediate: true },
-  { id: "mutation_contagion", name: "Contagion", rarity: "purple", short: "copy debuffs", description: "Choose up to 3 players and copy all of your negative Status Effects to them.", type: "contagion", mutationPower: true, targeted: true, immediate: true, maxTargets: 3 },
+  { id: "mutation_contagion", name: "Contagion", rarity: "purple", short: "infect", description: "Choose up to 3 players and copy all of your negative Status Effects to them.", type: "contagion", mutationPower: true, targeted: true, immediate: true, maxTargets: 3 },
   { id: "mutation_chain_reaction", name: "Chain Reaction", rarity: "purple", short: "trigger x2", description: "Immediately trigger all of your trigger-based Status Effects at double potency.", type: "chain_reaction", mutationPower: true, immediate: true },
   { id: "mutation_quarantine", name: "Quarantine", rarity: "purple", short: "block transfers", description: "Gain Quarantine for 3 rounds. Incoming Status Effect transfers and applications are blocked.", type: "quarantine", mutationPower: true, immediate: true },
   { id: "mutation_status_inversion", name: "Status Inversion", rarity: "purple", short: "negative -> positive", description: "Reverse your negative Status Effects into their positive counterparts and invert future negative rolls while active.", type: "status_inversion", mutationPower: true, immediate: true },
@@ -4394,8 +4394,13 @@ const elements = {
   devToolBackButton: null,
   devQuestionSearchInput: null,
   devQuestionThemeFilter: null,
-  devQuestionTypeFilter: null,
+  devQuestionDifficultyFilter: null,
+  devQuestionStyleFilter: null,
   devQuestionLanguageFilter: null,
+  devQuestionNewFilter: null,
+  devQuestionFilterButton: null,
+  devQuestionFilterPanel: null,
+  devQuestionClearFiltersButton: null,
   devQuestionPassNewButton: null,
   devQuestionUndoNewButton: null,
   devQuestionCounts: null,
@@ -9060,7 +9065,9 @@ function createActiveEffect(owner, powerId, name, description, options = {}) {
     statusPill: Boolean(options.statusPill),
     statusMeta: String(options.statusMeta || ""),
     mutationStatus: Boolean(options.mutationStatus),
-    canonicalMutationStatus: Boolean(options.canonicalMutationStatus)
+    canonicalMutationStatus: Boolean(options.canonicalMutationStatus),
+    statusNew: Boolean(options.statusNew),
+    statusNoticeIds: Array.isArray(options.statusNoticeIds) ? [...options.statusNoticeIds] : []
   };
 }
 
@@ -9468,11 +9475,15 @@ function renderEffectPanel() {
     badge.dataset.description = entry.description;
     badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
     badge.classList.toggle("mutation-status", Boolean(entry.mutationStatus));
+    badge.classList.toggle("status-new", Boolean(entry.statusNew));
     const label = document.createElement("strong");
-    label.textContent = entry.mutationStatus ? "Mutation" : entry.label;
+    label.textContent = entry.mutationStatus ? "" : entry.label;
     const name = document.createElement("span");
     name.textContent = entry.name;
-    badge.append(label, " ", name);
+    if (label.textContent) {
+      badge.append(label, " ");
+    }
+    badge.append(name);
     if (entry.statusPill && entry.statusMeta) {
       const meta = document.createElement("small");
       meta.className = "effect-badge-meta";
@@ -9480,6 +9491,14 @@ function renderEffectPanel() {
       badge.append(" ", meta);
     }
     attachFloatingDescriptionTooltip(badge);
+    if (entry.statusNew) {
+      const dismissNewStatusMarker = () => {
+        badge.classList.remove("status-new");
+        markMutationStatusNoticeSeen(entry.owner, entry.statusNoticeIds);
+      };
+      badge.addEventListener("mouseenter", dismissNewStatusMarker, { once: true });
+      badge.addEventListener("focus", dismissNewStatusMarker, { once: true });
+    }
     elements.effectPanel.appendChild(badge);
   });
 }
@@ -9541,19 +9560,6 @@ function renderMutationSummary() {
       icon: "assets/overlays/biohazard.svg",
       className: "permanent",
       meta: "Permanent Mutation"
-    }));
-  });
-  (state.mutationRoundFeed?.[owner] || [])
-    .filter((status) => isMutationStatusEligible(status) && status.category !== "time")
-    .forEach((status) => {
-    summary.appendChild(createMutationSummaryItem({
-      name: getMutationDisplayName(status),
-      description: getMutationSummaryDescription(status),
-      icon: powerCategoryInfo[status.category]?.icon || "assets/overlays/biohazard.svg",
-      className: status.category === "doom" ? "doom" : "status",
-      meta: status.rounds === "permanent"
-        ? "Gained this round · Permanent"
-        : `Gained this round · ${Number(status.rounds) || 1} round${Number(status.rounds) === 1 ? "" : "s"}`
     }));
   });
   setHidden(summary, summary.childElementCount === 0);
@@ -11349,6 +11355,7 @@ function renderAbilityLibrary() {
         ["Upgrade rarity", "Upgrades a random power-up in your hand, or gives 1 streak if none can upgrade."],
         ["Refill", "Refills an empty power-up slot, or gives 1 streak if your hand is full."],
         ["Rich Gets Richer", "Gain 5% to 10% of your current total score immediately."],
+        ["Time Dilation", "Adds 10 seconds to your answer timer for 3 rounds."],
         ["Bonus points", "Gain 300 to 500 points immediately."]
       ]
     },
@@ -12408,6 +12415,30 @@ async function handleBotMutationModeToggle() {
     return;
   }
   elements.botPartyMayhemModeToggle.checked = false;
+  updateBotSettingsFromControls();
+}
+
+async function handleBotPartyMayhemModeToggle() {
+  const settings = getAdvancedSettingsSource();
+  const previousPartyMayhem = Boolean(settings.partyMayhem);
+  if (!elements.botPartyMayhemModeToggle?.checked || !elements.botMutationModeToggle?.checked) {
+    updateBotSettingsFromControls();
+    return;
+  }
+  const confirmed = await showAppConfirm({
+    eyebrow: "Party Mayhem",
+    title: "Disable Mutation?",
+    copy: "Party Mayhem creates table events, while Mutation uses player Status Effects instead. These modes cannot be enabled together.",
+    confirmLabel: "Enable Party Mayhem",
+    cancelLabel: "Keep Mutation",
+    danger: false
+  });
+  if (!confirmed) {
+    elements.botPartyMayhemModeToggle.checked = previousPartyMayhem;
+    syncBotAdvancedControls();
+    return;
+  }
+  elements.botMutationModeToggle.checked = false;
   updateBotSettingsFromControls();
 }
 
@@ -29547,18 +29578,7 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
     .forEach((status) => addStatus(status));
 
   const entries = [];
-  getPermanentMutations(owner).forEach((mutationId) => {
-    const mutation = getPermanentMutationDefinition(mutationId);
-    if (!mutation) {
-      return;
-    }
-    entries.push(createActiveEffect(owner, mutation.powerId, `Mutation · ${mutation.name}`, mutation.description, {
-      statusPill: true,
-      statusMeta: "permanent",
-      mutationStatus: true,
-      canonicalMutationStatus: true
-    }));
-  });
+  const roundFeed = state.mutationRoundFeed?.[owner] || [];
 
   grouped.forEach(({ status, definition, count, remaining }) => {
     const name = status.name || definition.mutationName || definition.name;
@@ -29571,10 +29591,25 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
       statusPill: true,
       statusMeta: getMutationStatusMeta(status, count),
       mutationStatus: true,
-      canonicalMutationStatus: true
+      canonicalMutationStatus: true,
+      statusNew: roundFeed.some((entry) => entry.id === status.id && !entry.noticeSeen),
+      statusNoticeIds: roundFeed
+        .filter((entry) => entry.id === status.id && !entry.noticeSeen)
+        .map((entry) => entry.noticeId)
+        .filter(Boolean)
     }));
   });
   return entries;
+}
+
+function markMutationStatusNoticeSeen(owner, noticeIds = []) {
+  const seen = new Set((Array.isArray(noticeIds) ? noticeIds : [noticeIds]).filter(Boolean));
+  if (!owner || !seen.size || !Array.isArray(state.mutationRoundFeed?.[owner])) {
+    return;
+  }
+  state.mutationRoundFeed[owner] = state.mutationRoundFeed[owner].map((entry) => (
+    seen.has(entry.noticeId) ? { ...entry, noticeSeen: true } : entry
+  ));
 }
 
 function getMutationDefinitionForStatus(status) {
@@ -30907,6 +30942,8 @@ function applyMutationStatus(owner, definition, rounds, options = {}) {
     ...(state.mutationRoundFeed[affectedOwner] || []),
     {
       id: status.id,
+      noticeId: status.mutationId,
+      noticeSeen: false,
       name: status.name,
       description: status.description,
       category: status.category,
@@ -35384,30 +35421,17 @@ function buildDevToolScreen() {
           <span>Search</span>
           <input id="devQuestionSearchInput" type="search" placeholder="id, answer, keyword, URL">
         </label>
-        <label>
-          <span>Theme</span>
-          <select id="devQuestionThemeFilter"></select>
-        </label>
-        <label>
-          <span>Type</span>
-          <select id="devQuestionTypeFilter">
-            <option value="all">All questions</option>
-            <option value="image">Image only</option>
-            <option value="text">Text only</option>
-            <option value="image-mcq">Image MCQ</option>
-            <option value="text-mcq">Text MCQ</option>
-            <option value="multiple-choice">All multiple choice</option>
-            <option value="newly-added">Newly added</option>
-          </select>
-        </label>
-        <label>
-          <span>Card language</span>
-          <select id="devQuestionLanguageFilter">
-            <option value="all">All languages</option>
-            <option value="en">English cards</option>
-            <option value="zh-Hans">Chinese cards</option>
-          </select>
-        </label>
+        <div class="dev-question-filter-control">
+          <button type="button" class="icon-button dev-question-filter-button" id="devQuestionFilterButton" aria-expanded="false" aria-controls="devQuestionFilterPanel">Filter</button>
+          <section class="dev-question-filter-panel hidden" id="devQuestionFilterPanel" aria-label="Question filters">
+            <div class="dev-question-filter-heading"><strong>Filters</strong><button type="button" class="icon-button" id="devQuestionClearFiltersButton">Clear</button></div>
+            <fieldset id="devQuestionThemeFilter"><legend>Theme</legend></fieldset>
+            <fieldset id="devQuestionDifficultyFilter"><legend>Difficulty</legend><label><input type="checkbox" value="easy"> Easy</label><label><input type="checkbox" value="medium"> Medium</label><label><input type="checkbox" value="hard"> Hard</label><label><input type="checkbox" value="brutal"> Brutal</label></fieldset>
+            <fieldset id="devQuestionStyleFilter"><legend>Question style</legend><label><input type="checkbox" value="multiple-choice"> Multiple choice</label><label><input type="checkbox" value="image"> Contains image</label></fieldset>
+            <fieldset id="devQuestionLanguageFilter"><legend>Language</legend><label><input type="checkbox" value="en"> English</label><label><input type="checkbox" value="zh-Hans"> Simplified Chinese</label></fieldset>
+            <fieldset id="devQuestionNewFilter"><legend>Added</legend><label><input type="checkbox" value="newly-added"> Newly added</label></fieldset>
+          </section>
+        </div>
       </div>
       <div class="dev-question-counts" id="devQuestionCounts"></div>
       <section class="dev-question-tools" aria-label="Question bank tools">
@@ -35748,8 +35772,13 @@ function buildDevToolScreen() {
   elements.adminLogoutButton = screen.querySelector("#adminLogoutButton");
   elements.devQuestionSearchInput = screen.querySelector("#devQuestionSearchInput");
   elements.devQuestionThemeFilter = screen.querySelector("#devQuestionThemeFilter");
-  elements.devQuestionTypeFilter = screen.querySelector("#devQuestionTypeFilter");
+  elements.devQuestionDifficultyFilter = screen.querySelector("#devQuestionDifficultyFilter");
+  elements.devQuestionStyleFilter = screen.querySelector("#devQuestionStyleFilter");
   elements.devQuestionLanguageFilter = screen.querySelector("#devQuestionLanguageFilter");
+  elements.devQuestionNewFilter = screen.querySelector("#devQuestionNewFilter");
+  elements.devQuestionFilterButton = screen.querySelector("#devQuestionFilterButton");
+  elements.devQuestionFilterPanel = screen.querySelector("#devQuestionFilterPanel");
+  elements.devQuestionClearFiltersButton = screen.querySelector("#devQuestionClearFiltersButton");
   elements.devQuestionPassNewButton = screen.querySelector("#devQuestionPassNewButton");
   elements.devQuestionUndoNewButton = screen.querySelector("#devQuestionUndoNewButton");
   elements.devQuestionCounts = screen.querySelector("#devQuestionCounts");
@@ -35869,7 +35898,9 @@ function buildDevToolScreen() {
 
 function populateDevToolThemeSelects() {
   const themeOptions = triviaThemes.map((theme) => `<option value="${theme}">${theme}</option>`).join("");
-  elements.devQuestionThemeFilter.innerHTML = `<option value="all">All themes</option>${themeOptions}`;
+  elements.devQuestionThemeFilter.innerHTML = `<legend>Theme</legend>${triviaThemes.map((theme) => (
+    `<label><input type="checkbox" value="${theme}"> ${theme}</label>`
+  )).join("")}`;
   elements.devCreateTheme.innerHTML = themeOptions;
 }
 
@@ -35883,9 +35914,28 @@ function bindDevToolEvents() {
     }
   });
   elements.devQuestionSearchInput.addEventListener("input", filterQuestionDebugBank);
-  elements.devQuestionThemeFilter.addEventListener("change", filterQuestionDebugBank);
-  elements.devQuestionTypeFilter.addEventListener("change", filterQuestionDebugBank);
-  elements.devQuestionLanguageFilter.addEventListener("change", filterQuestionDebugBank);
+  [
+    elements.devQuestionThemeFilter,
+    elements.devQuestionDifficultyFilter,
+    elements.devQuestionStyleFilter,
+    elements.devQuestionLanguageFilter,
+    elements.devQuestionNewFilter
+  ].forEach((filter) => filter?.addEventListener("change", filterQuestionDebugBank));
+  elements.devQuestionFilterButton?.addEventListener("click", () => {
+    const opening = elements.devQuestionFilterPanel?.classList.contains("hidden");
+    setHidden(elements.devQuestionFilterPanel, !opening);
+    elements.devQuestionFilterButton.setAttribute("aria-expanded", String(opening));
+    playSound("click");
+  });
+  elements.devQuestionClearFiltersButton?.addEventListener("click", () => {
+    getDevQuestionFilterValues().forEach(([, fieldset]) => {
+      fieldset.querySelectorAll("input[type=checkbox]").forEach((input) => {
+        input.checked = false;
+      });
+    });
+    filterQuestionDebugBank();
+    playSound("click");
+  });
   elements.devQuestionPrevButton.addEventListener("click", () => selectQuestionDebugIndex(state.questionDebugIndex - 1));
   elements.devQuestionNextButton.addEventListener("click", () => selectQuestionDebugIndex(state.questionDebugIndex + 1));
   elements.devQuestionResults.addEventListener("click", (event) => {
@@ -38169,14 +38219,35 @@ function undoLastQuestionBatch() {
   filterQuestionDebugBank();
 }
 
+function getDevQuestionFilterValues() {
+  return [
+    ["themes", elements.devQuestionThemeFilter],
+    ["difficulties", elements.devQuestionDifficultyFilter],
+    ["styles", elements.devQuestionStyleFilter],
+    ["languages", elements.devQuestionLanguageFilter],
+    ["newOnly", elements.devQuestionNewFilter]
+  ];
+}
+
+function getCheckedDevQuestionFilterValues(fieldset) {
+  return new Set([...fieldset?.querySelectorAll("input[type=checkbox]:checked") || []].map((input) => input.value));
+}
+
+function setDevQuestionFilterValues(fieldset, values = []) {
+  const selected = new Set(Array.isArray(values) ? values : [values]);
+  fieldset?.querySelectorAll("input[type=checkbox]").forEach((input) => {
+    input.checked = selected.has(input.value);
+  });
+}
+
 function renderQuestionDebugCounts(counts = {}) {
   elements.devQuestionCounts.replaceChildren();
-  const selectedTheme = elements.devQuestionThemeFilter?.value || "all";
-  const selectedLanguage = elements.devQuestionLanguageFilter?.value || "all";
+  const selectedThemes = getCheckedDevQuestionFilterValues(elements.devQuestionThemeFilter);
+  const selectedLanguages = getCheckedDevQuestionFilterValues(elements.devQuestionLanguageFilter);
   const liveCounts = {};
   state.questionDebugBank.forEach((question) => {
     const language = normalizeQuestionLanguage(question.language);
-    if (selectedLanguage !== "all" && language !== selectedLanguage) {
+    if (selectedLanguages.size && !selectedLanguages.has(language)) {
       return;
     }
     const bucket = liveCounts[question.theme] || (liveCounts[question.theme] = {
@@ -38196,11 +38267,11 @@ function renderQuestionDebugCounts(counts = {}) {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "dev-count-chip";
-    item.classList.toggle("selected", selectedTheme === theme);
+    item.classList.toggle("selected", selectedThemes.has(theme));
     item.dataset.theme = theme;
     item.innerHTML = `<strong>${theme}</strong><span>${Number(count.total || 0)} total</span><small>${Number(count.image || 0)} image / ${Number(count.text || 0)} text / ${Number(count.multipleChoice || 0)} MC</small>`;
     item.addEventListener("click", () => {
-      elements.devQuestionThemeFilter.value = theme;
+      setDevQuestionFilterValues(elements.devQuestionThemeFilter, [theme]);
       filterQuestionDebugBank();
     });
     elements.devQuestionCounts.appendChild(item);
@@ -38209,36 +38280,35 @@ function renderQuestionDebugCounts(counts = {}) {
 
 function filterQuestionDebugBank() {
   const query = normalizeTriviaAnswer(elements.devQuestionSearchInput.value);
-  const theme = elements.devQuestionThemeFilter.value;
-  const type = elements.devQuestionTypeFilter.value;
-  const language = elements.devQuestionLanguageFilter?.value || "all";
+  const themes = getCheckedDevQuestionFilterValues(elements.devQuestionThemeFilter);
+  const difficulties = getCheckedDevQuestionFilterValues(elements.devQuestionDifficultyFilter);
+  const styles = getCheckedDevQuestionFilterValues(elements.devQuestionStyleFilter);
+  const languages = getCheckedDevQuestionFilterValues(elements.devQuestionLanguageFilter);
+  const newOnly = getCheckedDevQuestionFilterValues(elements.devQuestionNewFilter).has("newly-added");
   const passedIds = getQuestionDebugPassedIds();
   renderQuestionDebugCounts();
   elements.devQuestionCounts.querySelectorAll(".dev-count-chip").forEach((button) => {
-    button.classList.toggle("selected", button.dataset.theme === theme);
+    button.classList.toggle("selected", themes.has(button.dataset.theme));
   });
   state.questionDebugFiltered = state.questionDebugBank.filter((question) => {
     const questionLanguage = normalizeQuestionLanguage(question.language);
-    if (theme !== "all" && question.theme !== theme) {
+    if (themes.size && !themes.has(question.theme)) {
       return false;
     }
-    if (language !== "all" && questionLanguage !== language) {
+    if (difficulties.size && !difficulties.has(question.difficulty)) {
       return false;
     }
     const isMultipleChoice = question.questionStyle === MULTIPLE_CHOICE_STYLE;
-    if (type === "image-mcq" && !(question.type === "image" && isMultipleChoice)) {
+    if (styles.has("multiple-choice") && !isMultipleChoice) {
       return false;
     }
-    if (type === "text-mcq" && !(question.type === "text" && isMultipleChoice)) {
+    if (styles.has("image") && question.type !== "image") {
       return false;
     }
-    if (type === "multiple-choice" && !isMultipleChoice) {
+    if (languages.size && !languages.has(questionLanguage)) {
       return false;
     }
-    if (type === "newly-added" && !isQuestionDebugNew(question, passedIds)) {
-      return false;
-    }
-    if (type !== "all" && !["image-mcq", "text-mcq", "multiple-choice", "newly-added"].includes(type) && question.type !== type) {
+    if (newOnly && !isQuestionDebugNew(question, passedIds)) {
       return false;
     }
     if (!query) {
@@ -39225,11 +39295,11 @@ function updateDevCreatePreview() {
 function focusQuestionDebugById(id) {
   const question = state.questionDebugBank.find((entry) => entry.id === id);
   if (question) {
-    elements.devQuestionThemeFilter.value = question.theme || "all";
-    elements.devQuestionTypeFilter.value = "all";
-    if (elements.devQuestionLanguageFilter) {
-      elements.devQuestionLanguageFilter.value = normalizeQuestionLanguage(question.language);
-    }
+    setDevQuestionFilterValues(elements.devQuestionThemeFilter, [question.theme]);
+    setDevQuestionFilterValues(elements.devQuestionDifficultyFilter, [question.difficulty]);
+    setDevQuestionFilterValues(elements.devQuestionStyleFilter, []);
+    setDevQuestionFilterValues(elements.devQuestionLanguageFilter, [normalizeQuestionLanguage(question.language)]);
+    setDevQuestionFilterValues(elements.devQuestionNewFilter, []);
   }
   filterQuestionDebugBank();
   let index = state.questionDebugFiltered.findIndex((entry) => entry.id === id);
@@ -41309,6 +41379,29 @@ async function handleRoomMutationModeToggle() {
     return;
   }
   elements.partyMayhemModeToggle.checked = false;
+  updateRoomVariants({ immediate: true });
+}
+
+async function handleRoomPartyMayhemModeToggle() {
+  const previousPartyMayhem = Boolean(state.roomSettings.partyMayhem);
+  if (!elements.partyMayhemModeToggle?.checked || !elements.mutationModeToggle?.checked) {
+    updateRoomVariants();
+    return;
+  }
+  const confirmed = await showAppConfirm({
+    eyebrow: "Party Mayhem",
+    title: "Disable Mutation?",
+    copy: "Party Mayhem creates table events, while Mutation uses player Status Effects instead. These modes cannot be enabled together.",
+    confirmLabel: "Enable Party Mayhem",
+    cancelLabel: "Keep Mutation",
+    danger: false
+  });
+  if (!confirmed) {
+    elements.partyMayhemModeToggle.checked = previousPartyMayhem;
+    syncRoomControls();
+    return;
+  }
+  elements.mutationModeToggle.checked = false;
   updateRoomVariants({ immediate: true });
 }
 
@@ -49297,9 +49390,9 @@ elements.botAutoAdvanceToggle?.addEventListener("change", updateBotSettingsFromC
   elements.botChaosModeToggle,
   elements.botTimeMoneyModeToggle,
   elements.botAmplifiedModeToggle,
-  elements.botWildFireModeToggle,
-  elements.botPartyMayhemModeToggle
+  elements.botWildFireModeToggle
 ].forEach((toggle) => toggle?.addEventListener("change", updateBotSettingsFromControls));
+elements.botPartyMayhemModeToggle?.addEventListener("change", handleBotPartyMayhemModeToggle);
 elements.botMutationModeToggle?.addEventListener("change", handleBotMutationModeToggle);
 elements.startLocalButton.addEventListener("click", () => startGame("local"));
 elements.resetBotAdvancedButton?.addEventListener("click", resetAdvancedSettings);
@@ -49371,7 +49464,7 @@ elements.chaosModeToggle.addEventListener("change", updateRoomVariants);
 elements.timeMoneyModeToggle.addEventListener("change", updateRoomVariants);
 elements.amplifiedModeToggle.addEventListener("change", updateRoomVariants);
 elements.wildFireModeToggle.addEventListener("change", updateRoomVariants);
-elements.partyMayhemModeToggle.addEventListener("change", updateRoomVariants);
+elements.partyMayhemModeToggle.addEventListener("change", handleRoomPartyMayhemModeToggle);
 elements.mutationModeToggle.addEventListener("change", handleRoomMutationModeToggle);
 elements.randomModeToggle.addEventListener("change", updateRoomVariants);
 elements.classicModeToggle.addEventListener("change", handleClassicModeToggle);

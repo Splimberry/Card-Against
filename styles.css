@@ -3190,12 +3190,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .mutation-summary-copy strong {
-  overflow: hidden;
   color: #d8ff68;
   font-size: 0.68rem;
   font-weight: 950;
   line-height: 1.1;
-  text-overflow: ellipsis;
   text-shadow: 0 0 0.55rem rgb(var(--mutation-lime) / 0.65);
   white-space: nowrap;
 }
@@ -4576,13 +4574,142 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .dev-tool-controls {
   display: grid;
-  grid-template-columns: minmax(16rem, 1fr) minmax(12rem, 0.22fr) minmax(10rem, 0.18fr);
+  grid-template-columns: minmax(16rem, 1fr) auto;
   gap: 0.65rem;
   align-items: end;
   padding: 0.85rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(15, 13, 24, 0.88);
+}
+
+.dev-question-filter-control {
+  position: relative;
+  align-self: end;
+}
+
+.dev-question-filter-button {
+  min-height: 3rem;
+  min-width: 6.6rem;
+}
+
+.dev-question-filter-button[aria-expanded="true"] {
+  border-color: rgba(34, 211, 238, 0.62);
+  background: rgba(34, 211, 238, 0.13);
+  box-shadow: 0 0 1rem rgba(34, 211, 238, 0.12);
+}
+
+.dev-question-filter-panel {
+  position: absolute;
+  z-index: 120;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(11rem, 1fr));
+  gap: 0.72rem;
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0.78rem;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 6px),
+    rgba(11, 12, 19, 0.98);
+  box-shadow: 0 1.2rem 2.6rem rgba(0, 0, 0, 0.46), 0 0 1.2rem rgba(34, 211, 238, 0.08);
+}
+
+.dev-question-filter-heading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.dev-question-filter-heading strong {
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+
+.dev-question-filter-heading .icon-button {
+  min-height: 1.9rem;
+  padding: 0.28rem 0.52rem;
+  font-size: 0.68rem;
+}
+
+.dev-question-filter-panel fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: 0.38rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+}
+
+.dev-question-filter-panel legend {
+  padding: 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dev-question-filter-panel fieldset:first-of-type {
+  grid-column: 1 / -1;
+}
+
+.dev-question-filter-panel label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  min-height: 1.75rem;
+  padding: 0.22rem 0.38rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dev-question-filter-panel label:has(input:checked) {
+  border-color: rgba(34, 211, 238, 0.38);
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--ink);
+}
+
+.dev-question-filter-panel input {
+  width: 0.94rem;
+  height: 0.94rem;
+  margin: 0;
+  accent-color: #22d3ee;
+}
+
+@media (max-width: 640px) {
+  .dev-tool-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .dev-question-filter-control {
+    justify-self: stretch;
+  }
+
+  .dev-question-filter-button {
+    width: 100%;
+  }
+
+  .dev-question-filter-panel {
+    right: auto;
+    left: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .dev-question-filter-panel fieldset:first-of-type {
+    grid-column: auto;
+  }
 }
 
 .dev-tool-controls label,
@@ -5554,6 +5681,52 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .effect-panel.mutation-status-bar .effect-panel-header {
   color: #d8ff68;
   text-shadow: 0 0 0.55rem rgb(var(--mutation-lime) / 0.5);
+}
+
+.effect-panel.mutation-status-bar .effect-badge.mutation-status {
+  display: inline-grid;
+  grid-template-columns: auto;
+  gap: 0.1rem;
+  min-width: 6.45rem;
+  min-height: 2.25rem;
+  padding: 0.32rem 0.48rem;
+  border-radius: 8px;
+  line-height: 1.05;
+}
+
+.effect-panel.mutation-status-bar .effect-badge.mutation-status > span:not(.effect-badge-meta) {
+  overflow: hidden;
+  font-size: 0.69rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.effect-panel.mutation-status-bar .effect-badge-meta {
+  color: rgb(239 255 192 / 0.78);
+  font-size: 0.56rem;
+}
+
+.effect-badge.status-new::before {
+  content: "";
+  position: absolute;
+  top: -0.2rem;
+  right: -0.2rem;
+  z-index: 3;
+  width: 0.48rem;
+  height: 0.48rem;
+  border: 1px solid rgb(255 228 235 / 0.9);
+  border-radius: 50%;
+  background: #ff365f;
+  box-shadow: 0 0 0.3rem rgb(255 54 95 / 0.88), 0 0 0.74rem rgb(255 54 95 / 0.56);
+  animation: statusNoticePulse 1500ms ease-in-out infinite;
+}
+
+@keyframes statusNoticePulse {
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 0.42rem rgb(255 54 95 / 1), 0 0 1rem rgb(255 54 95 / 0.62);
+  }
 }
 
 .table-surface:has(.effect-badge:hover),

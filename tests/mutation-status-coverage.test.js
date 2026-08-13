@@ -147,8 +147,9 @@ assert.match(appSource, /deathMarkRounds: 2/, "Mutation Death Bomb must use a tw
 assert.match(appSource, /if \(bomb\.mutation\)/, "Mutation Death Bomb must not use the permanent mark path");
 assert.match(appSource, /id: "freeze_ray"[^\n]*mutationName: "Frozen"/, "Mutation Freeze Ray must display as Frozen");
 assert.match(appSource, /id: "heaven_hell_curse"[^\n]*mutationName: "Curse"/, "Mutation Heaven/Hell Curse must display as Curse");
-assert.match(appSource, /function renderMutationSummary\(\)[\s\S]{0,1800}isMutationStatusEligible\(status\)/, "Mutation summary must filter excluded statuses");
-assert.match(appSource, /if \(owner === focusedOwner\) getPermanentMutations\(owner\)/, "Permanent Mutations must be owner-only in the status bar");
+assert.match(appSource, /function renderMutationSummary\(\)[\s\S]{0,900}getPermanentMutations\(owner\)/, "Mutation summary must render permanent Mutations");
+assert.doesNotMatch(appSource.match(/function renderMutationSummary\(\)[\s\S]{0,1800}/)?.[0] || "", /mutationRoundFeed/, "Mutation summary must not render newly gained Status Effects");
+assert.doesNotMatch(appSource.match(/function getMutationStatusBarEntries\(owner = getFocusedOwner\(\)\)[\s\S]{0,2200}/)?.[0] || "", /getPermanentMutations\(owner\)/, "Permanent Mutations must stay out of the status bar");
 assert.match(appSource, /queueStatFlash\("mutation", "Mutation Status Roll"/, "Mutation rolls must use Mutation styling");
 [
   "permafrost", "eternal_flame", "fire_extinguisher", "eternal_celebration_status",
