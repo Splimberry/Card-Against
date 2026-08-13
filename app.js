@@ -9521,7 +9521,10 @@ function renderEffectPanel() {
     groupLabel.className = "mutation-status-group-label";
     groupLabel.textContent = label;
     group.appendChild(groupLabel);
-    groupEntries.forEach((entry) => appendBadge(entry, group));
+    const items = document.createElement("div");
+    items.className = "mutation-status-group-items";
+    groupEntries.forEach((entry) => appendBadge(entry, items));
+    group.appendChild(items);
     elements.effectPanel.appendChild(group);
   });
 }

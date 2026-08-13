@@ -5723,24 +5723,29 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .effect-panel.mutation-status-bar .mutation-status-group {
-  display: inline-flex;
+  display: contents;
+}
+
+.effect-panel.mutation-status-bar .mutation-status-group-items {
+  display: flex;
+  flex: 1 1 20rem;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.38rem;
   min-width: 0;
 }
 
-.effect-panel.mutation-status-bar .mutation-status-group + .mutation-status-group {
-  margin-left: 0.12rem;
-  padding-left: 0.58rem;
-  border-left: 1px solid rgb(255 255 255 / 0.2);
+.effect-panel.mutation-status-bar .mutation-status-group.positive .mutation-status-group-label {
+  display: none;
 }
 
 .mutation-status-group-label {
-  align-self: stretch;
+  align-self: center;
   display: inline-flex;
   align-items: center;
-  padding-right: 0.08rem;
+  margin-left: 0.12rem;
+  padding-left: 0.58rem;
+  border-left: 1px solid rgb(255 255 255 / 0.2);
   color: #d8ff68;
   font-size: 0.58rem;
   font-weight: 950;
@@ -5751,6 +5756,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .mutation-status-group.negative .mutation-status-group-label {
   color: #ff8aaa;
   text-shadow: 0 0 0.55rem rgb(255 77 125 / 0.4);
+}
+
+.mutation-status-group.negative .mutation-status-group-items {
+  flex-basis: 12rem;
 }
 
 .effect-panel.mutation-status-bar .effect-badge.mutation-status {
