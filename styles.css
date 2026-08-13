@@ -5722,6 +5722,37 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   text-shadow: 0 0 0.55rem rgb(var(--mutation-lime) / 0.5);
 }
 
+.effect-panel.mutation-status-bar .mutation-status-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.effect-panel.mutation-status-bar .mutation-status-group + .mutation-status-group {
+  margin-left: 0.12rem;
+  padding-left: 0.58rem;
+  border-left: 1px solid rgb(255 255 255 / 0.2);
+}
+
+.mutation-status-group-label {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  padding-right: 0.08rem;
+  color: #d8ff68;
+  font-size: 0.58rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.mutation-status-group.negative .mutation-status-group-label {
+  color: #ff8aaa;
+  text-shadow: 0 0 0.55rem rgb(255 77 125 / 0.4);
+}
+
 .effect-panel.mutation-status-bar .effect-badge.mutation-status {
   display: inline-grid;
   grid-template-columns: auto;
@@ -13151,6 +13182,21 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .effect-badge.mutation-status strong {
   color: #d8ff68;
   text-shadow: 0 0 0.55rem rgb(139 255 0 / 0.52);
+}
+
+.mutation-status-group.negative .effect-badge.mutation-status {
+  border-color: rgb(255 77 125 / 0.72);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.055) 0 1px, transparent 1px 5px),
+    linear-gradient(110deg, rgb(255 77 125 / 0.2), rgb(168 85 247 / 0.15));
+  box-shadow:
+    0 0 0.7rem rgb(255 77 125 / 0.24),
+    inset 0 0 0.6rem rgb(168 85 247 / 0.08);
+}
+
+.mutation-status-group.negative .effect-badge.mutation-status strong {
+  color: #ffc2d3;
+  text-shadow: 0 0 0.55rem rgb(255 77 125 / 0.52);
 }
 
 .ability-card[data-kind="table"] {

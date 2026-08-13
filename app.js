@@ -9066,6 +9066,7 @@ function createActiveEffect(owner, powerId, name, description, options = {}) {
     statusMeta: String(options.statusMeta || ""),
     mutationStatus: Boolean(options.mutationStatus),
     canonicalMutationStatus: Boolean(options.canonicalMutationStatus),
+    statusPolarity: options.statusPolarity === "negative" ? "negative" : "positive",
     statusNew: Boolean(options.statusNew),
     statusNoticeIds: Array.isArray(options.statusNoticeIds) ? [...options.statusNoticeIds] : []
   };
@@ -9468,7 +9469,7 @@ function renderEffectPanel() {
   header.textContent = isMatchModifierEnabled("mutation") ? "Status effects" : "Active effects";
   elements.effectPanel.appendChild(header);
 
-  visibleEntries.forEach((entry) => {
+  const appendBadge = (entry, container = elements.effectPanel) => {
     const badge = document.createElement("span");
     badge.className = "effect-badge";
     badge.dataset.rarity = entry.rarity;
@@ -9499,7 +9500,29 @@ function renderEffectPanel() {
       badge.addEventListener("mouseenter", dismissNewStatusMarker, { once: true });
       badge.addEventListener("focus", dismissNewStatusMarker, { once: true });
     }
-    elements.effectPanel.appendChild(badge);
+    container.appendChild(badge);
+  };
+
+  if (!mutationMode) {
+    visibleEntries.forEach((entry) => appendBadge(entry));
+    return;
+  }
+
+  const positiveEntries = visibleEntries.filter((entry) => entry.statusPolarity !== "negative");
+  const negativeEntries = visibleEntries.filter((entry) => entry.statusPolarity === "negative");
+  [
+    ["positive", "Positive", positiveEntries],
+    ["negative", "Negative", negativeEntries]
+  ].forEach(([polarity, label, groupEntries]) => {
+    if (!groupEntries.length) return;
+    const group = document.createElement("div");
+    group.className = `mutation-status-group ${polarity}`;
+    const groupLabel = document.createElement("span");
+    groupLabel.className = "mutation-status-group-label";
+    groupLabel.textContent = label;
+    group.appendChild(groupLabel);
+    groupEntries.forEach((entry) => appendBadge(entry, group));
+    elements.effectPanel.appendChild(group);
   });
 }
 
@@ -29592,6 +29615,7 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
       statusMeta: getMutationStatusMeta(status, count),
       mutationStatus: true,
       canonicalMutationStatus: true,
+      statusPolarity: definition.negative ? "negative" : "positive",
       statusNew: roundFeed.some((entry) => entry.id === status.id && !entry.noticeSeen),
       statusNoticeIds: roundFeed
         .filter((entry) => entry.id === status.id && !entry.noticeSeen)
@@ -30463,7 +30487,7 @@ function applyMutationPower(owner, power, meta = {}) {
         })
         : null;
       if (copied) removeAnyCopyableStatus(owner, source);
-      queueMutationPowerResult(owner, power, copied ? `${source.name} moved to ${getOwnerLabel(target)}` : "No transferable negative Status Effect");
+      queueMutationPowerResult(owner, power, copied ? `Passed ${source.name} to ${getOwnerLabel(target)}` : "No transferable negative Status Effect");
       break;
     }
     case "immunity_power": {
@@ -30486,13 +30510,23 @@ function applyMutationPower(owner, power, meta = {}) {
         !entry.triggered && getMutationStatusRemaining(entry) > 0 && getMutationDefinitionForStatus(entry)?.negative
       ));
       let copied = 0;
-      targets.forEach((target) => negatives.forEach((status) => {
+      const infectionDetails = [];
+      targets.forEach((target) => {
+        const transferred = [];
+        negatives.forEach((status) => {
         if (copyMutationStatusToOwner(status, target, getMutationStatusRemaining(status), {
           stackMultiplier: getMutationStatusStackCount(status),
           preserveDuration: true
-        })) copied += 1;
-      }));
-      queueMutationPowerResult(owner, power, copied ? `${copied} negative Status Effect${copied === 1 ? "" : "s"} spread` : "No negative Status Effects to spread");
+        })) {
+          copied += 1;
+          transferred.push(status.name);
+        }
+        });
+        if (transferred.length) {
+          infectionDetails.push(`Infected ${getOwnerLabel(target)}: ${[...new Set(transferred)].join(", ")}`);
+        }
+      });
+      queueMutationPowerResult(owner, power, copied ? infectionDetails : "No negative Status Effects to spread");
       break;
     }
     case "chain_reaction": {
