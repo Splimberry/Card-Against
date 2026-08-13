@@ -76,6 +76,9 @@ assert.match(appSource, /id="devPowerDebuffSelect"/, "Power Debug needs a Status
 assert.match(appSource, /function applyDebugDebuff\(scope = "dev"\)/, "Power Debug needs a debuff application action");
 assert.match(appSource, /permanentStatus: requestedDuration === 0/, "A debug debuff duration of zero must create a permanent Status Effect");
 assert.match(appSource, /classList\.remove\([^\n]*"mutation"[^\n]*"stat-flash-playing"\)/, "Stat Flash playback must clear the Mutation class before showing another overlay");
+assert.match(appSource, /tableWide: Boolean\(options\.tableWide \|\| owner === "table"\)/, "Active effects must identify table-wide effects");
+assert.match(appSource, /Virus Factory[\s\S]{0,280}tableWide: true/, "Virus Factory must be promoted as a table-wide effect");
+assert.match(appSource, /items\.className = "active-effect-items"/, "Non-Mutation status effects must use the rounded-square status area layout");
 assert.match(appSource, /if \(power\.mutationPower && \(power\.type === "bug_fix" \|\| power\.type === "potency_amplifier"\)\) \{[\s\S]{0,180}if \(openMutationStatusSelector\(owner, power, powerId\)\) \{[\s\S]{0,80}return;[\s\S]{0,80}\}\s*return;/, "Mutation status selectors must not fall back to generic player targeting");
 assert.match(appSource, /function getMutationStatusSelectionId\(status\)[\s\S]{0,220}synthetic:\$\{status\.id\}/, "Inherited status effects need stable selector identifiers");
 assert.match(appSource, /function getMutationStatusBySelection\(owner, selectionId\)/, "Mutation selector choices must resolve both rolled and inherited statuses");

@@ -5754,6 +5754,46 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   min-width: 0;
 }
 
+.effect-panel .active-effect-items {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.effect-badge.status-card {
+  display: inline-grid;
+  grid-template-columns: auto;
+  gap: 0.1rem;
+  min-width: 6.45rem;
+  min-height: 2.25rem;
+  padding: 0.32rem 0.48rem;
+  border-radius: 8px;
+  line-height: 1.05;
+}
+
+.effect-badge.status-card > span:not(.effect-badge-meta) {
+  overflow: hidden;
+  font-size: 0.69rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.effect-badge.status-card strong {
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.effect-badge.status-card.table-wide {
+  box-shadow:
+    0 0 0.72rem color-mix(in srgb, currentColor 18%, transparent),
+    inset 0 0 0.7rem color-mix(in srgb, currentColor 8%, transparent);
+}
+
 .effect-panel.mutation-status-bar .effect-badge.mutation-status {
   display: inline-grid;
   grid-template-columns: auto;

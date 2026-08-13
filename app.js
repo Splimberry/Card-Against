@@ -9085,6 +9085,7 @@ function createActiveEffect(owner, powerId, name, description, options = {}) {
     powerId: effectPowerId,
     chaosInfused: Boolean(options.chaosInfused || isChaosInfusedPower(effectPowerId)),
     private: Boolean(options.private),
+    tableWide: Boolean(options.tableWide || owner === "table"),
     statusPill: Boolean(options.statusPill),
     statusMeta: String(options.statusMeta || ""),
     mutationStatus: Boolean(options.mutationStatus),
@@ -9171,8 +9172,8 @@ function getActiveEffectEntries() {
       [getModeEffectTotal(bartenderStacks) > 0, createActiveEffect(owner, "bartender", bartenderStacks.chaos > 0 ? `Pharmacy${formatStackSuffix(bartenderStacks.chaos)}${bartenderStacks.normal ? ` + Bartender${formatStackSuffix(bartenderStacks.normal)}` : ""}` : `Bartender${formatStackSuffix(bartenderStacks.normal)}`, bartenderStacks.chaos > 0 ? "Chaos stacks serve three Blue Pill buffs at round start; normal stacks serve Cocktail Mix." : "Serves this player Cocktail Mix at round start per stack.", { chaosInfused: bartenderStacks.chaos > 0 })],
       [molotovStacks > 0, createActiveEffect(owner, "cocktail_mix", `Molotov Cocktail${formatStackSuffix(molotovStacks)}`, "Adds a reusable button: choose up to 2 players once per round. Others burn; self-targeting grants a streak and a buff.", { chaosInfused: true })],
       [Number(molotovBurning?.remaining) > 0, createActiveEffect(owner, "cocktail_mix", `Burning${formatStackSuffix(getEffectStackCount(molotovBurning?.stacks || 1))} · ${molotovBurning.remaining}r`, `Loses ${(Math.max(0, Number(molotovBurning.amount) || 750) * Math.max(1, Number(molotovBurning.stacks) || 1)).toLocaleString()} points at the start of each remaining round.`, { chaosInfused: true })],
-      [getEffectStackCount(state.virusFactories[owner]) > 0, createActiveEffect(owner, "virus_factory", `Virus Factory${formatStackSuffix(getEffectStackCount(state.virusFactories[owner]))}`, "Each stack gives every player a separate 33% chance to self-roll a debuff at round start.")],
-      [unstableConduitStacks > 0, createActiveEffect(owner, "crawler_virus", `Unstable Conduit${formatStackSuffix(unstableConduitStacks)}`, "Each stack rolls a separate 40% chance for every player to receive a random status effect at round start.", { chaosInfused: true })],
+      [getEffectStackCount(state.virusFactories[owner]) > 0, createActiveEffect(owner, "virus_factory", `Virus Factory${formatStackSuffix(getEffectStackCount(state.virusFactories[owner]))}`, "Each stack gives every player a separate 33% chance to self-roll a debuff at round start.", { tableWide: true })],
+      [unstableConduitStacks > 0, createActiveEffect(owner, "crawler_virus", `Unstable Conduit${formatStackSuffix(unstableConduitStacks)}`, "Each stack rolls a separate 40% chance for every player to receive a random status effect at round start.", { chaosInfused: true, tableWide: true })],
       [getEffectStackCount(state.error404Owners[owner]) > 0, createActiveEffect(owner, "crawler_virus", `Error 404${formatStackSuffix(getEffectStackCount(state.error404Owners[owner]))}`, "Each stack rolls a separate 33% chance to scramble players at a random timer moment each round.")],
       [getModeEffectTotal(typhoonStacks) > 0, createActiveEffect(
         owner,
@@ -9181,9 +9182,9 @@ function getActiveEffectEntries() {
         typhoonStacks.chaos > 0
           ? "Each chaos stack rolls Heaven effects independently; normal stacks roll normal Typhoon separately."
           : "At round start, each stack rolls a 33% chance for each player to self-cast Zap Strike or Lightning Strike.",
-        { chaosInfused: typhoonStacks.chaos > 0 }
+        { chaosInfused: typhoonStacks.chaos > 0, tableWide: true }
       )],
-      [getEffectStackCount(state.eternalSlumberOwners[owner]) > 0, createActiveEffect(owner, "sin_sloth", `Eternal Slumber${formatStackSuffix(getEffectStackCount(state.eternalSlumberOwners[owner]))}`, "No player can keep a streak higher than this player's streak.")],
+      [getEffectStackCount(state.eternalSlumberOwners[owner]) > 0, createActiveEffect(owner, "sin_sloth", `Eternal Slumber${formatStackSuffix(getEffectStackCount(state.eternalSlumberOwners[owner]))}`, "No player can keep a streak higher than this player's streak.", { tableWide: true })],
       [getEffectStackCount(state.wrathOwners[owner]) > 0, createActiveEffect(owner, "sin_wrath", `Explosive Temper${formatStackSuffix(getEffectStackCount(state.wrathOwners[owner]))}`, "When this player loses, each stack plants a random next-round 10% bomb.", { chaosInfused: true })],
       [getEffectStackCount(state.divineBlessingOwners[owner]) > 0, createActiveEffect(owner, "blessing", `Divine Blessing${formatStackSuffix(getEffectStackCount(state.divineBlessingOwners[owner]))}`, "Each stack gives this player 500 plus 5% score every round.", { chaosInfused: true })],
       [getEffectStackCount(state.superFuelOwners[owner]) > 0, createActiveEffect(owner, "rocket", `Super Fuel${formatStackSuffix(getEffectStackCount(state.superFuelOwners[owner]))}`, `Each active stack adds 1 streak to every future correct-round win.`, { chaosInfused: true })],
@@ -9502,6 +9503,8 @@ function renderEffectPanel() {
     badge.dataset.description = entry.description;
     badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
     badge.classList.toggle("mutation-status", Boolean(entry.mutationStatus));
+    badge.classList.toggle("status-card", !mutationMode);
+    badge.classList.toggle("table-wide", Boolean(entry.tableWide));
     badge.classList.toggle("status-negative", entry.statusPolarity === "negative");
     badge.classList.toggle("status-trigger", Boolean(entry.statusTrigger));
     badge.classList.toggle("status-new", Boolean(entry.statusNew));
@@ -9532,7 +9535,16 @@ function renderEffectPanel() {
   };
 
   if (!mutationMode) {
-    visibleEntries.forEach((entry) => appendBadge(entry));
+    const items = document.createElement("div");
+    items.className = "active-effect-items";
+    [...visibleEntries]
+      .sort((left, right) => {
+        const leftPriority = left.tableWide ? 0 : 1;
+        const rightPriority = right.tableWide ? 0 : 1;
+        return leftPriority - rightPriority || left.name.localeCompare(right.name);
+      })
+      .forEach((entry) => appendBadge(entry, items));
+    elements.effectPanel.appendChild(items);
     return;
   }
 
@@ -12861,10 +12873,10 @@ function isJoinedRoomClient() {
   if (!isRoomMode() || state.isSpectator) {
     return false;
   }
-  // This tracks how the local tab entered the room, not who is currently the
-  // host. Host authority is determined separately by isAuthoritativeRoomHost.
-  return state.currentOwner === "opponent"
-    || Boolean(state.joiningRoom && state.currentOwner !== "player");
+  // Joining is a durable local relationship. `currentOwner` is a rendering
+  // alias and can briefly be rebuilt while a participant snapshot merges.
+  // Do not let that transient alias turn a joined player into a host path.
+  return Boolean(state.joiningRoom);
 }
 
 function getExpectedRoomCurrentOwner() {
@@ -14909,19 +14921,9 @@ function recoverRoomRoundResultFromServer(payload = {}) {
   // Ignore a delayed marker from an already superseded round, but do not
   // reject a new match simply because this tab has not received round-started
   // yet. The persisted full result is what resolves that exact mismatch.
-  if (resultRevision && resultRevision < knownRevision) {
-    return Promise.resolve(false);
-  }
-  if (
-    matchId
-    && getCurrentRoomMatchId()
-    && matchId !== getCurrentRoomMatchId()
-    && round === Number(state.round || 0)
-    && resultRevision
-    && resultRevision <= knownRevision
-  ) {
-    return Promise.resolve(false);
-  }
+  // The readiness marker names one immutable server result. Do not reject it
+  // just because another room event moved this tab's revision cursor first:
+  // that is precisely the ordering case this recovery path exists to repair.
   const since = resultRevision ? Math.max(0, resultRevision - 1) : Math.max(0, Number(state.roomEventRevision) || 0);
   const recoveryKey = [code, matchId, round, resultRevision || since].join("|");
   if (state.roomRoundResultRecoveryPromise && state.roomRoundResultRecoveryKey === recoveryKey) {
@@ -15145,36 +15147,36 @@ function tryPlayPendingRoomRoundResult(localFallback = "") {
     return false;
   }
 
-  // A server round-result is already the complete grading decision. If the
-  // joined tab is still mounting the question or its local setup token was
-  // superseded, presenting through playRound can be rejected before it ever
-  // reaches the result panel. Apply the authoritative result directly in
-  // those transient states so a player cannot remain on the waiting spinner
-  // after the room has finished grading.
-  const stageHidden = elements.gameStage.classList.contains("hidden");
-  const setupWorkInvalid = typeof isCurrentMatchWork === "function"
-    && !isCurrentMatchWork(state.matchWorkToken);
-  const waitingForAuthoritativeResult = elements.loadingPanel?.dataset?.loadingState === "waiting-host";
-  let presented = false;
-  if (stageHidden || setupWorkInvalid || waitingForAuthoritativeResult) {
-    ensureRoomResultStageMounted();
-    presented = recoverRoomRoundResultPlayback(pending, localFallback);
+  // A joined tab never grades this round. Its job is to present the complete,
+  // immutable result that the server stored. Running the local `playRound()`
+  // animation/grading lifecycle here made presentation depend on local setup
+  // tokens and could leave a real player on the spinner after the host had
+  // already finished. Render the authoritative result directly instead.
+  ensureRoomResultStageMounted();
+  try {
+    const presented = recoverRoomRoundResultPlayback(pending, localFallback);
+    if (presented) {
+      state.roomRoundResultPendingPlayback = null;
+    }
+    return presented;
+  } catch (error) {
+    // Keep the result for the event-driven ready-marker recovery. Do not
+    // consume an immutable result merely because one optional UI renderer
+    // failed while the room was transitioning.
+    state.roomRoundResultPendingPlayback = pending;
+    state.roomRoundResultPlaybackKey = "";
+    recordRoomDiagnosticEvent("result-presentation-error", {
+      code: state.roomSettings.code,
+      eventType: "round-result",
+      matchId: pending.matchId,
+      round: pending.round
+    }, {
+      source: "client",
+      reason: error?.message || "Could not present the authoritative room result."
+    });
+    console.warn("Joined-player room result presentation failed:", error);
+    return false;
   }
-  if (!presented) {
-    presented = playSyncedRoomRoundResult(pending, localFallback);
-  }
-  if (!presented) {
-    // The server result is the authoritative hand-off. A joined tab can have
-    // an invalidated local setup token or still be between room screens when
-    // that hand-off arrives. Do not leave it in the spinner: mount the room
-    // stage and render the saved result directly.
-    ensureRoomResultStageMounted();
-    presented = recoverRoomRoundResultPlayback(pending, localFallback);
-  }
-  if (presented) {
-    state.roomRoundResultPendingPlayback = null;
-  }
-  return presented;
 }
 
 function ensureRoomResultStageMounted() {

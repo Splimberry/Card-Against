@@ -282,7 +282,7 @@ function testJoinedRoleDoesNotDependOnHostIdentity() {
     state: {
       isSpectator: false,
       currentOwner: "opponent",
-      joiningRoom: null
+      joiningRoom: { code: "CAI-1234" }
     },
     isRoomMode() {
       return true;
@@ -293,8 +293,8 @@ function testJoinedRoleDoesNotDependOnHostIdentity() {
 
   assert.equal(context.isJoinedRoomClient(), true);
   context.state.currentOwner = "player";
-  assert.equal(context.isJoinedRoomClient(), false);
-  context.state.joiningRoom = { code: "CAI-1234" };
+  assert.equal(context.isJoinedRoomClient(), true);
+  context.state.joiningRoom = null;
   assert.equal(context.isJoinedRoomClient(), false);
 }
 
@@ -394,7 +394,7 @@ async function testPendingResultWaitsForJoinedStage() {
   assert.equal(context.tryPlayPendingRoomRoundResult(), false);
   assert.deepEqual(context.state.roomRoundResultPendingPlayback, pending);
 
-  context.playSyncedRoomRoundResult = () => true;
+  context.recoverRoomRoundResultPlayback = () => true;
   assert.equal(context.tryPlayPendingRoomRoundResult(), true);
   assert.equal(context.state.roomRoundResultPendingPlayback, null);
 }
