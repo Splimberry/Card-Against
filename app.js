@@ -513,6 +513,7 @@ const powerCategoryInfo = Object.freeze({
   boost: { label: "Boost", icon: "assets/overlays/coin.svg" },
   chaos: { label: "Chaos", icon: "assets/modifiers/dice.svg" },
   mutation: { label: "Mutation", icon: "assets/overlays/biohazard.svg" },
+  streak: { label: "Streak", icon: "assets/overlays/snowflake.svg" },
   disruption: { label: "Disruption", icon: "assets/overlays/flash.svg" },
   risk: { label: "Risk", icon: "assets/overlays/bomb.svg" },
   time: { label: "Time", icon: "assets/modifiers/stop-watch.svg" },
@@ -576,6 +577,18 @@ function getPowerCategory(powerOrId) {
     }
   }
   return "utility";
+}
+
+// Keep the gameplay category intact while using a more specific visual for
+// cards whose whole purpose is streak protection or freezing.
+function getPowerVisualCategory(powerOrId) {
+  const power = typeof powerOrId === "string"
+    ? getPowerById(powerOrId)
+    : powerOrId;
+  if (["streak_retainer", "freeze_ray"].includes(String(power?.type || ""))) {
+    return "streak";
+  }
+  return getPowerCategory(power);
 }
 
 const chaosInfusedPowerOverrides = {
@@ -9092,6 +9105,7 @@ function getActiveEffectEntries() {
     const explosiveStacks = getEffectStackCount(state.explosiveDoomOwners?.[owner]);
     const permanentDeathMarkStacks = getSourceStackInfo(state.permanentDeathMarks?.[owner]).count;
     const molotovStacks = getEffectStackCount(state.molotovOwners?.[owner]);
+    const molotovBurning = state.molotovBurningMarks?.[owner];
     const unstableConduitStacks = getEffectStackCount(state.unstableConduitOwners?.[owner]);
     const fourthSlotStacks = getEffectStackCount(state.fourthSlotOwners?.[owner]);
     const timeCapsuleStacks = getEffectStackCount(state.timeCapsuleOwners?.[owner]);
@@ -9150,6 +9164,7 @@ function getActiveEffectEntries() {
       [getEffectStackCount(state.arsonists[owner]) > 0, createActiveEffect(owner, "arsonist", `Arsonist${formatStackSuffix(getEffectStackCount(state.arsonists[owner]))}`, "Each stack gives this player and a random other player 1 streak at round start.")],
       [getModeEffectTotal(bartenderStacks) > 0, createActiveEffect(owner, "bartender", bartenderStacks.chaos > 0 ? `Pharmacy${formatStackSuffix(bartenderStacks.chaos)}${bartenderStacks.normal ? ` + Bartender${formatStackSuffix(bartenderStacks.normal)}` : ""}` : `Bartender${formatStackSuffix(bartenderStacks.normal)}`, bartenderStacks.chaos > 0 ? "Chaos stacks serve three Blue Pill buffs at round start; normal stacks serve Cocktail Mix." : "Serves this player Cocktail Mix at round start per stack.", { chaosInfused: bartenderStacks.chaos > 0 })],
       [molotovStacks > 0, createActiveEffect(owner, "cocktail_mix", `Molotov Cocktail${formatStackSuffix(molotovStacks)}`, "Adds a reusable button: choose up to 2 players once per round. Others burn; self-targeting grants a streak and a buff.", { chaosInfused: true })],
+      [Number(molotovBurning?.remaining) > 0, createActiveEffect(owner, "cocktail_mix", `Burning${formatStackSuffix(getEffectStackCount(molotovBurning?.stacks || 1))} · ${molotovBurning.remaining}r`, `Loses ${(Math.max(0, Number(molotovBurning.amount) || 750) * Math.max(1, Number(molotovBurning.stacks) || 1)).toLocaleString()} points at the start of each remaining round.`, { chaosInfused: true })],
       [getEffectStackCount(state.virusFactories[owner]) > 0, createActiveEffect(owner, "virus_factory", `Virus Factory${formatStackSuffix(getEffectStackCount(state.virusFactories[owner]))}`, "Each stack gives every player a separate 33% chance to self-roll a debuff at round start.")],
       [unstableConduitStacks > 0, createActiveEffect(owner, "crawler_virus", `Unstable Conduit${formatStackSuffix(unstableConduitStacks)}`, "Each stack rolls a separate 40% chance for every player to receive a random status effect at round start.", { chaosInfused: true })],
       [getEffectStackCount(state.error404Owners[owner]) > 0, createActiveEffect(owner, "crawler_virus", `Error 404${formatStackSuffix(getEffectStackCount(state.error404Owners[owner]))}`, "Each stack rolls a separate 33% chance to scramble players at a random timer moment each round.")],
@@ -11113,7 +11128,7 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false, kin
     card.dataset.kind = entry.libraryKind || kind;
     card.dataset.description = entry.description;
     card.dataset.polarity = entry.polarity === "negative" ? "negative" : "positive";
-    const category = entry.category || (entry.powerId ? getPowerCategory(entry.powerId) : "");
+    const category = entry.iconCategory || entry.category || (entry.powerId ? getPowerVisualCategory(entry.powerId) : "");
     if (category && powerCategoryInfo[category]) {
       card.dataset.category = category;
     }
@@ -11273,6 +11288,7 @@ function getLibraryDefinitionEntry(definition, options = {}) {
     description: options.description || definition.description || copy[1] || "A temporary effect that changes future round resolution.",
     powerId: definition.powerId,
     category,
+    iconCategory: options.iconCategory || definition.iconCategory || "",
     rarity: options.rarity || (category === "doom" ? "doom" : category === "risk" || category === "disruption" ? "debuff" : "blue"),
     polarity: options.polarity || (isNegativeMutationStatusDisplay(definition) ? "negative" : "positive"),
     triggerOnce: Boolean(options.triggerOnce ?? definition.triggerOnce),
@@ -16412,6 +16428,8 @@ function applyRoomPowerState(payload = {}) {
   renderScore();
   renderTableEventControls();
   renderPowerUps();
+  renderHintControls();
+  renderEffectPanel();
   renderRoomPlayers();
   return true;
 }
@@ -28781,15 +28799,15 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { addEffectStack(state.eternalFlameProtection, owner); return { kind: "stack", key: "eternalFlameProtection" }; }
   },
   {
-    id: "streak_anchor", pool: "normal", name: "Streak Anchor", powerId: "streak_retainer", category: "defense", positive: true, triggerOnce: true,
+    id: "streak_anchor", pool: "normal", name: "Streak Anchor", powerId: "streak_retainer", category: "defense", iconCategory: "streak", positive: true, triggerOnce: true,
     apply: (owner) => { state.streakAnchorCharges[owner] = (state.streakAnchorCharges[owner] || 0) + 1; return { kind: "charge", key: "streakAnchorCharges" }; }
   },
   {
-    id: "streak_guard", pool: "normal", name: "Streak Guard", powerId: "cocktail_mix", category: "defense", positive: true,
+    id: "streak_guard", pool: "normal", name: "Streak Guard", powerId: "cocktail_mix", category: "defense", iconCategory: "streak", positive: true,
     apply: (owner, rounds) => { addOwnerDurationRounds(state.streakLossProtectionRounds, owner, rounds); return { kind: "counter", key: "streakLossProtectionRounds" }; }
   },
   {
-    id: "freeze_ray", pool: "normal", name: "Freeze Ray", mutationName: "Frozen", powerId: "freeze_ray", category: "disruption", negative: true,
+    id: "freeze_ray", pool: "normal", name: "Freeze Ray", mutationName: "Frozen", powerId: "freeze_ray", category: "disruption", iconCategory: "streak", negative: true,
     apply: (owner, rounds) => { addOwnerDurationRounds(state.streakFreezeRounds, owner, rounds); return { kind: "counter", key: "streakFreezeRounds" }; }
   },
   {
@@ -28863,7 +28881,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner, rounds) => { addChaosDuration(owner, "reflectorShield", rounds); return { kind: "chaosCounter", key: "reflectorShield" }; }
   },
   {
-    id: "resistant_streak", pool: "chaos", name: "Resistant Streak", description: "Blocks streak loss for its remaining 2 to 3 rounds. Each active stack reduces a later streak loss by 2.", powerId: "streak_retainer", category: "chaos", positive: true,
+    id: "resistant_streak", pool: "chaos", name: "Resistant Streak", description: "Blocks streak loss for its remaining 2 to 3 rounds. Each active stack reduces a later streak loss by 2.", powerId: "streak_retainer", category: "chaos", iconCategory: "streak", positive: true,
     apply: (owner, rounds) => {
       const current = getChaosStatus(owner).resistantStreak || {};
       const stacks = Math.max(0, Number(current.stacks) || 0) + 1;
@@ -28996,7 +29014,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { addEffectStack(state.nullProtocolOwners, owner); return { kind: "stack", key: "nullProtocolOwners" }; }
   },
   {
-    id: "doom_streak_guard", pool: "doom", name: "Doom Streak Guard", powerId: "ultimatum", category: "doom", positive: true,
+    id: "doom_streak_guard", pool: "doom", name: "Doom Streak Guard", powerId: "ultimatum", category: "doom", iconCategory: "streak", positive: true,
     apply: (owner, rounds) => { addOwnerDurationRounds(state.doomStreakGuardRounds, owner, rounds); return { kind: "counter", key: "doomStreakGuardRounds" }; }
   },
   {
@@ -29656,6 +29674,7 @@ function getDedicatedTemporaryStatusEntries(owner) {
   addCounter(state.streakSicknessRounds, "streak_sickness");
   addCounter(state.loserTaxCollectors, "loser_tax");
   addCounter(state.doomStreakGuardRounds, "doom_streak_guard");
+  addCounter(state.ultimatumRounds, "doom_shield");
 
   addDurationObject(state.redHerringMasks, "red_herring_status");
   addDurationObject(state.molotovBurningMarks, "molotov_burning");
@@ -31121,6 +31140,11 @@ function applyMutationStatus(owner, definition, rounds, options = {}) {
         });
       });
   }
+  // Statuses can be granted while an answer phase is already live. Refresh
+  // these local surfaces immediately so newly granted action statuses, such
+  // as Molotov Cocktail, are usable without waiting for a phase rerender.
+  renderHintControls();
+  renderEffectPanel();
   return status;
 }
 
@@ -33009,6 +33033,8 @@ function consumeImmediatePower(owner, power, meta = {}) {
   markTargetedPowerAnswerDamage({ owner, power, meta: state.playedPowerMeta[owner] || recordMeta });
   broadcastRoomPowerState(owner, power, state.playedPowerMeta[owner] || recordMeta);
   renderPowerUps();
+  renderHintControls();
+  renderEffectPanel();
   if (!meta.suppressSound) {
     playSound(power.type === "shuffle" || power.type === "premium_shuffle" || power.type === "mirror" || power.type === "hoarder" || power.type === "recycle_bin" ? "reveal" : "click");
   }
@@ -33607,7 +33633,7 @@ function renderPowerUps() {
     button.className = "power-card";
     button.dataset.power = power.id;
     button.dataset.rarity = visualPower.rarity;
-    button.dataset.category = getPowerCategory(visualPower);
+    button.dataset.category = getPowerVisualCategory(visualPower);
     const rule = getPowerRule(power);
     button.dataset.powerTiming = rule.timing;
     button.dataset.powerTarget = rule.target;
@@ -33619,7 +33645,7 @@ function renderPowerUps() {
     const usable = hasUseAvailable && isPowerUsable(power, owner);
     button.dataset.usable = String(usable);
     const unavailableReason = getPowerUnavailableReason(power, hasUseAvailable);
-    button.dataset.description = `${powerCategoryInfo[getPowerCategory(power)].label} power-up. ${rarityInfo[power.rarity].label}: ${description}${usable ? "" : ` (${unavailableReason})`}`;
+    button.dataset.description = `${powerCategoryInfo[getPowerVisualCategory(power)].label} power-up. ${rarityInfo[power.rarity].label}: ${description}${usable ? "" : ` (${unavailableReason})`}`;
     const selected = isPowerSelected(owner, power.id);
     button.setAttribute("aria-pressed", String(selected));
     button.setAttribute("aria-disabled", String(!usable));
@@ -33683,7 +33709,7 @@ function renderPowerUps() {
             return;
           }
           button.dataset.rarity = power.rarity;
-          button.dataset.category = getPowerCategory(power);
+          button.dataset.category = getPowerVisualCategory(power);
           button.classList.add("chaos-infused", "chaos-infuse-upgrading");
           button.innerHTML = getPowerCardMarkup(power);
           if (suggested) {

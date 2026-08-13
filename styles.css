@@ -6092,6 +6092,13 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   --power-category-rgb: 183 255 42;
 }
 
+.power-card[data-category="streak"],
+.ability-card[data-category="streak"] {
+  --power-category-icon: url("assets/overlays/snowflake.svg");
+  --power-category-icon-size: min(34%, 3.35rem);
+  --power-category-rgb: 103 232 255;
+}
+
 .power-card[data-category="time"],
 .ability-card[data-category="time"] {
   --power-category-icon: url("assets/modifiers/stop-watch.svg");
