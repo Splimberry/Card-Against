@@ -70,6 +70,8 @@ assert.match(appSource, /function setupPowerHands\(\) \{[\s\S]{0,1100}drawPowerH
 assert.match(appSource, /function setupPowerHands\(\) \{[\s\S]{0,1500}drawPowerHand\(getPowerHandLimit\(owner\), getPowerDrawOptions\(owner\)\)/, "Local bot hands must use Mutation-aware draw options");
 assert.match(appSource, /id: "mutation_bug_fix"[\s\S]{0,240}type: "bug_fix"/, "Bug Fix must use the dedicated status selector type");
 assert.match(appSource, /id: "mutation_potency_amplifier"[\s\S]{0,260}type: "potency_amplifier"/, "Potency Amplifier must use the dedicated status selector type");
+assert.match(appSource, /id: "mutation_chain_reaction"[\s\S]{0,280}every opponent's armed bomb Status Effect at double potency/, "Chain Reaction must detonate opponents' bomb Status Effects at double potency");
+assert.match(appSource, /function triggerOpponentBombStatuses\(owner\)/, "Chain Reaction needs a dedicated opponent bomb resolver");
 assert.match(appSource, /if \(power\.mutationPower && \(power\.type === "bug_fix" \|\| power\.type === "potency_amplifier"\)\) \{[\s\S]{0,180}if \(openMutationStatusSelector\(owner, power, powerId\)\) \{[\s\S]{0,80}return;[\s\S]{0,80}\}\s*return;/, "Mutation status selectors must not fall back to generic player targeting");
 assert.match(appSource, /function getMutationStatusSelectionId\(status\)[\s\S]{0,220}synthetic:\$\{status\.id\}/, "Inherited status effects need stable selector identifiers");
 assert.match(appSource, /function getMutationStatusBySelection\(owner, selectionId\)/, "Mutation selector choices must resolve both rolled and inherited statuses");

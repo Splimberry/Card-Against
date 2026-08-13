@@ -494,7 +494,7 @@ const mutationPowerDeck = Object.freeze([
   { id: "mutation_bonus", name: "Bonus", rarity: "blue", short: "3-5 next roll", description: "Next round, roll 3 to 5 Status Effects instead of 1 to 3.", type: "bonus_roll", mutationPower: true, immediate: true },
   { id: "mutation_broken_test_tube", name: "Broken Test Tube", rarity: "blue", short: "+1 mutation", description: "Immediately gain a new permanent Mutation.", type: "broken_test_tube", mutationPower: true, immediate: true },
   { id: "mutation_contagion", name: "Contagion", rarity: "purple", short: "infect", description: "Choose up to 3 players and copy all of your negative Status Effects to them.", type: "contagion", mutationPower: true, targeted: true, immediate: true, maxTargets: 3 },
-  { id: "mutation_chain_reaction", name: "Chain Reaction", rarity: "purple", short: "trigger x2", description: "Immediately trigger all of your trigger-based Status Effects at double potency.", type: "chain_reaction", mutationPower: true, immediate: true },
+  { id: "mutation_chain_reaction", name: "Chain Reaction", rarity: "purple", short: "enemy bombs x2", description: "Immediately trigger every opponent's armed bomb Status Effect at double potency. Each explosion names its owner and victim.", type: "chain_reaction", mutationPower: true, immediate: true },
   { id: "mutation_quarantine", name: "Quarantine", rarity: "purple", short: "block transfers", description: "Gain Quarantine for 3 rounds. Incoming Status Effect transfers and applications are blocked.", type: "quarantine", mutationPower: true, immediate: true },
   { id: "mutation_status_inversion", name: "Status Inversion", rarity: "purple", short: "negative -> positive", description: "Reverse your negative Status Effects into their positive counterparts and invert future negative rolls while active.", type: "status_inversion", mutationPower: true, immediate: true },
   { id: "mutation_catalyst_epic", name: "Mutation Catalyst", rarity: "purple", short: "mutations x2", description: "Double the potency of your permanent Mutation effects for the rest of the match.", type: "mutation_catalyst", mutationPower: true, immediate: true },
@@ -30347,60 +30347,140 @@ function applyMutationOverclockAtTurnEnd(owner) {
   return statuses.length;
 }
 
-function resolveMutationChainReaction(owner, status, events = []) {
-  const definition = getMutationDefinitionForStatus(status);
-  const cleanup = status?.cleanup || {};
+function triggerOpponentBombStatuses(owner) {
   const multiplier = 2;
-  if (!definition || !status?.triggerOnce || status.triggered) {
-    return false;
-  }
-  const targetOwner = cleanup.targetOwner || status.targetOwner || owner;
-  const loss = (target, percent, source) => {
+  const activeOwners = new Set(getActiveOwners());
+  const results = [];
+  const detonate = (bombOwner, target, percent, bombName, options = {}) => {
+    if (!bombOwner || bombOwner === owner || !target || !activeOwners.has(target)) {
+      return false;
+    }
     const amount = Math.floor(Math.max(0, getScore(target)) * percent * multiplier);
-    const applied = applyProtectedScoreLoss(target, amount, source, events);
-    if (applied > 0) {
-      queueStatFlash("bomb", source, formatSignedStat(-applied, "Point"), { owners: [target], complex: true });
+    const applied = applyProtectedScoreLoss(target, amount, `Chain Reaction · ${bombName}`);
+    const outcome = applied > 0 ? formatSignedStat(-applied, "Point") : "Blocked";
+    queueStatFlash("bomb", "Chain Reaction", `${getOwnerLabel(bombOwner)}'s ${bombName} exploded on ${getOwnerLabel(target)}: ${outcome}`, {
+      owners: [owner, target],
+      complex: true,
+      priority: true
+    });
+    results.push(`${getOwnerLabel(bombOwner)}'s ${bombName} exploded on ${getOwnerLabel(target)}: ${outcome}`);
+    if (typeof options.afterDetonate === "function") {
+      options.afterDetonate(target);
     }
-    return applied;
+    return true;
   };
-  if (definition.id === "time_bomb") {
-    const ownerScore = getScore(owner);
-    getActiveOwners()
-      .filter((target) => target !== owner && getScore(target) > ownerScore)
-      .forEach((target) => loss(target, 0.1, "Chain Reaction · Time Bomb"));
-  } else if (definition.id === "debuff_time_bomb") {
-    loss(owner, 0.1, "Chain Reaction · Debuff Time Bomb");
-  } else if (definition.id === "cluster_bomb") {
-    loss(owner, 0.1, "Chain Reaction · Cluster Bomb");
-    const shrapnel = getRandomInt(10, 20) * multiplier;
-    updateChaosStatus(owner, { shrapnel: Math.max(0, Number(getChaosStatus(owner).shrapnel) || 0) + shrapnel });
-    queueStatFlash("bomb", "Chain Reaction · Cluster Bomb", `+${shrapnel} Shrapnel`, { owners: [owner], complex: true });
-  } else if (definition.id === "hot_potato_status") {
-    const target = getRandomActiveOwner();
-    if (target) {
-      const deltas = Object.fromEntries(getActiveOwners().map((candidate) => [candidate, 0]));
-      applyHotPotatoHit(target, deltas, events, owner, 0.4, "Chain Reaction · Hot Potato");
-      if (deltas[target] < 0) addScore(target, deltas[target]);
+
+  const triggeredMutationIds = [];
+  const retainedTimeBombs = [];
+  (state.timeBombs || []).forEach((bomb) => {
+    if (bomb.owner === owner || !activeOwners.has(bomb.owner)) {
+      retainedTimeBombs.push(bomb);
+      return;
     }
-  } else if (definition.id === "death_bomb_status") {
-    if (targetOwner && getActiveOwners().includes(targetOwner)) {
-      loss(targetOwner, 0.2, "Chain Reaction · Death Bomb");
+    const targets = [...activeOwners].filter((target) => target !== bomb.owner && getScore(target) > getScore(bomb.owner));
+    if (!targets.length) {
+      retainedTimeBombs.push(bomb);
+      return;
+    }
+    targets.forEach((target) => detonate(bomb.owner, target, 0.1, "Time Bomb"));
+    if (bomb.mutationId) triggeredMutationIds.push(bomb.mutationId);
+  });
+  state.timeBombs = retainedTimeBombs;
+
+  const detonateOwnTargetBombs = (key, targetKey, name, percent, afterDetonate = null) => {
+    const retained = [];
+    (state[key] || []).forEach((bomb) => {
+      if (bomb.owner === owner || !activeOwners.has(bomb.owner) || !activeOwners.has(bomb[targetKey])) {
+        retained.push(bomb);
+        return;
+      }
+      if (detonate(bomb.owner, bomb[targetKey], percent, name, {
+        afterDetonate: (target) => afterDetonate?.(target, bomb)
+      })) {
+        if (bomb.mutationId) triggeredMutationIds.push(bomb.mutationId);
+      } else {
+        retained.push(bomb);
+      }
+    });
+    state[key] = retained;
+  };
+
+  detonateOwnTargetBombs("debuffTimeBombs", "owner", "Debuff Time Bomb", 0.1);
+  detonateOwnTargetBombs("wrathBombs", "targetOwner", "Wrath Bomb", 0.1);
+  detonateOwnTargetBombs("ultimatumBombs", "targetOwner", "Ultimatum Bomb", 0.1);
+  detonateOwnTargetBombs("deathBombMarks", "targetOwner", "Death Bomb", 0.2, (target, bomb) => {
+    if (bomb.mutation) {
       state.deathMarks = [...(state.deathMarks || []), {
-        owner,
-        targetOwner,
-        remaining: Math.max(1, Number(cleanup.deathMarkRounds) || 2),
+        owner: bomb.owner,
+        targetOwner: target,
+        remaining: Math.max(1, Number(bomb.deathMarkRounds) || 2),
         mutation: true
       }];
+      results.push(`${getOwnerLabel(bomb.owner)}'s Death Bomb applied Death Mark to ${getOwnerLabel(target)} for ${Math.max(1, Number(bomb.deathMarkRounds) || 2)} rounds.`);
+      return;
     }
-  } else if (definition.id === "wrath_bomb_status") {
-    if (targetOwner && getActiveOwners().includes(targetOwner)) {
-      loss(targetOwner, 0.1, "Chain Reaction · Wrath Bomb");
+    addSourceStack(state.permanentDeathMarks, target, bomb.owner);
+    results.push(`${getOwnerLabel(bomb.owner)}'s Death Bomb left ${getOwnerLabel(target)} with a Permanent Death Mark.`);
+  });
+
+  const retainedClusterBombs = [];
+  (state.clusterBombs || []).forEach((bomb) => {
+    if (bomb.owner === owner || !activeOwners.has(bomb.owner)) {
+      retainedClusterBombs.push(bomb);
+      return;
     }
-  } else {
-    return false;
-  }
-  markMutationStatusTriggered(owner, status.id, status.mutationId);
-  return true;
+    const detonated = detonate(bomb.owner, bomb.owner, 0.1, "Cluster Bomb", {
+      afterDetonate: () => {
+        const status = getChaosStatus(bomb.owner);
+        const shrapnel = getRandomInt(10, 20) * multiplier;
+        updateChaosStatus(bomb.owner, {
+          clusterBombs: Math.max(0, Number(status.clusterBombs) || 1) - 1,
+          shrapnel: Math.max(0, Number(status.shrapnel) || 0) + shrapnel
+        });
+        results.push(`${getOwnerLabel(bomb.owner)}'s Cluster Bomb released ${shrapnel} Shrapnel.`);
+      }
+    });
+    if (detonated && bomb.mutationId) triggeredMutationIds.push(bomb.mutationId);
+    if (!detonated) retainedClusterBombs.push(bomb);
+  });
+  state.clusterBombs = retainedClusterBombs;
+
+  const retainedPotatoes = [];
+  (state.hotPotatoOwners || []).forEach((entry) => {
+    const isMutationEntry = entry && typeof entry === "object";
+    const [bombOwner, mode = "normal"] = isMutationEntry
+      ? [entry.owner, entry.mode || "normal"]
+      : String(entry || "").split("|");
+    if (!bombOwner || bombOwner === owner || !activeOwners.has(bombOwner)) {
+      retainedPotatoes.push(entry);
+      return;
+    }
+    const target = mode === "chaos" ? getRandomOtherOwner(bombOwner) : getRandomActiveOwner();
+    const basePercent = mode === "chaos" ? 0.3 : 0.2;
+    if (detonate(bombOwner, target, basePercent, mode === "chaos" ? "Not My Problem" : "Hot Potato")) {
+      if (entry.mutationId) triggeredMutationIds.push(entry.mutationId);
+    } else {
+      retainedPotatoes.push(entry);
+    }
+  });
+  state.hotPotatoOwners = retainedPotatoes;
+  state.hotPotatoCount = retainedPotatoes.length;
+
+  [...activeOwners].filter((target) => target !== owner).forEach((target) => {
+    const stacks = getEffectStackCount(state.explosiveDoomOwners?.[target]);
+    if (stacks > 0) {
+      detonate(target, target, 0.1 * stacks, `Explosive x${stacks}`);
+    }
+    const shrapnel = Math.max(0, Number(getChaosStatus(target).shrapnel) || 0);
+    if (shrapnel > 0) {
+      detonate(target, target, 0.02 * shrapnel, `Shrapnel x${shrapnel}`, {
+        afterDetonate: () => updateChaosStatus(target, { shrapnel: 0 })
+      });
+    }
+  });
+
+  triggeredMutationIds.forEach(markMutationStatusTriggeredByMutationId);
+  return results;
 }
 
 function getMutationStatusEntriesForOwner(owner, predicate = () => true) {
@@ -30672,18 +30752,12 @@ function applyMutationPower(owner, power, meta = {}) {
       break;
     }
     case "chain_reaction": {
-      state.mutationChainReactionMultiplier[owner] = 2;
-      const triggerable = getCopyableActiveStatusEntries(owner).filter((entry) => (
-        !entry.triggered && getMutationStatusRemaining(entry) > 0 && Boolean(entry.triggerOnce)
-      ));
-      const events = [];
-      const triggered = triggerable.filter((status) => resolveMutationChainReaction(owner, status, events)).length;
-      delete state.mutationChainReactionMultiplier[owner];
-      delete state.mutationChainReactionPending[owner];
-      if (events.length) {
-        queueMutationPowerResult(owner, power, events.slice(0, 2));
+      const explosions = triggerOpponentBombStatuses(owner);
+      const visibleResults = explosions.slice(0, 8);
+      if (explosions.length > visibleResults.length) {
+        visibleResults.push(`${explosions.length - visibleResults.length} more explosion${explosions.length - visibleResults.length === 1 ? "" : "s"}`);
       }
-      queueMutationPowerResult(owner, power, triggered ? `${triggered} Status Effect${triggered === 1 ? "" : "s"} triggered at 2x potency` : "No trigger-based Status Effects");
+      queueMutationPowerResult(owner, power, visibleResults.length ? visibleResults : "No opponent bomb Status Effects are armed");
       break;
     }
     case "quarantine":
