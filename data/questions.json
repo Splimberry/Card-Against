@@ -37357,5 +37357,1691 @@
     },
     "language": "zh-Hans",
     "debugBatch": "zh-hans-image-mcq-medium-2026-08-12"
+  },
+  {
+    "id": "en-popculture-text-star-wars-planet",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "What desert planet is the home world of Luke Skywalker in Star Wars?",
+    "canonicalAnswer": "Tatooine",
+    "acceptedAnswers": [
+      "Tatooine"
+    ],
+    "botCards": [
+      "Jakku",
+      "Naboo"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-breaking-bad-network",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which cable network originally broadcast Breaking Bad in the United States?",
+    "canonicalAnswer": "AMC",
+    "acceptedAnswers": [
+      "AMC",
+      "American Movie Classics"
+    ],
+    "botCards": [
+      "HBO",
+      "FX"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-beyonce-alter-ego",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "What stage alter ego did Beyonce introduce on her 2008 double album I Am...?",
+    "canonicalAnswer": "Sasha Fierce",
+    "acceptedAnswers": [
+      "Sasha Fierce"
+    ],
+    "botCards": [
+      "Yonce",
+      "Queen B"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-spirited-away-studio",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "Which Japanese animation studio made Spirited Away?",
+    "canonicalAnswer": "Studio Ghibli",
+    "acceptedAnswers": [
+      "Studio Ghibli",
+      "Ghibli"
+    ],
+    "botCards": [
+      "Toei Animation",
+      "Madhouse"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-seinfeld-co-creator",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "Which comedian co-created Seinfeld with Jerry Seinfeld?",
+    "canonicalAnswer": "Larry David",
+    "acceptedAnswers": [
+      "Larry David",
+      "David"
+    ],
+    "botCards": [
+      "Jason Alexander",
+      "Michael Richards"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-narnia-author",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "Who wrote The Chronicles of Narnia series?",
+    "canonicalAnswer": "C. S. Lewis",
+    "acceptedAnswers": [
+      "C. S. Lewis",
+      "CS Lewis",
+      "Clive Staples Lewis"
+    ],
+    "botCards": [
+      "J. R. R. Tolkien",
+      "Philip Pullman"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-succession-family",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "What is the surname of the media dynasty at the center of Succession?",
+    "canonicalAnswer": "Roy",
+    "acceptedAnswers": [
+      "Roy",
+      "The Roy family"
+    ],
+    "botCards": [
+      "Pierce",
+      "Hughes"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-godot-playwright",
+    "theme": "Pop Culture",
+    "difficulty": "brutal",
+    "question": "Which playwright wrote the absurdist play Waiting for Godot?",
+    "canonicalAnswer": "Samuel Beckett",
+    "acceptedAnswers": [
+      "Samuel Beckett",
+      "Beckett"
+    ],
+    "botCards": [
+      "Harold Pinter",
+      "Eugene Ionesco"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-citizen-kane-sled",
+    "theme": "Pop Culture",
+    "difficulty": "brutal",
+    "question": "What word is written on the childhood sled in Citizen Kane?",
+    "canonicalAnswer": "Rosebud",
+    "acceptedAnswers": [
+      "Rosebud"
+    ],
+    "botCards": [
+      "Xanadu",
+      "Inquirer"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-popculture-text-first-streamed-netflix-original",
+    "theme": "Pop Culture",
+    "difficulty": "brutal",
+    "question": "Which political drama was Netflix's first major original scripted series released in full-season streaming form?",
+    "canonicalAnswer": "House of Cards",
+    "acceptedAnswers": [
+      "House of Cards"
+    ],
+    "botCards": [
+      "Orange Is the New Black",
+      "The Crown"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-hyrule-hero",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "What is the name of the green-clad hero who usually rescues Princess Zelda?",
+    "canonicalAnswer": "Link",
+    "acceptedAnswers": [
+      "Link"
+    ],
+    "botCards": [
+      "Ganondorf",
+      "Tingle"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-minecraft-creator",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What online alias is associated with Markus Persson, the original creator of Minecraft?",
+    "canonicalAnswer": "Notch",
+    "acceptedAnswers": [
+      "Notch"
+    ],
+    "botCards": [
+      "Dinnerbone",
+      "Jeb"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-portal-developer",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "Which game studio developed Portal?",
+    "canonicalAnswer": "Valve",
+    "acceptedAnswers": [
+      "Valve",
+      "Valve Corporation"
+    ],
+    "botCards": [
+      "id Software",
+      "Bungie"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-dnd-dungeon-master",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "What is the title of the person who narrates and runs a Dungeons & Dragons game?",
+    "canonicalAnswer": "Dungeon Master",
+    "acceptedAnswers": [
+      "Dungeon Master",
+      "DM"
+    ],
+    "botCards": [
+      "Game Warden",
+      "Lorekeeper"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-pac-man-designer",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "Which Japanese game designer created Pac-Man?",
+    "canonicalAnswer": "Toru Iwatani",
+    "acceptedAnswers": [
+      "Toru Iwatani",
+      "Iwatani"
+    ],
+    "botCards": [
+      "Shigeru Miyamoto",
+      "Hideo Kojima"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-half-life-city",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "What is the name of the fictional Eastern European city featured in Half-Life 2?",
+    "canonicalAnswer": "City 17",
+    "acceptedAnswers": [
+      "City 17",
+      "City Seventeen"
+    ],
+    "botCards": [
+      "Rapture",
+      "Dunwall"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-mass-effect-species",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "What reptilian alien species is Garrus Vakarian in Mass Effect?",
+    "canonicalAnswer": "Turian",
+    "acceptedAnswers": [
+      "Turian",
+      "Turians"
+    ],
+    "botCards": [
+      "Krogan",
+      "Salarian"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-tetris-inventor",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "brutal",
+    "question": "Which Soviet software engineer created Tetris in 1984?",
+    "canonicalAnswer": "Alexey Pajitnov",
+    "acceptedAnswers": [
+      "Alexey Pajitnov",
+      "Pajitnov"
+    ],
+    "botCards": [
+      "Dmitry Glukhovsky",
+      "Garry Kasparov"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-playstation-mascot-crash",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "brutal",
+    "question": "Which studio created Crash Bandicoot as an early PlayStation mascot?",
+    "canonicalAnswer": "Naughty Dog",
+    "acceptedAnswers": [
+      "Naughty Dog"
+    ],
+    "botCards": [
+      "Insomniac Games",
+      "Sucker Punch"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-gaming-text-arcade-high-score-initials",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "brutal",
+    "question": "In the original Donkey Kong arcade game, what initials appear as the default high-score champion?",
+    "canonicalAnswer": "AAA",
+    "acceptedAnswers": [
+      "AAA"
+    ],
+    "botCards": [
+      "DKJ",
+      "MIO"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-taj-mahal-country",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "In which country is the Taj Mahal located?",
+    "canonicalAnswer": "India",
+    "acceptedAnswers": [
+      "India"
+    ],
+    "botCards": [
+      "Pakistan",
+      "Bangladesh"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-berlin-wall-built",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "In what year was the Berlin Wall first built?",
+    "canonicalAnswer": "1961",
+    "acceptedAnswers": [
+      "1961"
+    ],
+    "botCards": [
+      "1945",
+      "1971"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-panama-canal-oceans",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which two oceans are linked by the Panama Canal?",
+    "canonicalAnswer": "Atlantic and Pacific",
+    "acceptedAnswers": [
+      "Atlantic and Pacific",
+      "Pacific and Atlantic",
+      "Atlantic Ocean and Pacific Ocean"
+    ],
+    "botCards": [
+      "Arctic and Atlantic",
+      "Indian and Pacific"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-babylon-gardens",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "Which ancient Mesopotamian city is traditionally associated with the Hanging Gardens?",
+    "canonicalAnswer": "Babylon",
+    "acceptedAnswers": [
+      "Babylon"
+    ],
+    "botCards": [
+      "Nineveh",
+      "Ur"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-haitian-revolution-leader",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which leader of the Haitian Revolution was captured by the French and died in a prison in France?",
+    "canonicalAnswer": "Toussaint Louverture",
+    "acceptedAnswers": [
+      "Toussaint Louverture",
+      "Louverture"
+    ],
+    "botCards": [
+      "Jean-Jacques Dessalines",
+      "Henri Christophe"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-silk-road-city",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which city in present-day Uzbekistan was a major Silk Road center famous for its Registan square?",
+    "canonicalAnswer": "Samarkand",
+    "acceptedAnswers": [
+      "Samarkand",
+      "Samarqand"
+    ],
+    "botCards": [
+      "Bukhara",
+      "Tashkent"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-treaty-us-revolution",
+    "theme": "Geo and History",
+    "difficulty": "hard",
+    "question": "Which 1783 treaty formally recognized American independence from Britain?",
+    "canonicalAnswer": "Treaty of Paris",
+    "acceptedAnswers": [
+      "Treaty of Paris",
+      "Paris Treaty"
+    ],
+    "botCards": [
+      "Treaty of Ghent",
+      "Treaty of Utrecht"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-oldest-republic",
+    "theme": "Geo and History",
+    "difficulty": "brutal",
+    "question": "Which small European country claims to be the world's oldest surviving republic, founded in 301 CE?",
+    "canonicalAnswer": "San Marino",
+    "acceptedAnswers": [
+      "San Marino"
+    ],
+    "botCards": [
+      "Andorra",
+      "Monaco"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-shortest-border",
+    "theme": "Geo and History",
+    "difficulty": "brutal",
+    "question": "Which two countries share the world's shortest international land border, at about 150 meters?",
+    "canonicalAnswer": "Spain and Morocco",
+    "acceptedAnswers": [
+      "Spain and Morocco",
+      "Morocco and Spain"
+    ],
+    "botCards": [
+      "Belgium and Netherlands",
+      "Argentina and Uruguay"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-geohistory-text-ethiopia-calendar-months",
+    "theme": "Geo and History",
+    "difficulty": "brutal",
+    "question": "How many months are in the Ethiopian calendar?",
+    "canonicalAnswer": "13",
+    "acceptedAnswers": [
+      "13",
+      "thirteen"
+    ],
+    "botCards": [
+      "12",
+      "14"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-baby-goat",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "What is a young goat called?",
+    "canonicalAnswer": "Kid",
+    "acceptedAnswers": [
+      "Kid",
+      "A kid"
+    ],
+    "botCards": [
+      "Foal",
+      "Calf"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-giraffe-tongue",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What color is a giraffe's tongue typically?",
+    "canonicalAnswer": "Blue-black",
+    "acceptedAnswers": [
+      "Blue-black",
+      "Blue black",
+      "Dark blue"
+    ],
+    "botCards": [
+      "Bright red",
+      "Yellow"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-axolotl-origin",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "The axolotl is native to lakes near which Mexican city?",
+    "canonicalAnswer": "Mexico City",
+    "acceptedAnswers": [
+      "Mexico City",
+      "Ciudad de Mexico"
+    ],
+    "botCards": [
+      "Guadalajara",
+      "Monterrey"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-platypus-venom",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "What body feature allows male platypuses to deliver venom?",
+    "canonicalAnswer": "Ankle spurs",
+    "acceptedAnswers": [
+      "Ankle spurs",
+      "Venomous ankle spurs",
+      "Spurs"
+    ],
+    "botCards": [
+      "Fangs",
+      "Claws"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-blue-whale-call",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "Which animal is known for producing some of the loudest sounds of any living creature?",
+    "canonicalAnswer": "Sperm whale",
+    "acceptedAnswers": [
+      "Sperm whale",
+      "Sperm whales"
+    ],
+    "botCards": [
+      "Blue whale",
+      "Howler monkey"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-narwhal-tusk",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "A narwhal's long tusk is actually an enlarged version of which body part?",
+    "canonicalAnswer": "Tooth",
+    "acceptedAnswers": [
+      "Tooth",
+      "A tooth"
+    ],
+    "botCards": [
+      "Horn",
+      "Antler"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-owl-nocturnal",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "What word describes animals, such as many owls, that are chiefly active at night?",
+    "canonicalAnswer": "Nocturnal",
+    "acceptedAnswers": [
+      "Nocturnal"
+    ],
+    "botCards": [
+      "Diurnal",
+      "Aquatic"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-frog-freezes-solid",
+    "theme": "Animals",
+    "difficulty": "brutal",
+    "question": "Which North American frog can survive winter by freezing much of its body solid?",
+    "canonicalAnswer": "Wood frog",
+    "acceptedAnswers": [
+      "Wood frog",
+      "Rana sylvatica"
+    ],
+    "botCards": [
+      "Bullfrog",
+      "Leopard frog"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-slowest-mammal",
+    "theme": "Animals",
+    "difficulty": "brutal",
+    "question": "Which mammal has the slowest known metabolism for its size?",
+    "canonicalAnswer": "Three-toed sloth",
+    "acceptedAnswers": [
+      "Three-toed sloth",
+      "Three toed sloth"
+    ],
+    "botCards": [
+      "Koala",
+      "Giant panda"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-animals-text-flamingo-color",
+    "theme": "Animals",
+    "difficulty": "brutal",
+    "question": "Which pigment in a flamingo's diet gives its feathers their pink color?",
+    "canonicalAnswer": "Carotenoids",
+    "acceptedAnswers": [
+      "Carotenoids",
+      "Carotenoid"
+    ],
+    "botCards": [
+      "Melanin",
+      "Chlorophyll"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-hummus-legume",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "Which legume is the main ingredient in traditional hummus?",
+    "canonicalAnswer": "Chickpea",
+    "acceptedAnswers": [
+      "Chickpea",
+      "Chickpeas",
+      "Garbanzo bean",
+      "Garbanzo beans"
+    ],
+    "botCards": [
+      "Lentil",
+      "White bean"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-miso-ingredient",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Miso soup is usually made by dissolving miso paste into what type of liquid?",
+    "canonicalAnswer": "Dashi",
+    "acceptedAnswers": [
+      "Dashi",
+      "Dashi stock"
+    ],
+    "botCards": [
+      "Coconut milk",
+      "Tomato broth"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-croissant-country",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Although strongly associated with France, the croissant originated from a pastry tradition in which country?",
+    "canonicalAnswer": "Austria",
+    "acceptedAnswers": [
+      "Austria",
+      "Austrian"
+    ],
+    "botCards": [
+      "Belgium",
+      "Italy"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-champagne-grapes",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "Which grape is one of the three main varieties used in Champagne production?",
+    "canonicalAnswer": "Pinot Noir",
+    "acceptedAnswers": [
+      "Pinot Noir"
+    ],
+    "botCards": [
+      "Cabernet Sauvignon",
+      "Malbec"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-sushi-vinegared-rice",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "What is the Japanese term for the vinegared rice that defines sushi?",
+    "canonicalAnswer": "Shari",
+    "acceptedAnswers": [
+      "Shari",
+      "Sushi rice"
+    ],
+    "botCards": [
+      "Nori",
+      "Wasabi"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-mole-poblano-city",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Mole poblano takes part of its name from which Mexican city?",
+    "canonicalAnswer": "Puebla",
+    "acceptedAnswers": [
+      "Puebla"
+    ],
+    "botCards": [
+      "Oaxaca",
+      "Merida"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-coffee-civet",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "Kopi luwak coffee is made from beans processed after being eaten by which animal?",
+    "canonicalAnswer": "Asian palm civet",
+    "acceptedAnswers": [
+      "Asian palm civet",
+      "Palm civet",
+      "Civet"
+    ],
+    "botCards": [
+      "Coati",
+      "Macaque"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-vanilla-orchid",
+    "theme": "Food and Drinks",
+    "difficulty": "brutal",
+    "question": "Vanilla beans are the seed pods of what type of flowering plant?",
+    "canonicalAnswer": "Orchid",
+    "acceptedAnswers": [
+      "Orchid",
+      "Orchids"
+    ],
+    "botCards": [
+      "Lily",
+      "Legume"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-worcestershire-anchovies",
+    "theme": "Food and Drinks",
+    "difficulty": "brutal",
+    "question": "Which small oily fish is a traditional key ingredient in Worcestershire sauce?",
+    "canonicalAnswer": "Anchovies",
+    "acceptedAnswers": [
+      "Anchovies",
+      "Anchovy"
+    ],
+    "botCards": [
+      "Sardines",
+      "Herring"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-food-text-bagel-boiled",
+    "theme": "Food and Drinks",
+    "difficulty": "brutal",
+    "question": "Before baking, what unusual cooking step gives a traditional bagel its chewy crust?",
+    "canonicalAnswer": "Boiling",
+    "acceptedAnswers": [
+      "Boiling",
+      "Boil in water",
+      "Boiled"
+    ],
+    "botCards": [
+      "Steaming",
+      "Deep-frying"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-marathon-distance",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "How many kilometers is an official marathon, rounded to one decimal place?",
+    "canonicalAnswer": "42.2",
+    "acceptedAnswers": [
+      "42.2",
+      "42.195",
+      "42.195 km"
+    ],
+    "botCards": [
+      "40",
+      "50"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-tennis-deuce",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "What term is used in tennis when both players have reached 40 points in a game?",
+    "canonicalAnswer": "Deuce",
+    "acceptedAnswers": [
+      "Deuce"
+    ],
+    "botCards": [
+      "Tiebreak",
+      "Advantage"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-cricket-maiden",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "In cricket, what is an over called when it concedes no runs?",
+    "canonicalAnswer": "Maiden",
+    "acceptedAnswers": [
+      "Maiden",
+      "Maiden over"
+    ],
+    "botCards": [
+      "Duck",
+      "Hat-trick"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-olympic-rings",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "How many interlocking rings appear on the Olympic symbol?",
+    "canonicalAnswer": "5",
+    "acceptedAnswers": [
+      "5",
+      "five"
+    ],
+    "botCards": [
+      "4",
+      "6"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-baseball-grand-slam",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In baseball, what is a home run called when the bases are loaded?",
+    "canonicalAnswer": "Grand slam",
+    "acceptedAnswers": [
+      "Grand slam",
+      "A grand slam"
+    ],
+    "botCards": [
+      "Walk-off",
+      "Inside-the-park home run"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-cycling-yellow-jersey",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "Which cycling race awards a yellow jersey to its overall leader?",
+    "canonicalAnswer": "Tour de France",
+    "acceptedAnswers": [
+      "Tour de France",
+      "Le Tour de France"
+    ],
+    "botCards": [
+      "Giro d'Italia",
+      "Vuelta a Espana"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-golf-albatross",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "In golf, what term means scoring three strokes under par on one hole?",
+    "canonicalAnswer": "Albatross",
+    "acceptedAnswers": [
+      "Albatross",
+      "Double eagle"
+    ],
+    "botCards": [
+      "Eagle",
+      "Condor"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-world-cup-trophy-designer",
+    "theme": "Sports",
+    "difficulty": "brutal",
+    "question": "Which Italian sculptor designed the current FIFA World Cup Trophy first awarded in 1974?",
+    "canonicalAnswer": "Silvio Gazzaniga",
+    "acceptedAnswers": [
+      "Silvio Gazzaniga",
+      "Gazzaniga"
+    ],
+    "botCards": [
+      "Giuseppe Pelizza",
+      "Umberto Boccioni"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-wimbledon-oldest-champion",
+    "theme": "Sports",
+    "difficulty": "brutal",
+    "question": "Who is the oldest men's singles champion in Wimbledon history, winning in 2017 at age 35?",
+    "canonicalAnswer": "Roger Federer",
+    "acceptedAnswers": [
+      "Roger Federer",
+      "Federer"
+    ],
+    "botCards": [
+      "Novak Djokovic",
+      "Rafael Nadal"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-sports-text-f1-first-world-champion",
+    "theme": "Sports",
+    "difficulty": "brutal",
+    "question": "Who was the first Formula One World Drivers' Champion, in 1950?",
+    "canonicalAnswer": "Giuseppe Farina",
+    "acceptedAnswers": [
+      "Giuseppe Farina",
+      "Nino Farina",
+      "Farina"
+    ],
+    "botCards": [
+      "Juan Manuel Fangio",
+      "Alberto Ascari"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-domain-name-system",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "What does DNS stand for in internet networking?",
+    "canonicalAnswer": "Domain Name System",
+    "acceptedAnswers": [
+      "Domain Name System",
+      "DNS"
+    ],
+    "botCards": [
+      "Digital Network Service",
+      "Data Number Standard"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-wifi-symbol",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "What does the Wi-Fi symbol's curved bars usually represent?",
+    "canonicalAnswer": "Wireless signal",
+    "acceptedAnswers": [
+      "Wireless signal",
+      "Wireless signals",
+      "Radio waves"
+    ],
+    "botCards": [
+      "Battery level",
+      "Download speed"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-rickroll-year",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "In what year was the song used in a rickroll first released?",
+    "canonicalAnswer": "1987",
+    "acceptedAnswers": [
+      "1987"
+    ],
+    "botCards": [
+      "1983",
+      "1991"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-url-s",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "In a URL beginning with https, what does the final S stand for?",
+    "canonicalAnswer": "Secure",
+    "acceptedAnswers": [
+      "Secure",
+      "Security"
+    ],
+    "botCards": [
+      "Server",
+      "System"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-gif-creator",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "Which company created the GIF image format in 1987?",
+    "canonicalAnswer": "CompuServe",
+    "acceptedAnswers": [
+      "CompuServe"
+    ],
+    "botCards": [
+      "AOL",
+      "Netscape"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-ascii-characters",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "How many characters are in the original 7-bit ASCII standard?",
+    "canonicalAnswer": "128",
+    "acceptedAnswers": [
+      "128",
+      "one hundred twenty-eight"
+    ],
+    "botCards": [
+      "64",
+      "256"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-meme-coinage",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "Which evolutionary biologist coined the word meme in his 1976 book The Selfish Gene?",
+    "canonicalAnswer": "Richard Dawkins",
+    "acceptedAnswers": [
+      "Richard Dawkins",
+      "Dawkins"
+    ],
+    "botCards": [
+      "Stephen Jay Gould",
+      "Daniel Dennett"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-first-youtube-video",
+    "theme": "Internet Culture",
+    "difficulty": "brutal",
+    "question": "What is the title of the first video uploaded to YouTube?",
+    "canonicalAnswer": "Me at the zoo",
+    "acceptedAnswers": [
+      "Me at the zoo"
+    ],
+    "botCards": [
+      "Welcome to YouTube",
+      "First upload"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-captcha-name",
+    "theme": "Internet Culture",
+    "difficulty": "brutal",
+    "question": "What does CAPTCHA stand for?",
+    "canonicalAnswer": "Completely Automated Public Turing test to tell Computers and Humans Apart",
+    "acceptedAnswers": [
+      "Completely Automated Public Turing test to tell Computers and Humans Apart",
+      "Completely automated public turing test to tell computers and humans apart"
+    ],
+    "botCards": [
+      "Computerized Access Program for Human Authentication",
+      "Centralized Automated Password Test"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-internet-text-hashtag-proposer",
+    "theme": "Internet Culture",
+    "difficulty": "brutal",
+    "question": "Which technology consultant proposed using the hash symbol for groups on Twitter in 2007?",
+    "canonicalAnswer": "Chris Messina",
+    "acceptedAnswers": [
+      "Chris Messina",
+      "Messina"
+    ],
+    "botCards": [
+      "Jack Dorsey",
+      "Biz Stone"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-water-boiling-point",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "At sea level, what Celsius temperature does pure water boil at?",
+    "canonicalAnswer": "100",
+    "acceptedAnswers": [
+      "100",
+      "100 degrees",
+      "100 C",
+      "100°C"
+    ],
+    "botCards": [
+      "90",
+      "110"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-olympus-mons-type",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "What is the specific geological classification of Olympus Mons?",
+    "canonicalAnswer": "Shield volcano",
+    "acceptedAnswers": [
+      "Shield volcano",
+      "A shield volcano"
+    ],
+    "botCards": [
+      "Stratovolcano",
+      "Impact crater"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-element-liquid-room-temperature",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which metal is liquid at ordinary room temperature?",
+    "canonicalAnswer": "Mercury",
+    "acceptedAnswers": [
+      "Mercury"
+    ],
+    "botCards": [
+      "Gallium",
+      "Bromine"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-hygrometer",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "Which instrument measures humidity in the air?",
+    "canonicalAnswer": "Hygrometer",
+    "acceptedAnswers": [
+      "Hygrometer"
+    ],
+    "botCards": [
+      "Barometer",
+      "Anemometer"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-neptune-winds",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Which planet has the fastest recorded winds in the Solar System?",
+    "canonicalAnswer": "Neptune",
+    "acceptedAnswers": [
+      "Neptune"
+    ],
+    "botCards": [
+      "Jupiter",
+      "Saturn"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-blood-ph-number",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "Approximately what pH does normal human blood maintain?",
+    "canonicalAnswer": "7.4",
+    "acceptedAnswers": [
+      "7.4",
+      "7.35 to 7.45"
+    ],
+    "botCards": [
+      "6.4",
+      "8.4"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-geological-era-dinosaurs",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "What geological era includes the Triassic, Jurassic, and Cretaceous periods?",
+    "canonicalAnswer": "Mesozoic",
+    "acceptedAnswers": [
+      "Mesozoic",
+      "Mesozoic Era"
+    ],
+    "botCards": [
+      "Paleozoic",
+      "Cenozoic"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-human-body-atoms",
+    "theme": "Science",
+    "difficulty": "brutal",
+    "question": "Which element makes up the largest share of the human body by mass?",
+    "canonicalAnswer": "Oxygen",
+    "acceptedAnswers": [
+      "Oxygen"
+    ],
+    "botCards": [
+      "Carbon",
+      "Hydrogen"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-eiffel-tower-expands",
+    "theme": "Science",
+    "difficulty": "brutal",
+    "question": "As its iron warms in summer, which direction does the Eiffel Tower's height change?",
+    "canonicalAnswer": "It increases",
+    "acceptedAnswers": [
+      "It increases",
+      "Increases",
+      "It gets taller",
+      "Taller"
+    ],
+    "botCards": [
+      "It decreases",
+      "It stays the same"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-science-text-banana-radioactive",
+    "theme": "Science",
+    "difficulty": "brutal",
+    "question": "Which naturally occurring element makes bananas slightly radioactive?",
+    "canonicalAnswer": "Potassium",
+    "acceptedAnswers": [
+      "Potassium",
+      "Potassium-40",
+      "K-40"
+    ],
+    "botCards": [
+      "Calcium",
+      "Magnesium"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-greek-love-goddess",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "Which Greek goddess is associated with love and beauty?",
+    "canonicalAnswer": "Aphrodite",
+    "acceptedAnswers": [
+      "Aphrodite"
+    ],
+    "botCards": [
+      "Hera",
+      "Demeter"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-anansi-origin",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Anansi, the trickster spider, comes from the folklore of which West African people?",
+    "canonicalAnswer": "Akan",
+    "acceptedAnswers": [
+      "Akan",
+      "The Akan"
+    ],
+    "botCards": [
+      "Yoruba",
+      "Zulu"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-egyptian-falcon-god",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "Which Egyptian god is commonly depicted with a falcon head and a solar disk?",
+    "canonicalAnswer": "Horus",
+    "acceptedAnswers": [
+      "Horus"
+    ],
+    "botCards": [
+      "Anubis",
+      "Osiris"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-king-arthur-advisor",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "What is the name of King Arthur's wizard adviser in Arthurian legend?",
+    "canonicalAnswer": "Merlin",
+    "acceptedAnswers": [
+      "Merlin"
+    ],
+    "botCards": [
+      "Mordred",
+      "Gawain"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-odysseus-wife",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "What is the name of Odysseus's wife, who waits for him in Ithaca?",
+    "canonicalAnswer": "Penelope",
+    "acceptedAnswers": [
+      "Penelope"
+    ],
+    "botCards": [
+      "Helen",
+      "Andromache"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-hindu-river-goddess",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "Which Hindu goddess personifies the Ganges River?",
+    "canonicalAnswer": "Ganga",
+    "acceptedAnswers": [
+      "Ganga",
+      "Ganges"
+    ],
+    "botCards": [
+      "Saraswati",
+      "Lakshmi"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-japanese-storm-god",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "What is the name of the Japanese Shinto god of storms and the sea?",
+    "canonicalAnswer": "Susanoo",
+    "acceptedAnswers": [
+      "Susanoo",
+      "Susanowo"
+    ],
+    "botCards": [
+      "Raijin",
+      "Fujin"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-sisyphus-word",
+    "theme": "Mythology",
+    "difficulty": "brutal",
+    "question": "Which Greek mythological king gave his name to a task that is endless and futile?",
+    "canonicalAnswer": "Sisyphus",
+    "acceptedAnswers": [
+      "Sisyphus"
+    ],
+    "botCards": [
+      "Tantalus",
+      "Prometheus"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-loki-daughter",
+    "theme": "Mythology",
+    "difficulty": "brutal",
+    "question": "In Norse mythology, which daughter of Loki rules the realm of the dead that bears her name?",
+    "canonicalAnswer": "Hel",
+    "acceptedAnswers": [
+      "Hel"
+    ],
+    "botCards": [
+      "Freya",
+      "Skadi"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-mythology-text-achilles-mother",
+    "theme": "Mythology",
+    "difficulty": "brutal",
+    "question": "What was the name of Achilles' sea-nymph mother?",
+    "canonicalAnswer": "Thetis",
+    "acceptedAnswers": [
+      "Thetis"
+    ],
+    "botCards": [
+      "Calypso",
+      "Amphitrite"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-american-gothic-painter",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "Which American painter created American Gothic?",
+    "canonicalAnswer": "Grant Wood",
+    "acceptedAnswers": [
+      "Grant Wood",
+      "Wood"
+    ],
+    "botCards": [
+      "Edward Hopper",
+      "Andrew Wyeth"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-magic-flute-prince",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "What is the name of the prince who is the hero of The Magic Flute?",
+    "canonicalAnswer": "Tamino",
+    "acceptedAnswers": [
+      "Tamino"
+    ],
+    "botCards": [
+      "Papageno",
+      "Sarastro"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-impressionism-dancers",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Impressionist painter is especially known for paintings of ballet dancers?",
+    "canonicalAnswer": "Edgar Degas",
+    "acceptedAnswers": [
+      "Edgar Degas",
+      "Degas"
+    ],
+    "botCards": [
+      "Claude Monet",
+      "Pierre-Auguste Renoir"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-saxophone-inventor",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "Which Belgian instrument maker invented the saxophone?",
+    "canonicalAnswer": "Adolphe Sax",
+    "acceptedAnswers": [
+      "Adolphe Sax",
+      "Sax"
+    ],
+    "botCards": [
+      "Antoine Joseph Sax",
+      "Hector Berlioz"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-guernica-year",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "In what year did Picasso paint Guernica?",
+    "canonicalAnswer": "1937",
+    "acceptedAnswers": [
+      "1937"
+    ],
+    "botCards": [
+      "1927",
+      "1947"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-chopin-nationality",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Which country is composer Frederic Chopin most closely associated with?",
+    "canonicalAnswer": "Poland",
+    "acceptedAnswers": [
+      "Poland",
+      "Polish"
+    ],
+    "botCards": [
+      "Austria",
+      "Hungary"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-mozart-requiem-unfinished",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "Which work was left unfinished at Mozart's death and completed by Franz Xaver Sussmayr?",
+    "canonicalAnswer": "Requiem",
+    "acceptedAnswers": [
+      "Requiem",
+      "Mozart's Requiem",
+      "Mozart Requiem"
+    ],
+    "botCards": [
+      "The Magic Flute",
+      "Don Giovanni"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-starry-night-location",
+    "theme": "Art and Music",
+    "difficulty": "brutal",
+    "question": "Which museum holds Van Gogh's The Starry Night?",
+    "canonicalAnswer": "Museum of Modern Art",
+    "acceptedAnswers": [
+      "Museum of Modern Art",
+      "MoMA",
+      "MOMA"
+    ],
+    "botCards": [
+      "Louvre Museum",
+      "Van Gogh Museum"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-blue-period-friend",
+    "theme": "Art and Music",
+    "difficulty": "brutal",
+    "question": "Which friend of Picasso died in 1901, an event linked to the start of his Blue Period?",
+    "canonicalAnswer": "Carlos Casagemas",
+    "acceptedAnswers": [
+      "Carlos Casagemas",
+      "Casagemas"
+    ],
+    "botCards": [
+      "Georges Braque",
+      "Juan Gris"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
+  },
+  {
+    "id": "en-artmusic-text-national-anthem-anthem-name",
+    "theme": "Art and Music",
+    "difficulty": "brutal",
+    "question": "What is the traditional title of the British royal anthem whose lyrics change from Queen to King with the monarch?",
+    "canonicalAnswer": "God Save the King",
+    "acceptedAnswers": [
+      "God Save the King",
+      "God Save the Queen"
+    ],
+    "botCards": [
+      "Rule Britannia",
+      "Land of Hope and Glory"
+    ],
+    "type": "text",
+    "debugBatch": "en-text-typed-brutal-2026-08-13"
   }
 ]

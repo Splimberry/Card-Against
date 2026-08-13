@@ -1735,7 +1735,8 @@ async function handleDebugQuestions(res) {
     multipleChoice: 0,
     easy: 0,
     medium: 0,
-    hard: 0
+    hard: 0,
+    brutal: 0
   }]));
 
   runtimeQuestionBank.forEach((question) => {
@@ -1746,7 +1747,8 @@ async function handleDebugQuestions(res) {
       multipleChoice: 0,
       easy: 0,
       medium: 0,
-      hard: 0
+      hard: 0,
+      brutal: 0
     });
     bucket.total += 1;
     bucket[question.type] = (bucket[question.type] || 0) + 1;
@@ -2018,9 +2020,9 @@ function normalizeCreatedQuestion(body) {
     throw new Error("Choose a valid theme.");
   }
 
-  const difficulty = ["easy", "medium", "hard"].includes(source.difficulty) ? source.difficulty : "";
+  const difficulty = ["easy", "medium", "hard", "brutal"].includes(source.difficulty) ? source.difficulty : "";
   if (!difficulty) {
-    throw new Error("Choose easy, medium, or hard difficulty.");
+    throw new Error("Choose easy, medium, hard, or brutal difficulty.");
   }
 
   const type = source.type === "image" ? "image" : "text";
@@ -8031,6 +8033,9 @@ function getBotCorrectChance(difficulty) {
   if (normalized.includes("hard")) {
     return 0.28;
   }
+  if (normalized.includes("brutal")) {
+    return 0.18;
+  }
   return 0.42;
 }
 
@@ -8107,7 +8112,7 @@ async function getSeedQuestionSetup(options = {}) {
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : [];
   const seed = String(options.setupSeed || `${Date.now()}-${Math.random()}`);
   const questionLanguage = normalizeQuestionLanguage(options.questionLanguage || options.language);
-  const preferredDifficulty = ["easy", "medium", "hard"].includes(String(options.preferredDifficulty || ""))
+  const preferredDifficulty = ["easy", "medium", "hard", "brutal"].includes(String(options.preferredDifficulty || ""))
     ? String(options.preferredDifficulty)
     : "";
   const preferredQuestionStyle = ["standard", "multiple-choice"].includes(String(options.preferredQuestionStyle || ""))

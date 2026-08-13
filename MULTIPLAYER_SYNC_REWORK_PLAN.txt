@@ -1,0 +1,682 @@
+Multiplayer Sync Rework Plan
+============================
+
+Goal
+----
+Replace the current multiplayer sync layer with a realtime, server-authoritative event system.
+
+Do not rewrite the whole app. Keep these systems intact:
+
+- UI styling
+- power-up definitions
+- grading logic
+- player/profile cosmetics
+- card animations
+- room screens
+- achievements/shop/inventory
+- all single-player modes
+
+Burn down and replace only the multiplayer sync, verification, catchup, and room snapshot logic.
+
+
+Why This Rework Exists
+----------------------
+The current multiplayer flow has become too dependent on fallback behavior:
+
+- clients write whole room snapshots
+- clients poll room state every few seconds
+- clients wait for HTTP responses before other screens can update
+- clients retry grading/submission transitions after delays
+- host/client code guesses missing remote answers
+- snapshots are used as normal gameplay confirmation instead of reconnect recovery
+
+This makes the app feel slow because every important action waits for confirmation or a later recovery path. It also creates bugs where old snapshots overwrite newer state, players duplicate, bots disappear, grading starts repeatedly, or non-hosts stay behind in a previous phase.
+
+The new rule:
+
+Clients send commands. The server validates commands, mutates canonical room state, increments a room revision, and broadcasts complete realtime events. Clients apply events exactly once, in revision order. Snapshots are only for initial join, reconnect, or detected revision gaps.
+
+
+Do Not Use For Normal Gameplay
+------------------------------
+Remove these patterns from normal multiplayer gameplay:
+
+- room polling loops
+- repeated full room fetches after actions
+- "verify every few seconds"
+- "retry stuck grading after 1.2s"
+- "waiting for host to sync"
+- client-side all-submitted loops
+- client-generated fallback answers for other real players
+- whole-room PUT updates from clients
+- host-only local decisions that other clients must discover later
+
+Allowed HTTP:
+
+- command submission
+- initial room list load
+- initial join/rejoin snapshot
+- private password check
+- reconnect snapshot
+- revision-gap recovery
+- debug/manual diagnostic tools
+
+Not allowed:
+
+- using HTTP snapshots as the normal way to make gameplay sync.
+
+
+Current Code To Replace
+-----------------------
+These are the main current paths that should be removed or converted behind a new sync layer:
+
+- app.js state.roomDirectoryPollId
+- app.js state.roomAutoResolveId
+- app.js refreshCurrentRoomDirectory()
+- app.js startRoomDirectoryPolling()
+- app.js waitForRoomSubmissionsThenPlay()
+- app.js publishCurrentRoomSubmission()
+- app.js submitRoomAnswer() multiplayer branch that locally marks remote answers
+- app.js beginRoomMatch() waiting for refreshCurrentRoomDirectory()
+- app.js addBotToRoom() local mutation + upsertHostedRoom()
+- app.js kickRoomBot() local mutation + upsertHostedRoom()
+- server.js handleUpsertRoom()
+- server.js handleRoomPresence()
+- server.js hostedRooms whole-room mutation model
+
+The room screens can keep their render functions. Replace the data plumbing underneath them.
+
+
+Target Architecture
+-------------------
+Add a single multiplayer sync module on the client and a single command/event model on the server.
+
+Server owns:
+
+- room status
+- participants
+- spectators
+- host ownership
+- connection state
+- settings
+- current match state
+- current round
+- timer deadline
+- question/card style owner
+- submitted answers
+- grading result
+- points/streaks
+- power-up hands
+- active effects
+- bot state
+- table events
+- chat
+- room revision
+
+Client owns only:
+
+- visual animation state
+- local input draft before submission
+- optimistic button disabled/loading state
+- sound/effects preferences
+- cached snapshot for fast display
+
+
+Room State Shape
+----------------
+Use one canonical room object on the server:
+
+room = {
+  code,
+  status,                 // lobby, answering, grading, round_result, complete
+  revision,
+  hostParticipantId,
+  createdByProfileId,
+  createdAt,
+  updatedAt,
+  settings,
+  participants,
+  spectators,
+  game,
+  chat
+}
+
+participant = {
+  id,
+  profileId,
+  clientInstanceId,
+  displayName,
+  cosmetics,
+  role,                   // host, player, spectator, bot
+  connectionStatus,       // online, disconnected, left, kicked
+  joinedAt,
+  lastSeenAt,
+  submittedRound,
+  currentAnswer,
+  answerDraft,            // only broadcast if spectators are present
+  points,
+  streak,
+  hand,
+  activeEffects
+}
+
+game = {
+  matchId,
+  round,
+  maxRounds,
+  phase,
+  phaseStartedAt,
+  phaseDeadlineAt,
+  question,
+  questionStyleOwnerId,
+  answersByParticipantId,
+  grading,
+  pointDeltas,
+  tableEvents,
+  powerEvents
+}
+
+
+Event Log
+---------
+Every room mutation creates an event with a strictly increasing room revision.
+
+event = {
+  roomCode,
+  revision,
+  type,
+  actorId,
+  clientEventId,
+  createdAt,
+  payload
+}
+
+Requirements:
+
+- revision increments once per atomic state mutation
+- each event payload must be complete enough to update the UI without fetching the room
+- clients ignore duplicate clientEventId/revision events
+- clients detect revision gaps and request missed events since lastRevision
+- full snapshot is only used if missed events are unavailable or too old
+
+
+Required Event Types
+--------------------
+Room lifecycle:
+
+- room_created
+- participant_joined
+- participant_rejoined
+- participant_disconnected
+- participant_left
+- participant_kicked
+- participant_banned
+- host_transferred
+- room_closed
+
+Lobby/settings:
+
+- settings_updated
+- classic_mode_confirmed
+- bot_added
+- bot_removed
+- match_started
+
+Gameplay:
+
+- round_started
+- answer_draft_updated
+- answer_submitted
+- power_used
+- power_resolved
+- hand_changed
+- active_effects_changed
+- bot_answer_submitted
+- all_answers_submitted
+- grading_started
+- grading_completed
+- points_changed
+- next_round_started
+- match_completed
+- rematch_started
+- returned_to_lobby
+
+Chat:
+
+- chat_message_added
+- system_message_added
+
+Spectator:
+
+- spectator_joined
+- spectator_left
+- spectator_count_changed
+
+
+Command API
+-----------
+Replace whole-room upserts with command endpoints.
+
+Each command accepts:
+
+{
+  roomCode,
+  participantId,
+  clientInstanceId,
+  clientEventId,
+  expectedRevision,
+  payload
+}
+
+Each command returns:
+
+{
+  ok,
+  roomCode,
+  revision,
+  events
+}
+
+The realtime broadcast sends the same events.
+
+Commands:
+
+- create_room
+- join_room
+- rejoin_room
+- leave_room
+- disconnect
+- transfer_host
+- update_settings
+- add_bot
+- remove_bot
+- start_match
+- update_answer_draft
+- submit_answer
+- use_power
+- resolve_timer_expired
+- skip_to_grading
+- start_next_round
+- end_game
+- rematch
+- return_to_lobby
+- send_chat
+
+
+Critical Flow: Answer Submission
+--------------------------------
+This is the highest priority because many current bugs come from missed submissions and retry-based grading.
+
+New flow:
+
+1. Player clicks Submit.
+2. Client sends submit_answer with clientEventId.
+3. Server validates participant is active, in answering phase, and not already submitted for this round.
+4. Server writes answersByParticipantId[participantId].
+5. Server updates participant submittedRound/status.
+6. Server emits answer_submitted.
+7. Server checks all active players and bots from canonical server state.
+8. If all are submitted, server emits all_answers_submitted and grading_started in the same command result/broadcast.
+9. Every client applies the same events by revision.
+
+Important:
+
+- Host answer is independent from player answer.
+- Player submit must never force host submit.
+- Timer expiry may auto-submit each unsubmitted player's own current input/draft, but only when server receives/executes resolve_timer_expired.
+- No client should generate another real player's answer.
+- No client should decide globally that grading starts.
+
+
+Critical Flow: Timer Expiry
+---------------------------
+Do not rely on every browser timer firing. Browser tabs throttle timers in the background.
+
+Use a server phaseDeadlineAt.
+
+Client display:
+
+- derive remaining time from phaseDeadlineAt - Date.now()
+- local timer is only visual
+
+Server resolution:
+
+- host may send resolve_timer_expired when its visual timer reaches zero
+- any client may send resolve_timer_expired after deadline
+- server accepts only if now >= phaseDeadlineAt
+- server auto-submits missing players using their latest answerDraft/currentAnswer
+- server emits answer_submitted for each auto-submitted participant
+- server emits grading_started
+
+This is not polling. It is a deadline command that is valid only once.
+
+
+Critical Flow: Begin Match
+--------------------------
+New flow:
+
+1. Host sends start_match.
+2. Server validates lobby state and active player count.
+3. Server creates matchId, round 1, question, questionStyleOwnerId, hands, timer deadline.
+4. Server emits match_started and round_started.
+5. All clients enter the match only from these events.
+
+Do not:
+
+- fetch full room first unless this is a revision-gap recovery
+- locally start host and hope other clients catch up
+- let stale lobby snapshots overwrite in-progress state
+
+
+Critical Flow: Next Round / Rematch
+-----------------------------------
+New flow:
+
+1. Host sends start_next_round or rematch.
+2. Server validates current phase.
+3. Server clears per-round submissions, power events, grading result, answer map.
+4. Server creates the next question and timer deadline.
+5. Server emits next_round_started or rematch_started.
+6. Clients reset UI from the event.
+
+Do not keep old answer_submitted or grading locks alive across rounds.
+
+
+Critical Flow: Bots
+-------------------
+Bots must be server-owned for multiplayer.
+
+Add/remove:
+
+- host sends add_bot/remove_bot
+- server mutates participants
+- server emits bot_added/bot_removed
+- clients never invent bot ids locally
+
+Answering:
+
+- server schedules or decides bot submissions based on phaseDeadlineAt
+- if all real active players submit, server submits remaining bots immediately
+- server emits bot_answer_submitted/answer_submitted events
+
+Do not:
+
+- make bots appear by host local mutation
+- make non-host wait for a bot that only exists on the host
+- allow bot id collisions from Date.now() on clients
+
+
+Critical Flow: Power-Ups
+------------------------
+Power-up rules can stay, but multiplayer execution must become server-authoritative.
+
+New flow:
+
+1. Client sends use_power.
+2. Server validates ownership, phase, target, once-per-round rules, chaos rules, and hand contents.
+3. Server resolves the effect against canonical room state.
+4. Server emits power_used plus any complete result events:
+   - points_changed
+   - active_effects_changed
+   - hand_changed
+   - answer_card_damaged
+   - timer_changed
+   - shield_used
+5. Clients render animations from events.
+
+Do not:
+
+- let each client independently calculate point losses/gains
+- let power-up use depend on local player arrays
+- fire instant powers again during grading
+- use periodic verification to correct point totals
+
+
+Reconnect / Duplicate Tab Rules
+-------------------------------
+Each signed-in profile or guest identity can have only one active player slot in a room.
+
+Use:
+
+- profileId for account identity
+- guestId for guest identity
+- clientInstanceId for browser tab instance
+- participantId for the room slot
+
+Rules:
+
+- same profileId/guestId cannot create a second active player slot
+- if the existing participant is disconnected, join becomes rejoin
+- if the existing participant is online in another tab, block or replace the old connection explicitly
+- reconnect keeps the same participantId, points, hand, submitted answer, effects, and role
+- refreshing during match must return as player if they started as player
+- spectator status is explicit and cannot accidentally replace player status
+
+
+Snapshots
+---------
+Snapshots are allowed only for:
+
+- initial page load room list
+- first join
+- direct invite link open
+- private password gate success
+- reconnect
+- revision gap recovery
+- manual debug refresh
+
+Snapshot rules:
+
+- snapshot must include revision
+- client applies snapshot only if snapshot.revision > localRevision
+- snapshot must never overwrite newer local event state
+- normal command success must not trigger a full snapshot fetch
+- realtime event success must not trigger a full snapshot fetch
+
+
+Client Sync Module
+------------------
+Create one client-side room sync module/API. Existing UI should call this module instead of directly mutating room state.
+
+Suggested shape:
+
+- roomSync.connect(roomCode)
+- roomSync.disconnect()
+- roomSync.sendCommand(type, payload)
+- roomSync.applyEvent(event)
+- roomSync.applySnapshot(snapshot)
+- roomSync.getLocalRoom()
+- roomSync.onChange(callback)
+- roomSync.onEvent(callback)
+
+The UI should not call fetch/upsert directly for gameplay.
+
+
+Rendering Contract
+------------------
+Render functions should be dumb consumers of local room state.
+
+Good:
+
+- event updates state.participants
+- renderRoomPlayers() displays participants
+- event updates game.phase
+- renderGamePhase() displays answering/grading/result
+
+Bad:
+
+- render function fetches room
+- render function starts polling
+- submit button directly marks other players as submitted
+- host UI decides non-host phase
+
+
+Diagnostics Required
+--------------------
+Add a temporary multiplayer sync debug panel/log that can be removed later.
+
+For every command/event, log:
+
+- time
+- roomCode
+- local participantId
+- command type
+- clientEventId
+- expectedRevision
+- returned revision
+- received event revision
+- event type
+- whether snapshot/catchup was used
+
+Add a visible warning in dev/debug only if a normal gameplay action used snapshot recovery.
+
+Goal during tests:
+
+- answer submit should update other client from answer_submitted event only
+- bot add should update other client from bot_added event only
+- grading should start from grading_started event only
+- next round should start from next_round_started event only
+- no room polling should be running during active gameplay
+
+
+Migration Steps
+---------------
+Step 1: Add event/revision foundation
+
+- Add server room revision.
+- Add event creation helper.
+- Add client event queue/apply logic.
+- Keep old UI rendering.
+- Do not yet remove old code.
+
+Step 2: Replace lobby sync
+
+- Replace create/join/rejoin/leave/kick/ban/bot/settings with command events.
+- Remove room directory polling while inside a room.
+- Keep room list refresh only on join screen.
+
+Step 3: Replace match start and phase sync
+
+- start_match emits match_started and round_started.
+- Clients enter game from event only.
+- Remove local host-only start assumptions.
+
+Step 4: Replace answer submission and grading
+
+- submit_answer emits answer_submitted.
+- server starts grading when all active participants are submitted or timer deadline resolves.
+- Remove waitForRoomSubmissionsThenPlay() from multiplayer.
+- Remove roomAutoResolveId for multiplayer grading flow.
+
+Step 5: Replace bots
+
+- Server owns bot ids, bot presence, and bot answer submission.
+- Bot add/remove is event-only.
+
+Step 6: Replace power-up sync
+
+- use_power is server-authoritative.
+- Server emits final state deltas.
+- Clients only animate/render event results.
+
+Step 7: Replace reconnect
+
+- Implement disconnected/reconnected events.
+- Preserve player slot and match state.
+- Add duplicate-tab guard.
+
+Step 8: Remove old sync paths
+
+- Delete or disable whole-room client upserts for active gameplay.
+- Delete room polling inside active rooms.
+- Delete normal-path catchup/retry/verification loops.
+- Keep snapshots only for allowed recovery cases.
+
+
+Acceptance Tests
+----------------
+Lobby:
+
+- host creates room, player appears on host immediately
+- player joins, host sees participant from participant_joined event
+- host adds 5 bots quickly, all clients see 5 unique bots
+- host removes bot, all clients remove it immediately
+- settings changes sync without flicker
+- classic cancel does not mutate settings
+
+Match start:
+
+- host clicks begin match, all clients enter answering phase from same event
+- no client is thrown back to lobby
+- round number, max rounds, timer, modifiers, and question match on all screens
+
+Answering:
+
+- both players submit at nearly the same time
+- submit status appears on other client immediately
+- no one clicks submit, timer expiry auto-submits all current drafts
+- host not submitting does not block forever
+- player submit does not force host submit
+- slow network client receives correct events in order
+
+Grading:
+
+- grading starts once
+- grading does not retrigger every few seconds
+- non-host sees grading phase
+- incorrect cards dim for every client
+- question progress syncs for every client
+
+Next round/rematch:
+
+- repeated next clicks are idempotent
+- rematch resets round state and card pile
+- no old answer_submitted events trigger immediate grading in new round
+
+Reconnect:
+
+- refresh host during lobby: host reconnects into same host slot
+- refresh host mid-match: room state remains unchanged
+- refresh player during answering: player rejoins as player, not spectator
+- refresh during waiting/grading/next countdown preserves phase
+- close tab: participant becomes disconnected, not duplicated
+- reconnect within grace period uses same participantId
+- same account in second tab cannot create duplicate player slot
+
+Power-ups:
+
+- point-changing powers update leaderboard immediately
+- targeted powers after submit still count for that round
+- instant powers do not fire twice
+- hand replacement/deletion/refill syncs from hand_changed events
+- chaos rules are applied once by server
+
+Spectator:
+
+- spectator never appears in leaderboard
+- spectator sees active phase immediately when joining mid-match
+- spectator live typing uses answer_draft_updated only when spectators are present
+- grading view syncs for spectator
+
+Stress:
+
+- one client on Slow 3G
+- one client backgrounded for 60 seconds
+- host clicks next while player reconnects
+- host ends game while player submits
+- bot removed while bot would submit
+- no normal-path polling/catchup warning appears in debug log
+
+
+Definition Of Done
+------------------
+The rework is done only when:
+
+- all normal multiplayer gameplay changes are delivered as realtime events
+- no active room uses setInterval polling to stay correct
+- no gameplay action waits for a full room snapshot to become visible
+- snapshots are only used for join/rejoin/revision-gap recovery
+- clients apply events idempotently by revision/clientEventId
+- stale snapshots cannot overwrite newer event-applied state
+- all listed acceptance tests pass
+

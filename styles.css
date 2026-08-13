@@ -7159,6 +7159,12 @@ body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"])
   color: #fecaca;
 }
 
+.difficulty-badge.difficulty-brutal {
+  border-color: rgba(192, 132, 252, 0.64);
+  background: rgba(147, 51, 234, 0.18);
+  color: #e9d5ff;
+}
+
 .question-image {
   display: grid;
   align-items: center;

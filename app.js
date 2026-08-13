@@ -7,7 +7,8 @@ const BRUTAL_WRONG_ANSWER_LOSS_PERCENT = 0.1;
 const DIFFICULTY_BONUSES = {
   easy: 250,
   medium: 500,
-  hard: 1000
+  hard: 1000,
+  brutal: 1500
 };
 const LOADING_MESSAGE_INTERVAL_MS = 2800;
 const QUESTION_RESERVE_LIMIT = 6;
@@ -6710,7 +6711,7 @@ async function requestRoundSetup(options = {}) {
   const questionStylePreference = [MULTIPLE_CHOICE_STYLE, "standard"].includes(options.questionStylePreference)
     ? options.questionStylePreference
     : getRoundQuestionStylePreference(timingOptions, setupSeed);
-  const questionDifficultyPreference = ["easy", "medium", "hard"].includes(options.questionDifficultyPreference)
+  const questionDifficultyPreference = ["easy", "medium", "hard", "brutal"].includes(options.questionDifficultyPreference)
     ? options.questionDifficultyPreference
     : "";
   const recentBlackCards = Array.isArray(options.recentBlackCards) ? options.recentBlackCards : state.recentBlackCards;
@@ -6811,7 +6812,7 @@ async function requestAuthoritativeRoomRoundSetup(options = {}) {
   const timingOptions = getRoundSetupTimingOptions(options);
   const enabledThemes = Array.isArray(options.enabledThemes) ? options.enabledThemes : getEnabledTriviaThemes();
   const preferredTheme = options.preferredTheme || "";
-  const preferredDifficulty = ["easy", "medium", "hard"].includes(options.questionDifficultyPreference)
+  const preferredDifficulty = ["easy", "medium", "hard", "brutal"].includes(options.questionDifficultyPreference)
     ? options.questionDifficultyPreference
     : "";
   const preferredQuestionStyle = [MULTIPLE_CHOICE_STYLE, "standard"].includes(options.questionStylePreference)
@@ -9550,7 +9551,9 @@ function renderMutationSummary() {
       description: getMutationSummaryDescription(status),
       icon: powerCategoryInfo[status.category]?.icon || "assets/overlays/biohazard.svg",
       className: status.category === "doom" ? "doom" : "status",
-      meta: `Gained this round · ${Number(status.rounds) || 1} round${Number(status.rounds) === 1 ? "" : "s"}`
+      meta: status.rounds === "permanent"
+        ? "Gained this round · Permanent"
+        : `Gained this round · ${Number(status.rounds) || 1} round${Number(status.rounds) === 1 ? "" : "s"}`
     }));
   });
   setHidden(summary, summary.childElementCount === 0);
@@ -10972,6 +10975,10 @@ function decrementRoundEffectCounters(owners) {
     state.streakSicknessRounds[owner] = Math.max(0, (state.streakSicknessRounds[owner] || 0) - 1);
     state.ultimatumRounds[owner] = Math.max(0, (state.ultimatumRounds[owner] || 0) - 1);
     state.doomStreakGuardRounds[owner] = Math.max(0, (state.doomStreakGuardRounds[owner] || 0) - 1);
+    state.mutationImmunityRounds[owner] = Math.max(0, (state.mutationImmunityRounds[owner] || 0) - 1);
+    state.mutationQuarantineRounds[owner] = Math.max(0, (state.mutationQuarantineRounds[owner] || 0) - 1);
+    state.mutationStatusInversionRounds[owner] = Math.max(0, (state.mutationStatusInversionRounds[owner] || 0) - 1);
+    state.mutationSovereignRounds[owner] = Math.max(0, (state.mutationSovereignRounds[owner] || 0) - 1);
     state.reverseGuardRounds[owner] = Math.max(0, (state.reverseGuardRounds[owner] || 0) - 1);
     if (!state.reverseGuardRounds[owner]) {
       delete state.reverseGuardTargets[owner];
@@ -11020,6 +11027,9 @@ function decrementRoundEffectCounters(owners) {
         ...expiredTemporaryStatuses
       ];
     }
+    applyMutationOverclockAtTurnEnd(owner);
+    delete state.mutationChainReactionMultiplier[owner];
+    delete state.mutationChainReactionPending[owner];
   });
   pruneMutationStatuses();
 }
@@ -11104,6 +11114,7 @@ const statusEffectLibraryIds = Object.freeze([
   "fourth_slot_status", "time_capsule_status", "endless_hand_status", "power_tunnelling_status",
   "shrapnel_status", "reverse_guard_status", "event_horizon_status", "target_wipe_status", "secret_agent_status",
   "doom_shield", "impending_doom", "null_corruption"
+  , "mutation_immunity_status", "quarantine_status", "status_inversion_status"
 ]);
 
 const statusEffectLibraryCopy = Object.freeze({
@@ -11157,6 +11168,9 @@ const statusEffectLibraryCopy = Object.freeze({
   impending_doom: ["Doom curse", "Blocks positive statuses; wrong answers lose 1,000 plus 10% per stack."],
   explosive_doom: ["Explosive", "Wrong answers lose 10% of score per stack. Cannot be removed."],
   null_corruption: ["Null curse", "Blocks positive statuses and bonus points; gains are reduced by 10% plus wrong-answer penalties."],
+  mutation_immunity_status: ["Immunity", "Only positive Status Effects can be gained for the remaining rounds."],
+  quarantine_status: ["Quarantine", "Status Effect transfers and incoming applications are blocked for the remaining rounds."],
+  status_inversion_status: ["Status Inversion", "Negative Status Effects resolve as positive effects for the remaining rounds."],
   doom_streak_guard: ["Doom streak shield", "Blocks streak reductions while active."],
   antivirus_charge: ["Next-debuff shield", "Blocks the next incoming debuff, then consumes one charge."],
   rocket_fuel: ["Stored streak", "Adds three streaks at the next round start."],
@@ -11196,6 +11210,16 @@ const statusEffectLibraryCopy = Object.freeze({
   target_wipe_status: ["Winner punishment", "A marked winner loses score, power-ups, and part of the round gain."],
   secret_agent_status: ["Identity scramble", "Scrambles visible identities and style for its remaining rounds."]
 });
+
+const mutationPowerLibraryEntries = Object.freeze(mutationPowerDeck.map((power) => ({
+  name: power.name,
+  short: power.short,
+  description: power.description,
+  powerId: power.id,
+  category: "mutation",
+  rarity: power.rarity,
+  libraryKind: "mutation-power"
+})));
 
 function getLibraryDefinitionEntry(definition, options = {}) {
   if (!definition) {
@@ -11254,15 +11278,44 @@ function getTableEventLibraryEntries() {
 }
 
 function renderAbilityLibrary() {
-  const chaosPreview = Boolean(elements.abilityChaosPreviewToggle?.checked);
   const mutationPreview = Boolean(elements.abilityMutationPreviewToggle?.checked);
+  // Mutation is a separate, status-focused ruleset. Its viewer must never
+  // fall through into the traditional deck, roll, or table-event sections.
+  if (mutationPreview) {
+    elements.abilityLibrary.replaceChildren();
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: "Mutation abilities",
+      rarity: "blue",
+      kind: "mutation-power",
+      open: true,
+      sectionIcon: powerCategoryInfo.mutation.icon,
+      entries: mutationPowerLibraryEntries
+    }));
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: "Mutation Status Effects",
+      rarity: "blue",
+      kind: "status",
+      sectionIcon: powerCategoryInfo.mutation.icon,
+      entries: getStatusEffectLibraryEntries()
+    }));
+    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
+      title: "Permanent Mutations",
+      rarity: "gold",
+      kind: "permanent-mutation",
+      sectionIcon: "assets/overlays/biohazard.svg",
+      entries: getPermanentMutationLibraryEntries()
+    }));
+    return;
+  }
+
+  const chaosPreview = Boolean(elements.abilityChaosPreviewToggle?.checked);
   const rarityOrder = chaosPreview
     ? ["grey", "blue", "purple", "gold", "doom"]
     : ["grey", "blue", "purple", "gold"];
   elements.abilityLibrary.replaceChildren();
 
   rarityOrder.forEach((rarity, index) => {
-    const powers = powerDeck.filter((power) => power.rarity === rarity);
+    const powers = getActivePowerDeck().filter((power) => power.rarity === rarity);
     if (!powers.length) {
       return;
     }
@@ -11323,7 +11376,7 @@ function renderAbilityLibrary() {
     }
   ];
 
-  if (!mutationPreview) rollSections.forEach((rollSection) => {
+  rollSections.forEach((rollSection) => {
     elements.abilityLibrary.appendChild(createAbilityLibrarySection({
       title: rollSection.title,
       rarity: rollSection.rarity,
@@ -11339,31 +11392,6 @@ function renderAbilityLibrary() {
       }))
     }));
   });
-
-  if (mutationPreview) {
-    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
-      title: "Mutation abilities",
-      rarity: "blue",
-      kind: "mutation-power",
-      open: true,
-      sectionIcon: powerCategoryInfo.mutation.icon,
-      entries: mutationPowerLibraryEntries
-    }));
-    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
-      title: "Mutation Status Effects",
-      rarity: "blue",
-      kind: "status",
-      sectionIcon: powerCategoryInfo.mutation.icon,
-      entries: getStatusEffectLibraryEntries()
-    }));
-    elements.abilityLibrary.appendChild(createAbilityLibrarySection({
-      title: "Permanent Mutations",
-      rarity: "gold",
-      kind: "permanent-mutation",
-      sectionIcon: "assets/overlays/biohazard.svg",
-      entries: getPermanentMutationLibraryEntries()
-    }));
-  }
 
   elements.abilityLibrary.appendChild(createAbilityLibrarySection({
     title: "Table events",
@@ -26788,20 +26816,15 @@ function openMolotovSelector(owner) {
     return;
   }
   elements.targetTitle.textContent = "Molotov Cocktail";
-  elements.targetModal.dataset.mode = "molotov";
-  elements.targetModal.dataset.powerCategory = getPowerCategory(power);
-  elements.targetModal.dataset.powerRarity = power.rarity || "purple";
-  elements.targetModal.dataset.minTargets = "1";
-  elements.targetModal.dataset.maxTargets = "2";
-  elements.targetModal.dataset.selectedTargets = "[]";
+  // Reuse the standard multi-target layout and its selection states. Molotov
+  // only changes the action copy and resolution once targets are confirmed.
+  elements.targetModal.dataset.mode = "multi-player";
+  elements.targetModal.dataset.action = "molotov";
   if (elements.targetSelectionHint) {
     elements.targetSelectionHint.textContent = "Choose up to 2 players, including yourself";
-    setHidden(elements.targetSelectionHint, false);
   }
   if (elements.confirmTargetButton) {
     elements.confirmTargetButton.textContent = "Throw Molotov";
-    setHidden(elements.confirmTargetButton, false);
-    elements.confirmTargetButton.disabled = true;
   }
 }
 
@@ -27357,6 +27380,7 @@ function closeTargetSelector() {
   elements.targetModal.dataset.owner = "";
   elements.targetModal.dataset.power = "";
   elements.targetModal.dataset.mode = "";
+  elements.targetModal.dataset.action = "";
   elements.targetModal.dataset.powerCategory = "";
   elements.targetModal.dataset.powerRarity = "";
   elements.targetModal.dataset.xrayPending = "";
@@ -27562,11 +27586,12 @@ function completeTargetSelection(targetOwnerOrTargets) {
   const powerId = elements.targetModal.dataset.power;
   const power = getPowerById(powerId);
   const mode = elements.targetModal.dataset.mode;
+  const action = elements.targetModal.dataset.action;
   if (mode === "mutation-status") {
-    const status = getMutationStatusByMutationId(owner, targetOwnerOrTargets);
+    const status = getMutationStatusBySelection(owner, targetOwnerOrTargets);
     if (status && power) {
       closeTargetSelector();
-      consumeImmediatePower(owner, power, { mutationStatusId: status.mutationId });
+      consumeImmediatePower(owner, power, { mutationStatusId: getMutationStatusSelectionId(status) });
     }
     return;
   }
@@ -27574,7 +27599,7 @@ function completeTargetSelection(targetOwnerOrTargets) {
     completeTableSabotageSelection(targetOwnerOrTargets);
     return;
   }
-  if (mode === "molotov") {
+  if (action === "molotov") {
     completeMolotovSelection(targetOwnerOrTargets);
     return;
   }
@@ -29544,7 +29569,7 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
     entries.push(createActiveEffect(owner, status.powerId || definition.powerId, name, description, {
       chaosInfused: definition.pool === "chaos",
       statusPill: true,
-      statusMeta: `${count}x | ${remaining} round${remaining === 1 ? "" : "s"}`,
+      statusMeta: getMutationStatusMeta(status, count),
       mutationStatus: true,
       canonicalMutationStatus: true
     }));
@@ -29934,7 +29959,19 @@ function markMutationStatusTriggeredByMutationId(mutationId) {
 }
 
 function getMutationStatusRemaining(status) {
+  if (status?.permanentStatus) {
+    return Infinity;
+  }
   return Math.max(0, (Number(status?.expiresAt) || state.round) - state.round + 1);
+}
+
+function getMutationStatusMeta(status, stacks = getMutationStatusStackCount(status)) {
+  const count = Math.max(1, Number(stacks) || 1);
+  if (status?.permanentStatus) {
+    return `${count}x | Permanent`;
+  }
+  const remaining = getMutationStatusRemaining(status);
+  return `${count}x | ${remaining} round${remaining === 1 ? "" : "s"}`;
 }
 
 function getMutationTierOdds(owner) {
@@ -30289,7 +30326,7 @@ function openMutationStatusSelector(owner, power, powerId) {
     button.type = "button";
     button.className = "target-option mutation-status-option";
     button.dataset.mutationStatusId = getMutationStatusSelectionId(status);
-    button.innerHTML = `<span><strong>${status.name}</strong><small>${Math.max(1, Number(status.stacks) || 1)}x | ${getMutationStatusRemaining(status)} round${getMutationStatusRemaining(status) === 1 ? "" : "s"}</small></span>`;
+    button.innerHTML = `<span><strong>${status.name}</strong><small>${getMutationStatusMeta(status, Math.max(1, Number(status.stacks) || 1))}</small></span>`;
     elements.targetList.appendChild(button);
   });
   setHidden(elements.targetModal, false);
@@ -30503,7 +30540,7 @@ function applyMutationPower(owner, power, meta = {}) {
           gained += 1;
         }
       });
-      queueMutationPowerResult(owner, power, `${gained} Status Effect${gained === 1 ? "" : "s"} became permanent`);
+      queueMutationPowerResult(owner, power, `${gained} Status Effect${gained === 1 ? "" : "s"} became permanent at 1x potency`);
       break;
     }
     case "sovereign":
@@ -30873,7 +30910,7 @@ function applyMutationStatus(owner, definition, rounds, options = {}) {
       name: status.name,
       description: status.description,
       category: status.category,
-      rounds: status.rounds
+      rounds: status.permanentStatus ? "permanent" : Math.max(1, Number(status.rounds) || 1)
     }
   ];
   if (status.triggerOnApply) {
