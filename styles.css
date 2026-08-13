@@ -3107,6 +3107,127 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   pointer-events: none;
 }
 
+.mutation-summary {
+  --mutation-lime: 184 255 42;
+  --mutation-yellow: 250 204 21;
+  position: absolute;
+  top: 0.72rem;
+  left: 0.72rem;
+  z-index: 47;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.35rem;
+  width: min(31rem, calc(100% - 1.45rem));
+  pointer-events: none;
+}
+
+.mutation-summary:not(.hidden) {
+  animation: mutationSummaryIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.mutation-summary-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.35rem;
+  max-width: min(15rem, 100%);
+  padding: 0.3rem 0.55rem 0.3rem 0.38rem;
+  border: 1px solid rgb(var(--mutation-lime) / 0.72);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 5px),
+    linear-gradient(110deg, rgb(var(--mutation-lime) / 0.2), rgb(var(--mutation-yellow) / 0.18)),
+    rgba(5, 12, 8, 0.92);
+  color: #efffc0;
+  box-shadow:
+    0 0 0.78rem rgb(var(--mutation-lime) / 0.25),
+    inset 0 0 0.7rem rgb(var(--mutation-yellow) / 0.1);
+  pointer-events: auto;
+}
+
+.mutation-summary-item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 12%, rgb(255 255 160 / 0.18) 48%, transparent 78%);
+  background-size: 220% 100%;
+  animation: mutationAcidShift 2300ms linear infinite;
+}
+
+.mutation-summary-item.permanent {
+  border-color: rgb(var(--mutation-yellow) / 0.86);
+  box-shadow:
+    0 0 1rem rgb(var(--mutation-lime) / 0.3),
+    0 0 1.5rem rgb(var(--mutation-yellow) / 0.12),
+    inset 0 0 0.75rem rgb(var(--mutation-yellow) / 0.12);
+}
+
+.mutation-summary-item.doom {
+  --mutation-lime: 255 42 95;
+  --mutation-yellow: 168 85 247;
+}
+
+.mutation-summary-item img {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 1.42rem;
+  width: 1.42rem;
+  height: 1.42rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1) drop-shadow(0 0 0.42rem rgb(var(--mutation-lime) / 0.82));
+}
+
+.mutation-summary-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-width: 0;
+  gap: 0.05rem;
+}
+
+.mutation-summary-copy strong {
+  overflow: hidden;
+  color: #d8ff68;
+  font-size: 0.68rem;
+  font-weight: 950;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 0.55rem rgb(var(--mutation-lime) / 0.65);
+  white-space: nowrap;
+}
+
+.mutation-summary-copy small {
+  color: rgb(239 255 192 / 0.76);
+  font-size: 0.58rem;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.table-surface:has(.mutation-summary:not(.hidden)) .round-overlay-icons {
+  top: 3.42rem;
+}
+
+@keyframes mutationSummaryIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mutationAcidShift {
+  from { background-position: 140% 0; }
+  to { background-position: -40% 0; }
+}
+
 .game-stage.spectator-mode .round-overlay-icons {
   top: 3.05rem;
 }
@@ -3217,6 +3338,17 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .round-overlay-icon.chaos,
 .round-overlay-icon.casino {
   --overlay-icon-color: #64dea4;
+}
+
+.round-overlay-icon.mutation {
+  --overlay-icon-color: #b7ff2a;
+  background:
+    linear-gradient(145deg, rgba(183, 255, 42, 0.22), rgba(250, 204, 21, 0.12) 52%, rgba(8, 10, 16, 0.9)),
+    rgba(8, 10, 16, 0.84);
+  box-shadow:
+    0 0.7rem 1.4rem rgba(0, 0, 0, 0.28),
+    0 0 0.95rem rgba(183, 255, 42, 0.34),
+    inset 0 0 0.55rem rgba(250, 204, 21, 0.14);
 }
 
 .round-overlay-icon.mixed {
@@ -5406,6 +5538,24 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   overflow: visible;
 }
 
+.effect-panel.mutation-status-bar {
+  --mutation-lime: 184 255 42;
+  --mutation-yellow: 250 204 21;
+  border-color: rgb(var(--mutation-lime) / 0.48);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 6px),
+    linear-gradient(110deg, rgb(var(--mutation-lime) / 0.1), rgb(var(--mutation-yellow) / 0.08) 48%, transparent 82%),
+    rgba(6, 12, 9, 0.72);
+  box-shadow:
+    0 0 1rem rgb(var(--mutation-lime) / 0.12),
+    inset 0 0 0.85rem rgb(var(--mutation-yellow) / 0.06);
+}
+
+.effect-panel.mutation-status-bar .effect-panel-header {
+  color: #d8ff68;
+  text-shadow: 0 0 0.55rem rgb(var(--mutation-lime) / 0.5);
+}
+
 .table-surface:has(.effect-badge:hover),
 .table-surface:has(.effect-badge:focus-visible),
 .effect-panel:hover,
@@ -5693,9 +5843,9 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .power-card[data-category="mutation"],
 .ability-card[data-category="mutation"] {
-  --power-category-icon: url("assets/overlays/coronavirus.svg");
+  --power-category-icon: url("assets/overlays/biohazard.svg");
   --power-category-icon-size: min(38%, 3.8rem);
-  --power-category-rgb: 64 222 164;
+  --power-category-rgb: 183 255 42;
 }
 
 .power-card[data-category="time"],
@@ -10801,7 +10951,7 @@ input:focus {
 
 .floating-description-tooltip {
   position: fixed;
-  z-index: 5000;
+  z-index: 10000;
   width: max-content;
   max-width: min(18rem, calc(100vw - 1rem));
   padding: 0.58rem 0.72rem;
@@ -12362,18 +12512,18 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .ability-mutation-toggle {
-  border-color: rgb(250 204 21 / 0.38);
+  border-color: rgb(190 255 45 / 0.58);
   background:
     repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 6px),
-    linear-gradient(110deg, rgb(64 222 164 / 0.12), rgb(250 204 21 / 0.14));
+    linear-gradient(110deg, rgb(139 255 0 / 0.16), rgb(250 204 21 / 0.2));
 }
 
 .ability-mutation-toggle:has(input:checked) {
-  border-color: rgb(250 204 21 / 0.62);
+  border-color: rgb(210 255 55 / 0.9);
   background:
     repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 6px),
-    linear-gradient(110deg, rgb(64 222 164 / 0.18), rgb(250 204 21 / 0.2));
-  box-shadow: 0 0 1rem rgb(250 204 21 / 0.14);
+    linear-gradient(110deg, rgb(139 255 0 / 0.24), rgb(250 204 21 / 0.28));
+  box-shadow: 0 0 1.2rem rgb(178 255 44 / 0.28), inset 0 0 0.8rem rgb(250 204 21 / 0.1);
 }
 
 .ability-chaos-toggle span {
@@ -12550,19 +12700,30 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .ability-section[data-kind="status"] {
-  border-color: rgb(34 211 238 / 0.3);
+  --section-accent: #b7ff2a;
+  --section-accent-rgb: 183 255 42;
+  border-color: rgb(183 255 42 / 0.3);
 }
 
 .ability-section[data-kind="mutation"] {
-  --section-accent: #facc15;
-  --section-accent-rgb: 250 204 21;
-  border-color: rgb(250 204 21 / 0.34);
+  --section-accent: #d8ff68;
+  --section-accent-rgb: 183 255 42;
+  border-color: rgb(183 255 42 / 0.52);
+  background:
+    linear-gradient(115deg, rgb(139 255 0 / 0.1), rgb(250 204 21 / 0.08) 48%, transparent 78%),
+    rgba(5, 8, 14, 0.82);
+  box-shadow: inset 0 0 1.1rem rgb(139 255 0 / 0.07), 0 0 0.9rem rgb(250 204 21 / 0.06);
 }
 
 .ability-section[data-kind="permanent-mutation"] {
-  --section-accent: #40dea4;
-  --section-accent-rgb: 64 222 164;
-  border-color: rgb(64 222 164 / 0.34);
+  --section-accent: #b7ff2a;
+  --section-accent-rgb: 183 255 42;
+  border-color: rgb(183 255 42 / 0.56);
+  background:
+    linear-gradient(115deg, rgb(139 255 0 / 0.1), rgb(250 204 21 / 0.08) 48%, transparent 78%),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.025) 0 1px, transparent 1px 7px),
+    rgba(5, 8, 14, 0.82);
+  box-shadow: inset 0 0 1.3rem rgb(139 255 0 / 0.08), 0 0 1rem rgb(250 204 21 / 0.08);
 }
 
 .ability-section[data-kind="table"] {
@@ -12715,7 +12876,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 /* Keep catalog group surfaces stronger than their default rarity wash. */
 .ability-card[data-kind="status"] {
   background:
-    linear-gradient(135deg, rgb(34 211 238 / 0.09), transparent 58%),
+    linear-gradient(135deg, rgb(183 255 42 / 0.11), rgb(250 204 21 / 0.05) 42%, transparent 68%),
     rgba(255, 255, 255, 0.045);
 }
 
@@ -12728,22 +12889,50 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .ability-card[data-kind="permanent-mutation"] {
   --power-category-icon: url("assets/overlays/biohazard.svg");
   --power-category-icon-size: min(40%, 4rem);
-  --power-category-rgb: 250 204 21;
-  border-color: rgb(250 204 21 / 0.72);
+  --power-category-rgb: 183 255 42;
+  border-color: rgb(183 255 42 / 0.82);
   background:
-    repeating-linear-gradient(0deg, rgb(250 204 21 / 0.035) 0 1px, transparent 1px 7px),
-    radial-gradient(circle at 88% 42%, rgb(250 204 21 / 0.13), transparent 42%),
-    linear-gradient(135deg, rgb(64 222 164 / 0.12), transparent 62%),
+    repeating-linear-gradient(0deg, rgb(183 255 42 / 0.045) 0 1px, transparent 1px 7px),
+    radial-gradient(circle at 88% 42%, rgb(250 204 21 / 0.2), transparent 42%),
+    linear-gradient(135deg, rgb(139 255 0 / 0.18), rgb(250 204 21 / 0.08) 48%, transparent 72%),
     rgba(255, 255, 255, 0.045);
   box-shadow:
-    inset 0 0 1rem rgb(250 204 21 / 0.06),
-    0 0 1rem rgb(64 222 164 / 0.1);
+    inset 0 0 1rem rgb(183 255 42 / 0.11),
+    0 0 1.15rem rgb(139 255 0 / 0.18),
+    0 0 2rem rgb(250 204 21 / 0.08);
   animation: permanentMutationViewerPulse 2600ms ease-in-out infinite;
 }
 
 .ability-card[data-kind="permanent-mutation"] strong {
-  color: #facc15;
-  text-shadow: 0 0 0.65rem rgb(250 204 21 / 0.42);
+  color: #d8ff68;
+  text-shadow: 0 0 0.65rem rgb(139 255 0 / 0.62), 0 0 1.1rem rgb(250 204 21 / 0.28);
+}
+
+.effect-badge.mutation-status {
+  border-color: rgb(183 255 42 / 0.78);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 5px),
+    linear-gradient(110deg, rgb(139 255 0 / 0.2), rgb(250 204 21 / 0.17));
+  color: #efffc0;
+  box-shadow:
+    0 0 0.7rem rgb(139 255 0 / 0.24),
+    inset 0 0 0.6rem rgb(250 204 21 / 0.08);
+}
+
+.effect-badge.mutation-status.chaos-infused {
+  --chaos-rarity-rgb: 183 255 42;
+  border-color: rgb(183 255 42 / 0.78);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 5px),
+    linear-gradient(110deg, rgb(183 255 42 / 0.2), rgb(250 204 21 / 0.16));
+  box-shadow:
+    0 0 0.8rem rgb(183 255 42 / 0.28),
+    inset 0 0 0.65rem rgb(250 204 21 / 0.1);
+}
+
+.effect-badge.mutation-status strong {
+  color: #d8ff68;
+  text-shadow: 0 0 0.55rem rgb(139 255 0 / 0.52);
 }
 
 .ability-card[data-kind="table"] {
@@ -12810,14 +12999,14 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     filter: brightness(1) saturate(1.02);
     box-shadow:
       inset 0 0 1rem rgb(250 204 21 / 0.06),
-      0 0 1rem rgb(64 222 164 / 0.1);
+      0 0 1rem rgb(183 255 42 / 0.12);
   }
 
   50% {
     filter: brightness(1.06) saturate(1.08);
     box-shadow:
       inset 0 0 1.2rem rgb(250 204 21 / 0.1),
-      0 0 1.4rem rgb(64 222 164 / 0.18),
+      0 0 1.4rem rgb(183 255 42 / 0.22),
       0 0 2rem rgb(250 204 21 / 0.08);
   }
 }
@@ -15076,6 +15265,14 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     rgba(8, 10, 18, 0.26);
 }
 
+.stat-flash.mutation {
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.075) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgba(183, 255, 42, 0.16), transparent 22%, rgba(250, 204, 21, 0.14) 48%, transparent 78%, rgba(183, 255, 42, 0.16)),
+    radial-gradient(circle at center, rgba(183, 255, 42, 0.22), rgba(250, 204, 21, 0.1) 46%, transparent 74%),
+    rgba(8, 18, 5, 0.28);
+}
+
 .stat-flash.burning {
   background:
     radial-gradient(circle at 50% 88%, rgba(255, 210, 88, 0.34), rgba(255, 94, 38, 0.18) 28%, transparent 62%),
@@ -15322,6 +15519,17 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     0.45rem 0 0 rgba(34, 211, 238, 0.16);
 }
 
+.stat-flash.mutation .stat-flash-panel {
+  border-color: rgba(183, 255, 42, 0.78);
+  background:
+    linear-gradient(135deg, rgba(183, 255, 42, 0.16), rgba(250, 204, 21, 0.12) 48%, rgba(8, 20, 8, 0.3)),
+    rgba(8, 14, 10, 0.86);
+  box-shadow:
+    0 1.25rem 4rem rgba(0, 0, 0, 0.38),
+    0 0 1.55rem rgba(183, 255, 42, 0.3),
+    inset 0 0 1rem rgba(250, 204, 21, 0.1);
+}
+
 .stat-flash.burning .stat-flash-panel {
   border-color: rgba(255, 155, 62, 0.72);
   background:
@@ -15447,6 +15655,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .stat-flash.chaos .stat-flash-panel::before,
+.stat-flash.mutation .stat-flash-panel::before,
 .stat-flash.doom .stat-flash-panel::before {
   content: "";
   position: absolute;
@@ -15458,6 +15667,12 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   opacity: 0.55;
   pointer-events: none;
   animation: chaosScanline var(--stat-flash-duration, 1150ms) steps(8) both;
+}
+
+.stat-flash.mutation .stat-flash-panel::before {
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 7px),
+    linear-gradient(90deg, transparent, rgba(183, 255, 42, 0.24), rgba(250, 204, 21, 0.16), transparent);
 }
 
 .stat-flash.doom .stat-flash-panel::before {
@@ -15492,6 +15707,19 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     -0.08rem 0 rgba(255, 77, 125, 0.82),
     0.08rem 0 rgba(34, 211, 238, 0.82),
     0 0 1rem rgba(64, 222, 164, 0.34);
+}
+
+.stat-flash.mutation .stat-flash-title {
+  color: #efffc0;
+  text-shadow:
+    -0.05rem 0 rgba(183, 255, 42, 0.72),
+    0.05rem 0 rgba(250, 204, 21, 0.56),
+    0 0 1rem rgba(183, 255, 42, 0.42);
+}
+
+.stat-flash.mutation .stat-flash-detail {
+  color: #f6ffd9;
+  text-shadow: 0 0 0.9rem rgba(183, 255, 42, 0.3);
 }
 
 .stat-flash.chaos .stat-flash-detail {
@@ -15581,6 +15809,12 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .stat-flash.chaos.stat-flash-playing .stat-flash-panel {
+  animation:
+    statFlashPanel var(--stat-flash-duration, 1150ms) cubic-bezier(0.16, 1, 0.3, 1) both,
+    chaosPanelGlitch var(--stat-flash-duration, 1150ms) steps(2, end) both;
+}
+
+.stat-flash.mutation.stat-flash-playing .stat-flash-panel {
   animation:
     statFlashPanel var(--stat-flash-duration, 1150ms) cubic-bezier(0.16, 1, 0.3, 1) both,
     chaosPanelGlitch var(--stat-flash-duration, 1150ms) steps(2, end) both;
