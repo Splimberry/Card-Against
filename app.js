@@ -3663,6 +3663,7 @@ const state = {
   spectatorRoundResultPlaybackKey: "",
   roomRoundResultPlaybackKey: "",
   roomRoundResultPendingPlayback: null,
+  roomRoundResultPresentationPromise: null,
   roomRoundResultPublishKey: "",
   roomConnectionNoticeKeys: new Set(),
   renderingSyncedRoomResume: false,
@@ -5582,6 +5583,7 @@ function clearRoundSubmissionState(options = {}) {
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
   state.roomRoundResultPendingPlayback = null;
+  state.roomRoundResultPresentationPromise = null;
   state.roomRoundResultPublishKey = "";
   state.roomBotAnswerSubmissions = {};
   state.roomBotAnswerWaitKey = "";
@@ -6596,6 +6598,7 @@ function cancelActiveMatchWork(options = {}) {
   state.nextSetupPromise = null;
   state.nextSetupStatus = "idle";
   state.setupStack = [];
+  state.roomRoundResultPresentationPromise = null;
   state.setupVersion += 1;
   if (options.stopRoomSync) {
     stopRoomPresenceMaintenance();
@@ -12263,6 +12266,21 @@ function isRoomParticipantHost(participant = {}) {
   return normalizeRoomParticipantRole(participant) === "host";
 }
 
+function getRoomSnapshotHostId() {
+  const roomCode = String(state.roomSettings?.code || "").trim().toUpperCase();
+  return [
+    state.joiningRoom?.code === roomCode ? state.joiningRoom : null,
+    state.hostedRooms.find((room) => room.code === roomCode)
+  ]
+    .filter(Boolean)
+    .sort((a, b) => (
+      (Number(b.revision) || 0) - (Number(a.revision) || 0)
+      || (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0)
+    ))
+    .map((room) => String(room.host?.id || "").trim())
+    .find(Boolean) || "";
+}
+
 function isRoomParticipantBot(participant = {}) {
   return normalizeRoomParticipantRole(participant) === "bot";
 }
@@ -12476,6 +12494,10 @@ function isCurrentHost() {
   if (!isRoomMode()) {
     return true;
   }
+  const snapshotHostId = getRoomSnapshotHostId();
+  if (snapshotHostId) {
+    return snapshotHostId === state.clientId;
+  }
   return Boolean(
     state.roomParticipants.some((participant) => (
       participant.id === state.clientId
@@ -12486,22 +12508,38 @@ function isCurrentHost() {
   );
 }
 
-// The participant role is authoritative for gameplay. `joiningRoom` is a
-// screen/session detail and can briefly remain populated while a host resumes
-// a match, so it must not decide who grades or publishes the result.
+function getAuthoritativeRoomHostId() {
+  const snapshotHostId = getRoomSnapshotHostId();
+  if (snapshotHostId) {
+    return snapshotHostId;
+  }
+  return state.roomParticipants.find((participant) => (
+    isRoomParticipantActive(participant) && isRoomParticipantHost(participant)
+  ))?.id || "";
+}
+
+// The room snapshot's host id is authoritative. Participant role flags can be
+// briefly stale while a membership update is merging; choosing the local tab
+// from a duplicate host list could make a joined player run the host-only
+// grading path and wait forever for a result it must present instead.
 function isAuthoritativeRoomHost() {
   if (!isRoomMode() || state.isSpectator) {
     return false;
   }
-  const roomCode = String(state.roomSettings.code || "").trim().toUpperCase();
-  const knownHostId = state.roomParticipants.find((participant) => (
-    isRoomParticipantActive(participant) && isRoomParticipantHost(participant)
-  ))?.id
-    || (state.joiningRoom?.code === roomCode ? state.joiningRoom.host?.id : "")
-    || state.hostedRooms.find((room) => room.code === roomCode)?.host?.id;
+  const knownHostId = getAuthoritativeRoomHostId();
   return knownHostId
     ? knownHostId === state.clientId
     : isCurrentHost();
+}
+
+function isJoinedRoomClient() {
+  if (!isRoomMode() || state.isSpectator) {
+    return false;
+  }
+  // The local owner is assigned from the join role. This is more reliable
+  // than a participant host flag while a stale membership delta is merging.
+  return state.currentOwner === "opponent"
+    || Boolean(state.joiningRoom && state.currentOwner !== "player");
 }
 
 function getExpectedRoomCurrentOwner() {
@@ -14383,7 +14421,13 @@ function normalizeRoomRoundResultPayload(payload = {}) {
 }
 
 function getRoomRoundResultForCurrentRound(round = state.round) {
-  const result = normalizeRoomRoundResultPayload(state.roomRoundResult || state.roomGame?.roundResult || state.joiningRoom?.game?.roundResult || null);
+  const result = normalizeRoomRoundResultPayload(
+    state.roomRoundResultPendingPlayback
+      || state.roomRoundResult
+      || state.roomGame?.roundResult
+      || state.joiningRoom?.game?.roundResult
+      || null
+  );
   if (!result || Number(result.round) !== Number(round)) {
     return null;
   }
@@ -14391,6 +14435,24 @@ function getRoomRoundResultForCurrentRound(round = state.round) {
     return null;
   }
   return result;
+}
+
+function getRoomRoundResultToPreserveDuringSetup(setup = null) {
+  const setupId = String(setup?.id || "").trim();
+  const currentMatchId = getCurrentRoomMatchId();
+  return [
+    state.roomRoundResultPendingPlayback,
+    state.roomRoundResult,
+    state.roomGame?.roundResult,
+    state.joiningRoom?.game?.roundResult
+  ]
+    .map((candidate) => normalizeRoomRoundResultPayload(candidate))
+    .find((result) => (
+      result
+      && Number(result.round) === Number(state.round)
+      && (!result.matchId || !currentMatchId || result.matchId === currentMatchId)
+      && (!setupId || !result.questionId || result.questionId === setupId)
+    )) || null;
 }
 
 function getOwnerFromRoomRoundParticipantId(participantId, fallbackIndex = -1) {
@@ -14431,7 +14493,10 @@ function applyRealtimeRoomRoundResult(payload = {}) {
         || completeAuthoritativeResult
       )
   );
-  if (!roomPayloadMatchesCurrentMatch(payload) && !canAdoptIncomingResult) {
+  // A complete server result is a self-contained authoritative hand-off. It
+  // includes the match, round, cards and scoring state, so an older local
+  // match id must not prevent a joined client from adopting and rendering it.
+  if (!roomPayloadMatchesCurrentMatch(payload) && !canAdoptIncomingResult && !completeAuthoritativeResult) {
     return false;
   }
   if (incomingRound !== Number(state.round)) {
@@ -14501,7 +14566,7 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   // just because it arrived during the setup animation or setup request.
   state.roomRoundResultPendingPlayback = result;
   applyAuthoritativeRoomResultState(result);
-  playSyncedRoomRoundResult(result);
+  tryPlayPendingRoomRoundResult();
   maybePlaySpectatorRoomRoundResult(result);
   return true;
 }
@@ -14662,11 +14727,73 @@ function showRoomRoundResultSyncError(message) {
   });
 }
 
-function playSyncedRoomRoundResult(result = null, localFallback = "") {
-  if (!isRoomMode() || state.isSpectator || state.matchEnded || elements.gameStage.classList.contains("hidden")) {
+// The result event is authoritative, but it can arrive while a joined client
+// is still mounting the shared question card. Keep the result pending until
+// the normal setup lifecycle presents it; realtime events should not need to
+// be replayed just because the DOM was between two setup states.
+function tryPlayPendingRoomRoundResult(localFallback = "") {
+  if (!isRoomMode() || state.isSpectator || state.matchEnded || isAuthoritativeRoomHost()) {
     return false;
   }
-  if (isAuthoritativeRoomHost()) {
+  const pending = normalizeRoomRoundResultPayload(
+    state.roomRoundResultPendingPlayback
+      || state.roomRoundResult
+      || state.roomGame?.roundResult
+      || state.joiningRoom?.game?.roundResult
+  );
+  if (!pending || Number(pending.round) !== Number(state.round)) {
+    return false;
+  }
+
+  // A server round-result is already the complete grading decision. If the
+  // joined tab is still mounting the question or its local setup token was
+  // superseded, presenting through playRound can be rejected before it ever
+  // reaches the result panel. Apply the authoritative result directly in
+  // those transient states so a player cannot remain on the waiting spinner
+  // after the room has finished grading.
+  const stageHidden = elements.gameStage.classList.contains("hidden");
+  const setupWorkInvalid = typeof isCurrentMatchWork === "function"
+    && !isCurrentMatchWork(state.matchWorkToken);
+  const waitingForAuthoritativeResult = elements.loadingPanel?.dataset?.loadingState === "waiting-host";
+  let presented = false;
+  if (stageHidden || setupWorkInvalid || waitingForAuthoritativeResult) {
+    ensureRoomResultStageMounted();
+    presented = recoverRoomRoundResultPlayback(pending, localFallback);
+  }
+  if (!presented) {
+    presented = playSyncedRoomRoundResult(pending, localFallback);
+  }
+  if (!presented) {
+    // The server result is the authoritative hand-off. A joined tab can have
+    // an invalidated local setup token or still be between room screens when
+    // that hand-off arrives. Do not leave it in the spinner: mount the room
+    // stage and render the saved result directly.
+    ensureRoomResultStageMounted();
+    presented = recoverRoomRoundResultPlayback(pending, localFallback);
+  }
+  if (presented) {
+    state.roomRoundResultPendingPlayback = null;
+  }
+  return presented;
+}
+
+function ensureRoomResultStageMounted() {
+  if (!isRoomMode() || state.isSpectator || !elements.gameStage.classList.contains("hidden")) {
+    return;
+  }
+  state.currentRoomStatus = "in-progress";
+  state.matchEnded = false;
+  ensureRoomCurrentOwner();
+  setPlayersForMode("room");
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.gameStage, false);
+}
+
+function playSyncedRoomRoundResult(result = null, localFallback = "") {
+  if (!isRoomMode() || state.isSpectator || state.matchEnded || isAuthoritativeRoomHost() || elements.gameStage.classList.contains("hidden")) {
     return false;
   }
   const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
@@ -14686,7 +14813,16 @@ function playSyncedRoomRoundResult(result = null, localFallback = "") {
   }
   const playbackKey = getRoomRoundResultPlaybackKey(syncedResult);
   if (state.roomRoundResultPlaybackKey === playbackKey) {
-    return true;
+    if (!elements.verdictPanel.classList.contains("hidden")) {
+      return true;
+    }
+    // The previous presentation may have been interrupted after claiming
+    // the key. Allow the saved authoritative result to recover the UI.
+    if (!state.roomRoundResultPresentationPromise) {
+      state.roomRoundResultPlaybackKey = "";
+    } else {
+      return true;
+    }
   }
   state.roomRoundResultPlaybackKey = playbackKey;
   commitWaitingPhasePowerUpForOwner(state.currentOwner);
@@ -14696,7 +14832,12 @@ function playSyncedRoomRoundResult(result = null, localFallback = "") {
   elements.answerInput.disabled = true;
   elements.submitButton.disabled = true;
   state.roomRoundResultPendingPlayback = null;
-  void playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || localFallback), { roundResult: syncedResult })
+  const presentationPromise = playRound(
+    getLockedRoundAnswer(state.currentOwner, localFallback),
+    { roundResult: syncedResult }
+  );
+  state.roomRoundResultPresentationPromise = presentationPromise;
+  void presentationPromise
     .catch((error) => {
       // Keep the authoritative result available for the next room resume or
       // catch-up if presentation is interrupted by a local UI transition.
@@ -14705,6 +14846,11 @@ function playSyncedRoomRoundResult(result = null, localFallback = "") {
         state.roomRoundResultPendingPlayback = syncedResult;
       }
       console.warn("Joined-player room result presentation failed:", error);
+    })
+    .finally(() => {
+      if (state.roomRoundResultPresentationPromise === presentationPromise) {
+        state.roomRoundResultPresentationPromise = null;
+      }
     });
   return true;
 }
@@ -15956,7 +16102,8 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   const existingResult = getRoomRoundResultForCurrentRound();
   if (existingResult) {
     if (!isAuthoritativeRoomHost()) {
-      playSyncedRoomRoundResult(existingResult, localFallback);
+      state.roomRoundResultPendingPlayback = existingResult;
+      tryPlayPendingRoomRoundResult(localFallback);
     }
     state.roomRoundResolving = false;
     return true;
@@ -15988,7 +16135,8 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     // not finish the wait until the presenter actually accepts the result;
     // otherwise the only authoritative event is consumed and the player can
     // remain on the waiting screen indefinitely.
-    return Boolean(playSyncedRoomRoundResult(result, localFallback));
+    state.roomRoundResultPendingPlayback = result;
+    return Boolean(tryPlayPendingRoomRoundResult(localFallback));
   };
   if (playSyncedResultIfReady()) {
     return;
@@ -16697,7 +16845,8 @@ function applyRealtimeRoomGrading(payload = {}) {
     if (state.isSpectator) {
       maybePlaySpectatorRoomRoundResult(existingResult);
     } else if (!isAuthoritativeRoomHost()) {
-      playSyncedRoomRoundResult(existingResult, getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+      state.roomRoundResultPendingPlayback = existingResult;
+      tryPlayPendingRoomRoundResult(getLockedRoundAnswer(state.currentOwner, state.localAnswers.playerOne || ""));
     }
     return true;
   }
@@ -16710,8 +16859,8 @@ function applyRealtimeRoomGrading(payload = {}) {
     return true;
   }
   state.roomRoundResolving = true;
-  if (!isAuthoritativeRoomHost()) {
-    waitForRoomRoundResultThenPlay(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
+  if (isJoinedRoomClient()) {
+    waitForRoomRoundResultThenPlay(getLockedRoundAnswer(state.currentOwner, state.localAnswers.playerOne || ""));
   } else {
     playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""));
   }
@@ -19575,7 +19724,8 @@ function applyRoomServerEventNow(event = {}, source = {}) {
     rememberRoomRevisionPayload(eventPayload);
     return true;
   }
-  const outOfMatch = !canApplyRoomEventForCurrentMatch(eventPayload);
+  const completeAuthoritativeResult = isCompleteAuthoritativeRoomPhasePayload(eventPayload, eventPayload.eventType);
+  const outOfMatch = !completeAuthoritativeResult && !canApplyRoomEventForCurrentMatch(eventPayload);
   const olderRound = isOlderRoomRoundEvent(eventPayload);
   if (outOfMatch || olderRound) {
     recordRoomDiagnosticEvent(outOfMatch ? "ignored-match" : "ignored-round", eventPayload, {
@@ -20626,7 +20776,7 @@ function applyRoomEvent(event = {}, source = {}) {
   // grading/result transition behind a missing unrelated delta.
   const stalePayload = !completeAuthoritativePhase
     && isStaleActiveRoomRealtimePayload(payload, previousRevision);
-  const outOfMatch = !canApplyRoomEventForCurrentMatch(payload);
+  const outOfMatch = !completeAuthoritativePhase && !canApplyRoomEventForCurrentMatch(payload);
   const olderRound = isOlderRoomRoundEvent(payload);
   if (
     stalePayload
@@ -33514,6 +33664,9 @@ function animateBlackCardToNaturalHeightAfterLayout(blackCard, beforeHeight, opt
 }
 
 function resetRoundUiForLoading(options = {}) {
+  const preservedRoomResult = isRoomMode()
+    ? getRoomRoundResultToPreserveDuringSetup()
+    : null;
   stopNextRoundCountdown();
   stopTimer();
   state.roundSetupRenderKey = "";
@@ -33545,7 +33698,8 @@ function resetRoundUiForLoading(options = {}) {
   clearSpectatorAnswerDraftState();
   state.spectatorRoundResultPlaybackKey = "";
   state.roomRoundResultPlaybackKey = "";
-  state.roomRoundResultPendingPlayback = null;
+  state.roomRoundResult = preservedRoomResult;
+  state.roomRoundResultPendingPlayback = preservedRoomResult;
   state.answerRemainingTimes = Object.fromEntries(getActiveOwners().map((owner) => [owner, state.timerSeconds]));
   clearLocalRoomSubmission();
   state.roomSubmissions = {};
@@ -33960,9 +34114,12 @@ function syncCurrentRoundSetupMetadata(setup) {
 function applyRoundSetup(setup, options = {}) {
   const renderKey = getRoundSetupRenderKey(setup, options);
   const shouldRender = options.forceRender === true || state.roundSetupRenderKey !== renderKey;
+  const existingRoomResult = isRoomMode()
+    ? getRoomRoundResultToPreserveDuringSetup(setup)
+    : null;
   stopLoadingMessages();
   setHidden(elements.errorPanel, true);
-  state.roomRoundResult = null;
+  state.roomRoundResult = existingRoomResult;
   state.questionId = setup.id || "";
   state.blackCard = setup.blackCard;
   removeReservedQuestionSetup(setup);
@@ -33995,6 +34152,7 @@ function applyRoundSetup(setup, options = {}) {
       }
     }
     scheduleNextSetupPrefetch();
+    tryPlayPendingRoomRoundResult();
     return;
   }
   state.roundSetupRenderKey = renderKey;
@@ -34014,6 +34172,7 @@ function applyRoundSetup(setup, options = {}) {
   }
   scheduleNextSetupPrefetch();
   playSound("reveal");
+  tryPlayPendingRoomRoundResult();
 }
 
 function buildDevToolScreen() {
@@ -39026,7 +39185,7 @@ async function startGame(mode) {
       if (state.isSpectator) {
         maybePlaySpectatorRoomRoundResult(state.roomGame?.roundResult || state.joiningRoom?.game?.roundResult || state.roomRoundResult);
       } else {
-        playSyncedRoomRoundResult(state.roomGame?.roundResult || state.joiningRoom?.game?.roundResult || state.roomRoundResult);
+        tryPlayPendingRoomRoundResult();
       }
     }
   } catch (error) {
@@ -40998,7 +41157,19 @@ function resumeSyncedRoomGame(room, options = {}) {
   startRoomPresenceMaintenance();
 
   applyRoundSetup(setup, { skipPublish: true, resumeSyncedRoom: true });
-  state.roomGame = game;
+  // Setup rendering can synchronously present a result that arrived while the
+  // resume was in progress. Merge the captured room snapshot without
+  // overwriting that newer same-round result.
+  const currentRoomResult = getRoomRoundResultToPreserveDuringSetup(setup);
+  state.roomGame = {
+    ...(game || {}),
+    ...(state.roomGame || {}),
+    ...(currentRoomResult ? { roundResult: currentRoomResult, status: "grading" } : {})
+  };
+  if (currentRoomResult) {
+    state.roomRoundResult = currentRoomResult;
+    state.roomRoundResultPendingPlayback = currentRoomResult;
+  }
   applyRoomGamePowerState(game);
   syncRoomSubmissionsFromParticipants();
   renderRoomPlayers();
@@ -41010,13 +41181,14 @@ function resumeSyncedRoomGame(room, options = {}) {
   const result = normalizeRoomRoundResultPayload(game.roundResult || null);
   if (result && Number(result.round) === Number(state.round)) {
     state.roomRoundResult = result;
+    state.roomRoundResultPendingPlayback = result;
     if (state.isSpectator) {
       maybePlaySpectatorRoomRoundResult(result);
     } else if (host) {
       state.roomRoundResolving = true;
       playRound(getLockedRoundAnswer("player", state.localAnswers.playerOne || ""), { roundResult: result });
     } else {
-      playSyncedRoomRoundResult(result);
+      tryPlayPendingRoomRoundResult();
     }
   } else if (game.status === "grading") {
     applyRealtimeRoomGrading({
@@ -41035,6 +41207,9 @@ function resumeSyncedRoomGame(room, options = {}) {
   }
   if (host && game.status === "playing") {
     scheduleHostRoomSubmissionDeadline();
+  }
+  if (!host && !state.isSpectator) {
+    tryPlayPendingRoomRoundResult();
   }
 
   return true;
@@ -45114,6 +45289,17 @@ function isCurrentRoomRoundResultForPlayback(result = null) {
   const syncedResult = normalizeRoomRoundResultPayload(result);
   if (!syncedResult || !isRoomMode() || state.matchEnded) {
     return false;
+  }
+  // The pending slot is populated only by an authoritative round-result or
+  // an authoritative room snapshot. Treat that exact saved result as valid
+  // even while the local setup/match metadata is catching up.
+  const pendingResult = normalizeRoomRoundResultPayload(state.roomRoundResultPendingPlayback);
+  if (
+    pendingResult
+    && Number(pendingResult.round) === Number(syncedResult.round)
+    && getRoomRoundResultPlaybackKey(pendingResult) === getRoomRoundResultPlaybackKey(syncedResult)
+  ) {
+    return true;
   }
   const currentResult = getRoomRoundResultForCurrentRound(Number(syncedResult.round) || state.round);
   return Boolean(

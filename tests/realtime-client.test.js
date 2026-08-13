@@ -177,6 +177,274 @@ function testCompleteAuthoritativePhasePayloadCanRepairMissedRevision() {
   }), false);
 }
 
+function testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge() {
+  const functionSource = `${getFunctionSource("getRoomSnapshotHostId", "isRoomParticipantBot")}\n${getFunctionSource("isCurrentHost", "getAuthoritativeRoomHostId")}\n${getFunctionSource("getAuthoritativeRoomHostId", "getExpectedRoomCurrentOwner")}`;
+  const context = {
+    state: {
+      clientId: "joined-client",
+      roomSettings: { code: "CAI-1234" },
+      joiningRoom: {
+        code: "CAI-1234",
+        host: { id: "host-client" }
+      },
+      hostedRooms: [],
+      roomParticipants: [
+        { id: "host-client", role: "host", active: true },
+        { id: "joined-client", role: "host", active: true }
+      ]
+    },
+    isRoomParticipantActive(participant) {
+      return participant.active !== false;
+    },
+    isRoomParticipantHost(participant) {
+      return participant.role === "host" || participant.host === true;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.getAuthoritativeRoomHostId = getAuthoritativeRoomHostId;`, context);
+
+  assert.equal(context.getAuthoritativeRoomHostId(), "host-client");
+  context.isRoomMode = () => true;
+  assert.equal(context.isCurrentHost(), false);
+}
+
+function testJoinedGradingWaitUsesJoinedOwner() {
+  const gradingSource = getFunctionSource("applyRealtimeRoomGrading", "forceRoomRoundToGrading");
+  assert.match(
+    gradingSource,
+    /waitForRoomRoundResultThenPlay\(getLockedRoundAnswer\(state\.currentOwner, state\.localAnswers\.playerOne \|\| ""\)\)/
+  );
+  assert.doesNotMatch(
+    gradingSource,
+    /waitForRoomRoundResultThenPlay\(getLockedRoundAnswer\("player", state\.localAnswers\.playerOne/
+  );
+  const waitSource = getFunctionSource("waitForRoomRoundResultThenPlay", "maybeResolveRoomSubmissions");
+  assert.match(waitSource, /tryPlayPendingRoomRoundResult\(localFallback\)/);
+  assert.doesNotMatch(waitSource, /playSyncedRoomRoundResult\(result, localFallback\)/);
+}
+
+function testSetupPreservesOnlyCurrentRoomResult() {
+  const functionSource = getFunctionSource("getRoomRoundResultToPreserveDuringSetup", "getOwnerFromRoomRoundParticipantId");
+  const context = {
+    state: {
+      roomRoundResultPendingPlayback: null,
+      roomRoundResult: {
+        round: 2,
+        matchId: "match-1",
+        questionId: "question-2"
+      },
+      roomGame: null,
+      joiningRoom: null,
+      round: 2
+    },
+    getCurrentRoomMatchId() {
+      return "match-1";
+    },
+    normalizeRoomRoundResultPayload(value) {
+      return value && typeof value === "object" ? value : null;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.getRoomRoundResultToPreserveDuringSetup = getRoomRoundResultToPreserveDuringSetup;`, context);
+
+  assert.deepEqual(
+    context.getRoomRoundResultToPreserveDuringSetup({ id: "question-2" }),
+    { round: 2, matchId: "match-1", questionId: "question-2" }
+  );
+  assert.equal(context.getRoomRoundResultToPreserveDuringSetup({ id: "question-3" }), null);
+}
+
+async function testPendingResultWaitsForJoinedStage() {
+  const functionSource = getFunctionSource("tryPlayPendingRoomRoundResult", "playSyncedRoomRoundResult");
+  const pending = { round: 1, matchId: "match-1", questionId: "question-1" };
+  const context = {
+    state: {
+      roomRoundResultPendingPlayback: pending,
+      roomRoundResult: null,
+      roomGame: null,
+      joiningRoom: null,
+      round: 1,
+      isSpectator: false,
+      matchEnded: false
+    },
+    normalizeRoomRoundResultPayload(value) {
+      return value && typeof value === "object" ? value : null;
+    },
+    isRoomMode() {
+      return true;
+    },
+    isJoinedRoomClient() {
+      return true;
+    },
+    elements: {
+      gameStage: {
+        classList: { contains: () => false }
+      }
+    },
+    isAuthoritativeRoomHost() {
+      return false;
+    },
+    ensureRoomResultStageMounted() {},
+    ensureRoomCurrentOwner() {},
+    setPlayersForMode() {},
+    setHidden() {},
+    recoverRoomRoundResultPlayback() {
+      return false;
+    },
+    playSyncedRoomRoundResult() {
+      return false;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.tryPlayPendingRoomRoundResult = tryPlayPendingRoomRoundResult;`, context);
+
+  assert.equal(context.tryPlayPendingRoomRoundResult(), false);
+  assert.deepEqual(context.state.roomRoundResultPendingPlayback, pending);
+
+  context.playSyncedRoomRoundResult = () => true;
+  assert.equal(context.tryPlayPendingRoomRoundResult(), true);
+  assert.equal(context.state.roomRoundResultPendingPlayback, null);
+}
+
+async function testPendingResultCanRecoverAfterPresentationTokenIsInvalidated() {
+  const functionSource = getFunctionSource("tryPlayPendingRoomRoundResult", "playSyncedRoomRoundResult");
+  const pending = { round: 1, matchId: "match-1", questionId: "question-1" };
+  let recovered = false;
+  const context = {
+    state: {
+      roomRoundResultPendingPlayback: pending,
+      roomRoundResult: pending,
+      roomGame: null,
+      joiningRoom: null,
+      round: 1,
+      isSpectator: false,
+      matchEnded: false
+    },
+    normalizeRoomRoundResultPayload(value) {
+      return value && typeof value === "object" ? value : null;
+    },
+    isRoomMode() {
+      return true;
+    },
+    isJoinedRoomClient() {
+      return true;
+    },
+    elements: {
+      gameStage: {
+        classList: { contains: () => false }
+      }
+    },
+    isAuthoritativeRoomHost() {
+      return false;
+    },
+    ensureRoomResultStageMounted() {},
+    ensureRoomCurrentOwner() {},
+    setPlayersForMode() {},
+    setHidden() {},
+    recoverRoomRoundResultPlayback() {
+      recovered = true;
+      return true;
+    },
+    playSyncedRoomRoundResult() {
+      return false;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.tryPlayPendingRoomRoundResult = tryPlayPendingRoomRoundResult;`, context);
+
+  assert.equal(context.tryPlayPendingRoomRoundResult(), true);
+  assert.equal(recovered, true);
+  assert.equal(context.state.roomRoundResultPendingPlayback, null);
+}
+
+function testWaitingHostResultUsesImmediateAuthoritativeRecovery() {
+  const functionSource = getFunctionSource("tryPlayPendingRoomRoundResult", "playSyncedRoomRoundResult");
+  const pending = { round: 1, matchId: "match-1", questionId: "question-1" };
+  let recovered = false;
+  let animated = false;
+  const context = {
+    state: {
+      roomRoundResultPendingPlayback: pending,
+      roomRoundResult: pending,
+      roomGame: null,
+      joiningRoom: null,
+      round: 1,
+      isSpectator: false,
+      matchEnded: false
+    },
+    normalizeRoomRoundResultPayload(value) {
+      return value && typeof value === "object" ? value : null;
+    },
+    isRoomMode() {
+      return true;
+    },
+    isJoinedRoomClient() {
+      return true;
+    },
+    elements: {
+      gameStage: {
+        classList: { contains: () => false }
+      },
+      loadingPanel: {
+        dataset: { loadingState: "waiting-host" }
+      }
+    },
+    isAuthoritativeRoomHost() {
+      return false;
+    },
+    ensureRoomResultStageMounted() {},
+    ensureRoomCurrentOwner() {},
+    setPlayersForMode() {},
+    setHidden() {},
+    recoverRoomRoundResultPlayback() {
+      recovered = true;
+      return true;
+    },
+    playSyncedRoomRoundResult() {
+      animated = true;
+      return true;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.tryPlayPendingRoomRoundResult = tryPlayPendingRoomRoundResult;`, context);
+
+  assert.equal(context.tryPlayPendingRoomRoundResult(), true);
+  assert.equal(recovered, true);
+  assert.equal(animated, false);
+  assert.equal(context.state.roomRoundResultPendingPlayback, null);
+}
+
+function testPendingAuthoritativeResultSurvivesStaleLocalMatch() {
+  const functionSource = getFunctionSource("isCurrentRoomRoundResultForPlayback", "recoverRoomRoundResultPlayback");
+  const pending = { round: 1, matchId: "server-match", questionId: "question-1", cards: ["answer"] };
+  const context = {
+    state: {
+      roomRoundResultPendingPlayback: pending,
+      roomRoundResult: null,
+      roomGame: { matchId: "old-match", round: 1 },
+      joiningRoom: null,
+      round: 1,
+      matchEnded: false
+    },
+    normalizeRoomRoundResultPayload(value) {
+      return value && typeof value === "object" ? value : null;
+    },
+    isRoomMode() {
+      return true;
+    },
+    getRoomRoundResultPlaybackKey(result) {
+      return `${result.matchId}|${result.round}|${result.questionId}`;
+    },
+    getRoomRoundResultForCurrentRound() {
+      return null;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.isCurrentRoomRoundResultForPlayback = isCurrentRoomRoundResultForPlayback;`, context);
+
+  assert.equal(context.isCurrentRoomRoundResultForPlayback(pending), true);
+}
+
 async function testRejectedResultDoesNotFinishTheWait() {
   const functionSource = getFunctionSource("waitForRoomRoundResultThenPlay", "maybeResolveRoomSubmissions");
   let waitedForSyncEvent = false;
@@ -187,6 +455,10 @@ async function testRejectedResultDoesNotFinishTheWait() {
       return { round: 1, cards: ["answer"] };
     },
     playSyncedRoomRoundResult() {
+      presenterCalls += 1;
+      return false;
+    },
+    tryPlayPendingRoomRoundResult() {
       presenterCalls += 1;
       return false;
     },
@@ -222,6 +494,13 @@ async function testRejectedResultDoesNotFinishTheWait() {
   await testGuestRoomJoinInitializesRealtimeWithoutAuth();
   testLobbyChannelIsReadyBeforeSubscribeCallback();
   testCompleteAuthoritativePhasePayloadCanRepairMissedRevision();
+  testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge();
+  testJoinedGradingWaitUsesJoinedOwner();
+  testSetupPreservesOnlyCurrentRoomResult();
+  await testPendingResultWaitsForJoinedStage();
+  await testPendingResultCanRecoverAfterPresentationTokenIsInvalidated();
+  testWaitingHostResultUsesImmediateAuthoritativeRecovery();
+  testPendingAuthoritativeResultSurvivesStaleLocalMatch();
   await testRejectedResultDoesNotFinishTheWait();
   console.log("Realtime client synchronization tests passed.");
 })().catch((error) => {
