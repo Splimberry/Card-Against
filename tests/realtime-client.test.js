@@ -230,15 +230,38 @@ function testJoinedGradingWaitUsesJoinedOwner() {
   assert.doesNotMatch(waitSource, /playSyncedRoomRoundResult\(result, localFallback\)/);
 }
 
-function testRoundResultTransportRequiresTheAuthoritativeHost() {
+function testRoundResultTransportUsesTheLocalHostContext() {
   const functionSource = getFunctionSource("publishRoomRoundResult", "getImmediatePowerAffectedOwners");
-  assert.match(functionSource, /if \(!isAuthoritativeRoomHost\(\)\)/);
-  assert.match(functionSource, /!options\.retrying && isAuthoritativeRoomHost\(\) && !state\.matchEnded/);
+  assert.match(functionSource, /if \(!isLocalRoomHostContext\(\)\)/);
+  assert.match(functionSource, /!options\.retrying && isLocalRoomHostContext\(\) && !state\.matchEnded/);
 
   const playRoundStart = source.indexOf("async function playRoundInternal");
   const playRoundEnd = source.indexOf("function isCurrentRoomRoundResultForPlayback", playRoundStart);
   const playRoundSource = source.slice(playRoundStart, playRoundEnd);
-  assert.match(playRoundSource, /if \(!isAuthoritativeRoomHost\(\) \|\| syncedRoundResult\)/);
+  assert.match(playRoundSource, /if \(!isLocalRoomHostContext\(\) \|\| syncedRoundResult\)/);
+}
+
+function testLocalHostContextDoesNotDependOnStaleDirectoryHostIdentity() {
+  const functionSource = getFunctionSource("isLocalRoomHostContext", "isJoinedRoomClient");
+  const context = {
+    state: {
+      isSpectator: false,
+      joiningRoom: null,
+      currentOwner: "player"
+    },
+    isRoomMode() {
+      return true;
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.isLocalRoomHostContext = isLocalRoomHostContext;`, context);
+
+  assert.equal(context.isLocalRoomHostContext(), true);
+  context.state.joiningRoom = { code: "CAI-1234" };
+  assert.equal(context.isLocalRoomHostContext(), false);
+  context.state.joiningRoom = null;
+  context.state.currentOwner = "opponent";
+  assert.equal(context.isLocalRoomHostContext(), false);
 }
 
 function testRoundResultReadyRecoveryIsOutOfBand() {
@@ -566,7 +589,8 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testCompleteAuthoritativePhasePayloadCanRepairMissedRevision();
   testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge();
   testJoinedGradingWaitUsesJoinedOwner();
-  testRoundResultTransportRequiresTheAuthoritativeHost();
+  testRoundResultTransportUsesTheLocalHostContext();
+  testLocalHostContextDoesNotDependOnStaleDirectoryHostIdentity();
   testRoundResultReadyRecoveryIsOutOfBand();
   testJoinedRoleDoesNotDependOnHostIdentity();
   testAutoAdvanceUsesTheManualRoundTransitionCommand();

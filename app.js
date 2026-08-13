@@ -4466,6 +4466,9 @@ const elements = {
   devPowerAddButton: null,
   devPowerFillButton: null,
   devPowerClearButton: null,
+  devPowerDebuffSelect: null,
+  devPowerDebuffDuration: null,
+  devPowerApplyDebuffButton: null,
   devPowerStatus: null,
   devPowerHand: null,
   devRoomDiagnosticsStatus: null,
@@ -4488,6 +4491,9 @@ const elements = {
   botPowerAddButton: document.querySelector("#botPowerAddButton"),
   botPowerFillButton: document.querySelector("#botPowerFillButton"),
   botPowerClearButton: document.querySelector("#botPowerClearButton"),
+  botPowerDebuffSelect: document.querySelector("#botPowerDebuffSelect"),
+  botPowerDebuffDuration: document.querySelector("#botPowerDebuffDuration"),
+  botPowerApplyDebuffButton: document.querySelector("#botPowerApplyDebuffButton"),
   botPowerStatus: document.querySelector("#botPowerStatus"),
   botPowerHand: document.querySelector("#botPowerHand"),
   devProfileGrid: null,
@@ -12839,6 +12845,18 @@ function isAuthoritativeRoomHost() {
     : isCurrentHost();
 }
 
+// A room snapshot can lag behind the host's own command response while a
+// player is joining. The local host must still publish the result it has just
+// calculated; the server verifies that authority before accepting the command.
+function isLocalRoomHostContext() {
+  return Boolean(
+    isRoomMode()
+    && !state.isSpectator
+    && !state.joiningRoom
+    && state.currentOwner === "player"
+  );
+}
+
 function isJoinedRoomClient() {
   if (!isRoomMode() || state.isSpectator) {
     return false;
@@ -15872,7 +15890,7 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
 }
 
 function publishRoomRoundResult(roundResult, options = {}) {
-  if (!isAuthoritativeRoomHost()) {
+  if (!isLocalRoomHostContext()) {
     return Promise.resolve(null);
   }
   const result = buildRoomRoundResultPayload(roundResult, options);
@@ -15911,7 +15929,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
         state.roomRoundResultPublishKey = "";
       }
       state.roomDirectoryOnline = false;
-      if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
+      if (!options.retrying && isLocalRoomHostContext() && !state.matchEnded) {
         return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
           ...options,
           clientEventId,
@@ -15927,7 +15945,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
       state.roomRoundResultPublishKey = "";
     }
     state.roomDirectoryOnline = false;
-    if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
+    if (!options.retrying && isLocalRoomHostContext() && !state.matchEnded) {
       return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
         ...options,
         clientEventId,
@@ -30129,7 +30147,11 @@ function markMutationStatusTriggered(owner, statusId, mutationId = "") {
     // Permanent Mutagen effects consume their current charge, clean up the
     // old backing state, then re-arm as the same permanent status.
     cleanupMutationStatusRecord({ ...triggeredStatus, triggered: false }, remaining);
-    const cleanup = definition?.apply(owner, 1, triggeredStatus.mutationId);
+    const cleanup = definition?.apply(
+      owner,
+      triggeredStatus.permanentStatus ? Number.MAX_SAFE_INTEGER : 1,
+      triggeredStatus.mutationId
+    );
     if (cleanup) {
       const rearmed = {
         ...triggeredStatus,
@@ -31143,6 +31165,7 @@ function pruneMutationStatuses() {
 
 function applyMutationStatus(owner, definition, rounds, options = {}) {
   if (definition?.negative
+    && !options.force
     && !options.resolvingInversion
     && (state.mutationStatusInversionRounds?.[owner] || 0) > 0) {
     const opposite = getMutationStatusDefinitionOpposite(definition);
@@ -31154,7 +31177,7 @@ function applyMutationStatus(owner, definition, rounds, options = {}) {
       });
     }
   }
-  if (definition?.negative && !options.skipSovereign && (state.mutationSovereignRounds?.[owner] || 0) > 0) {
+  if (definition?.negative && !options.force && !options.skipSovereign && (state.mutationSovereignRounds?.[owner] || 0) > 0) {
     const leaders = getLeaders();
     const redirectedOwners = isFirstPlace(owner)
       ? getActiveOwners().filter((target) => target !== owner)
@@ -31171,16 +31194,18 @@ function applyMutationStatus(owner, definition, rounds, options = {}) {
     }
     return redirected;
   }
-  if (!definition || !isMutationStatusEligible(definition) || definition.category === "time" || isMutationStatusBlocked(owner, definition, options)) {
+  if (!definition || !isMutationStatusEligible(definition) || definition.category === "time" || (!options.force && isMutationStatusBlocked(owner, definition, options))) {
     return null;
   }
-  if (shouldBlockPermanentMutationStatus(owner, { positive: Boolean(definition.positive), negative: Boolean(definition.negative) })) {
+  if (!options.force && shouldBlockPermanentMutationStatus(owner, { positive: Boolean(definition.positive), negative: Boolean(definition.negative) })) {
     return null;
   }
-  if (definition.negative && consumeDebuffShield(owner, "Mutation")) {
+  if (definition.negative && !options.force && consumeDebuffShield(owner, "Mutation")) {
     return null;
   }
-  const effectiveRounds = options.preserveDuration
+  const effectiveRounds = options.permanentStatus
+    ? Number.MAX_SAFE_INTEGER
+    : options.preserveDuration
     ? Math.max(1, Number(rounds) || 1)
     : getPermanentMutationStatusRounds(owner, definition, rounds);
   const stackMultiplier = Math.max(1, Number(options.stackMultiplier) || 1)
@@ -35983,8 +36008,17 @@ function buildDevToolScreen() {
         <button type="button" class="icon-button" id="devPowerAddButton">Add Power</button>
         <button type="button" class="icon-button" id="devPowerFillButton">Fill Hand</button>
         <button type="button" class="icon-button danger-button" id="devPowerClearButton">Clear Hand</button>
+        <label>
+          <span>Debuff</span>
+          <select id="devPowerDebuffSelect"></select>
+        </label>
+        <label>
+          <span>Duration</span>
+          <input id="devPowerDebuffDuration" type="number" min="0" step="1" value="2">
+        </label>
+        <button type="button" class="icon-button danger-button" id="devPowerApplyDebuffButton">Apply Debuff</button>
       </div>
-      <div class="debug-status" id="devPowerStatus">Start a game, then add any power-up to a player hand.</div>
+      <div class="debug-status" id="devPowerStatus">Start a game, then add any power-up to a player hand. Debuff duration 0 is permanent.</div>
       <div class="profile-debug-grid dev-power-hand" id="devPowerHand"></div>
     </section>
     <section class="dev-tool-panel hidden" data-dev-panel="profile">
@@ -36137,6 +36171,9 @@ function buildDevToolScreen() {
   elements.devPowerAddButton = screen.querySelector("#devPowerAddButton");
   elements.devPowerFillButton = screen.querySelector("#devPowerFillButton");
   elements.devPowerClearButton = screen.querySelector("#devPowerClearButton");
+  elements.devPowerDebuffSelect = screen.querySelector("#devPowerDebuffSelect");
+  elements.devPowerDebuffDuration = screen.querySelector("#devPowerDebuffDuration");
+  elements.devPowerApplyDebuffButton = screen.querySelector("#devPowerApplyDebuffButton");
   elements.devPowerStatus = screen.querySelector("#devPowerStatus");
   elements.devPowerHand = screen.querySelector("#devPowerHand");
   elements.devAchievementSearchInput = screen.querySelector("#devAchievementSearchInput");
@@ -36340,6 +36377,7 @@ function bindDevToolEvents() {
   elements.devPowerAddButton.addEventListener("click", () => addDebugPowerToHand("dev"));
   elements.devPowerFillButton.addEventListener("click", () => fillDebugPowerHand("dev"));
   elements.devPowerClearButton.addEventListener("click", () => clearDebugPowerHand("dev"));
+  elements.devPowerApplyDebuffButton.addEventListener("click", () => applyDebugDebuff("dev"));
   elements.devAchievementSearchInput.addEventListener("input", renderAchievementDebug);
   elements.devAchievementRarityFilter.addEventListener("change", renderAchievementDebug);
   elements.devAchievementTypeFilter.addEventListener("change", renderAchievementDebug);
@@ -37583,6 +37621,9 @@ function getPowerDebugRefs(scope = "dev") {
       chaosToggle: elements.botPowerChaosToggle,
       pauseToggle: elements.botPowerPauseToggle,
       unlimitedToggle: elements.botPowerUnlimitedToggle,
+      debuffSelect: elements.botPowerDebuffSelect,
+      debuffDuration: elements.botPowerDebuffDuration,
+      applyDebuffButton: elements.botPowerApplyDebuffButton,
       status: elements.botPowerStatus,
       hand: elements.botPowerHand
     };
@@ -37593,6 +37634,9 @@ function getPowerDebugRefs(scope = "dev") {
     searchInput: elements.devPowerSearchInput,
     powerSelect: elements.devPowerSelect,
     chaosToggle: elements.devPowerChaosToggle,
+    debuffSelect: elements.devPowerDebuffSelect,
+    debuffDuration: elements.devPowerDebuffDuration,
+    applyDebuffButton: elements.devPowerApplyDebuffButton,
     status: elements.devPowerStatus,
     hand: elements.devPowerHand
   };
@@ -37668,6 +37712,31 @@ function renderPowerDebugPowerOptions(scope = "dev") {
   refs.powerSelect.value = matches.some((power) => power.id === normalizedSelected) ? normalizedSelected : matches[0]?.id || "";
 }
 
+function getDebugDebuffDefinitions() {
+  return mutationStatusDefinitions
+    .filter((definition) => definition.negative && isMutationStatusEligible(definition) && definition.category !== "time")
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function renderPowerDebugDebuffOptions(scope = "dev") {
+  const refs = getPowerDebugRefs(scope);
+  if (!refs.debuffSelect) {
+    return;
+  }
+  const selected = refs.debuffSelect.value;
+  const definitions = getDebugDebuffDefinitions();
+  refs.debuffSelect.replaceChildren(...definitions.map((definition) => {
+    const option = document.createElement("option");
+    option.value = definition.id;
+    option.textContent = definition.name;
+    option.title = definition.description || definition.short || definition.name;
+    return option;
+  }));
+  refs.debuffSelect.value = definitions.some((definition) => definition.id === selected)
+    ? selected
+    : definitions[0]?.id || "";
+}
+
 function renderPowerDebug(scope = "dev") {
   const refs = getPowerDebugRefs(scope);
   if (!refs.ownerSelect || !refs.powerSelect || !refs.hand) {
@@ -37683,6 +37752,7 @@ function renderPowerDebug(scope = "dev") {
   }));
   refs.ownerSelect.value = selectedOwner;
   renderPowerDebugPowerOptions(scope);
+  renderPowerDebugDebuffOptions(scope);
   refs.chaosToggle.disabled = false;
   const hand = state.powerHands[selectedOwner] || [];
   refs.hand.replaceChildren(...hand.map((powerId) => {
@@ -37733,6 +37803,40 @@ function setPowerDebugStatus(scope, message) {
   if (refs.status) {
     refs.status.textContent = message;
   }
+}
+
+function applyDebugDebuff(scope = "dev") {
+  const refs = getPowerDebugRefs(scope);
+  const owner = refs.ownerSelect?.value || "";
+  const definition = mutationStatusDefinitions.find((entry) => entry.id === refs.debuffSelect?.value && entry.negative);
+  const requestedDuration = Math.max(0, Math.floor(Number(refs.debuffDuration?.value) || 0));
+  if (!owner || !definition) {
+    setPowerDebugStatus(scope, "Choose a player and debuff.");
+    return;
+  }
+  const status = applyMutationStatus(owner, definition, requestedDuration || 1, {
+    permanentStatus: requestedDuration === 0,
+    preserveDuration: true,
+    force: true,
+    source: "Power Debug"
+  });
+  if (!status) {
+    setPowerDebugStatus(scope, `${definition.name} could not be applied to ${getOwnerLabel(owner)}.`);
+    return;
+  }
+  const durationLabel = requestedDuration === 0
+    ? "permanently"
+    : `for ${requestedDuration} round${requestedDuration === 1 ? "" : "s"}`;
+  queueStatFlash("mutation", "Power Debug", `${definition.name} applied ${durationLabel}`, {
+    owners: [owner],
+    complex: true,
+    priority: true
+  });
+  setPowerDebugStatus(scope, `Applied ${definition.name} to ${getOwnerLabel(owner)} ${durationLabel}.`);
+  renderEffectPanel();
+  renderPowerDebug(scope);
+  publishPowerDebugState();
+  playSound("reveal");
 }
 
 function publishPowerDebugState() {
@@ -46780,7 +46884,7 @@ async function playRoundInternal(rawInput, options = {}) {
     hasCorrectAnswer = winningOwners.length > 0;
   }
   const publishHostRoundResult = () => {
-    if (!isAuthoritativeRoomHost() || syncedRoundResult) {
+    if (!isLocalRoomHostContext() || syncedRoundResult) {
       return;
     }
     let damagedParticipantIds = awarded?.damagedParticipantIds || [];
@@ -49722,6 +49826,7 @@ elements.botPowerUnlimitedToggle?.addEventListener("change", handleBotPowerDebug
 elements.botPowerAddButton?.addEventListener("click", () => addDebugPowerToHand("bot-match"));
 elements.botPowerFillButton?.addEventListener("click", () => fillDebugPowerHand("bot-match"));
 elements.botPowerClearButton?.addEventListener("click", () => clearDebugPowerHand("bot-match"));
+elements.botPowerApplyDebuffButton?.addEventListener("click", () => applyDebugDebuff("bot-match"));
 elements.botPowerHand?.addEventListener("click", (event) => {
   const card = event.target.closest(".bot-power-debug-card");
   if (!card || !elements.botPowerHand.contains(card)) {
