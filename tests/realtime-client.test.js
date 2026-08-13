@@ -230,10 +230,16 @@ function testJoinedGradingWaitUsesJoinedOwner() {
   assert.doesNotMatch(waitSource, /playSyncedRoomRoundResult\(result, localFallback\)/);
 }
 
-function testRoundResultTransportRequiresAuthoritativeHost() {
+function testRoundResultTransportLeavesHostAuthorizationToServer() {
   const functionSource = getFunctionSource("publishRoomRoundResult", "getImmediatePowerAffectedOwners");
-  assert.match(functionSource, /if \(!isAuthoritativeRoomHost\(\)\)/);
-  assert.match(functionSource, /!options\.retrying && isAuthoritativeRoomHost\(\) && !state\.matchEnded/);
+  assert.match(functionSource, /if \(!isRoomMode\(\) \|\| state\.isSpectator\)/);
+  assert.match(functionSource, /!options\.retrying && isRoomMode\(\) && !state\.isSpectator && !state\.matchEnded/);
+  assert.doesNotMatch(functionSource, /isAuthoritativeRoomHost\(\)/);
+
+  const playRoundStart = source.indexOf("async function playRoundInternal");
+  const playRoundEnd = source.indexOf("function isCurrentRoomRoundResultForPlayback", playRoundStart);
+  const playRoundSource = source.slice(playRoundStart, playRoundEnd);
+  assert.match(playRoundSource, /if \(!isRoomMode\(\) \|\| state\.isSpectator \|\| syncedRoundResult\)/);
 }
 
 function testJoinedRoleDoesNotDependOnHostIdentity() {
@@ -549,7 +555,7 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testCompleteAuthoritativePhasePayloadCanRepairMissedRevision();
   testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge();
   testJoinedGradingWaitUsesJoinedOwner();
-  testRoundResultTransportRequiresAuthoritativeHost();
+  testRoundResultTransportLeavesHostAuthorizationToServer();
   testJoinedRoleDoesNotDependOnHostIdentity();
   testAutoAdvanceUsesTheManualRoundTransitionCommand();
   testSetupPreservesOnlyCurrentRoomResult();

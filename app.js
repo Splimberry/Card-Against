@@ -15680,7 +15680,7 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
 }
 
 function publishRoomRoundResult(roundResult, options = {}) {
-  if (!isAuthoritativeRoomHost()) {
+  if (!isRoomMode() || state.isSpectator) {
     return Promise.resolve(null);
   }
   const result = buildRoomRoundResultPayload(roundResult, options);
@@ -15719,7 +15719,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
         state.roomRoundResultPublishKey = "";
       }
       state.roomDirectoryOnline = false;
-      if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
+      if (!options.retrying && isRoomMode() && !state.isSpectator && !state.matchEnded) {
         return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
           ...options,
           clientEventId,
@@ -15735,7 +15735,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
       state.roomRoundResultPublishKey = "";
     }
     state.roomDirectoryOnline = false;
-    if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
+    if (!options.retrying && isRoomMode() && !state.isSpectator && !state.matchEnded) {
       return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
         ...options,
         clientEventId,
@@ -46346,7 +46346,7 @@ async function playRoundInternal(rawInput, options = {}) {
     hasCorrectAnswer = winningOwners.length > 0;
   }
   const publishHostRoundResult = () => {
-    if (!isAuthoritativeRoomHost() || syncedRoundResult) {
+    if (!isRoomMode() || state.isSpectator || syncedRoundResult) {
       return;
     }
     let damagedParticipantIds = awarded?.damagedParticipantIds || [];
