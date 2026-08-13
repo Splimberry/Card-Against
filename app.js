@@ -3692,6 +3692,8 @@ const state = {
   roomRoundResultPendingPlayback: null,
   roomRoundResultPresentationPromise: null,
   roomRoundResultPublishKey: "",
+  roomRoundResultRecoveryKey: "",
+  roomRoundResultRecoveryPromise: null,
   roomConnectionNoticeKeys: new Set(),
   renderingSyncedRoomResume: false,
   roomBotSequence: 0,
@@ -5617,6 +5619,8 @@ function clearRoundSubmissionState(options = {}) {
   state.roomRoundResultPendingPlayback = null;
   state.roomRoundResultPresentationPromise = null;
   state.roomRoundResultPublishKey = "";
+  state.roomRoundResultRecoveryKey = "";
+  state.roomRoundResultRecoveryPromise = null;
   state.roomBotAnswerSubmissions = {};
   state.roomBotAnswerWaitKey = "";
   state.roomSubmissions = {};
@@ -9067,6 +9071,7 @@ function createActiveEffect(owner, powerId, name, description, options = {}) {
     mutationStatus: Boolean(options.mutationStatus),
     canonicalMutationStatus: Boolean(options.canonicalMutationStatus),
     statusPolarity: options.statusPolarity === "negative" ? "negative" : "positive",
+    statusTrigger: Boolean(options.statusTrigger),
     statusNew: Boolean(options.statusNew),
     statusNoticeIds: Array.isArray(options.statusNoticeIds) ? [...options.statusNoticeIds] : []
   };
@@ -9476,6 +9481,8 @@ function renderEffectPanel() {
     badge.dataset.description = entry.description;
     badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
     badge.classList.toggle("mutation-status", Boolean(entry.mutationStatus));
+    badge.classList.toggle("status-negative", entry.statusPolarity === "negative");
+    badge.classList.toggle("status-trigger", Boolean(entry.statusTrigger));
     badge.classList.toggle("status-new", Boolean(entry.statusNew));
     const label = document.createElement("strong");
     label.textContent = entry.mutationStatus ? "" : entry.label;
@@ -9508,25 +9515,24 @@ function renderEffectPanel() {
     return;
   }
 
-  const positiveEntries = visibleEntries.filter((entry) => entry.statusPolarity !== "negative");
-  const negativeEntries = visibleEntries.filter((entry) => entry.statusPolarity === "negative");
-  [
-    ["positive", "Positive", positiveEntries],
-    ["negative", "Negative", negativeEntries]
-  ].forEach(([polarity, label, groupEntries]) => {
-    if (!groupEntries.length) return;
-    const group = document.createElement("div");
-    group.className = `mutation-status-group ${polarity}`;
-    const groupLabel = document.createElement("span");
-    groupLabel.className = "mutation-status-group-label";
-    groupLabel.textContent = label;
-    group.appendChild(groupLabel);
-    const items = document.createElement("div");
-    items.className = "mutation-status-group-items";
-    groupEntries.forEach((entry) => appendBadge(entry, items));
-    group.appendChild(items);
-    elements.effectPanel.appendChild(group);
-  });
+  const getMutationStatusOrder = (entry) => {
+    const harmful = entry.statusPolarity === "negative";
+    const trigger = Boolean(entry.statusTrigger);
+    if (!harmful && !trigger) return 0;
+    if (!harmful && trigger) return 1;
+    if (harmful && !trigger) return 2;
+    return 3;
+  };
+  const items = document.createElement("div");
+  items.className = "mutation-status-items";
+  [...visibleEntries]
+    .sort((left, right) => (
+      getMutationStatusOrder(left) - getMutationStatusOrder(right)
+      || getRarityRank(left.rarity) - getRarityRank(right.rarity)
+      || left.name.localeCompare(right.name)
+    ))
+    .forEach((entry) => appendBadge(entry, items));
+  elements.effectPanel.appendChild(items);
 }
 
 function getMutationDisplayName(statusOrDefinition) {
@@ -9584,7 +9590,7 @@ function renderMutationSummary() {
       name: mutation.name,
       description: `${mutation.description} Lasts for the entire match.`,
       icon: "assets/overlays/biohazard.svg",
-      className: "permanent",
+      className: `permanent ${isNegativeMutationStatusDisplay(mutation) ? "negative" : "positive"}`,
       meta: "Permanent Mutation"
     }));
   });
@@ -11106,12 +11112,14 @@ function createAbilityLibrarySection({ title, rarity, entries, open = false, kin
     card.dataset.rarity = entry.rarity || rarity;
     card.dataset.kind = entry.libraryKind || kind;
     card.dataset.description = entry.description;
+    card.dataset.polarity = entry.polarity === "negative" ? "negative" : "positive";
     const category = entry.category || (entry.powerId ? getPowerCategory(entry.powerId) : "");
     if (category && powerCategoryInfo[category]) {
       card.dataset.category = category;
     }
     card.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
     card.classList.toggle("chaos-unavailable", Boolean(entry.chaosUnavailable));
+    card.classList.toggle("status-trigger", Boolean(entry.triggerOnce));
     if (entry.chaosUnavailable) {
       card.dataset.tooltip = entry.description;
       card.tabIndex = 0;
@@ -11266,6 +11274,8 @@ function getLibraryDefinitionEntry(definition, options = {}) {
     powerId: definition.powerId,
     category,
     rarity: options.rarity || (category === "doom" ? "doom" : category === "risk" || category === "disruption" ? "debuff" : "blue"),
+    polarity: options.polarity || (isNegativeMutationStatusDisplay(definition) ? "negative" : "positive"),
+    triggerOnce: Boolean(options.triggerOnce ?? definition.triggerOnce),
     chaosInfused: Boolean(options.chaosInfused),
     libraryKind: options.libraryKind || "status"
   };
@@ -11294,6 +11304,7 @@ function getPermanentMutationLibraryEntries() {
     powerId: mutation.powerId,
     category: mutation.category,
     rarity: "gold",
+    polarity: isNegativeMutationStatusDisplay(mutation) ? "negative" : "positive",
     libraryKind: "permanent-mutation"
   }));
 }
@@ -14846,6 +14857,86 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   return true;
 }
 
+function recoverRoomRoundResultFromServer(payload = {}) {
+  if (!isRoomMode() || state.isSpectator || !isJoinedRoomClient() || !hasActiveRoomContext()) {
+    return Promise.resolve(false);
+  }
+  const code = String(payload.code || state.roomSettings.code || "").trim().toUpperCase();
+  const round = Number(payload.round) || Number(state.round) || 0;
+  const matchId = String(payload.matchId || getCurrentRoomMatchId() || "").trim();
+  const resultRevision = Math.max(0, Number(payload.resultRevision) || Number(payload.revision) || 0);
+  const knownRevision = getKnownRoomRevision(code);
+  // The compact readiness signal may arrive before this tab has received the
+  // matching round-started payload. Fetch the durable result in that case;
+  // applyRealtimeRoomRoundResult can safely adopt its match, round, and setup.
+  if (!code || code !== state.roomSettings.code || !round || round < Number(state.round || 0)) {
+    return Promise.resolve(false);
+  }
+  // Ignore a delayed marker from an already superseded round, but do not
+  // reject a new match simply because this tab has not received round-started
+  // yet. The persisted full result is what resolves that exact mismatch.
+  if (resultRevision && resultRevision < knownRevision) {
+    return Promise.resolve(false);
+  }
+  if (
+    matchId
+    && getCurrentRoomMatchId()
+    && matchId !== getCurrentRoomMatchId()
+    && round === Number(state.round || 0)
+    && resultRevision
+    && resultRevision <= knownRevision
+  ) {
+    return Promise.resolve(false);
+  }
+  const since = resultRevision ? Math.max(0, resultRevision - 1) : Math.max(0, Number(state.roomEventRevision) || 0);
+  const recoveryKey = [code, matchId, round, resultRevision || since].join("|");
+  if (state.roomRoundResultRecoveryPromise && state.roomRoundResultRecoveryKey === recoveryKey) {
+    return state.roomRoundResultRecoveryPromise;
+  }
+  const recoveryPromise = (async () => {
+    // This is one event-driven fetch of the result that the server has already
+    // committed. It is not polling and runs only after the ready signal.
+    if (state.roomEventRefreshPromise) {
+      await state.roomEventRefreshPromise.catch(() => false);
+    }
+    if (getRoomRoundResultForCurrentRound(round)) {
+      return tryPlayPendingRoomRoundResult();
+    }
+    await requestRoomRealtimeCatchup("round-result-ready", {
+      force: true,
+      snapshot: false,
+      since
+    });
+    const result = getRoomRoundResultForCurrentRound(round);
+    if (!result) {
+      return false;
+    }
+    state.roomRoundResultPendingPlayback = result;
+    return tryPlayPendingRoomRoundResult();
+  })().finally(() => {
+    if (state.roomRoundResultRecoveryPromise === recoveryPromise) {
+      state.roomRoundResultRecoveryPromise = null;
+      state.roomRoundResultRecoveryKey = "";
+    }
+  });
+  state.roomRoundResultRecoveryKey = recoveryKey;
+  state.roomRoundResultRecoveryPromise = recoveryPromise;
+  return recoveryPromise;
+}
+
+function applyRealtimeRoomRoundResultReady(payload = {}) {
+  const code = String(payload.code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!code || code !== state.roomSettings.code || !isRoomMode()) {
+    return false;
+  }
+  // The full result is still the normal immediate path. This marker repairs a
+  // missed delivery only after the matching server result is durable.
+  if (isJoinedRoomClient() && !state.isSpectator) {
+    void recoverRoomRoundResultFromServer(payload);
+  }
+  return true;
+}
+
 function getSpectatorRoundResultPlaybackKey(result = {}) {
   return [
     result.matchId || getCurrentRoomMatchId(),
@@ -15765,7 +15856,7 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
 }
 
 function publishRoomRoundResult(roundResult, options = {}) {
-  if (!isRoomMode() || state.isSpectator) {
+  if (!isAuthoritativeRoomHost()) {
     return Promise.resolve(null);
   }
   const result = buildRoomRoundResultPayload(roundResult, options);
@@ -15804,7 +15895,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
         state.roomRoundResultPublishKey = "";
       }
       state.roomDirectoryOnline = false;
-      if (!options.retrying && isRoomMode() && !state.isSpectator && !state.matchEnded) {
+      if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
         return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
           ...options,
           clientEventId,
@@ -15820,7 +15911,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
       state.roomRoundResultPublishKey = "";
     }
     state.roomDirectoryOnline = false;
-    if (!options.retrying && isRoomMode() && !state.isSpectator && !state.matchEnded) {
+    if (!options.retrying && isAuthoritativeRoomHost() && !state.matchEnded) {
       return waitForRoomCommandRetry(220).then(() => publishRoomRoundResult(roundResult, {
         ...options,
         clientEventId,
@@ -18334,6 +18425,7 @@ const roomOnlyRealtimeEventTypes = new Set([
   "power-state",
   "round-grading",
   "round-result",
+  "round-result-ready",
   "round-started",
   "round-advancing",
   "round-skipped",
@@ -18413,6 +18505,7 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
     "answer-draft",
     "round-grading",
     "round-result",
+    "round-result-ready",
     "round-skipped",
     "round-started",
     "round-advancing",
@@ -18440,12 +18533,6 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
 function shouldBroadcastServerEventToLobby(event = {}) {
   const eventType = normalizeRoomEventType(event.type || event.eventType || event.payload?.eventType || "");
   return [
-    "round-advancing",
-    "round-started",
-    "round-grading",
-    "round-result",
-    "round-skipped",
-    "game-ended",
     "host-transferred",
     "participant-joined",
     "participant-updated",
@@ -19204,6 +19291,7 @@ const roomServerEventTypeMap = {
   round_advancing: "round-advancing",
   round_grading: "round-grading",
   round_result: "round-result",
+  round_result_ready: "round-result-ready",
   round_skipped: "round-skipped",
   round_setup_failed: "round-setup-failed",
   round_started: "round-started",
@@ -19237,6 +19325,7 @@ const handledRoomEventTypes = [
   "round-setup-failed",
   "round-grading",
   "round-result",
+  "round-result-ready",
   "round-skipped",
   "participant-left",
   "participant-moderated",
@@ -19808,6 +19897,9 @@ function applyRoomEventPayload(payload = {}, source = {}) {
     if (normalizedPayload.eventType === "round-result") {
       appliedDelta = applyRealtimeRoomRoundResult(normalizedPayload);
     }
+    if (normalizedPayload.eventType === "round-result-ready") {
+      appliedDelta = applyRealtimeRoomRoundResultReady(normalizedPayload);
+    }
     if (normalizedPayload.eventType === "round-skipped") {
       appliedDelta = forceRoomRoundToGrading(normalizedPayload);
     }
@@ -19945,6 +20037,28 @@ function applyRoomServerEvent(event = {}, source = {}) {
   const code = getRoomServerEventCode(event);
   const revision = Number(event.revision) || Number(event.payload?.revision) || 0;
   const eventType = normalizeRoomEventType(event.type || event.payload?.eventType || "");
+  if (eventType === "round-result-ready") {
+    const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
+    const readyPayload = normalizeRoomEventPayload({
+      ...payload,
+      eventType,
+      code: payload.code || payload.room?.code || state.roomSettings.code,
+      sourceId: event.sourceId || payload.sourceId || "server",
+      revision,
+      updatedAt: Number(event.createdAt) || Date.now()
+    });
+    // This is deliberately an out-of-band delivery marker, not a state
+    // revision. It may beat the full result over a separate websocket frame.
+    // Advancing the revision cursor here would make that result look stale.
+    const applied = applyRealtimeRoomRoundResultReady(readyPayload);
+    recordRoomDiagnosticEvent(applied ? "applied" : "not-applied", readyPayload, {
+      source: options.source || "server-event",
+      reason: applied
+        ? "Result readiness signal received; recovering the committed result."
+        : "Result readiness signal did not match the active room."
+    });
+    return applied;
+  }
   const completeAuthoritativePhase = isCompleteAuthoritativeRoomPhasePayload({
     ...(event.payload && typeof event.payload === "object" ? event.payload : {}),
     sourceId: event.sourceId || event.payload?.sourceId || "server"
@@ -28715,7 +28829,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { state.bottomFeederRounds[owner] = (state.bottomFeederRounds[owner] || 0) + 1; return { kind: "counter", key: "bottomFeederRounds", manualExpiry: true }; }
   },
   {
-    id: "time_bomb", pool: "normal", name: "Time Bomb", powerId: "time_bomb", category: "risk", negative: true, triggerOnce: true,
+    id: "time_bomb", pool: "normal", name: "Time Bomb", powerId: "time_bomb", category: "risk", negative: true, displayNegative: false, triggerOnce: true,
     apply: (owner, rounds, mutationId) => {
       state.timeBombs = [...(state.timeBombs || []), { owner, round: state.round + rounds - 1, mutationId }];
       return { kind: "arrayEntry", key: "timeBombs" };
@@ -28778,11 +28892,11 @@ const mutationStatusDefinitions = Object.freeze([
     }
   },
   {
-    id: "world_burn", pool: "normal", name: "Let the World Burn", powerId: "world_burn", category: "risk", negative: true,
+    id: "world_burn", pool: "normal", name: "Let the World Burn", powerId: "world_burn", category: "risk", negative: true, displayNegative: false,
     apply: (owner) => { addEffectStack(state.worldBurnOwners, owner); return { kind: "stack", key: "worldBurnOwners" }; }
   },
   {
-    id: "lawn_mower", pool: "normal", name: "Lawn Mower", powerId: "law_mower", category: "target", negative: true,
+    id: "lawn_mower", pool: "normal", name: "Lawn Mower", powerId: "law_mower", category: "target", negative: true, displayNegative: false,
     apply: (owner) => { addModeEffectStack(state.lawnMowerOwners, owner); return { kind: "modeStack", key: "lawnMowerOwners" }; }
   },
   {
@@ -28790,7 +28904,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { addModeEffectStack(state.bartenders, owner); return { kind: "modeStack", key: "bartenders" }; }
   },
   {
-    id: "hot_in_here", pool: "normal", name: "It's Getting Hot", description: "At round start, every other player loses 5% x max(owner streak - 1, 0) of their score per stack.", powerId: "hot_in_here", category: "target", negative: true,
+    id: "hot_in_here", pool: "normal", name: "It's Getting Hot", description: "At round start, every other player loses 5% x max(owner streak - 1, 0) of their score per stack.", powerId: "hot_in_here", category: "target", negative: true, displayNegative: false,
     apply: (owner) => { addEffectStack(state.hotInHereOwners, owner); return { kind: "stack", key: "hotInHereOwners" }; }
   },
   {
@@ -28822,7 +28936,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { addEffectStack(state.capitalismOwners, owner); return { kind: "stack", key: "capitalismOwners" }; }
   },
   {
-    id: "inferno", pool: "chaos", name: "Inferno", description: "At round start, gain 1 streak per stack; every other player loses 5% x owner final streak x stack count of their score.", powerId: "hot_in_here", category: "target", negative: true,
+    id: "inferno", pool: "chaos", name: "Inferno", description: "At round start, gain 1 streak per stack; every other player loses 5% x owner final streak x stack count of their score.", powerId: "hot_in_here", category: "target", negative: true, displayNegative: false,
     apply: (owner) => { addEffectStack(state.infernoOwners, owner); return { kind: "stack", key: "infernoOwners" }; }
   },
   {
@@ -28846,7 +28960,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { addEffectStack(state.chaosRefreshOwners, owner); return { kind: "stack", key: "chaosRefreshOwners" }; }
   },
   {
-    id: "reduce_to_ashes", pool: "chaos", name: "Reduce to Ashes", powerId: "world_burn", category: "target", negative: true,
+    id: "reduce_to_ashes", pool: "chaos", name: "Reduce to Ashes", powerId: "world_burn", category: "target", negative: true, displayNegative: false,
     apply: (owner) => { addEffectStack(state.reduceToAshesOwners, owner); return { kind: "stack", key: "reduceToAshesOwners" }; }
   },
   {
@@ -28917,7 +29031,7 @@ const mutationStatusDefinitions = Object.freeze([
     }
   },
   {
-    id: "red_herring_status", pool: "normal", name: "Red Herring", powerId: "red_herring", category: "disruption", negative: true,
+    id: "red_herring_status", pool: "normal", name: "Red Herring", powerId: "red_herring", category: "disruption", negative: true, displayNegative: false,
     apply: (owner, rounds, mutationId) => {
       state.redHerringMasks[owner] = {
         ...(state.redHerringMasks[owner] && typeof state.redHerringMasks[owner] === "object" ? state.redHerringMasks[owner] : {}),
@@ -28992,7 +29106,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { addEffectStack(state.error404Owners, owner); return { kind: "stack", key: "error404Owners" }; }
   },
   {
-    id: "explosive_temper", pool: "chaos", name: "Explosive Temper", powerId: "sin_wrath", category: "risk", negative: true,
+    id: "explosive_temper", pool: "chaos", name: "Explosive Temper", powerId: "sin_wrath", category: "risk", negative: true, displayNegative: false,
     apply: (owner) => { addEffectStack(state.wrathOwners, owner); return { kind: "stack", key: "wrathOwners" }; }
   },
   {
@@ -29133,7 +29247,7 @@ const mutationStatusDefinitions = Object.freeze([
     }
   },
   {
-    id: "event_horizon_status", pool: "chaos", name: "Event Horizon", short: "void mark", description: "The target's active effects and one power-up are stripped after they lose, and the mark repeats until it expires.", powerId: "void_bomb", category: "chaos", negative: true,
+    id: "event_horizon_status", pool: "chaos", name: "Event Horizon", short: "void mark", description: "The target's active effects and one power-up are stripped after they lose, and the mark repeats until it expires.", powerId: "void_bomb", category: "chaos", positive: true,
     apply: (owner) => {
       const targetOwner = getMutationRandomOtherOwner(owner);
       if (!targetOwner) {
@@ -29190,19 +29304,19 @@ const mutationStatusDefinitions = Object.freeze([
 
 const permanentMutationDefinitions = Object.freeze([
   { id: "adaptive_metabolism", name: "Adaptive Metabolism", short: "-10% losses", description: "Reduces this player's point losses by 10%.", powerId: "deep_freeze", category: "defense" },
-  { id: "volatile_genome", name: "Volatile Genome", short: "+20% gains / +10% wrong", description: "Positive point gains increase by 20%, but wrong answers cost an additional 10% of score.", powerId: "double_jeopardy", category: "risk" },
+  { id: "volatile_genome", name: "Volatile Genome", short: "+20% gains / +10% wrong", description: "Positive point gains increase by 20%, but wrong answers cost an additional 10% of score.", powerId: "double_jeopardy", category: "risk", negative: true },
   { id: "apex_mutation", name: "Apex Mutation", short: "+15% below 1st", description: "Correct positive gains increase by 15% while this player is below first place.", powerId: "basic_bounty", category: "boost" },
-  { id: "recessive_trait", name: "Recessive Trait", short: "-15% in 1st", description: "Positive gains decrease by 15% while this player is in first place.", powerId: "reign_chaos", category: "risk" },
-  { id: "genetic_drift", name: "Genetic Drift", short: "-5% to +10%", description: "At round start, this player's score randomly shifts between -5% and +10%.", powerId: "roulette", category: "chaos" },
+  { id: "recessive_trait", name: "Recessive Trait", short: "-15% in 1st", description: "Positive gains decrease by 15% while this player is in first place.", powerId: "reign_chaos", category: "risk", negative: true },
+  { id: "genetic_drift", name: "Genetic Drift", short: "-5% to +10%", description: "At round start, this player's score randomly shifts between -5% and +10%.", powerId: "roulette", category: "chaos", negative: true },
   { id: "status_mimicry", name: "Status Mimicry", short: "copy a status", description: "At round start, copies one random active temporary status from another player for this round.", powerId: "cocktail_mix", category: "chaos" },
   { id: "parasitic_growth", name: "Parasitic Growth", short: "steal 5%", description: "At round start, steals 5% of a random player's score.", powerId: "robin_hood", category: "target" },
   { id: "viral_spread", name: "Viral Spread", short: "transfer a debuff", description: "When this player answers correctly, one of their negative temporary statuses transfers to another player.", powerId: "virus_factory", category: "target" },
   { id: "mitosis", name: "Mitosis", short: "expired status splits", description: "When a temporary status expires, it has a 50% chance to split into two random one-round statuses.", powerId: "mutation", category: "mutation" },
   { id: "dominant_gene", name: "Dominant Gene", short: "+1 status round", description: "Positive temporary statuses gained by this player last one additional round.", powerId: "blessing", category: "boost" },
-  { id: "degenerative_gene", name: "Degenerative Gene", short: "next status -1r", description: "The next positive temporary status gained by this player lasts one fewer round.", powerId: "fire_extinguisher", category: "risk" },
+  { id: "degenerative_gene", name: "Degenerative Gene", short: "next status -1r", description: "The next positive temporary status gained by this player lasts one fewer round.", powerId: "fire_extinguisher", category: "risk", negative: true },
   { id: "chimera", name: "Chimera", short: "replace a status", description: "At round start, replaces one of this player's temporary statuses with one copied from an opponent.", powerId: "chaos_infuser", category: "chaos" },
   { id: "evolutionary_comeback", name: "Evolutionary Comeback", short: "last-place buff", description: "If this player loses while in last place, they gain a random buff.", powerId: "cocktail_mix", category: "boost" },
-  { id: "cellular_collapse", name: "Cellular Collapse", short: "3 wrongs -> -10%", description: "Wrong answers add stacks. At three stacks, this player loses 10% of score and the stacks clear.", powerId: "nail_coffin", category: "risk" },
+  { id: "cellular_collapse", name: "Cellular Collapse", short: "3 wrongs -> -10%", description: "Wrong answers add stacks. At three stacks, this player loses 10% of score and the stacks clear.", powerId: "nail_coffin", category: "risk", negative: true },
   { id: "mutation_stabilizer", name: "Mutation Stabilizer", short: "25% status block", description: "Each incoming status effect independently has a 25% chance to be blocked.", powerId: "antivirus", category: "defense" },
   { id: "unstable_symbiosis", name: "Unstable Symbiosis", short: "share 5% gains", description: "Links to a random player. Whenever either player gains points, the other receives 5% of that gain.", powerId: "soul_link", category: "target" }
 ]);
@@ -29618,7 +29732,8 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
       statusMeta: getMutationStatusMeta(status, count),
       mutationStatus: true,
       canonicalMutationStatus: true,
-      statusPolarity: definition.negative ? "negative" : "positive",
+      statusPolarity: isNegativeMutationStatusDisplay(definition) ? "negative" : "positive",
+      statusTrigger: Boolean(definition.triggerOnce),
       statusNew: roundFeed.some((entry) => entry.id === status.id && !entry.noticeSeen),
       statusNoticeIds: roundFeed
         .filter((entry) => entry.id === status.id && !entry.noticeSeen)
@@ -29641,6 +29756,11 @@ function markMutationStatusNoticeSeen(owner, noticeIds = []) {
 
 function getMutationDefinitionForStatus(status) {
   return mutationStatusDefinitions.find((definition) => definition.id === status?.id) || null;
+}
+
+function isNegativeMutationStatusDisplay(definition) {
+  return definition?.displayNegative === true
+    || (definition?.displayNegative !== false && Boolean(definition?.negative));
 }
 
 function getMutationEligibleStatusDefinitions() {
@@ -46525,7 +46645,7 @@ async function playRoundInternal(rawInput, options = {}) {
     hasCorrectAnswer = winningOwners.length > 0;
   }
   const publishHostRoundResult = () => {
-    if (!isRoomMode() || state.isSpectator || syncedRoundResult) {
+    if (!isAuthoritativeRoomHost() || syncedRoundResult) {
       return;
     }
     let damagedParticipantIds = awarded?.damagedParticipantIds || [];

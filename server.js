@@ -2200,6 +2200,25 @@ function sanitizeRoomEventForClient(event, options = {}) {
   if (sanitized.payload.game && typeof sanitized.payload.game === "object") {
     sanitized.payload.game = sanitizeRoomGameForClient(sanitized.payload.game, options);
   }
+  if (sanitized.type === "round_result") {
+    // The result already includes the complete scoring and power hand-off.
+    // Keep its accompanying game envelope lean for reliable realtime delivery.
+    const game = sanitized.payload.game && typeof sanitized.payload.game === "object"
+      ? sanitized.payload.game
+      : null;
+    if (game) {
+      sanitized.payload.game = {
+        matchId: game.matchId,
+        status: game.status,
+        round: game.round,
+        setup: game.setup || null,
+        matchSettings: game.matchSettings || null,
+        gradingStartedAt: game.gradingStartedAt || 0,
+        gradingReason: game.gradingReason || "",
+        updatedAt: game.updatedAt || sanitized.payload.updatedAt || event.createdAt || Date.now()
+      };
+    }
+  }
   if (!options.includePrivateSecrets) {
     delete sanitized.payload.hostToken;
     delete sanitized.payload.roomHostToken;
@@ -2578,12 +2597,6 @@ function isServerRealtimeBroadcastEnabled() {
 function shouldBroadcastRoomServerEventToLobby(event = {}) {
   const eventType = getClientRoomEventType(event.type || event.payload?.eventType || "");
   return [
-    "round-advancing",
-    "round-started",
-    "round-grading",
-    "round-result",
-    "round-skipped",
-    "game-ended",
     "host-transferred",
     "participant-joined",
     "participant-updated",
@@ -2598,6 +2611,22 @@ function shouldBroadcastRoomServerEventToLobby(event = {}) {
     "round-setup-failed",
     "room-deleted"
   ].includes(eventType);
+}
+
+function createRoomRoundResultReadyEvent(room, event) {
+  const payload = event?.payload && typeof event.payload === "object" ? event.payload : {};
+  const roundResult = normalizeRoomRoundResult(payload.roundResult || room?.game?.roundResult || null);
+  if (!room || !roundResult) {
+    return null;
+  }
+  return createSyntheticRoomEvent(room, "round_result_ready", {
+    clientEventId: payload.clientEventId,
+    actorId: event?.actorId || payload.actorId,
+    matchId: roundResult.matchId || room.game?.matchId || "",
+    round: roundResult.round || room.game?.round || 0,
+    resultRevision: Number(event?.revision) || getRoomRevision(room),
+    resultUpdatedAt: roundResult.updatedAt || room.updatedAt || Date.now()
+  });
 }
 
 function createRealtimeBroadcastMessage(topic, event) {
@@ -2651,6 +2680,16 @@ async function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], o
   }
 }
 
+async function broadcastRoomRoundResultReady(room, event) {
+  const readyEvent = createRoomRoundResultReadyEvent(room, event);
+  if (!readyEvent) {
+    return false;
+  }
+  return scheduleServerRoomRealtimeBroadcast(room.code, [readyEvent], {
+    includeSubmittedAnswers: false
+  });
+}
+
 async function createRoomCommandResponse(room, previousRevision = 0, options = {}) {
   const events = getRoomEventsAfterRevision(room, previousRevision, options);
   const broadcastSinceRevision = Number.isFinite(Number(options.broadcastSinceRevision))
@@ -2663,14 +2702,26 @@ async function createRoomCommandResponse(room, previousRevision = 0, options = {
   // acknowledgement keeps the command response and the realtime stream on
   // the same ordered path; the initiating browser must never relay a
   // speculative or delayed copy to the other players.
-  const serverBroadcast = await scheduleServerRoomRealtimeBroadcast(room.code, broadcastEvents, options);
+  // A small readiness event follows the full result. It lets a player recover
+  // the exact persisted result once when a large websocket payload is missed.
+  const resultEvent = broadcastEvents.find((event) => event.type === "round_result");
+  // Send both broadcasts concurrently. The full result remains the normal
+  // path; the tiny ready signal can arrive first and recover the committed
+  // result without making the host wait for two sequential network trips.
+  const [serverBroadcast, resultReadyBroadcast] = await Promise.all([
+    scheduleServerRoomRealtimeBroadcast(room.code, broadcastEvents, options),
+    resultEvent
+      ? broadcastRoomRoundResultReady(room, resultEvent)
+      : Promise.resolve(false)
+  ]);
   return {
     ok: true,
     roomCode: room.code,
     revision: getRoomRevision(room),
     updatedAt: room.updatedAt,
     events,
-    serverBroadcast
+    serverBroadcast,
+    resultReadyBroadcast
   };
 }
 
@@ -4181,11 +4232,12 @@ async function handleRoomCommandPublishRoundResult(req, res, room, command, rawB
     });
     if (canonicalEvent && !response.events.some((event) => event.id === canonicalEvent.id)) {
       response.events = [...response.events, canonicalEvent];
-      response.serverBroadcast = await scheduleServerRoomRealtimeBroadcast(
-        room.code,
-        [canonicalEvent],
-        { includeSubmittedAnswers: true }
-      );
+      const [serverBroadcast, resultReadyBroadcast] = await Promise.all([
+        scheduleServerRoomRealtimeBroadcast(room.code, [canonicalEvent], { includeSubmittedAnswers: true }),
+        broadcastRoomRoundResultReady(room, canonicalEvent)
+      ]);
+      response.serverBroadcast = serverBroadcast;
+      response.resultReadyBroadcast = resultReadyBroadcast;
     } else if (!canonicalEvent && !response.events.some((event) => event.type === "round_result")) {
       // Older rooms may contain the stored result without its event log entry.
       // Reconstruct a same-revision recovery event from the authoritative room
@@ -4199,11 +4251,12 @@ async function handleRoomCommandPublishRoundResult(req, res, room, command, rawB
         game: room.game
       });
       response.events = [...response.events, recoveryEvent];
-      response.serverBroadcast = await scheduleServerRoomRealtimeBroadcast(
-        room.code,
-        [recoveryEvent],
-        { includeSubmittedAnswers: true }
-      );
+      const [serverBroadcast, resultReadyBroadcast] = await Promise.all([
+        scheduleServerRoomRealtimeBroadcast(room.code, [recoveryEvent], { includeSubmittedAnswers: true }),
+        broadcastRoomRoundResultReady(room, recoveryEvent)
+      ]);
+      response.serverBroadcast = serverBroadcast;
+      response.resultReadyBroadcast = resultReadyBroadcast;
     }
     sendJson(res, 200, {
       ...response,

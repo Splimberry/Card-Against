@@ -230,16 +230,27 @@ function testJoinedGradingWaitUsesJoinedOwner() {
   assert.doesNotMatch(waitSource, /playSyncedRoomRoundResult\(result, localFallback\)/);
 }
 
-function testRoundResultTransportLeavesHostAuthorizationToServer() {
+function testRoundResultTransportRequiresTheAuthoritativeHost() {
   const functionSource = getFunctionSource("publishRoomRoundResult", "getImmediatePowerAffectedOwners");
-  assert.match(functionSource, /if \(!isRoomMode\(\) \|\| state\.isSpectator\)/);
-  assert.match(functionSource, /!options\.retrying && isRoomMode\(\) && !state\.isSpectator && !state\.matchEnded/);
-  assert.doesNotMatch(functionSource, /isAuthoritativeRoomHost\(\)/);
+  assert.match(functionSource, /if \(!isAuthoritativeRoomHost\(\)\)/);
+  assert.match(functionSource, /!options\.retrying && isAuthoritativeRoomHost\(\) && !state\.matchEnded/);
 
   const playRoundStart = source.indexOf("async function playRoundInternal");
   const playRoundEnd = source.indexOf("function isCurrentRoomRoundResultForPlayback", playRoundStart);
   const playRoundSource = source.slice(playRoundStart, playRoundEnd);
-  assert.match(playRoundSource, /if \(!isRoomMode\(\) \|\| state\.isSpectator \|\| syncedRoundResult\)/);
+  assert.match(playRoundSource, /if \(!isAuthoritativeRoomHost\(\) \|\| syncedRoundResult\)/);
+}
+
+function testRoundResultReadyRecoveryIsOutOfBand() {
+  const recoverySource = getFunctionSource("recoverRoomRoundResultFromServer", "applyRealtimeRoomRoundResultReady");
+  const readySource = getFunctionSource("applyRealtimeRoomRoundResultReady", "getSpectatorRoundResultPlaybackKey");
+  const serverEventSource = getFunctionSource("applyRoomServerEvent", "applyRoomServerEventNow");
+
+  assert.match(recoverySource, /since = resultRevision \? Math\.max\(0, resultRevision - 1\)/);
+  assert.match(recoverySource, /requestRoomRealtimeCatchup\("round-result-ready"/);
+  assert.match(readySource, /recoverRoomRoundResultFromServer\(payload\)/);
+  assert.match(serverEventSource, /eventType === "round-result-ready"/);
+  assert.match(serverEventSource, /Advancing the revision cursor here would make that result look stale/);
 }
 
 function testJoinedRoleDoesNotDependOnHostIdentity() {
@@ -555,7 +566,8 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testCompleteAuthoritativePhasePayloadCanRepairMissedRevision();
   testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge();
   testJoinedGradingWaitUsesJoinedOwner();
-  testRoundResultTransportLeavesHostAuthorizationToServer();
+  testRoundResultTransportRequiresTheAuthoritativeHost();
+  testRoundResultReadyRecoveryIsOutOfBand();
   testJoinedRoleDoesNotDependOnHostIdentity();
   testAutoAdvanceUsesTheManualRoundTransitionCommand();
   testSetupPreservesOnlyCurrentRoomResult();

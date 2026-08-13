@@ -5834,6 +5834,12 @@ async function testRoomRoundResultRequiresGradingLock() {
   });
   assert.equal(lockedResult.response.status, 200, lockedResult.payload.error);
   assert.equal(lockedResult.payload.eventType, "round-result");
+  const deliveredResultEvent = lockedResult.payload.events.find((event) => event.type === "round_result");
+  assert.ok(deliveredResultEvent, "The authoritative round result should be returned to the host and broadcast to joined players.");
+  assert.equal(deliveredResultEvent.payload.game.roundResult, undefined, "The result must not be duplicated inside the realtime game envelope.");
+  assert.equal(deliveredResultEvent.payload.game.powerState, undefined, "The complete result owns the power state for this transition.");
+  assert.equal(deliveredResultEvent.payload.game.setup.id, "test-question-2");
+  assert.equal(deliveredResultEvent.payload.roundResult.resultSummary.leaderboard[0].score, 1200);
   assert.equal(lockedResult.payload.roundResult.resultSummary.judgements[0].reason, "That matched the answer cleanly.");
   assert.equal(lockedResult.payload.roundResult.resultSummary.scoreDeltas[0].delta, 1200);
   assert.equal(lockedResult.payload.roundResult.resultSummary.leaderboard[0].rank, 1);
