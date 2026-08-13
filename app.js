@@ -30772,7 +30772,7 @@ function applyMutationPower(owner, power, meta = {}) {
   return true;
 }
 
-function pickWeightedMutationStatus(definitions, owner) {
+function pickMutationStatusByTier(definitions, owner) {
   const eligible = (definitions || []).filter((definition) => isMutationStatusEligible(definition));
   if (!eligible.length) {
     return null;
@@ -30796,6 +30796,41 @@ function pickWeightedMutationStatus(definitions, owner) {
     return roll < 0;
   }) || tiers[tiers.length - 1];
   return selectedTier.candidates[Math.floor(Math.random() * selectedTier.candidates.length)];
+}
+
+function pickWeightedMutationStatus(definitions, owner) {
+  const options = arguments[2] || {};
+  const eligible = (definitions || []).filter((definition) => isMutationStatusEligible(definition));
+  if (!eligible.length) {
+    return null;
+  }
+  if (!options.balancedRoundRoll) {
+    return pickMutationStatusByTier(eligible, owner);
+  }
+
+  // Mutation round rolls are intentionally even. First choose whether the
+  // status helps or harms its owner, then split harmful results evenly between
+  // lasting and volatile trigger-based effects. Tier odds still determine the
+  // rarity within the selected bucket.
+  // `displayNegative` controls the status-bar color for owner-beneficial
+  // attacks. Roll balance must use gameplay polarity instead.
+  const positive = eligible.filter((definition) => !definition.negative);
+  const negative = eligible.filter((definition) => Boolean(definition.negative));
+  const wantsNegative = Math.random() < 0.5;
+  let candidates = wantsNegative ? negative : positive;
+  if (wantsNegative) {
+    const volatile = candidates.filter((definition) => definition.triggerOnce);
+    const lasting = candidates.filter((definition) => !definition.triggerOnce);
+    const wantsVolatile = Math.random() < 0.5;
+    candidates = wantsVolatile ? volatile : lasting;
+    if (!candidates.length) {
+      candidates = wantsVolatile ? lasting : volatile;
+    }
+  }
+  if (!candidates.length) {
+    candidates = wantsNegative ? positive : negative;
+  }
+  return pickMutationStatusByTier(candidates.length ? candidates : eligible, owner);
 }
 
 function cleanupMutationStatusRecord(status, remainingEntries = []) {
@@ -31170,7 +31205,7 @@ function applyMutationStatusRoundStart() {
     const applied = [];
     const available = [...getMutationStatusPoolForRoll(owner)];
     while (available.length && applied.length < count) {
-      const definition = pickWeightedMutationStatus(available, owner);
+      const definition = pickWeightedMutationStatus(available, owner, { balancedRoundRoll: true });
       if (!definition) {
         break;
       }

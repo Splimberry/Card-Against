@@ -100,6 +100,10 @@ assert.match(
   /function pickWeightedMutationStatus\(definitions, owner\)/,
   "Mutation mode must select status tiers with weighted rarity"
 );
+assert.match(appSource, /balancedRoundRoll/, "Mutation round rolls must balance positive and negative Status Effects");
+assert.match(appSource, /const wantsNegative = Math\.random\(\) < 0\.5/, "Mutation round rolls must be 50\/50 positive and negative");
+assert.match(appSource, /const wantsVolatile = Math\.random\(\) < 0\.5/, "Negative Mutation round rolls must be 50\/50 volatile");
+assert.match(appSource, /const negative = eligible\.filter\(\(definition\) => Boolean\(definition\.negative\)\)/, "Mutation round balance must use gameplay polarity rather than display color");
 assert.match(appSource, /chaos: Math\.min\(0\.7, 0\.2/, "Mutation Chaos odds must start at 20%");
 assert.match(appSource, /doom: Math\.min\(0\.2, 0\.025/, "Mutation Doom odds must start at 2.5%");
 assert.doesNotMatch(appSource, /currentMutationTableEffect/, "Mutation must not retain a separate table-effect state");
