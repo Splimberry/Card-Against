@@ -3663,6 +3663,31 @@ function createSyntheticRoomEvent(room, type, payload = {}) {
   }, { includeSubmittedAnswers: true });
 }
 
+function getCanonicalRoomRoundResultEvent(room, roundResult, options = {}) {
+  const expectedResult = normalizeRoomRoundResult(roundResult);
+  if (!room || !expectedResult) {
+    return null;
+  }
+  const expectedMatchId = String(expectedResult.matchId || room.game?.matchId || "").trim();
+  const expectedRound = Number(expectedResult.round || room.game?.round || 0);
+  const event = normalizeRoomEvents(room.events)
+    .filter((entry) => entry.type === "round_result")
+    .reverse()
+    .find((entry) => {
+      const eventResult = normalizeRoomRoundResult(entry.payload?.roundResult || null);
+      return eventResult
+        && Number(eventResult.round) === expectedRound
+        && (!expectedMatchId || !eventResult.matchId || eventResult.matchId === expectedMatchId);
+    });
+  if (!event) {
+    return null;
+  }
+  return sanitizeRoomEventForClient(event, {
+    includeSubmittedAnswers: options.includeSubmittedAnswers !== false,
+    includePrivateSecrets: options.includePrivateSecrets === true
+  });
+}
+
 async function handleRoomCommandResolveAllSubmitted(req, res, room, command, rawBody = {}) {
   if (!requireRoomParticipantAuth(req, res, room, command.participantId, rawBody, "Only a room participant can resolve submitted answers.")) {
     return;
@@ -4143,8 +4168,43 @@ async function handleRoomCommandPublishRoundResult(req, res, room, command, rawB
     && (!existingResult.matchId || !roundResult.matchId || existingResult.matchId === roundResult.matchId)
     && Number(existingResult.round) === Number(roundResult.round || currentRound)
   ) {
+    const response = await createRoomCommandResponse(room, previousRevision, { includeSubmittedAnswers: true });
+    // The result is immutable for a match/round, but its realtime delivery is
+    // not. A host retry can reach this duplicate branch after the original
+    // publish was committed while a joined client missed the broadcast. Send
+    // the canonical persisted event again so the joined client receives the
+    // same authoritative hand-off instead of waiting for a later snapshot.
+    const canonicalEvent = getCanonicalRoomRoundResultEvent(room, existingResult, {
+      includeSubmittedAnswers: true
+    });
+    if (canonicalEvent && !response.events.some((event) => event.id === canonicalEvent.id)) {
+      response.events = [...response.events, canonicalEvent];
+      response.serverBroadcast = await scheduleServerRoomRealtimeBroadcast(
+        room.code,
+        [canonicalEvent],
+        { includeSubmittedAnswers: true }
+      );
+    } else if (!canonicalEvent && !response.events.some((event) => event.type === "round_result")) {
+      // Older rooms may contain the stored result without its event log entry.
+      // Reconstruct a same-revision recovery event from the authoritative room
+      // state so those rooms can still release joined clients from grading.
+      const recoveryEvent = createSyntheticRoomEvent(room, "round_result", {
+        clientEventId: command.clientEventId,
+        actorId: command.participantId,
+        round: existingResult.round,
+        matchId: room.game?.matchId || existingResult.matchId || "",
+        roundResult: existingResult,
+        game: room.game
+      });
+      response.events = [...response.events, recoveryEvent];
+      response.serverBroadcast = await scheduleServerRoomRealtimeBroadcast(
+        room.code,
+        [recoveryEvent],
+        { includeSubmittedAnswers: true }
+      );
+    }
     sendJson(res, 200, {
-      ...(await createRoomCommandResponse(room, previousRevision, { includeSubmittedAnswers: true })),
+      ...response,
       duplicate: true,
       roundResult: existingResult,
       game: room.game

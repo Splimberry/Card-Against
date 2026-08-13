@@ -5864,6 +5864,9 @@ async function testRoomRoundResultRequiresGradingLock() {
   assert.equal(duplicateResult.response.status, 200, duplicateResult.payload.error);
   assert.equal(duplicateResult.payload.duplicate, true);
   assert.equal(duplicateResult.payload.roundResult.resultSummary.scoreDeltas[0].delta, 1200);
+  const replayedResultEvent = duplicateResult.payload.events.find((event) => event.type === "round_result");
+  assert.ok(replayedResultEvent, "A duplicate result publish should replay the canonical round-result event.");
+  assert.equal(replayedResultEvent.payload.roundResult.resultSummary.scoreDeltas[0].delta, 1200);
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);

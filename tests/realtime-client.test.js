@@ -210,10 +210,17 @@ function testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge() {
 
 function testJoinedGradingWaitUsesJoinedOwner() {
   const gradingSource = getFunctionSource("applyRealtimeRoomGrading", "forceRoomRoundToGrading");
+  const resolveSource = getFunctionSource("resolveRoomSubmissionsNow", "waitForRoomRoundResultThenPlay");
+  const playRoundStart = source.indexOf("async function playRoundInternal");
+  const playRoundEnd = source.indexOf("async function playRound(", playRoundStart);
+  const playRoundSource = source.slice(playRoundStart, playRoundEnd);
   assert.match(
     gradingSource,
     /waitForRoomRoundResultThenPlay\(getLockedRoundAnswer\(state\.currentOwner, state\.localAnswers\.playerOne \|\| ""\)\)/
   );
+  assert.match(gradingSource, /else if \(isJoinedRoomClient\(\)\)/);
+  assert.match(resolveSource, /if \(isJoinedRoomClient\(\)\)/);
+  assert.match(playRoundSource, /isRoomMode\(\) && isJoinedRoomClient\(\) && !syncedRoundResult/);
   assert.doesNotMatch(
     gradingSource,
     /waitForRoomRoundResultThenPlay\(getLockedRoundAnswer\("player", state\.localAnswers\.playerOne/
@@ -282,7 +289,9 @@ async function testPendingResultWaitsForJoinedStage() {
       }
     },
     isAuthoritativeRoomHost() {
-      return false;
+      // A stale room snapshot can briefly identify the joined tab as host.
+      // Playback must still follow the local joined-role marker.
+      return true;
     },
     ensureRoomResultStageMounted() {},
     ensureRoomCurrentOwner() {},

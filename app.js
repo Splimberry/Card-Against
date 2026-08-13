@@ -14732,7 +14732,7 @@ function showRoomRoundResultSyncError(message) {
 // the normal setup lifecycle presents it; realtime events should not need to
 // be replayed just because the DOM was between two setup states.
 function tryPlayPendingRoomRoundResult(localFallback = "") {
-  if (!isRoomMode() || state.isSpectator || state.matchEnded || isAuthoritativeRoomHost()) {
+  if (!isRoomMode() || state.isSpectator || state.matchEnded || !isJoinedRoomClient()) {
     return false;
   }
   const pending = normalizeRoomRoundResultPayload(
@@ -14793,7 +14793,7 @@ function ensureRoomResultStageMounted() {
 }
 
 function playSyncedRoomRoundResult(result = null, localFallback = "") {
-  if (!isRoomMode() || state.isSpectator || state.matchEnded || isAuthoritativeRoomHost() || elements.gameStage.classList.contains("hidden")) {
+  if (!isRoomMode() || state.isSpectator || state.matchEnded || !isJoinedRoomClient() || elements.gameStage.classList.contains("hidden")) {
     return false;
   }
   const syncedResult = normalizeRoomRoundResultPayload(result || state.roomRoundResult);
@@ -16101,7 +16101,7 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   }
   const existingResult = getRoomRoundResultForCurrentRound();
   if (existingResult) {
-    if (!isAuthoritativeRoomHost()) {
+    if (isJoinedRoomClient()) {
       state.roomRoundResultPendingPlayback = existingResult;
       tryPlayPendingRoomRoundResult(localFallback);
     }
@@ -16116,7 +16116,7 @@ function resolveRoomSubmissionsNow(localFallback = "", matchToken = state.matchW
   }
   commitWaitingPhasePowerUpForOwner(state.currentOwner);
   state.roomRoundResolving = true;
-  if (!isAuthoritativeRoomHost()) {
+  if (isJoinedRoomClient()) {
     showWaitingForRoomRoundResult();
     waitForRoomRoundResultThenPlay(localFallback, matchToken);
     return true;
@@ -16844,7 +16844,7 @@ function applyRealtimeRoomGrading(payload = {}) {
     applyAuthoritativeRoomResultState(existingResult);
     if (state.isSpectator) {
       maybePlaySpectatorRoomRoundResult(existingResult);
-    } else if (!isAuthoritativeRoomHost()) {
+    } else if (isJoinedRoomClient()) {
       state.roomRoundResultPendingPlayback = existingResult;
       tryPlayPendingRoomRoundResult(getLockedRoundAnswer(state.currentOwner, state.localAnswers.playerOne || ""));
     }
@@ -44991,7 +44991,7 @@ async function playRoundInternal(rawInput, options = {}) {
   // same round successfully completed through a fallback or synced result.
   setHidden(elements.errorPanel, true);
   const syncedRoundResult = options.roundResult ? normalizeRoomRoundResultPayload(options.roundResult) : null;
-  if (isRoomMode() && !isAuthoritativeRoomHost() && !syncedRoundResult) {
+  if (isRoomMode() && isJoinedRoomClient() && !syncedRoundResult) {
     if (!state.roomRoundResolving) {
       state.roomRoundResolving = true;
     }
