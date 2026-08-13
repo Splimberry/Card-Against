@@ -15918,6 +15918,22 @@ function publishRoomRoundResult(roundResult, options = {}) {
     powerState: result.powerState || getRoomPowerStatePayload(),
     updatedAt: result.updatedAt
   };
+  // The host has already produced the immutable result at this point. Send it
+  // straight to the subscribed room before waiting for the persistence round
+  // trip so joined players can leave their grading spinner immediately. The
+  // server stores and rebroadcasts this exact result afterwards, which remains
+  // the authoritative reconciliation path.
+  broadcastRealtimeRoomChange("round-result", code, {
+    clientEventId,
+    actorParticipantId: state.clientId,
+    hostParticipantId: state.clientId,
+    matchId: result.matchId,
+    round: result.round,
+    roundResult: result,
+    game: state.roomGame,
+    updatedAt: result.updatedAt,
+    forceRoomChannel: true
+  });
   return roomSync.sendCommand("publish_round_result", {
     clientEventId,
     hostParticipantId: state.clientId,

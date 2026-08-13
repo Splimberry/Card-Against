@@ -234,6 +234,12 @@ function testRoundResultTransportUsesTheLocalHostContext() {
   const functionSource = getFunctionSource("publishRoomRoundResult", "getImmediatePowerAffectedOwners");
   assert.match(functionSource, /if \(!isLocalRoomHostContext\(\)\)/);
   assert.match(functionSource, /!options\.retrying && isLocalRoomHostContext\(\) && !state\.matchEnded/);
+  assert.match(functionSource, /broadcastRealtimeRoomChange\("round-result", code/);
+  assert.ok(
+    functionSource.indexOf('broadcastRealtimeRoomChange("round-result", code')
+      < functionSource.indexOf('roomSync.sendCommand("publish_round_result"'),
+    "The finished host result should reach subscribed players before the server commit response."
+  );
 
   const playRoundStart = source.indexOf("async function playRoundInternal");
   const playRoundEnd = source.indexOf("function isCurrentRoomRoundResultForPlayback", playRoundStart);
