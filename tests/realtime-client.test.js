@@ -208,6 +208,30 @@ function testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge() {
   assert.equal(context.isCurrentHost(), false);
 }
 
+function testJoinedClientUsesAuthoritativeHostWhenOwnerMarkerIsStale() {
+  const functionSource = getFunctionSource("isJoinedRoomClient", "getExpectedRoomCurrentOwner");
+  const context = {
+    state: {
+      clientId: "joined-client",
+      isSpectator: false,
+      currentOwner: "player",
+      joiningRoom: null
+    },
+    isRoomMode() {
+      return true;
+    },
+    getAuthoritativeRoomHostId() {
+      return "host-client";
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${functionSource}\nthis.isJoinedRoomClient = isJoinedRoomClient;`, context);
+
+  assert.equal(context.isJoinedRoomClient(), true);
+  context.state.clientId = "host-client";
+  assert.equal(context.isJoinedRoomClient(), false);
+}
+
 function testJoinedGradingWaitUsesJoinedOwner() {
   const gradingSource = getFunctionSource("applyRealtimeRoomGrading", "forceRoomRoundToGrading");
   const resolveSource = getFunctionSource("resolveRoomSubmissionsNow", "waitForRoomRoundResultThenPlay");
@@ -228,6 +252,29 @@ function testJoinedGradingWaitUsesJoinedOwner() {
   const waitSource = getFunctionSource("waitForRoomRoundResultThenPlay", "maybeResolveRoomSubmissions");
   assert.match(waitSource, /tryPlayPendingRoomRoundResult\(localFallback\)/);
   assert.doesNotMatch(waitSource, /playSyncedRoomRoundResult\(result, localFallback\)/);
+}
+
+function testRoundResultTransportDoesNotDependOnStaleHostSnapshot() {
+  const functionSource = getFunctionSource("publishRoomRoundResult", "getImmediatePowerAffectedOwners");
+  assert.match(functionSource, /if \(!isRoomMode\(\) \|\| state\.isSpectator\)/);
+  assert.match(functionSource, /!options\.retrying && isRoomMode\(\) && !state\.isSpectator && !state\.matchEnded/);
+  assert.doesNotMatch(functionSource, /!options\.retrying && isAuthoritativeRoomHost\(\)/);
+}
+
+function testAutoAdvanceUsesTheManualRoundTransitionCommand() {
+  const functionSource = getFunctionSource("publishRoomRoundAdvancing", "publishRoomGameEnded");
+  assert.match(functionSource, /const commandType = Number\(round\) <= 1 && !state\.roomGame/);
+  assert.match(functionSource, /: "start_next_round";/);
+  assert.doesNotMatch(functionSource, /\? "resolve_auto_advance"/);
+  assert.match(functionSource, /nextRoundAt: 0/);
+
+  const countdownSource = getFunctionSource("startNextRoundCountdown", "advanceAfterVerdict");
+  assert.match(countdownSource, /void advanceAfterVerdict\(\);/);
+  assert.doesNotMatch(countdownSource, /advanceAfterVerdict\(\{ autoAdvance: true \}\)/);
+
+  const advanceSource = getFunctionSource("advanceAfterVerdict", "completeBlackCard");
+  assert.match(advanceSource, /publishRoomRoundAdvancing\(nextRound\);/);
+  assert.doesNotMatch(advanceSource, /publishRoomRoundAdvancing\(nextRound, \{/);
 }
 
 function testSetupPreservesOnlyCurrentRoomResult() {
@@ -504,7 +551,10 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testLobbyChannelIsReadyBeforeSubscribeCallback();
   testCompleteAuthoritativePhasePayloadCanRepairMissedRevision();
   testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge();
+  testJoinedClientUsesAuthoritativeHostWhenOwnerMarkerIsStale();
   testJoinedGradingWaitUsesJoinedOwner();
+  testRoundResultTransportDoesNotDependOnStaleHostSnapshot();
+  testAutoAdvanceUsesTheManualRoundTransitionCommand();
   testSetupPreservesOnlyCurrentRoomResult();
   await testPendingResultWaitsForJoinedStage();
   await testPendingResultCanRecoverAfterPresentationTokenIsInvalidated();

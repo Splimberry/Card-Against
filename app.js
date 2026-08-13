@@ -12695,10 +12695,15 @@ function isJoinedRoomClient() {
   if (!isRoomMode() || state.isSpectator) {
     return false;
   }
-  // The local owner is assigned from the join role. This is more reliable
-  // than a participant host flag while a stale membership delta is merging.
-  return state.currentOwner === "opponent"
-    || Boolean(state.joiningRoom && state.currentOwner !== "player");
+  // A joined player must continue consuming the host's authoritative phase
+  // events even if an in-flight snapshot briefly resets its local owner. The
+  // room host id is the stable source for this distinction; the owner marker
+  // is only a fallback while the initial join snapshot is still arriving.
+  const hostId = getAuthoritativeRoomHostId();
+  if (hostId) {
+    return hostId !== state.clientId;
+  }
+  return Boolean(state.joiningRoom);
 }
 
 function getExpectedRoomCurrentOwner() {
@@ -15633,7 +15638,10 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
 }
 
 function publishRoomRoundResult(roundResult, options = {}) {
-  if (!isAuthoritativeRoomHost()) {
+  // The server authenticates this command as the host. Do not make transport
+  // depend on a possibly stale client-side host snapshot after grading has
+  // already completed locally.
+  if (!isRoomMode() || state.isSpectator) {
     return Promise.resolve(null);
   }
   const result = buildRoomRoundResultPayload(roundResult, options);
@@ -41582,9 +41590,11 @@ function publishRoomRoundAdvancing(round = state.round, options = {}) {
   }
   const code = state.roomSettings.code;
   const roomSessionId = state.roomSessionId;
-  const commandType = options.autoAdvance
-    ? "resolve_auto_advance"
-    : Number(round) <= 1 && !state.roomGame
+  // Auto-advance is the same host action as clicking Next Round. The server
+  // owns the authoritative deadline check through the normal transition;
+  // using a second command type created a separate validation path that could
+  // strand the room after the countdown expired.
+  const commandType = Number(round) <= 1 && !state.roomGame
     ? state.matchEnded || state.currentRoomStatus === "complete"
       ? "rematch"
       : "start_match"
@@ -44874,7 +44884,10 @@ function startNextRoundCountdown() {
     if (state.nextRoundCountdown <= 0) {
       stopNextRoundCountdown();
       if (canAdvanceVerdict()) {
-        void advanceAfterVerdict({ autoAdvance: true });
+        // Auto advance intentionally takes the identical host transition as
+        // the Next Round button. A separate client-side variant can leave a
+        // host in loading while the manual path remains healthy.
+        void advanceAfterVerdict();
       }
     }
   }, 1000);
@@ -44899,9 +44912,7 @@ async function advanceAfterVerdict(options = {}) {
 
   const nextRound = state.round + 1;
   if (isRoomMode() && isCurrentHost() && !state.joiningRoom) {
-    const advancePromise = publishRoomRoundAdvancing(nextRound, {
-      autoAdvance: Boolean(options.autoAdvance)
-    });
+    const advancePromise = publishRoomRoundAdvancing(nextRound);
     state.round = nextRound;
     void newRound();
     let advance = await advancePromise;
@@ -45534,7 +45545,10 @@ async function playRoundInternal(rawInput, options = {}) {
     hasCorrectAnswer = winningOwners.length > 0;
   }
   const publishHostRoundResult = () => {
-    if (!isAuthoritativeRoomHost() || syncedRoundResult) {
+    // This function is only reached from the local host grading path. Let the
+    // server decide whether the caller is authorized instead of dropping the
+    // result when the browser's room snapshot is briefly stale.
+    if (!isRoomMode() || state.isSpectator || syncedRoundResult) {
       return;
     }
     let damagedParticipantIds = awarded?.damagedParticipantIds || [];
