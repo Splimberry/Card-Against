@@ -4466,9 +4466,10 @@ const elements = {
   devPowerAddButton: null,
   devPowerFillButton: null,
   devPowerClearButton: null,
-  devPowerDebuffSelect: null,
-  devPowerDebuffDuration: null,
-  devPowerApplyDebuffButton: null,
+  devPowerEffectSelect: null,
+  devPowerEffectDuration: null,
+  devPowerEffectStacks: null,
+  devPowerApplyEffectButton: null,
   devPowerStatus: null,
   devPowerHand: null,
   devRoomDiagnosticsStatus: null,
@@ -4491,9 +4492,10 @@ const elements = {
   botPowerAddButton: document.querySelector("#botPowerAddButton"),
   botPowerFillButton: document.querySelector("#botPowerFillButton"),
   botPowerClearButton: document.querySelector("#botPowerClearButton"),
-  botPowerDebuffSelect: document.querySelector("#botPowerDebuffSelect"),
-  botPowerDebuffDuration: document.querySelector("#botPowerDebuffDuration"),
-  botPowerApplyDebuffButton: document.querySelector("#botPowerApplyDebuffButton"),
+  botPowerEffectSelect: document.querySelector("#botPowerEffectSelect"),
+  botPowerEffectDuration: document.querySelector("#botPowerEffectDuration"),
+  botPowerEffectStacks: document.querySelector("#botPowerEffectStacks"),
+  botPowerApplyEffectButton: document.querySelector("#botPowerApplyEffectButton"),
   botPowerStatus: document.querySelector("#botPowerStatus"),
   botPowerHand: document.querySelector("#botPowerHand"),
   devProfileGrid: null,
@@ -36010,17 +36012,25 @@ function buildDevToolScreen() {
         <button type="button" class="icon-button" id="devPowerAddButton">Add Power</button>
         <button type="button" class="icon-button" id="devPowerFillButton">Fill Hand</button>
         <button type="button" class="icon-button danger-button" id="devPowerClearButton">Clear Hand</button>
-        <label>
-          <span>Debuff</span>
-          <select id="devPowerDebuffSelect"></select>
-        </label>
-        <label>
-          <span>Duration</span>
-          <input id="devPowerDebuffDuration" type="number" min="0" step="1" value="2">
-        </label>
-        <button type="button" class="icon-button danger-button" id="devPowerApplyDebuffButton">Apply Debuff</button>
+        <section class="power-debug-effects" aria-label="Effect testing">
+          <label class="power-debug-effect-select">
+            <span>Effect</span>
+            <select id="devPowerEffectSelect"></select>
+          </label>
+          <div class="power-debug-effect-actions">
+            <label>
+              <span>Duration</span>
+              <input id="devPowerEffectDuration" type="number" min="0" step="1" value="2">
+            </label>
+            <label>
+              <span>Stacks</span>
+              <input id="devPowerEffectStacks" type="number" min="1" step="1" value="1">
+            </label>
+            <button type="button" class="icon-button" id="devPowerApplyEffectButton">Apply Effect</button>
+          </div>
+        </section>
       </div>
-      <div class="debug-status" id="devPowerStatus">Start a game, then add any power-up to a player hand. Debuff duration 0 is permanent.</div>
+      <div class="debug-status" id="devPowerStatus">Start a game, then add any power-up to a player hand. Effect duration 0 is permanent.</div>
       <div class="profile-debug-grid dev-power-hand" id="devPowerHand"></div>
     </section>
     <section class="dev-tool-panel hidden" data-dev-panel="profile">
@@ -36173,9 +36183,10 @@ function buildDevToolScreen() {
   elements.devPowerAddButton = screen.querySelector("#devPowerAddButton");
   elements.devPowerFillButton = screen.querySelector("#devPowerFillButton");
   elements.devPowerClearButton = screen.querySelector("#devPowerClearButton");
-  elements.devPowerDebuffSelect = screen.querySelector("#devPowerDebuffSelect");
-  elements.devPowerDebuffDuration = screen.querySelector("#devPowerDebuffDuration");
-  elements.devPowerApplyDebuffButton = screen.querySelector("#devPowerApplyDebuffButton");
+  elements.devPowerEffectSelect = screen.querySelector("#devPowerEffectSelect");
+  elements.devPowerEffectDuration = screen.querySelector("#devPowerEffectDuration");
+  elements.devPowerEffectStacks = screen.querySelector("#devPowerEffectStacks");
+  elements.devPowerApplyEffectButton = screen.querySelector("#devPowerApplyEffectButton");
   elements.devPowerStatus = screen.querySelector("#devPowerStatus");
   elements.devPowerHand = screen.querySelector("#devPowerHand");
   elements.devAchievementSearchInput = screen.querySelector("#devAchievementSearchInput");
@@ -36379,7 +36390,7 @@ function bindDevToolEvents() {
   elements.devPowerAddButton.addEventListener("click", () => addDebugPowerToHand("dev"));
   elements.devPowerFillButton.addEventListener("click", () => fillDebugPowerHand("dev"));
   elements.devPowerClearButton.addEventListener("click", () => clearDebugPowerHand("dev"));
-  elements.devPowerApplyDebuffButton.addEventListener("click", () => applyDebugDebuff("dev"));
+  elements.devPowerApplyEffectButton.addEventListener("click", () => applyDebugEffect("dev"));
   elements.devAchievementSearchInput.addEventListener("input", renderAchievementDebug);
   elements.devAchievementRarityFilter.addEventListener("change", renderAchievementDebug);
   elements.devAchievementTypeFilter.addEventListener("change", renderAchievementDebug);
@@ -37623,9 +37634,10 @@ function getPowerDebugRefs(scope = "dev") {
       chaosToggle: elements.botPowerChaosToggle,
       pauseToggle: elements.botPowerPauseToggle,
       unlimitedToggle: elements.botPowerUnlimitedToggle,
-      debuffSelect: elements.botPowerDebuffSelect,
-      debuffDuration: elements.botPowerDebuffDuration,
-      applyDebuffButton: elements.botPowerApplyDebuffButton,
+      effectSelect: elements.botPowerEffectSelect,
+      effectDuration: elements.botPowerEffectDuration,
+      effectStacks: elements.botPowerEffectStacks,
+      applyEffectButton: elements.botPowerApplyEffectButton,
       status: elements.botPowerStatus,
       hand: elements.botPowerHand
     };
@@ -37636,9 +37648,10 @@ function getPowerDebugRefs(scope = "dev") {
     searchInput: elements.devPowerSearchInput,
     powerSelect: elements.devPowerSelect,
     chaosToggle: elements.devPowerChaosToggle,
-    debuffSelect: elements.devPowerDebuffSelect,
-    debuffDuration: elements.devPowerDebuffDuration,
-    applyDebuffButton: elements.devPowerApplyDebuffButton,
+    effectSelect: elements.devPowerEffectSelect,
+    effectDuration: elements.devPowerEffectDuration,
+    effectStacks: elements.devPowerEffectStacks,
+    applyEffectButton: elements.devPowerApplyEffectButton,
     status: elements.devPowerStatus,
     hand: elements.devPowerHand
   };
@@ -37714,27 +37727,27 @@ function renderPowerDebugPowerOptions(scope = "dev") {
   refs.powerSelect.value = matches.some((power) => power.id === normalizedSelected) ? normalizedSelected : matches[0]?.id || "";
 }
 
-function getDebugDebuffDefinitions() {
+function getDebugEffectDefinitions() {
   return mutationStatusDefinitions
-    .filter((definition) => definition.negative && isMutationStatusEligible(definition) && definition.category !== "time")
+    .filter((definition) => isMutationStatusEligible(definition) && definition.category !== "time")
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function renderPowerDebugDebuffOptions(scope = "dev") {
+function renderPowerDebugEffectOptions(scope = "dev") {
   const refs = getPowerDebugRefs(scope);
-  if (!refs.debuffSelect) {
+  if (!refs.effectSelect) {
     return;
   }
-  const selected = refs.debuffSelect.value;
-  const definitions = getDebugDebuffDefinitions();
-  refs.debuffSelect.replaceChildren(...definitions.map((definition) => {
+  const selected = refs.effectSelect.value;
+  const definitions = getDebugEffectDefinitions();
+  refs.effectSelect.replaceChildren(...definitions.map((definition) => {
     const option = document.createElement("option");
     option.value = definition.id;
-    option.textContent = definition.name;
+    option.textContent = `${definition.name} (${definition.negative ? "Negative" : "Positive"})`;
     option.title = definition.description || definition.short || definition.name;
     return option;
   }));
-  refs.debuffSelect.value = definitions.some((definition) => definition.id === selected)
+  refs.effectSelect.value = definitions.some((definition) => definition.id === selected)
     ? selected
     : definitions[0]?.id || "";
 }
@@ -37754,7 +37767,7 @@ function renderPowerDebug(scope = "dev") {
   }));
   refs.ownerSelect.value = selectedOwner;
   renderPowerDebugPowerOptions(scope);
-  renderPowerDebugDebuffOptions(scope);
+  renderPowerDebugEffectOptions(scope);
   refs.chaosToggle.disabled = false;
   const hand = state.powerHands[selectedOwner] || [];
   refs.hand.replaceChildren(...hand.map((powerId) => {
@@ -37807,18 +37820,20 @@ function setPowerDebugStatus(scope, message) {
   }
 }
 
-function applyDebugDebuff(scope = "dev") {
+function applyDebugEffect(scope = "dev") {
   const refs = getPowerDebugRefs(scope);
   const owner = refs.ownerSelect?.value || "";
-  const definition = mutationStatusDefinitions.find((entry) => entry.id === refs.debuffSelect?.value && entry.negative);
-  const requestedDuration = Math.max(0, Math.floor(Number(refs.debuffDuration?.value) || 0));
+  const definition = mutationStatusDefinitions.find((entry) => entry.id === refs.effectSelect?.value && isMutationStatusEligible(entry));
+  const requestedDuration = Math.max(0, Math.floor(Number(refs.effectDuration?.value) || 0));
+  const requestedStacks = Math.max(1, Math.floor(Number(refs.effectStacks?.value) || 1));
   if (!owner || !definition) {
-    setPowerDebugStatus(scope, "Choose a player and debuff.");
+    setPowerDebugStatus(scope, "Choose a player and effect.");
     return;
   }
   const status = applyMutationStatus(owner, definition, requestedDuration || 1, {
     permanentStatus: requestedDuration === 0,
     preserveDuration: true,
+    stackMultiplier: requestedStacks,
     force: true,
     source: "Power Debug"
   });
@@ -37829,12 +37844,13 @@ function applyDebugDebuff(scope = "dev") {
   const durationLabel = requestedDuration === 0
     ? "permanently"
     : `for ${requestedDuration} round${requestedDuration === 1 ? "" : "s"}`;
-  queueStatFlash("mutation", "Power Debug", `${definition.name} applied ${durationLabel}`, {
+  const stackLabel = requestedStacks > 1 ? ` at x${requestedStacks} stacks` : "";
+  queueStatFlash(definition.negative ? "negative" : "positive", "Power Debug", `${definition.name} applied ${durationLabel}${stackLabel}`, {
     owners: [owner],
     complex: true,
     priority: true
   });
-  setPowerDebugStatus(scope, `Applied ${definition.name} to ${getOwnerLabel(owner)} ${durationLabel}.`);
+  setPowerDebugStatus(scope, `Applied ${definition.name} to ${getOwnerLabel(owner)} ${durationLabel}${stackLabel}.`);
   renderEffectPanel();
   renderPowerDebug(scope);
   publishPowerDebugState();
@@ -49828,7 +49844,7 @@ elements.botPowerUnlimitedToggle?.addEventListener("change", handleBotPowerDebug
 elements.botPowerAddButton?.addEventListener("click", () => addDebugPowerToHand("bot-match"));
 elements.botPowerFillButton?.addEventListener("click", () => fillDebugPowerHand("bot-match"));
 elements.botPowerClearButton?.addEventListener("click", () => clearDebugPowerHand("bot-match"));
-elements.botPowerApplyDebuffButton?.addEventListener("click", () => applyDebugDebuff("bot-match"));
+elements.botPowerApplyEffectButton?.addEventListener("click", () => applyDebugEffect("bot-match"));
 elements.botPowerHand?.addEventListener("click", (event) => {
   const card = event.target.closest(".bot-power-debug-card");
   if (!card || !elements.botPowerHand.contains(card)) {

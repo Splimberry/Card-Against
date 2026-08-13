@@ -873,17 +873,25 @@
             <button type="button" class="icon-button" id="botPowerAddButton">Give Power</button>
             <button type="button" class="icon-button" id="botPowerFillButton">Fill Hand</button>
             <button type="button" class="icon-button danger-button" id="botPowerClearButton">Clear Hand</button>
-            <label>
-              <span>Debuff</span>
-              <select id="botPowerDebuffSelect"></select>
-            </label>
-            <label>
-              <span>Duration</span>
-              <input id="botPowerDebuffDuration" type="number" min="0" step="1" value="2">
-            </label>
-            <button type="button" class="icon-button danger-button" id="botPowerApplyDebuffButton">Apply Debuff</button>
+            <section class="power-debug-effects" aria-label="Effect testing">
+              <label class="power-debug-effect-select">
+                <span>Effect</span>
+                <select id="botPowerEffectSelect"></select>
+              </label>
+              <div class="power-debug-effect-actions">
+                <label>
+                  <span>Duration</span>
+                  <input id="botPowerEffectDuration" type="number" min="0" step="1" value="2">
+                </label>
+                <label>
+                  <span>Stacks</span>
+                  <input id="botPowerEffectStacks" type="number" min="1" step="1" value="1">
+                </label>
+                <button type="button" class="icon-button" id="botPowerApplyEffectButton">Apply Effect</button>
+              </div>
+            </section>
           </div>
-          <div class="debug-status" id="botPowerStatus">Give yourself or a bot any power-up. Bots use forced power-ups immediately. Debuff duration 0 is permanent.</div>
+          <div class="debug-status" id="botPowerStatus">Give yourself or a bot any power-up. Bots use forced power-ups immediately. Effect duration 0 is permanent.</div>
           <div class="profile-debug-grid dev-power-hand" id="botPowerHand"></div>
         </div>
       </section>

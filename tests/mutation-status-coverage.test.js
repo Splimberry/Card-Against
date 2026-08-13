@@ -72,9 +72,10 @@ assert.match(appSource, /id: "mutation_bug_fix"[\s\S]{0,240}type: "bug_fix"/, "B
 assert.match(appSource, /id: "mutation_potency_amplifier"[\s\S]{0,260}type: "potency_amplifier"/, "Potency Amplifier must use the dedicated status selector type");
 assert.match(appSource, /id: "mutation_chain_reaction"[\s\S]{0,280}every opponent's armed bomb Status Effect at double potency/, "Chain Reaction must detonate opponents' bomb Status Effects at double potency");
 assert.match(appSource, /function triggerOpponentBombStatuses\(owner\)/, "Chain Reaction needs a dedicated opponent bomb resolver");
-assert.match(appSource, /id="devPowerDebuffSelect"/, "Power Debug needs a Status Effect debuff selector");
-assert.match(appSource, /function applyDebugDebuff\(scope = "dev"\)/, "Power Debug needs a debuff application action");
-assert.match(appSource, /permanentStatus: requestedDuration === 0/, "A debug debuff duration of zero must create a permanent Status Effect");
+assert.match(appSource, /id="devPowerEffectSelect"/, "Power Debug needs an effect selector");
+assert.match(appSource, /function applyDebugEffect\(scope = "dev"\)/, "Power Debug needs an effect application action");
+assert.match(appSource, /stackMultiplier: requestedStacks/, "Power Debug must apply the requested effect stack count");
+assert.match(appSource, /permanentStatus: requestedDuration === 0/, "A debug effect duration of zero must create a permanent Status Effect");
 assert.match(appSource, /classList\.remove\([^\n]*"mutation"[^\n]*"stat-flash-playing"\)/, "Stat Flash playback must clear the Mutation class before showing another overlay");
 assert.match(appSource, /tableWide: Boolean\(options\.tableWide \|\| owner === "table"\)/, "Active effects must identify table-wide effects");
 assert.match(appSource, /Virus Factory[\s\S]{0,280}tableWide: true/, "Virus Factory must be promoted as a table-wide effect");
