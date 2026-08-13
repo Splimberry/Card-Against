@@ -35927,6 +35927,18 @@ function bindDevToolEvents() {
     elements.devQuestionFilterButton.setAttribute("aria-expanded", String(opening));
     playSound("click");
   });
+  document.addEventListener("pointerdown", (event) => {
+    const panel = elements.devQuestionFilterPanel;
+    const button = elements.devQuestionFilterButton;
+    if (!panel || !button || panel.classList.contains("hidden")) {
+      return;
+    }
+    if (panel.contains(event.target) || button.contains(event.target)) {
+      return;
+    }
+    setHidden(panel, true);
+    button.setAttribute("aria-expanded", "false");
+  });
   elements.devQuestionClearFiltersButton?.addEventListener("click", () => {
     getDevQuestionFilterValues().forEach(([, fieldset]) => {
       fieldset.querySelectorAll("input[type=checkbox]").forEach((input) => {
