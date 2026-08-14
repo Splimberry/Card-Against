@@ -2200,9 +2200,10 @@ function sanitizeRoomEventForClient(event, options = {}) {
   if (sanitized.payload.game && typeof sanitized.payload.game === "object") {
     sanitized.payload.game = sanitizeRoomGameForClient(sanitized.payload.game, options);
   }
-  if (sanitized.type === "round_result") {
-    // The result already includes the complete scoring and power hand-off.
-    // Keep its accompanying game envelope lean for reliable realtime delivery.
+  if (["round_grading", "round_result"].includes(sanitized.type)) {
+    // Grading only needs the shared setup and locked submissions. Keep live
+    // power state on its dedicated sync path so the grading handoff remains
+    // small and can never be delayed by a large effect map.
     const game = sanitized.payload.game && typeof sanitized.payload.game === "object"
       ? sanitized.payload.game
       : null;

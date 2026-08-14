@@ -5615,6 +5615,9 @@ async function testRoomGradingAllSubmittedLocksWhenAllAnswersPresent() {
   assert.equal(grading.payload.eventType, "round-grading");
   assert.equal(grading.payload.reason, "all-submitted");
   assert.equal(grading.payload.submissions.length, 2);
+  const deliveredGradingEvent = grading.payload.events.find((event) => event.type === "round_grading");
+  assert.ok(deliveredGradingEvent, "The shared grading handoff should be returned to joined players.");
+  assert.equal(deliveredGradingEvent.payload.game.powerState, undefined, "Power state must not be included in the grading handoff.");
 
   const stored = await getRoom(code);
   assert.equal(stored.response.status, 200, stored.payload.error);
