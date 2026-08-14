@@ -166,6 +166,10 @@
   grid-column: 1 / -1;
 }
 
+.bot-power-debug-controls .power-debug-effect-search {
+  grid-column: 1 / -1;
+}
+
 .bot-power-debug-controls .power-debug-effect-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(8rem, 1.4fr);

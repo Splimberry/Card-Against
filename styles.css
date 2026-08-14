@@ -4803,6 +4803,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   grid-column: 1 / -1;
 }
 
+.dev-tool-controls .power-debug-effect-search {
+  grid-column: 1 / -1;
+}
+
 .dev-tool-controls .power-debug-effect-actions {
   display: grid;
   grid-template-columns: minmax(8rem, 0.7fr) minmax(8rem, 0.7fr) auto;

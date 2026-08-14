@@ -4466,6 +4466,7 @@ const elements = {
   devPowerAddButton: null,
   devPowerFillButton: null,
   devPowerClearButton: null,
+  devPowerEffectSearchInput: null,
   devPowerEffectSelect: null,
   devPowerEffectDuration: null,
   devPowerEffectStacks: null,
@@ -4492,6 +4493,7 @@ const elements = {
   botPowerAddButton: document.querySelector("#botPowerAddButton"),
   botPowerFillButton: document.querySelector("#botPowerFillButton"),
   botPowerClearButton: document.querySelector("#botPowerClearButton"),
+  botPowerEffectSearchInput: document.querySelector("#botPowerEffectSearchInput"),
   botPowerEffectSelect: document.querySelector("#botPowerEffectSelect"),
   botPowerEffectDuration: document.querySelector("#botPowerEffectDuration"),
   botPowerEffectStacks: document.querySelector("#botPowerEffectStacks"),
@@ -9168,7 +9170,7 @@ function getActiveEffectEntries() {
       [state.luckRounds[owner] > 0, createActiveEffect(owner, "lucky_side", `Lucky Side x${state.luckRounds[owner]}`, "Buff/debuff rolls become buffs, and new power-ups are Rare or better.")],
       [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", `${hasActiveMutationStatus(owner, "heaven_hell_curse") ? "Curse" : "Heaven/Hell Curse"}${formatStackSuffix(getEffectStackCount(state.heavenHellCurses[owner]))}`, "At round scoring, removes 250 points per current streak for each stack.")],
       [state.bottomFeederRounds[owner] > 0, createActiveEffect(owner, "bottom_feeder", `Bottom Feeder x${state.bottomFeederRounds[owner]}`, `Pays this player ${(state.bottomFeederRounds[owner] * 100).toLocaleString()} points after each loss.`)],
-      [worldBurnStacks > 0, createActiveEffect(owner, "world_burn", `Let the World Burn${formatStackSuffix(worldBurnStacks)}`, `${worldBurnStacks} stack${worldBurnStacks === 1 ? "" : "s"}: first place loses 5% at each round start per stack.`)],
+      [worldBurnStacks > 0, createActiveEffect(owner, "world_burn", `Let the World Burn${formatStackSuffix(worldBurnStacks)}`, `${worldBurnStacks} stack${worldBurnStacks === 1 ? "" : "s"}: first place loses 5% at each round start per stack.`, { tableWide: true })],
       [getModeEffectTotal(lawnMowerStacks) > 0, createActiveEffect(owner, "law_mower", lawnMowerStacks.chaos > 0 ? `Cut Down to Size${formatStackSuffix(lawnMowerStacks.chaos)}${lawnMowerStacks.normal ? ` + Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}` : ""}` : `Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}`, lawnMowerStacks.chaos > 0 ? "Chaos stacks hit players ahead for 15% and trim Chaos-refreshed hands; normal stacks hit for 12%." : "Players ahead lose 12% of this player's score each round per stack.", { chaosInfused: lawnMowerStacks.chaos > 0 })],
       [getEffectStackCount(state.arsonists[owner]) > 0, createActiveEffect(owner, "arsonist", `Arsonist${formatStackSuffix(getEffectStackCount(state.arsonists[owner]))}`, "Each stack gives this player and a random other player 1 streak at round start.")],
       [getModeEffectTotal(bartenderStacks) > 0, createActiveEffect(owner, "bartender", bartenderStacks.chaos > 0 ? `Pharmacy${formatStackSuffix(bartenderStacks.chaos)}${bartenderStacks.normal ? ` + Bartender${formatStackSuffix(bartenderStacks.normal)}` : ""}` : `Bartender${formatStackSuffix(bartenderStacks.normal)}`, bartenderStacks.chaos > 0 ? "Chaos stacks serve three Blue Pill buffs at round start; normal stacks serve Cocktail Mix." : "Serves this player Cocktail Mix at round start per stack.", { chaosInfused: bartenderStacks.chaos > 0 })],
@@ -9203,7 +9205,7 @@ function getActiveEffectEntries() {
       [eternalCelebrationStacks > 0, createActiveEffect(owner, "afterparty", `Eternal Celebration${formatStackSuffix(eternalCelebrationStacks)}`, "Wins empower this player's score by 10% and chaos-infuse an eligible refreshed power.", { chaosInfused: true })],
       [isChaosMegaHackActive(owner), createActiveEffect(owner, "xray_hacks", `Mega Hacks · ${Math.max(0, 3 - megaHackUses)} left`, "This player can inspect hands and delete up to 3 revealed power-ups this match.", { chaosInfused: true })],
       [uselessSoftwareStacks > 0, createActiveEffect(owner, "software_downgrade", `Useless Software${formatStackSuffix(uselessSoftwareStacks)}`, "Cannot gain Chaos Infusion. Common power-ups become Dead Weight for the rest of the match.", { chaosInfused: true })],
-      [reduceToAshesStacks > 0, createActiveEffect(owner, "world_burn", `Reduce to Ashes${formatStackSuffix(reduceToAshesStacks)}`, "At each round start, players ahead lose 5% times this player's streak plus 1 per stack.", { chaosInfused: true })],
+      [reduceToAshesStacks > 0, createActiveEffect(owner, "world_burn", `Reduce to Ashes${formatStackSuffix(reduceToAshesStacks)}`, "At each round start, players ahead lose 5% times this player's streak plus 1 per stack.", { chaosInfused: true, tableWide: true })],
       [streakSicknessRounds > 0, createActiveEffect(owner, "heaven_hell", `Streak Sickness · ${streakSicknessRounds}r`, "Streak changes are locked and each current streak costs this player 250 points at round scoring.")],
       [chaosStatuses.unstableStreak?.length > 0, createActiveEffect(owner, "cocktail_mix", `Unstable Streak x${chaosStatuses.unstableStreak.length}`, "Each stack rolls a separate temporary -1 to +3 streak bonus at round start for 3 rounds.", { chaosInfused: true })],
       [chaosStatuses.reflectorShield > 0, createActiveEffect(owner, "deep_freeze", `Reflector Shield x${chaosStatuses.reflectorShield}`, "Blocks point deductions for its remaining rounds and reflects 50% of blocked damage.", { chaosInfused: true })],
@@ -9474,9 +9476,10 @@ function renderEffectPanel() {
 
   const mutationMode = isMatchModifierEnabled("mutation");
   const entries = mutationMode ? getMutationStatusBarEntries() : getActiveEffectEntries();
+  const focusedOwner = getFocusedOwner();
   const visibleEntries = mutationMode
-    ? entries.filter((entry) => entry.owner === getFocusedOwner() && entry.canonicalMutationStatus)
-    : entries;
+    ? entries.filter((entry) => entry.owner === focusedOwner && entry.canonicalMutationStatus)
+    : entries.filter((entry) => entry.owner === focusedOwner || entry.tableWide);
   elements.effectPanel.replaceChildren();
   elements.effectPanel.classList.toggle("mutation-status-bar", mutationMode);
   elements.effectPanel.classList.toggle("empty", visibleEntries.length === 0);
@@ -36029,6 +36032,10 @@ function buildDevToolScreen() {
         <button type="button" class="icon-button" id="devPowerFillButton">Fill Hand</button>
         <button type="button" class="icon-button danger-button" id="devPowerClearButton">Clear Hand</button>
         <section class="power-debug-effects" aria-label="Effect testing">
+          <label class="power-debug-effect-search">
+            <span>Search effects</span>
+            <input id="devPowerEffectSearchInput" type="search" placeholder="Find effect">
+          </label>
           <label class="power-debug-effect-select">
             <span>Effect</span>
             <select id="devPowerEffectSelect"></select>
@@ -36199,6 +36206,7 @@ function buildDevToolScreen() {
   elements.devPowerAddButton = screen.querySelector("#devPowerAddButton");
   elements.devPowerFillButton = screen.querySelector("#devPowerFillButton");
   elements.devPowerClearButton = screen.querySelector("#devPowerClearButton");
+  elements.devPowerEffectSearchInput = screen.querySelector("#devPowerEffectSearchInput");
   elements.devPowerEffectSelect = screen.querySelector("#devPowerEffectSelect");
   elements.devPowerEffectDuration = screen.querySelector("#devPowerEffectDuration");
   elements.devPowerEffectStacks = screen.querySelector("#devPowerEffectStacks");
@@ -36401,6 +36409,7 @@ function bindDevToolEvents() {
   });
   elements.devPowerOwnerSelect.addEventListener("change", () => renderPowerDebug("dev"));
   elements.devPowerSearchInput.addEventListener("input", () => renderPowerDebug("dev"));
+  elements.devPowerEffectSearchInput.addEventListener("input", () => renderPowerDebug("dev"));
   elements.devPowerSelect.addEventListener("change", () => renderPowerDebug("dev"));
   elements.devPowerChaosToggle.addEventListener("change", () => renderPowerDebug("dev"));
   elements.devPowerAddButton.addEventListener("click", () => addDebugPowerToHand("dev"));
@@ -37648,6 +37657,7 @@ function getPowerDebugRefs(scope = "dev") {
       searchInput: elements.botPowerSearchInput,
       powerSelect: elements.botPowerSelect,
       chaosToggle: elements.botPowerChaosToggle,
+      effectSearchInput: elements.botPowerEffectSearchInput,
       pauseToggle: elements.botPowerPauseToggle,
       unlimitedToggle: elements.botPowerUnlimitedToggle,
       effectSelect: elements.botPowerEffectSelect,
@@ -37664,6 +37674,7 @@ function getPowerDebugRefs(scope = "dev") {
     searchInput: elements.devPowerSearchInput,
     powerSelect: elements.devPowerSelect,
     chaosToggle: elements.devPowerChaosToggle,
+    effectSearchInput: elements.devPowerEffectSearchInput,
     effectSelect: elements.devPowerEffectSelect,
     effectDuration: elements.devPowerEffectDuration,
     effectStacks: elements.devPowerEffectStacks,
@@ -37749,13 +37760,29 @@ function getDebugEffectDefinitions() {
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
+function matchesPowerDebugEffectSearch(definition, searchText) {
+  if (!searchText) {
+    return true;
+  }
+  return [
+    definition.id,
+    definition.name,
+    definition.short,
+    definition.description,
+    definition.negative ? "negative" : "positive",
+    definition.category
+  ].join(" ").toLowerCase().includes(searchText);
+}
+
 function renderPowerDebugEffectOptions(scope = "dev") {
   const refs = getPowerDebugRefs(scope);
   if (!refs.effectSelect) {
     return;
   }
   const selected = refs.effectSelect.value;
-  const definitions = getDebugEffectDefinitions();
+  const searchText = String(refs.effectSearchInput?.value || "").trim().toLowerCase();
+  const definitions = getDebugEffectDefinitions()
+    .filter((definition) => matchesPowerDebugEffectSearch(definition, searchText));
   refs.effectSelect.replaceChildren(...definitions.map((definition) => {
     const option = document.createElement("option");
     option.value = definition.id;
@@ -37763,6 +37790,13 @@ function renderPowerDebugEffectOptions(scope = "dev") {
     option.title = definition.description || definition.short || definition.name;
     return option;
   }));
+  if (!definitions.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No matching effects";
+    option.disabled = true;
+    refs.effectSelect.appendChild(option);
+  }
   refs.effectSelect.value = definitions.some((definition) => definition.id === selected)
     ? selected
     : definitions[0]?.id || "";
@@ -49853,6 +49887,7 @@ elements.botPowerDebugModal?.addEventListener("click", (event) => {
 });
 elements.botPowerOwnerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerSearchInput?.addEventListener("input", () => renderPowerDebug("bot-match"));
+elements.botPowerEffectSearchInput?.addEventListener("input", () => renderPowerDebug("bot-match"));
 elements.botPowerSelect?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerChaosToggle?.addEventListener("change", () => renderPowerDebug("bot-match"));
 elements.botPowerPauseToggle?.addEventListener("change", handleBotPowerDebugPauseToggle);
