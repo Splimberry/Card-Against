@@ -9103,6 +9103,16 @@ function createActiveEffect(owner, powerId, name, description, options = {}) {
   };
 }
 
+function getArmedHotPotatoCount() {
+  const recordedCount = Math.max(0, Number(state.hotPotatoCount) || 0);
+  const recordedOwners = Array.isArray(state.hotPotatoOwners)
+    ? state.hotPotatoOwners.filter((entry) => typeof entry === "string").length
+    : 0;
+  // The owner list is the durable record. Count is retained for older room
+  // payloads, so use whichever representation proves more armed potatoes.
+  return Math.max(recordedCount, recordedOwners);
+}
+
 function getActiveEffectEntries() {
   const entries = [];
   const owners = getActiveOwners();
@@ -9485,8 +9495,9 @@ function getActiveEffectEntries() {
     }
   });
 
-  if (state.hotPotatoCount > 0) {
-    entries.push(createActiveEffect("table", "hot_potato", `Hot Potato x${state.hotPotatoCount}`, "Final round: each Hot Potato hits a random player; chaos potatoes avoid their owner and hit for 30%."));
+  const armedHotPotatoes = getArmedHotPotatoCount();
+  if (armedHotPotatoes > 0) {
+    entries.push(createActiveEffect("table", "hot_potato", `Hot Potato x${armedHotPotatoes}`, "Final round: each Hot Potato hits a random player; chaos potatoes avoid their owner and hit for 30%."));
   }
 
   if (state.loserPenaltyRounds > 0) {
@@ -9496,14 +9507,20 @@ function getActiveEffectEntries() {
   return entries;
 }
 
+function getRegularStatusBarEntries(owner = getFocusedOwner()) {
+  // The status bar is the band under the hand, not the top-left overlay icon
+  // feed. It contains only effects that still change gameplay for this player
+  // or for the whole table.
+  return getActiveEffectEntries()
+    .filter((entry) => !entry.mutationStatus)
+    .filter((entry) => entry.owner === owner || entry.tableWide);
+}
+
 function shouldRenderEffectPanel() {
   return !state.gradingActive
     && !state.matchEnded
     && !elements.gameStage.classList.contains("hidden")
-    && !elements.inputPanel.classList.contains("hidden")
-    && elements.cardsArea.classList.contains("hidden")
-    && elements.verdictPanel.classList.contains("hidden")
-    && elements.endPanel.classList.contains("hidden");
+    && !elements.inputPanel.classList.contains("hidden");
 }
 
 function renderEffectPanel() {
@@ -9516,11 +9533,10 @@ function renderEffectPanel() {
   }
 
   const mutationMode = isMatchModifierEnabled("mutation");
-  const entries = mutationMode ? getMutationStatusBarEntries() : getActiveEffectEntries();
   const focusedOwner = getFocusedOwner();
   const visibleEntries = mutationMode
-    ? entries.filter((entry) => entry.owner === focusedOwner && entry.canonicalMutationStatus)
-    : entries.filter((entry) => entry.owner === focusedOwner || entry.tableWide);
+    ? getMutationStatusBarEntries().filter((entry) => entry.owner === focusedOwner && entry.canonicalMutationStatus)
+    : getRegularStatusBarEntries(focusedOwner);
   elements.effectPanel.replaceChildren();
   elements.effectPanel.classList.toggle("mutation-status-bar", mutationMode);
   elements.effectPanel.classList.toggle("empty", visibleEntries.length === 0);

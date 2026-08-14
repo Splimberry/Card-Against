@@ -86,7 +86,10 @@ assert.match(appSource, /groupedTimedEffects\(state\.skillIssueMarks[\s\S]{0,520
 assert.match(appSource, /Soul Link <- \$\{getOwnerLabel\(link\.owner\)\}/, "Soul Link must appear for the linked target as well as its owner");
 assert.match(appSource, /Virus Corruption[\s\S]{0,240}tableWide: true/, "Cross-table Virus Corruption must be visible to every player");
 assert.match(appSource, /items\.className = "active-effect-items"/, "Non-Mutation status effects must use the rounded-square status area layout");
-assert.match(appSource, /entries\.filter\(\(entry\) => entry\.owner === focusedOwner \|\| entry\.tableWide\)/, "Non-Mutation status bars must show personal effects plus table-wide effects only");
+assert.match(appSource, /function getRegularStatusBarEntries\(owner = getFocusedOwner\(\)\)[\s\S]{0,500}entry\.owner === owner \|\| entry\.tableWide/, "Non-Mutation status bars must show personal effects plus table-wide effects only");
+assert.match(appSource, /function shouldRenderEffectPanel\(\) \{[\s\S]{0,320}!elements\.inputPanel\.classList\.contains\("hidden"\)/, "The status bar must follow the live answer phase instead of stale card or verdict visibility");
+assert.doesNotMatch(appSource.match(/function shouldRenderEffectPanel\(\)[\s\S]{0,420}/)?.[0] || "", /cardsArea|verdictPanel|endPanel/, "Answer-phase status rendering must not be gated by stale result surfaces");
+assert.match(appSource, /function getArmedHotPotatoCount\(\)[\s\S]{0,520}Math\.max\(recordedCount, recordedOwners\)/, "Armed Hot Potato statuses must survive count-only or owner-list-only sync payloads");
 assert.match(appSource, /id="devPowerEffectSearchInput"/, "Power Debug needs an effect search input");
 assert.match(appSource, /function matchesPowerDebugEffectSearch\(definition, searchText\)/, "Effect search must filter by status effect details");
 assert.match(appSource, /if \(power\.mutationPower && \(power\.type === "bug_fix" \|\| power\.type === "potency_amplifier"\)\) \{[\s\S]{0,180}if \(openMutationStatusSelector\(owner, power, powerId\)\) \{[\s\S]{0,80}return;[\s\S]{0,80}\}\s*return;/, "Mutation status selectors must not fall back to generic player targeting");
