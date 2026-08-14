@@ -48,19 +48,21 @@ function getNormalRegistryEntries(state) {
   const hasActiveMutationStatus = () => false;
   const getPlayedPowerEntries = () => [];
   const formatStackSuffix = (count) => count > 1 ? ` x${count}` : "";
-  const getMutationStatusRemaining = () => 0;
+  const getMutationStatusRemaining = (status) => Math.max(0, Number(status?.rounds) || 0);
   const isChaosMegaHackActive = () => false;
   const hasImpendingDoom = () => false;
   const hasDoomShield = () => false;
   const hasExplosiveDoom = () => false;
   const getSecretAgentPendingSwapRounds = () => [];
   const isMatchModifierEnabled = () => false;
-  const getPermanentMutations = () => [];
-  const getPermanentMutationDefinition = () => null;
+  const getPermanentMutations = () => Array.isArray(state.__permanentMutations) ? state.__permanentMutations : [];
+  const getPermanentMutationDefinition = (id) => id === "adaptive_metabolism"
+    ? { id, name: "Adaptive Metabolism", powerId: "shield", description: "Test permanent mutation.", category: "normal" }
+    : null;
   const getPermanentMutationState = () => ({ symbiosisTargets: {} });
-  const isMutationStatusEligible = () => false;
+  const isMutationStatusEligible = () => true;
   const statusEffectLibraryCopy = {};
-  const getMutationStatusesAffectingOwner = () => [];
+  const getMutationStatusesAffectingOwner = () => Array.isArray(state.__temporaryStatuses) ? state.__temporaryStatuses : [];
   const getOwnerLabel = (owner) => owner === "player" ? "You" : "Table";
   const getScore = () => 0;
   const canPowerBecomeChaosInfused = () => false;
@@ -86,5 +88,30 @@ const visibleNames = visibleEntries.map((entry) => entry.name);
 assert.ok(visibleNames.includes("Pocket Shield x1"), "Personal regular effects must remain visible when unrelated statuses are absent");
 assert.ok(visibleNames.includes("Hot Potato x1"), "Table-wide regular effects must remain visible when unrelated statuses are absent");
 assert.ok(visibleEntries.every((entry) => entry.statusPill), "Regular effects must enter the shared status-card renderer");
+
+const temporaryStatusState = createRegistryState();
+temporaryStatusState.__temporaryStatuses = [{
+  id: "hot_potato_status",
+  owner: "player",
+  targetOwner: "player",
+  name: "Hot Potato",
+  description: "Triggers when its timer ends.",
+  powerId: "hot_potato",
+  category: "risk",
+  rounds: 2
+}];
+const temporaryStatusEntries = getNormalRegistryEntries(temporaryStatusState);
+assert.ok(
+  temporaryStatusEntries.some((entry) => entry.name === "Hot Potato" && entry.statusMeta === "1x | 2 rounds"),
+  "Temporary shared statuses must remain visible in regular single-player matches"
+);
+
+const permanentMutationState = createRegistryState();
+permanentMutationState.__permanentMutations = ["adaptive_metabolism"];
+const permanentMutationEntries = getNormalRegistryEntries(permanentMutationState);
+assert.ok(
+  !permanentMutationEntries.some((entry) => entry.name === "Mutation · Adaptive Metabolism"),
+  "Permanent Mutations must remain exclusive to Mutation matches"
+);
 
 console.log("Active effect registry checks passed.");

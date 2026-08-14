@@ -7767,7 +7767,9 @@ function getStaticCacheControl(filePath, contentType = "") {
     return "no-store";
   }
   if (extension === ".js" || extension === ".css") {
-    return "public, max-age=21600, stale-while-revalidate=604800";
+    // These source files keep stable URLs, so clients must revalidate them
+    // instead of running an earlier deployment for up to six hours.
+    return "no-cache, must-revalidate";
   }
   if (
     contentType.startsWith("audio/")

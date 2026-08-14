@@ -9096,6 +9096,7 @@ function createActiveEffect(owner, powerId, name, description, options = {}) {
     statusMeta: String(options.statusMeta || ""),
     mutationStatus: Boolean(options.mutationStatus),
     canonicalMutationStatus: Boolean(options.canonicalMutationStatus),
+    permanentMutation: Boolean(options.permanentMutation),
     statusPolarity: options.statusPolarity === "negative" ? "negative" : "positive",
     statusTrigger: Boolean(options.statusTrigger),
     statusNew: Boolean(options.statusNew),
@@ -9292,7 +9293,14 @@ function getActiveEffectEntries() {
         mutation.powerId,
         `Mutation · ${mutation.name}`,
         description,
-        { chaosInfused: mutation.category === "chaos", statusPill: true, statusMeta: "permanent", mutationStatus: true, canonicalMutationStatus: true }
+        {
+          chaosInfused: mutation.category === "chaos",
+          statusPill: true,
+          statusMeta: "permanent",
+          mutationStatus: true,
+          canonicalMutationStatus: true,
+          permanentMutation: true
+        }
       ));
     });
     const mutationStatusGroups = new Map();
@@ -9307,6 +9315,7 @@ function getActiveEffectEntries() {
       });
     mutationStatusGroups.forEach((statuses) => {
       const status = statuses[0];
+      const statusOwner = status.targetOwner || status.owner;
       const remaining = Math.max(...statuses.map(getMutationStatusRemaining));
       const stacks = statuses.length;
       const targetText = status.targetOwner && status.targetOwner !== status.owner
@@ -9512,12 +9521,9 @@ function getRegularStatusBarEntries(owner = getFocusedOwner()) {
     return [];
   }
 
-  // Keep regular games on the same status-card data contract as Mutation.
-  // The active-effect registry remains the source of truth for normal powers,
-  // while this adapter makes every ongoing effect render through the shared
-  // status-bar path below.
+  // Temporary statuses render in normal games; permanent traits stay Mutation-only.
   return getActiveEffectEntries()
-    .filter((entry) => !entry.mutationStatus)
+    .filter((entry) => !entry.permanentMutation)
     .filter((entry) => entry.owner === owner || entry.tableWide)
     .map((entry) => ({
       ...entry,
