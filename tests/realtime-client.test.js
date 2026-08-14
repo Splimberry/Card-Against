@@ -235,16 +235,40 @@ function testRoundResultTransportUsesTheLocalHostContext() {
   assert.match(functionSource, /if \(!isLocalRoomHostContext\(\)\)/);
   assert.match(functionSource, /!options\.retrying && isLocalRoomHostContext\(\) && !state\.matchEnded/);
   assert.match(functionSource, /broadcastRealtimeRoomChange\("round-result", code/);
+  assert.match(functionSource, /peerResult: true/);
+  assert.match(functionSource, /broadcastCommittedRoomRoundResultReady\(result, data, clientEventId\)/);
   assert.ok(
     functionSource.indexOf('broadcastRealtimeRoomChange("round-result", code')
       < functionSource.indexOf('roomSync.sendCommand("publish_round_result"'),
-    "The finished host result should reach subscribed players before the server commit response."
+    "The completed result must reach joined players before the persistence request."
   );
+
+  const readySource = getFunctionSource("broadcastCommittedRoomRoundResultReady", "getImmediatePowerAffectedOwners");
+  assert.match(readySource, /broadcastRealtimeRoomChange\("round-result-ready", code/);
+  assert.match(readySource, /resultRevision: revision/);
 
   const playRoundStart = source.indexOf("async function playRoundInternal");
   const playRoundEnd = source.indexOf("function isCurrentRoomRoundResultForPlayback", playRoundStart);
   const playRoundSource = source.slice(playRoundStart, playRoundEnd);
   assert.match(playRoundSource, /if \(!isLocalRoomHostContext\(\) \|\| syncedRoundResult\)/);
+}
+
+function testJoinedClientCanAdoptImmediateHostRoundResult() {
+  const functionSource = getFunctionSource("applyRealtimeRoomRoundResult", "recoverRoomRoundResultFromServer");
+  assert.match(functionSource, /const completePeerResult = Boolean\(/);
+  assert.match(functionSource, /payload\.peerResult === true/);
+  assert.match(functionSource, /\|\| completePeerResult/);
+}
+
+function testResultPresentationIsNotBlockedByPowerStateReconciliation() {
+  const applySource = getFunctionSource("applyRealtimeRoomRoundResult", "recoverRoomRoundResultFromServer");
+  const safeStateSource = getFunctionSource("applyRoomRoundResultStateSafely", "showWaitingForRoomRoundResult");
+  const presentationSource = getFunctionSource("recoverRoomRoundResultPlayback", "playRound");
+
+  assert.match(applySource, /applyRoomRoundResultStateSafely\(result, \{ source: "realtime-result" \}\)/);
+  assert.match(safeStateSource, /try \{/);
+  assert.match(safeStateSource, /catch \(error\)/);
+  assert.match(presentationSource, /applyRoomRoundResultStateSafely\(syncedResult, \{/);
 }
 
 function testLocalHostContextDoesNotDependOnStaleDirectoryHostIdentity() {
@@ -596,6 +620,8 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testJoinedClientUsesRoomHostIdentityDuringDuplicateHostMerge();
   testJoinedGradingWaitUsesJoinedOwner();
   testRoundResultTransportUsesTheLocalHostContext();
+  testJoinedClientCanAdoptImmediateHostRoundResult();
+  testResultPresentationIsNotBlockedByPowerStateReconciliation();
   testLocalHostContextDoesNotDependOnStaleDirectoryHostIdentity();
   testRoundResultReadyRecoveryIsOutOfBand();
   testJoinedRoleDoesNotDependOnHostIdentity();

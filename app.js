@@ -14857,18 +14857,31 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   }
   const incomingRound = Number(result.round || incomingGame?.round) || 0;
   const completeAuthoritativeResult = isCompleteAuthoritativeRoomPhasePayload(payload, "round-result");
+  // The host sends this complete hand-off as soon as it has finished grading.
+  // It is intentionally accepted before the persistence response so joined
+  // players never wait on an extra HTTP and server-broadcast round trip. The
+  // server's matching round_result event still reconciles this provisional
+  // presentation once it is committed.
+  const completePeerResult = Boolean(
+    payload.peerResult === true
+      && incomingGame
+      && incomingRound >= Number(state.round || 0)
+      && result.matchId
+      && incomingGame.matchId === result.matchId
+  );
   const canAdoptIncomingResult = Boolean(
     incomingGame
       && incomingRound >= Number(state.round || 0)
       && (
         canAdoptIncomingRoomGame(incomingGame, payload.room || state.joiningRoom, incomingRound)
         || completeAuthoritativeResult
+        || completePeerResult
       )
   );
   // A complete server result is a self-contained authoritative hand-off. It
   // includes the match, round, cards and scoring state, so an older local
   // match id must not prevent a joined client from adopting and rendering it.
-  if (!roomPayloadMatchesCurrentMatch(payload) && !canAdoptIncomingResult && !completeAuthoritativeResult) {
+  if (!roomPayloadMatchesCurrentMatch(payload) && !canAdoptIncomingResult && !completeAuthoritativeResult && !completePeerResult) {
     return false;
   }
   // A complete server result is the authoritative hand-off for this round.
@@ -14943,7 +14956,7 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   // mounting. The result event is authoritative; playback must not be lost
   // just because it arrived during the setup animation or setup request.
   state.roomRoundResultPendingPlayback = result;
-  applyAuthoritativeRoomResultState(result);
+  applyRoomRoundResultStateSafely(result, { source: "realtime-result" });
   tryPlayPendingRoomRoundResult();
   maybePlaySpectatorRoomRoundResult(result);
   return true;
@@ -15137,6 +15150,27 @@ function applyAuthoritativeRoomResultState(result = null, options = {}) {
     renderRoomPlayers();
   }
   return true;
+}
+
+function applyRoomRoundResultStateSafely(result = null, options = {}) {
+  try {
+    return applyAuthoritativeRoomResultState(result, options);
+  } catch (error) {
+    // Score/power reconciliation is supplemental to the immutable answer
+    // review. Never allow a malformed or newly-added power effect to hide a
+    // completed grading result from a joined player.
+    recordRoomDiagnosticEvent("result-state-error", {
+      code: state.roomSettings.code,
+      eventType: "round-result",
+      matchId: result?.matchId,
+      round: result?.round
+    }, {
+      source: options.source || "client",
+      reason: error?.message || "Could not apply every synced result state entry."
+    });
+    console.warn("Could not apply all synced room result state:", error);
+    return false;
+  }
 }
 
 function showWaitingForRoomRoundResult() {
@@ -15962,11 +15996,9 @@ function publishRoomRoundResult(roundResult, options = {}) {
     powerState: result.powerState || getRoomPowerStatePayload(),
     updatedAt: result.updatedAt
   };
-  // The host has already produced the immutable result at this point. Send it
-  // straight to the subscribed room before waiting for the persistence round
-  // trip so joined players can leave their grading spinner immediately. The
-  // server stores and rebroadcasts this exact result afterwards, which remains
-  // the authoritative reconciliation path.
+  // Results take the realtime-first path. This packet is self-contained and
+  // lets joined players present the grading recap immediately; the same result
+  // is then committed by the server and reconciled through its event log.
   broadcastRealtimeRoomChange("round-result", code, {
     clientEventId,
     actorParticipantId: state.clientId,
@@ -15975,6 +16007,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
     round: result.round,
     roundResult: result,
     game: state.roomGame,
+    peerResult: true,
     updatedAt: result.updatedAt,
     forceRoomChannel: true
   });
@@ -16003,6 +16036,11 @@ function publishRoomRoundResult(roundResult, options = {}) {
       return null;
     }
     state.roomDirectoryOnline = true;
+    // A full grading result can be too large for one realtime frame. Once the
+    // server has durably stored it, send a compact peer marker so subscribed
+    // clients fetch that exact revision immediately instead of waiting for a
+    // large broadcast that may have been dropped.
+    broadcastCommittedRoomRoundResultReady(result, data, clientEventId);
     return data;
   }).catch(() => {
     if (state.roomRoundResultPublishKey === publishKey) {
@@ -16018,6 +16056,27 @@ function publishRoomRoundResult(roundResult, options = {}) {
     }
     return null;
   });
+}
+
+function broadcastCommittedRoomRoundResultReady(result = null, response = null, clientEventId = "") {
+  const roundResult = normalizeRoomRoundResultPayload(result);
+  const code = String(state.roomSettings.code || "").trim().toUpperCase();
+  const revision = Math.max(0, Number(response?.revision) || 0);
+  if (!roundResult || !code || code === "CAI-0000" || !revision) {
+    return false;
+  }
+  broadcastRealtimeRoomChange("round-result-ready", code, {
+    clientEventId: String(clientEventId || createRoomSyncCommandId("round-result-ready", code)).slice(0, 160),
+    actorParticipantId: state.clientId,
+    hostParticipantId: state.clientId,
+    matchId: roundResult.matchId,
+    round: roundResult.round,
+    resultRevision: revision,
+    resultUpdatedAt: roundResult.updatedAt,
+    updatedAt: Date.now(),
+    forceRoomChannel: true
+  });
+  return true;
 }
 
 function getImmediatePowerAffectedOwners(owner, power, meta = {}) {
@@ -47305,7 +47364,10 @@ function recoverRoomRoundResultPlayback(result = null, rawInput = "", error = nu
     syncedResult,
     getRoundGradingReasons(syncedResult.cards, cardRatings, syncedResult)
   );
-  applyAuthoritativeRoomResultState(syncedResult, { render: false });
+  applyRoomRoundResultStateSafely(syncedResult, {
+    render: false,
+    source: "result-presentation"
+  });
 
   try {
     clearCardBadges();
