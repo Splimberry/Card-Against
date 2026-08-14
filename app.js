@@ -23107,7 +23107,7 @@ function canGainPositiveStatus(owner) {
 }
 
 function isSecretAgentMaskedOwner(owner) {
-  return Boolean(owner && owner !== getFocusedOwner() && Object.values(state.secretAgentRounds || {}).some((rounds) => (rounds || 0) > 0));
+  return Boolean(owner && Object.values(state.secretAgentRounds || {}).some((rounds) => (rounds || 0) > 0));
 }
 
 function getSecretAgentMaskedLabel(owner) {
@@ -23366,7 +23366,7 @@ function getScore(owner) {
 }
 
 function isScoreHidden(owner) {
-  if (!owner || owner === getFocusedOwner()) {
+  if (!owner) {
     return false;
   }
   const mask = state.redHerringMasks?.[owner];
@@ -25919,37 +25919,38 @@ function renderPlayerNameWithTitle(element, playerOrOwner, fallbackLabel = "", o
     return;
   }
   const player = typeof playerOrOwner === "string" ? getPlayer(playerOrOwner) : playerOrOwner;
-  const label = player?.owner && isSecretAgentMaskedOwner(player.owner)
+  const masked = Boolean(player?.owner && isSecretAgentMaskedOwner(player.owner));
+  const label = masked
     ? getSecretAgentMaskedLabel(player.owner)
     : player?.label || fallbackLabel || (typeof playerOrOwner === "string" ? getOwnerLabel(playerOrOwner) : "Player");
   const title = getEquippedAchievementTitle(getDisplayTitleIdForPlayer(player));
   element.replaceChildren();
   element.classList.add("name-with-title");
-  if (title && !options.hideTitle && !(player?.owner && isSecretAgentMaskedOwner(player.owner))) {
+  if (title && !options.hideTitle && !masked) {
     element.appendChild(createEquippedTitlePill(title, getTitlePillCustomization(player)));
   }
   const name = document.createElement("span");
   name.className = "name-with-title-text";
   name.textContent = label;
-  applyProfileFontToElement(name, getProfileFontForPlayer(player));
+  applyProfileFontToElement(name, masked ? getProfileFont("default") : getProfileFontForPlayer(player));
   element.appendChild(name);
-  const disconnectedBadge = player?.owner && isSecretAgentMaskedOwner(player.owner) ? null : createDisconnectedPlayerBadge(player);
+  const disconnectedBadge = masked ? null : createDisconnectedPlayerBadge(player);
   if (disconnectedBadge) {
     element.appendChild(disconnectedBadge);
   }
-  const spectatorBadge = player?.owner && isSecretAgentMaskedOwner(player.owner) ? null : createSpectatorPlayerBadge(player);
+  const spectatorBadge = masked ? null : createSpectatorPlayerBadge(player);
   if (spectatorBadge) {
     element.appendChild(spectatorBadge);
   }
-  const hostBadge = player?.owner && isSecretAgentMaskedOwner(player.owner) ? null : createHostPlayerBadge(player);
+  const hostBadge = masked ? null : createHostPlayerBadge(player);
   if (hostBadge) {
     element.appendChild(hostBadge);
   }
-  const botBadge = player?.owner && isSecretAgentMaskedOwner(player.owner) ? null : createBotPlayerBadge(player);
+  const botBadge = masked ? null : createBotPlayerBadge(player);
   if (botBadge) {
     element.appendChild(botBadge);
   }
-  (player?.owner && isSecretAgentMaskedOwner(player.owner) ? [] : getSpecialBadgesForPlayer(player)).forEach((badge) => {
+  (masked ? [] : getSpecialBadgesForPlayer(player)).forEach((badge) => {
     const badgeIcon = createSpecialPlayerBadge(badge);
     if (badgeIcon) {
       element.appendChild(badgeIcon);
