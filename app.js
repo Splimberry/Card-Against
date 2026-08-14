@@ -15957,7 +15957,11 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
   result.cardCustomization = shouldUseAnswerCardCustomization(revealOwner)
     ? getRoomSyncCardCustomization(getProfileCardCustomizationForOwner(revealOwner) || defaultProfileCustomization)
     : null;
-  result.powerState = getRoomPowerStatePayload();
+  // Power state is deliberately not part of the grading hand-off. It contains
+  // every live effect map and can be much larger than the verdict itself. A
+  // result only needs the scored player rows and the compact visible summary;
+  // hands and effects keep using their dedicated power-state events.
+  result.powerState = null;
   result.scoreState = getActiveOwners()
     .map(getRoomAbilityPlayerSyncEntry)
     .filter(Boolean);
@@ -15969,6 +15973,20 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
     streakBefore: options.streakBefore
   });
   return result;
+}
+
+function getRoomRoundResultGameEnvelope(result = null) {
+  const game = state.roomGame && typeof state.roomGame === "object" ? state.roomGame : {};
+  return {
+    matchId: String(result?.matchId || game.matchId || getCurrentRoomMatchId() || "").trim(),
+    status: "grading",
+    round: Number(result?.round || game.round || state.round) || state.round,
+    setup: game.setup || null,
+    matchSettings: game.matchSettings || null,
+    gradingStartedAt: Number(game.gradingStartedAt) || 0,
+    gradingReason: String(game.gradingReason || "all-submitted"),
+    updatedAt: Number(result?.updatedAt) || Date.now()
+  };
 }
 
 function publishRoomRoundResult(roundResult, options = {}) {
@@ -15993,9 +16011,9 @@ function publishRoomRoundResult(roundResult, options = {}) {
     status: "grading",
     round: state.round,
     roundResult: result,
-    powerState: result.powerState || getRoomPowerStatePayload(),
     updatedAt: result.updatedAt
   };
+  const peerGame = getRoomRoundResultGameEnvelope(result);
   // Results take the realtime-first path. This packet is self-contained and
   // lets joined players present the grading recap immediately; the same result
   // is then committed by the server and reconciled through its event log.
@@ -16006,7 +16024,7 @@ function publishRoomRoundResult(roundResult, options = {}) {
     matchId: result.matchId,
     round: result.round,
     roundResult: result,
-    game: state.roomGame,
+    game: peerGame,
     peerResult: true,
     updatedAt: result.updatedAt,
     forceRoomChannel: true

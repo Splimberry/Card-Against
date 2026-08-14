@@ -260,6 +260,18 @@ function testJoinedClientCanAdoptImmediateHostRoundResult() {
   assert.match(functionSource, /\|\| completePeerResult/);
 }
 
+function testRoundResultDoesNotTransportThePowerEngine() {
+  const resultSource = getFunctionSource("buildRoomRoundResultPayload", "getRoomRoundResultGameEnvelope");
+  const envelopeSource = getFunctionSource("getRoomRoundResultGameEnvelope", "publishRoomRoundResult");
+  const transportSource = getFunctionSource("publishRoomRoundResult", "broadcastCommittedRoomRoundResultReady");
+
+  assert.match(resultSource, /result\.powerState = null/);
+  assert.doesNotMatch(resultSource, /result\.powerState = getRoomPowerStatePayload\(\)/);
+  assert.doesNotMatch(envelopeSource, /powerState:/);
+  assert.match(transportSource, /const peerGame = getRoomRoundResultGameEnvelope\(result\)/);
+  assert.match(transportSource, /game: peerGame/);
+}
+
 function testResultPresentationIsNotBlockedByPowerStateReconciliation() {
   const applySource = getFunctionSource("applyRealtimeRoomRoundResult", "recoverRoomRoundResultFromServer");
   const safeStateSource = getFunctionSource("applyRoomRoundResultStateSafely", "showWaitingForRoomRoundResult");
@@ -621,6 +633,7 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testJoinedGradingWaitUsesJoinedOwner();
   testRoundResultTransportUsesTheLocalHostContext();
   testJoinedClientCanAdoptImmediateHostRoundResult();
+  testRoundResultDoesNotTransportThePowerEngine();
   testResultPresentationIsNotBlockedByPowerStateReconciliation();
   testLocalHostContextDoesNotDependOnStaleDirectoryHostIdentity();
   testRoundResultReadyRecoveryIsOutOfBand();
