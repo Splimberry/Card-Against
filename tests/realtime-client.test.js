@@ -318,6 +318,14 @@ function testRoundResultReadyRecoveryIsOutOfBand() {
   assert.match(serverEventSource, /Advancing the revision cursor here would make that result look stale/);
 }
 
+function testServerEventEnvelopeRoomCodeIsPreserved() {
+  const serverEventSource = getFunctionSource("applyRoomServerEvent", "applyRoomServerEventNow");
+  const applyNowSource = getFunctionSource("applyRoomServerEventNow", "refreshRoomEventsSinceLastRevision");
+
+  assert.match(serverEventSource, /payload\.code \|\| payload\.room\?\.code \|\| event\.roomCode \|\| state\.roomSettings\.code/);
+  assert.match(applyNowSource, /payload\.code \|\| payload\.room\?\.code \|\| event\.roomCode \|\| state\.roomSettings\.code/);
+}
+
 function testJoinedRoleDoesNotDependOnHostIdentity() {
   const functionSource = getFunctionSource("isJoinedRoomClient", "getExpectedRoomCurrentOwner");
   const context = {
@@ -637,6 +645,7 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testResultPresentationIsNotBlockedByPowerStateReconciliation();
   testLocalHostContextDoesNotDependOnStaleDirectoryHostIdentity();
   testRoundResultReadyRecoveryIsOutOfBand();
+  testServerEventEnvelopeRoomCodeIsPreserved();
   testJoinedRoleDoesNotDependOnHostIdentity();
   testAutoAdvanceUsesTheManualRoundTransitionCommand();
   testSetupPreservesOnlyCurrentRoomResult();

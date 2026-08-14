@@ -20239,7 +20239,10 @@ function applyRoomServerEvent(event = {}, source = {}) {
     const readyPayload = normalizeRoomEventPayload({
       ...payload,
       eventType,
-      code: payload.code || payload.room?.code || state.roomSettings.code,
+      // Server event envelopes identify their room with `roomCode`, while
+      // compact payloads intentionally omit a duplicate `code` field.
+      // Preserve that envelope value before falling back to local state.
+      code: payload.code || payload.room?.code || event.roomCode || state.roomSettings.code,
       sourceId: event.sourceId || payload.sourceId || "server",
       revision,
       updatedAt: Number(event.createdAt) || Date.now()
@@ -20307,7 +20310,9 @@ function applyRoomServerEventNow(event = {}, source = {}) {
   const eventPayload = normalizeRoomEventPayload({
     ...payload,
     eventType: normalizeRoomEventType(type),
-    code: payload.code || payload.room?.code || state.roomSettings.code,
+    // `roomCode` lives on the server event envelope. Dropping it here made
+    // joined clients classify valid events as CAI-0000 and buffer them forever.
+    code: payload.code || payload.room?.code || event.roomCode || state.roomSettings.code,
     sourceId: event.sourceId || payload.sourceId || "server",
     revision: Number(event.revision) || 0,
     updatedAt: Number(event.createdAt) || Date.now()
