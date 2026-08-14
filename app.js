@@ -31890,8 +31890,22 @@ function removeActiveEffectsForOwner(owner) {
   delete state.insurancePolicies[owner];
   delete state.virusFactories[owner];
   delete state.error404Owners[owner];
+  delete state.unstableConduitOwners[owner];
+  delete state.fourthSlotOwners[owner];
+  delete state.endlessHandRounds[owner];
+  delete state.powerTunnellingRounds[owner];
+  delete state.molotovBurningMarks[owner];
+  delete state.molotovOwners[owner];
+  delete state.molotovUsedRounds[owner];
+  delete state.eternalCelebrationOwners[owner];
+  delete state.uselessSoftwareOwners[owner];
+  delete state.reduceToAshesOwners[owner];
+  delete state.streakSicknessRounds[owner];
   delete state.chaosStatusEffects[owner];
   delete state.mutationStatuses[owner];
+  delete state.mutationImmunityRounds[owner];
+  delete state.mutationQuarantineRounds[owner];
+  delete state.mutationStatusInversionRounds[owner];
   delete state.penaltyStormOwners[owner];
   delete state.fraudMasterOwners[owner];
   delete state.fireExtinguisherOwners[owner];
@@ -31925,11 +31939,20 @@ function removeActiveEffectsForOwner(owner) {
   delete state.hotInHereOwners[owner];
   delete state.worldBurnOwners[owner];
   delete state.lawnMowerOwners[owner];
+  delete state.impendingDoomOwners[owner];
+  delete state.collapsingStarOwners[owner];
+  delete state.nullProtocolOwners[owner];
+  delete state.ultimatumRounds[owner];
+  delete state.explosiveDoomOwners[owner];
+  delete state.doomStreakGuardRounds[owner];
+  delete state.secretAgentRounds[owner];
+  delete state.secretAgentSwapRounds[owner];
   state.timeBombs = state.timeBombs.filter((bomb) => bomb.owner !== owner);
   state.deathMarks = (state.deathMarks || []).filter((mark) => mark.owner !== owner && mark.targetOwner !== owner);
   state.deathBombMarks = (state.deathBombMarks || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
   state.clusterBombs = (state.clusterBombs || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
   state.wrathBombs = (state.wrathBombs || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
+  state.ultimatumBombs = (state.ultimatumBombs || []).filter((bomb) => bomb.owner !== owner && bomb.targetOwner !== owner);
   state.streakLinks = (state.streakLinks || []).filter((link) => link.owner !== owner && link.targetOwner !== owner);
   delete state.eventHorizonMarks[owner];
   Object.keys(state.eventHorizonMarks || {})
@@ -31940,6 +31963,11 @@ function removeActiveEffectsForOwner(owner) {
     .forEach((targetOwner) => delete state.permanentDeathMarks[targetOwner]);
   state.skillIssueMarks = (state.skillIssueMarks || []).filter((mark) => mark.owner !== owner && mark.targetOwner !== owner);
   state.debuffTimeBombs = (state.debuffTimeBombs || []).filter((bomb) => bomb.owner !== owner);
+  state.hotPotatoOwners = (state.hotPotatoOwners || []).filter((entry) => {
+    const sourceOwner = typeof entry === "string" ? String(entry).split("|")[0] : entry?.owner;
+    return sourceOwner !== owner;
+  });
+  state.hotPotatoCount = state.hotPotatoOwners.length;
   state.error404Schedule = (state.error404Schedule || []).filter((entry) => entry.owner !== owner && entry.target !== owner);
   state.pendingDeadWeights = state.pendingDeadWeights.filter((transfer) => transfer.owner !== owner);
   state.soulLinks = (state.soulLinks || []).filter((link) => link.owner !== owner && link.targetOwner !== owner);
@@ -38130,6 +38158,15 @@ function renderPowerDebug(scope = "dev") {
   refs.ownerSelect.value = selectedOwner;
   renderPowerDebugPowerOptions(scope);
   renderPowerDebugEffectOptions(scope);
+  const mutationMatch = isMatchModifierEnabled("mutation");
+  if (refs.effectDuration) {
+    // Duration belongs to Mutation's temporary-status model. Regular games
+    // apply the same native state and timing as the corresponding power.
+    refs.effectDuration.disabled = !mutationMatch;
+    refs.effectDuration.title = mutationMatch
+      ? "Rounds for this temporary Mutation status. Zero makes it permanent."
+      : "Normal matches use each effect's native timing.";
+  }
   refs.chaosToggle.disabled = false;
   const hand = state.powerHands[selectedOwner] || [];
   refs.hand.replaceChildren(...hand.map((powerId) => {
@@ -38182,6 +38219,54 @@ function setPowerDebugStatus(scope, message) {
   }
 }
 
+const normalDebugStatusRounds = Object.freeze({
+  streak_guard: 2,
+  cocktail_debt: 2,
+  chaos_debt: 2,
+  streak_loss_amplifier: 2,
+  chaos_sickness: 2,
+  reflector_shield: 2,
+  resistant_streak: 2,
+  cluster_bomb: 2,
+  death_mark_status: 2,
+  time_bomb: 4,
+  debuff_time_bomb: 4,
+  hot_potato_status: 0
+});
+
+function getNormalDebugStatusRounds(definition) {
+  return normalDebugStatusRounds[definition?.id] ?? 3;
+}
+
+function applyNormalDebugStatus(owner, definition, stacks = 1) {
+  if (!owner || !definition?.apply) {
+    return 0;
+  }
+
+  // Hot Potato has a deliberately different durable representation outside
+  // Mutation: a plain owner entry means "detonate on the final round".
+  if (definition.id === "hot_potato_status") {
+    const count = Math.max(1, Number(stacks) || 1);
+    state.hotPotatoOwners = [
+      ...(state.hotPotatoOwners || []),
+      ...Array.from({ length: count }, () => owner)
+    ];
+    state.hotPotatoCount = Math.max(0, Number(state.hotPotatoCount) || 0) + count;
+    return count;
+  }
+
+  const rounds = getNormalDebugStatusRounds(definition);
+  let applied = 0;
+  for (let index = 0; index < Math.max(1, Number(stacks) || 1); index += 1) {
+    // Do not supply a mutationId. The definition updates the normal runtime
+    // store once, without creating a second Mutation status-card record.
+    if (definition.apply(owner, rounds)) {
+      applied += 1;
+    }
+  }
+  return applied;
+}
+
 function applyDebugEffect(scope = "dev") {
   const refs = getPowerDebugRefs(scope);
   const owner = refs.ownerSelect?.value || "";
@@ -38192,20 +38277,25 @@ function applyDebugEffect(scope = "dev") {
     setPowerDebugStatus(scope, "Choose a player and effect.");
     return;
   }
-  const status = applyMutationStatus(owner, definition, requestedDuration || 1, {
-    permanentStatus: requestedDuration === 0,
-    preserveDuration: true,
-    stackMultiplier: requestedStacks,
-    force: true,
-    source: "Power Debug"
-  });
-  if (!status) {
+  const mutationMatch = isMatchModifierEnabled("mutation");
+  const result = mutationMatch
+    ? applyMutationStatus(owner, definition, requestedDuration || 1, {
+      permanentStatus: requestedDuration === 0,
+      preserveDuration: true,
+      stackMultiplier: requestedStacks,
+      force: true,
+      source: "Power Debug"
+    })
+    : applyNormalDebugStatus(owner, definition, requestedStacks);
+  if (!result) {
     setPowerDebugStatus(scope, `${definition.name} could not be applied to ${getOwnerLabel(owner)}.`);
     return;
   }
-  const durationLabel = requestedDuration === 0
-    ? "permanently"
-    : `for ${requestedDuration} round${requestedDuration === 1 ? "" : "s"}`;
+  const durationLabel = mutationMatch
+    ? requestedDuration === 0
+      ? "permanently"
+      : `for ${requestedDuration} round${requestedDuration === 1 ? "" : "s"}`
+    : "with its normal behavior";
   const stackLabel = requestedStacks > 1 ? ` at x${requestedStacks} stacks` : "";
   queueStatFlash(definition.negative ? "negative" : "positive", "Power Debug", `${definition.name} applied ${durationLabel}${stackLabel}`, {
     owners: [owner],
@@ -38220,13 +38310,17 @@ function applyDebugEffect(scope = "dev") {
 }
 
 function clearDebugMutationStatuses(scope = "dev") {
-  if (!isMatchModifierEnabled("mutation")) {
-    setPowerDebugStatus(scope, "Start a Mutation match before clearing Status Effects.");
-    return;
-  }
   const refs = getPowerDebugRefs(scope);
   const owner = refs.ownerSelect?.value || "";
   if (!owner) {
+    return;
+  }
+  if (!isMatchModifierEnabled("mutation")) {
+    removeActiveEffectsForOwner(owner);
+    renderScore();
+    renderPowerDebug(scope);
+    publishPowerDebugState();
+    setPowerDebugStatus(scope, `Cleared all active Status Effects from ${getOwnerLabel(owner)}.`);
     return;
   }
   const toRemove = Object.entries(state.mutationStatuses || {})

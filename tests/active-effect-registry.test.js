@@ -114,4 +114,31 @@ assert.ok(
   "Permanent Mutations must remain exclusive to Mutation matches"
 );
 
+const normalDebugStart = appSource.indexOf("const normalDebugStatusRounds");
+const normalDebugEnd = appSource.indexOf("function applyDebugEffect", normalDebugStart);
+assert.ok(normalDebugStart >= 0 && normalDebugEnd > normalDebugStart, "Normal debug status adapter must exist");
+
+const debugState = {
+  hotPotatoOwners: [],
+  hotPotatoCount: 0,
+  normalClusterBombs: 0,
+  mutationStatuses: {}
+};
+{
+  const state = debugState;
+  eval(appSource.slice(normalDebugStart, normalDebugEnd));
+  const clusterBomb = {
+    id: "cluster_bomb",
+    apply: () => {
+      state.normalClusterBombs += 1;
+      return { kind: "clusterBomb" };
+    }
+  };
+  assert.equal(applyNormalDebugStatus("player", clusterBomb, 1), 1, "Normal debug effects must apply once");
+  assert.equal(state.normalClusterBombs, 1, "Normal debug effects must update their live effect store");
+  assert.deepEqual(state.mutationStatuses, {}, "Normal debug effects must not create Mutation records");
+  assert.equal(applyNormalDebugStatus("player", { id: "hot_potato_status", apply: () => null }, 2), 2, "Hot Potato uses its normal final-round representation");
+  assert.deepEqual(state.hotPotatoOwners, ["player", "player"], "Normal Hot Potato entries must not be Mutation records");
+}
+
 console.log("Active effect registry checks passed.");
