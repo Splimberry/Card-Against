@@ -4471,6 +4471,7 @@ const elements = {
   devPowerEffectDuration: null,
   devPowerEffectStacks: null,
   devPowerApplyEffectButton: null,
+  devPowerClearEffectsButton: null,
   devPowerStatus: null,
   devPowerHand: null,
   devRoomDiagnosticsStatus: null,
@@ -4498,6 +4499,7 @@ const elements = {
   botPowerEffectDuration: document.querySelector("#botPowerEffectDuration"),
   botPowerEffectStacks: document.querySelector("#botPowerEffectStacks"),
   botPowerApplyEffectButton: document.querySelector("#botPowerApplyEffectButton"),
+  botPowerClearEffectsButton: document.querySelector("#botPowerClearEffectsButton"),
   botPowerStatus: document.querySelector("#botPowerStatus"),
   botPowerHand: document.querySelector("#botPowerHand"),
   devProfileGrid: null,
@@ -22533,6 +22535,7 @@ function applyRoundStartEffects() {
   const soulLinkDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
   const hotInHereDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
   const totalDeltas = Object.fromEntries(owners.map((owner) => [owner, 0]));
+  applyMutationRecurringRoundStartEffects(owners, events);
   applyCollapsingStarRoundStart(owners, events);
   applyMolotovBurningMarks(owners, events, totalDeltas);
   applyUnstableConduitRoundStart(owners, events);
@@ -22882,6 +22885,46 @@ function applyRoundStartEffects() {
     renderScore();
   }
   pruneMutationStatuses();
+}
+
+function applyMutationRecurringRoundStartEffects(owners, events) {
+  if (!isMatchModifierEnabled("mutation")) {
+    return;
+  }
+  owners.forEach((owner) => {
+    const statuses = getMutationStatusEntries(owner).filter((status) => (
+      !status.triggered && getMutationStatusRemaining(status) > 0
+    ));
+    const tunnelling = statuses.some((status) => status.id === "power_tunnelling_status");
+    if (tunnelling) {
+      const refills = refillPowerTunnellingHand(owner, "from active Power Tunnelling");
+      if (refills.length) {
+        events.push(...refills);
+      }
+    }
+
+    const capsule = statuses.find((status) => status.id === "time_capsule_status");
+    if (capsule) {
+      let powerId = state.lastPlayedPowerUps?.[owner] || "";
+      if (!getPowerById(powerId)) {
+        powerId = drawPowerCard([...(state.powerHands?.[owner] || [])], getPowerDrawOptions(owner));
+      }
+      if (powerId) {
+        syncTimeCapsuleSlot(owner, powerId);
+        events.push(`Time Capsule refreshed ${getOwnerLabel(owner)}'s stored power-up.`);
+      }
+    }
+
+    statuses
+      .filter((status) => status.id === "rocket_fuel" && Number(status.appliedRound) < state.round)
+      .forEach((status) => {
+        const bonus = 3 * getMutationStatusStackCount(status);
+        setOwnerStreak(owner, getOwnerStreak(owner) + bonus);
+        queueStatFlash("positive", "Rocket Fuel", formatSignedStat(bonus, "Streak"), { owners: [owner], complex: true });
+        events.push(`Rocket Fuel gave ${getOwnerLabel(owner)} ${bonus} streak at round start.`);
+        markMutationStatusTriggered(owner, status.id, status.mutationId);
+      });
+  });
 }
 
 function applyPendingLegendaryPowerRewards() {
@@ -23795,7 +23838,8 @@ function getPowerHandLimit(owner) {
 function getVendingMachineRefillCost(owner) {
   const hand = state.powerHands[owner] || [];
   if (hand.some((powerId) => powerId === `${"vending_machine"}${chaosInfusedPowerSuffix}`)
-    || (state.powerTunnellingRounds?.[owner] || 0) === state.round) {
+    || (state.powerTunnellingRounds?.[owner] || 0) === state.round
+    || hasActiveMutationStatus(owner, "power_tunnelling_status")) {
     return 0;
   }
   const limit = getPowerHandLimit(owner);
@@ -23862,7 +23906,8 @@ function refillPowerTunnellingHand(owner, reason = "from Power Tunnelling") {
 
 function rollChaosRefillAfterPowerUse(owner, power, events = []) {
   const endless = state.endlessHandRounds?.[owner] === state.round;
-  const tunnelling = state.powerTunnellingRounds?.[owner] === state.round;
+  const tunnelling = state.powerTunnellingRounds?.[owner] === state.round
+    || hasActiveMutationStatus(owner, "power_tunnelling_status");
   if (!endless && !tunnelling) {
     return;
   }
@@ -28927,7 +28972,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { state.bottomFeederRounds[owner] = (state.bottomFeederRounds[owner] || 0) + 1; return { kind: "counter", key: "bottomFeederRounds", manualExpiry: true }; }
   },
   {
-    id: "time_bomb", pool: "normal", name: "Time Bomb", powerId: "time_bomb", category: "risk", negative: true, displayNegative: false, triggerOnce: true,
+    id: "time_bomb", pool: "normal", name: "Time Bomb", powerId: "time_bomb", category: "risk", negative: true, triggerOnce: true,
     apply: (owner, rounds, mutationId) => {
       state.timeBombs = [...(state.timeBombs || []), { owner, round: state.round + rounds - 1, mutationId }];
       return { kind: "arrayEntry", key: "timeBombs" };
@@ -28990,11 +29035,11 @@ const mutationStatusDefinitions = Object.freeze([
     }
   },
   {
-    id: "world_burn", pool: "normal", name: "Let the World Burn", powerId: "world_burn", category: "risk", negative: true, displayNegative: false,
+    id: "world_burn", pool: "normal", name: "Let the World Burn", powerId: "world_burn", category: "risk", positive: true,
     apply: (owner) => { addEffectStack(state.worldBurnOwners, owner); return { kind: "stack", key: "worldBurnOwners" }; }
   },
   {
-    id: "lawn_mower", pool: "normal", name: "Lawn Mower", powerId: "law_mower", category: "target", negative: true, displayNegative: false,
+    id: "lawn_mower", pool: "normal", name: "Lawn Mower", powerId: "law_mower", category: "target", positive: true,
     apply: (owner) => { addModeEffectStack(state.lawnMowerOwners, owner); return { kind: "modeStack", key: "lawnMowerOwners" }; }
   },
   {
@@ -29002,7 +29047,7 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { addModeEffectStack(state.bartenders, owner); return { kind: "modeStack", key: "bartenders" }; }
   },
   {
-    id: "hot_in_here", pool: "normal", name: "It's Getting Hot", description: "At round start, every other player loses 5% x max(owner streak - 1, 0) of their score per stack.", powerId: "hot_in_here", category: "target", negative: true, displayNegative: false,
+    id: "hot_in_here", pool: "normal", name: "It's Getting Hot", description: "At round start, every other player loses 5% x max(owner streak - 1, 0) of their score per stack.", powerId: "hot_in_here", category: "target", positive: true,
     apply: (owner) => { addEffectStack(state.hotInHereOwners, owner); return { kind: "stack", key: "hotInHereOwners" }; }
   },
   {
@@ -29102,8 +29147,8 @@ const mutationStatusDefinitions = Object.freeze([
     apply: (owner) => { state.debuffShieldCharges[owner] = (state.debuffShieldCharges[owner] || 0) + 1; return { kind: "charge", key: "debuffShieldCharges" }; }
   },
   {
-    id: "rocket_fuel", pool: "normal", name: "Rocket Fuel", powerId: "rocket", category: "boost", positive: true, triggerOnce: true,
-    apply: (owner) => { state.pendingStreakBonuses[owner] = (state.pendingStreakBonuses[owner] || 0) + 3; return { kind: "counter", key: "pendingStreakBonuses" }; }
+    id: "rocket_fuel", pool: "normal", name: "Rocket Fuel", description: "At the next round start, gain 3 streak per stack, then this effect is consumed.", powerId: "rocket", category: "boost", positive: true, triggerOnce: true,
+    apply: () => ({ kind: "mutationOnly" })
   },
   {
     id: "resistant_shield", pool: "chaos", name: "Resistant Shield", powerId: "shield", category: "defense", positive: true,
@@ -29129,7 +29174,7 @@ const mutationStatusDefinitions = Object.freeze([
     }
   },
   {
-    id: "red_herring_status", pool: "normal", name: "Red Herring", powerId: "red_herring", category: "disruption", negative: true, displayNegative: false,
+    id: "red_herring_status", pool: "normal", name: "Red Herring", powerId: "red_herring", category: "disruption", positive: true,
     apply: (owner, rounds, mutationId) => {
       state.redHerringMasks[owner] = {
         ...(state.redHerringMasks[owner] && typeof state.redHerringMasks[owner] === "object" ? state.redHerringMasks[owner] : {}),
@@ -29682,11 +29727,20 @@ function getMutationStatusesAffectingOwner(owner) {
   }
   return Object.values(state.mutationStatuses || {})
     .flatMap((records) => Array.isArray(records) ? records : [])
-    .filter((status) => (
-      !status.triggered
-      && getMutationStatusRemaining(status) > 0
-      && (status.targetOwner || status.owner) === owner
-    ));
+    .filter((status) => {
+      if (status.triggered || getMutationStatusRemaining(status) <= 0) {
+        return false;
+      }
+      if (["soul_link_status", "streak_link_status"].includes(status.id)) {
+        return status.owner === owner || status.targetOwner === owner;
+      }
+      // 180 Guard protects the source owner while the saved target is only
+      // the recipient of redirected losses.
+      if (status.id === "reverse_guard_status") {
+        return status.owner === owner;
+      }
+      return (status.targetOwner || status.owner) === owner;
+    });
 }
 
 function getDedicatedTemporaryStatusEntries(owner) {
@@ -29740,6 +29794,32 @@ function getDedicatedTemporaryStatusEntries(owner) {
     });
   };
 
+  const addTargetedMark = (marks, definitionId) => {
+    (Array.isArray(marks) ? marks : []).forEach((mark) => {
+      if (mark?.targetOwner !== owner || Math.max(0, Number(mark.remaining) || 0) <= 0) {
+        return;
+      }
+      const definition = getMutationDefinitionForStatus({ id: definitionId });
+      if (!definition) {
+        return;
+      }
+      entries.push({
+        id: definition.id,
+        owner: mark.owner || owner,
+        targetOwner: owner,
+        name: definition.name,
+        powerId: definition.powerId,
+        category: definition.category,
+        triggerOnce: Boolean(definition.triggerOnce),
+        triggered: false,
+        rounds: Math.max(1, Number(mark.remaining) || 1),
+        expiresAt: state.round + Math.max(1, Number(mark.remaining) || 1) - 1,
+        synthetic: true,
+        sourceMark: mark
+      });
+    });
+  };
+
   // These stores are the regular power/status system. Including them here
   // lets Mutation traits interact with temporary statuses granted by powers,
   // not only statuses rolled by Mutation itself.
@@ -29761,6 +29841,11 @@ function getDedicatedTemporaryStatusEntries(owner) {
   addDurationObject(state.fireExtinguishedRounds, "mutation_extinguished");
   addDurationObject(state.insurancePolicies, "insurance_policy");
   addDurationObject(state.insuranceFrauds, "insurance_fraud_status");
+  // Death Bomb creates a follow-up Death Mark without a fresh Mutation
+  // record. Mirror those live marks so the affected player never loses the
+  // status-bar warning between the two effects.
+  addTargetedMark(state.deathBombMarks, "death_bomb_status");
+  addTargetedMark(state.deathMarks, "death_mark_status");
 
   const chaosStatus = getChaosStatus(owner);
   [
@@ -29821,17 +29906,27 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
 
   grouped.forEach(({ status, definition, count, remaining }) => {
     const name = status.name || definition.mutationName || definition.name;
-    const description = status.description
+    let description = status.description
       || definition.description
       || statusEffectLibraryCopy[status.id]?.[1]
       || `Active for ${remaining} round${remaining === 1 ? "" : "s"}.`;
+    if (["soul_link_status", "streak_link_status"].includes(status.id)) {
+      const linkedOwner = status.owner === owner ? status.targetOwner : status.owner;
+      if (linkedOwner) {
+        description = `${description} Linked to ${getOwnerLabel(linkedOwner)}.`;
+      }
+    } else if (status.id === "reverse_guard_status" && status.targetOwner) {
+      description = `${description} Losses are redirected to ${getOwnerLabel(status.targetOwner)}.`;
+    } else if (["death_mark_status", "death_bomb_status", "event_horizon_status", "target_wipe_status"].includes(status.id) && status.owner !== owner) {
+      description = `${description} Applied by ${getOwnerLabel(status.owner)}.`;
+    }
     entries.push(createActiveEffect(owner, status.powerId || definition.powerId, name, description, {
       chaosInfused: definition.pool === "chaos",
       statusPill: true,
       statusMeta: getMutationStatusMeta(status, count),
       mutationStatus: true,
       canonicalMutationStatus: true,
-      statusPolarity: isNegativeMutationStatusDisplay(definition) ? "negative" : "positive",
+      statusPolarity: getMutationStatusDisplayPolarity(definition, status, owner),
       statusTrigger: Boolean(definition.triggerOnce),
       statusNew: roundFeed.some((entry) => entry.id === status.id && !entry.noticeSeen),
       statusNoticeIds: roundFeed
@@ -29841,6 +29936,15 @@ function getMutationStatusBarEntries(owner = getFocusedOwner()) {
     }));
   });
   return entries;
+}
+
+function getMutationStatusDisplayPolarity(definition, status, owner) {
+  // Let the World Burn benefits its owner, but its visual warning turns red
+  // while that owner is leading the room.
+  if (definition?.id === "world_burn" && isFirstPlace(owner)) {
+    return "negative";
+  }
+  return isNegativeMutationStatusDisplay(definition) ? "negative" : "positive";
 }
 
 function markMutationStatusNoticeSeen(owner, noticeIds = []) {
@@ -29965,6 +30069,12 @@ function removeDedicatedTemporaryStatus(owner, status) {
       return true;
     case "insurance_fraud_status":
       delete state.insuranceFrauds[owner];
+      return true;
+    case "death_bomb_status":
+      state.deathBombMarks = (state.deathBombMarks || []).filter((mark) => mark.targetOwner !== owner);
+      return true;
+    case "death_mark_status":
+      state.deathMarks = (state.deathMarks || []).filter((mark) => mark.targetOwner !== owner);
       return true;
     default:
       return false;
@@ -31302,6 +31412,7 @@ function applyMutationStatus(owner, definition, rounds, options = {}) {
     mutationId,
     rounds: options.permanentStatus ? Number.MAX_SAFE_INTEGER : effectiveRounds,
     expiresAt: options.permanentStatus ? Number.MAX_SAFE_INTEGER : state.round + effectiveRounds - 1,
+    appliedRound: state.round,
     short: definition.short || "",
     description: definition.description || "",
     cleanup,
@@ -36089,6 +36200,7 @@ function buildDevToolScreen() {
               <input id="devPowerEffectStacks" type="number" min="1" step="1" value="1">
             </label>
             <button type="button" class="icon-button" id="devPowerApplyEffectButton">Apply Effect</button>
+            <button type="button" class="icon-button danger-button" id="devPowerClearEffectsButton">Clear All Status</button>
           </div>
         </section>
       </div>
@@ -36250,6 +36362,7 @@ function buildDevToolScreen() {
   elements.devPowerEffectDuration = screen.querySelector("#devPowerEffectDuration");
   elements.devPowerEffectStacks = screen.querySelector("#devPowerEffectStacks");
   elements.devPowerApplyEffectButton = screen.querySelector("#devPowerApplyEffectButton");
+  elements.devPowerClearEffectsButton = screen.querySelector("#devPowerClearEffectsButton");
   elements.devPowerStatus = screen.querySelector("#devPowerStatus");
   elements.devPowerHand = screen.querySelector("#devPowerHand");
   elements.devAchievementSearchInput = screen.querySelector("#devAchievementSearchInput");
@@ -36455,6 +36568,7 @@ function bindDevToolEvents() {
   elements.devPowerFillButton.addEventListener("click", () => fillDebugPowerHand("dev"));
   elements.devPowerClearButton.addEventListener("click", () => clearDebugPowerHand("dev"));
   elements.devPowerApplyEffectButton.addEventListener("click", () => applyDebugEffect("dev"));
+  elements.devPowerClearEffectsButton.addEventListener("click", () => clearDebugMutationStatuses("dev"));
   elements.devAchievementSearchInput.addEventListener("input", renderAchievementDebug);
   elements.devAchievementRarityFilter.addEventListener("change", renderAchievementDebug);
   elements.devAchievementTypeFilter.addEventListener("change", renderAchievementDebug);
@@ -37703,6 +37817,7 @@ function getPowerDebugRefs(scope = "dev") {
       effectDuration: elements.botPowerEffectDuration,
       effectStacks: elements.botPowerEffectStacks,
       applyEffectButton: elements.botPowerApplyEffectButton,
+      clearEffectsButton: elements.botPowerClearEffectsButton,
       status: elements.botPowerStatus,
       hand: elements.botPowerHand
     };
@@ -37718,6 +37833,7 @@ function getPowerDebugRefs(scope = "dev") {
     effectDuration: elements.devPowerEffectDuration,
     effectStacks: elements.devPowerEffectStacks,
     applyEffectButton: elements.devPowerApplyEffectButton,
+    clearEffectsButton: elements.devPowerClearEffectsButton,
     status: elements.devPowerStatus,
     hand: elements.devPowerHand
   };
@@ -37940,10 +38056,31 @@ function applyDebugEffect(scope = "dev") {
     priority: true
   });
   setPowerDebugStatus(scope, `Applied ${definition.name} to ${getOwnerLabel(owner)} ${durationLabel}${stackLabel}.`);
-  renderEffectPanel();
+  renderScore();
   renderPowerDebug(scope);
   publishPowerDebugState();
   playSound("reveal");
+}
+
+function clearDebugMutationStatuses(scope = "dev") {
+  if (!isMatchModifierEnabled("mutation")) {
+    setPowerDebugStatus(scope, "Start a Mutation match before clearing Status Effects.");
+    return;
+  }
+  const refs = getPowerDebugRefs(scope);
+  const owner = refs.ownerSelect?.value || "";
+  if (!owner) {
+    return;
+  }
+  const toRemove = Object.entries(state.mutationStatuses || {})
+    .flatMap(([sourceOwner, records]) => (Array.isArray(records) ? records : []).map((status) => ({ sourceOwner, status })))
+    .filter(({ status }) => !status.permanentStatus && getMutationStatusesAffectingOwner(owner).includes(status));
+  toRemove.forEach(({ sourceOwner, status }) => removeMutationStatusRecord(sourceOwner, status.mutationId));
+  getDedicatedTemporaryStatusEntries(owner).forEach((status) => removeDedicatedTemporaryStatus(owner, status));
+  renderScore();
+  renderPowerDebug(scope);
+  publishPowerDebugState();
+  setPowerDebugStatus(scope, toRemove.length ? `Cleared ${toRemove.length} active Status Effect${toRemove.length === 1 ? "" : "s"} from ${getOwnerLabel(owner)}.` : `${getOwnerLabel(owner)} has no active Status Effects to clear.`);
 }
 
 function publishPowerDebugState() {
@@ -49935,6 +50072,7 @@ elements.botPowerAddButton?.addEventListener("click", () => addDebugPowerToHand(
 elements.botPowerFillButton?.addEventListener("click", () => fillDebugPowerHand("bot-match"));
 elements.botPowerClearButton?.addEventListener("click", () => clearDebugPowerHand("bot-match"));
 elements.botPowerApplyEffectButton?.addEventListener("click", () => applyDebugEffect("bot-match"));
+elements.botPowerClearEffectsButton?.addEventListener("click", () => clearDebugMutationStatuses("bot-match"));
 elements.botPowerHand?.addEventListener("click", (event) => {
   const card = event.target.closest(".bot-power-debug-card");
   if (!card || !elements.botPowerHand.contains(card)) {
