@@ -9153,7 +9153,7 @@ function getActiveEffectEntries() {
         "time_bender",
         `Time Accelerator x${timeAcceleratorEntries.length}`,
         `Everyone else drains ${timeAcceleratorEntries.some((entry) => isChaosInfusedPower(entry.power)) ? 4 : 2}x faster while active; this player's timer is unaffected.`,
-        { chaosInfused: timeAcceleratorEntries.some((entry) => isChaosInfusedPower(entry.power)) }
+        { chaosInfused: timeAcceleratorEntries.some((entry) => isChaosInfusedPower(entry.power)), tableWide: true }
       )],
       [state.pendingStreakBonuses[owner] > 0, createActiveEffect(owner, "rocket", `Rocket Fuel +${state.pendingStreakBonuses[owner]}`, "Adds streak to this player at the start of next round.")],
       [state.pendingPowerBonuses[owner] > 0, createActiveEffect(owner, "small_insurance", `Pending Bonus +${state.pendingPowerBonuses[owner]}`, "Pays this player next round.")],
@@ -9163,6 +9163,12 @@ function getActiveEffectEntries() {
         `${getPowerById(state.insurancePolicies[owner]?.powerId)?.name || "Insurance"}${formatStackSuffix(getEffectStackCount(state.insurancePolicies[owner]) || 1)} · ${state.insurancePolicies[owner]?.remaining || 0}r`,
         `Triggers on your next loss within ${state.insurancePolicies[owner]?.remaining || 0} round${(state.insurancePolicies[owner]?.remaining || 0) === 1 ? "" : "s"}: keeps your streak and pays ${Math.round((state.insurancePolicies[owner]?.payoutPercent || 0) * 100)}% of your total score${state.insurancePolicies[owner]?.refillOnTrigger ? ", then refills all ability slots" : ""}.`
       )],
+      [state.insuranceFrauds[owner], createActiveEffect(
+        owner,
+        "insurance_fraud",
+        `Insurance Fraud${formatStackSuffix(getEffectStackCount(state.insuranceFrauds[owner]))} · ${Math.max(0, Number(state.insuranceFrauds[owner]?.remaining) || 0)}r`,
+        `After 3 losses, pays ${(4500 * Math.max(1, getEffectStackCount(state.insuranceFrauds[owner]))).toLocaleString()} points, grants ${3 * Math.max(1, getEffectStackCount(state.insuranceFrauds[owner]))} streak, and rolls one buff per stack. ${Math.max(0, Number(state.insuranceFrauds[owner]?.losses) || 0)}/3 losses so far.`
+      )],
       [state.pendingCocktailBuffs[owner] > 0, createActiveEffect(owner, "overachiever", `Overachiever Buff x${state.pendingCocktailBuffs[owner]}`, "Gives this player a Cocktail Mix buff next round.")],
       [state.pendingLegendaryPowers[owner] > 0, createActiveEffect(owner, "overachiever", `Pending Legendary x${state.pendingLegendaryPowers[owner]}`, "Gives this player a Legendary power-up next round after Chaos refresh.")],
       [(state.pocketShieldBreakThresholds[owner] || 0) > 0, createActiveEffect(owner, "shield", "Resistant Shield", "Point shield persists until it blocks over 2,000 points in one round.", { chaosInfused: true })],
@@ -9171,14 +9177,14 @@ function getActiveEffectEntries() {
       [state.heavenHellCurses[owner], createActiveEffect(owner, "heaven_hell", `${hasActiveMutationStatus(owner, "heaven_hell_curse") ? "Curse" : "Heaven/Hell Curse"}${formatStackSuffix(getEffectStackCount(state.heavenHellCurses[owner]))}`, "At round scoring, removes 250 points per current streak for each stack.")],
       [state.bottomFeederRounds[owner] > 0, createActiveEffect(owner, "bottom_feeder", `Bottom Feeder x${state.bottomFeederRounds[owner]}`, `Pays this player ${(state.bottomFeederRounds[owner] * 100).toLocaleString()} points after each loss.`)],
       [worldBurnStacks > 0, createActiveEffect(owner, "world_burn", `Let the World Burn${formatStackSuffix(worldBurnStacks)}`, `${worldBurnStacks} stack${worldBurnStacks === 1 ? "" : "s"}: first place loses 5% at each round start per stack.`, { tableWide: true })],
-      [getModeEffectTotal(lawnMowerStacks) > 0, createActiveEffect(owner, "law_mower", lawnMowerStacks.chaos > 0 ? `Cut Down to Size${formatStackSuffix(lawnMowerStacks.chaos)}${lawnMowerStacks.normal ? ` + Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}` : ""}` : `Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}`, lawnMowerStacks.chaos > 0 ? "Chaos stacks hit players ahead for 15% and trim Chaos-refreshed hands; normal stacks hit for 12%." : "Players ahead lose 12% of this player's score each round per stack.", { chaosInfused: lawnMowerStacks.chaos > 0 })],
-      [getEffectStackCount(state.arsonists[owner]) > 0, createActiveEffect(owner, "arsonist", `Arsonist${formatStackSuffix(getEffectStackCount(state.arsonists[owner]))}`, "Each stack gives this player and a random other player 1 streak at round start.")],
+      [getModeEffectTotal(lawnMowerStacks) > 0, createActiveEffect(owner, "law_mower", lawnMowerStacks.chaos > 0 ? `Cut Down to Size${formatStackSuffix(lawnMowerStacks.chaos)}${lawnMowerStacks.normal ? ` + Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}` : ""}` : `Lawn Mower${formatStackSuffix(lawnMowerStacks.normal)}`, lawnMowerStacks.chaos > 0 ? "Chaos stacks hit players ahead for 15% and trim Chaos-refreshed hands; normal stacks hit for 12%." : "Players ahead lose 12% of this player's score each round per stack.", { chaosInfused: lawnMowerStacks.chaos > 0, tableWide: true })],
+      [getEffectStackCount(state.arsonists[owner]) > 0, createActiveEffect(owner, "arsonist", `Arsonist${formatStackSuffix(getEffectStackCount(state.arsonists[owner]))}`, "Each stack gives this player and a random other player 1 streak at round start.", { tableWide: true })],
       [getModeEffectTotal(bartenderStacks) > 0, createActiveEffect(owner, "bartender", bartenderStacks.chaos > 0 ? `Pharmacy${formatStackSuffix(bartenderStacks.chaos)}${bartenderStacks.normal ? ` + Bartender${formatStackSuffix(bartenderStacks.normal)}` : ""}` : `Bartender${formatStackSuffix(bartenderStacks.normal)}`, bartenderStacks.chaos > 0 ? "Chaos stacks serve three Blue Pill buffs at round start; normal stacks serve Cocktail Mix." : "Serves this player Cocktail Mix at round start per stack.", { chaosInfused: bartenderStacks.chaos > 0 })],
       [molotovStacks > 0, createActiveEffect(owner, "cocktail_mix", `Molotov Cocktail${formatStackSuffix(molotovStacks)}`, "Adds a reusable button: choose up to 2 players once per round. Others burn; self-targeting grants a streak and a buff.", { chaosInfused: true })],
       [Number(molotovBurning?.remaining) > 0, createActiveEffect(owner, "cocktail_mix", `Burning${formatStackSuffix(getEffectStackCount(molotovBurning?.stacks || 1))} · ${molotovBurning.remaining}r`, `Loses ${(Math.max(0, Number(molotovBurning.amount) || 750) * Math.max(1, Number(molotovBurning.stacks) || 1)).toLocaleString()} points at the start of each remaining round.`, { chaosInfused: true })],
       [getEffectStackCount(state.virusFactories[owner]) > 0, createActiveEffect(owner, "virus_factory", `Virus Factory${formatStackSuffix(getEffectStackCount(state.virusFactories[owner]))}`, "Each stack gives every player a separate 33% chance to self-roll a debuff at round start.", { tableWide: true })],
       [unstableConduitStacks > 0, createActiveEffect(owner, "crawler_virus", `Unstable Conduit${formatStackSuffix(unstableConduitStacks)}`, "Each stack rolls a separate 40% chance for every player to receive a random status effect at round start.", { chaosInfused: true, tableWide: true })],
-      [getEffectStackCount(state.error404Owners[owner]) > 0, createActiveEffect(owner, "crawler_virus", `Error 404${formatStackSuffix(getEffectStackCount(state.error404Owners[owner]))}`, "Each stack rolls a separate 33% chance to scramble players at a random timer moment each round.")],
+      [getEffectStackCount(state.error404Owners[owner]) > 0, createActiveEffect(owner, "crawler_virus", `Error 404${formatStackSuffix(getEffectStackCount(state.error404Owners[owner]))}`, "Each stack rolls a separate 33% chance to scramble players at a random timer moment each round.", { tableWide: true })],
       [getModeEffectTotal(typhoonStacks) > 0, createActiveEffect(
         owner,
         "typhoon_season",
@@ -9189,17 +9195,18 @@ function getActiveEffectEntries() {
         { chaosInfused: typhoonStacks.chaos > 0, tableWide: true }
       )],
       [getEffectStackCount(state.eternalSlumberOwners[owner]) > 0, createActiveEffect(owner, "sin_sloth", `Eternal Slumber${formatStackSuffix(getEffectStackCount(state.eternalSlumberOwners[owner]))}`, "No player can keep a streak higher than this player's streak.", { tableWide: true })],
-      [getEffectStackCount(state.wrathOwners[owner]) > 0, createActiveEffect(owner, "sin_wrath", `Explosive Temper${formatStackSuffix(getEffectStackCount(state.wrathOwners[owner]))}`, "When this player loses, each stack plants a random next-round 10% bomb.", { chaosInfused: true })],
+      [getEffectStackCount(state.wrathOwners[owner]) > 0, createActiveEffect(owner, "sin_wrath", `Explosive Temper${formatStackSuffix(getEffectStackCount(state.wrathOwners[owner]))}`, "When this player loses, each stack plants a random next-round 10% bomb.", { chaosInfused: true, tableWide: true })],
       [getEffectStackCount(state.divineBlessingOwners[owner]) > 0, createActiveEffect(owner, "blessing", `Divine Blessing${formatStackSuffix(getEffectStackCount(state.divineBlessingOwners[owner]))}`, "Each stack gives this player 500 plus 5% score every round.", { chaosInfused: true })],
       [getEffectStackCount(state.superFuelOwners[owner]) > 0, createActiveEffect(owner, "rocket", `Super Fuel${formatStackSuffix(getEffectStackCount(state.superFuelOwners[owner]))}`, `Each active stack adds 1 streak to every future correct-round win.`, { chaosInfused: true })],
       [getEffectStackCount(state.vultureSwarmOwners[owner]) > 0, createActiveEffect(owner, "vulture", `Vulture Swarm${formatStackSuffix(getEffectStackCount(state.vultureSwarmOwners[owner]))}`, "Each stack pays this player 500 points per previous loss every round.", { chaosInfused: true })],
       [getEffectStackCount(state.chaosRefreshOwners[owner]) > 0, createActiveEffect(owner, "reign_chaos", `Chaos Infusioner${formatStackSuffix(getEffectStackCount(state.chaosRefreshOwners[owner]))}`, "Each stack turns one hand refresh chaos-infused.", { chaosInfused: true })],
       [permanentDeathMarkStacks > 0, createActiveEffect(owner, "time_bomb", `Permanent Death Mark${formatStackSuffix(permanentDeathMarkStacks)}`, "Each stack doubles current point losses for the rest of the game.", { chaosInfused: true })],
-      [getEffectStackCount(state.chaosEnvyOwners[owner]) > 0, createActiveEffect(owner, "sin_envy", `Virus Corruption${formatStackSuffix(getEffectStackCount(state.chaosEnvyOwners[owner]))}`, "Each stack drains everyone by 3% x this player's wrong-answer count every round.", { chaosInfused: true })],
+      [getEffectStackCount(state.chaosEnvyOwners[owner]) > 0, createActiveEffect(owner, "sin_envy", `Virus Corruption${formatStackSuffix(getEffectStackCount(state.chaosEnvyOwners[owner]))}`, "Each stack drains everyone by 3% x this player's wrong-answer count every round.", { chaosInfused: true, tableWide: true })],
       [getEffectStackCount(state.chaosBottomFeederOwners[owner]) > 0, createActiveEffect(owner, "bottom_feeder", `Scavenger${formatStackSuffix(getEffectStackCount(state.chaosBottomFeederOwners[owner]))}`, "Each stack adds a Bottom Feeder stack at the end of every round.", { chaosInfused: true })],
-      [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for the remaining rounds.", { chaosInfused: true })],
+      [state.loserTaxCollectors[owner] > 0, createActiveEffect(owner, "loser_tax", `Debt Collector x${state.loserTaxCollectors[owner]}`, "Losers pay this player 350 points for the remaining rounds.", { chaosInfused: true, tableWide: true })],
       [fourthSlotStacks > 0, createActiveEffect(owner, "recycle_bin", `4th Slot${formatStackSuffix(fourthSlotStacks)}`, "Adds one permanent power-up slot for this match per stack.")],
       [timeCapsuleStacks > 0, createActiveEffect(owner, "hoarder", `Time Capsule${formatStackSuffix(timeCapsuleStacks)}`, `Adds a permanent slot containing ${getPowerById(state.timeCapsuleOwners?.[owner]?.powerId)?.name || "the last power used"}; it updates after every power use.`, { chaosInfused: true })],
+      [state.allOutRounds?.[owner] === state.round && state.endlessHandRounds?.[owner] !== state.round, createActiveEffect(owner, "all_out", "All Out", "Power-ups can be used repeatedly this round.")],
       [state.endlessHandRounds?.[owner] === state.round, createActiveEffect(owner, "all_out", "Endless Hand", "Power-ups can be used repeatedly this round; each use has a 66% chance to add another power-up.", { chaosInfused: true })],
       [state.powerTunnellingRounds?.[owner] === state.round, createActiveEffect(owner, "vending_machine", "Power Tunnelling", "Power-ups can be used repeatedly this round and empty slots refill for free with stolen powers.", { chaosInfused: true })],
       [eternalCelebrationStacks > 0, createActiveEffect(owner, "afterparty", `Eternal Celebration${formatStackSuffix(eternalCelebrationStacks)}`, "Wins empower this player's score by 10% and chaos-infuse an eligible refreshed power.", { chaosInfused: true })],
@@ -9219,7 +9226,7 @@ function getActiveEffectEntries() {
       [hasImpendingDoom(owner), createActiveEffect(owner, "red_button", `Impending Doom${formatStackSuffix(doomStacks)}`, "Cannot gain positive status effects. Each stack makes wrong answers lose 1,000 plus 10% points. Cannot be removed.")],
       [getEffectStackCount(state.nullProtocolOwners?.[owner]) > 0, createActiveEffect(owner, "null_protocol", `Null Corruption${formatStackSuffix(getEffectStackCount(state.nullProtocolOwners[owner]))}`, "Cannot gain positive statuses or bonus points. Point gains lose 10%, plus 5% for every wrong answer. Cannot be removed.")],
       [getEffectStackCount(state.targetWipeMarks?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Target Wipe${formatStackSuffix(getEffectStackCount(state.targetWipeMarks[owner]?.count || state.targetWipeMarks[owner]))} · ${state.targetWipeMarks[owner]?.remaining || 0}r`, "If this player wins while marked, they lose 12.5% per stack, lose 2 power-ups per stack, and retain only 75% of their round gain per stack.", { chaosInfused: true })],
-      [getEffectStackCount(state.collapsingStarOwners?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Collapsing Star${formatStackSuffix(getEffectStackCount(state.collapsingStarOwners[owner]))}`, "Each round, randomly marks a player ahead of this player with Target Wipe.", { chaosInfused: true })],
+      [getEffectStackCount(state.collapsingStarOwners?.[owner]) > 0, createActiveEffect(owner, "collapsing_star", `Collapsing Star${formatStackSuffix(getEffectStackCount(state.collapsingStarOwners[owner]))}`, "Each round, randomly marks a player ahead of this player with Target Wipe.", { chaosInfused: true, tableWide: true })],
       [hasDoomShield(owner), createActiveEffect(owner, "ultimatum", `Ultimatum x${state.ultimatumRounds[owner]}`, "Blocks point loss, debuffs, streak loss, and targeting. Cannot be removed.")],
       [hasExplosiveDoom(owner), createActiveEffect(owner, "ultimatum", `Explosive${formatStackSuffix(explosiveStacks)}`, "Each stack makes wrong answers lose 10% of this player's score. Cannot be removed.")],
       [(state.doomStreakGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "thermal_scythe", `Thermal Guard x${state.doomStreakGuardRounds[owner]}`, "Blocks all streak reductions. Cannot be removed.")],
@@ -9229,14 +9236,14 @@ function getActiveEffectEntries() {
         `Secret Agent x${state.secretAgentRounds[owner]}`,
         `Scrambles other players' visible identities and style. Score swap resolves at the end of round ${getSecretAgentPendingSwapRounds(owner)[0] || "the effect"}. Cannot be removed.`
       )],
-      [thornPercent > 0, createActiveEffect(owner, "thorns", thornPercent > 0.33 ? `Thorns III${formatStackSuffix(Math.round(thornPercent / 0.33))}` : "Thorns", `Reflects ${Math.round(thornPercent * 100)}% of this player's scoring losses to everyone else.`, { chaosInfused: thornPercent > 0.33 })],
-      [getEffectStackCount(state.hotInHereOwners[owner]) > 0, createActiveEffect(owner, "hot_in_here", `It's Getting Hot${formatStackSuffix(getEffectStackCount(state.hotInHereOwners[owner]))}`, "At round start, each stack makes everyone else lose 5% x max(this player's streak - 1, 0).")],
+      [thornPercent > 0, createActiveEffect(owner, "thorns", thornPercent > 0.33 ? `Thorns III${formatStackSuffix(Math.round(thornPercent / 0.33))}` : "Thorns", `Reflects ${Math.round(thornPercent * 100)}% of this player's scoring losses to everyone else.`, { chaosInfused: thornPercent > 0.33, tableWide: true })],
+      [getEffectStackCount(state.hotInHereOwners[owner]) > 0, createActiveEffect(owner, "hot_in_here", `It's Getting Hot${formatStackSuffix(getEffectStackCount(state.hotInHereOwners[owner]))}`, "At round start, each stack makes everyone else lose 5% x max(this player's streak - 1, 0).", { tableWide: true })],
       [getEffectStackCount(state.penaltyStormOwners?.[owner]) > 0, createActiveEffect(owner, "penalty_cloud", `Penalty Storm${formatStackSuffix(getEffectStackCount(state.penaltyStormOwners[owner]))}`, "When this player loses, each stack removes 5% x (losses this match + 1) of projected score plus 500 x (current streak + 1) points.", { chaosInfused: true })],
       [getEffectStackCount(state.fraudMasterOwners?.[owner]) > 0, createActiveEffect(owner, "insurance_fraud", `Fraud Master${formatStackSuffix(getEffectStackCount(state.fraudMasterOwners[owner]))}`, "After an assisted win or more than 3 losses, this player gains (2,000 points + 10% of current score) per stack.", { chaosInfused: true })],
       [getEffectStackCount(state.fireExtinguisherOwners?.[owner]) > 0, createActiveEffect(owner, "arsonist", `Fire Extinguisher${formatStackSuffix(getEffectStackCount(state.fireExtinguisherOwners[owner]))}`, "Choose up to 2 players each round to extinguish their streaks.", { chaosInfused: true })],
       [getEffectStackCount(state.midasTouchOwners?.[owner]) > 0, createActiveEffect(owner, "ultimate_bounty", `Midas' Touch${formatStackSuffix(getEffectStackCount(state.midasTouchOwners[owner]))}`, "Wins add a permanent stack; each stack pays 5% of current score at round start.", { chaosInfused: true })],
       [getEffectStackCount(state.capitalismOwners?.[owner]) > 0, createActiveEffect(owner, "communism", `Capitalism${formatStackSuffix(getEffectStackCount(state.capitalismOwners[owner]))}`, "Positive earnings are permanently increased by 50% per stack.", { chaosInfused: true })],
-      [getEffectStackCount(state.infernoOwners?.[owner]) > 0, createActiveEffect(owner, "hot_in_here", `Inferno${formatStackSuffix(getEffectStackCount(state.infernoOwners[owner]))}`, "At round start, gain 1 streak per stack; everyone else loses 5% x your final streak x stack count of their score.", { chaosInfused: true })],
+      [getEffectStackCount(state.infernoOwners?.[owner]) > 0, createActiveEffect(owner, "hot_in_here", `Inferno${formatStackSuffix(getEffectStackCount(state.infernoOwners[owner]))}`, "At round start, gain 1 streak per stack; everyone else loses 5% x your final streak x stack count of their score.", { chaosInfused: true, tableWide: true })],
       [(state.reverseGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "reverse", `180 Guard · ${state.reverseGuardRounds[owner]}r`, `Point losses are redirected to ${getOwnerLabel(state.reverseGuardTargets?.[owner])}.`, { chaosInfused: true })],
       [state.redHerringMasks[owner] && owner === getFocusedOwner(), createActiveEffect(
         owner,
@@ -9395,6 +9402,33 @@ function getActiveEffectEntries() {
     ));
   });
 
+  groupedTimedEffects(state.skillIssueMarks, (mark) => `${mark.targetOwner}|${mark.owner}|${mark.remaining || 0}`).forEach((marks) => {
+    const mark = marks[0];
+    if (!owners.includes(mark.targetOwner)) {
+      return;
+    }
+    const stacks = marks.length;
+    entries.push(createActiveEffect(
+      mark.targetOwner,
+      "haha_you_lose",
+      `Skill Issue${formatStackSuffix(stacks)} · ${mark.remaining || 0}r`,
+      `Each stack takes ${(Number(mark.amount) || 1500).toLocaleString()} points plus ${Math.round((Number(mark.percent) || 0.1) * 100)}% of score on a loss, then gives ${getOwnerLabel(mark.owner)} ${Number(mark.streakGain) || 3} streak.`,
+      { chaosInfused: true }
+    ));
+  });
+
+  owners
+    .filter((owner) => Number(state.deadWeightLockedRounds?.[owner]) === Number(state.round))
+    .forEach((owner) => {
+      entries.push(createActiveEffect(
+        owner,
+        "dead_weight",
+        "Dead Weight",
+        "Power-ups are disabled for this player for the rest of this round.",
+        { chaosInfused: true }
+      ));
+    });
+
   (state.streakLinks || []).forEach((link) => {
     if (!owners.includes(link.owner) || !owners.includes(link.targetOwner)) {
       return;
@@ -9440,7 +9474,12 @@ function getActiveEffectEntries() {
 
   (state.soulLinks || []).forEach((link) => {
     if (owners.includes(link.owner) && owners.includes(link.targetOwner)) {
-      entries.push(createActiveEffect(link.owner, "soul_link", `Soul Link -> ${getOwnerLabel(link.targetOwner)}`, "At round start, both linked players gain 10% of the other's score."));
+      const percent = Math.round((Number(link.stealPercent) || 0.1) * 100);
+      const description = link.parasitic
+        ? `At round start, ${getOwnerLabel(link.owner)} steals ${percent}% of ${getOwnerLabel(link.targetOwner)}'s score.`
+        : `At round start, both linked players gain ${percent}% of the other's score.`;
+      entries.push(createActiveEffect(link.owner, "soul_link", `Soul Link -> ${getOwnerLabel(link.targetOwner)}`, description, { chaosInfused: Boolean(link.parasitic) }));
+      entries.push(createActiveEffect(link.targetOwner, "soul_link", `Soul Link <- ${getOwnerLabel(link.owner)}`, description, { chaosInfused: Boolean(link.parasitic) }));
     }
   });
 

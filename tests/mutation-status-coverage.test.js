@@ -80,6 +80,11 @@ assert.match(appSource, /classList\.remove\([^\n]*"mutation"[^\n]*"stat-flash-pl
 assert.match(appSource, /tableWide: Boolean\(options\.tableWide \|\| owner === "table"\)/, "Active effects must identify table-wide effects");
 assert.match(appSource, /Virus Factory[\s\S]{0,280}tableWide: true/, "Virus Factory must be promoted as a table-wide effect");
 assert.match(appSource, /Let the World Burn[\s\S]{0,260}tableWide: true/, "Let the World Burn must be visible to every player in the non-Mutation status bar");
+assert.match(appSource, /state\.allOutRounds\?\.\[owner\] === state\.round[\s\S]{0,180}"All Out"/, "Normal All Out must appear in the non-Mutation status bar");
+assert.match(appSource, /state\.insuranceFrauds\[owner\][\s\S]{0,240}Insurance Fraud/, "Normal Insurance Fraud must appear in the non-Mutation status bar");
+assert.match(appSource, /groupedTimedEffects\(state\.skillIssueMarks[\s\S]{0,520}`Skill Issue/, "Skill Issue marks must appear on their target's non-Mutation status bar");
+assert.match(appSource, /Soul Link <- \$\{getOwnerLabel\(link\.owner\)\}/, "Soul Link must appear for the linked target as well as its owner");
+assert.match(appSource, /Virus Corruption[\s\S]{0,240}tableWide: true/, "Cross-table Virus Corruption must be visible to every player");
 assert.match(appSource, /items\.className = "active-effect-items"/, "Non-Mutation status effects must use the rounded-square status area layout");
 assert.match(appSource, /entries\.filter\(\(entry\) => entry\.owner === focusedOwner \|\| entry\.tableWide\)/, "Non-Mutation status bars must show personal effects plus table-wide effects only");
 assert.match(appSource, /id="devPowerEffectSearchInput"/, "Power Debug needs an effect search input");
