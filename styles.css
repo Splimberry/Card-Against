@@ -5768,16 +5768,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   text-shadow: 0 0 0.55rem rgb(var(--mutation-lime) / 0.5);
 }
 
-.effect-panel.mutation-status-bar .mutation-status-items {
-  display: flex;
-  flex: 1 1 20rem;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.38rem;
-  min-width: 0;
-}
-
-.effect-panel .active-effect-items {
+.effect-panel .status-effect-items {
   display: flex;
   flex: 1 1 20rem;
   flex-wrap: wrap;

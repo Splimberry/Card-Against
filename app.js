@@ -9508,12 +9508,39 @@ function getActiveEffectEntries() {
 }
 
 function getRegularStatusBarEntries(owner = getFocusedOwner()) {
-  // The status bar is the band under the hand, not the top-left overlay icon
-  // feed. It contains only effects that still change gameplay for this player
-  // or for the whole table.
+  if (!owner) {
+    return [];
+  }
+
+  // Keep regular games on the same status-card data contract as Mutation.
+  // The active-effect registry remains the source of truth for normal powers,
+  // while this adapter makes every ongoing effect render through the shared
+  // status-bar path below.
   return getActiveEffectEntries()
     .filter((entry) => !entry.mutationStatus)
-    .filter((entry) => entry.owner === owner || entry.tableWide);
+    .filter((entry) => entry.owner === owner || entry.tableWide)
+    .map((entry) => ({
+      ...entry,
+      statusPill: true
+    }));
+}
+
+function getStatusBarEntries(owner = getFocusedOwner()) {
+  return isMatchModifierEnabled("mutation")
+    ? getMutationStatusBarEntries(owner).filter((entry) => entry.owner === owner && entry.canonicalMutationStatus)
+    : getRegularStatusBarEntries(owner);
+}
+
+function getStatusBarEntryOrder(entry, mutationMode) {
+  if (!mutationMode) {
+    return entry.tableWide ? 0 : 1;
+  }
+  const harmful = entry.statusPolarity === "negative";
+  const trigger = Boolean(entry.statusTrigger);
+  if (!harmful && !trigger) return 0;
+  if (!harmful && trigger) return 1;
+  if (harmful && !trigger) return 2;
+  return 3;
 }
 
 function shouldRenderEffectPanel() {
@@ -9533,10 +9560,7 @@ function renderEffectPanel() {
   }
 
   const mutationMode = isMatchModifierEnabled("mutation");
-  const focusedOwner = getFocusedOwner();
-  const visibleEntries = mutationMode
-    ? getMutationStatusBarEntries().filter((entry) => entry.owner === focusedOwner && entry.canonicalMutationStatus)
-    : getRegularStatusBarEntries(focusedOwner);
+  const visibleEntries = getStatusBarEntries(getFocusedOwner());
   elements.effectPanel.replaceChildren();
   elements.effectPanel.classList.toggle("mutation-status-bar", mutationMode);
   elements.effectPanel.classList.toggle("empty", visibleEntries.length === 0);
@@ -9559,19 +9583,20 @@ function renderEffectPanel() {
   elements.effectPanel.appendChild(header);
 
   const appendBadge = (entry, container = elements.effectPanel) => {
+    const useMutationStyling = mutationMode && entry.mutationStatus;
     const badge = document.createElement("span");
     badge.className = "effect-badge";
     badge.dataset.rarity = entry.rarity;
     badge.dataset.description = entry.description;
     badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
-    badge.classList.toggle("mutation-status", Boolean(entry.mutationStatus));
-    badge.classList.toggle("status-card", !mutationMode);
+    badge.classList.toggle("mutation-status", useMutationStyling);
+    badge.classList.toggle("status-card", !useMutationStyling);
     badge.classList.toggle("table-wide", Boolean(entry.tableWide));
     badge.classList.toggle("status-negative", entry.statusPolarity === "negative");
     badge.classList.toggle("status-trigger", Boolean(entry.statusTrigger));
     badge.classList.toggle("status-new", Boolean(entry.statusNew));
     const label = document.createElement("strong");
-    label.textContent = entry.mutationStatus ? "" : entry.label;
+    label.textContent = useMutationStyling ? "" : entry.label;
     const name = document.createElement("span");
     name.textContent = entry.name;
     if (label.textContent) {
@@ -9596,34 +9621,11 @@ function renderEffectPanel() {
     container.appendChild(badge);
   };
 
-  if (!mutationMode) {
-    const items = document.createElement("div");
-    items.className = "active-effect-items";
-    [...visibleEntries]
-      .sort((left, right) => {
-        const leftPriority = left.tableWide ? 0 : 1;
-        const rightPriority = right.tableWide ? 0 : 1;
-        return leftPriority - rightPriority || left.name.localeCompare(right.name);
-      })
-      .forEach((entry) => appendBadge(entry, items));
-    elements.effectPanel.appendChild(items);
-    setHidden(elements.effectPanel, false);
-    return;
-  }
-
-  const getMutationStatusOrder = (entry) => {
-    const harmful = entry.statusPolarity === "negative";
-    const trigger = Boolean(entry.statusTrigger);
-    if (!harmful && !trigger) return 0;
-    if (!harmful && trigger) return 1;
-    if (harmful && !trigger) return 2;
-    return 3;
-  };
   const items = document.createElement("div");
-  items.className = "mutation-status-items";
+  items.className = "status-effect-items";
   [...visibleEntries]
     .sort((left, right) => (
-      getMutationStatusOrder(left) - getMutationStatusOrder(right)
+      getStatusBarEntryOrder(left, mutationMode) - getStatusBarEntryOrder(right, mutationMode)
       || getRarityRank(left.rarity) - getRarityRank(right.rarity)
       || left.name.localeCompare(right.name)
     ))

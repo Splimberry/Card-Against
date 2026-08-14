@@ -85,8 +85,9 @@ assert.match(appSource, /state\.insuranceFrauds\[owner\][\s\S]{0,240}Insurance F
 assert.match(appSource, /groupedTimedEffects\(state\.skillIssueMarks[\s\S]{0,520}`Skill Issue/, "Skill Issue marks must appear on their target's non-Mutation status bar");
 assert.match(appSource, /Soul Link <- \$\{getOwnerLabel\(link\.owner\)\}/, "Soul Link must appear for the linked target as well as its owner");
 assert.match(appSource, /Virus Corruption[\s\S]{0,240}tableWide: true/, "Cross-table Virus Corruption must be visible to every player");
-assert.match(appSource, /items\.className = "active-effect-items"/, "Non-Mutation status effects must use the rounded-square status area layout");
+assert.match(appSource, /items\.className = "status-effect-items"/, "All status effects must use the shared rounded-square status area layout");
 assert.match(appSource, /function getRegularStatusBarEntries\(owner = getFocusedOwner\(\)\)[\s\S]{0,500}entry\.owner === owner \|\| entry\.tableWide/, "Non-Mutation status bars must show personal effects plus table-wide effects only");
+assert.match(appSource, /function getStatusBarEntries\(owner = getFocusedOwner\(\)\)[\s\S]{0,320}getMutationStatusBarEntries\(owner\)[\s\S]{0,320}getRegularStatusBarEntries\(owner\)/, "Mutation and regular matches must use the shared status-bar entry path");
 assert.match(appSource, /function shouldRenderEffectPanel\(\) \{[\s\S]{0,320}!elements\.inputPanel\.classList\.contains\("hidden"\)/, "The status bar must follow the live answer phase instead of stale card or verdict visibility");
 assert.doesNotMatch(appSource.match(/function shouldRenderEffectPanel\(\)[\s\S]{0,420}/)?.[0] || "", /cardsArea|verdictPanel|endPanel/, "Answer-phase status rendering must not be gated by stale result surfaces");
 assert.match(appSource, /function getArmedHotPotatoCount\(\)[\s\S]{0,520}Math\.max\(recordedCount, recordedOwners\)/, "Armed Hot Potato statuses must survive count-only or owner-list-only sync payloads");
