@@ -9591,6 +9591,7 @@ function renderEffectPanel() {
       })
       .forEach((entry) => appendBadge(entry, items));
     elements.effectPanel.appendChild(items);
+    setHidden(elements.effectPanel, false);
     return;
   }
 
@@ -9612,6 +9613,7 @@ function renderEffectPanel() {
     ))
     .forEach((entry) => appendBadge(entry, items));
   elements.effectPanel.appendChild(items);
+  setHidden(elements.effectPanel, false);
 }
 
 function getMutationDisplayName(statusOrDefinition) {
