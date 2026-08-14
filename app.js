@@ -14858,12 +14858,22 @@ function getOwnerFromRoomRoundParticipantId(participantId, fallbackIndex = -1) {
   return "";
 }
 
+function recordRoomGradingHandoff(type = "grading-result", payload = {}, reason = "") {
+  recordRoomDiagnosticEvent(type, payload, {
+    source: "grading-handoff",
+    eventType: "round-result",
+    reason
+  });
+}
+
 function applyRealtimeRoomRoundResult(payload = {}) {
   if (!isRoomMode() || !hasActiveRoomContext()) {
+    recordRoomGradingHandoff("grading-result-rejected", payload, "Ignored because this tab does not have an active multiplayer room.");
     return false;
   }
   const code = String(payload.code || payload.room?.code || state.roomSettings.code || "").trim().toUpperCase();
   if (!code || code !== state.roomSettings.code) {
+    recordRoomGradingHandoff("grading-result-rejected", payload, "Ignored because the result belongs to a different room.");
     return false;
   }
   const incomingGame = payload.game && typeof payload.game === "object"
@@ -14873,6 +14883,7 @@ function applyRealtimeRoomRoundResult(payload = {}) {
       : null;
   const result = normalizeRoomRoundResultPayload(payload.roundResult || incomingGame?.roundResult || payload);
   if (!result) {
+    recordRoomGradingHandoff("grading-result-rejected", payload, "Ignored because the result did not include complete answer cards.");
     return false;
   }
   const incomingRound = Number(result.round || incomingGame?.round) || 0;
@@ -14902,6 +14913,7 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   // includes the match, round, cards and scoring state, so an older local
   // match id must not prevent a joined client from adopting and rendering it.
   if (!roomPayloadMatchesCurrentMatch(payload) && !canAdoptIncomingResult && !completeAuthoritativeResult && !completePeerResult) {
+    recordRoomGradingHandoff("grading-result-rejected", payload, "Ignored because its match identity does not match this round.");
     return false;
   }
   // A complete server result is the authoritative hand-off for this round.
@@ -14977,7 +14989,14 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   // just because it arrived during the setup animation or setup request.
   state.roomRoundResultPendingPlayback = result;
   applyRoomRoundResultStateSafely(result, { source: "realtime-result" });
-  tryPlayPendingRoomRoundResult();
+  const presented = tryPlayPendingRoomRoundResult();
+  recordRoomGradingHandoff(
+    presented ? "grading-result-rendered" : "grading-result-pending",
+    { ...payload, roundResult: result },
+    presented
+      ? "Received and rendered the authoritative grading result."
+      : "Received the authoritative result, but its display is waiting for the local round state."
+  );
   maybePlaySpectatorRoomRoundResult(result);
   return true;
 }
@@ -15234,7 +15253,17 @@ function showRoomRoundResultSyncError(message) {
 // the normal setup lifecycle presents it; realtime events should not need to
 // be replayed just because the DOM was between two setup states.
 function tryPlayPendingRoomRoundResult(localFallback = "") {
-  if (!isRoomMode() || state.isSpectator || state.matchEnded || !isJoinedRoomClient()) {
+  const blockedByMode = !isRoomMode();
+  const blockedBySpectator = state.isSpectator;
+  const blockedByMatchEnd = state.matchEnded;
+  const blockedByRole = !isJoinedRoomClient();
+  if (blockedByMode || blockedBySpectator || blockedByMatchEnd || blockedByRole) {
+    recordRoomGradingHandoff("grading-result-playback-blocked", {}, [
+      blockedByMode ? "not in multiplayer" : "",
+      blockedBySpectator ? "spectator view" : "",
+      blockedByMatchEnd ? "match ended" : "",
+      blockedByRole ? "tab is not recognised as a joined player" : ""
+    ].filter(Boolean).join(", "));
     return false;
   }
   const pending = normalizeRoomRoundResultPayload(
@@ -15244,6 +15273,13 @@ function tryPlayPendingRoomRoundResult(localFallback = "") {
       || state.joiningRoom?.game?.roundResult
   );
   if (!pending || Number(pending.round) !== Number(state.round)) {
+    recordRoomGradingHandoff(
+      "grading-result-playback-blocked",
+      pending || {},
+      !pending
+        ? "No authoritative result is stored locally yet."
+        : `Result is for round ${Number(pending.round) || 0}, while this tab is on round ${Number(state.round) || 0}.`
+    );
     return false;
   }
 
@@ -15257,6 +15293,9 @@ function tryPlayPendingRoomRoundResult(localFallback = "") {
     const presented = recoverRoomRoundResultPlayback(pending, localFallback);
     if (presented) {
       state.roomRoundResultPendingPlayback = null;
+    }
+    if (!presented) {
+      recordRoomGradingHandoff("grading-result-playback-blocked", pending, "The result was stored, but the grading view could not mount yet.");
     }
     return presented;
   } catch (error) {
@@ -16720,6 +16759,7 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     state.roomRoundResolving = false;
     return;
   }
+  recordRoomGradingHandoff("grading-result-waiting", {}, "Round is locked. Waiting for the host's authoritative result.");
   showWaitingForRoomRoundResult();
   const waitTimeout = Math.max(5000, Number(timeoutMs) || getRoomRoundResultWaitTimeoutMs());
   void waitForRoomSyncCondition(() => {
@@ -16739,6 +16779,7 @@ async function waitForRoomRoundResultThenPlay(localFallback = "", matchToken = s
     if (result !== "played" && isCurrentMatchWork(matchToken) && isRoomMode() && !state.matchEnded) {
       await requestRoomRealtimeCatchup("round-result-wait-timeout", { force: true, snapshot: true });
       if (!playSyncedResultIfReady() && isCurrentMatchWork(matchToken)) {
+        recordRoomGradingHandoff("grading-result-recovery-failed", {}, "The result was still unavailable after the event-driven server catchup.");
         elements.loadingPanel.dataset.loadingState = "waiting-host";
         elements.loadingText.textContent = "Still waiting for the host to sync the results...";
         setHidden(elements.errorPanel, true);
@@ -19907,6 +19948,7 @@ function renderRoomDiagnosticsPanel() {
   const diagnostics = getRoomDiagnosticsState();
   const roomCode = String(state.roomSettings.code || state.realtimeRoomCode || "").trim().toUpperCase();
   const activeCode = roomCode && roomCode !== "CAI-0000" ? roomCode : "No active room";
+  const latestGradingHandoff = diagnostics.timeline.find((entry) => entry.type.startsWith("grading-result")) || null;
   elements.devRoomDiagnosticsStatus.textContent = [
     "Realtime is the main sync path.",
     "One-shot catchup runs only after reconnect, revision gaps, or the button here.",
@@ -19924,7 +19966,8 @@ function renderRoomDiagnosticsPanel() {
     createRoomDiagnosticMetric("Snapshots Blocked", String(diagnostics.snapshotBlocked), "Blocked from overwriting live state"),
     createRoomDiagnosticMetric("Ignored", String(diagnostics.ignoredEvents), `${diagnostics.ignoredStaleEvents} stale, ${diagnostics.ignoredDuplicates} duplicate`),
     createRoomDiagnosticMetric("Revision Gaps", String(diagnostics.revisionGaps), diagnostics.lastGap ? diagnostics.lastGap.reason : "No gaps detected"),
-    createRoomDiagnosticMetric("Catchups", String(diagnostics.resyncAttempts), diagnostics.lastResync ? diagnostics.lastResync.reason : `${diagnostics.catchupSkipped} skipped`)
+    createRoomDiagnosticMetric("Catchups", String(diagnostics.resyncAttempts), diagnostics.lastResync ? diagnostics.lastResync.reason : `${diagnostics.catchupSkipped} skipped`),
+    createRoomDiagnosticMetric("Grading Handoff", latestGradingHandoff ? latestGradingHandoff.type.replace("grading-result-", "") : "None", latestGradingHandoff?.reason || "No grading result has been handled in this tab yet.")
   );
   elements.devRoomDiagnosticsList.replaceChildren();
   if (!diagnostics.timeline.length) {
@@ -21701,6 +21744,9 @@ const roomSync = {
         throw requestError || new Error("Room command request failed.");
       }
       const data = await response.json().catch(() => ({}));
+      const gradingBroadcastResult = commandType === "publish_round_result"
+        ? `Server broadcast: ${data.serverBroadcast === true ? "confirmed" : data.serverBroadcast === false ? "not confirmed" : "not reported"}. Result-ready broadcast: ${data.resultReadyBroadcast === true ? "confirmed" : data.resultReadyBroadcast === false ? "not confirmed" : "not reported"}.`
+        : "";
       recordRoomDiagnosticEvent(response.ok ? "command-response" : "command-error", {
         ...data,
         code: data.roomCode || roomCode,
@@ -21712,7 +21758,9 @@ const roomSync = {
         commandType,
         clientEventId,
         expectedRevision,
-            result: response.ok ? `Returned revision ${data.revision || 0}.` : (data.error || `HTTP ${response.status}`)
+        result: response.ok
+          ? `Returned revision ${data.revision || 0}.${gradingBroadcastResult ? ` ${gradingBroadcastResult}` : ""}`
+          : (data.error || `HTTP ${response.status}`)
       });
       const events = Array.isArray(data.events) ? data.events : [];
       if (!response.ok || data.ok === false) {

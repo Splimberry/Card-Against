@@ -417,6 +417,7 @@ async function testPendingResultWaitsForJoinedStage() {
     isJoinedRoomClient() {
       return true;
     },
+    recordRoomGradingHandoff() {},
     elements: {
       gameStage: {
         classList: { contains: () => false }
@@ -472,6 +473,7 @@ async function testPendingResultCanRecoverAfterPresentationTokenIsInvalidated() 
     isJoinedRoomClient() {
       return true;
     },
+    recordRoomGradingHandoff() {},
     elements: {
       gameStage: {
         classList: { contains: () => false }
@@ -524,6 +526,7 @@ function testWaitingHostResultUsesImmediateAuthoritativeRecovery() {
     isJoinedRoomClient() {
       return true;
     },
+    recordRoomGradingHandoff() {},
     elements: {
       gameStage: {
         classList: { contains: () => false }
@@ -611,6 +614,7 @@ async function testRejectedResultDoesNotFinishTheWait() {
     isRoomMode() {
       return true;
     },
+    recordRoomGradingHandoff() {},
     showWaitingForRoomRoundResult() {},
     getRoomRoundResultWaitTimeoutMs() {
       return 1000;
