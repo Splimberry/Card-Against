@@ -2334,10 +2334,8 @@ async function testRoomPowerStateEndpointStampsEvents() {
 
   const events = await request("GET", `/api/rooms/${code}/events?since=0`);
   assert.equal(events.response.status, 200, events.payload.error);
-  assert.equal(events.payload.events.some((event) => event.type === "power_used"), true);
-  assert.equal(events.payload.events.some((event) => event.type === "hand_changed"), true);
-  assert.equal(events.payload.events.some((event) => event.type === "power_resolved"), true);
-  assert.equal(events.payload.events.some((event) => event.type === "power_state"), true);
+  const powerEvents = events.payload.events.filter((event) => event.payload?.powerId === "software_downgrade");
+  assert.deepEqual(powerEvents.map((event) => event.type), ["power_state"]);
 }
 
 async function testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand() {

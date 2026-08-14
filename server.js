@@ -4578,30 +4578,9 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     action: action || null,
     serverAuthoritative: Boolean(action?.type === "use" && isServerPowerEngineMigrated(action.powerId))
   };
-  const previousHandsSignature = JSON.stringify(previousPowerState?.hands || []);
-  const nextHandsSignature = JSON.stringify(mergedPowerState.hands || []);
-  const previousEffectsSignature = JSON.stringify(previousPowerState?.effects || {});
-  const nextEffectsSignature = JSON.stringify(mergedPowerState.effects || {});
-  stampRoomEvent(room, "power_used", {
-    ...powerEventPayload,
-    powerState: undefined,
-    timerState: undefined
-  });
-  if (previousHandsSignature !== nextHandsSignature) {
-    stampRoomEvent(room, "hand_changed", {
-      ...powerEventPayload,
-      hands: mergedPowerState.hands,
-      powerState: undefined
-    });
-  }
-  if (previousEffectsSignature !== nextEffectsSignature) {
-    stampRoomEvent(room, "active_effects_changed", {
-      ...powerEventPayload,
-      effects: mergedPowerState.effects,
-      powerState: undefined
-    });
-  }
-  stampRoomEvent(room, "power_resolved", powerEventPayload);
+  // A power action is one authoritative state transition. Emitting the same
+  // full effect map under several event types bloated the room stream and
+  // could delay the grading event that immediately followed a power use.
   stampRoomEvent(room, "power_state", powerEventPayload);
   finalizeRoom(room);
   const storedRoom = await backendStore.upsertRoom(room);
