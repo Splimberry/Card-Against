@@ -9279,7 +9279,7 @@ function getActiveEffectEntries() {
         entries.push(entry);
       }
     });
-    if (owner === focusedOwner) getPermanentMutations(owner).forEach((mutationId) => {
+    if (isMatchModifierEnabled("mutation") && owner === focusedOwner) getPermanentMutations(owner).forEach((mutationId) => {
       const mutation = getPermanentMutationDefinition(mutationId);
       if (!mutation) {
         return;
@@ -9316,8 +9316,18 @@ function getActiveEffectEntries() {
     mutationStatusGroups.forEach((statuses) => {
       const status = statuses[0];
       const statusOwner = status.targetOwner || status.owner;
+      const hasLiveBackingEffect = effects.some(([active, entry]) => (
+        active
+        && entry.powerId === status.powerId
+        && (entry.name === status.name || entry.name.startsWith(`${status.name} `))
+      ));
+      // A Mutation record can be backed by the same live store as a regular
+      // effect. Show that effect once instead of rendering a second card.
+      if (hasLiveBackingEffect) {
+        return;
+      }
       const remaining = Math.max(...statuses.map(getMutationStatusRemaining));
-      const stacks = statuses.length;
+      const stacks = statuses.reduce((total, entry) => total + Math.max(1, Number(entry.stacks) || 1), 0);
       const targetText = status.targetOwner && status.targetOwner !== status.owner
         ? ` Target: ${getOwnerLabel(status.targetOwner)}.`
         : "";
@@ -22747,7 +22757,8 @@ function applyRoundStartEffects() {
     const shrapnel = Math.max(0, Number(status.shrapnel) || 0) + getRandomInt(10, 20);
     updateChaosStatus(bomb.owner, {
       clusterBombs: Math.max(0, Number(status.clusterBombs) || 1) - 1,
-      shrapnel
+      shrapnel,
+      shrapnelGuaranteedRound: state.round
     });
     queueStatFlash("bomb", "Cluster Bomb", [formatSignedStat(-appliedLoss, "Point"), `+${shrapnel} Shrapnel`], { owners: [bomb.owner], complex: true });
     events.push(`Cluster Bomb hit ${getOwnerLabel(bomb.owner)} for ${appliedLoss.toLocaleString()} points and released shrapnel.`);
@@ -22766,10 +22777,15 @@ function applyRoundStartEffects() {
         exploded += 1;
       }
     }
+    // Shrapnel granted during this round-start pass must visibly resolve in
+    // the same round. Remaining shards still retain their normal 50% rolls.
+    if (!exploded && Number(status.shrapnelGuaranteedRound) === Number(state.round)) {
+      exploded = 1;
+    }
     if (exploded) {
       const loss = Math.floor(getScore(owner) * 0.02) * exploded;
       const appliedLoss = applyProtectedScoreLoss(owner, loss, "Shrapnel", events);
-      updateChaosStatus(owner, { shrapnel: shards - exploded });
+      updateChaosStatus(owner, { shrapnel: shards - exploded, shrapnelGuaranteedRound: 0 });
       queueStatFlash("bomb", "Shrapnel", formatSignedStat(-appliedLoss, "Point"), { owners: [owner], complex: true });
       events.push(`Shrapnel exploded ${exploded} time${exploded === 1 ? "" : "s"} on ${getOwnerLabel(owner)} for ${appliedLoss.toLocaleString()} points.`);
     }
@@ -29527,9 +29543,10 @@ const mutationStatusDefinitions = Object.freeze([
   {
     id: "shrapnel_status", pool: "chaos", name: "Shrapnel", powerId: "time_bomb", category: "chaos", negative: true,
     apply: (owner) => {
-      const count = Math.max(0, Number(getChaosStatus(owner).shrapnel) || 0) + getRandomInt(1, 3);
-      updateChaosStatus(owner, { shrapnel: count });
-      return { kind: "chaosNumeric", key: "shrapnel", amount: count };
+      const added = getRandomInt(1, 3);
+      const count = Math.max(0, Number(getChaosStatus(owner).shrapnel) || 0) + added;
+      updateChaosStatus(owner, { shrapnel: count, shrapnelGuaranteedRound: state.round });
+      return { kind: "chaosNumeric", key: "shrapnel", amount: added };
     }
   },
   {
@@ -38267,6 +38284,52 @@ function applyNormalDebugStatus(owner, definition, stacks = 1) {
   return applied;
 }
 
+function applyMutationDebugStatus(owner, definition, duration, stacks = 1) {
+  const requestedStacks = Math.max(1, Number(stacks) || 1);
+  const statuses = [];
+  for (let index = 0; index < requestedStacks; index += 1) {
+    const status = applyMutationStatus(owner, definition, duration || 1, {
+      permanentStatus: duration === 0,
+      preserveDuration: true,
+      // Each debug stack must execute the real effect. A metadata-only
+      // multiplier leaves charge, array, bomb, and random-value effects at 1.
+      stackMultiplier: 1,
+      force: true,
+      source: "Power Debug"
+    });
+    if (status) {
+      statuses.push(status);
+    }
+  }
+  return statuses;
+}
+
+function resolveDebugShrapnel(owner) {
+  const status = getChaosStatus(owner);
+  const shards = Math.max(0, Number(status.shrapnel) || 0);
+  if (!shards) {
+    return 0;
+  }
+  let exploded = 0;
+  for (let index = 0; index < shards; index += 1) {
+    if (Math.random() < 0.5) {
+      exploded += 1;
+    }
+  }
+  // Debug effects are granted during an already-running round. Ensure the
+  // immediate test reflects the round-start behavior instead of appearing
+  // inert until the next round.
+  exploded = Math.max(1, exploded);
+  const amount = Math.floor(getScore(owner) * 0.02) * exploded;
+  const appliedLoss = applyProtectedScoreLoss(owner, amount, "Shrapnel");
+  updateChaosStatus(owner, {
+    shrapnel: Math.max(0, shards - exploded),
+    shrapnelGuaranteedRound: 0
+  });
+  queueStatFlash("bomb", "Shrapnel", formatSignedStat(-appliedLoss, "Point"), { owners: [owner], complex: true });
+  return exploded;
+}
+
 function applyDebugEffect(scope = "dev") {
   const refs = getPowerDebugRefs(scope);
   const owner = refs.ownerSelect?.value || "";
@@ -38279,18 +38342,15 @@ function applyDebugEffect(scope = "dev") {
   }
   const mutationMatch = isMatchModifierEnabled("mutation");
   const result = mutationMatch
-    ? applyMutationStatus(owner, definition, requestedDuration || 1, {
-      permanentStatus: requestedDuration === 0,
-      preserveDuration: true,
-      stackMultiplier: requestedStacks,
-      force: true,
-      source: "Power Debug"
-    })
+    ? applyMutationDebugStatus(owner, definition, requestedDuration, requestedStacks)
     : applyNormalDebugStatus(owner, definition, requestedStacks);
-  if (!result) {
+  if (!result || (Array.isArray(result) && result.length === 0)) {
     setPowerDebugStatus(scope, `${definition.name} could not be applied to ${getOwnerLabel(owner)}.`);
     return;
   }
+  const explodedShrapnel = definition.id === "shrapnel_status"
+    ? resolveDebugShrapnel(owner)
+    : 0;
   const durationLabel = mutationMatch
     ? requestedDuration === 0
       ? "permanently"
@@ -38302,7 +38362,7 @@ function applyDebugEffect(scope = "dev") {
     complex: true,
     priority: true
   });
-  setPowerDebugStatus(scope, `Applied ${definition.name} to ${getOwnerLabel(owner)} ${durationLabel}${stackLabel}.`);
+  setPowerDebugStatus(scope, `Applied ${definition.name} to ${getOwnerLabel(owner)} ${durationLabel}${stackLabel}${explodedShrapnel ? `; ${explodedShrapnel} Shrapnel exploded.` : ""}.`);
   renderScore();
   renderPowerDebug(scope);
   publishPowerDebugState();

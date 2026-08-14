@@ -74,8 +74,9 @@ assert.match(appSource, /id: "mutation_chain_reaction"[\s\S]{0,280}every opponen
 assert.match(appSource, /function triggerOpponentBombStatuses\(owner\)/, "Chain Reaction needs a dedicated opponent bomb resolver");
 assert.match(appSource, /id="devPowerEffectSelect"/, "Power Debug needs an effect selector");
 assert.match(appSource, /function applyDebugEffect\(scope = "dev"\)/, "Power Debug needs an effect application action");
-assert.match(appSource, /stackMultiplier: requestedStacks/, "Power Debug must apply the requested effect stack count");
-assert.match(appSource, /permanentStatus: requestedDuration === 0/, "A debug effect duration of zero must create a permanent Status Effect");
+assert.match(appSource, /function applyMutationDebugStatus\(owner, definition, duration, stacks = 1\)/, "Power Debug must apply requested stacks through real status instances");
+assert.match(appSource, /for \(let index = 0; index < requestedStacks; index \+= 1\)[\s\S]{0,600}stackMultiplier: 1/, "Each debug stack must execute the underlying status behavior");
+assert.match(appSource, /function applyMutationDebugStatus\(owner, definition, duration, stacks = 1\)[\s\S]{0,700}permanentStatus: duration === 0/, "A debug effect duration of zero must create a permanent Status Effect");
 assert.match(appSource, /classList\.remove\([^\n]*"mutation"[^\n]*"stat-flash-playing"\)/, "Stat Flash playback must clear the Mutation class before showing another overlay");
 assert.match(appSource, /tableWide: Boolean\(options\.tableWide \|\| owner === "table"\)/, "Active effects must identify table-wide effects");
 assert.match(appSource, /Virus Factory[\s\S]{0,280}tableWide: true/, "Virus Factory must be promoted as a table-wide effect");
