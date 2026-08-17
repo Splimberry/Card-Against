@@ -9419,13 +9419,15 @@ input:focus {
   animation: mutationSurfacePulse 2800ms ease-in-out infinite;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"][data-card-special="false"]::after {
-  content: "";
+.profile-card-theme-decoration {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   border-radius: inherit;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="mutation"] {
   background: linear-gradient(135deg, #b7ff2a, #facc15);
   -webkit-mask-image: url("/assets/overlays/biohazard.svg");
   -webkit-mask-repeat: no-repeat;
@@ -9447,13 +9449,17 @@ input:focus {
   animation: none !important;
 }
 
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card > .profile-card-theme-decoration {
+  animation: none !important;
+}
+
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"],
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"] {
   position: relative;
   isolation: isolate;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > * {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > :not(.profile-card-theme-decoration) {
   position: relative;
   z-index: 2;
 }
