@@ -3620,6 +3620,21 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .game-stage.spectator-mode.room-active
+  .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden)):has(.loading-panel:not(.hidden)) {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.game-stage.spectator-mode.room-active
+  .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden)):has(.loading-panel:not(.hidden))
+  .loading-panel {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  max-height: none;
+  z-index: 11;
+}
+
+.game-stage.spectator-mode.room-active
   .table-surface:has(.cards-area.spectator-answer-mode:not(.hidden))
   .verdict-panel:not(.hidden) {
   grid-row: 2;
@@ -8067,6 +8082,20 @@ input:focus {
   overflow-wrap: anywhere;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Spectator cards are wide enough to wrap a styled name. Let glow and badges
+   escape their text box instead of clipping them into a grey rectangle. */
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card[data-card-custom="true"][data-card-effects~="text-glow"]
+  :is(.answer-owner, .answer-owner .name-with-title, .answer-owner .name-with-title-text) {
+  overflow: visible;
+}
+
+.game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card[data-card-custom="true"][data-card-effects~="text-glow"]
+  .answer-owner .name-with-title-text {
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .spectator-submitted-pill {
@@ -12611,6 +12640,19 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Target cards inherit text-glow cosmetics. Avoid clipping that glow inside
+   the truncation wrappers; long names wrap within the target row instead. */
+.target-option[data-card-custom="true"][data-card-effects~="text-glow"]
+  :is(.target-player-copy, .target-player-copy > .name-with-title, .target-player-copy .name-with-title-text) {
+  overflow: visible;
+}
+
+.target-option[data-card-custom="true"][data-card-effects~="text-glow"] .target-player-copy .name-with-title-text {
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .target-option .target-player-copy :is(.bot-player-badge, .host-player-badge, .special-player-badge) {
