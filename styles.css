@@ -1993,7 +1993,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .spectator-count-pill {
   position: absolute;
   top: 0.72rem;
-  left: 0.72rem;
+  right: 0.72rem;
   z-index: 44;
   display: inline-flex;
   align-items: center;
@@ -2018,10 +2018,11 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .spectator-count-pill[data-tooltip]::after {
-  left: 0;
+  right: 0;
+  left: auto;
   bottom: auto;
   top: calc(100% + 0.45rem);
-  transform-origin: 0 0;
+  transform-origin: 100% 0;
 }
 
 .spectator-count-icon,
@@ -8090,6 +8091,20 @@ input:focus {
   text-transform: uppercase;
   box-shadow: 0 0 0.75rem rgba(64, 222, 164, 0.18);
   white-space: nowrap;
+}
+
+/* Custom cards position their direct children for their visual effects. Keep
+   answer-state overlays independent so they stay anchored to the card edge. */
+.white-card[data-card-custom="true"] > .spectator-submitted-pill {
+  position: absolute;
+  top: 0.52rem;
+  right: 0.56rem;
+  z-index: 5;
+}
+
+.game-stage.spectator-mode .white-card:has(.spectator-submitted-pill) > .answer-hint-marker {
+  top: 0.52rem;
+  right: 4.55rem;
 }
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .white-card p {

@@ -8628,6 +8628,26 @@ function renderCardBadges(cards, winnerIndex, ratings = getCardRatings(cards, wi
   });
 }
 
+function syncAnswerCardHintMarker(card, owner = "") {
+  if (!card) {
+    return;
+  }
+  const hintMarker = card.querySelector(".answer-hint-marker");
+  if (!hintMarker) {
+    return;
+  }
+  const participantId = getRoomParticipantIdForOwner(owner || card.dataset.owner || "");
+  const participant = participantId
+    ? state.roomParticipants.find((entry) => entry.id === participantId)
+    : null;
+  const usedHint = Boolean(
+    state.roundHintUsage[owner]
+      || participant?.usedHintRound === state.round
+      || state.roomGame?.answers?.[participantId]?.usedHint
+  );
+  setHidden(hintMarker, !usedHint);
+}
+
 function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   const cardIndex = Number(card.dataset.cardIndex);
   const owner = card.dataset.owner || getRoundCardOwners()[cardIndex] || "";
@@ -8643,17 +8663,7 @@ function applyAnswerCardContent(card, cards, ratings, correctIndexes = []) {
   updateInlineGradingReason(gradingReason, reason);
   card.classList.toggle("answer-priority", correctIndexes.includes(cardIndex));
   card.classList.toggle("answer-incorrect", Boolean(rating && !rating.correct));
-  const hintMarker = card.querySelector(".answer-hint-marker");
-  const participantId = getRoomParticipantIdForOwner(owner);
-  const participant = participantId
-    ? state.roomParticipants.find((entry) => entry.id === participantId)
-    : null;
-  const usedHint = Boolean(
-    state.roundHintUsage[owner]
-      || participant?.usedHintRound === state.round
-      || state.roomGame?.answers?.[participantId]?.usedHint
-  );
-  setHidden(hintMarker, !usedHint);
+  syncAnswerCardHintMarker(card, owner);
 }
 
 function getOwnAnswerCardIndex(cards) {
@@ -8887,6 +8897,7 @@ function decorateSpectatorAnswerCard(card, cardIndex) {
   } else if (!submitted && existingPill) {
     existingPill.remove();
   }
+  syncAnswerCardHintMarker(card, owner);
   updateRatingBadge(card.querySelector(".rating-badge"), null, "");
 }
 
