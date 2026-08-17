@@ -9284,7 +9284,7 @@ input:focus {
   animation: doomProfileColorShift 2300ms ease-in-out infinite;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > * {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > :not(.profile-card-theme-decoration) {
   position: relative;
   z-index: 2;
 }
@@ -9398,15 +9398,17 @@ input:focus {
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] {
   border: 6px solid transparent;
   background:
-    linear-gradient(145deg, #07110f, #0b1516 62%, #10110c),
-    linear-gradient(120deg, #40dea4, #facc15 48%, #40dea4);
-  background-origin: padding-box, border-box;
-  background-clip: padding-box, border-box;
+    radial-gradient(ellipse at 20% 16%, rgba(183, 255, 42, 0.16), transparent 36%),
+    radial-gradient(ellipse at 84% 84%, rgba(250, 204, 21, 0.1), transparent 42%),
+    linear-gradient(145deg, #040906, #09110b 58%, #09070f),
+    linear-gradient(120deg, #b7ff2a, #facc15 48%, #7ee230 76%, #b7ff2a);
+  background-origin: padding-box, padding-box, padding-box, border-box;
+  background-clip: padding-box, padding-box, padding-box, border-box;
   box-shadow:
     0 1rem 2rem rgba(0, 0, 0, 0.36),
-    0 0 1.2rem rgba(64, 222, 164, 0.18),
-    0 0 1.65rem rgba(250, 204, 21, 0.12);
-  animation: circuitCorePulse 2600ms ease-in-out infinite;
+    0 0 1.2rem rgba(183, 255, 42, 0.16),
+    0 0 1.65rem rgba(250, 204, 21, 0.1);
+  animation: mutationSurfacePulse 2800ms ease-in-out infinite;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"]::before {
@@ -9416,12 +9418,13 @@ input:focus {
   z-index: 1;
   pointer-events: none;
   background:
-    repeating-linear-gradient(90deg, transparent 0 1.1rem, rgba(64, 222, 164, 0.12) 1.1rem 1.16rem, transparent 1.16rem 2.8rem),
-    repeating-linear-gradient(0deg, transparent 0 1.2rem, rgba(250, 204, 21, 0.1) 1.2rem 1.25rem, transparent 1.25rem 2.6rem);
-  background-size: 3.6rem 100%, 100% 3.6rem;
+    radial-gradient(circle at 18% 18%, rgba(220, 255, 110, 0.26) 0 0.16rem, transparent 0.21rem),
+    radial-gradient(circle at 74% 70%, rgba(250, 204, 21, 0.18) 0 0.12rem, transparent 0.18rem),
+    repeating-linear-gradient(132deg, transparent 0 1.35rem, rgba(183, 255, 42, 0.08) 1.35rem 1.42rem, transparent 1.42rem 3rem);
+  background-size: 4.2rem 4.2rem, 5.4rem 5.4rem, 100% 100%;
   mix-blend-mode: screen;
-  opacity: 0.3;
-  animation: circuitCoreTrace 3600ms linear infinite;
+  opacity: 0.28;
+  animation: mutationVeinPulse 3400ms ease-in-out infinite;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card,
@@ -9429,17 +9432,68 @@ input:focus {
   animation: none !important;
 }
 
+/* Use child decoration layers for themed SVGs so they remain independent of
+   profile patterns and effects that already use the card pseudo-elements. */
+.profile-card-theme-decoration {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > :not(.profile-card-theme-decoration) {
+  position: relative;
+  z-index: 2;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="mutation"] {
+  background: linear-gradient(135deg, rgba(183, 255, 42, 0.88), rgba(250, 204, 21, 0.8));
+  -webkit-mask-image: url("assets/overlays/biohazard.svg");
+  mask-image: url("assets/overlays/biohazard.svg");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 6.6rem;
+  mask-size: 6.6rem;
+  -webkit-mask-position: 0.85rem 0.5rem;
+  mask-position: 0.85rem 0.5rem;
+  mix-blend-mode: screen;
+  opacity: 0.22;
+  animation: mutationHazardPulse 3200ms ease-in-out infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] {
+  z-index: 1;
+  background: linear-gradient(135deg, rgba(255, 28, 76, 0.84), rgba(168, 85, 247, 0.74));
+  -webkit-mask-image: url("assets/modifiers/skull.svg");
+  mask-image: url("assets/modifiers/skull.svg");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 5.8rem;
+  mask-size: 5.8rem;
+  -webkit-mask-position: 0.7rem 0.35rem;
+  mask-position: 0.7rem 0.35rem;
+  mix-blend-mode: screen;
+  opacity: 0.18;
+  animation: doomSkullDrift 8200ms linear infinite;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card > .profile-card-theme-decoration,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration {
+  animation: none !important;
+}
+
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="abyssal"][data-card-custom="true"] {
   border: 6px solid transparent;
   background:
-    linear-gradient(145deg, #07111f, #0b1529 58%, #0d1022),
-    linear-gradient(120deg, #22d3ee, #8b5cf6 52%, #22d3ee);
+    linear-gradient(145deg, #020611, #050817 58%, #090615),
+    linear-gradient(120deg, #0d758a, #5d3b9c 52%, #0d758a);
   background-origin: padding-box, border-box;
   background-clip: padding-box, border-box;
   box-shadow:
     0 1rem 2rem rgba(0, 0, 0, 0.38),
-    0 0 1.15rem rgba(34, 211, 238, 0.16),
-    0 0 1.75rem rgba(139, 92, 246, 0.14);
+    0 0 1.15rem rgba(13, 117, 138, 0.14),
+    0 0 1.75rem rgba(93, 59, 156, 0.12);
   animation: abyssalEnergy 3800ms ease-in-out infinite;
 }
 
@@ -9449,7 +9503,10 @@ input:focus {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(ellipse at 20% 0%, rgba(34, 211, 238, 0.12), transparent 42%), radial-gradient(ellipse at 84% 100%, rgba(139, 92, 246, 0.14), transparent 48%);
+  background: radial-gradient(ellipse at 20% 0%, rgba(13, 117, 138, 0.12), transparent 42%), radial-gradient(ellipse at 84% 100%, rgba(93, 59, 156, 0.14), transparent 48%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: 50% 50%;
   mix-blend-mode: screen;
   opacity: 0.46;
   animation: abyssalCurrent 4200ms ease-in-out infinite;
@@ -9500,13 +9557,13 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] {
-  --custom-card-metallic-surface: linear-gradient(145deg, #07110f, #0b1516 62%, #10110c);
-  --custom-card-metallic-rim-gradient: linear-gradient(120deg, #40dea4, #facc15 48%, #40dea4);
+  --custom-card-metallic-surface: linear-gradient(145deg, #040906, #09110b 58%, #09070f);
+  --custom-card-metallic-rim-gradient: linear-gradient(120deg, #b7ff2a, #facc15 48%, #7ee230 76%, #b7ff2a);
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="abyssal"][data-card-custom="true"] {
-  --custom-card-metallic-surface: linear-gradient(145deg, #07111f, #0b1529 58%, #0d1022);
-  --custom-card-metallic-rim-gradient: linear-gradient(120deg, #22d3ee, #8b5cf6 52%, #22d3ee);
+  --custom-card-metallic-surface: linear-gradient(145deg, #020611, #050817 58%, #090615);
+  --custom-card-metallic-rim-gradient: linear-gradient(120deg, #0d758a, #5d3b9c 52%, #0d758a);
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"][data-card-effects~="metallic"]:is([data-card-style="voidglass"], [data-card-style="solar-flare"], [data-card-style="holographic"], [data-card-style="circuit-core"], [data-card-style="abyssal"]) {
@@ -10137,58 +10194,80 @@ input:focus {
   }
 }
 
-@keyframes circuitCorePulse {
+@keyframes mutationSurfacePulse {
   0%,
   100% {
-    filter: brightness(0.98);
+    filter: brightness(0.96) saturate(0.92);
   }
 
   50% {
-    filter: brightness(1.06);
+    filter: brightness(1.06) saturate(1.08);
   }
 }
 
-@keyframes circuitCoreTrace {
-  0% {
-    background-position: 0 0, 0 0;
-    opacity: 0.24;
+@keyframes mutationVeinPulse {
+  0%,
+  100% {
+    opacity: 0.2;
   }
 
-  100% {
-    background-position: 3.6rem 0, 0 3.6rem;
+  50% {
     opacity: 0.42;
+  }
+}
+
+@keyframes mutationHazardPulse {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+
+  50% {
+    opacity: 0.32;
   }
 }
 
 @keyframes abyssalEnergy {
   0%,
   100% {
-    filter: brightness(0.98) saturate(0.94);
+    filter: brightness(0.94) saturate(0.88);
     box-shadow:
       0 1rem 2rem rgba(0, 0, 0, 0.38),
-      0 0 1.15rem rgba(34, 211, 238, 0.14),
-      0 0 1.75rem rgba(139, 92, 246, 0.12);
+      0 0 1.15rem rgba(13, 117, 138, 0.12),
+      0 0 1.75rem rgba(93, 59, 156, 0.1);
   }
 
   50% {
-    filter: brightness(1.04) saturate(1.08);
+    filter: brightness(1.02) saturate(1.02);
     box-shadow:
       0 1rem 2rem rgba(0, 0, 0, 0.38),
-      0 0 1.45rem rgba(34, 211, 238, 0.24),
-      0 0 2rem rgba(139, 92, 246, 0.2);
+      0 0 1.45rem rgba(13, 117, 138, 0.2),
+      0 0 2rem rgba(93, 59, 156, 0.16);
   }
 }
 
 @keyframes abyssalCurrent {
   0%,
   100% {
-    opacity: 0.3;
-    transform: scale(1);
+    opacity: 0.26;
+    background-size: 100% 100%;
   }
 
   50% {
-    opacity: 0.54;
-    transform: scale(1.04);
+    opacity: 0.48;
+    background-size: 112% 112%;
+  }
+}
+
+@keyframes doomSkullDrift {
+  0% {
+    -webkit-mask-position: 0.7rem 0.35rem;
+    mask-position: 0.7rem 0.35rem;
+  }
+
+  100% {
+    -webkit-mask-position: 6.5rem 6.15rem;
+    mask-position: 6.5rem 6.15rem;
   }
 }
 
@@ -14150,22 +14229,23 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   animation: holographicEdgeShift 4200ms linear infinite;
 }
 
-.profile-style-option[data-profile-style-kind="circuitCore"] {
-  border-color: rgba(64, 222, 164, 0.54);
+.profile-style-option[data-profile-style-kind="mutation"] {
+  border-color: rgba(183, 255, 42, 0.58);
   background:
-    repeating-linear-gradient(90deg, transparent 0 0.8rem, rgba(64, 222, 164, 0.12) 0.8rem 0.86rem, transparent 0.86rem 1.8rem),
-    linear-gradient(135deg, rgba(64, 222, 164, 0.18), rgba(250, 204, 21, 0.1)),
-    rgba(7, 17, 15, 0.84);
-  box-shadow: 0 0 1rem rgba(64, 222, 164, 0.14);
+    radial-gradient(circle at 18% 24%, rgba(183, 255, 42, 0.26), transparent 28%),
+    radial-gradient(circle at 80% 74%, rgba(250, 204, 21, 0.16), transparent 32%),
+    linear-gradient(135deg, rgba(183, 255, 42, 0.12), rgba(250, 204, 21, 0.08)),
+    rgba(4, 9, 6, 0.9);
+  box-shadow: 0 0 1rem rgba(183, 255, 42, 0.16);
 }
 
 .profile-style-option[data-profile-style-kind="abyssal"] {
-  border-color: rgba(139, 92, 246, 0.56);
+  border-color: rgba(93, 59, 156, 0.62);
   background:
-    radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.16), transparent 38%),
-    linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(139, 92, 246, 0.18)),
-    rgba(7, 17, 31, 0.88);
-  box-shadow: 0 0 1rem rgba(139, 92, 246, 0.16);
+    radial-gradient(circle at 18% 12%, rgba(13, 117, 138, 0.16), transparent 38%),
+    linear-gradient(135deg, rgba(13, 117, 138, 0.1), rgba(93, 59, 156, 0.16)),
+    rgba(2, 6, 17, 0.92);
+  box-shadow: 0 0 1rem rgba(93, 59, 156, 0.14);
 }
 
 .profile-style-option[data-profile-style-kind="neon"] {
@@ -15058,25 +15138,29 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   animation: holographicEdgeShift 4200ms linear infinite;
 }
 
-.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="circuitCore"] .profile-shop-preview {
-  border-color: rgba(64, 222, 164, 0.54);
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="mutation"] .profile-shop-preview {
+  border-color: rgba(183, 255, 42, 0.58);
+  background: rgba(4, 9, 6, 0.9);
 }
 
-.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="circuitCore"] .profile-shop-preview::before {
-  background:
-    repeating-linear-gradient(90deg, transparent 0 0.55rem, rgba(64, 222, 164, 0.76) 0.55rem 0.62rem, transparent 0.62rem 1.4rem),
-    linear-gradient(135deg, rgba(64, 222, 164, 0.88), rgba(250, 204, 21, 0.78));
-  background-size: 1.8rem 100%, 100% 100%;
-  animation: circuitCoreTrace 3600ms linear infinite;
+.profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="mutation"] .profile-shop-preview::before {
+  background: linear-gradient(135deg, #b7ff2a, #facc15);
+  -webkit-mask-image: url("assets/overlays/biohazard.svg");
+  mask-image: url("assets/overlays/biohazard.svg");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 2.5rem;
+  mask-size: 2.5rem;
+  animation: mutationHazardPulse 3200ms ease-in-out infinite;
 }
 
 .profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="abyssal"] .profile-shop-preview {
-  border-color: rgba(139, 92, 246, 0.56);
-  box-shadow: 0 0 0.8rem rgba(139, 92, 246, 0.16);
+  border-color: rgba(93, 59, 156, 0.62);
+  box-shadow: 0 0 0.8rem rgba(93, 59, 156, 0.14);
 }
 
 .profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="abyssal"] .profile-shop-preview::before {
-  background: linear-gradient(135deg, #0c6f91, #8b5cf6, #22d3ee);
+  background: linear-gradient(135deg, #020611, #23183f, #0d5263);
   animation: abyssalCurrent 4200ms ease-in-out infinite;
 }
 

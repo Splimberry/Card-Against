@@ -250,7 +250,8 @@ const profileCardStyles = [
   { id: "voidglass", name: "Voidglass", kind: "voidglass", condition: "Buy in Profile Shop for 1,200 coins.", unlockType: "shop", cost: 1200 },
   { id: "solar-flare", name: "Solar Flare", kind: "solarFlare", condition: "Buy in Profile Shop for 1,000 coins.", unlockType: "shop", cost: 1000 },
   { id: "holographic", name: "Holographic", kind: "holographic", condition: "Buy in Profile Shop for 1,500 coins.", unlockType: "shop", cost: 1500 },
-  { id: "circuit-core", name: "Circuit Core", kind: "circuitCore", condition: "Buy in Profile Shop for 900 coins.", unlockType: "shop", cost: 900 },
+  // Keep the established id so owners of Circuit Core receive Mutation automatically.
+  { id: "circuit-core", name: "Mutation", kind: "mutation", condition: "Buy in Profile Shop for 900 coins.", unlockType: "shop", cost: 900 },
   { id: "abyssal", name: "Abyssal", kind: "abyssal", condition: "Buy in Profile Shop for 1,200 coins.", unlockType: "shop", cost: 1200 }
 ];
 const profileCardStyleMap = Object.fromEntries(profileCardStyles.map((style) => [style.id, style]));
@@ -17886,6 +17887,26 @@ function applyBlackCardCustomizationForOwner(owner, customizationOverride = null
   applyProfileCustomizationSurface(blackCard, getProfileCardCustomizationForOwner(owner));
 }
 
+function syncProfileCardThemeDecoration(card, styleId) {
+  const theme = styleId === "circuit-core"
+    ? "mutation"
+    : styleId === "doom"
+      ? "doom"
+      : "";
+  const decoration = Array.from(card.children || []).find((child) => child.classList?.contains("profile-card-theme-decoration"));
+  if (!theme) {
+    decoration?.remove();
+    return;
+  }
+  const layer = decoration || document.createElement("span");
+  layer.className = "profile-card-theme-decoration";
+  layer.dataset.theme = theme;
+  layer.setAttribute("aria-hidden", "true");
+  if (!decoration) {
+    card.prepend(layer);
+  }
+}
+
 function applyCardCustomizationToElement(card, customization, options = {}) {
   if (!card) {
     return;
@@ -17907,6 +17928,7 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
   card.dataset.cardSpecial = String(isSpecialStyle);
   card.dataset.cardEffects = activeEffectIds.length ? activeEffectIds.join(" ") : "none";
   card.dataset.cardPattern = activePatternId;
+  syncProfileCardThemeDecoration(card, style.id);
   card.classList.toggle("profile-preview-card", Boolean(options.preview));
   if (activeEffectIds.includes("rgb")) {
     syncRgbAnimationPhase(card, style);
@@ -17949,7 +17971,7 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
   } else if (style.kind === "holographic") {
     primary = getProfileCardColour("blue");
     secondary = getProfileCardColour("pink");
-  } else if (style.kind === "circuitCore") {
+  } else if (style.kind === "mutation") {
     primary = getProfileCardColour("green");
     secondary = getProfileCardColour("gold");
   } else if (style.kind === "abyssal") {
@@ -26399,7 +26421,7 @@ function getProfileStyleSwatch(style, draft = getProfileCustomizationDraft()) {
       secondary: getProfileCardColour("pink")
     };
   }
-  if (style.kind === "circuitCore") {
+  if (style.kind === "mutation") {
     return {
       primary: getProfileCardColour("green"),
       secondary: getProfileCardColour("gold")

@@ -300,6 +300,7 @@
     "Epic": "史詩",
     "Legendary": "傳奇",
     "Doom": "末日",
+    "Mutation": "变异",
     "None": "沒有",
     "Score changes": "分數變化",
     "No power": "沒有能力卡",
