@@ -3947,6 +3947,7 @@ const state = {
   allOutRounds: {},
   extraPowerUses: {},
   powerDebugPanelOpen: false,
+  roomPowerDebugPanelOpen: false,
   powerDebugTimerPaused: false,
   powerDebugTimerManualPaused: false,
   powerDebugTimerAutoPaused: false,
@@ -4521,6 +4522,25 @@ const elements = {
   botPowerClearEffectsButton: document.querySelector("#botPowerClearEffectsButton"),
   botPowerStatus: document.querySelector("#botPowerStatus"),
   botPowerHand: document.querySelector("#botPowerHand"),
+  roomPowerDebugOpenButton: document.querySelector("#roomPowerDebugOpenButton"),
+  roomPowerDebugModal: document.querySelector("#roomPowerDebugModal"),
+  roomPowerDebugPanel: document.querySelector("#roomPowerDebugPanel"),
+  roomPowerDebugCloseButton: document.querySelector("#roomPowerDebugCloseButton"),
+  roomPowerOwnerSelect: document.querySelector("#roomPowerOwnerSelect"),
+  roomPowerSearchInput: document.querySelector("#roomPowerSearchInput"),
+  roomPowerSelect: document.querySelector("#roomPowerSelect"),
+  roomPowerChaosToggle: document.querySelector("#roomPowerChaosToggle"),
+  roomPowerAddButton: document.querySelector("#roomPowerAddButton"),
+  roomPowerFillButton: document.querySelector("#roomPowerFillButton"),
+  roomPowerClearButton: document.querySelector("#roomPowerClearButton"),
+  roomPowerEffectSearchInput: document.querySelector("#roomPowerEffectSearchInput"),
+  roomPowerEffectSelect: document.querySelector("#roomPowerEffectSelect"),
+  roomPowerEffectDuration: document.querySelector("#roomPowerEffectDuration"),
+  roomPowerEffectStacks: document.querySelector("#roomPowerEffectStacks"),
+  roomPowerApplyEffectButton: document.querySelector("#roomPowerApplyEffectButton"),
+  roomPowerClearEffectsButton: document.querySelector("#roomPowerClearEffectsButton"),
+  roomPowerStatus: document.querySelector("#roomPowerStatus"),
+  roomPowerHand: document.querySelector("#roomPowerHand"),
   devProfileGrid: null,
   devProfileStatus: null,
   devProfileUnlockAllButton: null,
@@ -34216,6 +34236,7 @@ function appendPowerSuggestionBubble(button, suggestion) {
 }
 
 function renderPowerUps() {
+  renderRoomPowerDebugPanel();
   const owner = getCurrentPowerOwner();
   const hand = state.powerHands[owner] || [];
   elements.powerPanel.dataset.handSize = String(hand.length);
@@ -35263,6 +35284,21 @@ function canShowBotPowerDebugPanel() {
   return Boolean(canUseBotPowerDebugPanel() && state.powerDebugPanelOpen);
 }
 
+function canUseRoomPowerDebugPanel() {
+  return Boolean(
+    state.adminAuthenticated
+    && isRoomMode()
+    && !state.matchEnded
+    && state.roomGame?.status === "playing"
+    && elements.roomPowerDebugModal
+    && !elements.gameStage.classList.contains("hidden")
+  );
+}
+
+function canShowRoomPowerDebugPanel() {
+  return Boolean(canUseRoomPowerDebugPanel() && state.roomPowerDebugPanelOpen);
+}
+
 function updateBotPowerDebugPauseStatus() {
   if (!elements.botPowerDebugPauseStatus) {
     return;
@@ -35384,6 +35420,45 @@ function renderBotPowerDebugPanel() {
   syncBotPowerDebugUnlimitedToggle();
   reconcileBotPowerDebugPause();
   renderPowerDebug("bot-match");
+}
+
+function openRoomPowerDebugPanel() {
+  if (!canUseRoomPowerDebugPanel()) {
+    return;
+  }
+  state.roomPowerDebugPanelOpen = true;
+  renderRoomPowerDebugPanel();
+  playSound("click");
+}
+
+function closeRoomPowerDebugPanel() {
+  if (!state.roomPowerDebugPanelOpen) {
+    return;
+  }
+  state.roomPowerDebugPanelOpen = false;
+  renderRoomPowerDebugPanel();
+  playSound("click");
+}
+
+function renderRoomPowerDebugPanel() {
+  if (!elements.roomPowerDebugModal || !elements.roomPowerDebugOpenButton) {
+    return;
+  }
+  const available = canUseRoomPowerDebugPanel();
+  if (!available) {
+    state.roomPowerDebugPanelOpen = false;
+  }
+  setHidden(elements.roomPowerDebugOpenButton, !available);
+  const visible = available && state.roomPowerDebugPanelOpen;
+  if (!visible) {
+    hideModalWithMotion(elements.roomPowerDebugModal);
+    if (elements.roomPowerDebugModal.classList.contains("hidden")) {
+      setHidden(elements.roomPowerDebugModal, true);
+    }
+    return;
+  }
+  setHidden(elements.roomPowerDebugModal, false);
+  renderPowerDebug("room-match");
 }
 
 function handleTimerExpired() {
@@ -35775,11 +35850,17 @@ function resetRoundUiForLoading(options = {}) {
   setHidden(elements.answerProgressPanel, true);
   setHidden(elements.powerPanel, true);
   state.powerDebugPanelOpen = false;
+  state.roomPowerDebugPanelOpen = false;
   hideModalWithMotion(elements.botPowerDebugModal);
   if (elements.botPowerDebugModal?.classList.contains("hidden")) {
     setHidden(elements.botPowerDebugModal, true);
   }
   setHidden(elements.botPowerDebugOpenButton, true);
+  hideModalWithMotion(elements.roomPowerDebugModal);
+  if (elements.roomPowerDebugModal?.classList.contains("hidden")) {
+    setHidden(elements.roomPowerDebugModal, true);
+  }
+  setHidden(elements.roomPowerDebugOpenButton, true);
   reconcileBotPowerDebugPause();
   setHidden(elements.effectPanel, true);
   setHidden(elements.loadingPanel, false);
@@ -36078,6 +36159,7 @@ function updateModeUi() {
   renderTopModeLabel();
   renderAnswerCardsForOwners(getRoundCardOwners());
   renderBotPowerDebugPanel();
+  renderRoomPowerDebugPanel();
   elements.answerInput.placeholder = isRoomMode()
     ? `${getOwnerLabel(state.currentOwner)} answer`
     : isDuel
@@ -38173,6 +38255,23 @@ function getPowerDebugRefs(scope = "dev") {
       hand: elements.botPowerHand
     };
   }
+  if (scope === "room-match") {
+    return {
+      panel: elements.roomPowerDebugPanel,
+      ownerSelect: elements.roomPowerOwnerSelect,
+      searchInput: elements.roomPowerSearchInput,
+      powerSelect: elements.roomPowerSelect,
+      chaosToggle: elements.roomPowerChaosToggle,
+      effectSearchInput: elements.roomPowerEffectSearchInput,
+      effectSelect: elements.roomPowerEffectSelect,
+      effectDuration: elements.roomPowerEffectDuration,
+      effectStacks: elements.roomPowerEffectStacks,
+      applyEffectButton: elements.roomPowerApplyEffectButton,
+      clearEffectsButton: elements.roomPowerClearEffectsButton,
+      status: elements.roomPowerStatus,
+      hand: elements.roomPowerHand
+    };
+  }
   return {
     panel: elements.devToolScreen,
     ownerSelect: elements.devPowerOwnerSelect,
@@ -38194,6 +38293,10 @@ function getPowerDebugOwners(scope = "dev") {
   if (scope === "bot-match") {
     const owners = getActiveOwners().filter((owner) => owner === "player" || isBotOwner(owner));
     return owners.length ? owners : ["player"];
+  }
+  if (scope === "room-match") {
+    const owners = getActiveOwners().filter((owner) => Boolean(getRoomParticipantIdForOwner(owner)));
+    return owners.length ? owners : [];
   }
   const owners = getActiveOwners();
   return owners.length ? owners : ["player"];
@@ -38337,9 +38440,10 @@ function renderPowerDebug(scope = "dev") {
   const hand = state.powerHands[selectedOwner] || [];
   refs.hand.replaceChildren(...hand.map((powerId) => {
     const power = getPowerById(powerId);
-    const card = document.createElement(scope === "bot-match" ? "button" : "article");
-    card.className = scope === "bot-match" ? "profile-debug-card bot-power-debug-card" : "profile-debug-card";
-    if (scope === "bot-match") {
+    const interactiveHand = scope === "bot-match" || scope === "room-match";
+    const card = document.createElement(interactiveHand ? "button" : "article");
+    card.className = interactiveHand ? "profile-debug-card bot-power-debug-card" : "profile-debug-card";
+    if (interactiveHand) {
       card.type = "button";
       card.dataset.owner = selectedOwner;
       card.dataset.powerId = powerId;
@@ -38364,6 +38468,7 @@ function renderPowerDebug(scope = "dev") {
 function renderAllPowerDebugPanels() {
   renderPowerDebug("dev");
   renderPowerDebug("bot-match");
+  renderPowerDebug("room-match");
 }
 
 function getSelectedDebugPowerId(scope = "dev") {
@@ -38527,7 +38632,7 @@ function applyDebugEffect(scope = "dev") {
   setPowerDebugStatus(scope, `Applied ${definition.name} to ${getOwnerLabel(owner)} ${durationLabel}${stackLabel}${explodedShrapnel ? `; ${explodedShrapnel} Shrapnel exploded.` : ""}.`);
   renderScore();
   renderPowerDebug(scope);
-  publishPowerDebugState();
+  void publishPowerDebugState(scope, "apply_effect", owner);
   playSound("reveal");
 }
 
@@ -38541,7 +38646,7 @@ function clearDebugMutationStatuses(scope = "dev") {
     removeActiveEffectsForOwner(owner);
     renderScore();
     renderPowerDebug(scope);
-    publishPowerDebugState();
+    void publishPowerDebugState(scope, "clear_effects", owner);
     setPowerDebugStatus(scope, `Cleared all active Status Effects from ${getOwnerLabel(owner)}.`);
     return;
   }
@@ -38552,14 +38657,54 @@ function clearDebugMutationStatuses(scope = "dev") {
   getDedicatedTemporaryStatusEntries(owner).forEach((status) => removeDedicatedTemporaryStatus(owner, status));
   renderScore();
   renderPowerDebug(scope);
-  publishPowerDebugState();
+  void publishPowerDebugState(scope, "clear_effects", owner);
   setPowerDebugStatus(scope, toRemove.length ? `Cleared ${toRemove.length} active Status Effect${toRemove.length === 1 ? "" : "s"} from ${getOwnerLabel(owner)}.` : `${getOwnerLabel(owner)} has no active Status Effects to clear.`);
 }
 
-function publishPowerDebugState() {
-  if (isRoomMode() && isCurrentHost()) {
-    publishRoomPowerState(getRoomPowerStatePayload()).catch(() => {});
+function publishPowerDebugState(scope = "dev", operation = "", owner = "") {
+  if (scope === "room-match") {
+    return publishRoomAdminPowerDebugState(operation, owner);
   }
+  if (isRoomMode() && isCurrentHost()) {
+    return publishRoomPowerState(getRoomPowerStatePayload());
+  }
+  return Promise.resolve(null);
+}
+
+function publishRoomAdminPowerDebugState(operation = "", owner = "") {
+  if (!canUseRoomPowerDebugPanel()) {
+    return Promise.resolve(null);
+  }
+  const targetParticipantId = getRoomParticipantIdForOwner(owner);
+  if (!targetParticipantId) {
+    setPowerDebugStatus("room-match", "Choose an active room participant first.");
+    return Promise.resolve(null);
+  }
+  const code = state.roomSettings.code;
+  const clientEventId = createRoomSyncCommandId("admin-power-debug", code);
+  return roomSync.sendCommand("admin_power_debug", {
+    ...getRoomPowerStatePayload(),
+    round: state.round,
+    operation,
+    targetParticipantId,
+    actorParticipantId: state.clientId,
+    powerId: "admin_power_debug",
+    clientEventId
+  }, {
+    roomCode: code,
+    participantId: state.clientId,
+    clientEventId,
+    retry: false
+  }).then((data) => {
+    if (!data?.ok) {
+      throw new Error(data?.error || "The server did not apply this Power Debug change.");
+    }
+    renderRoomPowerDebugPanel();
+    return data;
+  }).catch((error) => {
+    setPowerDebugStatus("room-match", error?.message || "Could not sync Power Debug. Refresh the room before trying again.");
+    return null;
+  });
 }
 
 function forceDebugBotPowerUse(owner, powerId) {
@@ -38627,7 +38772,7 @@ function addDebugPowerToHand(scope = "dev") {
   setPowerDebugStatus(scope, `Added ${power.name} to ${getOwnerLabel(owner)}.${botSuffix}`);
   renderAllPowerDebugPanels();
   renderPowerUps();
-  publishPowerDebugState();
+  void publishPowerDebugState(scope, "add_power", owner);
   playSound("reveal");
 }
 
@@ -38649,7 +38794,7 @@ function removeDebugPowerFromHand(scope = "dev", owner, powerId) {
   setPowerDebugStatus(scope, `Removed ${getPowerById(powerId)?.name || powerId} from ${getOwnerLabel(owner)}.`);
   renderAllPowerDebugPanels();
   renderPowerUps();
-  publishPowerDebugState();
+  void publishPowerDebugState(scope, "remove_power", owner);
   playSound("click");
 }
 
@@ -38687,7 +38832,7 @@ function fillDebugPowerHand(scope = "dev") {
   setPowerDebugStatus(scope, `Filled ${getOwnerLabel(owner)}'s hand starting with ${getPowerById(powerId).name}.${botSuffix}`);
   renderAllPowerDebugPanels();
   renderPowerUps();
-  publishPowerDebugState();
+  void publishPowerDebugState(scope, "fill_hand", owner);
   playSound("reveal");
 }
 
@@ -38706,7 +38851,7 @@ function clearDebugPowerHand(scope = "dev") {
   setPowerDebugStatus(scope, `Cleared ${getOwnerLabel(owner)}'s hand.`);
   renderAllPowerDebugPanels();
   renderPowerUps();
-  publishPowerDebugState();
+  void publishPowerDebugState(scope, "clear_hand", owner);
   playSound("click");
 }
 
@@ -39090,6 +39235,7 @@ function updateAdminControls() {
     setHidden(elements.adminLogoutButton, !state.adminAuthenticated);
   }
   renderBotPowerDebugPanel();
+  renderRoomPowerDebugPanel();
 }
 
 async function refreshAdminSession() {
@@ -46770,7 +46916,9 @@ function closeOverlayMenus(options = {}) {
   close(elements.adminAuthModal);
   setBotAdvancedOpen(false);
   state.powerDebugPanelOpen = false;
+  state.roomPowerDebugPanelOpen = false;
   close(elements.botPowerDebugModal);
+  close(elements.roomPowerDebugModal);
   reconcileBotPowerDebugPause();
 }
 
@@ -50555,6 +50703,30 @@ elements.botPowerHand?.addEventListener("click", (event) => {
     return;
   }
   removeDebugPowerFromHand("bot-match", card.dataset.owner, card.dataset.powerId);
+});
+elements.roomPowerDebugOpenButton?.addEventListener("click", openRoomPowerDebugPanel);
+elements.roomPowerDebugCloseButton?.addEventListener("click", closeRoomPowerDebugPanel);
+elements.roomPowerDebugModal?.addEventListener("click", (event) => {
+  if (event.target === elements.roomPowerDebugModal) {
+    closeRoomPowerDebugPanel();
+  }
+});
+elements.roomPowerOwnerSelect?.addEventListener("change", () => renderPowerDebug("room-match"));
+elements.roomPowerSearchInput?.addEventListener("input", () => renderPowerDebug("room-match"));
+elements.roomPowerEffectSearchInput?.addEventListener("input", () => renderPowerDebug("room-match"));
+elements.roomPowerSelect?.addEventListener("change", () => renderPowerDebug("room-match"));
+elements.roomPowerChaosToggle?.addEventListener("change", () => renderPowerDebug("room-match"));
+elements.roomPowerAddButton?.addEventListener("click", () => addDebugPowerToHand("room-match"));
+elements.roomPowerFillButton?.addEventListener("click", () => fillDebugPowerHand("room-match"));
+elements.roomPowerClearButton?.addEventListener("click", () => clearDebugPowerHand("room-match"));
+elements.roomPowerApplyEffectButton?.addEventListener("click", () => applyDebugEffect("room-match"));
+elements.roomPowerClearEffectsButton?.addEventListener("click", () => clearDebugMutationStatuses("room-match"));
+elements.roomPowerHand?.addEventListener("click", (event) => {
+  const card = event.target.closest(".bot-power-debug-card");
+  if (!card || !elements.roomPowerHand.contains(card)) {
+    return;
+  }
+  removeDebugPowerFromHand("room-match", card.dataset.owner, card.dataset.powerId);
 });
 elements.profileCustomizeButton?.addEventListener("click", openProfileCustomization);
 elements.profileShopButton?.addEventListener("click", openProfileShop);

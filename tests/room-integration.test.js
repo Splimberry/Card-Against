@@ -383,6 +383,12 @@ async function roomPowerStateCommand(code, body = {}, headers = {}) {
   });
 }
 
+async function roomAdminPowerDebugCommand(code, body = {}, headers = {}) {
+  return enrichRoomCommandResult(code, await roomCommand(code, "admin_power_debug", body, headers), {
+    includeStoredRoom: false
+  });
+}
+
 async function roomRoundResultCommand(code, body = {}, headers = {}) {
   return enrichRoomCommandResult(code, await roomCommand(code, "publish_round_result", body, headers));
 }
@@ -2336,6 +2342,99 @@ async function testRoomPowerStateEndpointStampsEvents() {
   assert.equal(events.response.status, 200, events.payload.error);
   const powerEvents = events.payload.events.filter((event) => event.payload?.powerId === "software_downgrade");
   assert.deepEqual(powerEvents.map((event) => event.type), ["power_state"]);
+}
+
+async function testAdminRoomPowerDebugRequiresAdminAndPublishesCanonicalPowerState() {
+  const code = makeCode(8095);
+  const matchId = `${code}-match`;
+  await upsertRoom(makeRoom(code, {
+    status: "in-progress",
+    participants: [
+      {
+        id: "host-client",
+        name: "Host",
+        host: true,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "host"
+      },
+      {
+        id: "guest-client",
+        name: "Guest",
+        host: false,
+        spectator: false,
+        bot: false,
+        active: true,
+        muted: false,
+        status: "joined"
+      }
+    ],
+    game: {
+      matchId,
+      status: "playing",
+      round: 1,
+      setup: makeSetup(1),
+      powerState: {
+        matchId,
+        updatedAt: 1000,
+        hands: [
+          { participantId: "host-client", owner: "player", updatedAt: 1000, hand: ["shuffle"], fresh: [] },
+          { participantId: "guest-client", owner: "opponent", updatedAt: 1000, hand: [], fresh: [] }
+        ],
+        played: [],
+        players: [
+          { participantId: "host-client", owner: "player", updatedAt: 1000, score: 100, streak: 1 },
+          { participantId: "guest-client", owner: "opponent", updatedAt: 1000, score: 200, streak: 2 }
+        ],
+        effects: { maps: {}, arrays: {}, values: {} }
+      },
+      updatedAt: Date.now()
+    }
+  }));
+
+  const payload = {
+    matchId,
+    round: 1,
+    operation: "add_power",
+    targetParticipantId: "guest-client",
+    hands: [
+      { participantId: "host-client", owner: "player", updatedAt: 2000, hand: ["shuffle"], fresh: [] },
+      { participantId: "guest-client", owner: "opponent", updatedAt: 2000, hand: ["xray_hacks"], fresh: ["xray_hacks"] }
+    ],
+    played: [],
+    players: [
+      { participantId: "host-client", owner: "player", updatedAt: 2000, score: 100, streak: 1 },
+      { participantId: "guest-client", owner: "opponent", updatedAt: 2000, score: 200, streak: 2 }
+    ],
+    effects: { maps: {}, arrays: {}, values: {} }
+  };
+  const unauthorized = await roomAdminPowerDebugCommand(code, payload);
+  assert.equal(unauthorized.response.status, 401);
+
+  const result = await roomAdminPowerDebugCommand(code, payload, adminHeaders());
+  assert.equal(result.response.status, 200, result.payload.error);
+  assert.equal(result.payload.eventType, "power-state");
+  assert.equal(result.payload.debugOperation, "add_power");
+  assert.equal(result.payload.adminDebug, true);
+  assert.ok(result.payload.powerRevision >= 1);
+  assert.deepEqual(
+    result.payload.powerState.hands.find((entry) => entry.participantId === "guest-client")?.hand,
+    ["xray_hacks"]
+  );
+
+  const stored = await getRoom(code);
+  assert.equal(stored.response.status, 200, stored.payload.error);
+  assert.deepEqual(
+    stored.payload.room.game.powerState.hands.find((entry) => entry.participantId === "guest-client")?.hand,
+    ["xray_hacks"]
+  );
+  const events = await request("GET", `/api/rooms/${code}/events?since=0`);
+  assert.equal(events.response.status, 200, events.payload.error);
+  const event = events.payload.events.find((entry) => entry.type === "power_state" && entry.payload?.adminDebug);
+  assert.ok(event);
+  assert.equal(event.payload.targetParticipantId, "guest-client");
 }
 
 async function testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand() {
@@ -7264,6 +7363,7 @@ async function main() {
   await testRoomSettingsPatchPreservesParticipantsChatAndGame();
   await testRoomSettingsClassicModeNormalization();
   await testRoomPowerStateEndpointStampsEvents();
+  await testAdminRoomPowerDebugRequiresAdminAndPublishesCanonicalPowerState();
   await testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand();
   await testRoomPowerStateRejectsInvalidTargetParticipant();
   await testRoomPowerStateTimeBenderUpdatesSharedTimers();

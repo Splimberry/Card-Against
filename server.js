@@ -3065,6 +3065,10 @@ async function handleRoomCommandParsed(req, res, normalizedCode, command, body) 
       await handleRoomCommandUsePower(req, res, room, command, body);
       return;
     }
+    if (command.type === "admin_power_debug") {
+      await handleRoomCommandAdminPowerDebug(req, res, room, command);
+      return;
+    }
     if (command.type === "leave_room") {
       await handleRoomCommandLeaveRoom(req, res, room, command, body);
       return;
@@ -4605,6 +4609,108 @@ async function handleRoomCommandUsePower(req, res, room, command, rawBody = {}) 
     players: responsePowerState.players,
     effects: responsePowerState.effects,
     timerState: getRoomTimerStatePayload(storedRoom.game) || timerState
+  });
+}
+
+const adminPowerDebugOperations = new Set([
+  "add_power",
+  "fill_hand",
+  "clear_hand",
+  "remove_power",
+  "apply_effect",
+  "clear_effects"
+]);
+
+async function handleRoomCommandAdminPowerDebug(req, res, room, command) {
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+  if (!room.game || room.status !== "in-progress" || room.game.status !== "playing") {
+    sendJson(res, 409, { ok: false, error: "Power Debug is only available during an active room match." });
+    return;
+  }
+
+  const body = command.payload && typeof command.payload === "object" ? command.payload : {};
+  const operation = String(body.operation || "").trim().toLowerCase();
+  if (!adminPowerDebugOperations.has(operation)) {
+    sendJson(res, 400, { ok: false, error: "Unsupported Power Debug operation." });
+    return;
+  }
+  const targetParticipantId = String(body.targetParticipantId || "").trim().slice(0, 120);
+  const targetParticipant = room.participants.find((participant) => participant.id === targetParticipantId);
+  if (!targetParticipantId || !targetParticipant || !isGameplayParticipant(targetParticipant) || targetParticipant.active === false) {
+    sendJson(res, 400, { ok: false, error: "Choose an active gameplay participant for Power Debug." });
+    return;
+  }
+
+  const currentMatchId = String(room.game.matchId || "").slice(0, 80);
+  const payloadMatchId = String(body.matchId || "").slice(0, 80);
+  if (payloadMatchId && currentMatchId && payloadMatchId !== currentMatchId) {
+    sendJson(res, 409, { ok: false, error: "Power Debug state belongs to a previous match." });
+    return;
+  }
+  const currentRound = clampServerNumber(room.game.round, 0, 100, 0);
+  const payloadRound = clampServerNumber(body.round, 0, 100, 0);
+  if (payloadRound && currentRound && payloadRound !== currentRound) {
+    sendJson(res, 409, { ok: false, error: "Power Debug state belongs to a different round." });
+    return;
+  }
+
+  const submittedPowerState = stripClientPowerStateRevisions({
+    matchId: payloadMatchId || currentMatchId,
+    updatedAt: Date.now(),
+    hands: body.hands,
+    played: body.played,
+    players: body.players,
+    effects: body.effects
+  });
+  const powerState = filterRoomPowerStateParticipants(submittedPowerState, room);
+  if (!powerState) {
+    sendJson(res, 400, { ok: false, error: "Power Debug needs a complete room power state." });
+    return;
+  }
+
+  const previousRevision = getRoomRevision(room);
+  const previousPowerState = normalizeRoomPowerState(room.game.powerState);
+  const mergedPowerState = stampRoomPowerStateServerRevision(
+    previousPowerState,
+    powerState,
+    mergeRoomPowerState(previousPowerState, powerState),
+    getRoomPowerStateRevision(previousPowerState) + 1
+  );
+  room.game.powerState = mergedPowerState;
+  room.game.updatedAt = Date.now();
+  const powerEventPayload = {
+    clientEventId: command.clientEventId,
+    actorId: String(command.participantId || "").slice(0, 120),
+    actorParticipantId: String(command.participantId || "").slice(0, 120),
+    targetParticipantId,
+    round: currentRound,
+    matchId: room.game.matchId || powerState.matchId || "",
+    powerId: "admin_power_debug",
+    debugOperation: operation,
+    powerState: mergedPowerState,
+    serverAuthoritative: true,
+    adminDebug: true
+  };
+  stampRoomEvent(room, "power_state", powerEventPayload);
+  finalizeRoom(room);
+  const storedRoom = await backendStore.upsertRoom(room);
+  const responsePowerState = normalizeRoomPowerState(storedRoom.game?.powerState) || mergedPowerState;
+  sendJson(res, 200, {
+    ...(await createRoomCommandResponse(storedRoom, previousRevision)),
+    round: clampServerNumber(storedRoom.game?.round, 0, 100, currentRound),
+    matchId: storedRoom.game?.matchId || responsePowerState.matchId || "",
+    powerId: "admin_power_debug",
+    debugOperation: operation,
+    targetParticipantId,
+    adminDebug: true,
+    powerState: responsePowerState,
+    powerRevision: responsePowerState.revision || 0,
+    hands: responsePowerState.hands,
+    played: responsePowerState.played,
+    players: responsePowerState.players,
+    effects: responsePowerState.effects
   });
 }
 

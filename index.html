@@ -424,6 +424,7 @@
 
           <section class="power-panel" id="powerPanel" aria-label="Power ups"></section>
           <button type="button" class="secondary-button bot-power-debug-open hidden" id="botPowerDebugOpenButton">Power Debug</button>
+          <button type="button" class="secondary-button bot-power-debug-open hidden" id="roomPowerDebugOpenButton">Power Debug</button>
           <section class="effect-panel hidden" id="effectPanel" aria-label="Active effects"></section>
 
           <section class="input-panel" id="inputPanel" aria-labelledby="inputTitle">
@@ -898,6 +899,66 @@
           </div>
           <div class="debug-status" id="botPowerStatus">Give yourself or a bot any power-up. Bots use forced power-ups immediately. Effect duration 0 is permanent.</div>
           <div class="profile-debug-grid dev-power-hand" id="botPowerHand"></div>
+        </div>
+      </section>
+
+      <section class="bot-power-debug-modal hidden" id="roomPowerDebugModal" aria-labelledby="roomPowerDebugTitle" role="dialog" aria-modal="true">
+        <div class="bot-power-debug-panel" id="roomPowerDebugPanel">
+          <div class="bot-power-debug-heading">
+            <div>
+              <p class="eyebrow">Admin room testing</p>
+              <h2 id="roomPowerDebugTitle">Power Debug</h2>
+            </div>
+            <div class="bot-power-debug-heading-actions">
+              <span>Changes are sent through the room server.</span>
+              <button type="button" class="icon-button" id="roomPowerDebugCloseButton">Close</button>
+            </div>
+          </div>
+          <div class="bot-power-debug-controls">
+            <label>
+              <span>Player</span>
+              <select id="roomPowerOwnerSelect"></select>
+            </label>
+            <label>
+              <span>Search</span>
+              <input id="roomPowerSearchInput" type="search" placeholder="Find power-up">
+            </label>
+            <label>
+              <span>Power-up</span>
+              <select id="roomPowerSelect"></select>
+            </label>
+            <label class="mode-toggle bot-power-debug-toggle">
+              <input id="roomPowerChaosToggle" type="checkbox">
+              <span>Chaos version</span>
+            </label>
+            <button type="button" class="icon-button" id="roomPowerAddButton">Give Power</button>
+            <button type="button" class="icon-button" id="roomPowerFillButton">Fill Hand</button>
+            <button type="button" class="icon-button danger-button" id="roomPowerClearButton">Clear Hand</button>
+            <section class="power-debug-effects" aria-label="Effect testing">
+              <label class="power-debug-effect-search">
+                <span>Search effects</span>
+                <input id="roomPowerEffectSearchInput" type="search" placeholder="Find effect">
+              </label>
+              <label class="power-debug-effect-select">
+                <span>Effect</span>
+                <select id="roomPowerEffectSelect"></select>
+              </label>
+              <div class="power-debug-effect-actions">
+                <label>
+                  <span>Duration</span>
+                  <input id="roomPowerEffectDuration" type="number" min="0" step="1" value="2">
+                </label>
+                <label>
+                  <span>Stacks</span>
+                  <input id="roomPowerEffectStacks" type="number" min="1" step="1" value="1">
+                </label>
+                <button type="button" class="icon-button" id="roomPowerApplyEffectButton">Apply Effect</button>
+                <button type="button" class="icon-button danger-button" id="roomPowerClearEffectsButton">Clear All Status</button>
+              </div>
+            </section>
+          </div>
+          <div class="debug-status" id="roomPowerStatus">Choose a player, then send a server-synchronized Power Debug change.</div>
+          <div class="profile-debug-grid dev-power-hand" id="roomPowerHand"></div>
         </div>
       </section>
 
