@@ -9422,6 +9422,12 @@ input:focus {
 
 /* Use child decoration layers for themed SVGs so they remain independent of
    profile patterns and effects that already use the card pseudo-elements. */
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"],
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"] {
+  position: relative;
+  isolation: isolate;
+}
+
 .profile-card-theme-decoration {
   position: absolute;
   inset: 0;
@@ -9458,24 +9464,24 @@ input:focus {
   animation: mutationHazardPulse 3200ms ease-in-out infinite;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] {
   z-index: 3;
   mix-blend-mode: normal;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon {
   width: 5rem;
   opacity: 0.62;
   filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(3146%) hue-rotate(331deg) brightness(108%) contrast(106%) drop-shadow(0 0 0.35rem rgba(255, 28, 76, 0.9)) drop-shadow(0 0 0.85rem rgba(255, 28, 76, 0.58));
   animation: doomSkullDrift 8200ms linear infinite;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="0"] {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="0"] {
   top: 0.4rem;
   right: 0.5rem;
 }
 
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="1"] {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="1"] {
   bottom: 0.35rem;
   left: 0.45rem;
   filter: brightness(0) saturate(100%) invert(44%) sepia(81%) saturate(2659%) hue-rotate(241deg) brightness(105%) contrast(100%) drop-shadow(0 0 0.35rem rgba(168, 85, 247, 0.9)) drop-shadow(0 0 0.85rem rgba(168, 85, 247, 0.56));
@@ -9483,9 +9489,9 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card > .profile-card-theme-decoration,
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration,
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card > .profile-card-theme-decoration .profile-card-theme-icon,
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration .profile-card-theme-icon {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration .profile-card-theme-icon {
   animation: none !important;
 }
 
