@@ -2181,6 +2181,13 @@ function forgetPendingInventoryMutation(userId, opId) {
   );
 }
 
+function getPendingInventoryPurchaseKeys(userId = getUserInventoryStorageId()) {
+  return [...new Set(loadUserInventoryMutationQueue(userId)
+    .filter((mutation) => mutation.kind === "purchase")
+    .map((mutation) => getProfileShopKey(mutation.type, mutation.id))
+    .filter(Boolean))];
+}
+
 function writeUserInventoryCache(inventory) {
   if (!inventory?.userId) {
     return;
@@ -2369,11 +2376,12 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
+      const rejected = [400, 409].includes(response.status);
+      if (rejected) {
+        forgetPendingInventoryMutation(userId, mutation.opId);
+      }
       if (result.inventory && !loadUserInventoryQueue(userId).length) {
         applyServerUserInventory(result.inventory, { authoritative: true });
-      }
-      if ([400, 409].includes(response.status)) {
-        forgetPendingInventoryMutation(userId, mutation.opId);
       }
       throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
     }
@@ -2664,13 +2672,23 @@ function applyServerUserInventory(inventory = {}, options = {}) {
     || (options.includeLocalSnapshot !== false && doesActiveUserStorageCacheBelongToUser({ id: userId }));
   const includeLocalSnapshot = options.includeLocalSnapshot === true
     || (options.includeLocalSnapshot !== false && hasPendingUserInventoryWork(userId) && canTrustCurrentBrowserInventory);
-  const inventoryToApply = shouldMergeLocal
+  let inventoryToApply = shouldMergeLocal
     ? mergeUserInventoriesForHydration({ id: userId }, [
       serverInventory,
       loadUserInventoryCache(userId),
       includeLocalSnapshot ? getLocalUserInventorySnapshot({ id: userId }) : null
     ]) || serverInventory
     : serverInventory;
+  const pendingPurchaseKeys = getPendingInventoryPurchaseKeys(userId);
+  if (pendingPurchaseKeys.length) {
+    inventoryToApply = {
+      ...inventoryToApply,
+      cosmetics: [...new Set([
+        ...(Array.isArray(inventoryToApply.cosmetics) ? inventoryToApply.cosmetics : []),
+        ...pendingPurchaseKeys
+      ].map(normalizeInventoryKey).filter(Boolean))]
+    };
+  }
   state.userInventoryApplying = true;
   try {
     const coins = Math.max(0, Math.floor(Number(inventoryToApply.coins) || 0));
@@ -26705,7 +26723,7 @@ function buyProfileShopItem(type, id) {
   }
   const purchaseKey = getProfileShopKey(type, id);
   const opId = createUserInventoryOpId("purchase-cosmetic", purchaseKey);
-  saveCurrencyBalance(balance - item.cost);
+  saveCurrencyBalance(balance - item.cost, { syncReconcile: false });
   saveProfileShopPurchases([...purchases, purchaseKey], { sync: false });
   elements.profileShopModal?.classList.remove("motion-opening");
   state.justPurchasedProfileShopKey = purchaseKey;
