@@ -1484,8 +1484,8 @@ const triviaThemes = [
   "Art and Music"
 ];
 const questionLanguages = {
-  en: { label: "English", shortLabel: "EN", idPrefix: "" },
-  "zh-Hans": { label: "Simplified Chinese", shortLabel: "中文", idPrefix: "chinese" }
+  en: { label: "English", shortLabel: "EN", idPrefix: "en" },
+  "zh-Hans": { label: "Simplified Chinese", shortLabel: "中文", idPrefix: "zh-hans" }
 };
 const loadingMessages = {
   setup: [
@@ -4257,6 +4257,10 @@ window.addEventListener("cards-ai-language-change", () => {
   state.nextSetupStatus = "idle";
   state.setupVersion += 1;
   clearWarmSetup();
+  if (elements.userQuestionScreen && !elements.userQuestionScreen.classList.contains("hidden")) {
+    syncUserQuestionIdPrefix();
+    updateUserQuestionPreview();
+  }
 });
 
 const elements = {
@@ -6731,6 +6735,7 @@ function normalizeSetupPayload(setup) {
 
   return {
     id: String(setup.id || "").trim(),
+    translationKey: String(setup.translationKey || "").trim(),
     blackCard: String(setup.blackCard || "").trim(),
     type: setup.type === "text" ? "text" : "image",
     questionStyle: setup.questionStyle === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
@@ -37170,11 +37175,18 @@ function normalizeUserQuestionIdInput() {
 }
 
 function syncUserQuestionIdPrefix() {
-  const prefix = getThemeIdPrefix(elements.userQuestionTheme.value);
+  const prefix = getDevQuestionIdPrefix(elements.userQuestionTheme.value, getCurrentQuestionLanguage());
   const current = formatDevQuestionId(elements.userQuestionId.value);
-  if (!current || getKnownThemeIdPrefixes().has(current.split("-")[0])) {
+  const parts = current.split("-");
+  const knownPrefixes = getKnownThemeIdPrefixes();
+  const knownLanguagePrefixes = new Set(Object.values(questionLanguages).map((entry) => entry.idPrefix).filter(Boolean));
+  const withoutLanguage = knownLanguagePrefixes.has(parts[0]) ? parts.slice(1) : parts;
+  const suffix = knownPrefixes.has(withoutLanguage[0]) ? withoutLanguage.slice(1).join("-") : withoutLanguage.join("-");
+  if (!current || !suffix) {
     elements.userQuestionId.value = `${prefix}-`;
+    return;
   }
+  elements.userQuestionId.value = `${prefix}-${suffix}`;
 }
 
 function getUserQuestionDraftStorageUserKey() {
@@ -37427,6 +37439,7 @@ function updateUserQuestionPreview() {
 function getUserQuestionPayload() {
   const payload = {
     id: formatDevQuestionId(elements.userQuestionId.value),
+    language: getCurrentQuestionLanguage(),
     type: elements.userQuestionType.value,
     questionStyle: elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE ? MULTIPLE_CHOICE_STYLE : "standard",
     gradingStrictness: elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE
@@ -37470,7 +37483,7 @@ function clearUserQuestionForm() {
 async function submitUserQuestion(event) {
   event.preventDefault();
   if (!elements.userQuestionForm.reportValidity()) return;
-  if (!validateQuestionEditorId(elements.userQuestionId, elements.userQuestionTheme.value, elements.userQuestionStatus)) {
+  if (!validateQuestionEditorId(elements.userQuestionId, elements.userQuestionTheme.value, elements.userQuestionStatus, getCurrentQuestionLanguage())) {
     return;
   }
   if (elements.userQuestionStyle?.value === MULTIPLE_CHOICE_STYLE

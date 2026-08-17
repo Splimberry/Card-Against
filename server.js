@@ -1765,6 +1765,7 @@ async function handleDebugQuestions(res) {
     questions: runtimeQuestionBank.map((question, index) => ({
       index,
       id: question.id,
+      translationKey: question.translationKey,
       type: question.type,
       questionStyle: question.questionStyle || "standard",
       language: normalizeQuestionLanguage(question.language),
@@ -2030,6 +2031,7 @@ function normalizeCreatedQuestion(body) {
     ? "multiple-choice"
     : "standard";
   const language = normalizeQuestionLanguage(source.language || source.questionLanguage);
+  const translationKey = normalizeQuestionTranslationKey(source.translationKey, id);
   const debugBatch = normalizeQuestionDebugBatch(source.debugBatch);
   const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
   const question = String(source.question || "").trim().replace(/\s+/g, " ").slice(0, 260);
@@ -2067,6 +2069,7 @@ function normalizeCreatedQuestion(body) {
     type,
     questionStyle,
     language,
+    ...(translationKey ? { translationKey } : {}),
     gradingStrictness,
     theme,
     difficulty,
@@ -8068,6 +8071,7 @@ function normalizeSeedQuestion(question) {
     ? "multiple-choice"
     : "standard";
   const language = normalizeQuestionLanguage(source.language || source.questionLanguage);
+  const translationKey = normalizeQuestionTranslationKey(source.translationKey, source.id);
   const gradingStrictness = normalizeGradingStrictness(source.gradingStrictness);
   const debugBatch = normalizeQuestionDebugBatch(source.debugBatch);
   const theme = triviaThemes.includes(source.theme) ? source.theme : "Pop Culture";
@@ -8117,6 +8121,7 @@ function normalizeSeedQuestion(question) {
     type,
     questionStyle,
     language,
+    ...(translationKey ? { translationKey } : {}),
     gradingStrictness,
     theme,
     difficulty: String(source.difficulty || "medium").trim().slice(0, 30),
@@ -8150,6 +8155,15 @@ function normalizeSeedQuestion(question) {
 function createFallbackBotCards(answer) {
   const fallback = ["Unknown", "Not sure"];
   return fallback.map((card) => card === answer ? "Maybe" : card);
+}
+
+function normalizeQuestionTranslationKey(value, id = "") {
+  const source = String(value || id || "").trim().toLowerCase();
+  return source
+    .replace(/^(?:en|zh-hans|chinese)-/, "")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
 }
 
 function uniqueAnswers(answers) {
@@ -8296,6 +8310,7 @@ async function getSeedQuestionSetup(options = {}) {
     type: picked.type,
     questionStyle: picked.questionStyle || "standard",
     language: normalizeQuestionLanguage(picked.language),
+    translationKey: picked.translationKey,
     gradingStrictness: normalizeGradingStrictness(picked.gradingStrictness),
     theme: picked.theme,
     difficulty: picked.difficulty,
