@@ -9428,6 +9428,10 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="mutation"] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
   background: linear-gradient(135deg, #b7ff2a, #facc15);
   -webkit-mask-image: url("/assets/overlays/biohazard.svg");
   -webkit-mask-repeat: no-repeat;
