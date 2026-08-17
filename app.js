@@ -17944,9 +17944,7 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
       && !(id === "rgb" && rgbDisabledProfileStyleIds.has(style.id))
       && !(id === "pastel" && (style.id === "default" || style.id === "black"))
     ));
-  const activePatternId = isSpecialStyle || style.kind === "mutation"
-    ? "none"
-    : normalized.patternId;
+  const activePatternId = isSpecialStyle ? "none" : normalized.patternId;
   card.dataset.cardStyle = style.id;
   const hasStyleLayers = activeEffectIds.length > 0 || activePatternId !== "none";
   card.dataset.cardCustom = style.id === "default" && !options.preview && !options.forceCustom && !hasStyleLayers ? "false" : "true";
