@@ -418,6 +418,29 @@ async function upsertRoom(room) {
   return payload.room;
 }
 
+function getMultiplayerPowerTransportTestIds() {
+  const source = readFileSync(new URL("../app.js", `file://${__filename}`), "utf8");
+  const collectIds = (startMarker, endMarker) => {
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker, start);
+    assert.ok(start >= 0 && end > start, `Could not locate ${startMarker}.`);
+    return [...new Set(
+      [...source.slice(start, end).matchAll(/\bid:\s*"([^"]+)"/g)]
+        .map((match) => match[1])
+    )];
+  };
+  const traditional = collectIds("const powerDeck = [", "const mutationPowerDeck");
+  const mutation = collectIds("const mutationPowerDeck", "const powerMap");
+  const chaosStart = source.indexOf("const chaosInfusedPowerOverrides = {");
+  const chaosEnd = source.indexOf("const powerSuggestionTextById", chaosStart);
+  assert.ok(chaosStart >= 0 && chaosEnd > chaosStart, "Could not locate Chaos power overrides.");
+  const chaosIds = [...new Set(
+    [...source.slice(chaosStart, chaosEnd).matchAll(/^  ([a-z0-9_]+): \{/gm)]
+      .map((match) => `${match[1]}__chaos`)
+  )];
+  return [...new Set([...traditional, ...mutation, ...chaosIds])];
+}
+
 async function listRooms() {
   const { response, payload } = await request("GET", "/api/rooms");
   assert.equal(response.status, 200, payload.error);
@@ -2435,6 +2458,121 @@ async function testAdminRoomPowerDebugRequiresAdminAndPublishesCanonicalPowerSta
   const event = events.payload.events.find((entry) => entry.type === "power_state" && entry.payload?.adminDebug);
   assert.ok(event);
   assert.equal(event.payload.targetParticipantId, "guest-client");
+}
+
+async function testEveryAvailablePowerUsesCanonicalMultiplayerTransport() {
+  const powerIds = getMultiplayerPowerTransportTestIds();
+  assert.ok(powerIds.length >= 100, "The power transport suite must cover the full available deck.");
+  const previousRateLimitDisabled = process.env.RATE_LIMIT_DISABLED;
+  process.env.RATE_LIMIT_DISABLED = "true";
+  try {
+    for (const [index, powerId] of powerIds.entries()) {
+    const code = makeCode(8600 + index);
+    const matchId = `${code}-match`;
+    await upsertRoom(makeRoom(code, {
+      status: "in-progress",
+      participants: [
+        {
+          id: "host-client",
+          name: "Host",
+          host: true,
+          spectator: false,
+          bot: false,
+          active: true,
+          muted: false,
+          status: "host"
+        },
+        {
+          id: "guest-client",
+          name: "Guest",
+          host: false,
+          spectator: false,
+          bot: false,
+          active: true,
+          muted: false,
+          status: "joined"
+        }
+      ],
+      game: {
+        matchId,
+        status: "playing",
+        round: 1,
+        setup: makeSetup(1),
+        powerState: {
+          matchId,
+          updatedAt: 1000,
+          hands: [
+            { participantId: "host-client", owner: "player", updatedAt: 1000, hand: [powerId], fresh: [powerId] },
+            { participantId: "guest-client", owner: "opponent", updatedAt: 1000, hand: [], fresh: [] }
+          ],
+          played: [],
+          players: [
+            { participantId: "host-client", owner: "player", updatedAt: 1000, score: 10000, streak: 5 },
+            { participantId: "guest-client", owner: "opponent", updatedAt: 1000, score: 5000, streak: 4 }
+          ],
+          effects: { maps: {}, arrays: {}, values: {} }
+        },
+        updatedAt: Date.now()
+      }
+    }));
+
+    const result = await roomPowerStateCommand(code, {
+      matchId,
+      round: 1,
+      powerId,
+      actorParticipantId: "host-client",
+      targetParticipantId: "guest-client",
+      hands: [
+        { participantId: "host-client", owner: "player", updatedAt: 2000, hand: [], fresh: [] },
+        { participantId: "guest-client", owner: "opponent", updatedAt: 2000, hand: [], fresh: [] }
+      ],
+      played: [
+        {
+          participantId: "host-client",
+          owner: "player",
+          updatedAt: 2000,
+          stacks: [{ powerId, revealId: `transport-${powerId}`, meta: { targetOwner: "opponent" } }],
+          primaryPowerId: powerId,
+          meta: { targetOwner: "opponent" }
+        }
+      ],
+      players: [
+        { participantId: "host-client", owner: "player", updatedAt: 2000, score: 10000, streak: 5 },
+        { participantId: "guest-client", owner: "opponent", updatedAt: 2000, score: 5000, streak: 4 }
+      ],
+      effects: { maps: {}, arrays: {}, values: {} },
+      action: {
+        version: 1,
+        type: "use",
+        powerId,
+        actorParticipantId: "host-client",
+        targetParticipantId: "guest-client",
+        matchId,
+        round: 1,
+        meta: { targetOwner: "opponent" }
+      }
+    });
+    assert.equal(result.response.status, 200, `${powerId}: ${result.payload.error || "power command failed"}`);
+    assert.equal(result.payload.eventType, "power-state", `${powerId}: no canonical power event`);
+    assert.ok(result.payload.powerRevision >= 1, `${powerId}: no power revision`);
+    assert.equal(
+      result.payload.powerState.hands.find((entry) => entry.participantId === "host-client")?.hand.includes(powerId),
+      false,
+      `${powerId}: remained in the authoritative hand after use`
+    );
+    assert.equal(
+      result.payload.powerState.played.find((entry) => entry.participantId === "host-client")?.stacks.some((entry) => entry.powerId === powerId),
+      true,
+      `${powerId}: missing from authoritative played history`
+    );
+    }
+  } finally {
+    if (previousRateLimitDisabled === undefined) {
+      delete process.env.RATE_LIMIT_DISABLED;
+    } else {
+      process.env.RATE_LIMIT_DISABLED = previousRateLimitDisabled;
+    }
+  }
 }
 
 async function testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand() {
@@ -7364,6 +7502,7 @@ async function main() {
   await testRoomSettingsClassicModeNormalization();
   await testRoomPowerStateEndpointStampsEvents();
   await testAdminRoomPowerDebugRequiresAdminAndPublishesCanonicalPowerState();
+  await testEveryAvailablePowerUsesCanonicalMultiplayerTransport();
   await testRoomPowerStateRejectsPowerMissingFromAuthoritativeHand();
   await testRoomPowerStateRejectsInvalidTargetParticipant();
   await testRoomPowerStateTimeBenderUpdatesSharedTimers();
