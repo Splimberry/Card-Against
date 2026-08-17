@@ -1182,7 +1182,7 @@ const chaosInfusedPowerOverrides = {
   },
   reverse: {
     name: "180",
-    short: "gain transfer / guard",
+    short: "steal + guard",
     description: "Transfer a target's gains to yourself this round. For the next 3 rounds, point losses against you are transferred to that target instead.",
     reverseGuard: true,
     guardRounds: 3
@@ -9268,7 +9268,13 @@ function getActiveEffectEntries() {
       [getEffectStackCount(state.midasTouchOwners?.[owner]) > 0, createActiveEffect(owner, "ultimate_bounty", `Midas' Touch${formatStackSuffix(getEffectStackCount(state.midasTouchOwners[owner]))}`, "Wins add a permanent stack; each stack pays 5% of current score at round start.", { chaosInfused: true })],
       [getEffectStackCount(state.capitalismOwners?.[owner]) > 0, createActiveEffect(owner, "communism", `Capitalism${formatStackSuffix(getEffectStackCount(state.capitalismOwners[owner]))}`, "Positive earnings are permanently increased by 50% per stack.", { chaosInfused: true })],
       [getEffectStackCount(state.infernoOwners?.[owner]) > 0, createActiveEffect(owner, "hot_in_here", `Inferno${formatStackSuffix(getEffectStackCount(state.infernoOwners[owner]))}`, "At round start, gain 1 streak per stack; everyone else loses 5% x your final streak x stack count of their score.", { chaosInfused: true, tableWide: true })],
-      [(state.reverseGuardRounds?.[owner] || 0) > 0, createActiveEffect(owner, "reverse", `180 Guard · ${state.reverseGuardRounds[owner]}r`, `Point losses are redirected to ${getOwnerLabel(state.reverseGuardTargets?.[owner])}.`, { chaosInfused: true })],
+      [(state.reverseGuardRounds?.[owner] || 0) > 0, createActiveEffect(
+        owner,
+        "reverse",
+        "180 Guard",
+        `Redirects your point losses to ${getOwnerLabel(state.reverseGuardTargets?.[owner])}.`,
+        { chaosInfused: true, statusPill: true, statusMeta: `${state.reverseGuardRounds[owner]}r` }
+      )],
       [state.redHerringMasks[owner] && owner === getFocusedOwner(), createActiveEffect(
         owner,
         "red_herring",
@@ -9577,6 +9583,86 @@ function shouldRenderEffectPanel() {
     && !elements.inputPanel.classList.contains("hidden");
 }
 
+function getStatusEffectAnimationBaseKey(entry) {
+  const name = String(entry?.name || "")
+    .replace(/\s+·\s+.*$/, "")
+    .replace(/\s+x\d+$/, "")
+    .trim();
+  return [entry?.owner || "", entry?.powerId || "", name, entry?.tableWide ? "table" : "personal"].join("|");
+}
+
+function getStatusEffectBadgeSnapshots() {
+  const items = elements.effectPanel?.querySelector(".status-effect-items");
+  if (!items || shouldReduceMotion()) {
+    return new Map();
+  }
+  return new Map(
+    [...items.querySelectorAll(".effect-badge[data-effect-animation-key]")]
+      .map((badge) => [badge.dataset.effectAnimationKey, {
+        rect: badge.getBoundingClientRect(),
+        badge: badge.cloneNode(true)
+      }])
+      .filter(([key, snapshot]) => Boolean(key) && snapshot.rect.width > 0 && snapshot.rect.height > 0)
+  );
+}
+
+function animateStatusEffectChanges(previousBadges, items, options = {}) {
+  if (shouldReduceMotion() || !(previousBadges instanceof Map)) {
+    return;
+  }
+  const duration = 620;
+  const easing = "cubic-bezier(0.16, 1, 0.3, 1)";
+  const nextBadges = new Set();
+  [...items.querySelectorAll(".effect-badge[data-effect-animation-key]")].forEach((badge) => {
+    const key = badge.dataset.effectAnimationKey;
+    const previous = previousBadges.get(key);
+    nextBadges.add(key);
+    if (!previous) {
+      if (!options.animateNew) {
+        return;
+      }
+      const animation = badge.animate([
+        { opacity: 0, transform: "translate3d(0, 0.45rem, 0) scale(0.86)" },
+        { opacity: 1, transform: "translate3d(0, 0, 0) scale(1)" }
+      ], { duration: 460, easing, fill: "both" });
+      animation.finished.then(() => animation.cancel(), () => animation.cancel());
+      return;
+    }
+    const nextRect = badge.getBoundingClientRect();
+    const deltaX = previous.rect.left - nextRect.left;
+    const deltaY = previous.rect.top - nextRect.top;
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
+      return;
+    }
+    const animation = badge.animate([
+      { transform: `translate3d(${deltaX}px, ${deltaY}px, 0)` },
+      { transform: "translate3d(0, 0, 0)" }
+    ], { duration, easing, fill: "both" });
+    animation.finished.then(() => animation.cancel(), () => animation.cancel());
+  });
+
+  previousBadges.forEach((previous, key) => {
+    if (nextBadges.has(key)) {
+      return;
+    }
+    const leaving = previous.badge;
+    leaving.style.position = "fixed";
+    leaving.style.left = `${previous.rect.left}px`;
+    leaving.style.top = `${previous.rect.top}px`;
+    leaving.style.width = `${previous.rect.width}px`;
+    leaving.style.height = `${previous.rect.height}px`;
+    leaving.style.margin = "0";
+    leaving.style.pointerEvents = "none";
+    leaving.style.zIndex = "1200";
+    document.body.appendChild(leaving);
+    const animation = leaving.animate([
+      { opacity: 1, transform: "translate3d(0, 0, 0) scale(1)" },
+      { opacity: 0, transform: "translate3d(0, -0.3rem, 0) scale(0.86)" }
+    ], { duration: 360, easing, fill: "both" });
+    animation.finished.then(() => leaving.remove(), () => leaving.remove());
+  });
+}
+
 function renderEffectPanel() {
   if (!shouldRenderEffectPanel()) {
     elements.effectPanel.replaceChildren();
@@ -9586,6 +9672,9 @@ function renderEffectPanel() {
     return;
   }
 
+  const hadEffectSurface = !elements.effectPanel.classList.contains("hidden")
+    && Boolean(elements.effectPanel.querySelector(".status-effect-items, .effect-empty"));
+  const previousBadges = getStatusEffectBadgeSnapshots();
   const mutationMode = isMatchModifierEnabled("mutation");
   const visibleEntries = getStatusBarEntries(getFocusedOwner());
   elements.effectPanel.replaceChildren();
@@ -9600,6 +9689,7 @@ function renderEffectPanel() {
     empty.className = "effect-empty";
     empty.textContent = "None";
     elements.effectPanel.append(header, empty);
+    animateStatusEffectChanges(previousBadges, document.createElement("div"), { animateNew: hadEffectSurface });
     setHidden(elements.effectPanel, false);
     return;
   }
@@ -9613,6 +9703,7 @@ function renderEffectPanel() {
     const useMutationStyling = mutationMode && entry.mutationStatus;
     const badge = document.createElement("span");
     badge.className = "effect-badge";
+    badge.dataset.effectAnimationKey = entry.effectAnimationKey || "";
     badge.dataset.rarity = entry.rarity;
     badge.dataset.description = entry.description;
     badge.classList.toggle("chaos-infused", Boolean(entry.chaosInfused));
@@ -9650,14 +9741,21 @@ function renderEffectPanel() {
 
   const items = document.createElement("div");
   items.className = "status-effect-items";
+  const animationCounts = new Map();
   [...visibleEntries]
     .sort((left, right) => (
       getStatusBarEntryOrder(left, mutationMode) - getStatusBarEntryOrder(right, mutationMode)
       || getRarityRank(left.rarity) - getRarityRank(right.rarity)
       || left.name.localeCompare(right.name)
     ))
-    .forEach((entry) => appendBadge(entry, items));
+    .forEach((entry) => {
+      const baseKey = getStatusEffectAnimationBaseKey(entry);
+      const occurrence = animationCounts.get(baseKey) || 0;
+      animationCounts.set(baseKey, occurrence + 1);
+      appendBadge({ ...entry, effectAnimationKey: `${baseKey}|${occurrence}` }, items);
+  });
   elements.effectPanel.appendChild(items);
+  animateStatusEffectChanges(previousBadges, items, { animateNew: hadEffectSurface });
   setHidden(elements.effectPanel, false);
 }
 
@@ -38269,6 +38367,19 @@ function getNormalDebugStatusRounds(definition) {
 function applyNormalDebugStatus(owner, definition, stacks = 1) {
   if (!owner || !definition?.apply) {
     return 0;
+  }
+
+  if (definition.id === "reverse_guard_status") {
+    const targetOwner = getMutationRandomOtherOwner(owner);
+    if (!targetOwner) {
+      return 0;
+    }
+    state.reverseGuardRounds[owner] = Math.max(
+      Number(state.reverseGuardRounds[owner]) || 0,
+      getNormalDebugStatusRounds(definition)
+    );
+    state.reverseGuardTargets[owner] = targetOwner;
+    return 1;
   }
 
   // Hot Potato has a deliberately different durable representation outside

@@ -89,6 +89,15 @@ assert.ok(visibleNames.includes("Pocket Shield x1"), "Personal regular effects m
 assert.ok(visibleNames.includes("Hot Potato x1"), "Table-wide regular effects must remain visible when unrelated statuses are absent");
 assert.ok(visibleEntries.every((entry) => entry.statusPill), "Regular effects must enter the shared status-card renderer");
 
+const reverseGuardState = createRegistryState();
+reverseGuardState.reverseGuardRounds = { player: 3 };
+reverseGuardState.reverseGuardTargets = { player: "opponent" };
+const reverseGuardEntries = getNormalRegistryEntries(reverseGuardState);
+assert.ok(
+  reverseGuardEntries.some((entry) => entry.name === "180 Guard" && entry.statusMeta === "3r"),
+  "180 Guard must appear as a compact normal-mode status card"
+);
+
 const temporaryStatusState = createRegistryState();
 temporaryStatusState.__temporaryStatuses = [{
   id: "hot_potato_status",
