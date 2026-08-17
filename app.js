@@ -17925,45 +17925,6 @@ function applyBlackCardCustomizationForOwner(owner, customizationOverride = null
   applyProfileCustomizationSurface(blackCard, getProfileCardCustomizationForOwner(owner));
 }
 
-function syncProfileCardThemeDecoration(card, styleId) {
-  const theme = styleId === "circuit-core"
-    ? "mutation"
-    : styleId === "doom"
-      ? "doom"
-      : "";
-  const decoration = Array.from(card.children || []).find((child) => child.classList?.contains("profile-card-theme-decoration"));
-  if (!theme) {
-    decoration?.remove();
-    return;
-  }
-  const layer = decoration || document.createElement("span");
-  const icons = theme === "mutation"
-    ? ["/assets/overlays/biohazard.svg"]
-    : ["/assets/modifiers/skull.svg", "/assets/modifiers/skull.svg"];
-  layer.className = "profile-card-theme-decoration";
-  layer.dataset.theme = theme;
-  layer.setAttribute("aria-hidden", "true");
-  if (!decoration) {
-    card.prepend(layer);
-  }
-  const existingIcons = Array.from(layer.querySelectorAll(".profile-card-theme-icon"));
-  icons.forEach((src, index) => {
-    const icon = existingIcons[index] || document.createElement("img");
-    icon.className = "profile-card-theme-icon";
-    icon.dataset.themeIconIndex = String(index);
-    icon.setAttribute("alt", "");
-    icon.setAttribute("aria-hidden", "true");
-    icon.setAttribute("draggable", "false");
-    if (icon.getAttribute("src") !== src) {
-      icon.setAttribute("src", src);
-    }
-    if (!existingIcons[index]) {
-      layer.append(icon);
-    }
-  });
-  existingIcons.slice(icons.length).forEach((icon) => icon.remove());
-}
-
 function applyCardCustomizationToElement(card, customization, options = {}) {
   if (!card) {
     return;
@@ -17987,7 +17948,6 @@ function applyCardCustomizationToElement(card, customization, options = {}) {
   card.dataset.cardSpecial = String(isSpecialStyle);
   card.dataset.cardEffects = activeEffectIds.length ? activeEffectIds.join(" ") : "none";
   card.dataset.cardPattern = activePatternId;
-  syncProfileCardThemeDecoration(card, style.id);
   card.classList.toggle("profile-preview-card", Boolean(options.preview));
   if (activeEffectIds.includes("rgb")) {
     syncRgbAnimationPhase(card, style);
