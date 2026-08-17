@@ -42713,5 +42713,203 @@
     "language": "zh-Hans",
     "translationKey": "popculture-text-first-streamed-netflix-original",
     "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-text-hyrule-hero",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "通常拯救塞尔达公主、身穿绿衣的英雄叫什么名字？",
+    "canonicalAnswer": "林克",
+    "acceptedAnswers": [
+      "林克",
+      "Link"
+    ],
+    "botCards": [
+      "加农多夫",
+      "丁格尔"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-hyrule-hero"
+  },
+  {
+    "id": "zh-hans-gaming-text-minecraft-creator",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《我的世界》原始创作者马库斯·佩尔松使用的网络别名是什么？",
+    "canonicalAnswer": "Notch",
+    "acceptedAnswers": [
+      "Notch",
+      "诺奇"
+    ],
+    "botCards": [
+      "Dinnerbone",
+      "Jeb"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-minecraft-creator"
+  },
+  {
+    "id": "zh-hans-gaming-text-portal-developer",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "哪家游戏工作室开发了《传送门》？",
+    "canonicalAnswer": "Valve",
+    "acceptedAnswers": [
+      "Valve",
+      "维尔福",
+      "Valve Corporation"
+    ],
+    "botCards": [
+      "id Software",
+      "Bungie"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-portal-developer"
+  },
+  {
+    "id": "zh-hans-gaming-text-dnd-dungeon-master",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "在《龙与地下城》中，负责叙述故事并主持游戏的人被称为什么？",
+    "canonicalAnswer": "地下城主",
+    "acceptedAnswers": [
+      "地下城主",
+      "DM",
+      "Dungeon Master"
+    ],
+    "botCards": [
+      "游戏管理员",
+      "传说守护者"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-dnd-dungeon-master"
+  },
+  {
+    "id": "zh-hans-gaming-text-pac-man-designer",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "哪位日本游戏设计师创造了《吃豆人》？",
+    "canonicalAnswer": "岩谷彻",
+    "acceptedAnswers": [
+      "岩谷彻",
+      "岩谷徹",
+      "Toru Iwatani",
+      "Iwatani"
+    ],
+    "botCards": [
+      "宫本茂",
+      "小岛秀夫"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-pac-man-designer"
+  },
+  {
+    "id": "zh-hans-gaming-text-half-life-city",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "《半条命 2》中出现的虚构东欧城市叫什么？",
+    "canonicalAnswer": "17号城市",
+    "acceptedAnswers": [
+      "17号城市",
+      "第17城",
+      "City 17",
+      "City Seventeen"
+    ],
+    "botCards": [
+      "销魂城",
+      "德瓦尔"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-half-life-city"
+  },
+  {
+    "id": "zh-hans-gaming-text-mass-effect-species",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "在《质量效应》中，盖拉斯·瓦卡里安属于哪个爬行类外星种族？",
+    "canonicalAnswer": "突锐人",
+    "acceptedAnswers": [
+      "突锐人",
+      "Turian",
+      "Turians"
+    ],
+    "botCards": [
+      "克洛根人",
+      "塞拉睿人"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-mass-effect-species"
+  },
+  {
+    "id": "zh-hans-gaming-text-tetris-inventor",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "brutal",
+    "question": "1984 年创造《俄罗斯方块》的苏联软件工程师是谁？",
+    "canonicalAnswer": "阿列克谢·帕基特诺夫",
+    "acceptedAnswers": [
+      "阿列克谢·帕基特诺夫",
+      "阿列克谢·帕基特诺夫",
+      "Alexey Pajitnov",
+      "Pajitnov"
+    ],
+    "botCards": [
+      "德米特里·格鲁霍夫斯基",
+      "加里·卡斯帕罗夫"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-tetris-inventor"
+  },
+  {
+    "id": "zh-hans-gaming-text-playstation-mascot-crash",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "brutal",
+    "question": "哪家工作室将《古惑狼》打造为早期 PlayStation 吉祥物？",
+    "canonicalAnswer": "顽皮狗",
+    "acceptedAnswers": [
+      "顽皮狗",
+      "Naughty Dog"
+    ],
+    "botCards": [
+      "失眠组",
+      "Sucker Punch"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-playstation-mascot-crash"
+  },
+  {
+    "id": "zh-hans-gaming-text-arcade-high-score-initials",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "brutal",
+    "question": "在初代《大金刚》街机游戏中，默认最高分冠军显示的缩写是什么？",
+    "canonicalAnswer": "AAA",
+    "acceptedAnswers": [
+      "AAA"
+    ],
+    "botCards": [
+      "DKJ",
+      "MIO"
+    ],
+    "type": "text",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17",
+    "language": "zh-Hans",
+    "translationKey": "gaming-text-arcade-high-score-initials"
   }
 ]
