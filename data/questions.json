@@ -42503,5 +42503,215 @@
     "debugBatch": "en-text-typed-brutal-2026-08-13",
     "language": "en",
     "translationKey": "artmusic-text-national-anthem-anthem-name"
+  },
+  {
+    "id": "zh-hans-popculture-text-star-wars-planet",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "在《星球大战》中，卢克·天行者的故乡是哪颗沙漠行星？",
+    "canonicalAnswer": "塔图因",
+    "acceptedAnswers": [
+      "塔图因",
+      "塔图因星",
+      "Tatooine"
+    ],
+    "botCards": [
+      "贾库",
+      "纳布"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-star-wars-planet",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-breaking-bad-network",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《绝命毒师》最初在美国由哪家有线电视台播出？",
+    "canonicalAnswer": "AMC",
+    "acceptedAnswers": [
+      "AMC",
+      "美国电影经典频道",
+      "American Movie Classics"
+    ],
+    "botCards": [
+      "HBO",
+      "FX"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-breaking-bad-network",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-beyonce-alter-ego",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "碧昂丝在 2008 年双专辑《I Am...》中推出了哪个舞台人格？",
+    "canonicalAnswer": "萨莎·菲尔斯",
+    "acceptedAnswers": [
+      "萨莎·菲尔斯",
+      "萨沙·菲尔斯",
+      "Sasha Fierce"
+    ],
+    "botCards": [
+      "央丝",
+      "蜂后"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-beyonce-alter-ego",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-spirited-away-studio",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "日本动画电影《千与千寻》由哪家动画工作室制作？",
+    "canonicalAnswer": "吉卜力工作室",
+    "acceptedAnswers": [
+      "吉卜力工作室",
+      "吉卜力",
+      "Studio Ghibli"
+    ],
+    "botCards": [
+      "东映动画",
+      "MADHOUSE"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-spirited-away-studio",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-seinfeld-co-creator",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "哪位喜剧演员与杰瑞·宋飞共同创作了《宋飞正传》？",
+    "canonicalAnswer": "拉里·戴维",
+    "acceptedAnswers": [
+      "拉里·戴维",
+      "拉里戴维",
+      "Larry David"
+    ],
+    "botCards": [
+      "杰森·亚历山大",
+      "迈克尔·理查兹"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-seinfeld-co-creator",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-narnia-author",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "《纳尼亚传奇》系列的作者是谁？",
+    "canonicalAnswer": "C·S·刘易斯",
+    "acceptedAnswers": [
+      "C·S·刘易斯",
+      "C.S.刘易斯",
+      "CS刘易斯",
+      "C. S. Lewis",
+      "Clive Staples Lewis"
+    ],
+    "botCards": [
+      "J·R·R·托尔金",
+      "菲利普·普尔曼"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-narnia-author",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-succession-family",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "电视剧《继承之战》中媒体家族的姓氏是什么？",
+    "canonicalAnswer": "罗伊",
+    "acceptedAnswers": [
+      "罗伊",
+      "罗伊家族",
+      "Roy"
+    ],
+    "botCards": [
+      "皮尔斯",
+      "休斯"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-succession-family",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-godot-playwright",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "brutal",
+    "question": "荒诞派戏剧《等待戈多》的作者是哪位剧作家？",
+    "canonicalAnswer": "塞缪尔·贝克特",
+    "acceptedAnswers": [
+      "塞缪尔·贝克特",
+      "贝克特",
+      "Samuel Beckett"
+    ],
+    "botCards": [
+      "哈罗德·品特",
+      "欧仁·尤内斯库"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-godot-playwright",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-citizen-kane-sled",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "brutal",
+    "question": "电影《公民凯恩》中，童年雪橇上写着哪个词？",
+    "canonicalAnswer": "玫瑰花蕾",
+    "acceptedAnswers": [
+      "玫瑰花蕾",
+      "Rosebud"
+    ],
+    "botCards": [
+      "世外桃源",
+      "问询报"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-citizen-kane-sled",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-text-first-streamed-netflix-original",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "brutal",
+    "question": "哪部政治剧是 Netflix 首部以整季形式上线的重要原创剧情剧集？",
+    "canonicalAnswer": "纸牌屋",
+    "acceptedAnswers": [
+      "纸牌屋",
+      "House of Cards"
+    ],
+    "botCards": [
+      "女子监狱",
+      "王冠"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-text-first-streamed-netflix-original",
+    "debugBatch": "zh-hans-text-typed-brutal-2026-08-17"
   }
 ]
