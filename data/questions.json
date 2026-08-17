@@ -47572,5 +47572,2581 @@
     "language": "zh-Hans",
     "translationKey": "geohistory-russia-alaska",
     "debugBatch": "zh-hans-typed-batch-02-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-vincent-sunflowers",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "创作 1888 年名作《向日葵》的著名荷兰后印象派画家的名字是什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Vincent_Willem_van_Gogh_127.jpg/500px-Vincent_Willem_van_Gogh_127.jpg",
+      "alt": "一位留着红棕色胡须、背景为蓝绿色的男子肖像",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "文森特",
+    "acceptedAnswers": [
+      "文森特",
+      "文森特·梵高",
+      "Vincent",
+      "Vincent van Gogh"
+    ],
+    "botCards": [
+      "克洛德",
+      "保罗"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-vincent-sunflowers",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-violin-strings",
+    "type": "text",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "现代标准小提琴使用马尾弓拉奏，装有几根弦？",
+    "canonicalAnswer": "4",
+    "acceptedAnswers": [
+      "4",
+      "四",
+      "four"
+    ],
+    "botCards": [
+      "3",
+      "5"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-violin-strings",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-monalisa-louvre",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "达·芬奇 16 世纪名画《蒙娜丽莎》永久陈列在巴黎的哪一座著名艺术博物馆？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Louvre_Museum_Wikimedia_Commons.jpg/960px-Louvre_Museum_Wikimedia_Commons.jpg",
+      "alt": "一座博物馆的庭院，中央有玻璃金字塔",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "卢浮宫",
+    "acceptedAnswers": [
+      "卢浮宫",
+      "卢浮宫博物馆",
+      "Louvre",
+      "Louvre Museum",
+      "Musée du Louvre"
+    ],
+    "botCards": [
+      "奥赛博物馆",
+      "蓬皮杜中心"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-monalisa-louvre",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-instruments-woodwind",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "交响乐团中，长笛、单簧管、双簧管和巴松管统称属于哪一类乐器？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/116_Museu_de_la_M%C3%BAsica.jpg/500px-116_Museu_de_la_M%C3%BAsica.jpg",
+      "alt": "博物馆中陈列的多种管乐器",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "木管乐器",
+    "acceptedAnswers": [
+      "木管乐器",
+      "木管",
+      "木管乐器组",
+      "Woodwind",
+      "woodwinds",
+      "woodwind family"
+    ],
+    "botCards": [
+      "铜管乐器",
+      "弦乐器"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-instruments-woodwind",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-ukulele-hawaii",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "easy",
+    "question": "这种由葡萄牙弦乐器改良而来、与夏威夷音乐密切相关的小型四弦乐器叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Ukulele1_HiRes.jpg",
+      "alt": "一把木制小型四弦乐器",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "尤克里里",
+    "acceptedAnswers": [
+      "尤克里里",
+      "乌克丽丽",
+      "Ukulele",
+      "ukalele",
+      "uke"
+    ],
+    "botCards": [
+      "曼陀林",
+      "班卓琴"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-ukulele-hawaii",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-scream-munch",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "创作 1893 年表现主义名作《呐喊》的挪威画家是谁？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/The_Scream.jpg/500px-The_Scream.jpg",
+      "alt": "一幅表现主义画作，人物双手捂脸，背景有旋涡状橙红天空",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "爱德华·蒙克",
+    "acceptedAnswers": [
+      "爱德华·蒙克",
+      "蒙克",
+      "Edvard Munch",
+      "Munch"
+    ],
+    "botCards": [
+      "爱德华·马奈",
+      "古斯塔夫·克里姆特"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-scream-munch",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-piano-forte",
+    "type": "text",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "钢琴原名 pianoforte 中的力度术语 forte 在音乐里表示什么？",
+    "canonicalAnswer": "强",
+    "acceptedAnswers": [
+      "强",
+      "强音",
+      "响亮",
+      "loud",
+      "strongly"
+    ],
+    "botCards": [
+      "弱",
+      "渐强"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-piano-forte",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-sculpture-thinker",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "奥古斯特·罗丹创作的这尊青铜人物低头托腮沉思，其正式题名是什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Le_Penseur_by_Rodin_%28Kunsthalle_Bielefeld%29_2014-04-10.JPG/500px-Le_Penseur_by_Rodin_%28Kunsthalle_Bielefeld%29_2014-04-10.JPG",
+      "alt": "一尊坐着、前倾并用一只手托住下巴的青铜雕像",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "思想者",
+    "acceptedAnswers": [
+      "思想者",
+      "沉思者",
+      "The Thinker",
+      "Thinker",
+      "Le Penseur"
+    ],
+    "botCards": [
+      "大卫",
+      "掷铁饼者"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-sculpture-thinker",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-opera-soprano",
+    "type": "image",
+    "theme": "Art and Music",
+    "difficulty": "medium",
+    "question": "在古典歌剧和合唱中，成年女性能够达到的最高声部称为什么？",
+    "image": {
+      "url": "https://i.guim.co.uk/img/media/eab3dfc5e5b60e49803b6f5a330b31e422704a8c/0_49_2200_1320/master/2200.jpg?width=620&dpr=2&s=none&crop=none",
+      "alt": "舞台上一位正在表演的歌剧歌手",
+      "credit": "The Guardian"
+    },
+    "canonicalAnswer": "女高音",
+    "acceptedAnswers": [
+      "女高音",
+      "高女声",
+      "Soprano",
+      "coloratura soprano",
+      "lyric soprano"
+    ],
+    "botCards": [
+      "女低音",
+      "次女高音"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-opera-soprano",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-artmusic-beethoven-deaf",
+    "type": "text",
+    "theme": "Art and Music",
+    "difficulty": "hard",
+    "question": "贝多芬在 1824 年完成、包含著名合唱《欢乐颂》的交响曲是第几号？",
+    "canonicalAnswer": "9",
+    "acceptedAnswers": [
+      "9",
+      "九",
+      "第九",
+      "第九交响曲",
+      "nine",
+      "ninth",
+      "9th",
+      "Symphony No. 9"
+    ],
+    "botCards": [
+      "5",
+      "7"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "artmusic-beethoven-deaf",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-wednesday-dance",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "2022 年 Netflix 剧集里，因校园舞蹈片段走红的亚当斯一家女儿叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/d/d1/Wednesday_Addams_%282022%29.png",
+      "alt": "一位留黑发、表情严肃的年轻女孩",
+      "credit": "Wikimedia / Netflix promotional image"
+    },
+    "canonicalAnswer": "星期三·亚当斯",
+    "acceptedAnswers": [
+      "星期三·亚当斯",
+      "星期三",
+      "Wednesday Addams",
+      "Wednesday"
+    ],
+    "botCards": [
+      "莫蒂西亚·亚当斯",
+      "帕斯利·亚当斯"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-wednesday-dance",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-squidgame-costume",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "这些粉色连体制服和几何面具属于哪部热门韩国生存剧中的守卫？",
+    "image": {
+      "url": "https://img.asmedia.epimg.net/resizer/v2/HODUMRVMCFESLNSMW4HNJ3Q26A.png?auth=2073e612b4eb92d7ea441abca5236548b3282f4491835448a939af94089acf95&width=1152&height=648&smart=true",
+      "alt": "身穿粉色制服、戴着几何图案面具的人",
+      "credit": "AS Media"
+    },
+    "canonicalAnswer": "鱿鱼游戏",
+    "acceptedAnswers": [
+      "鱿鱼游戏",
+      "鱿鱼游戏：第456号玩家",
+      "Squid Game",
+      "Ojingeo Geim"
+    ],
+    "botCards": [
+      "地狱公使",
+      "甜蜜家园"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-squidgame-costume",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-barbie-director",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "哪位美国电影人执导了 2023 年卖座电影《芭比》？",
+    "canonicalAnswer": "格蕾塔·葛韦格",
+    "acceptedAnswers": [
+      "格蕾塔·葛韦格",
+      "格蕾塔·葛薇格",
+      "Greta Gerwig",
+      "Gerwig"
+    ],
+    "botCards": [
+      "索菲亚·科波拉",
+      "帕蒂·詹金斯"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Greta_Gerwig.jpg/500px-Greta_Gerwig.jpg",
+      "alt": "一位在公开活动中的女电影人",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-barbie-director",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-spiderverse-miles",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "动画《蜘蛛侠：平行宇宙》系列中，接过蜘蛛侠身份的布鲁克林少年全名是什么？",
+    "canonicalAnswer": "迈尔斯·莫拉莱斯",
+    "acceptedAnswers": [
+      "迈尔斯·莫拉莱斯",
+      "迈尔斯",
+      "Miles Morales",
+      "Miles"
+    ],
+    "botCards": [
+      "彼得·帕克",
+      "格温·史黛西"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/8/8e/Spider-Man_%28Miles_Morales%29_character_art.png",
+      "alt": "一位穿着黑红色蜘蛛侠战衣的年轻超级英雄",
+      "credit": "Wikimedia / Marvel character art"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-spiderverse-miles",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-mandalorian-grogu",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "easy",
+    "question": "《星球大战》角色中，被粉丝广泛称作“尤达宝宝”的人物官方名字是什么？",
+    "canonicalAnswer": "格罗古",
+    "acceptedAnswers": [
+      "格罗古",
+      "古古",
+      "Grogu",
+      "Din Grogu"
+    ],
+    "botCards": [
+      "丁·贾林",
+      "尤达"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/a/a0/Grogu_%28Star_Wars%29.jpg",
+      "alt": "一名有大耳朵、身穿长袍的小型外星角色",
+      "credit": "Wikimedia / Lucasfilm promotional image"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-mandalorian-grogu",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-dune-arrakis",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《沙丘》系列中那颗广阔的沙漠行星正式名称是什么？",
+    "image": {
+      "url": "https://miro.medium.com/v2/resize:fit:1400/format:webp/1*Fq1YD8f2o1ohFHYh7bLCWA.jpeg",
+      "alt": "一片广阔干燥的沙漠景观",
+      "credit": "Medium hosted image"
+    },
+    "canonicalAnswer": "厄拉科斯",
+    "acceptedAnswers": [
+      "厄拉科斯",
+      "阿拉基斯",
+      "Arrakis"
+    ],
+    "botCards": [
+      "卡拉丹",
+      "杰迪主星"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-dune-arrakis",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-wonka-chocolate",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "提莫西·查拉梅在 2023 年音乐前传电影中饰演的虚构巧克力商叫什么？",
+    "image": {
+      "url": "https://m.media-amazon.com/images/M/MV5BMzkzYzI2ZjgtNWVjNS00ZmE2LWFlMjktYTQwMjU4MjVhZjdlXkEyXkFqcGc@._V1_QL75_UX830_.jpg",
+      "alt": "一名戴礼帽、穿鲜艳服装的巧克力商形象",
+      "credit": "Amazon / movie promotional image"
+    },
+    "canonicalAnswer": "威利·旺卡",
+    "acceptedAnswers": [
+      "威利·旺卡",
+      "旺卡",
+      "Willy Wonka",
+      "Wonka"
+    ],
+    "botCards": [
+      "查理·巴克特",
+      "奥古斯塔斯·格卢普"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-wonka-chocolate",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-tedlasso-biscuit",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "在《足球教练》中，泰德每天早上用一个粉色小盒子里的哪种烘焙点心打动老板丽贝卡？",
+    "image": {
+      "url": "https://s.abcnews.com/images/GMA/ted-lasso-biscuits-ht-rc-211221_1640096866540_hpMain.jpg?w=992",
+      "alt": "一个粉色盒子里的浅色方形饼干",
+      "credit": "ABC News"
+    },
+    "canonicalAnswer": "黄油酥饼",
+    "acceptedAnswers": [
+      "黄油酥饼",
+      "酥饼",
+      "Shortbread",
+      "shortbread biscuits",
+      "biscuits"
+    ],
+    "botCards": [
+      "司康饼",
+      "布朗尼"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-tedlasso-biscuit",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-succession-waystar",
+    "type": "image",
+    "theme": "Pop Culture",
+    "difficulty": "medium",
+    "question": "《继承之战》中，罗伊家族控制的媒体娱乐集团英文名是什么？请用英文作答。",
+    "canonicalAnswer": "Waystar Royco",
+    "acceptedAnswers": [
+      "Waystar Royco",
+      "Waystar"
+    ],
+    "botCards": [
+      "Pierce Global Media",
+      "GoJo"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/7/70/Logan_Roy.jpg",
+      "alt": "一位身穿西装的年长男子肖像",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-succession-waystar",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-popculture-everything-gogly",
+    "type": "text",
+    "theme": "Pop Culture",
+    "difficulty": "hard",
+    "question": "在奥斯卡获奖电影《瞬息全宇宙》中，伊芙琳和威门把什么日常手工用品贴到物品上来象征他们的理念？",
+    "canonicalAnswer": "活动眼睛",
+    "acceptedAnswers": [
+      "活动眼睛",
+      "摇摇眼",
+      "塑料活动眼",
+      "Googly eyes",
+      "craft eyes",
+      "plastic eyes"
+    ],
+    "botCards": [
+      "亮片",
+      "纽扣"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "popculture-everything-gogly",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-eldenring-malenia",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "这顶带翅膀装饰的女武神风格头盔属于玛莲妮亚；她是 2022 年哪款动作 RPG 中著名且极难的首领？",
+    "image": {
+      "url": "https://eldenring.wiki.fextralife.com/file/Elden-Ring/malenias_winged_helm_elden_ring_wiki_guide_200px.png",
+      "alt": "一顶带翅膀装饰的金属头盔",
+      "credit": "Elden Ring Wiki"
+    },
+    "canonicalAnswer": "艾尔登法环",
+    "acceptedAnswers": [
+      "艾尔登法环",
+      "Elden Ring"
+    ],
+    "botCards": [
+      "黑暗之魂III",
+      "只狼：影逝二度"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "gaming-eldenring-malenia",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-animalcrossing-bells",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "在任天堂哪一个休闲游戏系列中，玩家用这种货币向狸克偿还房屋贷款？",
+    "image": {
+      "url": "https://dodo.ac/np/images/1/1e/99k_Bells_NH_Inv_Icon.png",
+      "alt": "一袋印有铃铛图案的硬币",
+      "credit": "Nookipedia"
+    },
+    "canonicalAnswer": "动物森友会",
+    "acceptedAnswers": [
+      "动物森友会",
+      "动物之森",
+      "Animal Crossing",
+      "Animal Crossing: New Horizons"
+    ],
+    "botCards": [
+      "星露谷物语",
+      "牧场物语"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "gaming-animalcrossing-bells",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-amongus-impostor",
+    "type": "text",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "在社交推理游戏《Among Us》中，必须暗中淘汰船员的隐藏破坏者被称为什么？",
+    "canonicalAnswer": "内鬼",
+    "acceptedAnswers": [
+      "内鬼",
+      "冒名顶替者",
+      "Impostor",
+      "Imposter",
+      "impostors",
+      "imposters"
+    ],
+    "botCards": [
+      "船员",
+      "观察者"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "gaming-amongus-impostor",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-fortnite-bus",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "在《堡垒之夜》大逃杀标准对局开始时，玩家从哪一种飞行载具上一跃而下？",
+    "canonicalAnswer": "战斗巴士",
+    "acceptedAnswers": [
+      "战斗巴士",
+      "Battle Bus"
+    ],
+    "botCards": [
+      "补给直升机",
+      "空投飞艇"
+    ],
+    "image": {
+      "url": "https://static.wikia.nocookie.net/fortnite/images/d/d7/Battle_Bus_-*Vehicle*-_Fortnite.png/revision/latest/scale-to-width-down/536?cb=20210927140325",
+      "alt": "一辆悬挂在气球下的飞行巴士",
+      "credit": "Fortnite Wiki"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "gaming-fortnite-bus",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-sonic-rings",
+    "type": "text",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "easy",
+    "question": "刺猬索尼克在关卡中收集什么发光物品，以避免受伤后立刻失去一条命？",
+    "canonicalAnswer": "金环",
+    "acceptedAnswers": [
+      "金环",
+      "环",
+      "Rings",
+      "gold rings",
+      "ring"
+    ],
+    "botCards": [
+      "混沌翡翠",
+      "生命箱"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "gaming-sonic-rings",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-hades-zagreus",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "希腊神话中的冥界王子扎格列欧斯试图逃离父亲统治的世界；他是哪个 Roguelike 动作游戏的主角？",
+    "image": {
+      "url": "https://images.ctfassets.net/5owu3y35gz1g/5LpElH2nmE7iS4v593VJvo/55f74bd209f45dc179c5279926cb2ea5/hades_09-dec-2019_05.jpg?w=600&h=338&q=80",
+      "alt": "一名持武器的年轻动画风格角色",
+      "credit": "Supergiant Games media image"
+    },
+    "canonicalAnswer": "哈迪斯",
+    "acceptedAnswers": [
+      "哈迪斯",
+      "Hades"
+    ],
+    "botCards": [
+      "死亡细胞",
+      "空洞骑士"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "gaming-hades-zagreus",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-lastofus-fireflies",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《最后生还者》中，寻找虫草感染解药的革命民兵组织叫什么？",
+    "image": {
+      "url": "https://static.wikia.nocookie.net/thelastofus/images/0/0e/Fireflies_logo.png/revision/latest/scale-to-width-down/536?cb=20200207132214",
+      "alt": "一个带有抽象昆虫图案的革命组织徽记",
+      "credit": "The Last of Us Wiki"
+    },
+    "canonicalAnswer": "火萤",
+    "acceptedAnswers": [
+      "火萤",
+      "萤火虫",
+      "Fireflies",
+      "Firefly"
+    ],
+    "botCards": [
+      "FEDRA",
+      "猎人"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "gaming-lastofus-fireflies",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-cyberpunk-nightcity",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《赛博朋克 2077》故事发生的那座霓虹闪耀的未来巨型城市叫什么？",
+    "image": {
+      "url": "https://static.wikia.nocookie.net/cyberpunk/images/5/5f/Night_City_Database_CP2077.png/revision/latest?cb=20240805091028",
+      "alt": "夜晚霓虹灯照亮的未来城市天际线",
+      "credit": "Cyberpunk Wiki"
+    },
+    "canonicalAnswer": "夜之城",
+    "acceptedAnswers": [
+      "夜之城",
+      "Night City"
+    ],
+    "botCards": [
+      "新东京",
+      "洛圣都"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "gaming-cyberpunk-nightcity",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-portal-weightedcube",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "medium",
+    "question": "《传送门》中，这个带粉色爱心的银色金属箱有一个亲切的专属名称，叫什么？",
+    "canonicalAnswer": "加重同伴方块",
+    "acceptedAnswers": [
+      "加重同伴方块",
+      "同伴方块",
+      "Weighted Companion Cube",
+      "Companion Cube"
+    ],
+    "botCards": [
+      "测试球",
+      "量子涡轮机"
+    ],
+    "image": {
+      "url": "https://i1.theportalwiki.net/img/thumb/6/6b/Portal2_CompanionCube.png/600px-Portal2_CompanionCube.png",
+      "alt": "一个带粉色爱心图案的银色金属方块",
+      "credit": "Portal Wiki"
+    },
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "gaming-portal-weightedcube",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-gaming-discoelysium-revachol",
+    "type": "image",
+    "theme": "Gaming and Geek Culture",
+    "difficulty": "hard",
+    "question": "失忆侦探哈里·杜博阿在政治撕裂的海滨城市雷瓦肖调查谋杀案；这座城市属于哪款游戏？",
+    "canonicalAnswer": "极乐迪斯科",
+    "acceptedAnswers": [
+      "极乐迪斯科",
+      "Disco Elysium"
+    ],
+    "botCards": [
+      "极限竞速：地平线",
+      "底特律：变人"
+    ],
+    "image": {
+      "url": "https://carolinaangles.com/wp-content/uploads/2021/01/picture1.png",
+      "alt": "一幅描绘破旧海滨城市的游戏美术图",
+      "credit": "Carolina Angles"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "gaming-discoelysium-revachol",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-greece-parthenon",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "供奉希腊智慧女神、坐落于卫城山顶的这座古代神庙位于哪一座欧洲首都？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/The_Parthenon_in_Athens.jpg/960px-The_Parthenon_in_Athens.jpg",
+      "alt": "山顶上的一座古希腊石柱神庙",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "雅典",
+    "acceptedAnswers": [
+      "雅典",
+      "Athens",
+      "Athina"
+    ],
+    "botCards": [
+      "罗马",
+      "索菲亚"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-greece-parthenon",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-brazil-rio",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "巨大的基督像俯瞰糖面包山，它位于巴西哪座主要沿海城市？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Christ_the_Redeemer_-_Cristo_Redentor.jpg/500px-Christ_the_Redeemer_-_Cristo_Redentor.jpg",
+      "alt": "一座张开双臂的巨型基督雕像俯瞰沿海群山",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "里约热内卢",
+    "acceptedAnswers": [
+      "里约热内卢",
+      "里约",
+      "Rio de Janeiro",
+      "Rio"
+    ],
+    "botCards": [
+      "圣保罗",
+      "萨尔瓦多"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-brazil-rio",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-libertybell-philadelphia",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "以明显裂缝闻名的自由钟位于宾夕法尼亚州哪一座主要城市？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Liberty_Bell_2017a.jpg/500px-Liberty_Bell_2017a.jpg",
+      "alt": "一口有明显裂缝的历史大钟",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "费城",
+    "acceptedAnswers": [
+      "费城",
+      "Philadelphia",
+      "Philly"
+    ],
+    "botCards": [
+      "匹兹堡",
+      "波士顿"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-libertybell-philadelphia",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-italy-venice",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "这座叹息桥横跨水道，位于以贡多拉船闻名的哪座意大利历史城市？",
+    "canonicalAnswer": "威尼斯",
+    "acceptedAnswers": [
+      "威尼斯",
+      "Venice",
+      "Venezia"
+    ],
+    "botCards": [
+      "佛罗伦萨",
+      "热那亚"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Bridge_of_Sighs_sea_facade_Venice.jpg/330px-Bridge_of_Sighs_sea_facade_Venice.jpg",
+      "alt": "一座跨越狭窄水道的白色石桥",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-italy-venice",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-egypt-nile",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "easy",
+    "question": "这条大河曾滋养古埃及文明，并最终流入地中海；它叫什么？",
+    "canonicalAnswer": "尼罗河",
+    "acceptedAnswers": [
+      "尼罗河",
+      "Nile",
+      "Nile River"
+    ],
+    "botCards": [
+      "刚果河",
+      "约旦河"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/The_Nile_River_flows_into_the_Mediterranean_Sea_%28iss071e405499%29.jpg/500px-The_Nile_River_flows_into_the_Mediterranean_Sea_%28iss071e405499%29.jpg",
+      "alt": "一条大河在入海处形成的三角洲卫星图",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-egypt-nile",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-panama-canal",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "1914 年启用、通过船闸连接大西洋和太平洋的工程奇迹横跨哪个中美洲国家？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Panama_Canal_Gatun_Locks_opening.jpg/500px-Panama_Canal_Gatun_Locks_opening.jpg",
+      "alt": "一艘船穿过一组大型船闸",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "巴拿马",
+    "acceptedAnswers": [
+      "巴拿马",
+      "Panama",
+      "Republic of Panama"
+    ],
+    "botCards": [
+      "哥斯达黎加",
+      "危地马拉"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-panama-canal",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-iceland-geothermal",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "因冰川与火山活动而有“冰与火之国”之称的北欧岛国是哪个国家？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/B%C3%A1r%C3%B0arbunga_Volcano%2C_September_4_2014_-_15123275226.jpg/500px-B%C3%A1r%C3%B0arbunga_Volcano%2C_September_4_2014_-_15123275226.jpg",
+      "alt": "火山喷发，熔岩在荒凉地貌中流动",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "冰岛",
+    "acceptedAnswers": [
+      "冰岛",
+      "Iceland"
+    ],
+    "botCards": [
+      "挪威",
+      "芬兰"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-iceland-geothermal",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-france-napoleon",
+    "type": "text",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "哪位法国军事统帅在 1804 年加冕为法兰西皇帝，并在此后十多年主导欧洲局势？",
+    "canonicalAnswer": "拿破仑·波拿巴",
+    "acceptedAnswers": [
+      "拿破仑·波拿巴",
+      "拿破仑",
+      "Napoleon Bonaparte",
+      "Napoleon",
+      "Napoleon I"
+    ],
+    "botCards": [
+      "路易十四",
+      "夏尔·戴高乐"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-france-napoleon",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-usa-wright",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "这两架早期滑翔机与哪对兄弟有关？他们在 1903 年制造了第一架成功的动力飞机。",
+    "canonicalAnswer": "莱特兄弟",
+    "acceptedAnswers": [
+      "莱特兄弟",
+      "莱特",
+      "Wright Brothers",
+      "Wright"
+    ],
+    "botCards": [
+      "莱特纳兄弟",
+      "蒙哥尔菲耶兄弟"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/WrightGlidersSideBySide.jpg/500px-WrightGlidersSideBySide.jpg",
+      "alt": "两架早期滑翔机并排陈列",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-usa-wright",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-geohistory-turkey-istanbul",
+    "type": "image",
+    "theme": "Geo and History",
+    "difficulty": "medium",
+    "question": "这座城市曾称拜占庭，后称君士坦丁堡；它如今在土耳其叫什么？",
+    "canonicalAnswer": "伊斯坦布尔",
+    "acceptedAnswers": [
+      "伊斯坦布尔",
+      "Istanbul",
+      "Istambul"
+    ],
+    "botCards": [
+      "安卡拉",
+      "伊兹密尔"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Historical_peninsula_and_modern_skyline_of_Istanbul.jpg/960px-Historical_peninsula_and_modern_skyline_of_Istanbul.jpg",
+      "alt": "一座历史半岛和现代城市天际线",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "geohistory-turkey-istanbul",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-giraffe-neck",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "图中这种斑块花纹属于哪一种高大的非洲动物？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Genetic_subdivision_in_the_giraffe_based_on_mitochondrial_DNA_sequences.png/500px-Genetic_subdivision_in_the_giraffe_based_on_mitochondrial_DNA_sequences.png",
+      "alt": "展示多种斑块花纹差异的动物毛皮图示",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "长颈鹿",
+    "acceptedAnswers": [
+      "长颈鹿",
+      "Giraffe",
+      "giraffes"
+    ],
+    "botCards": [
+      "斑马",
+      "豹"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "animals-giraffe-neck",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-penguin-antarctica",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "图中成鸟和幼鸟站在南极冰面上；它们属于哪一种企鹅？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Aptenodytes_forsteri_-Snow_Hill_Island%2C_Antarctica_-adults_and_juvenile-8.jpg/500px-Aptenodytes_forsteri_-Snow_Hill_Island%2C_Antarctica_-adults_and_juvenile-8.jpg",
+      "alt": "数只大型企鹅成鸟和一只幼鸟站在南极冰面上",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "帝企鹅",
+    "acceptedAnswers": [
+      "帝企鹅",
+      "皇帝企鹅",
+      "Emperor Penguin",
+      "emperor penguins",
+      "Aptenodytes forsteri"
+    ],
+    "botCards": [
+      "阿德利企鹅",
+      "王企鹅"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "animals-penguin-antarctica",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-sloth-tree",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "这种新热带树栖哺乳动物以动作极慢、几乎终生倒挂在树上而闻名，叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Bicho-pregui%C3%A7a_3.jpg/500px-Bicho-pregui%C3%A7a_3.jpg",
+      "alt": "一只毛茸茸的哺乳动物抱着树枝",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "树懒",
+    "acceptedAnswers": [
+      "树懒",
+      "Sloth",
+      "sloths"
+    ],
+    "botCards": [
+      "考拉",
+      "狐猴"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "animals-sloth-tree",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-bee-honey",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "请写出 Apidae 科中的任一类群；只回答“蜂”不算。",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Apis_mellifera_-_Cirsium_arvense_-_Keila.jpg/500px-Apis_mellifera_-_Cirsium_arvense_-_Keila.jpg",
+      "alt": "一只小型条纹昆虫停在蓟花上吸食花蜜",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "蜜蜂",
+    "acceptedAnswers": [
+      "蜜蜂",
+      "熊蜂",
+      "木蜂",
+      "Honey bee",
+      "honey bees",
+      "Bumble bee",
+      "bumble bees",
+      "Carpenter bee",
+      "carpenter bees"
+    ],
+    "botCards": [
+      "黄蜂",
+      "蝴蝶"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "animals-bee-honey",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-kangaroo-joey",
+    "type": "text",
+    "theme": "Animals",
+    "difficulty": "easy",
+    "question": "英文中，袋鼠、考拉等有袋类动物的幼崽常用哪个四字母词称呼？请用英文作答。",
+    "canonicalAnswer": "joey",
+    "acceptedAnswers": [
+      "joey"
+    ],
+    "botCards": [
+      "cub",
+      "calf"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "animals-kangaroo-joey",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-owl-night",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "这种拥有前向双眼和静音飞羽的夜行猛禽属于哪一类鸟？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Bubo_bubo_sibiricus_-_01.JPG/500px-Bubo_bubo_sibiricus_-_01.JPG",
+      "alt": "一只大型夜行猛禽停在户外",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "猫头鹰",
+    "acceptedAnswers": [
+      "猫头鹰",
+      "Owl",
+      "owls"
+    ],
+    "botCards": [
+      "鹰",
+      "隼"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "animals-owl-night",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-octopus-arms",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "章鱼有几颗心脏？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Octopus2.jpg/500px-Octopus2.jpg",
+      "alt": "一只章鱼在水下游动",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "3",
+    "acceptedAnswers": [
+      "3",
+      "三",
+      "three"
+    ],
+    "botCards": [
+      "1",
+      "2"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "animals-octopus-arms",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-platypus-venom",
+    "type": "text",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "雄性鸭嘴兽后腿有尖锐的防御性距刺，会分泌什么有害物质？",
+    "canonicalAnswer": "毒液",
+    "acceptedAnswers": [
+      "毒液",
+      "毒素",
+      "Venom",
+      "poison",
+      "toxin"
+    ],
+    "botCards": [
+      "墨汁",
+      "酸液"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "animals-platypus-venom",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-pack-wolves",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "medium",
+    "question": "由野狼组成、一起生活或狩猎的社会群体称为什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Canis_lupus_pack_surrounding_Bison.jpg/500px-Canis_lupus_pack_surrounding_Bison.jpg",
+      "alt": "多只狼围着一头野牛",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "狼群",
+    "acceptedAnswers": [
+      "狼群",
+      "Pack",
+      "wolf pack"
+    ],
+    "botCards": [
+      "蜂群",
+      "鱼群"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "animals-pack-wolves",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-animals-narwhal-teeth",
+    "type": "image",
+    "theme": "Animals",
+    "difficulty": "hard",
+    "question": "这些鲸类用来滤食的梳状结构叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Mysticeti_Diversity.png/500px-Mysticeti_Diversity.png",
+      "alt": "一幅展示多种须鲸形态的插画",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "鲸须",
+    "acceptedAnswers": [
+      "鲸须",
+      "鲸须板",
+      "Baleen",
+      "baleen plates",
+      "whalebone"
+    ],
+    "botCards": [
+      "长牙",
+      "鳃"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "animals-narwhal-teeth",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-taco-mexican",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "哪种传统墨西哥街头食物由折叠的玉米或小麦饼包裹调味肉类和配料制成？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Carnitas.jpg/500px-Carnitas.jpg",
+      "alt": "两张装有肉、洋葱、香菜和青柠的折叠玉米饼",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "塔可",
+    "acceptedAnswers": [
+      "塔可",
+      "墨西哥卷饼",
+      "Taco",
+      "tacos"
+    ],
+    "botCards": [
+      "玉米片",
+      "墨西哥煎饼"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-taco-mexican",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-donut-hole",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "这种常见的油炸面点带糖霜或糖衣，传统上呈中间有孔的圆环形，叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Christmas_doughnut_%2815456531431%29.jpg/330px-Christmas_doughnut_%2815456531431%29.jpg",
+      "alt": "一个带糖霜和彩色糖针的环形油炸面点",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "甜甜圈",
+    "acceptedAnswers": [
+      "甜甜圈",
+      "Donut",
+      "Doughnut",
+      "donuts",
+      "doughnuts"
+    ],
+    "botCards": [
+      "贝果",
+      "油条"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-donut-hole",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-hamburger-bun",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "作为现代汉堡前身的汉堡排与哪个国家有关？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/RedDot_Burger.jpg/500px-RedDot_Burger.jpg",
+      "alt": "一个夹有配料的汉堡",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "德国",
+    "acceptedAnswers": [
+      "德国",
+      "德意志",
+      "Germany",
+      "Deutschland"
+    ],
+    "botCards": [
+      "美国",
+      "荷兰"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-hamburger-bun",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-tea-leaves",
+    "type": "text",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "将 Camellia sinensis 的加工叶用热水或沸水冲泡制成、全球广泛饮用的芳香饮料是什么？",
+    "canonicalAnswer": "茶",
+    "acceptedAnswers": [
+      "茶",
+      "茶饮",
+      "Tea",
+      "green tea",
+      "black tea"
+    ],
+    "botCards": [
+      "咖啡",
+      "可可"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-tea-leaves",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-maplesyrup-canada",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "easy",
+    "question": "从枫树木质部汁液中采集、常淋在早餐煎饼上的甜味调味糖浆叫什么？",
+    "canonicalAnswer": "枫糖浆",
+    "acceptedAnswers": [
+      "枫糖浆",
+      "Maple syrup",
+      "syrup"
+    ],
+    "botCards": [
+      "蜂蜜",
+      "焦糖酱"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Maple_syrup.jpg/500px-Maple_syrup.jpg",
+      "alt": "一瓶琥珀色糖浆放在煎饼旁",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-maplesyrup-canada",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-ramen-bowl",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "这道传统日式汤面用中式小麦面配浓郁肉汤或鱼汤，并常加叉烧和溏心蛋，叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Shoyu_Ramen%EF%BC%88Tokyo_Ramen%EF%BC%89_-_01.jpg/500px-Shoyu_Ramen%EF%BC%88Tokyo_Ramen%EF%BC%89_-_01.jpg",
+      "alt": "一碗酱油汤底的面条，配有叉烧等配料",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "拉面",
+    "acceptedAnswers": [
+      "拉面",
+      "Ramen",
+      "ramen noodles"
+    ],
+    "botCards": [
+      "乌冬面",
+      "荞麦面"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-ramen-bowl",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-paella-spain",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "源自西班牙瓦伦西亚、常以藏红花调味并在大浅锅中烹制海鲜或肉类的米饭菜肴叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/01_Paella_Valenciana_original.jpg/500px-01_Paella_Valenciana_original.jpg",
+      "alt": "一个大浅锅中的西班牙米饭菜肴",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "西班牙海鲜饭",
+    "acceptedAnswers": [
+      "西班牙海鲜饭",
+      "海鲜饭",
+      "Paella",
+      "Paella Valenciana"
+    ],
+    "botCards": [
+      "烩饭",
+      "抓饭"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-paella-spain",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-mozzarella-buffalo",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "传统上用水牛奶制成、常切片放在那不勒斯披萨上的白色半软质意大利奶酪叫什么？",
+    "canonicalAnswer": "马苏里拉奶酪",
+    "acceptedAnswers": [
+      "马苏里拉奶酪",
+      "马苏里拉",
+      "莫扎里拉",
+      "Mozzarella",
+      "mozzarella cheese",
+      "bocconcini"
+    ],
+    "botCards": [
+      "帕尔马干酪",
+      "里科塔奶酪"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Bocconcini_gobeirne.jpg/500px-Bocconcini_gobeirne.jpg",
+      "alt": "几颗白色半软质奶酪球",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-mozzarella-buffalo",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-tofu-coagulant",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "medium",
+    "question": "豆腐由哪一种豆类作物提取的豆浆凝固压制而成？",
+    "canonicalAnswer": "大豆",
+    "acceptedAnswers": [
+      "大豆",
+      "黄豆",
+      "Soybean",
+      "Soy",
+      "soy beans"
+    ],
+    "botCards": [
+      "鹰嘴豆",
+      "绿豆"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Japanese_SilkyTofu_%28Kinugoshi_Tofu%29.JPG/500px-Japanese_SilkyTofu_%28Kinugoshi_Tofu%29.JPG",
+      "alt": "一块白色丝滑豆制品",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-tofu-coagulant",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-fooddrinks-earlgrey-bergamot",
+    "type": "image",
+    "theme": "Food and Drinks",
+    "difficulty": "hard",
+    "question": "哪一种红茶混合茶因加入佛手柑橙皮提取的油而具有独特香气？",
+    "canonicalAnswer": "伯爵茶",
+    "acceptedAnswers": [
+      "伯爵茶",
+      "Earl Grey",
+      "Earl Grey tea"
+    ],
+    "botCards": [
+      "阿萨姆茶",
+      "大吉岭茶"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Frisch_aufgebr%C3%BChter_EarlGrey_Tee.jpg/960px-Frisch_aufgebr%C3%BChter_EarlGrey_Tee.jpg",
+      "alt": "一杯刚泡好的深色茶",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "fooddrinks-earlgrey-bergamot",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-soccer-ball",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "传统黑白足球上有多少块黑色五边形皮片？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1d/Football_Pallo_valmiina-cropped.jpg",
+      "alt": "传统黑白足球，黑色五边形与白色六边形构成球面",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "12",
+    "acceptedAnswers": [
+      "12",
+      "十二",
+      "twelve"
+    ],
+    "botCards": [
+      "10",
+      "20"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "sports-soccer-ball",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-bowling-pins",
+    "type": "text",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "标准十瓶保龄球比赛中，球道尽头摆放多少个木瓶供玩家击倒？",
+    "canonicalAnswer": "10",
+    "acceptedAnswers": [
+      "10",
+      "十",
+      "ten"
+    ],
+    "botCards": [
+      "8",
+      "12"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "sports-bowling-pins",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-swimming-goggles",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "竞技游泳者在水下保持视线清晰并防止眼睛受刺激时，会佩戴什么护目装备？",
+    "image": {
+      "url": "https://www.swimoutlet.com/cdn/shop/articles/IMG_6827.jpg?v=1598410313",
+      "alt": "一副用于水下保持视线清晰的护目镜",
+      "credit": "SwimOutlet"
+    },
+    "canonicalAnswer": "泳镜",
+    "acceptedAnswers": [
+      "泳镜",
+      "游泳镜",
+      "Goggles",
+      "swimming goggles",
+      "swim goggles"
+    ],
+    "botCards": [
+      "潜水面镜",
+      "耳塞"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "sports-swimming-goggles",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-superbowl-football",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "文斯·隆巴迪奖杯每年颁给哪一项美国大型体育赛事的冠军队？",
+    "canonicalAnswer": "超级碗",
+    "acceptedAnswers": [
+      "超级碗",
+      "Super Bowl"
+    ],
+    "botCards": [
+      "世界大赛",
+      "NBA 总决赛"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Commanders%27_three_Vince_Lombardi_Trophy%2C_2023.jpg/500px-Commanders%27_three_Vince_Lombardi_Trophy%2C_2023.jpg",
+      "alt": "三座橄榄球冠军奖杯陈列在一起",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "sports-superbowl-football",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-hockey-puck",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "easy",
+    "question": "冰上曲棍球比赛中，在冰面上滑动的黑色硫化橡胶圆盘叫什么？",
+    "canonicalAnswer": "冰球",
+    "acceptedAnswers": [
+      "冰球",
+      "冰球饼",
+      "Puck",
+      "hockey puck"
+    ],
+    "botCards": [
+      "羽毛球",
+      "保龄球"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Ice_hockey_puck_-_2.jpg/500px-Ice_hockey_puck_-_2.jpg",
+      "alt": "一个黑色橡胶圆盘置于白色背景上",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "sports-hockey-puck",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-skateboarding-ollie",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "由 Alan Gelfand 发明、滑手不用手而让自己与滑板同时跃起的基础滑板动作叫什么？",
+    "image": {
+      "url": "https://www.the-house.com/portal/wp-content/uploads/2017/09/How-to-Ollie-copy.jpg",
+      "alt": "一名滑板手让滑板和身体同时离开地面",
+      "credit": "The House"
+    },
+    "canonicalAnswer": "豚跳",
+    "acceptedAnswers": [
+      "豚跳",
+      "Ollie"
+    ],
+    "botCards": [
+      "脚跟翻",
+      "踢翻"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "sports-skateboarding-ollie",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-sumo-japan",
+    "type": "image",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "图中这种在圆形场地上进行的日本摔跤运动叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Asashoryu_fight_Jan08.JPG/500px-Asashoryu_fight_Jan08.JPG",
+      "alt": "两名体型壮硕的运动员在圆形场地上抱摔",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "相扑",
+    "acceptedAnswers": [
+      "相扑",
+      "Sumo",
+      "sumo wrestling"
+    ],
+    "botCards": [
+      "柔道",
+      "自由式摔跤"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "sports-sumo-japan",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-badminton-points",
+    "type": "text",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "按照世界羽联规则，现代羽毛球一局比赛通常先到多少分获胜？",
+    "canonicalAnswer": "21",
+    "acceptedAnswers": [
+      "21",
+      "二十一",
+      "twenty-one"
+    ],
+    "botCards": [
+      "15",
+      "25"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "sports-badminton-points",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-tennis-love",
+    "type": "text",
+    "theme": "Sports",
+    "difficulty": "medium",
+    "question": "在传统网球计分中，裁判报零分时会使用哪个英文单词？请用英文作答。",
+    "canonicalAnswer": "Love",
+    "acceptedAnswers": [
+      "Love"
+    ],
+    "botCards": [
+      "Nil",
+      "Zero"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "sports-tennis-love",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-sports-marathon-greece",
+    "type": "text",
+    "theme": "Sports",
+    "difficulty": "hard",
+    "question": "现代马拉松纪念希腊信使斐迪皮德斯从著名战场跑到哪一座古城的传说？",
+    "canonicalAnswer": "雅典",
+    "acceptedAnswers": [
+      "雅典",
+      "Athens",
+      "Athina"
+    ],
+    "botCards": [
+      "斯巴达",
+      "科林斯"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "sports-marathon-greece",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-nyancat-popttart",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "这个粉色糕点身体的像素猫会拖着彩虹穿过太空；这只 2011 年走红的网络梗猫叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/e/ed/Nyan_cat_250px_frame.PNG",
+      "alt": "一只像素风猫形角色在太空中留下彩虹轨迹",
+      "credit": "Wikimedia / Nyan Cat frame"
+    },
+    "canonicalAnswer": "彩虹猫",
+    "acceptedAnswers": [
+      "彩虹猫",
+      "Nyan Cat",
+      "Pop-Tart Cat",
+      "Nyan"
+    ],
+    "botCards": [
+      "键盘猫",
+      "不爽猫"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-nyancat-popttart",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-instagram-camera",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "这个复古棕色相机图标是 2010 年推出的哪一个大型照片和视频分享社交平台的早期标志？",
+    "image": {
+      "url": "https://cdn.logojoy.com/wp-content/uploads/20230511120343/instagram-old-logo-2011-e1683821161506.png",
+      "alt": "一个复古棕色相机图标",
+      "credit": "Logojoy"
+    },
+    "canonicalAnswer": "Instagram",
+    "acceptedAnswers": [
+      "Instagram",
+      "IG",
+      "Insta",
+      "照片墙"
+    ],
+    "botCards": [
+      "Pinterest",
+      "Flickr"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-instagram-camera",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-discord-mascot",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "Discord 那个形似游戏手柄的官方吉祥物叫什么英文名？请用英文作答。",
+    "image": {
+      "url": "https://res.cloudinary.com/apideck/image/upload/w_196,f_auto/v1678484810/marketplaces/ckhg56iu1mkpc0b66vj7fsj3o/listings/tried-to-make-the-discord-clyde-logo-more-similar-to-the-v0-g2bha52fh9v91_w9wnla.webp",
+      "alt": "一个形似游戏手柄的笑脸图标",
+      "credit": "Cloudinary hosted image"
+    },
+    "canonicalAnswer": "Clyde",
+    "acceptedAnswers": [
+      "Clyde"
+    ],
+    "botCards": [
+      "Snoo",
+      "Meme Man"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-discord-mascot",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-slang-lol",
+    "type": "text",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "网络聊天中常见的三字母缩写 LOL 代表哪一句英文短语？请用英文作答。",
+    "canonicalAnswer": "Laugh out loud",
+    "acceptedAnswers": [
+      "Laugh out loud",
+      "laughing out loud"
+    ],
+    "botCards": [
+      "Lots of love",
+      "Leave out loud"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-slang-lol",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-wordle-squares",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "easy",
+    "question": "在猜词游戏 Wordle 中，若字母正确且位置也正确，方格会变成什么颜色？",
+    "canonicalAnswer": "绿色",
+    "acceptedAnswers": [
+      "绿色",
+      "绿",
+      "Green"
+    ],
+    "botCards": [
+      "黄色",
+      "灰色"
+    ],
+    "image": {
+      "url": "https://static01.nyt.com/images/2022/01/06/multimedia/03xp-wordle/03xp-wordle-superJumbo.png?quality=75&auto=webp",
+      "alt": "一张猜词游戏网格，格子呈现不同颜色",
+      "credit": "The New York Times"
+    },
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-wordle-squares",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-doge-breed",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "因 Doge 梗图走红的 Kabosu 属于哪一种日本犬种？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/en/5/5f/Original_Doge_meme.jpg",
+      "alt": "一只浅棕色日本犬坐在沙发上",
+      "credit": "Wikimedia / Doge meme image"
+    },
+    "canonicalAnswer": "柴犬",
+    "acceptedAnswers": [
+      "柴犬",
+      "Shiba Inu",
+      "Shiba",
+      "shibas"
+    ],
+    "botCards": [
+      "秋田犬",
+      "日本尖嘴犬"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "internet-doge-breed",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-rickastley-year",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "因经典“瑞克摇摆”诱导链接恶作剧而成为网络文化符号的英国流行歌手是谁？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Glasto2023_%28149_of_468%29_%2853009108914%29_%28cropped%29.jpg/500px-Glasto2023_%28149_of_468%29_%2853009108914%29_%28cropped%29.jpg",
+      "alt": "一名男歌手在户外音乐节舞台上表演",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "瑞克·阿斯特利",
+    "acceptedAnswers": [
+      "瑞克·阿斯特利",
+      "瑞克·阿斯利",
+      "Rick Astley",
+      "Astley"
+    ],
+    "botCards": [
+      "乔治·迈克尔",
+      "罗比·威廉姆斯"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-rickastley-year",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-slang-idk",
+    "type": "text",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "网络聊天常用的三字母缩写 IDK 代表哪一句英文短语？请用英文作答。",
+    "canonicalAnswer": "I don't know",
+    "acceptedAnswers": [
+      "I don't know"
+    ],
+    "botCards": [
+      "I do know",
+      "I never knew"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-slang-idk",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-reddit-upvote",
+    "type": "text",
+    "theme": "Internet Culture",
+    "difficulty": "medium",
+    "question": "Reddit 上向上的“赞同”箭头图标通常是什么颜色？",
+    "canonicalAnswer": "橙色",
+    "acceptedAnswers": [
+      "橙色",
+      "橙红色",
+      "Orange",
+      "orangered"
+    ],
+    "botCards": [
+      "蓝色",
+      "紫色"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-reddit-upvote",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-internet-youtube-firstvideo",
+    "type": "image",
+    "theme": "Internet Culture",
+    "difficulty": "hard",
+    "question": "YouTube 联合创始人 Jawed Karim 2005 年上传的第一支视频是在什么地点的围栏前拍摄的？",
+    "canonicalAnswer": "圣迭戈动物园",
+    "acceptedAnswers": [
+      "圣迭戈动物园",
+      "圣地亚哥动物园",
+      "San Diego Zoo",
+      "the zoo"
+    ],
+    "botCards": [
+      "布朗克斯动物园",
+      "伦敦动物园"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Me_at_the_zoo.webm/250px--Me_at_the_zoo.webm.jpg",
+      "alt": "一段早期网络视频的画面，一名年轻男子站在动物围栏前",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "internet-youtube-firstvideo",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-microscope-cells",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "哪一种标准光学仪器通过组合透镜放大肉眼看不见的微生物或细胞？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Ukrainian_microscope_%28cropped%29.jpg/500px-Ukrainian_microscope_%28cropped%29.jpg",
+      "alt": "实验室中一台带目镜和物镜的光学仪器",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "显微镜",
+    "acceptedAnswers": [
+      "显微镜",
+      "光学显微镜",
+      "Microscope",
+      "optical microscope",
+      "light microscope"
+    ],
+    "botCards": [
+      "望远镜",
+      "分光仪"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "science-microscope-cells",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-magnet-poles",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "每一块独立磁铁天生具有几个磁极？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/08/MagnetEZ.jpg",
+      "alt": "一块磁铁的两端以不同颜色标示",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "2",
+    "acceptedAnswers": [
+      "2",
+      "二",
+      "two"
+    ],
+    "botCards": [
+      "1",
+      "4"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "science-magnet-poles",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-moon-lunar",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "地球唯一永久的天然卫星、通过引力影响海洋潮汐的天体叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/960px-FullMoon2010.jpg",
+      "alt": "一轮满月，表面可见陨石坑",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "月球",
+    "acceptedAnswers": [
+      "月球",
+      "月亮",
+      "The Moon",
+      "Moon",
+      "Luna"
+    ],
+    "botCards": [
+      "火卫一",
+      "金星"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "science-moon-lunar",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-chemistry-oxygen",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "氧在元素周期表中的原子序数是多少？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Liquid_oxygen_in_a_beaker_%28cropped_and_retouched%29.jpg/500px-Liquid_oxygen_in_a_beaker_%28cropped_and_retouched%29.jpg",
+      "alt": "一只烧杯中装着浅蓝色液体",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "8",
+    "acceptedAnswers": [
+      "8",
+      "八",
+      "eight"
+    ],
+    "botCards": [
+      "6",
+      "16"
+    ],
+    "gradingStrictness": "exact",
+    "language": "zh-Hans",
+    "translationKey": "science-chemistry-oxygen",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-gravity-apple",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "easy",
+    "question": "根据科学轶事，哪位英国数学家看到苹果从树上落下后提出了万有引力定律？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Portrait_of_Sir_Isaac_Newton%2C_1689_%28brightened%29.jpg/500px-Portrait_of_Sir_Isaac_Newton%2C_1689_%28brightened%29.jpg",
+      "alt": "一位 17 世纪英国科学家的肖像",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "艾萨克·牛顿",
+    "acceptedAnswers": [
+      "艾萨克·牛顿",
+      "牛顿",
+      "Sir Isaac Newton",
+      "Isaac Newton",
+      "Newton"
+    ],
+    "botCards": [
+      "伽利略·伽利莱",
+      "约翰内斯·开普勒"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "science-gravity-apple",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-volcano-magma",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "地表之下的熔融岩石在喷发前称为什么？",
+    "image": {
+      "url": "https://images.nationalgeographic.org/image/upload/t_edhub_resource_key_image/v1638891630/EducationHub/photos/lava-flow.jpg",
+      "alt": "火山活动中流动的炽热熔融岩石",
+      "credit": "National Geographic"
+    },
+    "canonicalAnswer": "岩浆",
+    "acceptedAnswers": [
+      "岩浆",
+      "Magma"
+    ],
+    "botCards": [
+      "熔岩",
+      "火山灰"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "science-volcano-magma",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-astronomy-mars",
+    "type": "image",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "是什么物质让火星呈现橙红色？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Mars_-_August_30_2021_-_Flickr_-_Kevin_M._Gill.png/960px-Mars_-_August_30_2021_-_Flickr_-_Kevin_M._Gill.png",
+      "alt": "一颗橙红色行星",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "氧化铁",
+    "acceptedAnswers": [
+      "氧化铁",
+      "铁锈",
+      "Iron oxide",
+      "rust",
+      "iron oxides",
+      "oxidized iron",
+      "iron oxide dust"
+    ],
+    "botCards": [
+      "二氧化碳",
+      "硫磺"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "science-astronomy-mars",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-biology-skin",
+    "type": "text",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "按表面积和重量计算，人体最大的一种器官是什么？",
+    "canonicalAnswer": "皮肤",
+    "acceptedAnswers": [
+      "皮肤",
+      "Skin",
+      "the skin",
+      "integument"
+    ],
+    "botCards": [
+      "肝脏",
+      "肺"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "science-biology-skin",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-sound-vacuum",
+    "type": "text",
+    "theme": "Science",
+    "difficulty": "medium",
+    "question": "声波需要物质介质传播，因此在什么空无环境中无法传播或被听见？",
+    "canonicalAnswer": "真空",
+    "acceptedAnswers": [
+      "真空",
+      "Vacuum",
+      "a vacuum",
+      "outer space",
+      "space"
+    ],
+    "botCards": [
+      "水中",
+      "钢铁中"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "science-sound-vacuum",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-science-chemistry-absolute",
+    "type": "text",
+    "theme": "Science",
+    "difficulty": "hard",
+    "question": "绝对零度换算为摄氏温度是多少？",
+    "canonicalAnswer": "-273.15 °C",
+    "acceptedAnswers": [
+      "-273.15 °C",
+      "-273.15",
+      "零下273.15摄氏度",
+      "负273.15摄氏度",
+      "minus 273.15",
+      "negative 273.15",
+      "-273 c",
+      "-273 celsius",
+      "-273"
+    ],
+    "botCards": [
+      "-100 °C",
+      "0 °C"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "science-chemistry-absolute",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-greek-poseidon",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "手持能引发地震和风暴的三叉戟，波塞冬统治哪一片广阔领域？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Statue_of_Poseidon_NAMA_235_%28DerHexer%29%2C_part_2.JPG/500px-Statue_of_Poseidon_NAMA_235_%28DerHexer%29%2C_part_2.JPG",
+      "alt": "一尊与古代海神相关的雕像",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "海洋",
+    "acceptedAnswers": [
+      "海洋",
+      "大海",
+      "海",
+      "Sea",
+      "Ocean",
+      "oceans"
+    ],
+    "botCards": [
+      "天空",
+      "冥界"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "mythology-greek-poseidon",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-egypt-sphinx",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "这种神话生物有狮子的身体和人的头部，吉萨高原上有著名巨像；它叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Great_Sphinx_of_Giza_-_20080716a.jpg/500px-Great_Sphinx_of_Giza_-_20080716a.jpg",
+      "alt": "一座狮身人首的巨大古代石雕",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "斯芬克斯",
+    "acceptedAnswers": [
+      "斯芬克斯",
+      "狮身人面像",
+      "Sphinx",
+      "the sphinx",
+      "Great Sphinx"
+    ],
+    "botCards": [
+      "鹰身女妖",
+      "半人马"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "mythology-egypt-sphinx",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-greek-aphrodite",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "在古典绘画中常从海泡沫和巨型扇贝壳中诞生的阿佛洛狄忒，是爱与什么的希腊女神？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Cnidus_Aphrodite_Altemps_Inv8619.jpg/500px-Cnidus_Aphrodite_Altemps_Inv8619.jpg",
+      "alt": "一尊古典风格的女性大理石雕像",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "美丽",
+    "acceptedAnswers": [
+      "美丽",
+      "美貌",
+      "Beauty",
+      "physical beauty"
+    ],
+    "botCards": [
+      "战争",
+      "智慧"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "mythology-greek-aphrodite",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-arthurian-excalibur",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "英国亚瑟王传说中，湖中仙女赐给亚瑟王的魔法宝剑叫什么？",
+    "canonicalAnswer": "王者之剑",
+    "acceptedAnswers": [
+      "王者之剑",
+      "圣剑",
+      "Excalibur",
+      "Caliburn"
+    ],
+    "botCards": [
+      "冈格尼尔",
+      "杜兰达尔"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/An_island_story%3B_a_child%27s_history_of_England_%281906%29_%2814801002423%29.jpg/500px-An_island_story%3B_a_child%27s_history_of_England_%281906%29_%2814801002423%29.jpg",
+      "alt": "一幅画，国王从湖中女子手中接过一把剑",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "mythology-arthurian-excalibur",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-greek-pandora",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "easy",
+    "question": "希腊神话中，哪位好奇的第一位人类女性打开禁罐，意外将灾祸与苦难放入人间？",
+    "canonicalAnswer": "潘多拉",
+    "acceptedAnswers": [
+      "潘多拉",
+      "Pandora"
+    ],
+    "botCards": [
+      "珀耳塞福涅",
+      "海伦"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Pandora_-_John_William_Waterhouse.jpg/500px-Pandora_-_John_William_Waterhouse.jpg",
+      "alt": "一名古典画中的女子手持容器",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "mythology-greek-pandora",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-greek-hermes",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "希腊信使神赫尔墨斯携带的双蛇缠绕有翼手杖，具体叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Caduceus.svg/500px-Caduceus.svg.png",
+      "alt": "一根带翅膀的杖，缠着两条蛇",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "双蛇杖",
+    "acceptedAnswers": [
+      "双蛇杖",
+      "赫尔墨斯杖",
+      "Caduceus",
+      "the caduceus"
+    ],
+    "botCards": [
+      "阿斯克勒庇俄斯杖",
+      "三叉戟"
+    ],
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "mythology-greek-hermes",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-greek-prometheus",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "哪位机智的泰坦因从奥林匹斯山盗火赠予人类，而被判每天让鹰啄食肝脏？",
+    "canonicalAnswer": "普罗米修斯",
+    "acceptedAnswers": [
+      "普罗米修斯",
+      "Prometheus"
+    ],
+    "botCards": [
+      "阿特拉斯",
+      "克洛诺斯"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Prometheus_and_Atlas%2C_Laconian_black-figure_kylix%2C_by_the_Arkesilas_Painter%2C_560-550_BC%2C_inv._16592_-_Museo_Gregoriano_Etrusco_-_Vatican_Museums_-_DSC01069.jpg/500px-Prometheus_and_Atlas%2C_Laconian_black-figure_kylix%2C_by_the_Arkesilas_Painter%2C_560-550_BC%2C_inv._16592_-_Museo_Gregoriano_Etrusco_-_Vatican_Museums_-_DSC01069.jpg",
+      "alt": "一只古希腊酒杯上画着两位神话人物",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "normal",
+    "language": "zh-Hans",
+    "translationKey": "mythology-greek-prometheus",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-african-anansi",
+    "type": "text",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "在西非和加勒比民间传说中，机智的诡计者阿南西最常化作什么动物？",
+    "canonicalAnswer": "蜘蛛",
+    "acceptedAnswers": [
+      "蜘蛛",
+      "Spider",
+      "a spider"
+    ],
+    "botCards": [
+      "乌鸦",
+      "狐狸"
+    ],
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "mythology-african-anansi",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-mesopotamian-gilgamesh",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "medium",
+    "question": "统治古城乌鲁克、在现存最古老史诗中遍寻永生秘密的传奇国王是谁？",
+    "canonicalAnswer": "吉尔伽美什",
+    "acceptedAnswers": [
+      "吉尔伽美什",
+      "Gilgamesh"
+    ],
+    "botCards": [
+      "汉谟拉比",
+      "萨尔贡"
+    ],
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Hero_lion_Dur-Sharrukin_Louvre_AO19862.jpg/500px-Hero_lion_Dur-Sharrukin_Louvre_AO19862.jpg",
+      "alt": "古代浮雕中的英雄抱着一只狮子",
+      "credit": "Wikimedia Commons"
+    },
+    "gradingStrictness": "forgiving",
+    "language": "zh-Hans",
+    "translationKey": "mythology-mesopotamian-gilgamesh",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
+  },
+  {
+    "id": "zh-hans-mythology-slavic-babayaga",
+    "type": "image",
+    "theme": "Mythology",
+    "difficulty": "hard",
+    "question": "斯拉夫民间传说中，住在鸡脚小屋、乘飞天石臼出行的著名森林女巫叫什么？",
+    "image": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/6c/%D0%A1%D0%BA%D0%B0%D0%B7%D0%BA%D0%B0_%D0%91%D0%B0%D0%B1%D0%B0-%D1%8F%D0%B3%D0%B0_3.jpg",
+      "alt": "斯拉夫童话中一位老巫婆的插画",
+      "credit": "Wikimedia Commons"
+    },
+    "canonicalAnswer": "芭芭雅嘎",
+    "acceptedAnswers": [
+      "芭芭雅嘎",
+      "巴巴雅加",
+      "Baba Yaga"
+    ],
+    "botCards": [
+      "摩根勒菲",
+      "梅林"
+    ],
+    "gradingStrictness": "strict",
+    "language": "zh-Hans",
+    "translationKey": "mythology-slavic-babayaga",
+    "debugBatch": "zh-hans-typed-batch-03-2026-08-17"
   }
 ]
