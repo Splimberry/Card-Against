@@ -9412,19 +9412,7 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"]::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(220, 255, 110, 0.26) 0 0.16rem, transparent 0.21rem),
-    radial-gradient(circle at 74% 70%, rgba(250, 204, 21, 0.18) 0 0.12rem, transparent 0.18rem),
-    repeating-linear-gradient(132deg, transparent 0 1.35rem, rgba(183, 255, 42, 0.08) 1.35rem 1.42rem, transparent 1.42rem 3rem);
-  background-size: 4.2rem 4.2rem, 5.4rem 5.4rem, 100% 100%;
-  mix-blend-mode: screen;
-  opacity: 0.28;
-  animation: mutationVeinPulse 3400ms ease-in-out infinite;
+  content: none;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card,
@@ -9440,6 +9428,16 @@ input:focus {
   z-index: 1;
   pointer-events: none;
   border-radius: inherit;
+  overflow: hidden;
+}
+
+.profile-card-theme-icon {
+  position: absolute;
+  display: block;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > :not(.profile-card-theme-decoration) {
@@ -9448,38 +9446,46 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="mutation"] {
-  background: linear-gradient(135deg, rgba(183, 255, 42, 0.88), rgba(250, 204, 21, 0.8));
-  -webkit-mask-image: url("assets/overlays/biohazard.svg");
-  mask-image: url("assets/overlays/biohazard.svg");
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 6.6rem;
-  mask-size: 6.6rem;
-  -webkit-mask-position: 0.85rem 0.5rem;
-  mask-position: 0.85rem 0.5rem;
   mix-blend-mode: screen;
-  opacity: 0.22;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="mutation"] .profile-card-theme-icon {
+  top: 0.55rem;
+  right: 0.7rem;
+  width: 5.8rem;
+  opacity: 0.28;
+  filter: brightness(0) saturate(100%) invert(90%) sepia(85%) saturate(947%) hue-rotate(28deg) brightness(103%) contrast(102%) drop-shadow(0 0 0.5rem rgba(183, 255, 42, 0.42));
   animation: mutationHazardPulse 3200ms ease-in-out infinite;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] {
   z-index: 1;
-  background: linear-gradient(135deg, rgba(255, 28, 76, 0.84), rgba(168, 85, 247, 0.74));
-  -webkit-mask-image: url("assets/modifiers/skull.svg");
-  mask-image: url("assets/modifiers/skull.svg");
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 5.8rem;
-  mask-size: 5.8rem;
-  -webkit-mask-position: 0.7rem 0.35rem;
-  mask-position: 0.7rem 0.35rem;
   mix-blend-mode: screen;
-  opacity: 0.18;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon {
+  width: 4.6rem;
+  opacity: 0.25;
+  filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(3146%) hue-rotate(331deg) brightness(103%) contrast(102%) drop-shadow(0 0 0.5rem rgba(255, 28, 76, 0.48));
   animation: doomSkullDrift 8200ms linear infinite;
 }
 
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="0"] {
+  top: 0.55rem;
+  right: 0.7rem;
+}
+
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="1"] {
+  bottom: 0.5rem;
+  left: 0.65rem;
+  filter: brightness(0) saturate(100%) invert(44%) sepia(81%) saturate(2659%) hue-rotate(241deg) brightness(96%) contrast(96%) drop-shadow(0 0 0.5rem rgba(168, 85, 247, 0.44));
+  animation-direction: reverse;
+}
+
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card > .profile-card-theme-decoration,
-:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration {
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"].flying-card > .profile-card-theme-decoration .profile-card-theme-icon,
+:is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"].flying-card > .profile-card-theme-decoration .profile-card-theme-icon {
   animation: none !important;
 }
 
@@ -10219,11 +10225,13 @@ input:focus {
 @keyframes mutationHazardPulse {
   0%,
   100% {
-    opacity: 0.15;
+    opacity: 0.2;
+    transform: scale(0.94) rotate(-4deg);
   }
 
   50% {
-    opacity: 0.32;
+    opacity: 0.36;
+    transform: scale(1.03) rotate(3deg);
   }
 }
 
@@ -10260,14 +10268,15 @@ input:focus {
 }
 
 @keyframes doomSkullDrift {
-  0% {
-    -webkit-mask-position: 0.7rem 0.35rem;
-    mask-position: 0.7rem 0.35rem;
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: translate3d(0, 0, 0) rotate(-4deg);
   }
 
-  100% {
-    -webkit-mask-position: 6.5rem 6.15rem;
-    mask-position: 6.5rem 6.15rem;
+  50% {
+    opacity: 0.34;
+    transform: translate3d(-0.3rem, 0.22rem, 0) rotate(5deg);
   }
 }
 
@@ -15144,13 +15153,8 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .profile-shop-item[data-profile-shop-type="style"][data-profile-shop-kind="mutation"] .profile-shop-preview::before {
-  background: linear-gradient(135deg, #b7ff2a, #facc15);
-  -webkit-mask-image: url("assets/overlays/biohazard.svg");
-  mask-image: url("assets/overlays/biohazard.svg");
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 2.5rem;
-  mask-size: 2.5rem;
+  background: url("assets/overlays/biohazard.svg") center / 2.5rem no-repeat;
+  filter: brightness(0) saturate(100%) invert(90%) sepia(85%) saturate(947%) hue-rotate(28deg) brightness(103%) contrast(102%);
   animation: mutationHazardPulse 3200ms ease-in-out infinite;
 }
 
