@@ -2204,13 +2204,14 @@ function sanitizeRoomEventForClient(event, options = {}) {
     sanitized.payload.game = sanitizeRoomGameForClient(sanitized.payload.game, options);
   }
   if (["round_grading", "round_result"].includes(sanitized.type)) {
-    // Grading only needs the shared setup and locked submissions. Keep live
-    // power state on its dedicated sync path so the grading handoff remains
-    // small and can never be delayed by a large effect map.
+    // Grading only needs the shared setup, locked submissions, and the one
+    // visible table event. Keep the rest of the live power state on its
+    // dedicated sync path so this handoff stays compact.
     const game = sanitized.payload.game && typeof sanitized.payload.game === "object"
       ? sanitized.payload.game
       : null;
     if (game) {
+      const tableEvent = game.powerState?.effects?.values?.currentTableEvent;
       sanitized.payload.game = {
         matchId: game.matchId,
         status: game.status,
@@ -2221,6 +2222,9 @@ function sanitizeRoomEventForClient(event, options = {}) {
         gradingReason: game.gradingReason || "",
         updatedAt: game.updatedAt || sanitized.payload.updatedAt || event.createdAt || Date.now()
       };
+      sanitized.payload.tableEvent = tableEvent && typeof tableEvent === "object"
+        ? cloneServerRoomJson(tableEvent, null, 12000)
+        : null;
     }
   }
   if (!options.includePrivateSecrets) {
@@ -6719,6 +6723,9 @@ function normalizeRoomRoundResult(result) {
   const aiSecondOpinionIndexes = Array.isArray(result.aiSecondOpinionIndexes)
     ? [...new Set(result.aiSecondOpinionIndexes.map((index) => clampServerNumber(index, 0, cards.length - 1, -1)).filter((index) => index >= 0))]
     : [];
+  const tableEvent = result.tableEvent && typeof result.tableEvent === "object"
+    ? cloneServerRoomJson(result.tableEvent, null, 12000)
+    : null;
   return {
     matchId: String(result.matchId || "").slice(0, 80),
     round: clampServerNumber(result.round, 1, 100, 1),
@@ -6745,6 +6752,7 @@ function normalizeRoomRoundResult(result) {
     powerState,
     scoreState,
     resultSummary: normalizeRoomRoundResultSummary(result.resultSummary),
+    tableEvent,
     source: String(result.source || "host").slice(0, 40),
     nextRoundAt: clampServerNumber(result.nextRoundAt, 0, Number.MAX_SAFE_INTEGER, 0),
     updatedAt: clampServerNumber(result.updatedAt, 0, Number.MAX_SAFE_INTEGER, Date.now())

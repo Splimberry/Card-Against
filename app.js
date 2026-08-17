@@ -14514,24 +14514,17 @@ function broadcastSpectatorAnswerDraft(answer = elements.answerInput?.value || "
   }
   state.lastBroadcastAnswerDraft = signature;
   const clientEventId = createRoomSyncCommandId("answer-draft", state.roomSettings.code);
-  void roomSync.sendCommand("update_answer_draft", {
+  // Drafts are display-only spectator data. Sending every keystroke through
+  // the authoritative command queue could put a real answer behind several
+  // draft writes, so this stays on the lightweight realtime channel.
+  broadcastRealtimeRoomChange("answer-draft", state.roomSettings.code, {
     clientEventId,
     participantId,
     round: state.round,
     matchId: getCurrentRoomMatchId(),
-    answer: draft
-  }, {
-    roomCode: state.roomSettings.code,
-    participantId,
-    clientEventId
-  }).then((result) => {
-    if (!result?.ok && state.lastBroadcastAnswerDraft === signature) {
-      state.lastBroadcastAnswerDraft = "";
-    }
-  }).catch(() => {
-    if (state.lastBroadcastAnswerDraft === signature) {
-      state.lastBroadcastAnswerDraft = "";
-    }
+    answer: draft,
+    forceRoomChannel: true,
+    updatedAt: Date.now()
   });
   return true;
 }
@@ -14975,6 +14968,9 @@ function normalizeRoomRoundResultPayload(payload = {}) {
     powerState: source.powerState && typeof source.powerState === "object" ? cloneRoomAbilitySyncValue(source.powerState, null) : null,
     scoreState: Array.isArray(source.scoreState) ? cloneRoomAbilitySyncValue(source.scoreState, []) : [],
     resultSummary: normalizeRoomRoundResultSummaryPayload(source.resultSummary, cards),
+    tableEvent: source.tableEvent && typeof source.tableEvent === "object"
+      ? cloneRoomAbilitySyncValue(source.tableEvent, null)
+      : null,
     source: String(source.source || "host").slice(0, 40),
     nextRoundAt: Math.max(0, Number(source.nextRoundAt) || 0),
     updatedAt: Number(source.updatedAt) || Date.now()
@@ -15157,7 +15153,9 @@ function applyRealtimeRoomRoundResult(payload = {}) {
   // mounting. The result event is authoritative; playback must not be lost
   // just because it arrived during the setup animation or setup request.
   state.roomRoundResultPendingPlayback = result;
+  applyRoomTableEventPayload(result.tableEvent);
   applyRoomRoundResultStateSafely(result, { source: "realtime-result" });
+  recordJoinedRoomRoundHistory(result);
   const presented = tryPlayPendingRoomRoundResult();
   recordRoomGradingHandoff(
     presented ? "grading-result-rendered" : "grading-result-pending",
@@ -15967,6 +15965,16 @@ function applyRoomAbilityEffectStatePayload(effects) {
   return changed;
 }
 
+function applyRoomTableEventPayload(tableEvent = null) {
+  return applyRoomAbilityEffectStatePayload({
+    values: {
+      currentTableEvent: tableEvent && typeof tableEvent === "object"
+        ? cloneRoomAbilitySyncValue(tableEvent, null)
+        : null
+    }
+  });
+}
+
 function getRoomPowerStatePayload(owners = getActiveOwners()) {
   const uniqueOwners = [...new Set(owners)].filter((owner) => getPlayer(owner));
   return {
@@ -16166,6 +16174,7 @@ function buildRoomRoundResultPayload(roundResult, options = {}) {
     questionId: state.questionId,
     revealAnswerIndex: options.revealAnswerIndex,
     awarded: options.awarded || null,
+    tableEvent: getCurrentTableEvent(),
     updatedAt: Date.now()
   });
   if (!result) {
@@ -17560,6 +17569,9 @@ function applyRealtimeRoomGrading(payload = {}) {
       updatedAt: Number(payload.updatedAt) || Date.now()
     };
   }
+  if (Object.hasOwn(payload, "tableEvent")) {
+    applyRoomTableEventPayload(payload.tableEvent);
+  }
   if (state.joiningRoom) {
     state.joiningRoom = {
       ...state.joiningRoom,
@@ -18925,7 +18937,6 @@ function isCriticalRoomRealtimeEvent(eventType = "") {
     "chat-message",
     "answer-submitted",
     "hint-used",
-    "answer-draft",
     "round-grading",
     "round-result",
     "round-result-ready",
@@ -44430,10 +44441,21 @@ function applyRealtimeRoomGameEnded(payload = {}) {
     hostedRoom.revision = Number(payload.revision) || hostedRoom.revision || 0;
     hostedRoom.updatedAt = Number(payload.updatedAt) || hostedRoom.updatedAt || Date.now();
   }
+  applyRoomGamePowerState(state.roomGame);
+  const finalRoundResult = normalizeRoomRoundResultPayload(state.roomGame.roundResult || state.roomRoundResult);
+  if (finalRoundResult) {
+    state.roomRoundResult = finalRoundResult;
+    applyRoomTableEventPayload(finalRoundResult.tableEvent);
+    applyRoomRoundResultStateSafely(finalRoundResult, { source: "game-ended" });
+    recordJoinedRoomRoundHistory(finalRoundResult);
+  }
   rememberRoomRevisionPayload(payload);
   if (!state.matchEnded) {
-    addSystemChat("The host ended the game.", { private: true, sync: false });
-    endMatch(true, { syncRoom: false });
+    const completedNaturally = state.matchHistory.length >= state.maxRounds;
+    addSystemChat(completedNaturally ? "The match is complete." : "The host ended the game.", { private: true, sync: false });
+    // The host already applied and published final effects. A joined client
+    // must render that published state, not roll those effects a second time.
+    endMatch(!completedNaturally, { syncRoom: false, applyFinalEffects: false });
   }
   return true;
 }
@@ -47889,6 +47911,72 @@ function isCurrentRoomRoundResultForPlayback(result = null) {
   );
 }
 
+function recordJoinedRoomRoundHistory(result = null) {
+  if (!isJoinedRoomClient() || state.isSpectator) {
+    return false;
+  }
+  const syncedResult = normalizeRoomRoundResultPayload(result);
+  if (!syncedResult || !syncedResult.matchId || !syncedResult.round) {
+    return false;
+  }
+  const resultKey = getRoomRoundResultPlaybackKey(syncedResult);
+  if (state.matchHistory.some((entry) => entry?.roomResultKey === resultKey)) {
+    return true;
+  }
+
+  const summary = syncedResult.resultSummary || {};
+  const localOwner = state.currentOwner;
+  const localParticipantId = getRoomParticipantIdForOwner(localOwner);
+  const scoreDeltas = Array.isArray(summary.scoreDeltas) ? summary.scoreDeltas : [];
+  const judgements = Array.isArray(summary.judgements) ? summary.judgements : [];
+  const winningOwners = syncedResult.winningParticipantIds
+    .map((participantId) => getOwnerFromRoomRoundParticipantId(participantId))
+    .filter((owner) => owner && getActiveOwners().includes(owner));
+  const ownJudgement = judgements.find((entry) => String(entry?.participantId || "") === localParticipantId);
+  const ownScoreDelta = scoreDeltas.find((entry) => String(entry?.participantId || "") === localParticipantId);
+  const deltas = Object.fromEntries(scoreDeltas
+    .map((entry) => [getRoomOwnerForParticipantId(entry?.participantId) || String(entry?.owner || ""), Math.round(Number(entry?.delta) || 0)])
+    .filter(([owner]) => owner));
+  const payoutDetails = Object.fromEntries(scoreDeltas
+    .map((entry) => [getRoomOwnerForParticipantId(entry?.participantId) || String(entry?.owner || ""), {
+      tag: String(entry?.tag || ""),
+      correct: Boolean(entry?.correct)
+    }])
+    .filter(([owner]) => owner));
+  const awarded = {
+    noCorrect: winningOwners.length === 0,
+    noPoints: !Object.values(deltas).some((delta) => delta > 0),
+    winningOwners,
+    deltas,
+    payoutDetails,
+    total: Math.max(0, ...Object.values(deltas).map((delta) => Number(delta) || 0)),
+    tag: String(ownJudgement?.tag || ownScoreDelta?.tag || "Result"),
+    events: Array.isArray(summary.powerEvents) ? summary.powerEvents : []
+  };
+  const localCorrect = Boolean(ownJudgement?.correct || winningOwners.includes(localOwner));
+  const historyEntry = {
+    roomResultKey: resultKey,
+    round: syncedResult.round,
+    winner: awarded.noCorrect ? "No correct answers" : getOwnerLabel(winningOwners[0] || ""),
+    winners: winningOwners.map(getOwnerLabel),
+    points: awarded.total,
+    tag: awarded.tag,
+    difficulty: state.questionDifficulty,
+    coinsEarned: 0,
+    powerEvents: awarded.events,
+    card: syncedResult.cards[syncedResult.winnerIndex] || ""
+  };
+
+  if (state.roundProgress.length < syncedResult.round) {
+    state.roundProgress = [...state.roundProgress, ...Array.from({ length: syncedResult.round - state.roundProgress.length }, () => "unanswered")];
+  }
+  state.roundProgress[syncedResult.round - 1] = localCorrect ? "correct" : "incorrect";
+  awardRoundCoins(winningOwners, awarded);
+  historyEntry.coinsEarned = awarded.coinsEarned || 0;
+  state.matchHistory.push(historyEntry);
+  return true;
+}
+
 function recoverRoomRoundResultPlayback(result = null, rawInput = "", error = null) {
   const syncedResult = normalizeRoomRoundResultPayload(result);
   if (!isCurrentRoomRoundResultForPlayback(syncedResult)) {
@@ -47938,6 +48026,7 @@ function recoverRoomRoundResultPlayback(result = null, rawInput = "", error = nu
     render: false,
     source: "result-presentation"
   });
+  recordJoinedRoomRoundHistory(syncedResult);
 
   try {
     clearCardBadges();
@@ -50472,7 +50561,7 @@ function endMatch(wasExited = false, options = {}) {
   state.setupStack = [];
   clearRoundSubmissionState();
   const redHerringOwnersAtEnd = new Set(Object.keys(state.redHerringMasks || {}));
-  const finalEffects = applyFinalMatchEffects();
+  const finalEffects = options.applyFinalEffects === false ? null : applyFinalMatchEffects();
   const titlesByOwner = wasExited ? {} : evaluateMatchTitles(redHerringOwnersAtEnd);
   if (wasExited) {
     state.finalTitlesByOwner = {};

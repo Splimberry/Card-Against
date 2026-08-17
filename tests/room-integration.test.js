@@ -6020,6 +6020,7 @@ async function testRoomRoundResultRequiresGradingLock() {
     hostParticipantId: "host-client",
     roundResult: makeRoundResult(2, {
       matchId,
+      tableEvent: { id: "gamblers_dice", name: "Gambler's Dice" },
       resultSummary: {
         judgements: [
           {
@@ -6077,6 +6078,7 @@ async function testRoomRoundResultRequiresGradingLock() {
   assert.equal(deliveredResultEvent.payload.game.roundResult, undefined, "The result must not be duplicated inside the realtime game envelope.");
   assert.equal(deliveredResultEvent.payload.game.powerState, undefined, "The complete result owns the power state for this transition.");
   assert.equal(deliveredResultEvent.payload.game.setup.id, "test-question-2");
+  assert.equal(deliveredResultEvent.payload.roundResult.tableEvent?.id, "gamblers_dice");
   assert.equal(deliveredResultEvent.payload.roundResult.resultSummary.leaderboard[0].score, 1200);
   assert.equal(lockedResult.payload.roundResult.resultSummary.judgements[0].reason, "That matched the answer cleanly.");
   assert.equal(lockedResult.payload.roundResult.resultSummary.scoreDeltas[0].delta, 1200);

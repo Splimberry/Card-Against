@@ -266,10 +266,44 @@ function testRoundResultDoesNotTransportThePowerEngine() {
   const transportSource = getFunctionSource("publishRoomRoundResult", "broadcastCommittedRoomRoundResultReady");
 
   assert.match(resultSource, /result\.powerState = null/);
+  assert.match(resultSource, /tableEvent: getCurrentTableEvent\(\)/);
   assert.doesNotMatch(resultSource, /result\.powerState = getRoomPowerStatePayload\(\)/);
   assert.doesNotMatch(envelopeSource, /powerState:/);
   assert.match(transportSource, /const peerGame = getRoomRoundResultGameEnvelope\(result\)/);
   assert.match(transportSource, /game: peerGame/);
+}
+
+function testTableEventSurvivesCompactGradingAndResultHandoffs() {
+  const gradingSource = getFunctionSource("applyRealtimeRoomGrading", "forceRoomRoundToGrading");
+  const resultSource = getFunctionSource("applyRealtimeRoomRoundResult", "recoverRoomRoundResultFromServer");
+  const serverSource = fs.readFileSync(require.resolve("../server.js"), "utf8");
+
+  assert.match(gradingSource, /Object\.hasOwn\(payload, "tableEvent"\)/);
+  assert.match(gradingSource, /applyRoomTableEventPayload\(payload\.tableEvent\)/);
+  assert.match(resultSource, /applyRoomTableEventPayload\(result\.tableEvent\)/);
+  assert.match(serverSource, /sanitized\.payload\.tableEvent = tableEvent/);
+  assert.match(serverSource, /tableEvent,\n    source:/);
+}
+
+function testDraftPreviewCannotQueueAheadOfAnswerSubmission() {
+  const draftSource = getFunctionSource("broadcastSpectatorAnswerDraft", "scheduleSpectatorAnswerDraftBroadcast");
+
+  assert.match(draftSource, /broadcastRealtimeRoomChange\("answer-draft"/);
+  assert.doesNotMatch(draftSource, /roomSync\.sendCommand\("update_answer_draft"/);
+}
+
+function testJoinedRoundResultBuildsFinalMatchHistory() {
+  const historySource = getFunctionSource("recordJoinedRoomRoundHistory", "recoverRoomRoundResultPlayback");
+  const presentationSource = getFunctionSource("recoverRoomRoundResultPlayback", "playRound");
+  const gameEndedSource = getFunctionSource("applyRealtimeRoomGameEnded", "applyRealtimeRoomReturnedToLobby");
+  const endMatchSource = getFunctionSource("endMatch", "submitCurrentAnswer");
+
+  assert.match(historySource, /awardRoundCoins\(winningOwners, awarded\)/);
+  assert.match(historySource, /state\.matchHistory\.push\(historyEntry\)/);
+  assert.match(presentationSource, /recordJoinedRoomRoundHistory\(syncedResult\)/);
+  assert.match(gameEndedSource, /recordJoinedRoomRoundHistory\(finalRoundResult\)/);
+  assert.match(gameEndedSource, /applyFinalEffects: false/);
+  assert.match(endMatchSource, /options\.applyFinalEffects === false \? null : applyFinalMatchEffects\(\)/);
 }
 
 function testResultPresentationIsNotBlockedByPowerStateReconciliation() {
@@ -646,6 +680,9 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testRoundResultTransportUsesTheLocalHostContext();
   testJoinedClientCanAdoptImmediateHostRoundResult();
   testRoundResultDoesNotTransportThePowerEngine();
+  testTableEventSurvivesCompactGradingAndResultHandoffs();
+  testDraftPreviewCannotQueueAheadOfAnswerSubmission();
+  testJoinedRoundResultBuildsFinalMatchHistory();
   testResultPresentationIsNotBlockedByPowerStateReconciliation();
   testLocalHostContextDoesNotDependOnStaleDirectoryHostIdentity();
   testRoundResultReadyRecoveryIsOutOfBand();
