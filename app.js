@@ -17938,8 +17938,8 @@ function syncProfileCardThemeDecoration(card, styleId) {
   }
   const layer = decoration || document.createElement("span");
   const icons = theme === "mutation"
-    ? ["assets/overlays/biohazard.svg"]
-    : ["assets/modifiers/skull.svg", "assets/modifiers/skull.svg"];
+    ? ["/assets/overlays/biohazard.svg"]
+    : ["/assets/modifiers/skull.svg", "/assets/modifiers/skull.svg"];
   layer.className = "profile-card-theme-decoration";
   layer.dataset.theme = theme;
   layer.setAttribute("aria-hidden", "true");

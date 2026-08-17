@@ -9425,7 +9425,7 @@ input:focus {
 .profile-card-theme-decoration {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
   border-radius: inherit;
   overflow: hidden;
@@ -9446,39 +9446,39 @@ input:focus {
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="mutation"] {
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .black-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="circuit-core"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="mutation"] .profile-card-theme-icon {
-  top: 0.55rem;
-  right: 0.7rem;
-  width: 5.8rem;
-  opacity: 0.28;
-  filter: brightness(0) saturate(100%) invert(90%) sepia(85%) saturate(947%) hue-rotate(28deg) brightness(103%) contrast(102%) drop-shadow(0 0 0.5rem rgba(183, 255, 42, 0.42));
+  top: 0.4rem;
+  right: 0.5rem;
+  width: 6.25rem;
+  opacity: 0.72;
+  filter: brightness(0) saturate(100%) invert(90%) sepia(85%) saturate(947%) hue-rotate(28deg) brightness(108%) contrast(108%) drop-shadow(0 0 0.35rem rgba(183, 255, 42, 0.95)) drop-shadow(0 0 0.9rem rgba(250, 204, 21, 0.6));
   animation: mutationHazardPulse 3200ms ease-in-out infinite;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] {
-  z-index: 1;
-  mix-blend-mode: screen;
+  z-index: 3;
+  mix-blend-mode: normal;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon {
-  width: 4.6rem;
-  opacity: 0.25;
-  filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(3146%) hue-rotate(331deg) brightness(103%) contrast(102%) drop-shadow(0 0 0.5rem rgba(255, 28, 76, 0.48));
+  width: 5rem;
+  opacity: 0.62;
+  filter: brightness(0) saturate(100%) invert(28%) sepia(100%) saturate(3146%) hue-rotate(331deg) brightness(108%) contrast(106%) drop-shadow(0 0 0.35rem rgba(255, 28, 76, 0.9)) drop-shadow(0 0 0.85rem rgba(255, 28, 76, 0.58));
   animation: doomSkullDrift 8200ms linear infinite;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="0"] {
-  top: 0.55rem;
-  right: 0.7rem;
+  top: 0.4rem;
+  right: 0.5rem;
 }
 
 :is(.white-card, .profile-card, .room-host-profile, .room-player-card, .join-room-card, .leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-style="doom"][data-card-custom="true"] > .profile-card-theme-decoration[data-theme="doom"] .profile-card-theme-icon[data-theme-icon-index="1"] {
-  bottom: 0.5rem;
-  left: 0.65rem;
-  filter: brightness(0) saturate(100%) invert(44%) sepia(81%) saturate(2659%) hue-rotate(241deg) brightness(96%) contrast(96%) drop-shadow(0 0 0.5rem rgba(168, 85, 247, 0.44));
+  bottom: 0.35rem;
+  left: 0.45rem;
+  filter: brightness(0) saturate(100%) invert(44%) sepia(81%) saturate(2659%) hue-rotate(241deg) brightness(105%) contrast(100%) drop-shadow(0 0 0.35rem rgba(168, 85, 247, 0.9)) drop-shadow(0 0 0.85rem rgba(168, 85, 247, 0.56));
   animation-direction: reverse;
 }
 
@@ -10225,12 +10225,12 @@ input:focus {
 @keyframes mutationHazardPulse {
   0%,
   100% {
-    opacity: 0.2;
+    opacity: 0.48;
     transform: scale(0.94) rotate(-4deg);
   }
 
   50% {
-    opacity: 0.36;
+    opacity: 0.76;
     transform: scale(1.03) rotate(3deg);
   }
 }
@@ -10270,12 +10270,12 @@ input:focus {
 @keyframes doomSkullDrift {
   0%,
   100% {
-    opacity: 0.18;
+    opacity: 0.44;
     transform: translate3d(0, 0, 0) rotate(-4deg);
   }
 
   50% {
-    opacity: 0.34;
+    opacity: 0.72;
     transform: translate3d(-0.3rem, 0.22rem, 0) rotate(5deg);
   }
 }
