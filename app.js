@@ -45857,44 +45857,16 @@ function isRoomPlayerListHostProfileVisible(target) {
 }
 
 function syncRoomPanelHeights() {
-  const roomScreenVisible = elements.roomScreen && !elements.roomScreen.classList.contains("hidden");
-  const settingsPanel = elements.roomScreen?.querySelector(".room-settings-panel");
   const previewPanel = elements.roomScreen?.querySelector(".room-preview");
   const playerList = elements.roomPlayerList;
-  if (playerList?.classList.contains("room-player-list-resizing")) {
-    return;
+  // Create Room's preview and chat are content-led sibling panels. Clear legacy
+  // sizing written by the former settings-height synchronizer on every render.
+  if (previewPanel) {
+    previewPanel.style.height = "";
   }
-  if (!roomScreenVisible || !settingsPanel || !previewPanel || !playerList) {
-    if (previewPanel) {
-      previewPanel.style.height = "";
-    }
-    if (playerList) {
-      playerList.style.maxHeight = "";
-    }
-    return;
+  if (playerList && !playerList.classList.contains("room-player-list-resizing")) {
+    playerList.style.maxHeight = "";
   }
-
-  previewPanel.style.height = "";
-  playerList.style.maxHeight = "";
-  const settingsRect = settingsPanel.getBoundingClientRect();
-  const previewRect = previewPanel.getBoundingClientRect();
-  const listRect = playerList.getBoundingClientRect();
-  const columnsAreSideBySide = Math.abs(settingsRect.top - previewRect.top) < 12
-    && previewRect.left > settingsRect.left
-    && previewRect.width > 0
-    && settingsRect.width > 0;
-  if (!columnsAreSideBySide) {
-    return;
-  }
-
-  const previewStyle = window.getComputedStyle(previewPanel);
-  const previewPaddingBottom = Number.parseFloat(previewStyle.paddingBottom) || 0;
-  const listMaxHeight = Math.floor(settingsRect.bottom - listRect.top - previewPaddingBottom - 2);
-  if (listMaxHeight < 140) {
-    return;
-  }
-  previewPanel.style.height = `${Math.round(settingsRect.height)}px`;
-  playerList.style.maxHeight = `${listMaxHeight}px`;
 }
 
 function scheduleRoomPanelHeightSync() {
