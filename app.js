@@ -44836,7 +44836,7 @@ function stopRoomPresenceMaintenance() {
 }
 
 function getKickableRoomBotTarget(owner = "", participantId = "") {
-  if (!isRoomMode() || !isCurrentHost()) {
+  if (!canModerateCurrentRoom()) {
     return null;
   }
 
