@@ -7,7 +7,10 @@ const {
   normalizeGradingStrictness,
   getLocalGradingThreshold,
   isAnswerCorrectByStrictness,
-  shouldAskAiForSecondOpinion
+  shouldAskAiForSecondOpinion,
+  normalizeSeedQuestion,
+  pickBotAnswersForSetup,
+  pickRoomBotAutoAnswer
 } = handleRequest._test;
 
 function assertAccepted(answer, acceptedAnswers, message) {
@@ -244,5 +247,83 @@ assert.equal(shouldAskAiForSecondOpinion("vinsnt", ["Vincent van Gogh"], strictN
 const strictTypoScore = scoreAnswerAgainstBank("Vincnt van Goh", ["Vincent van Gogh"]);
 assert.equal(shouldAskAiForSecondOpinion("Vincnt van Goh", ["Vincent van Gogh"], strictTypoScore, "strict"), true, "strict can review high-confidence spelling slips");
 assert.equal(shouldAskAiForSecondOpinion("Vincnt van Goh", ["Vincent van Gogh"], strictTypoScore, "exact"), false, "exact never asks AI to rescue answers");
+
+const localizedBotQuestion = normalizeSeedQuestion({
+  id: "zh-hans-test-bot-language",
+  type: "text",
+  theme: "Art and Music",
+  difficulty: "medium",
+  language: "zh-Hans",
+  question: "哪位荷兰画家创作了《星月夜》？",
+  canonicalAnswer: "文森特·梵高",
+  acceptedAnswers: ["文森特·梵高", "梵高", "Vincent van Gogh", "Van Gogh"],
+  botCards: ["伦勃朗", "约翰内斯·维米尔"]
+});
+assert.deepEqual(localizedBotQuestion.botCorrectPool, ["文森特·梵高", "梵高"], "Chinese bot pool removes English aliases when Chinese answers exist");
+for (let seed = 0; seed < 16; seed += 1) {
+  const botCards = pickBotAnswersForSetup(localizedBotQuestion, `bot-language-${seed}`);
+  assert.ok(botCards.every((answer) => !/[A-Za-z]{2,}/.test(answer)), "Chinese setup bot answers stay localized");
+  const autoAnswer = pickRoomBotAutoAnswer({
+    code: "ZH01",
+    game: {
+      matchId: "zh-language-match",
+      round: seed + 1,
+      setup: {
+        language: "zh-Hans",
+        blackCard: localizedBotQuestion.blackCard,
+        canonicalAnswer: localizedBotQuestion.canonicalAnswer,
+        acceptedAnswers: localizedBotQuestion.acceptedAnswers,
+        botCards
+      }
+    }
+  }, { id: `bot-${seed}` }, seed);
+  assert.ok(!/[A-Za-z]{2,}/.test(autoAnswer), "Chinese auto-submitted bot answers stay localized");
+}
+
+const englishAnswerChineseQuestion = normalizeSeedQuestion({
+  id: "zh-hans-test-bot-english-answer",
+  type: "text",
+  theme: "Internet Culture",
+  difficulty: "medium",
+  language: "zh-Hans",
+  question: "URL 中的 U 代表哪个英文单词？请用英文作答。",
+  canonicalAnswer: "uniform",
+  acceptedAnswers: ["uniform"],
+  botCards: ["universal", "user"]
+});
+assert.deepEqual(englishAnswerChineseQuestion.botCorrectPool, ["uniform"], "Chinese prompts that require English preserve their English bot answer pool");
+
+const englishOnlyChineseQuestion = normalizeSeedQuestion({
+  id: "zh-hans-test-bot-fallback",
+  type: "text",
+  theme: "Internet Culture",
+  difficulty: "medium",
+  language: "zh-Hans",
+  question: "这个网络地址的协议缩写是什么？",
+  canonicalAnswer: "HTTP",
+  acceptedAnswers: ["HTTP"],
+  botCards: ["FTP", "SMTP"]
+});
+assert.deepEqual(englishOnlyChineseQuestion.botCorrectPool, [], "Chinese prompts without an English-answer instruction do not retain English aliases for bots");
+assert.deepEqual(englishOnlyChineseQuestion.botCards, ["不确定", "不知道"], "Chinese prompts without localized bot answers use Chinese fallbacks");
+for (let seed = 0; seed < 8; seed += 1) {
+  const botCards = pickBotAnswersForSetup(englishOnlyChineseQuestion, `bot-fallback-${seed}`);
+  assert.ok(botCards.every((answer) => /[\u3400-\u9fff]/u.test(answer)), "Chinese setup fallback answers stay in Chinese");
+  const autoAnswer = pickRoomBotAutoAnswer({
+    code: "ZH02",
+    game: {
+      matchId: "zh-fallback-match",
+      round: seed + 1,
+      setup: {
+        language: "zh-Hans",
+        blackCard: englishOnlyChineseQuestion.blackCard,
+        canonicalAnswer: englishOnlyChineseQuestion.canonicalAnswer,
+        acceptedAnswers: englishOnlyChineseQuestion.acceptedAnswers,
+        botCards
+      }
+    }
+  }, { id: `fallback-bot-${seed}` }, seed);
+  assert.ok(/[\u3400-\u9fff]/u.test(autoAnswer), "Chinese auto-submit fallback answers stay in Chinese");
+}
 
 console.log("Answer grading tests passed.");

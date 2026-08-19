@@ -110,6 +110,8 @@ const gradingStrictnessOptions = ["forgiving", "normal", "strict", "exact"];
 const gradingStrictnessSet = new Set(gradingStrictnessOptions);
 const roundGradingModeOptions = ["mixed", "local", "force-ai"];
 const roundGradingModeSet = new Set(roundGradingModeOptions);
+const chineseCharacterPattern = /[\u3400-\u9fff]/u;
+const chineseEnglishAnswerInstructionPattern = /(?:请用英文(?:名称|名|单词|缩写)?作答|请用英语作答|请用符号作答|英文(?:名称|名|单词|缩写)|英语(?:名称|单词))/u;
 const lowSignalFillerAnswers = new Set([
   "idk",
   "i dont know",
@@ -395,7 +397,10 @@ handleRequest._test = {
   normalizeGradingStrictness,
   getLocalGradingThreshold,
   isAnswerCorrectByStrictness,
-  shouldAskAiForSecondOpinion
+  shouldAskAiForSecondOpinion,
+  normalizeSeedQuestion,
+  pickBotAnswersForSetup,
+  pickRoomBotAutoAnswer
 };
 
 module.exports = handleRequest;
@@ -5916,7 +5921,7 @@ function pickRoomBotAutoAnswer(room = {}, participant = {}, slot = 0) {
   const game = room.game && typeof room.game === "object" ? room.game : {};
   const setup = game.setup && typeof game.setup === "object" ? game.setup : {};
   const seed = `${game.matchId || room.code || "room"}-${game.round || 0}-${participant.id || slot}`;
-  const pool = uniqueAnswers([
+  const pool = getLanguageAppropriateBotAnswers(setup, [
     ...(Array.isArray(setup.botCards) ? setup.botCards : []),
     ...(Array.isArray(setup.botAnswerPool) ? setup.botAnswerPool : []),
     ...(Array.isArray(setup.botWrongPool) ? setup.botWrongPool : []),
@@ -5924,7 +5929,7 @@ function pickRoomBotAutoAnswer(room = {}, participant = {}, slot = 0) {
     setup.canonicalAnswer,
     ...(Array.isArray(setup.acceptedAnswers) ? setup.acceptedAnswers : [])
   ]);
-  return pickFromPool(pool, seed) || "Not sure";
+  return pickFromPool(pool, seed) || (normalizeQuestionLanguage(setup.language) === "zh-Hans" ? "不确定" : "Not sure");
 }
 
 function autoSubmitRoomBotsWhenOnlyBotsPending(room, options = {}) {
@@ -8113,14 +8118,18 @@ function normalizeSeedQuestion(question) {
   const botCards = questionStyle === "multiple-choice"
     ? multipleChoiceOptions.filter((answer) => normalizeQuestionText(answer) !== normalizeQuestionText(canonicalAnswer)).slice(0, 3)
     : rawBotCards;
-  const botCorrectPool = uniqueAnswers([canonicalAnswer, ...acceptedAnswers]);
-  const botWrongPool = uniqueAnswers(botCards).filter((answer) => {
+  const botCorrectPool = getLanguageAppropriateBotAnswers({ language, blackCard }, [
+    canonicalAnswer,
+    ...acceptedAnswers
+  ]);
+  const botWrongPool = getLanguageAppropriateBotAnswers({ language, blackCard }, uniqueAnswers(botCards).filter((answer) => {
     const accepted = [canonicalAnswer, ...acceptedAnswers].filter(Boolean);
     return !isAnswerCorrectByStrictness(answer, accepted, gradingStrictness);
-  });
+  }));
+  const fallbackBotCards = createFallbackBotCards(canonicalAnswer, language);
   const botAnswerPool = uniqueAnswers([
     ...botCorrectPool,
-    ...(botWrongPool.length ? botWrongPool : botCards)
+    ...(botWrongPool.length ? botWrongPool : fallbackBotCards)
   ]);
   const image = source.image && typeof source.image === "object" ? source.image : {};
 
@@ -8146,7 +8155,7 @@ function normalizeSeedQuestion(question) {
     acceptedAnswers: uniqueAnswers(acceptedAnswers).slice(0, 10),
     botCards: questionStyle === "multiple-choice"
       ? []
-      : botCards.length === 2 ? botCards : createFallbackBotCards(canonicalAnswer),
+      : botWrongPool.length === 2 ? botWrongPool : fallbackBotCards,
     multipleChoiceOptions: questionStyle === "multiple-choice" && multipleChoiceOptions.length === 4
       ? multipleChoiceOptions
       : [],
@@ -8154,14 +8163,16 @@ function normalizeSeedQuestion(question) {
       ? source.rejectedAnswers.map((answer) => String(answer).trim().slice(0, 120)).filter(Boolean).slice(0, 12)
       : [],
     botCorrectPool,
-    botWrongPool: botWrongPool.length ? botWrongPool : createFallbackBotCards(canonicalAnswer),
+    botWrongPool: botWrongPool.length ? botWrongPool : fallbackBotCards,
     botAnswerPool,
     source: "seed"
   };
 }
 
-function createFallbackBotCards(answer) {
-  const fallback = ["Unknown", "Not sure"];
+function createFallbackBotCards(answer, language = "en") {
+  const fallback = normalizeQuestionLanguage(language) === "zh-Hans"
+    ? ["不确定", "不知道"]
+    : ["Unknown", "Not sure"];
   return fallback.map((card) => card === answer ? "Maybe" : card);
 }
 
@@ -8186,6 +8197,30 @@ function uniqueAnswers(answers) {
       seen.add(key);
       return true;
     });
+}
+
+function questionRequestsEnglishAnswer(question = {}) {
+  const language = normalizeQuestionLanguage(question.language || question.questionLanguage);
+  if (language !== "zh-Hans") {
+    return false;
+  }
+  const prompt = String(question.blackCard || question.question || "");
+  return chineseEnglishAnswerInstructionPattern.test(prompt);
+}
+
+function isChineseBotAnswer(answer) {
+  const value = String(answer || "").trim();
+  return chineseCharacterPattern.test(value) || !/[A-Za-z]{2,}/.test(value);
+}
+
+function getLanguageAppropriateBotAnswers(question, answers) {
+  const pool = uniqueAnswers(answers);
+  if (normalizeQuestionLanguage(question?.language || question?.questionLanguage) !== "zh-Hans" || questionRequestsEnglishAnswer(question)) {
+    return pool;
+  }
+
+  const localized = pool.filter(isChineseBotAnswer);
+  return localized;
 }
 
 function getBotCorrectChance(difficulty) {
@@ -8213,17 +8248,16 @@ function pickBotAnswersForSetup(question, seed) {
   if (question.questionStyle === "multiple-choice") {
     return [];
   }
-  const correctPool = uniqueAnswers(
-    Array.isArray(question.botCorrectPool) && question.botCorrectPool.length
-      ? question.botCorrectPool
-      : [question.canonicalAnswer, ...(question.acceptedAnswers || [])]
-  );
-  const wrongPool = uniqueAnswers(
-    Array.isArray(question.botWrongPool) && question.botWrongPool.length
-      ? question.botWrongPool
-      : question.botCards || []
-  ).filter((answer) => !isAnswerCorrectByStrictness(answer, correctPool, question.gradingStrictness));
-  const anyPool = uniqueAnswers([
+  const sourceCorrectPool = Array.isArray(question.botCorrectPool) && question.botCorrectPool.length
+    ? question.botCorrectPool
+    : [question.canonicalAnswer, ...(question.acceptedAnswers || [])];
+  const sourceWrongPool = Array.isArray(question.botWrongPool) && question.botWrongPool.length
+    ? question.botWrongPool
+    : question.botCards || [];
+  const correctPool = getLanguageAppropriateBotAnswers(question, sourceCorrectPool);
+  const wrongPool = getLanguageAppropriateBotAnswers(question, sourceWrongPool)
+    .filter((answer) => !isAnswerCorrectByStrictness(answer, correctPool, question.gradingStrictness));
+  const anyPool = getLanguageAppropriateBotAnswers(question, [
     ...correctPool,
     ...wrongPool,
     ...(Array.isArray(question.botAnswerPool) ? question.botAnswerPool : [])
