@@ -4631,6 +4631,84 @@ async function testRoomUsesStoredHostQuestionLanguage() {
   assert.equal(stored.payload.room.game.setup.language, "zh-Hans");
 }
 
+async function testRoomMultilingualAnswersDefaultsAndPersists() {
+  const chineseCode = makeCode(8144);
+  const chineseRoom = makeRoom(chineseCode);
+  chineseRoom.settings.questionLanguage = "zh-Hans";
+  await upsertRoom(chineseRoom);
+
+  const storedChinese = await getRoom(chineseCode);
+  assert.equal(storedChinese.response.status, 200, storedChinese.payload.error);
+  assert.equal(storedChinese.payload.room.settings.multilingualAnswers, true, "non-English rooms default multilingual answers on");
+
+  const disabled = await roomSettingsCommand(chineseCode, {
+    hostParticipantId: "host-client",
+    status: "lobby",
+    settings: { multilingualAnswers: false }
+  });
+  assert.equal(disabled.response.status, 200, disabled.payload.error);
+  assert.equal(disabled.payload.settings.multilingualAnswers, false, "host settings update accepts multilingual toggle");
+  const settingsEvent = disabled.payload.events.find((event) => event.type === "settings_updated");
+  assert.equal(settingsEvent?.payload?.settings?.multilingualAnswers, false, "settings broadcast includes multilingual toggle");
+
+  const storedDisabled = await getRoom(chineseCode);
+  assert.equal(storedDisabled.response.status, 200, storedDisabled.payload.error);
+  assert.equal(storedDisabled.payload.room.settings.multilingualAnswers, false, "multilingual toggle persists on the room");
+
+  const englishCode = makeCode(8145);
+  await upsertRoom(makeRoom(englishCode));
+  const storedEnglish = await getRoom(englishCode);
+  assert.equal(storedEnglish.response.status, 200, storedEnglish.payload.error);
+  assert.equal(storedEnglish.payload.room.settings.multilingualAnswers, false, "English rooms default multilingual answers off");
+}
+
+async function testRoomGradingUsesAuthoritativeMultilingualQuestionContext() {
+  const code = makeCode(8146);
+  const room = makeRoom(code, {
+    status: "in-progress",
+    game: {
+      matchId: `${code}-match`,
+      status: "playing",
+      round: 1,
+      setup: {
+        id: "zh-hans-popculture-text-star-wars-planet",
+        type: "text",
+        questionStyle: "standard",
+        language: "zh-Hans",
+        translationKey: "popculture-text-star-wars-planet",
+        theme: "Pop Culture",
+        blackCard: "在《星球大战》中，卢克·天行者的故乡是哪颗沙漠行星？",
+        canonicalAnswer: "塔图因",
+        acceptedAnswers: ["塔图因", "塔图因星"],
+        rejectedAnswers: [],
+        gradingStrictness: "normal",
+        image: { url: "", alt: "", credit: "" }
+      },
+      answers: {}
+    }
+  });
+  room.settings.questionLanguage = "zh-Hans";
+  await upsertRoom(room);
+
+  const graded = await request("POST", "/api/round", {
+    mode: "room",
+    roomCode: code,
+    participantId: "host-client",
+    gradingMode: "local",
+    blackCard: "Client-supplied question should not be trusted.",
+    triviaTheme: "Wrong Theme",
+    canonicalAnswer: "wrong answer",
+    acceptedAnswers: ["wrong answer"],
+    gradingStrictness: "exact",
+    answerCards: [
+      { owner: "host-client", label: "Host", answer: "塔图因" },
+      { owner: "guest-client", label: "Guest", answer: "Tatooine" }
+    ]
+  }, adminHeaders());
+  assert.equal(graded.response.status, 200, graded.payload.error);
+  assert.deepEqual(graded.payload.correctIndexes, [0, 1], "room grading uses the stored Chinese setup and paired English counterpart instead of client grading fields");
+}
+
 async function testRoomStartMatchPreservesInitialPowerState() {
   const code = makeCode(8142);
   const matchId = `${code}-match`;
@@ -7565,6 +7643,8 @@ async function main() {
   await testRoomRoundSetupRecoversMissingPreparationState();
   await testRoomRoundSetupCannotSkipPreparedRound();
   await testRoomUsesStoredHostQuestionLanguage();
+  await testRoomMultilingualAnswersDefaultsAndPersists();
+  await testRoomGradingUsesAuthoritativeMultilingualQuestionContext();
   await testStaleRoomRoundAdvancingCannotOverwriteCurrentRound();
   await testDelayedRoomRoundAdvancingCannotClearStartedSetup();
   await testStaleRoomSetupCannotOverwriteGrading();

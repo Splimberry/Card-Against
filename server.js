@@ -111,7 +111,11 @@ const gradingStrictnessSet = new Set(gradingStrictnessOptions);
 const roundGradingModeOptions = ["mixed", "local", "force-ai"];
 const roundGradingModeSet = new Set(roundGradingModeOptions);
 const chineseCharacterPattern = /[\u3400-\u9fff]/u;
-const chineseEnglishAnswerInstructionPattern = /(?:请用英文(?:名称|名|单词|缩写)?作答|请用英语作答|请用符号作答|英文(?:名称|名|单词|缩写)|英语(?:名称|单词))/u;
+const answerLetterPattern = /\p{L}/u;
+const asciiLetterPattern = /[A-Za-z]/;
+const latinCharacterPattern = /\p{Script=Latin}/u;
+const nonChineseWritingPattern = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Arabic}\p{Script=Cyrillic}\p{Script=Devanagari}\p{Script=Greek}\p{Script=Thai}]/u;
+const chineseEnglishAnswerInstructionPattern = /(?:请用(?:英文|英语)(?:名称|名|单词|缩写|标题|全称|(?:单个)?字母|字符)?作答|请用(?:化学)?符号作答|(?:英文|英语)(?:名称|名|单词|缩写|标题|全称|(?:单个)?字母|字符)|化学符号)/u;
 const lowSignalFillerAnswers = new Set([
   "idk",
   "i dont know",
@@ -399,6 +403,16 @@ handleRequest._test = {
   isAnswerCorrectByStrictness,
   shouldAskAiForSecondOpinion,
   normalizeSeedQuestion,
+  normalizeLocalizedAcceptedAnswers,
+  normalizeRoomSettings,
+  getAnswerMarkingContext,
+  getAiMarkingContext,
+  createLocalRoundResult,
+  getAiSecondOpinionCandidates,
+  buildRoundPrompt,
+  buildRoundSecondOpinionPrompt,
+  validateRoundResult,
+  hydrateRoomRoundPayload,
   pickBotAnswersForSetup,
   pickRoomBotAutoAnswer
 };
@@ -2068,6 +2082,7 @@ function normalizeCreatedQuestion(body) {
   } else if (botCards.length !== 2) {
     throw new Error("Enter exactly two bot answers.");
   }
+  acceptedAnswers = normalizeLocalizedAcceptedAnswers({ language, blackCard: question }, acceptedAnswers);
 
   const created = {
     id,
@@ -6244,11 +6259,15 @@ function normalizeRoom(room) {
 function normalizeRoomSettings(settings = {}, code = "") {
   const source = settings && typeof settings === "object" ? settings : {};
   const classicMode = Boolean(source.classicMode);
+  const questionLanguage = normalizeQuestionLanguage(source.questionLanguage || source.language);
   return {
     rounds: clampServerNumber(source.rounds, 1, 10, 10),
     timerSeconds: clampServerNumber(source.timerSeconds, 10, 60, 30),
     maxPlayers: clampServerNumber(source.maxPlayers, 2, 10, 5),
-    questionLanguage: normalizeQuestionLanguage(source.questionLanguage || source.language),
+    questionLanguage,
+    multilingualAnswers: typeof source.multilingualAnswers === "boolean"
+      ? source.multilingualAnswers
+      : questionLanguage !== "en",
     harsh: classicMode ? false : Boolean(source.harsh),
     chaos: classicMode ? false : Boolean(source.chaos),
     timeMoney: classicMode ? false : Boolean(source.timeMoney),
@@ -6782,6 +6801,7 @@ function normalizeRoomRoundAward(awarded) {
 function normalizeRoomGameSettings(settings = {}) {
   const source = settings && typeof settings === "object" ? settings : {};
   const classicMode = Boolean(source.classicMode);
+  const questionLanguage = normalizeQuestionLanguage(source.questionLanguage || source.language);
   const enabledThemes = Array.isArray(source.enabledThemes)
     ? source.enabledThemes.map((theme) => String(theme).trim()).filter((theme) => triviaThemes.includes(theme)).slice(0, triviaThemes.length)
     : [];
@@ -6789,7 +6809,10 @@ function normalizeRoomGameSettings(settings = {}) {
     rounds: clampServerNumber(source.rounds, 1, 10, 10),
     timerSeconds: clampServerNumber(source.timerSeconds, 10, 60, 30),
     maxPlayers: clampServerNumber(source.maxPlayers, 2, 10, 5),
-    questionLanguage: normalizeQuestionLanguage(source.questionLanguage || source.language),
+    questionLanguage,
+    multilingualAnswers: typeof source.multilingualAnswers === "boolean"
+      ? source.multilingualAnswers
+      : questionLanguage !== "en",
     harsh: classicMode ? false : Boolean(source.harsh),
     chaos: classicMode ? false : Boolean(source.chaos),
     timeMoney: classicMode ? false : Boolean(source.timeMoney),
@@ -8094,9 +8117,10 @@ function normalizeSeedQuestion(question) {
     return null;
   }
 
-  const acceptedAnswers = Array.isArray(source.acceptedAnswers)
+  const rawAcceptedAnswers = Array.isArray(source.acceptedAnswers)
     ? source.acceptedAnswers.map((answer) => String(answer).trim().slice(0, 120)).filter(Boolean)
     : [];
+  const acceptedAnswers = normalizeLocalizedAcceptedAnswers({ language, blackCard }, rawAcceptedAnswers);
   const rawBotCards = questionStyle === "multiple-choice"
     ? normalizeAnswerList(source.botCards, 3)
     : normalizeBotCards(source.botCards);
@@ -8206,6 +8230,41 @@ function questionRequestsEnglishAnswer(question = {}) {
   }
   const prompt = String(question.blackCard || question.question || "");
   return chineseEnglishAnswerInstructionPattern.test(prompt);
+}
+
+function isNumericOrSymbolicAnswer(answer) {
+  const compact = String(answer || "").trim().replace(/\s+/g, "");
+  if (!compact) {
+    return false;
+  }
+  if (!answerLetterPattern.test(compact)) {
+    return /[\p{N}\p{S}]/u.test(compact);
+  }
+  const letters = compact.match(/[A-Za-z]/g) || [];
+  return /\p{N}/u.test(compact)
+    && /^[A-Za-z\p{N}+\-*/^().%]+$/u.test(compact)
+    && letters.length <= 3
+    && compact.length <= 8;
+}
+
+function isForeignLanguageAliasForQuestion(answer, question = {}) {
+  const language = normalizeQuestionLanguage(question.language || question.questionLanguage);
+  if (language === "en" || questionRequestsEnglishAnswer(question)) {
+    return false;
+  }
+  const value = String(answer || "").trim();
+  if (!value || isNumericOrSymbolicAnswer(value)) {
+    return false;
+  }
+  if (language === "zh-Hans") {
+    return asciiLetterPattern.test(value) && !chineseCharacterPattern.test(value);
+  }
+  return false;
+}
+
+function normalizeLocalizedAcceptedAnswers(question = {}, answers = []) {
+  const source = Array.isArray(answers) ? answers : [];
+  return uniqueAnswers(source).filter((answer) => !isForeignLanguageAliasForQuestion(answer, question));
 }
 
 function isChineseBotAnswer(answer) {
@@ -8422,6 +8481,9 @@ async function handleRound(req, res) {
       sendJson(res, roomAuth.status, { error: roomAuth.error });
       return;
     }
+    if (roomAuth.room) {
+      await hydrateRoomRoundPayload(payload, roomAuth.room);
+    }
     if (payload.gradingMode !== "mixed" && !hasAdminAuth(req)) {
       sendJson(res, 403, { error: "Admin authentication is required for grading debug modes." });
       return;
@@ -8589,6 +8651,8 @@ function normalizeRoundPayload(body) {
   const participantId = String(body.participantId || "").trim().slice(0, 80);
   const gradingStrictness = normalizeGradingStrictness(body.gradingStrictness);
   const gradingMode = normalizeRoundGradingMode(body.gradingMode || body.debugGradingMode);
+  const questionLanguage = normalizeQuestionLanguage(body.questionLanguage || body.language);
+  const translationKey = normalizeQuestionTranslationKey(body.translationKey, body.questionId || body.id);
 
   if (!blackCard) {
     throw new Error("Missing trivia question.");
@@ -8606,6 +8670,11 @@ function normalizeRoundPayload(body) {
     acceptedAnswers: acceptedAnswers.length ? acceptedAnswers : canonicalAnswer ? [canonicalAnswer] : [],
     rejectedAnswers,
     gradingStrictness,
+    questionLanguage,
+    roomQuestionLanguage: questionLanguage,
+    translationKey,
+    multilingualAnswers: false,
+    englishMarkingContext: null,
     image,
     mode,
     roomCode,
@@ -8632,7 +8701,7 @@ function getApiKey() {
 
 async function validateRoundRequestAuth(req, payload, body = {}) {
   if (payload.mode !== "room") {
-    return { ok: true };
+    return { ok: true, room: null };
   }
   if (!/^CAI-\d{4}$/.test(payload.roomCode)) {
     return { ok: false, status: 400, error: "Room grading needs a valid room code." };
@@ -8645,7 +8714,7 @@ async function validateRoundRequestAuth(req, payload, body = {}) {
     return { ok: false, status: 409, error: "Room is not in progress." };
   }
   if (hasRoomHostAuth(req, room, body)) {
-    return { ok: true };
+    return { ok: true, room };
   }
   if (!payload.participantId) {
     return { ok: false, status: 400, error: "Room grading needs a participant id." };
@@ -8653,7 +8722,170 @@ async function validateRoundRequestAuth(req, payload, body = {}) {
   if (!hasRoomParticipantAuth(req, room, payload.participantId, body)) {
     return { ok: false, status: 403, error: "Only room participants can grade this round." };
   }
-  return { ok: true };
+  return { ok: true, room };
+}
+
+function createRoundMarkingContext(source = {}, options = {}) {
+  const question = String(source.question || source.blackCard || "").trim().slice(0, 300);
+  const canonicalAnswer = String(source.canonicalAnswer || "").trim().slice(0, 120);
+  const acceptedAnswers = uniqueAnswers(
+    Array.isArray(source.acceptedAnswers)
+      ? source.acceptedAnswers.map((answer) => String(answer || "").trim().slice(0, 120)).filter(Boolean)
+      : []
+  ).slice(0, 16);
+  return {
+    source: String(options.source || "question-language"),
+    language: normalizeQuestionLanguage(source.language || source.questionLanguage),
+    theme: String(source.theme || source.triviaTheme || "Mixed Trivia").trim().slice(0, 80),
+    question,
+    canonicalAnswer,
+    acceptedAnswers,
+    rejectedAnswers: uniqueAnswers(
+      Array.isArray(source.rejectedAnswers)
+        ? source.rejectedAnswers.map((answer) => String(answer || "").trim().slice(0, 120)).filter(Boolean)
+        : []
+    ).slice(0, 12),
+    gradingStrictness: normalizeGradingStrictness(source.gradingStrictness),
+    image: normalizeQuestionImage(source.image)
+  };
+}
+
+function getNativeRoundMarkingContext(payload) {
+  return createRoundMarkingContext({
+    language: payload.questionLanguage,
+    theme: payload.triviaTheme,
+    question: payload.blackCard,
+    canonicalAnswer: payload.canonicalAnswer,
+    acceptedAnswers: payload.acceptedAnswers,
+    rejectedAnswers: payload.rejectedAnswers,
+    gradingStrictness: payload.gradingStrictness,
+    image: payload.image
+  });
+}
+
+function getMarkingContextAnswerBank(context = {}) {
+  return uniqueAnswers([context.canonicalAnswer, ...(context.acceptedAnswers || [])].filter(Boolean));
+}
+
+function isCrossLanguageAnswerForMarking(answer, context = {}) {
+  const value = String(answer || "").trim();
+  if (!value || !answerLetterPattern.test(value) || isNumericOrSymbolicAnswer(value)) {
+    return false;
+  }
+  const language = normalizeQuestionLanguage(context.language || context.questionLanguage);
+  if (language === "zh-Hans") {
+    return nonChineseWritingPattern.test(value) || !chineseCharacterPattern.test(value);
+  }
+  if (language === "en") {
+    return !latinCharacterPattern.test(value);
+  }
+  return true;
+}
+
+function getAnswerMarkingContext(payload, answer) {
+  const nativeContext = getNativeRoundMarkingContext(payload);
+  const crossLanguageAnswer = !questionRequestsEnglishAnswer(nativeContext)
+    && isCrossLanguageAnswerForMarking(answer, nativeContext);
+  const canUseEnglishCounterpart = payload.mode === "room"
+    && Boolean(payload.multilingualAnswers)
+    && nativeContext.language !== "en"
+    && payload.englishMarkingContext
+    && crossLanguageAnswer;
+  if (canUseEnglishCounterpart) {
+    return {
+      ...payload.englishMarkingContext,
+      source: "english-counterpart",
+      crossLanguageFallback: true,
+      chineseNativeAnswer: false
+    };
+  }
+  const nativeAnswerBank = getMarkingContextAnswerBank(nativeContext);
+  const nativeAnswerMatch = isAnswerCorrectByStrictness(answer, nativeAnswerBank, nativeContext.gradingStrictness);
+  return {
+    ...nativeContext,
+    crossLanguageFallback: false,
+    foreignLanguageAnswerRejected: payload.mode === "room"
+      && crossLanguageAnswer
+      && !nativeAnswerMatch
+      && (!payload.multilingualAnswers || (nativeContext.language !== "en" && !payload.englishMarkingContext)),
+    chineseNativeAnswer: payload.mode === "room"
+      && payload.roomQuestionLanguage === "zh-Hans"
+      && nativeContext.language === "zh-Hans"
+      && !questionRequestsEnglishAnswer(nativeContext)
+      && chineseCharacterPattern.test(String(answer || ""))
+  };
+}
+
+function getChineseAiMarkingCriteria() {
+  return [
+    "Treat Simplified and Traditional Chinese equivalents as the same intended answer.",
+    "Accept established Chinese names and terms, standard Chinese aliases, natural word-order variants, Chinese and Arabic number forms, and minor unambiguous typos.",
+    "Respect the supplied gradingStrictness. In particular, Exact accepts only an exact normalized listed answer; it does not rescue typos, partials, or semantic equivalents.",
+    "Reject broad categories, related but different entities, vague one-character answers, unclear phonetic guesses, and nonsense."
+  ];
+}
+
+function getAiMarkingContext(context = {}) {
+  const serialized = {
+    source: context.source || "question-language",
+    language: normalizeQuestionLanguage(context.language),
+    theme: context.theme || "Mixed Trivia",
+    question: context.question || "",
+    canonicalAnswer: context.canonicalAnswer || "",
+    acceptedAnswers: getMarkingContextAnswerBank(context),
+    rejectedAnswers: Array.isArray(context.rejectedAnswers) ? context.rejectedAnswers : [],
+    gradingStrictness: normalizeGradingStrictness(context.gradingStrictness),
+    image: normalizeQuestionImage(context.image)
+  };
+  if (context.chineseNativeAnswer) {
+    serialized.chineseAnswerCriteria = getChineseAiMarkingCriteria();
+  }
+  if (context.foreignLanguageAnswerRejected) {
+    serialized.rejectForeignLanguageAnswer = true;
+  }
+  return serialized;
+}
+
+async function hydrateRoomRoundPayload(payload, room) {
+  const setup = room?.game?.setup && typeof room.game.setup === "object" ? room.game.setup : null;
+  if (!setup) {
+    return payload;
+  }
+
+  payload.questionLanguage = normalizeQuestionLanguage(setup.language || room.settings?.questionLanguage);
+  payload.roomQuestionLanguage = normalizeQuestionLanguage(room.settings?.questionLanguage || setup.language);
+  payload.translationKey = normalizeQuestionTranslationKey(setup.translationKey, setup.id);
+  payload.multilingualAnswers = typeof room.settings?.multilingualAnswers === "boolean"
+    ? room.settings.multilingualAnswers
+    : payload.questionLanguage !== "en";
+  payload.blackCard = String(setup.blackCard || payload.blackCard || "").trim().slice(0, 300);
+  payload.triviaTheme = String(setup.theme || setup.triviaTheme || payload.triviaTheme || "Mixed Trivia").trim().slice(0, 80);
+  payload.canonicalAnswer = String(setup.canonicalAnswer || payload.canonicalAnswer || "").trim().slice(0, 120);
+  payload.acceptedAnswers = Array.isArray(setup.acceptedAnswers)
+    ? setup.acceptedAnswers.map((answer) => String(answer || "").trim().slice(0, 120)).filter(Boolean).slice(0, 16)
+    : payload.canonicalAnswer ? [payload.canonicalAnswer] : [];
+  payload.rejectedAnswers = Array.isArray(setup.rejectedAnswers)
+    ? setup.rejectedAnswers.map((answer) => String(answer || "").trim().slice(0, 120)).filter(Boolean).slice(0, 12)
+    : [];
+  payload.gradingStrictness = normalizeGradingStrictness(setup.gradingStrictness);
+  payload.image = normalizeQuestionImage(setup.image);
+  payload.englishMarkingContext = null;
+
+  if (!payload.multilingualAnswers || payload.questionLanguage === "en" || !payload.translationKey) {
+    return payload;
+  }
+
+  const questionStyle = setup.questionStyle === "multiple-choice" ? "multiple-choice" : "standard";
+  const runtimeQuestionBank = await getRuntimeQuestionBank();
+  const englishCounterpart = runtimeQuestionBank.find((question) => (
+    normalizeQuestionLanguage(question.language) === "en"
+    && normalizeQuestionTranslationKey(question.translationKey, question.id) === payload.translationKey
+    && (question.questionStyle || "standard") === questionStyle
+  ));
+  if (englishCounterpart) {
+    payload.englishMarkingContext = createRoundMarkingContext(englishCounterpart, { source: "english-counterpart" });
+  }
+  return payload;
 }
 
 function createAiRoundCacheKey(payload) {
@@ -8667,6 +8899,21 @@ function createAiRoundCacheKey(payload) {
     acceptedAnswers: payload.acceptedAnswers,
     rejectedAnswers: payload.rejectedAnswers,
     gradingStrictness: payload.gradingStrictness,
+    questionLanguage: payload.questionLanguage,
+    roomQuestionLanguage: payload.roomQuestionLanguage,
+    translationKey: payload.translationKey,
+    multilingualAnswers: Boolean(payload.multilingualAnswers),
+    englishMarkingContext: payload.englishMarkingContext
+      ? {
+        language: payload.englishMarkingContext.language,
+        question: payload.englishMarkingContext.question,
+        canonicalAnswer: payload.englishMarkingContext.canonicalAnswer,
+        acceptedAnswers: payload.englishMarkingContext.acceptedAnswers,
+        rejectedAnswers: payload.englishMarkingContext.rejectedAnswers,
+        gradingStrictness: payload.englishMarkingContext.gradingStrictness,
+        imageUrl: payload.englishMarkingContext.image?.url || ""
+      }
+      : null,
     imageUrl: payload.image?.url || "",
     answer: payload.answer,
     opponentAnswer: payload.opponentAnswer,
@@ -8681,7 +8928,9 @@ function createAiRoundCacheKey(payload) {
       }))
       .sort((a, b) => `${a.owner}:${a.label}`.localeCompare(`${b.owner}:${b.label}`))
   };
-  return Buffer.from(JSON.stringify(stablePayload)).toString("base64url").slice(0, 512);
+  return createHmac("sha256", "cards-against-ai-round-cache")
+    .update(JSON.stringify(stablePayload))
+    .digest("base64url");
 }
 
 function getAiRoundCache(key) {
@@ -8755,25 +9004,11 @@ function getApiStyle() {
   return getBaseUrl().includes("api.openai.com") ? "responses" : "chat";
 }
 
-function getGradingStrictnessInstruction(strictness) {
-  switch (normalizeGradingStrictness(strictness)) {
-    case "forgiving":
-      return "Strictness is forgiving: count clear intent, common shorthand, phonetic spelling, and distinctive partial answers when the answer clearly points to the canonical answer.";
-    case "strict":
-      return "Strictness is strict: accept only specific, unambiguous answers. Minor spelling slips are fine, but vague partials and guesses that could mean something else should stay incorrect.";
-    case "exact":
-      return "Strictness is exact: accept only an exact normalized match to canonicalAnswer or one of acceptedAnswers. Do not rescue typos, partials, aliases, acronyms, or semantic equivalents unless they are explicitly listed.";
-    case "normal":
-    default:
-      return "Strictness is normal: accept clear aliases, abbreviations, distinctive partial answers, and small spelling mistakes when the intended answer is obvious.";
-  }
-}
-
 function buildRoundPrompt(payload) {
   const isLocal = payload.mode === "local";
   const isRoom = payload.mode === "room";
   const botLabels = Array.isArray(payload.botLabels) ? payload.botLabels.map((label) => String(label || "").trim()).filter(Boolean) : [];
-  const submittedAnswers = isRoom
+  const answerEntries = isRoom
     ? payload.answerCards.map((card, index) => ({ index, label: card.label || `Player ${index + 1}`, answer: card.answer }))
     : isLocal
     ? [
@@ -8784,6 +9019,10 @@ function buildRoundPrompt(payload) {
       { index: 0, label: "Player", answer: payload.answer },
       ...payload.botCards.map((answer, index) => ({ index: index + 1, label: botLabels[index] || `Bot ${index + 1}`, answer }))
     ];
+  const submittedAnswers = answerEntries.map((entry) => ({
+    ...entry,
+    markingContext: getAiMarkingContext(getAnswerMarkingContext(payload, entry.answer))
+  }));
   const isPlayerBehind =
     !isLocal &&
     !isRoom &&
@@ -8794,7 +9033,6 @@ function buildRoundPrompt(payload) {
     !isRoom &&
     (payload.matchContext.opponentScore - payload.matchContext.playerScore >= 2000 ||
       payload.matchContext.opponentWins - payload.matchContext.playerWins >= 2);
-  const providedAnswers = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
   return JSON.stringify({
     task: isRoom
       ? "Grade every multiplayer room participant's short trivia answer exactly as typed."
@@ -8811,8 +9049,15 @@ function buildRoundPrompt(payload) {
     rules: [
       "Return only valid JSON. Do not wrap the JSON in markdown.",
       "Use submittedAnswers as the source of truth for every player/bot response. These answers are present and must be graded.",
-      "Grade answers against the question and the intended meaning of canonicalAnswer. Treat acceptedAnswers as optional examples, not as the complete list of all valid answers.",
-      getGradingStrictnessInstruction(payload.gradingStrictness),
+      "Each submitted answer has its own markingContext. Grade it only against that context's question, intended answer, acceptedAnswers, rejectedAnswers, and gradingStrictness; never borrow an answer list from another submitted answer.",
+      "Treat each context's canonicalAnswer and acceptedAnswers as examples of the intended answer, not as a complete list of every valid wording.",
+      "Respect each markingContext.gradingStrictness. Exact allows only an exact normalized listed answer; strict requires a specific unambiguous answer; normal accepts clear aliases and small mistakes; forgiving accepts clear intent and common shorthand.",
+      ...(submittedAnswers.some((entry) => entry.markingContext.chineseAnswerCriteria)
+        ? ["Apply chineseAnswerCriteria only to the submitted answer whose markingContext provides it."]
+        : []),
+      ...(submittedAnswers.some((entry) => entry.markingContext.rejectForeignLanguageAnswer)
+        ? ["Reject any submitted answer whose markingContext has rejectForeignLanguageAnswer set. Multilingual answers are unavailable for that answer, so translation and alias rules do not override this instruction."]
+        : []),
       "Blank or empty answers are always incorrect and must never appear in correctIndexes.",
       "Use general trivia knowledge to accept semantically equivalent answers even when they are not listed in acceptedAnswers.",
       "Accept common aliases, nicknames, abbreviations, acronyms, translations, alternate spellings, swapped word order, missing accents, and minor spelling mistakes when the intended answer is clearly correct.",
@@ -8860,14 +9105,7 @@ function buildRoundPrompt(payload) {
     },
     submittedAnswers,
     providedBotCards: payload.botCards,
-    trivia: {
-      theme: payload.triviaTheme,
-      question: payload.blackCard,
-      canonicalAnswer: payload.canonicalAnswer,
-      acceptedAnswers: providedAnswers,
-      gradingStrictness: normalizeGradingStrictness(payload.gradingStrictness),
-      image: payload.image
-    },
+    trivia: getAiMarkingContext(getNativeRoundMarkingContext(payload)),
     matchContext: payload.matchContext
   });
 }
@@ -9031,11 +9269,17 @@ function buildRoundSecondOpinionPrompt(payload, candidates = []) {
     rules: [
       "Return only valid JSON. Do not wrap the JSON in markdown.",
       "Only evaluate candidateAnswers. Do not include any index that is not listed in candidateAnswers.",
-      "Grade each candidate directly against the trivia question and the intended meaning of canonicalAnswer. Do not rely only on string similarity to canonicalAnswer or acceptedAnswers.",
-      "Treat canonicalAnswer and acceptedAnswers as examples of the intended answer, not a complete list of every valid wording.",
+      "Each candidate includes its own markingContext. Grade it only against that context; do not borrow an answer list or strictness from another candidate.",
+      "Treat each context's canonicalAnswer and acceptedAnswers as examples of the intended answer, not a complete list of every valid wording.",
       "Use the same acceptance standard as the full AI grader. If this answer would be accepted by a direct AI grading pass, include its index here.",
       "Do not be stricter just because the local preset grader rejected the answer. Your job is to correct local misses, not to defend them.",
-      getGradingStrictnessInstruction(payload.gradingStrictness),
+      "Respect each markingContext.gradingStrictness, including Exact's requirement for an exact normalized listed answer.",
+      ...(candidates.some((candidate) => candidate.markingContext?.chineseNativeAnswer)
+        ? ["Apply chineseAnswerCriteria only when it is present in that candidate's markingContext."]
+        : []),
+      ...(candidates.some((candidate) => candidate.markingContext?.foreignLanguageAnswerRejected)
+        ? ["Reject a candidate whose markingContext has rejectForeignLanguageAnswer set. Multilingual answers are unavailable for that answer."]
+        : []),
       "Accept an answer only when it clearly identifies the canonical answer despite misspelling, missing accents, phonetic spelling, abbreviation, alias, swapped word order, translation, or a distinctive partial answer.",
       "Be generous with broken spacing, extra articles, small filler words, typo-like splits or merges, and phonetic multi-word attempts when the intended answer is obvious from the question.",
       "If the stored answer is only part of a name or concept, accept a different identifying part, fuller name, common surname, title, alias, or equivalent phrase when the question context makes it clearly the same answer.",
@@ -9045,19 +9289,13 @@ function buildRoundSecondOpinionPrompt(payload, candidates = []) {
       "If a meaningful answer points clearly to the right thing, accept it. Leave it out only when it could reasonably be a different answer or does not identify the answer.",
       "Do not include explanations, commentary, or rewritten answers."
     ],
-    trivia: {
-      theme: payload.triviaTheme,
-      question: payload.blackCard,
-      canonicalAnswer: payload.canonicalAnswer,
-      acceptedAnswers: [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean),
-      gradingStrictness: normalizeGradingStrictness(payload.gradingStrictness),
-      image: payload.image
-    },
+    trivia: getAiMarkingContext(getNativeRoundMarkingContext(payload)),
     candidateAnswers: candidates.map((candidate) => ({
       index: candidate.index,
       label: candidate.label,
       answer: candidate.answer,
-      localScore: Math.round(candidate.score * 100) / 100
+      localScore: Math.round(candidate.score * 100) / 100,
+      markingContext: getAiMarkingContext(candidate.markingContext || getAnswerMarkingContext(payload, candidate.answer))
     }))
   });
 }
@@ -9207,13 +9445,21 @@ function createLocalRoundResult(payload) {
     : payload.mode === "local"
     ? [payload.answer, payload.opponentAnswer]
     : [payload.answer, ...normalizeBotCards(payload.botCards, expectedCards - 1)];
-  const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
-  const rejectedAnswers = Array.isArray(payload.rejectedAnswers) ? payload.rejectedAnswers : [];
   const correctIndexes = cards
-    .map((card, index) => ({ index, score: scoreAnswerAgainstBank(card, answerBank) }))
+    .slice(0, expectedCards)
+    .map((card, index) => {
+      const markingContext = getAnswerMarkingContext(payload, card);
+      const answerBank = getMarkingContextAnswerBank(markingContext);
+      return {
+        index,
+        score: scoreAnswerAgainstBank(card, answerBank),
+        answerBank,
+        markingContext
+      };
+    })
     .filter((entry) => (
-      !isExplicitlyRejectedAnswer(cards[entry.index], rejectedAnswers)
-      && isAnswerCorrectByStrictness(cards[entry.index], answerBank, payload.gradingStrictness)
+      !isExplicitlyRejectedAnswer(cards[entry.index], entry.markingContext.rejectedAnswers)
+      && isAnswerCorrectByStrictness(cards[entry.index], entry.answerBank, entry.markingContext.gradingStrictness)
     ))
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.index)
@@ -9267,25 +9513,31 @@ function isExplicitlyRejectedAnswer(answer, rejectedAnswers = []) {
 }
 
 function getAiSecondOpinionCandidates(payload, localResult) {
-  const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
-  if (!answerBank.length || !Array.isArray(localResult.cards)) {
+  if (!Array.isArray(localResult.cards)) {
     return [];
   }
   const alreadyCorrect = new Set(localResult.correctIndexes || []);
-  const rejectedAnswers = Array.isArray(payload.rejectedAnswers) ? payload.rejectedAnswers : [];
   return getRoundAnswerEntries(payload, localResult.cards)
-    .map((entry) => ({
-      ...entry,
-      score: scoreAnswerAgainstBank(entry.answer, answerBank)
-    }))
+    .map((entry) => {
+      const markingContext = getAnswerMarkingContext(payload, entry.answer);
+      const answerBank = getMarkingContextAnswerBank(markingContext);
+      return {
+        ...entry,
+        markingContext,
+        answerBank,
+        score: scoreAnswerAgainstBank(entry.answer, answerBank)
+      };
+    })
     .filter((entry) => (
-      !entry.bot
+      entry.answerBank.length
+      && !entry.bot
+      && !entry.markingContext.foreignLanguageAnswerRejected
       && !alreadyCorrect.has(entry.index)
-      && !isExplicitlyRejectedAnswer(entry.answer, rejectedAnswers)
-      && shouldAskAiForSecondOpinion(entry.answer, answerBank, entry.score, payload.gradingStrictness, {
-        question: payload.blackCard,
-        theme: payload.triviaTheme,
-        image: payload.image,
+      && !isExplicitlyRejectedAnswer(entry.answer, entry.markingContext.rejectedAnswers)
+      && shouldAskAiForSecondOpinion(entry.answer, entry.answerBank, entry.score, entry.markingContext.gradingStrictness, {
+        question: entry.markingContext.question,
+        theme: entry.markingContext.theme,
+        image: entry.markingContext.image,
         mode: payload.mode
       })
     ))
@@ -9293,7 +9545,6 @@ function getAiSecondOpinionCandidates(payload, localResult) {
 }
 
 function createAiSecondOpinionShieldResult(payload, localResult, options = {}) {
-  const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
   const entries = getRoundAnswerEntries(payload, localResult.cards);
   const targetIndex = clampServerNumber(options.targetIndex, 0, Math.max(entries.length - 1, 0), 0);
   const baseEntry = entries[targetIndex] || {
@@ -9306,10 +9557,12 @@ function createAiSecondOpinionShieldResult(payload, localResult, options = {}) {
     ...baseEntry,
     bot: Boolean(options.treatAsBot || baseEntry.bot)
   };
+  const markingContext = getAnswerMarkingContext(payload, entry.answer);
+  const answerBank = getMarkingContextAnswerBank(markingContext);
   const localScore = scoreAnswerAgainstBank(entry.answer, answerBank);
-  const localThreshold = getLocalGradingThreshold(payload.gradingStrictness);
+  const localThreshold = getLocalGradingThreshold(markingContext.gradingStrictness);
   const alreadyCorrect = Array.isArray(localResult.correctIndexes) && localResult.correctIndexes.includes(entry.index);
-  const explicitlyRejected = isExplicitlyRejectedAnswer(entry.answer, payload.rejectedAnswers);
+  const explicitlyRejected = isExplicitlyRejectedAnswer(entry.answer, markingContext.rejectedAnswers);
   let decision = null;
 
   if (!answerBank.length) {
@@ -9337,10 +9590,10 @@ function createAiSecondOpinionShieldResult(payload, localResult, options = {}) {
       reason: "This matches a saved rejected answer, so the AI shield blocks review."
     };
   } else {
-    decision = getAiSecondOpinionShieldDecision(entry.answer, answerBank, localScore, payload.gradingStrictness, {
-      question: payload.blackCard,
-      theme: payload.triviaTheme,
-      image: payload.image,
+    decision = getAiSecondOpinionShieldDecision(entry.answer, answerBank, localScore, markingContext.gradingStrictness, {
+      question: markingContext.question,
+      theme: markingContext.theme,
+      image: markingContext.image,
       mode: payload.mode
     });
   }
@@ -9351,13 +9604,14 @@ function createAiSecondOpinionShieldResult(payload, localResult, options = {}) {
     answerIndex: entry.index,
     label: entry.label,
     normalizedAnswer: normalizeTriviaAnswer(entry.answer),
-    strictness: normalizeGradingStrictness(payload.gradingStrictness),
+    strictness: normalizeGradingStrictness(markingContext.gradingStrictness),
     localScore: Number(localScore.toFixed(4)),
     localThreshold,
     localCorrect: alreadyCorrect,
     explicitlyRejected,
     treatAsBot: entry.bot,
     answerBank,
+    markingContext: getAiMarkingContext(markingContext),
     aiConfigured: Boolean(getApiKey()),
     wouldAskAi: Boolean(decision.askAi),
     shield: decision.askAi ? "allows-ai-review" : "blocks-ai-review",
@@ -9494,6 +9748,10 @@ function hasContextualAnswerReviewSignal(normalizedAnswer, context = {}, strictn
   if (!question || question.length < 8) {
     return false;
   }
+  const chineseCharacterCount = (normalizedAnswer.match(/[\u3400-\u9fff]/gu) || []).length;
+  if (chineseCharacterCount) {
+    return chineseCharacterCount >= (normalizeGradingStrictness(strictness) === "strict" ? 3 : 2);
+  }
   const words = normalizedAnswer.split(" ").filter(Boolean);
   if (!words.length || words.length > 8) {
     return false;
@@ -9542,22 +9800,24 @@ function hasUsefulAnswerSignal(normalizedAnswer) {
 }
 
 function getLowSignalAnswerReason(normalizedAnswer) {
-  if (!normalizedAnswer || normalizedAnswer.length < 3 || normalizedAnswer.length > 80) {
+  const chineseCharacterCount = (String(normalizedAnswer || "").match(/[\u3400-\u9fff]/gu) || []).length;
+  const minimumLength = chineseCharacterCount ? 2 : 3;
+  if (!normalizedAnswer || normalizedAnswer.length < minimumLength || normalizedAnswer.length > 80) {
     return {
-      reasonCode: !normalizedAnswer ? "blank-answer" : normalizedAnswer.length < 3 ? "too-short" : "too-long",
+      reasonCode: !normalizedAnswer ? "blank-answer" : normalizedAnswer.length < minimumLength ? "too-short" : "too-long",
       reason: !normalizedAnswer
         ? "Blank answers never use AI."
-        : normalizedAnswer.length < 3
+        : normalizedAnswer.length < minimumLength
           ? "This answer is too short for AI review."
           : "This answer is too long for the short-answer AI review path."
     };
   }
   const compact = normalizedAnswer.replace(/\s+/g, "");
   const nonsenseReason = getLikelyLowSignalNonsenseReason(normalizedAnswer);
-  if (compact.length < 3 || /(.)\1{3,}/.test(compact) || nonsenseReason) {
+  if (compact.length < minimumLength || /(.)\1{3,}/.test(compact) || nonsenseReason) {
     return {
-      reasonCode: compact.length < 3 ? "too-short" : /(.)\1{3,}/.test(compact) ? "repeated-junk" : nonsenseReason.reasonCode,
-      reason: compact.length < 3
+      reasonCode: compact.length < minimumLength ? "too-short" : /(.)\1{3,}/.test(compact) ? "repeated-junk" : nonsenseReason.reasonCode,
+      reason: compact.length < minimumLength
         ? "This answer is too short for AI review."
         : /(.)\1{3,}/.test(compact)
           ? "This looks like repeated junk, so the AI shield blocks review."
@@ -9577,7 +9837,7 @@ function getLowSignalAnswerReason(normalizedAnswer) {
       reason: "This does not look like a meaningful written answer, so the AI shield blocks review."
     };
   }
-  if (!/[a-z0-9]/.test(compact)) {
+  if (!/[\p{L}\p{N}]/u.test(compact)) {
     return {
       reasonCode: "no-answer-signal",
       reason: "This does not contain useful answer text for AI review."
@@ -10188,14 +10448,25 @@ function validateRoundResult(result, payload) {
   const modelCorrectIndexes = Array.isArray(result.correctIndexes)
     ? [...new Set(result.correctIndexes.map(Number).filter((index) => Number.isInteger(index) && index >= 0 && index < expectedCards && String(cards[index] || "").trim()))]
     : [];
-  const answerBank = [payload.canonicalAnswer, ...payload.acceptedAnswers].filter(Boolean);
   const localCorrectIndexes = cards
-    .map((card, index) => ({ index, score: scoreAnswerAgainstBank(card, answerBank) }))
-    .filter((entry) => isAnswerCorrectByStrictness(cards[entry.index], answerBank, payload.gradingStrictness))
+    .map((card, index) => {
+      const markingContext = getAnswerMarkingContext(payload, card);
+      const answerBank = getMarkingContextAnswerBank(markingContext);
+      return { index, answerBank, markingContext };
+    })
+    .filter((entry) => (
+      !isExplicitlyRejectedAnswer(cards[entry.index], entry.markingContext.rejectedAnswers)
+      && isAnswerCorrectByStrictness(cards[entry.index], entry.answerBank, entry.markingContext.gradingStrictness)
+    ))
     .map((entry) => entry.index);
-  const safeModelCorrectIndexes = normalizeGradingStrictness(payload.gradingStrictness) === "exact"
-    ? modelCorrectIndexes.filter((index) => localCorrectIndexes.includes(index))
-    : modelCorrectIndexes;
+  const safeModelCorrectIndexes = modelCorrectIndexes.filter((index) => {
+    const markingContext = getAnswerMarkingContext(payload, cards[index]);
+    return !markingContext.foreignLanguageAnswerRejected
+      && (
+        normalizeGradingStrictness(markingContext.gradingStrictness) !== "exact"
+        || localCorrectIndexes.includes(index)
+      );
+  });
   const correctIndexes = [...new Set([...safeModelCorrectIndexes, ...localCorrectIndexes])];
   const fallbackWinnerIndex = correctIndexes[0] ?? 0;
   const safeWinnerIndex = correctIndexes.length

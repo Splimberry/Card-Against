@@ -3584,6 +3584,7 @@ const state = {
     classicMode: false,
     randomModifiers: false,
     autoAdvance: true,
+    multilingualAnswers: getCurrentQuestionLanguage() !== "en",
     enabledThemes: savedEnabledThemes.length ? [...savedEnabledThemes] : [...triviaThemes],
     private: false,
     password: "",
@@ -4406,6 +4407,7 @@ const elements = {
   randomModeToggle: document.querySelector("#randomModeToggle"),
   classicModeToggle: document.querySelector("#classicModeToggle"),
   autoAdvanceToggle: document.querySelector("#autoAdvanceToggle"),
+  multilingualAnswersToggle: document.querySelector("#multilingualAnswersToggle"),
   privateRoomToggle: document.querySelector("#privateRoomToggle"),
   roomPasswordRow: document.querySelector("#roomPasswordRow"),
   roomPasswordInput: document.querySelector("#roomPasswordInput"),
@@ -19625,11 +19627,15 @@ function getRoomMatchSettingsPayload(settings = state.roomSettings) {
   const source = settings && typeof settings === "object" ? settings : {};
   const enabledThemes = normalizeCachedThemes(source.enabledThemes);
   const classicMode = Boolean(source.classicMode);
+  const questionLanguage = getRoomQuestionLanguage(source);
   return {
     rounds: clampNumber(source.rounds, 1, 10, 10),
     timerSeconds: clampNumber(source.timerSeconds, 10, 60, 30),
     maxPlayers: clampNumber(source.maxPlayers, 2, 10, 5),
-    questionLanguage: getRoomQuestionLanguage(source),
+    questionLanguage,
+    multilingualAnswers: typeof source.multilingualAnswers === "boolean"
+      ? source.multilingualAnswers
+      : questionLanguage !== "en",
     harsh: classicMode ? false : Boolean(source.harsh),
     chaos: classicMode ? false : Boolean(source.chaos),
     timeMoney: classicMode ? false : Boolean(source.timeMoney),
@@ -41938,11 +41944,13 @@ function syncRoomInviteButtons() {
 
 function getDefaultRoomSettings(code = "CAI-0000") {
   const cachedThemes = normalizeCachedThemes(state.enabledThemes);
+  const questionLanguage = getCurrentQuestionLanguage();
   return {
     rounds: 10,
     timerSeconds: 30,
     maxPlayers: 5,
-    questionLanguage: getCurrentQuestionLanguage(),
+    questionLanguage,
+    multilingualAnswers: questionLanguage !== "en",
     harsh: false,
     chaos: false,
     timeMoney: false,
@@ -41979,6 +41987,7 @@ function syncRoomControls() {
   elements.randomModeToggle.checked = Boolean(state.roomSettings.randomModifiers);
   elements.classicModeToggle.checked = state.roomSettings.classicMode;
   elements.autoAdvanceToggle.checked = state.roomSettings.autoAdvance !== false;
+  elements.multilingualAnswersToggle.checked = Boolean(state.roomSettings.multilingualAnswers);
   elements.privateRoomToggle.checked = state.roomSettings.private;
   syncClassicRoomToggleState();
   elements.roomPasswordInput.value = state.roomSettings.password || "";
@@ -42692,6 +42701,7 @@ function applyRoomVariantControlsToSettings(options = {}) {
   state.roomSettings.classicMode = elements.classicModeToggle.checked;
   state.roomSettings.randomModifiers = elements.randomModeToggle.checked;
   state.roomSettings.autoAdvance = elements.autoAdvanceToggle.checked;
+  state.roomSettings.multilingualAnswers = elements.multilingualAnswersToggle.checked;
   state.roomSettings.private = elements.privateRoomToggle.checked;
   state.roomSettings.password = cleanChatInput(elements.roomPasswordInput.value);
   setCollapsed(elements.roomPasswordRow, !state.roomSettings.private);
@@ -50854,6 +50864,7 @@ elements.mutationModeToggle.addEventListener("change", handleRoomMutationModeTog
 elements.randomModeToggle.addEventListener("change", updateRoomVariants);
 elements.classicModeToggle.addEventListener("change", handleClassicModeToggle);
 elements.autoAdvanceToggle.addEventListener("change", updateRoomVariants);
+elements.multilingualAnswersToggle.addEventListener("change", updateRoomVariants);
 elements.privateRoomToggle.addEventListener("change", updateRoomVariants);
 elements.roomPasswordInput.addEventListener("input", updateRoomVariants);
 function handleModerationClick(event) {

@@ -42494,8 +42494,7 @@
     "canonicalAnswer": "塔图因",
     "acceptedAnswers": [
       "塔图因",
-      "塔图因星",
-      "Tatooine"
+      "塔图因星"
     ],
     "botCards": [
       "贾库",
@@ -42536,8 +42535,7 @@
     "canonicalAnswer": "萨莎·菲尔斯",
     "acceptedAnswers": [
       "萨莎·菲尔斯",
-      "萨沙·菲尔斯",
-      "Sasha Fierce"
+      "萨沙·菲尔斯"
     ],
     "botCards": [
       "央丝",
@@ -42557,8 +42555,7 @@
     "canonicalAnswer": "吉卜力工作室",
     "acceptedAnswers": [
       "吉卜力工作室",
-      "吉卜力",
-      "Studio Ghibli"
+      "吉卜力"
     ],
     "botCards": [
       "东映动画",
@@ -42578,8 +42575,7 @@
     "canonicalAnswer": "拉里·戴维",
     "acceptedAnswers": [
       "拉里·戴维",
-      "拉里戴维",
-      "Larry David"
+      "拉里戴维"
     ],
     "botCards": [
       "杰森·亚历山大",
@@ -42600,9 +42596,7 @@
     "acceptedAnswers": [
       "C·S·刘易斯",
       "C.S.刘易斯",
-      "CS刘易斯",
-      "C. S. Lewis",
-      "Clive Staples Lewis"
+      "CS刘易斯"
     ],
     "botCards": [
       "J·R·R·托尔金",
@@ -42622,8 +42616,7 @@
     "canonicalAnswer": "罗伊",
     "acceptedAnswers": [
       "罗伊",
-      "罗伊家族",
-      "Roy"
+      "罗伊家族"
     ],
     "botCards": [
       "皮尔斯",
@@ -42643,8 +42636,7 @@
     "canonicalAnswer": "塞缪尔·贝克特",
     "acceptedAnswers": [
       "塞缪尔·贝克特",
-      "贝克特",
-      "Samuel Beckett"
+      "贝克特"
     ],
     "botCards": [
       "哈罗德·品特",
@@ -42663,8 +42655,7 @@
     "question": "电影《公民凯恩》中，童年雪橇上写着哪个词？",
     "canonicalAnswer": "玫瑰花蕾",
     "acceptedAnswers": [
-      "玫瑰花蕾",
-      "Rosebud"
+      "玫瑰花蕾"
     ],
     "botCards": [
       "世外桃源",
@@ -42683,8 +42674,7 @@
     "question": "哪部政治剧是 Netflix 首部以整季形式上线的重要原创剧情剧集？",
     "canonicalAnswer": "纸牌屋",
     "acceptedAnswers": [
-      "纸牌屋",
-      "House of Cards"
+      "纸牌屋"
     ],
     "botCards": [
       "女子监狱",
@@ -42702,8 +42692,7 @@
     "question": "通常拯救塞尔达公主、身穿绿衣的英雄叫什么名字？",
     "canonicalAnswer": "林克",
     "acceptedAnswers": [
-      "林克",
-      "Link"
+      "林克"
     ],
     "botCards": [
       "加农多夫",
@@ -42721,7 +42710,6 @@
     "question": "《我的世界》原始创作者马库斯·佩尔松使用的网络别名是什么？",
     "canonicalAnswer": "Notch",
     "acceptedAnswers": [
-      "Notch",
       "诺奇"
     ],
     "botCards": [
@@ -42740,9 +42728,7 @@
     "question": "哪家游戏工作室开发了《传送门》？",
     "canonicalAnswer": "Valve",
     "acceptedAnswers": [
-      "Valve",
-      "维尔福",
-      "Valve Corporation"
+      "维尔福"
     ],
     "botCards": [
       "id软件",
@@ -42760,9 +42746,7 @@
     "question": "在《龙与地下城》中，负责叙述故事并主持游戏的人被称为什么？",
     "canonicalAnswer": "地下城主",
     "acceptedAnswers": [
-      "地下城主",
-      "DM",
-      "Dungeon Master"
+      "地下城主"
     ],
     "botCards": [
       "游戏管理员",
@@ -42781,9 +42765,7 @@
     "canonicalAnswer": "岩谷彻",
     "acceptedAnswers": [
       "岩谷彻",
-      "岩谷徹",
-      "Toru Iwatani",
-      "Iwatani"
+      "岩谷徹"
     ],
     "botCards": [
       "宫本茂",
@@ -42802,9 +42784,7 @@
     "canonicalAnswer": "17号城市",
     "acceptedAnswers": [
       "17号城市",
-      "第17城",
-      "City 17",
-      "City Seventeen"
+      "第17城"
     ],
     "botCards": [
       "销魂城",
@@ -42822,9 +42802,7 @@
     "question": "在《质量效应》中，盖拉斯·瓦卡里安属于哪个爬行类外星种族？",
     "canonicalAnswer": "突锐人",
     "acceptedAnswers": [
-      "突锐人",
-      "Turian",
-      "Turians"
+      "突锐人"
     ],
     "botCards": [
       "克洛根人",
@@ -42843,9 +42821,7 @@
     "canonicalAnswer": "阿列克谢·帕基特诺夫",
     "acceptedAnswers": [
       "阿列克谢·帕基特诺夫",
-      "阿列克谢·帕基特诺夫",
-      "Alexey Pajitnov",
-      "Pajitnov"
+      "阿列克谢·帕基特诺夫"
     ],
     "botCards": [
       "德米特里·格鲁霍夫斯基",
@@ -42863,8 +42839,7 @@
     "question": "哪家工作室将《古惑狼》打造为早期 PlayStation 吉祥物？",
     "canonicalAnswer": "顽皮狗",
     "acceptedAnswers": [
-      "顽皮狗",
-      "Naughty Dog"
+      "顽皮狗"
     ],
     "botCards": [
       "失眠组",
@@ -42901,10 +42876,7 @@
     "question": "《星球大战》中，绝地武士和西斯使用的这把优雅武器叫什么？",
     "canonicalAnswer": "光剑",
     "acceptedAnswers": [
-      "光剑",
-      "Lightsaber",
-      "lightsaber",
-      "light saber"
+      "光剑"
     ],
     "botCards": [
       "爆能枪",
@@ -42928,9 +42900,7 @@
     "question": "黑豹是哪一个虚构非洲国家的国王？",
     "canonicalAnswer": "瓦坎达",
     "acceptedAnswers": [
-      "瓦坎达",
-      "Wakanda",
-      "wakanda"
+      "瓦坎达"
     ],
     "botCards": [
       "拉托维尼亚",
@@ -42980,9 +42950,7 @@
     },
     "canonicalAnswer": "邓德·米夫林",
     "acceptedAnswers": [
-      "邓德·米夫林",
-      "Dunder Mifflin",
-      "dunder mifflin"
+      "邓德·米夫林"
     ],
     "botCards": [
       "万斯制冷",
@@ -43001,9 +42969,7 @@
     "question": "高中化学老师沃尔特·怀特踏入毒品交易后使用什么化名？",
     "canonicalAnswer": "海森堡",
     "acceptedAnswers": [
-      "海森堡",
-      "Heisenberg",
-      "heisenberg"
+      "海森堡"
     ],
     "botCards": [
       "索尔·古德曼",
@@ -43027,9 +42993,7 @@
     },
     "canonicalAnswer": "陀螺",
     "acceptedAnswers": [
-      "陀螺",
-      "Spinning top",
-      "spinning top"
+      "陀螺"
     ],
     "botCards": [
       "骰子",
@@ -43049,11 +43013,7 @@
     "canonicalAnswer": "霉霉粉",
     "acceptedAnswers": [
       "霉霉粉",
-      "霉粉",
-      "Swifties",
-      "swifties",
-      "Swiftie",
-      "swiftie"
+      "霉粉"
     ],
     "botCards": [
       "碧昂丝蜂巢粉",
@@ -43073,11 +43033,7 @@
     "canonicalAnswer": "詹姆斯·卡梅隆",
     "acceptedAnswers": [
       "詹姆斯·卡梅隆",
-      "詹姆斯·卡梅伦",
-      "James Cameron",
-      "james cameron",
-      "Cameron",
-      "cameron"
+      "詹姆斯·卡梅伦"
     ],
     "botCards": [
       "史蒂文·斯皮尔伯格",
@@ -43102,11 +43058,7 @@
     "canonicalAnswer": "斯米戈尔",
     "acceptedAnswers": [
       "斯米戈尔",
-      "斯麦戈",
-      "Smeagol",
-      "smeagol",
-      "Sméagol",
-      "sméagol"
+      "斯麦戈"
     ],
     "botCards": [
       "比尔博·巴金斯",
@@ -43126,10 +43078,7 @@
     "canonicalAnswer": "原木",
     "acceptedAnswers": [
       "原木",
-      "木头",
-      "A log",
-      "a log",
-      "log"
+      "木头"
     ],
     "botCards": [
       "猫头鹰",
@@ -43153,10 +43102,7 @@
     },
     "canonicalAnswer": "苦力怕",
     "acceptedAnswers": [
-      "苦力怕",
-      "Creeper",
-      "creeper",
-      "creepars"
+      "苦力怕"
     ],
     "botCards": [
       "僵尸",
@@ -43175,10 +43121,7 @@
     "question": "在《传送门》中引导和测试你的被动攻击性、大有前途的人工智能叫什么名字？",
     "canonicalAnswer": "格拉多斯",
     "acceptedAnswers": [
-      "格拉多斯",
-      "GLaDOS",
-      "glados",
-      "glados ai"
+      "格拉多斯"
     ],
     "botCards": [
       "肖丹",
@@ -43202,9 +43145,7 @@
     },
     "canonicalAnswer": "粉红",
     "acceptedAnswers": [
-      "粉红",
-      "Pinky",
-      "pinky"
+      "粉红"
     ],
     "botCards": [
       "眨眼",
@@ -43228,9 +43169,7 @@
     },
     "canonicalAnswer": "皮卡丘",
     "acceptedAnswers": [
-      "皮卡丘",
-      "Pikachu",
-      "pikachu"
+      "皮卡丘"
     ],
     "botCards": [
       "雷中",
@@ -43254,10 +43193,7 @@
     },
     "canonicalAnswer": "三角力量",
     "acceptedAnswers": [
-      "三角力量",
-      "Triforce",
-      "triforce",
-      "the triforce"
+      "三角力量"
     ],
     "botCards": [
       "大师剑",
@@ -43276,10 +43212,7 @@
     "question": "在《上古卷轴 5：天际》中，组成标志性“不屈之力”呐喊的三个力量词是什么？",
     "canonicalAnswer": "福斯罗达",
     "acceptedAnswers": [
-      "福斯罗达",
-      "Fus Ro Dah",
-      "fus ro dah",
-      "fusrodah"
+      "福斯罗达"
     ],
     "botCards": [
       "乌尔德·纳赫·凯斯特",
@@ -43303,10 +43236,7 @@
     },
     "canonicalAnswer": "撬棍",
     "acceptedAnswers": [
-      "撬棍",
-      "Crowbar",
-      "crowbar",
-      "a crowbar"
+      "撬棍"
     ],
     "botCards": [
       "扳手",
@@ -43330,11 +43260,7 @@
     },
     "canonicalAnswer": "哔哔小子",
     "acceptedAnswers": [
-      "哔哔小子",
-      "Pip-Boy",
-      "pip-boy",
-      "pip boy",
-      "pipboy"
+      "哔哔小子"
     ],
     "botCards": [
       "隐形男孩",
@@ -43358,9 +43284,7 @@
     },
     "canonicalAnswer": "凯尔莫罕",
     "acceptedAnswers": [
-      "凯尔莫罕",
-      "Kaer Morhen",
-      "kaer morhen"
+      "凯尔莫罕"
     ],
     "botCards": [
       "维吉玛",
@@ -43384,11 +43308,7 @@
     },
     "canonicalAnswer": "格温",
     "acceptedAnswers": [
-      "格温",
-      "Gwyn",
-      "gwyn",
-      "lord gwyn",
-      "gwyn, lord of cinder"
+      "格温"
     ],
     "botCards": [
       "阿尔托利亚斯",
@@ -43412,10 +43332,7 @@
     },
     "canonicalAnswer": "埃及",
     "acceptedAnswers": [
-      "埃及",
-      "Egypt",
-      "egypt",
-      "arab republic of egypt"
+      "埃及"
     ],
     "botCards": [
       "苏丹",
@@ -43439,10 +43356,7 @@
     },
     "canonicalAnswer": "罗马",
     "acceptedAnswers": [
-      "罗马",
-      "Rome",
-      "rome",
-      "roma"
+      "罗马"
     ],
     "botCards": [
       "雅典",
@@ -43461,9 +43375,7 @@
     "question": "这是哪个国家的国旗？",
     "canonicalAnswer": "加拿大",
     "acceptedAnswers": [
-      "加拿大",
-      "Canada",
-      "Canada"
+      "加拿大"
     ],
     "botCards": [
       "黎巴嫩",
@@ -43487,11 +43399,7 @@
     "question": "南美哪条河流被认为是世界上排水量最大的河流？",
     "canonicalAnswer": "亚马逊河",
     "acceptedAnswers": [
-      "亚马逊河",
-      "Amazon River",
-      "amazon",
-      "amazon river",
-      "rio amazonas"
+      "亚马逊河"
     ],
     "botCards": [
       "尼罗河",
@@ -43515,12 +43423,7 @@
     },
     "canonicalAnswer": "富士山",
     "acceptedAnswers": [
-      "富士山",
-      "Mount Fuji",
-      "mount fuji",
-      "mt fuji",
-      "fuji",
-      "fujisan"
+      "富士山"
     ],
     "botCards": [
       "乞力马扎罗山",
@@ -43539,10 +43442,7 @@
     "question": "公元 79 年维苏威火山喷发后，哪座古罗马城市被掩埋并保存在火山灰之下？",
     "canonicalAnswer": "庞贝古城",
     "acceptedAnswers": [
-      "庞贝古城",
-      "Pompeii",
-      "pompeii",
-      "pompei"
+      "庞贝古城"
     ],
     "botCards": [
       "赫库兰尼姆",
@@ -43561,9 +43461,7 @@
     "question": "作为竞争对手悉尼和墨尔本的妥协选择的澳大利亚联邦首都是哪座城市？",
     "canonicalAnswer": "堪培拉",
     "acceptedAnswers": [
-      "堪培拉",
-      "Canberra",
-      "canberra"
+      "堪培拉"
     ],
     "botCards": [
       "悉尼",
@@ -43587,12 +43485,7 @@
     },
     "canonicalAnswer": "路易十四",
     "acceptedAnswers": [
-      "路易十四",
-      "Louis XIV",
-      "louis xiv",
-      "louis 14",
-      "louis the fourteenth",
-      "king louis xiv"
+      "路易十四"
     ],
     "botCards": [
       "路易十六",
@@ -43616,10 +43509,7 @@
     },
     "canonicalAnswer": "大宪章",
     "acceptedAnswers": [
-      "大宪章",
-      "Magna Carta",
-      "magna carta",
-      "magna carta libertatum"
+      "大宪章"
     ],
     "botCards": [
       "权利法案",
@@ -43643,10 +43533,7 @@
     },
     "canonicalAnswer": "马丘比丘",
     "acceptedAnswers": [
-      "马丘比丘",
-      "Machu Picchu",
-      "machu picchu",
-      "machupicchu"
+      "马丘比丘"
     ],
     "botCards": [
       "奇琴伊察",
@@ -43670,11 +43557,7 @@
     },
     "canonicalAnswer": "狮子",
     "acceptedAnswers": [
-      "狮子",
-      "Lion",
-      "lion",
-      "african lion",
-      "panthera leo"
+      "狮子"
     ],
     "botCards": [
       "虎",
@@ -43698,11 +43581,7 @@
     },
     "canonicalAnswer": "大熊猫",
     "acceptedAnswers": [
-      "大熊猫",
-      "Giant Panda",
-      "giant panda",
-      "panda",
-      "panda bear"
+      "大熊猫"
     ],
     "botCards": [
       "小熊猫",
@@ -43721,10 +43600,7 @@
     "question": "世界上最快的陆地哺乳动物叫什么名字，它能在短时间内达到每小时 60 英里以上的速度？",
     "canonicalAnswer": "猎豹",
     "acceptedAnswers": [
-      "猎豹",
-      "Cheetah",
-      "cheetah",
-      "acinonyx jubatus"
+      "猎豹"
     ],
     "botCards": [
       "叉角羚",
@@ -43748,10 +43624,7 @@
     },
     "canonicalAnswer": "鸭嘴兽",
     "acceptedAnswers": [
-      "鸭嘴兽",
-      "Platypus",
-      "platypus",
-      "duck-billed platypus"
+      "鸭嘴兽"
     ],
     "botCards": [
       "海狸",
@@ -43775,10 +43648,7 @@
     },
     "canonicalAnswer": "袋鼠",
     "acceptedAnswers": [
-      "袋鼠",
-      "Kangaroo",
-      "kangaroo",
-      "red kangaroo"
+      "袋鼠"
     ],
     "botCards": [
       "袋鼠",
@@ -43797,10 +43667,7 @@
     "question": "What marine mammal is scientifically recognized as the largest animal ever known to have lived on Earth?",
     "canonicalAnswer": "蓝鲸",
     "acceptedAnswers": [
-      "蓝鲸",
-      "Blue Whale",
-      "blue whale",
-      "balaenoptera musculus"
+      "蓝鲸"
     ],
     "botCards": [
       "座头鲸",
@@ -43824,10 +43691,7 @@
     },
     "canonicalAnswer": "变色龙",
     "acceptedAnswers": [
-      "变色龙",
-      "Chameleon",
-      "chameleon",
-      "chameleons"
+      "变色龙"
     ],
     "botCards": [
       "壁虎",
@@ -43851,10 +43715,7 @@
     },
     "canonicalAnswer": "独角鲸",
     "acceptedAnswers": [
-      "独角鲸",
-      "Narwhal",
-      "narwhal",
-      "narwhale"
+      "独角鲸"
     ],
     "botCards": [
       "白鲸",
@@ -43878,10 +43739,7 @@
     },
     "canonicalAnswer": "蝾螈",
     "acceptedAnswers": [
-      "蝾螈",
-      "Axolotl",
-      "axolotl",
-      "mexican walking fish"
+      "蝾螈"
     ],
     "botCards": [
       "泥巴小狗",
@@ -43900,10 +43758,7 @@
     "question": "使用什么具体的集体名词来描述共同生活的狮子的社会群体或家庭单位？",
     "canonicalAnswer": "骄傲",
     "acceptedAnswers": [
-      "骄傲",
-      "Pride",
-      "pride",
-      "a pride"
+      "骄傲"
     ],
     "botCards": [
       "包",
@@ -43927,11 +43782,7 @@
     },
     "canonicalAnswer": "水豚",
     "acceptedAnswers": [
-      "水豚",
-      "Capybara",
-      "capybara",
-      "capybaras",
-      "hydrochoerus hydrochaeris"
+      "水豚"
     ],
     "botCards": [
       "海狸鼠",
@@ -43955,11 +43806,7 @@
     },
     "canonicalAnswer": "科莫多龙",
     "acceptedAnswers": [
-      "科莫多龙",
-      "Komodo Dragon",
-      "komodo dragon",
-      "komodo",
-      "varanus komodoensis"
+      "科莫多龙"
     ],
     "botCards": [
       "巨蜥",
@@ -43983,11 +43830,7 @@
     },
     "canonicalAnswer": "游隼",
     "acceptedAnswers": [
-      "游隼",
-      "Peregrine Falcon",
-      "peregrine falcon",
-      "peregrine",
-      "falco peregrinus"
+      "游隼"
     ],
     "botCards": [
       "金鹰",
@@ -44011,10 +43854,7 @@
     },
     "canonicalAnswer": "马达加斯加",
     "acceptedAnswers": [
-      "马达加斯加",
-      "Madagascar",
-      "madagascar",
-      "republic of madagascar"
+      "马达加斯加"
     ],
     "botCards": [
       "婆罗洲",
@@ -44038,12 +43878,7 @@
     },
     "canonicalAnswer": "海豚",
     "acceptedAnswers": [
-      "海豚",
-      "Dolphin",
-      "dolphin",
-      "dolphins",
-      "delphinidae",
-      "oceanic dolphin"
+      "海豚"
     ],
     "botCards": [
       "海豚",
@@ -44067,13 +43902,7 @@
     },
     "canonicalAnswer": "缓步动物",
     "acceptedAnswers": [
-      "缓步动物",
-      "Tardigrades",
-      "tardigrade",
-      "tardigrades",
-      "tardigrada",
-      "water bear",
-      "moss piglet"
+      "缓步动物"
     ],
     "botCards": [
       "线虫",
@@ -44092,11 +43921,7 @@
     "question": "除了几乎所有其他东西之外，澳大利亚考拉高度专业化的饮食完全由哪个特定植物科的叶子组成？",
     "canonicalAnswer": "桉树",
     "acceptedAnswers": [
-      "桉树",
-      "Eucalyptus",
-      "eucalyptus",
-      "eucalyptus leaves",
-      "gum tree"
+      "桉树"
     ],
     "botCards": [
       "竹子",
@@ -44115,11 +43940,7 @@
     "question": "在历史民间传说中，有什么不祥的集体名词专门用来形容一群乌鸦？",
     "canonicalAnswer": "谋杀",
     "acceptedAnswers": [
-      "谋杀",
-      "Murder",
-      "murder",
-      "a murder",
-      "murder of crows"
+      "谋杀"
     ],
     "botCards": [
       "不友善",
@@ -44143,12 +43964,7 @@
     },
     "canonicalAnswer": "海鳗",
     "acceptedAnswers": [
-      "海鳗",
-      "Moray Eel",
-      "moray",
-      "moray eel",
-      "moray eels",
-      "muraenidae"
+      "海鳗"
     ],
     "botCards": [
       "电鳗",
@@ -44172,11 +43988,7 @@
     },
     "canonicalAnswer": "琴鸟",
     "acceptedAnswers": [
-      "琴鸟",
-      "Lyrebird",
-      "lyrebird",
-      "lyrebirds",
-      "superb lyrebird"
+      "琴鸟"
     ],
     "botCards": [
       "知更鸟",
@@ -44200,10 +44012,7 @@
     },
     "canonicalAnswer": "寿司",
     "acceptedAnswers": [
-      "寿司",
-      "Sushi",
-      "sushi",
-      "maki"
+      "寿司"
     ],
     "botCards": [
       "点心",
@@ -44227,10 +44036,7 @@
     },
     "canonicalAnswer": "羊角面包",
     "acceptedAnswers": [
-      "羊角面包",
-      "Croissant",
-      "croissant",
-      "croissants"
+      "羊角面包"
     ],
     "botCards": [
       "丹麦语",
@@ -44249,12 +44055,7 @@
     "question": "辣椒的辣度和辣度是用什么衡量标准来划分的？",
     "canonicalAnswer": "斯科维尔量表",
     "acceptedAnswers": [
-      "斯科维尔量表",
-      "Scoville scale",
-      "scoville",
-      "scoville scale",
-      "scoville heat units",
-      "shu"
+      "斯科维尔量表"
     ],
     "botCards": [
       "里氏震级",
@@ -44278,10 +44079,7 @@
     },
     "canonicalAnswer": "鳄梨",
     "acceptedAnswers": [
-      "鳄梨",
-      "Avocado",
-      "avocado",
-      "avocados"
+      "鳄梨"
     ],
     "botCards": [
       "芒果",
@@ -44305,10 +44103,7 @@
     },
     "canonicalAnswer": "玛格丽特",
     "acceptedAnswers": [
-      "玛格丽特",
-      "Margherita",
-      "margherita",
-      "pizza margherita"
+      "玛格丽特"
     ],
     "botCards": [
       "意大利辣香肠",
@@ -44327,10 +44122,7 @@
     "question": "什么常见的素食蛋白质来源是通过凝固豆浆并将所得凝乳压制成柔软的白色块而制成的？",
     "canonicalAnswer": "豆腐",
     "acceptedAnswers": [
-      "豆腐",
-      "Tofu",
-      "tofu",
-      "bean curd"
+      "豆腐"
     ],
     "botCards": [
       "丹贝",
@@ -44354,9 +44146,7 @@
     },
     "canonicalAnswer": "浓缩咖啡",
     "acceptedAnswers": [
-      "浓缩咖啡",
-      "Espresso",
-      "espresso"
+      "浓缩咖啡"
     ],
     "botCards": [
       "美式咖啡",
@@ -44380,10 +44170,7 @@
     },
     "canonicalAnswer": "马卡龙",
     "acceptedAnswers": [
-      "马卡龙",
-      "Macaron",
-      "macaron",
-      "macarons"
+      "马卡龙"
     ],
     "botCards": [
       "马卡龙",
@@ -44402,9 +44189,7 @@
     "question": "源自特定番红花的深红色丝，被广泛认为是世界上按重量计算最昂贵的香料？",
     "canonicalAnswer": "藏红花",
     "acceptedAnswers": [
-      "藏红花",
-      "Saffron",
-      "saffron"
+      "藏红花"
     ],
     "botCards": [
       "香草",
@@ -44423,9 +44208,7 @@
     "question": "哪种传统美味布丁含有羊内脏、燕麦和香料，被誉为苏格兰国菜？",
     "canonicalAnswer": "哈吉斯",
     "acceptedAnswers": [
-      "哈吉斯",
-      "Haggis",
-      "haggis"
+      "哈吉斯"
     ],
     "botCards": [
       "黑布丁",
@@ -44449,10 +44232,7 @@
     },
     "canonicalAnswer": "泡菜",
     "acceptedAnswers": [
-      "泡菜",
-      "Kimchi",
-      "kimchi",
-      "gimchi"
+      "泡菜"
     ],
     "botCards": [
       "酸菜",
@@ -44476,10 +44256,7 @@
     },
     "canonicalAnswer": "鹰嘴豆泥",
     "acceptedAnswers": [
-      "鹰嘴豆泥",
-      "Hummus",
-      "hummus",
-      "houmous"
+      "鹰嘴豆泥"
     ],
     "botCards": [
       "巴巴·加努什",
@@ -44503,10 +44280,7 @@
     },
     "canonicalAnswer": "面疙瘩",
     "acceptedAnswers": [
-      "面疙瘩",
-      "Gnocchi",
-      "gnocchi",
-      "potato gnocchi"
+      "面疙瘩"
     ],
     "botCards": [
       "馄饨",
@@ -44530,9 +44304,7 @@
     },
     "canonicalAnswer": "冰淇淋",
     "acceptedAnswers": [
-      "冰淇淋",
-      "Gelato",
-      "gelato"
+      "冰淇淋"
     ],
     "botCards": [
       "冰糕",
@@ -44556,10 +44328,7 @@
     },
     "canonicalAnswer": "油条",
     "acceptedAnswers": [
-      "油条",
-      "Churros",
-      "churros",
-      "churro"
+      "油条"
     ],
     "botCards": [
       "贝涅饼",
@@ -44583,10 +44352,7 @@
     },
     "canonicalAnswer": "火锅",
     "acceptedAnswers": [
-      "火锅",
-      "Fondue",
-      "fondue",
-      "cheese fondue"
+      "火锅"
     ],
     "botCards": [
       "拉克莱特",
@@ -44610,9 +44376,7 @@
     },
     "canonicalAnswer": "布丁",
     "acceptedAnswers": [
-      "布丁",
-      "Poutine",
-      "poutine"
+      "布丁"
     ],
     "botCards": [
       "迪斯科薯条",
@@ -44636,10 +44400,7 @@
     },
     "canonicalAnswer": "康普茶",
     "acceptedAnswers": [
-      "康普茶",
-      "Kombucha",
-      "kombucha",
-      "kefir tea"
+      "康普茶"
     ],
     "botCards": [
       "开菲尔",
@@ -44663,11 +44424,7 @@
     },
     "canonicalAnswer": "酸橘汁腌鱼",
     "acceptedAnswers": [
-      "酸橘汁腌鱼",
-      "Ceviche",
-      "ceviche",
-      "sebiche",
-      "seviche"
+      "酸橘汁腌鱼"
     ],
     "botCards": [
       "生鱼片",
@@ -44691,10 +44448,7 @@
     },
     "canonicalAnswer": "鹅肝",
     "acceptedAnswers": [
-      "鹅肝",
-      "Foie Gras",
-      "foie gras",
-      "foiegras"
+      "鹅肝"
     ],
     "botCards": [
       "帕特·恩·克鲁特",
@@ -44718,13 +44472,7 @@
     },
     "canonicalAnswer": "奥运会",
     "acceptedAnswers": [
-      "奥运会",
-      "Olympic Games",
-      "olympics",
-      "olympic games",
-      "the olympics",
-      "summer olympics",
-      "winter olympics"
+      "奥运会"
     ],
     "botCards": [
       "世界杯",
@@ -44743,11 +44491,7 @@
     "question": "哪一个国际体育联合会每四年举办一次国际足联世界杯锦标赛？",
     "canonicalAnswer": "足球",
     "acceptedAnswers": [
-      "足球",
-      "Soccer",
-      "soccer",
-      "football",
-      "association football"
+      "足球"
     ],
     "botCards": [
       "橄榄球",
@@ -44771,9 +44515,7 @@
     },
     "canonicalAnswer": "网球",
     "acceptedAnswers": [
-      "网球",
-      "Tennis",
-      "tennis"
+      "网球"
     ],
     "botCards": [
       "羽毛球",
@@ -44797,9 +44539,7 @@
     },
     "canonicalAnswer": "篮球",
     "acceptedAnswers": [
-      "篮球",
-      "Basketball",
-      "basketball"
+      "篮球"
     ],
     "botCards": [
       "无挡板篮球",
@@ -44823,9 +44563,7 @@
     },
     "canonicalAnswer": "冰壶",
     "acceptedAnswers": [
-      "冰壶",
-      "Curling",
-      "curling"
+      "冰壶"
     ],
     "botCards": [
       "冰球",
@@ -44844,9 +44582,7 @@
     "question": "在高尔夫比赛中，什么术语描述了在特定洞中低于标准杆一杆的得分？",
     "canonicalAnswer": "小鸟",
     "acceptedAnswers": [
-      "小鸟",
-      "Birdie",
-      "birdie"
+      "小鸟"
     ],
     "botCards": [
       "鹰",
@@ -44870,9 +44606,7 @@
     },
     "canonicalAnswer": "棒球",
     "acceptedAnswers": [
-      "棒球",
-      "Baseball",
-      "baseball"
+      "棒球"
     ],
     "botCards": [
       "板球",
@@ -44896,10 +44630,7 @@
     },
     "canonicalAnswer": "毽子",
     "acceptedAnswers": [
-      "毽子",
-      "Shuttlecock",
-      "shuttlecock",
-      "birdie"
+      "毽子"
     ],
     "botCards": [
       "乒乓球",
@@ -44919,10 +44650,7 @@
     "canonicalAnswer": "26.2 英里",
     "acceptedAnswers": [
       "26.2 英里",
-      "26.2 miles",
-      "26.2",
-      "26.2 miles",
-      "26 miles and 385 yards"
+      "26.2"
     ],
     "botCards": [
       "13.1 英里",
@@ -44941,13 +44669,7 @@
     "question": "说出奥运会击剑中使用的三种刀片武器中的任何一种。",
     "canonicalAnswer": "花剑、重剑或佩剑",
     "acceptedAnswers": [
-      "花剑、重剑或佩剑",
-      "Foil, Epee, or Sabre",
-      "foil",
-      "epee",
-      "épée",
-      "sabre",
-      "saber"
+      "花剑、重剑或佩剑"
     ],
     "botCards": [
       "剑杆",
@@ -44967,10 +44689,7 @@
     "canonicalAnswer": "草地",
     "acceptedAnswers": [
       "草地",
-      "草",
-      "grass",
-      "lawn",
-      "grass court"
+      "草"
     ],
     "botCards": [
       "红土",
@@ -44995,9 +44714,7 @@
     "canonicalAnswer": "金色",
     "acceptedAnswers": [
       "金色",
-      "黄色",
-      "gold",
-      "yellow"
+      "黄色"
     ],
     "botCards": [
       "红色",
@@ -45022,10 +44739,7 @@
     "canonicalAnswer": "有舵雪橇",
     "acceptedAnswers": [
       "有舵雪橇",
-      "雪车",
-      "bobsleigh",
-      "bobsled",
-      "bobsledding"
+      "雪车"
     ],
     "botCards": [
       "钢架雪车",
@@ -45049,9 +44763,7 @@
     },
     "canonicalAnswer": "捕手",
     "acceptedAnswers": [
-      "捕手",
-      "catcher",
-      "the catcher"
+      "捕手"
     ],
     "botCards": [
       "投手",
@@ -45071,8 +44783,7 @@
     "canonicalAnswer": "15",
     "acceptedAnswers": [
       "15",
-      "十五",
-      "fifteen"
+      "十五"
     ],
     "botCards": [
       "11",
@@ -45097,8 +44808,7 @@
     "canonicalAnswer": "15",
     "acceptedAnswers": [
       "15",
-      "十五",
-      "fifteen"
+      "十五"
     ],
     "botCards": [
       "10",
@@ -45118,10 +44828,7 @@
     "canonicalAnswer": "黄色",
     "acceptedAnswers": [
       "黄色",
-      "黄衫",
-      "yellow",
-      "yellow jersey",
-      "maillot jaune"
+      "黄衫"
     ],
     "botCards": [
       "绿色",
@@ -45146,9 +44853,7 @@
     "canonicalAnswer": "舵手",
     "acceptedAnswers": [
       "舵手",
-      "赛艇舵手",
-      "coxswain",
-      "cox"
+      "赛艇舵手"
     ],
     "botCards": [
       "领桨员",
@@ -45173,10 +44878,7 @@
     "canonicalAnswer": "走步",
     "acceptedAnswers": [
       "走步",
-      "走步违例",
-      "traveling",
-      "travelling",
-      "travel"
+      "走步违例"
     ],
     "botCards": [
       "二次运球",
@@ -45196,9 +44898,7 @@
     "canonicalAnswer": "硫化橡胶",
     "acceptedAnswers": [
       "硫化橡胶",
-      "橡胶",
-      "vulcanized rubber",
-      "vulcanised rubber"
+      "橡胶"
     ],
     "botCards": [
       "聚氨酯",
@@ -45222,11 +44922,8 @@
     },
     "canonicalAnswer": "Doge",
     "acceptedAnswers": [
-      "Doge",
-      "doge",
       "狗头",
-      "卡波苏",
-      "Kabosu"
+      "卡波苏"
     ],
     "botCards": [
       "不爽猫",
@@ -45250,9 +44947,7 @@
     },
     "canonicalAnswer": "维基百科",
     "acceptedAnswers": [
-      "维基百科",
-      "Wikipedia",
-      "wikipedia"
+      "维基百科"
     ],
     "botCards": [
       "维基词典",
@@ -45272,9 +44967,7 @@
     "canonicalAnswer": "错失恐惧症",
     "acceptedAnswers": [
       "错失恐惧症",
-      "害怕错过",
-      "fear of missing out",
-      "Fear of Missing Out"
+      "害怕错过"
     ],
     "botCards": [
       "社交恐惧症",
@@ -45298,8 +44991,6 @@
     },
     "canonicalAnswer": "YouTube",
     "acceptedAnswers": [
-      "YouTube",
-      "youtube",
       "油管"
     ],
     "botCards": [
@@ -45345,11 +45036,7 @@
     "canonicalAnswer": "瑞克摇摆",
     "acceptedAnswers": [
       "瑞克摇摆",
-      "瑞克摇",
-      "Rickroll",
-      "rickroll",
-      "Rickrolling",
-      "rickrolling"
+      "瑞克摇"
     ],
     "botCards": [
       "点击诱饵",
@@ -45374,9 +45061,7 @@
     "canonicalAnswer": "分心男友",
     "acceptedAnswers": [
       "分心男友",
-      "分心的男友",
-      "Distracted Boyfriend",
-      "distracted boyfriend"
+      "分心的男友"
     ],
     "botCards": [
       "灾难女孩",
@@ -45400,11 +45085,7 @@
     },
     "canonicalAnswer": "比特币",
     "acceptedAnswers": [
-      "比特币",
-      "Bitcoin",
-      "bitcoin",
-      "BTC",
-      "btc"
+      "比特币"
     ],
     "botCards": [
       "以太坊",
@@ -45424,9 +45105,7 @@
     "canonicalAnswer": "太长不看",
     "acceptedAnswers": [
       "太长不看",
-      "太长；没读",
-      "too long; didn't read",
-      "too long didn't read"
+      "太长；没读"
     ],
     "botCards": [
       "看完再说",
@@ -45470,10 +45149,7 @@
     "canonicalAnswer": "弗莱迪·费斯熊",
     "acceptedAnswers": [
       "弗莱迪·费斯熊",
-      "弗莱迪熊",
-      "Freddy Fazbear",
-      "freddy fazbear",
-      "Freddy"
+      "弗莱迪熊"
     ],
     "botCards": [
       "邦尼兔",
@@ -45498,9 +45174,7 @@
     "canonicalAnswer": "不爽猫",
     "acceptedAnswers": [
       "不爽猫",
-      "暴躁猫",
-      "Grumpy Cat",
-      "grumpy cat"
+      "暴躁猫"
     ],
     "botCards": [
       "键盘猫",
@@ -45525,11 +45199,7 @@
     "canonicalAnswer": "电子琴",
     "acceptedAnswers": [
       "电子琴",
-      "键盘",
-      "keyboard",
-      "electronic keyboard",
-      "musical keyboard",
-      "synth keyboard"
+      "键盘"
     ],
     "botCards": [
       "钢琴",
@@ -45553,10 +45223,7 @@
     },
     "canonicalAnswer": "斯基比迪厕所",
     "acceptedAnswers": [
-      "斯基比迪厕所",
-      "Skibidi Toilet",
-      "skibidi toilet",
-      "Skibidi"
+      "斯基比迪厕所"
     ],
     "botCards": [
       "班班幼儿园",
@@ -45580,11 +45247,7 @@
     },
     "canonicalAnswer": "后室",
     "acceptedAnswers": [
-      "后室",
-      "The Backrooms",
-      "the backrooms",
-      "Backrooms",
-      "backrooms"
+      "后室"
     ],
     "botCards": [
       "寂静岭",
@@ -45634,10 +45297,7 @@
     "canonicalAnswer": "火焰",
     "acceptedAnswers": [
       "火焰",
-      "火",
-      "fire",
-      "flames",
-      "a fire"
+      "火"
     ],
     "botCards": [
       "洪水",
@@ -45661,10 +45321,7 @@
     },
     "canonicalAnswer": "史蒂夫",
     "acceptedAnswers": [
-      "史蒂夫",
-      "Steve",
-      "steve",
-      "Minecraft Steve"
+      "史蒂夫"
     ],
     "botCards": [
       "亚历克斯",
@@ -45689,11 +45346,7 @@
     "canonicalAnswer": "佩佩蛙",
     "acceptedAnswers": [
       "佩佩蛙",
-      "悲伤蛙",
-      "Pepe the Frog",
-      "pepe the frog",
-      "Pepe",
-      "pepe"
+      "悲伤蛙"
     ],
     "botCards": [
       "科米蛙",
@@ -45717,11 +45370,7 @@
     },
     "canonicalAnswer": "凯尔",
     "acceptedAnswers": [
-      "凯尔",
-      "Kyle",
-      "kyle",
-      "Kyle Craven",
-      "kyle craven"
+      "凯尔"
     ],
     "botCards": [
       "布莱恩",
@@ -45746,9 +45395,7 @@
     "canonicalAnswer": "氢",
     "acceptedAnswers": [
       "氢",
-      "氢元素",
-      "Hydrogen",
-      "hydrogen"
+      "氢元素"
     ],
     "botCards": [
       "氦",
@@ -45772,9 +45419,7 @@
     },
     "canonicalAnswer": "土星",
     "acceptedAnswers": [
-      "土星",
-      "Saturn",
-      "saturn"
+      "土星"
     ],
     "botCards": [
       "木星",
@@ -45799,10 +45444,7 @@
     "canonicalAnswer": "双螺旋结构",
     "acceptedAnswers": [
       "双螺旋结构",
-      "双螺旋",
-      "Double Helix",
-      "double helix",
-      "helix"
+      "双螺旋"
     ],
     "botCards": [
       "三螺旋结构",
@@ -45822,10 +45464,7 @@
     "canonicalAnswer": "阿尔伯特·爱因斯坦",
     "acceptedAnswers": [
       "阿尔伯特·爱因斯坦",
-      "爱因斯坦",
-      "Albert Einstein",
-      "albert einstein",
-      "Einstein"
+      "爱因斯坦"
     ],
     "botCards": [
       "艾萨克·牛顿",
@@ -45849,11 +45488,7 @@
     },
     "canonicalAnswer": "线粒体",
     "acceptedAnswers": [
-      "线粒体",
-      "Mitochondrion",
-      "mitochondrion",
-      "Mitochondria",
-      "mitochondria"
+      "线粒体"
     ],
     "botCards": [
       "叶绿体",
@@ -45873,9 +45508,7 @@
     "canonicalAnswer": "金刚石",
     "acceptedAnswers": [
       "金刚石",
-      "钻石",
-      "Diamond",
-      "diamond"
+      "钻石"
     ],
     "botCards": [
       "刚玉",
@@ -45900,10 +45533,7 @@
     "canonicalAnswer": "猎户座",
     "acceptedAnswers": [
       "猎户座",
-      "猎户星座",
-      "Orion",
-      "orion",
-      "Orion the Hunter"
+      "猎户星座"
     ],
     "botCards": [
       "天蝎座",
@@ -45923,10 +45553,7 @@
     "canonicalAnswer": "光",
     "acceptedAnswers": [
       "光",
-      "光线",
-      "Light",
-      "light",
-      "speed of light"
+      "光线"
     ],
     "botCards": [
       "声音",
@@ -45948,8 +45575,6 @@
       "水",
       "H2O",
       "h2o",
-      "Water",
-      "water",
       "一氧化二氢"
     ],
     "botCards": [
@@ -45969,11 +45594,7 @@
     "question": "植物中吸收光能以驱动光合作用的绿色色素，化学名称是什么？",
     "canonicalAnswer": "叶绿素",
     "acceptedAnswers": [
-      "叶绿素",
-      "Chlorophyll",
-      "chlorophyll",
-      "chlorophyll a",
-      "chlorophyll b"
+      "叶绿素"
     ],
     "botCards": [
       "血红蛋白",
@@ -45998,10 +45619,7 @@
     "canonicalAnswer": "牛顿摆",
     "acceptedAnswers": [
       "牛顿摆",
-      "牛顿撞球",
-      "Newton's Cradle",
-      "newton's cradle",
-      "newtons cradle"
+      "牛顿撞球"
     ],
     "botCards": [
       "傅科摆",
@@ -46025,9 +45643,7 @@
     },
     "canonicalAnswer": "金星",
     "acceptedAnswers": [
-      "金星",
-      "Venus",
-      "venus"
+      "金星"
     ],
     "botCards": [
       "水星",
@@ -46051,10 +45667,7 @@
     },
     "canonicalAnswer": "间歇泉",
     "acceptedAnswers": [
-      "间歇泉",
-      "Geyser",
-      "geyser",
-      "geysers"
+      "间歇泉"
     ],
     "botCards": [
       "温泉",
@@ -46079,10 +45692,7 @@
     "canonicalAnswer": "臭氧层",
     "acceptedAnswers": [
       "臭氧层",
-      "Ozone Layer",
-      "ozone layer",
-      "臭氧",
-      "ozonosphere"
+      "臭氧"
     ],
     "botCards": [
       "电离层",
@@ -46107,10 +45717,7 @@
     "canonicalAnswer": "地震仪",
     "acceptedAnswers": [
       "地震仪",
-      "地震记录仪",
-      "Seismograph",
-      "seismograph",
-      "seismometer"
+      "地震记录仪"
     ],
     "botCards": [
       "气压计",
@@ -46134,10 +45741,7 @@
     },
     "canonicalAnswer": "地衣",
     "acceptedAnswers": [
-      "地衣",
-      "Lichen",
-      "lichen",
-      "lichens"
+      "地衣"
     ],
     "botCards": [
       "苔藓",
@@ -46162,11 +45766,7 @@
     "canonicalAnswer": "盘古大陆",
     "acceptedAnswers": [
       "盘古大陆",
-      "泛大陆",
-      "Pangaea",
-      "pangaea",
-      "Pangea",
-      "pangea"
+      "泛大陆"
     ],
     "botCards": [
       "冈瓦纳大陆",
@@ -46192,10 +45792,7 @@
     "acceptedAnswers": [
       "科里奥利效应",
       "科氏效应",
-      "科氏力",
-      "Coriolis Effect",
-      "coriolis effect",
-      "coriolis force"
+      "科氏力"
     ],
     "botCards": [
       "多普勒效应",
@@ -46220,10 +45817,7 @@
     "canonicalAnswer": "互利共生",
     "acceptedAnswers": [
       "互利共生",
-      "互惠共生",
-      "Mutualism",
-      "mutualism",
-      "mutualistic relationship"
+      "互惠共生"
     ],
     "botCards": [
       "寄生",
@@ -46248,9 +45842,7 @@
     "canonicalAnswer": "事件视界",
     "acceptedAnswers": [
       "事件视界",
-      "事界",
-      "Event Horizon",
-      "event horizon"
+      "事界"
     ],
     "botCards": [
       "奇点",
@@ -46274,9 +45866,7 @@
     },
     "canonicalAnswer": "宙斯",
     "acceptedAnswers": [
-      "宙斯",
-      "Zeus",
-      "zeus"
+      "宙斯"
     ],
     "botCards": [
       "波塞冬",
@@ -46300,9 +45890,7 @@
     },
     "canonicalAnswer": "阿努比斯",
     "acceptedAnswers": [
-      "阿努比斯",
-      "Anubis",
-      "anubis"
+      "阿努比斯"
     ],
     "botCards": [
       "荷鲁斯",
@@ -46323,11 +45911,7 @@
     "acceptedAnswers": [
       "雷神之锤",
       "妙尔尼尔",
-      "姆乔尔尼尔",
-      "Mjolnir",
-      "mjolnir",
-      "Mjölnir",
-      "mjölnir"
+      "姆乔尔尼尔"
     ],
     "botCards": [
       "冈格尼尔",
@@ -46351,9 +45935,7 @@
     },
     "canonicalAnswer": "美杜莎",
     "acceptedAnswers": [
-      "美杜莎",
-      "Medusa",
-      "medusa"
+      "美杜莎"
     ],
     "botCards": [
       "珀耳塞福涅",
@@ -46373,9 +45955,7 @@
     "canonicalAnswer": "英灵殿",
     "acceptedAnswers": [
       "英灵殿",
-      "瓦尔哈拉",
-      "Valhalla",
-      "valhalla"
+      "瓦尔哈拉"
     ],
     "botCards": [
       "尼福尔海姆",
@@ -46395,9 +45975,7 @@
     "canonicalAnswer": "阿喀琉斯",
     "acceptedAnswers": [
       "阿喀琉斯",
-      "阿基里斯",
-      "Achilles",
-      "achilles"
+      "阿基里斯"
     ],
     "botCards": [
       "赫克托耳",
@@ -46422,9 +46000,7 @@
     "canonicalAnswer": "珀伽索斯",
     "acceptedAnswers": [
       "珀伽索斯",
-      "飞马",
-      "Pegasus",
-      "pegasus"
+      "飞马"
     ],
     "botCards": [
       "独角兽",
@@ -46449,11 +46025,7 @@
     "canonicalAnswer": "世界树",
     "acceptedAnswers": [
       "世界树",
-      "尤克特拉希尔",
-      "Yggdrasil",
-      "yggdrasil",
-      "Yggdrasill",
-      "yggdrasill"
+      "尤克特拉希尔"
     ],
     "botCards": [
       "生命之树",
@@ -46474,11 +46046,7 @@
     "acceptedAnswers": [
       "刻耳柏洛斯",
       "刻耳柏罗斯",
-      "地狱犬",
-      "Cerberus",
-      "cerberus",
-      "Kerberos",
-      "kerberos"
+      "地狱犬"
     ],
     "botCards": [
       "许德拉",
@@ -46497,9 +46065,7 @@
     "question": "根据罗马建城神话，哪位孪生兄弟杀死了雷穆斯，后来成为罗马第一位国王？",
     "canonicalAnswer": "罗慕路斯",
     "acceptedAnswers": [
-      "罗慕路斯",
-      "Romulus",
-      "romulus"
+      "罗慕路斯"
     ],
     "botCards": [
       "雷穆斯",
@@ -46524,10 +46090,7 @@
     "canonicalAnswer": "胡狼",
     "acceptedAnswers": [
       "胡狼",
-      "豺",
-      "Jackal",
-      "jackal",
-      "Egyptian jackal"
+      "豺"
     ],
     "botCards": [
       "狼",
@@ -46551,9 +46114,7 @@
     },
     "canonicalAnswer": "伊卡洛斯",
     "acceptedAnswers": [
-      "伊卡洛斯",
-      "Icarus",
-      "icarus"
+      "伊卡洛斯"
     ],
     "botCards": [
       "珀耳修斯",
@@ -46578,11 +46139,7 @@
     "canonicalAnswer": "太阳",
     "acceptedAnswers": [
       "太阳",
-      "日",
-      "The Sun",
-      "the sun",
-      "Sun",
-      "sun"
+      "日"
     ],
     "botCards": [
       "月亮",
@@ -46608,10 +46165,7 @@
     "acceptedAnswers": [
       "雷霆",
       "雷电",
-      "闪电",
-      "Thunderbolt",
-      "thunderbolt",
-      "lightning bolt"
+      "闪电"
     ],
     "botCards": [
       "三叉戟",
@@ -46631,8 +46185,7 @@
     "canonicalAnswer": "3",
     "acceptedAnswers": [
       "3",
-      "三",
-      "three"
+      "三"
     ],
     "botCards": [
       "2",
@@ -46657,11 +46210,7 @@
     "canonicalAnswer": "英灵殿",
     "acceptedAnswers": [
       "英灵殿",
-      "瓦尔哈拉",
-      "Valhalla",
-      "valhalla",
-      "Valhöll",
-      "valhöll"
+      "瓦尔哈拉"
     ],
     "botCards": [
       "芬布尔冬宫",
@@ -46687,11 +46236,7 @@
     "acceptedAnswers": [
       "迷宫",
       "克里特迷宫",
-      "拉比林斯",
-      "The Labyrinth",
-      "the labyrinth",
-      "Labyrinth",
-      "labyrinth"
+      "拉比林斯"
     ],
     "botCards": [
       "特洛伊城墙",
@@ -46711,10 +46256,7 @@
     "canonicalAnswer": "狼",
     "acceptedAnswers": [
       "狼",
-      "巨狼",
-      "Wolf",
-      "wolf",
-      "giant wolf"
+      "巨狼"
     ],
     "botCards": [
       "熊",
@@ -46734,10 +46276,7 @@
     "canonicalAnswer": "脚后跟",
     "acceptedAnswers": [
       "脚后跟",
-      "脚跟",
-      "Heel",
-      "heel",
-      "Achilles tendon"
+      "脚跟"
     ],
     "botCards": [
       "心脏",
@@ -46763,10 +46302,7 @@
     "acceptedAnswers": [
       "衔尾蛇",
       "咬尾蛇",
-      "乌洛波洛斯",
-      "Ouroboros",
-      "ouroboros",
-      "uroboros"
+      "乌洛波洛斯"
     ],
     "botCards": [
       "九头蛇",
@@ -46791,10 +46327,7 @@
     "canonicalAnswer": "红色",
     "acceptedAnswers": [
       "红色",
-      "红",
-      "Red",
-      "red",
-      "red pill"
+      "红"
     ],
     "botCards": [
       "蓝色",
@@ -46814,9 +46347,7 @@
     "canonicalAnswer": "阿伦黛尔",
     "acceptedAnswers": [
       "阿伦黛尔",
-      "阿伦戴尔",
-      "Arendelle",
-      "arendelle"
+      "阿伦戴尔"
     ],
     "botCards": [
       "科罗纳王国",
@@ -46841,9 +46372,7 @@
     "canonicalAnswer": "分院帽",
     "acceptedAnswers": [
       "分院帽",
-      "霍格沃茨分院帽",
-      "Sorting Hat",
-      "sorting hat"
+      "霍格沃茨分院帽"
     ],
     "botCards": [
       "隐形衣",
@@ -46868,9 +46397,7 @@
     "canonicalAnswer": "史瑞克",
     "acceptedAnswers": [
       "史瑞克",
-      "怪物史莱克",
-      "Shrek",
-      "shrek"
+      "怪物史莱克"
     ],
     "botCards": [
       "菲奥娜",
@@ -46894,9 +46421,7 @@
     },
     "canonicalAnswer": "捉鬼敢死队",
     "acceptedAnswers": [
-      "捉鬼敢死队",
-      "Ghostbusters",
-      "ghostbusters"
+      "捉鬼敢死队"
     ],
     "botCards": [
       "神秘博士",
@@ -46915,9 +46440,7 @@
     "question": "荷马、玛琦、巴特、丽莎和玛吉·辛普森居住的虚构美国小镇叫什么？",
     "canonicalAnswer": "斯普林菲尔德",
     "acceptedAnswers": [
-      "斯普林菲尔德",
-      "Springfield",
-      "springfield"
+      "斯普林菲尔德"
     ],
     "botCards": [
       "谢尔比维尔",
@@ -46937,11 +46460,7 @@
     "canonicalAnswer": "邓迪奖",
     "acceptedAnswers": [
       "邓迪奖",
-      "邓迪奖杯",
-      "Dundie",
-      "dundie",
-      "Dundies",
-      "dundies"
+      "邓迪奖杯"
     ],
     "botCards": [
       "金球奖",
@@ -46966,11 +46485,8 @@
     "canonicalAnswer": "德罗宁",
     "acceptedAnswers": [
       "德罗宁",
-      "DeLorean",
-      "delorean",
       "DMC-12",
-      "dmc-12",
-      "DeLorean DMC-12"
+      "dmc-12"
     ],
     "botCards": [
       "福特野马",
@@ -46994,10 +46510,7 @@
     },
     "canonicalAnswer": "琥珀",
     "acceptedAnswers": [
-      "琥珀",
-      "Amber",
-      "amber",
-      "fossilized amber"
+      "琥珀"
     ],
     "botCards": [
       "树化石",
@@ -47016,11 +46529,7 @@
     "question": "奉俊昊执导的哪部 2019 年讽刺惊悚片成为首部赢得奥斯卡最佳影片的非英语电影？",
     "canonicalAnswer": "寄生虫",
     "acceptedAnswers": [
-      "寄生虫",
-      "Parasite",
-      "parasite",
-      "Gisaengchung",
-      "gisaengchung"
+      "寄生虫"
     ],
     "botCards": [
       "燃烧",
@@ -47044,9 +46553,7 @@
     },
     "canonicalAnswer": "超级蘑菇",
     "acceptedAnswers": [
-      "超级蘑菇",
-      "Super Mushroom",
-      "super mushroom"
+      "超级蘑菇"
     ],
     "botCards": [
       "火焰花",
@@ -47070,9 +46577,7 @@
     },
     "canonicalAnswer": "拉姆达",
     "acceptedAnswers": [
-      "拉姆达",
-      "Lambda",
-      "lambda"
+      "拉姆达"
     ],
     "botCards": [
       "欧米伽",
@@ -47096,10 +46601,7 @@
     },
     "canonicalAnswer": "草莓",
     "acceptedAnswers": [
-      "草莓",
-      "Strawberry",
-      "strawberry",
-      "strawberries"
+      "草莓"
     ],
     "botCards": [
       "橙子",
@@ -47123,13 +46625,7 @@
     },
     "canonicalAnswer": "精灵球",
     "acceptedAnswers": [
-      "精灵球",
-      "Poké Ball",
-      "Poke Ball",
-      "poke ball",
-      "pokeball",
-      "poké ball",
-      "pokéball"
+      "精灵球"
     ],
     "botCards": [
       "宝可梦图鉴",
@@ -47150,13 +46646,7 @@
     "acceptedAnswers": [
       "四连方块",
       "四连骨牌",
-      "四格骨牌",
-      "Tetrominoes",
-      "tetrominoes",
-      "Tetromino",
-      "tetromino",
-      "Tetrimino",
-      "tetrimino"
+      "四格骨牌"
     ],
     "botCards": [
       "多米诺骨牌",
@@ -47175,11 +46665,7 @@
     "question": "《辐射》系列的末日废土中，哪种日常一次性物品充当主要标准货币？",
     "canonicalAnswer": "瓶盖",
     "acceptedAnswers": [
-      "瓶盖",
-      "Bottle Caps",
-      "bottle caps",
-      "bottle cap",
-      "caps"
+      "瓶盖"
     ],
     "botCards": [
       "子弹",
@@ -47205,11 +46691,7 @@
     "acceptedAnswers": [
       "甜卷",
       "甜甜卷",
-      "甜甜圈",
-      "Sweetroll",
-      "sweetroll",
-      "sweet roll",
-      "sweetrolls"
+      "甜甜圈"
     ],
     "botCards": [
       "肉桂卷",
@@ -47230,12 +46712,7 @@
     "acceptedAnswers": [
       "圆环",
       "环",
-      "环形",
-      "Ring",
-      "ring",
-      "ringworld",
-      "torus",
-      "Halo ring"
+      "环形"
     ],
     "botCards": [
       "球体",
@@ -47260,10 +46737,7 @@
     "canonicalAnswer": "极乐城",
     "acceptedAnswers": [
       "极乐城",
-      "销魂城",
-      "Rapture",
-      "rapture",
-      "City of Rapture"
+      "销魂城"
     ],
     "botCards": [
       "哥谭市",
@@ -47283,11 +46757,7 @@
     "canonicalAnswer": "利罗伊",
     "acceptedAnswers": [
       "利罗伊",
-      "利洛伊",
-      "Leeroy",
-      "leeroy",
-      "Leeroy Jenkins",
-      "leeroy jenkins"
+      "利洛伊"
     ],
     "botCards": [
       "阿萨斯",
@@ -47312,13 +46782,7 @@
     "canonicalAnswer": "纽约市",
     "acceptedAnswers": [
       "纽约市",
-      "纽约",
-      "New York City",
-      "new york city",
-      "New York",
-      "new york",
-      "NYC",
-      "nyc"
+      "纽约"
     ],
     "botCards": [
       "波士顿",
@@ -47342,9 +46806,7 @@
     },
     "canonicalAnswer": "巴黎",
     "acceptedAnswers": [
-      "巴黎",
-      "Paris",
-      "paris"
+      "巴黎"
     ],
     "botCards": [
       "伦敦",
@@ -47369,12 +46831,7 @@
     "canonicalAnswer": "中国",
     "acceptedAnswers": [
       "中国",
-      "中华人民共和国",
-      "China",
-      "china",
-      "People's Republic of China",
-      "PRC",
-      "prc"
+      "中华人民共和国"
     ],
     "botCards": [
       "蒙古",
@@ -47398,9 +46855,7 @@
     },
     "canonicalAnswer": "泰姬陵",
     "acceptedAnswers": [
-      "泰姬陵",
-      "Taj Mahal",
-      "taj mahal"
+      "泰姬陵"
     ],
     "botCards": [
       "胡马雍陵",
@@ -47424,9 +46879,7 @@
     },
     "canonicalAnswer": "巨石阵",
     "acceptedAnswers": [
-      "巨石阵",
-      "Stonehenge",
-      "stonehenge"
+      "巨石阵"
     ],
     "botCards": [
       "埃夫伯里石阵",
@@ -47445,9 +46898,7 @@
     "question": "世界上人口最多的大都市区位于哪一座亚洲城市？",
     "canonicalAnswer": "东京",
     "acceptedAnswers": [
-      "东京",
-      "Tokyo",
-      "tokyo"
+      "东京"
     ],
     "botCards": [
       "上海",
@@ -47468,10 +46919,7 @@
     "acceptedAnswers": [
       "克利奥帕特拉",
       "埃及艳后",
-      "克利奥帕特拉七世",
-      "Cleopatra",
-      "cleopatra",
-      "Cleopatra VII"
+      "克利奥帕特拉七世"
     ],
     "botCards": [
       "娜芙蒂蒂",
@@ -47490,12 +46938,7 @@
     "question": "哪一个大洋将北美和南美与欧洲和非洲分隔开？",
     "canonicalAnswer": "大西洋",
     "acceptedAnswers": [
-      "大西洋",
-      "Atlantic Ocean",
-      "atlantic ocean",
-      "Atlantic",
-      "atlantic",
-      "the atlantic"
+      "大西洋"
     ],
     "botCards": [
       "太平洋",
@@ -47515,11 +46958,7 @@
     "canonicalAnswer": "亚伯拉罕·林肯",
     "acceptedAnswers": [
       "亚伯拉罕·林肯",
-      "林肯",
-      "Abraham Lincoln",
-      "abraham lincoln",
-      "Lincoln",
-      "lincoln"
+      "林肯"
     ],
     "botCards": [
       "尤利西斯·格兰特",
@@ -47539,11 +46978,7 @@
     "canonicalAnswer": "俄罗斯帝国",
     "acceptedAnswers": [
       "俄罗斯帝国",
-      "俄国",
-      "Russian Empire",
-      "russian empire",
-      "Russia",
-      "russia"
+      "俄国"
     ],
     "botCards": [
       "大英帝国",
@@ -47568,9 +47003,7 @@
     "canonicalAnswer": "文森特",
     "acceptedAnswers": [
       "文森特",
-      "文森特·梵高",
-      "Vincent",
-      "Vincent van Gogh"
+      "文森特·梵高"
     ],
     "botCards": [
       "克洛德",
@@ -47590,8 +47023,7 @@
     "canonicalAnswer": "4",
     "acceptedAnswers": [
       "4",
-      "四",
-      "four"
+      "四"
     ],
     "botCards": [
       "3",
@@ -47616,10 +47048,7 @@
     "canonicalAnswer": "卢浮宫",
     "acceptedAnswers": [
       "卢浮宫",
-      "卢浮宫博物馆",
-      "Louvre",
-      "Louvre Museum",
-      "Musée du Louvre"
+      "卢浮宫博物馆"
     ],
     "botCards": [
       "奥赛博物馆",
@@ -47645,10 +47074,7 @@
     "acceptedAnswers": [
       "木管乐器",
       "木管",
-      "木管乐器组",
-      "Woodwind",
-      "woodwinds",
-      "woodwind family"
+      "木管乐器组"
     ],
     "botCards": [
       "铜管乐器",
@@ -47673,10 +47099,7 @@
     "canonicalAnswer": "尤克里里",
     "acceptedAnswers": [
       "尤克里里",
-      "乌克丽丽",
-      "Ukulele",
-      "ukalele",
-      "uke"
+      "乌克丽丽"
     ],
     "botCards": [
       "曼陀林",
@@ -47701,9 +47124,7 @@
     "canonicalAnswer": "爱德华·蒙克",
     "acceptedAnswers": [
       "爱德华·蒙克",
-      "蒙克",
-      "Edvard Munch",
-      "Munch"
+      "蒙克"
     ],
     "botCards": [
       "爱德华·马奈",
@@ -47724,9 +47145,7 @@
     "acceptedAnswers": [
       "强",
       "强音",
-      "响亮",
-      "loud",
-      "strongly"
+      "响亮"
     ],
     "botCards": [
       "弱",
@@ -47751,10 +47170,7 @@
     "canonicalAnswer": "思想者",
     "acceptedAnswers": [
       "思想者",
-      "沉思者",
-      "The Thinker",
-      "Thinker",
-      "Le Penseur"
+      "沉思者"
     ],
     "botCards": [
       "大卫",
@@ -47779,10 +47195,7 @@
     "canonicalAnswer": "女高音",
     "acceptedAnswers": [
       "女高音",
-      "高女声",
-      "Soprano",
-      "coloratura soprano",
-      "lyric soprano"
+      "高女声"
     ],
     "botCards": [
       "女低音",
@@ -47805,10 +47218,7 @@
       "九",
       "第九",
       "第九交响曲",
-      "nine",
-      "ninth",
-      "9th",
-      "Symphony No. 9"
+      "9th"
     ],
     "botCards": [
       "5",
@@ -47833,9 +47243,7 @@
     "canonicalAnswer": "星期三·亚当斯",
     "acceptedAnswers": [
       "星期三·亚当斯",
-      "星期三",
-      "Wednesday Addams",
-      "Wednesday"
+      "星期三"
     ],
     "botCards": [
       "莫蒂西亚·亚当斯",
@@ -47860,9 +47268,7 @@
     "canonicalAnswer": "鱿鱼游戏",
     "acceptedAnswers": [
       "鱿鱼游戏",
-      "鱿鱼游戏：第456号玩家",
-      "Squid Game",
-      "Ojingeo Geim"
+      "鱿鱼游戏：第456号玩家"
     ],
     "botCards": [
       "地狱公使",
@@ -47882,9 +47288,7 @@
     "canonicalAnswer": "格蕾塔·葛韦格",
     "acceptedAnswers": [
       "格蕾塔·葛韦格",
-      "格蕾塔·葛薇格",
-      "Greta Gerwig",
-      "Gerwig"
+      "格蕾塔·葛薇格"
     ],
     "botCards": [
       "索菲亚·科波拉",
@@ -47909,9 +47313,7 @@
     "canonicalAnswer": "迈尔斯·莫拉莱斯",
     "acceptedAnswers": [
       "迈尔斯·莫拉莱斯",
-      "迈尔斯",
-      "Miles Morales",
-      "Miles"
+      "迈尔斯"
     ],
     "botCards": [
       "彼得·帕克",
@@ -47936,9 +47338,7 @@
     "canonicalAnswer": "格罗古",
     "acceptedAnswers": [
       "格罗古",
-      "古古",
-      "Grogu",
-      "Din Grogu"
+      "古古"
     ],
     "botCards": [
       "丁·贾林",
@@ -47968,8 +47368,7 @@
     "canonicalAnswer": "厄拉科斯",
     "acceptedAnswers": [
       "厄拉科斯",
-      "阿拉基斯",
-      "Arrakis"
+      "阿拉基斯"
     ],
     "botCards": [
       "卡拉丹",
@@ -47994,9 +47393,7 @@
     "canonicalAnswer": "威利·旺卡",
     "acceptedAnswers": [
       "威利·旺卡",
-      "旺卡",
-      "Willy Wonka",
-      "Wonka"
+      "旺卡"
     ],
     "botCards": [
       "查理·巴克特",
@@ -48021,10 +47418,7 @@
     "canonicalAnswer": "黄油酥饼",
     "acceptedAnswers": [
       "黄油酥饼",
-      "酥饼",
-      "Shortbread",
-      "shortbread biscuits",
-      "biscuits"
+      "酥饼"
     ],
     "botCards": [
       "司康饼",
@@ -48070,10 +47464,7 @@
     "acceptedAnswers": [
       "活动眼睛",
       "摇摇眼",
-      "塑料活动眼",
-      "Googly eyes",
-      "craft eyes",
-      "plastic eyes"
+      "塑料活动眼"
     ],
     "botCards": [
       "亮片",
@@ -48097,8 +47488,7 @@
     },
     "canonicalAnswer": "艾尔登法环",
     "acceptedAnswers": [
-      "艾尔登法环",
-      "Elden Ring"
+      "艾尔登法环"
     ],
     "botCards": [
       "黑暗之魂III",
@@ -48123,9 +47513,7 @@
     "canonicalAnswer": "动物森友会",
     "acceptedAnswers": [
       "动物森友会",
-      "动物之森",
-      "Animal Crossing",
-      "Animal Crossing: New Horizons"
+      "动物之森"
     ],
     "botCards": [
       "星露谷物语",
@@ -48145,11 +47533,7 @@
     "canonicalAnswer": "内鬼",
     "acceptedAnswers": [
       "内鬼",
-      "冒名顶替者",
-      "Impostor",
-      "Imposter",
-      "impostors",
-      "imposters"
+      "冒名顶替者"
     ],
     "botCards": [
       "船员",
@@ -48168,8 +47552,7 @@
     "question": "在《堡垒之夜》大逃杀标准对局开始时，玩家从哪一种飞行载具上一跃而下？",
     "canonicalAnswer": "战斗巴士",
     "acceptedAnswers": [
-      "战斗巴士",
-      "Battle Bus"
+      "战斗巴士"
     ],
     "botCards": [
       "补给直升机",
@@ -48194,10 +47577,7 @@
     "canonicalAnswer": "金环",
     "acceptedAnswers": [
       "金环",
-      "环",
-      "Rings",
-      "gold rings",
-      "ring"
+      "环"
     ],
     "botCards": [
       "混沌翡翠",
@@ -48221,8 +47601,7 @@
     },
     "canonicalAnswer": "哈迪斯",
     "acceptedAnswers": [
-      "哈迪斯",
-      "Hades"
+      "哈迪斯"
     ],
     "botCards": [
       "死亡细胞",
@@ -48247,9 +47626,7 @@
     "canonicalAnswer": "火萤",
     "acceptedAnswers": [
       "火萤",
-      "萤火虫",
-      "Fireflies",
-      "Firefly"
+      "萤火虫"
     ],
     "botCards": [
       "联邦灾后应急管理局",
@@ -48273,8 +47650,7 @@
     },
     "canonicalAnswer": "夜之城",
     "acceptedAnswers": [
-      "夜之城",
-      "Night City"
+      "夜之城"
     ],
     "botCards": [
       "新东京",
@@ -48294,9 +47670,7 @@
     "canonicalAnswer": "加重同伴方块",
     "acceptedAnswers": [
       "加重同伴方块",
-      "同伴方块",
-      "Weighted Companion Cube",
-      "Companion Cube"
+      "同伴方块"
     ],
     "botCards": [
       "测试球",
@@ -48320,8 +47694,7 @@
     "question": "失忆侦探哈里·杜博阿在政治撕裂的海滨城市雷瓦肖调查谋杀案；这座城市属于哪款游戏？",
     "canonicalAnswer": "极乐迪斯科",
     "acceptedAnswers": [
-      "极乐迪斯科",
-      "Disco Elysium"
+      "极乐迪斯科"
     ],
     "botCards": [
       "极限竞速：地平线",
@@ -48350,9 +47723,7 @@
     },
     "canonicalAnswer": "雅典",
     "acceptedAnswers": [
-      "雅典",
-      "Athens",
-      "Athina"
+      "雅典"
     ],
     "botCards": [
       "罗马",
@@ -48377,9 +47748,7 @@
     "canonicalAnswer": "里约热内卢",
     "acceptedAnswers": [
       "里约热内卢",
-      "里约",
-      "Rio de Janeiro",
-      "Rio"
+      "里约"
     ],
     "botCards": [
       "圣保罗",
@@ -48403,9 +47772,7 @@
     },
     "canonicalAnswer": "费城",
     "acceptedAnswers": [
-      "费城",
-      "Philadelphia",
-      "Philly"
+      "费城"
     ],
     "botCards": [
       "匹兹堡",
@@ -48424,9 +47791,7 @@
     "question": "这座叹息桥横跨水道，位于以贡多拉船闻名的哪座意大利历史城市？",
     "canonicalAnswer": "威尼斯",
     "acceptedAnswers": [
-      "威尼斯",
-      "Venice",
-      "Venezia"
+      "威尼斯"
     ],
     "botCards": [
       "佛罗伦萨",
@@ -48450,9 +47815,7 @@
     "question": "这条大河曾滋养古埃及文明，并最终流入地中海；它叫什么？",
     "canonicalAnswer": "尼罗河",
     "acceptedAnswers": [
-      "尼罗河",
-      "Nile",
-      "Nile River"
+      "尼罗河"
     ],
     "botCards": [
       "刚果河",
@@ -48481,9 +47844,7 @@
     },
     "canonicalAnswer": "巴拿马",
     "acceptedAnswers": [
-      "巴拿马",
-      "Panama",
-      "Republic of Panama"
+      "巴拿马"
     ],
     "botCards": [
       "哥斯达黎加",
@@ -48507,8 +47868,7 @@
     },
     "canonicalAnswer": "冰岛",
     "acceptedAnswers": [
-      "冰岛",
-      "Iceland"
+      "冰岛"
     ],
     "botCards": [
       "挪威",
@@ -48528,10 +47888,7 @@
     "canonicalAnswer": "拿破仑·波拿巴",
     "acceptedAnswers": [
       "拿破仑·波拿巴",
-      "拿破仑",
-      "Napoleon Bonaparte",
-      "Napoleon",
-      "Napoleon I"
+      "拿破仑"
     ],
     "botCards": [
       "路易十四",
@@ -48551,9 +47908,7 @@
     "canonicalAnswer": "莱特兄弟",
     "acceptedAnswers": [
       "莱特兄弟",
-      "莱特",
-      "Wright Brothers",
-      "Wright"
+      "莱特"
     ],
     "botCards": [
       "莱特纳兄弟",
@@ -48577,9 +47932,7 @@
     "question": "这座城市曾称拜占庭，后称君士坦丁堡；它如今在土耳其叫什么？",
     "canonicalAnswer": "伊斯坦布尔",
     "acceptedAnswers": [
-      "伊斯坦布尔",
-      "Istanbul",
-      "Istambul"
+      "伊斯坦布尔"
     ],
     "botCards": [
       "安卡拉",
@@ -48608,9 +47961,7 @@
     },
     "canonicalAnswer": "长颈鹿",
     "acceptedAnswers": [
-      "长颈鹿",
-      "Giraffe",
-      "giraffes"
+      "长颈鹿"
     ],
     "botCards": [
       "斑马",
@@ -48635,10 +47986,7 @@
     "canonicalAnswer": "帝企鹅",
     "acceptedAnswers": [
       "帝企鹅",
-      "皇帝企鹅",
-      "Emperor Penguin",
-      "emperor penguins",
-      "Aptenodytes forsteri"
+      "皇帝企鹅"
     ],
     "botCards": [
       "阿德利企鹅",
@@ -48662,9 +48010,7 @@
     },
     "canonicalAnswer": "树懒",
     "acceptedAnswers": [
-      "树懒",
-      "Sloth",
-      "sloths"
+      "树懒"
     ],
     "botCards": [
       "考拉",
@@ -48690,13 +48036,7 @@
     "acceptedAnswers": [
       "蜜蜂",
       "熊蜂",
-      "木蜂",
-      "Honey bee",
-      "honey bees",
-      "Bumble bee",
-      "bumble bees",
-      "Carpenter bee",
-      "carpenter bees"
+      "木蜂"
     ],
     "botCards": [
       "黄蜂",
@@ -48739,9 +48079,7 @@
     },
     "canonicalAnswer": "猫头鹰",
     "acceptedAnswers": [
-      "猫头鹰",
-      "Owl",
-      "owls"
+      "猫头鹰"
     ],
     "botCards": [
       "鹰",
@@ -48766,8 +48104,7 @@
     "canonicalAnswer": "3",
     "acceptedAnswers": [
       "3",
-      "三",
-      "three"
+      "三"
     ],
     "botCards": [
       "1",
@@ -48787,10 +48124,7 @@
     "canonicalAnswer": "毒液",
     "acceptedAnswers": [
       "毒液",
-      "毒素",
-      "Venom",
-      "poison",
-      "toxin"
+      "毒素"
     ],
     "botCards": [
       "墨汁",
@@ -48814,9 +48148,7 @@
     },
     "canonicalAnswer": "狼群",
     "acceptedAnswers": [
-      "狼群",
-      "Pack",
-      "wolf pack"
+      "狼群"
     ],
     "botCards": [
       "蜂群",
@@ -48841,10 +48173,7 @@
     "canonicalAnswer": "鲸须",
     "acceptedAnswers": [
       "鲸须",
-      "鲸须板",
-      "Baleen",
-      "baleen plates",
-      "whalebone"
+      "鲸须板"
     ],
     "botCards": [
       "长牙",
@@ -48869,9 +48198,7 @@
     "canonicalAnswer": "塔可",
     "acceptedAnswers": [
       "塔可",
-      "墨西哥卷饼",
-      "Taco",
-      "tacos"
+      "墨西哥卷饼"
     ],
     "botCards": [
       "玉米片",
@@ -48895,11 +48222,7 @@
     },
     "canonicalAnswer": "甜甜圈",
     "acceptedAnswers": [
-      "甜甜圈",
-      "Donut",
-      "Doughnut",
-      "donuts",
-      "doughnuts"
+      "甜甜圈"
     ],
     "botCards": [
       "贝果",
@@ -48924,9 +48247,7 @@
     "canonicalAnswer": "德国",
     "acceptedAnswers": [
       "德国",
-      "德意志",
-      "Germany",
-      "Deutschland"
+      "德意志"
     ],
     "botCards": [
       "美国",
@@ -48946,10 +48267,7 @@
     "canonicalAnswer": "茶",
     "acceptedAnswers": [
       "茶",
-      "茶饮",
-      "Tea",
-      "green tea",
-      "black tea"
+      "茶饮"
     ],
     "botCards": [
       "咖啡",
@@ -48968,9 +48286,7 @@
     "question": "从枫树木质部汁液中采集、常淋在早餐煎饼上的甜味调味糖浆叫什么？",
     "canonicalAnswer": "枫糖浆",
     "acceptedAnswers": [
-      "枫糖浆",
-      "Maple syrup",
-      "syrup"
+      "枫糖浆"
     ],
     "botCards": [
       "蜂蜜",
@@ -48999,9 +48315,7 @@
     },
     "canonicalAnswer": "拉面",
     "acceptedAnswers": [
-      "拉面",
-      "Ramen",
-      "ramen noodles"
+      "拉面"
     ],
     "botCards": [
       "乌冬面",
@@ -49026,9 +48340,7 @@
     "canonicalAnswer": "西班牙海鲜饭",
     "acceptedAnswers": [
       "西班牙海鲜饭",
-      "海鲜饭",
-      "Paella",
-      "Paella Valenciana"
+      "海鲜饭"
     ],
     "botCards": [
       "烩饭",
@@ -49049,10 +48361,7 @@
     "acceptedAnswers": [
       "马苏里拉奶酪",
       "马苏里拉",
-      "莫扎里拉",
-      "Mozzarella",
-      "mozzarella cheese",
-      "bocconcini"
+      "莫扎里拉"
     ],
     "botCards": [
       "帕尔马干酪",
@@ -49077,10 +48386,7 @@
     "canonicalAnswer": "大豆",
     "acceptedAnswers": [
       "大豆",
-      "黄豆",
-      "Soybean",
-      "Soy",
-      "soy beans"
+      "黄豆"
     ],
     "botCards": [
       "鹰嘴豆",
@@ -49104,9 +48410,7 @@
     "question": "哪一种红茶混合茶因加入佛手柑橙皮提取的油而具有独特香气？",
     "canonicalAnswer": "伯爵茶",
     "acceptedAnswers": [
-      "伯爵茶",
-      "Earl Grey",
-      "Earl Grey tea"
+      "伯爵茶"
     ],
     "botCards": [
       "阿萨姆茶",
@@ -49136,8 +48440,7 @@
     "canonicalAnswer": "12",
     "acceptedAnswers": [
       "12",
-      "十二",
-      "twelve"
+      "十二"
     ],
     "botCards": [
       "10",
@@ -49157,8 +48460,7 @@
     "canonicalAnswer": "10",
     "acceptedAnswers": [
       "10",
-      "十",
-      "ten"
+      "十"
     ],
     "botCards": [
       "8",
@@ -49183,10 +48485,7 @@
     "canonicalAnswer": "泳镜",
     "acceptedAnswers": [
       "泳镜",
-      "游泳镜",
-      "Goggles",
-      "swimming goggles",
-      "swim goggles"
+      "游泳镜"
     ],
     "botCards": [
       "潜水面镜",
@@ -49205,8 +48504,7 @@
     "question": "文斯·隆巴迪奖杯每年颁给哪一项美国大型体育赛事的冠军队？",
     "canonicalAnswer": "超级碗",
     "acceptedAnswers": [
-      "超级碗",
-      "Super Bowl"
+      "超级碗"
     ],
     "botCards": [
       "世界大赛",
@@ -49231,9 +48529,7 @@
     "canonicalAnswer": "冰球",
     "acceptedAnswers": [
       "冰球",
-      "冰球饼",
-      "Puck",
-      "hockey puck"
+      "冰球饼"
     ],
     "botCards": [
       "羽毛球",
@@ -49262,8 +48558,7 @@
     },
     "canonicalAnswer": "豚跳",
     "acceptedAnswers": [
-      "豚跳",
-      "Ollie"
+      "豚跳"
     ],
     "botCards": [
       "脚跟翻",
@@ -49287,9 +48582,7 @@
     },
     "canonicalAnswer": "相扑",
     "acceptedAnswers": [
-      "相扑",
-      "Sumo",
-      "sumo wrestling"
+      "相扑"
     ],
     "botCards": [
       "柔道",
@@ -49309,8 +48602,7 @@
     "canonicalAnswer": "21",
     "acceptedAnswers": [
       "21",
-      "二十一",
-      "twenty-one"
+      "二十一"
     ],
     "botCards": [
       "15",
@@ -49348,9 +48640,7 @@
     "question": "现代马拉松纪念希腊信使斐迪皮德斯从著名战场跑到哪一座古城的传说？",
     "canonicalAnswer": "雅典",
     "acceptedAnswers": [
-      "雅典",
-      "Athens",
-      "Athina"
+      "雅典"
     ],
     "botCards": [
       "斯巴达",
@@ -49374,10 +48664,7 @@
     },
     "canonicalAnswer": "彩虹猫",
     "acceptedAnswers": [
-      "彩虹猫",
-      "Nyan Cat",
-      "Pop-Tart Cat",
-      "Nyan"
+      "彩虹猫"
     ],
     "botCards": [
       "键盘猫",
@@ -49401,9 +48688,6 @@
     },
     "canonicalAnswer": "Instagram",
     "acceptedAnswers": [
-      "Instagram",
-      "IG",
-      "Insta",
       "照片墙"
     ],
     "botCards": [
@@ -49468,8 +48752,7 @@
     "canonicalAnswer": "绿色",
     "acceptedAnswers": [
       "绿色",
-      "绿",
-      "Green"
+      "绿"
     ],
     "botCards": [
       "黄色",
@@ -49498,10 +48781,7 @@
     },
     "canonicalAnswer": "柴犬",
     "acceptedAnswers": [
-      "柴犬",
-      "Shiba Inu",
-      "Shiba",
-      "shibas"
+      "柴犬"
     ],
     "botCards": [
       "秋田犬",
@@ -49526,9 +48806,7 @@
     "canonicalAnswer": "瑞克·阿斯特利",
     "acceptedAnswers": [
       "瑞克·阿斯特利",
-      "瑞克·阿斯利",
-      "Rick Astley",
-      "Astley"
+      "瑞克·阿斯利"
     ],
     "botCards": [
       "乔治·迈克尔",
@@ -49567,9 +48845,7 @@
     "canonicalAnswer": "橙色",
     "acceptedAnswers": [
       "橙色",
-      "橙红色",
-      "Orange",
-      "orangered"
+      "橙红色"
     ],
     "botCards": [
       "蓝色",
@@ -49589,9 +48865,7 @@
     "canonicalAnswer": "圣迭戈动物园",
     "acceptedAnswers": [
       "圣迭戈动物园",
-      "圣地亚哥动物园",
-      "San Diego Zoo",
-      "the zoo"
+      "圣地亚哥动物园"
     ],
     "botCards": [
       "布朗克斯动物园",
@@ -49621,10 +48895,7 @@
     "canonicalAnswer": "显微镜",
     "acceptedAnswers": [
       "显微镜",
-      "光学显微镜",
-      "Microscope",
-      "optical microscope",
-      "light microscope"
+      "光学显微镜"
     ],
     "botCards": [
       "望远镜",
@@ -49649,8 +48920,7 @@
     "canonicalAnswer": "2",
     "acceptedAnswers": [
       "2",
-      "二",
-      "two"
+      "二"
     ],
     "botCards": [
       "1",
@@ -49675,10 +48945,7 @@
     "canonicalAnswer": "月球",
     "acceptedAnswers": [
       "月球",
-      "月亮",
-      "The Moon",
-      "Moon",
-      "Luna"
+      "月亮"
     ],
     "botCards": [
       "火卫一",
@@ -49703,8 +48970,7 @@
     "canonicalAnswer": "8",
     "acceptedAnswers": [
       "8",
-      "八",
-      "eight"
+      "八"
     ],
     "botCards": [
       "6",
@@ -49729,10 +48995,7 @@
     "canonicalAnswer": "艾萨克·牛顿",
     "acceptedAnswers": [
       "艾萨克·牛顿",
-      "牛顿",
-      "Sir Isaac Newton",
-      "Isaac Newton",
-      "Newton"
+      "牛顿"
     ],
     "botCards": [
       "伽利略·伽利莱",
@@ -49756,8 +49019,7 @@
     },
     "canonicalAnswer": "岩浆",
     "acceptedAnswers": [
-      "岩浆",
-      "Magma"
+      "岩浆"
     ],
     "botCards": [
       "熔岩",
@@ -49782,12 +49044,7 @@
     "canonicalAnswer": "氧化铁",
     "acceptedAnswers": [
       "氧化铁",
-      "铁锈",
-      "Iron oxide",
-      "rust",
-      "iron oxides",
-      "oxidized iron",
-      "iron oxide dust"
+      "铁锈"
     ],
     "botCards": [
       "二氧化碳",
@@ -49806,10 +49063,7 @@
     "question": "按表面积和重量计算，人体最大的一种器官是什么？",
     "canonicalAnswer": "皮肤",
     "acceptedAnswers": [
-      "皮肤",
-      "Skin",
-      "the skin",
-      "integument"
+      "皮肤"
     ],
     "botCards": [
       "肝脏",
@@ -49828,11 +49082,7 @@
     "question": "声波需要物质介质传播，因此在什么空无环境中无法传播或被听见？",
     "canonicalAnswer": "真空",
     "acceptedAnswers": [
-      "真空",
-      "Vacuum",
-      "a vacuum",
-      "outer space",
-      "space"
+      "真空"
     ],
     "botCards": [
       "水中",
@@ -49851,14 +49101,10 @@
     "question": "绝对零度换算为摄氏温度是多少？",
     "canonicalAnswer": "-273.15 °C",
     "acceptedAnswers": [
-      "-273.15 °C",
       "-273.15",
       "零下273.15摄氏度",
       "负273.15摄氏度",
-      "minus 273.15",
-      "negative 273.15",
       "-273 c",
-      "-273 celsius",
       "-273"
     ],
     "botCards": [
@@ -49885,10 +49131,7 @@
     "acceptedAnswers": [
       "海洋",
       "大海",
-      "海",
-      "Sea",
-      "Ocean",
-      "oceans"
+      "海"
     ],
     "botCards": [
       "天空",
@@ -49913,10 +49156,7 @@
     "canonicalAnswer": "斯芬克斯",
     "acceptedAnswers": [
       "斯芬克斯",
-      "狮身人面像",
-      "Sphinx",
-      "the sphinx",
-      "Great Sphinx"
+      "狮身人面像"
     ],
     "botCards": [
       "鹰身女妖",
@@ -49941,9 +49181,7 @@
     "canonicalAnswer": "美丽",
     "acceptedAnswers": [
       "美丽",
-      "美貌",
-      "Beauty",
-      "physical beauty"
+      "美貌"
     ],
     "botCards": [
       "战争",
@@ -49963,9 +49201,7 @@
     "canonicalAnswer": "王者之剑",
     "acceptedAnswers": [
       "王者之剑",
-      "圣剑",
-      "Excalibur",
-      "Caliburn"
+      "圣剑"
     ],
     "botCards": [
       "冈格尼尔",
@@ -49989,8 +49225,7 @@
     "question": "希腊神话中，哪位好奇的第一位人类女性打开禁罐，意外将灾祸与苦难放入人间？",
     "canonicalAnswer": "潘多拉",
     "acceptedAnswers": [
-      "潘多拉",
-      "Pandora"
+      "潘多拉"
     ],
     "botCards": [
       "珀耳塞福涅",
@@ -50020,9 +49255,7 @@
     "canonicalAnswer": "双蛇杖",
     "acceptedAnswers": [
       "双蛇杖",
-      "赫尔墨斯杖",
-      "Caduceus",
-      "the caduceus"
+      "赫尔墨斯杖"
     ],
     "botCards": [
       "阿斯克勒庇俄斯杖",
@@ -50041,8 +49274,7 @@
     "question": "哪位机智的泰坦因从奥林匹斯山盗火赠予人类，而被判每天让鹰啄食肝脏？",
     "canonicalAnswer": "普罗米修斯",
     "acceptedAnswers": [
-      "普罗米修斯",
-      "Prometheus"
+      "普罗米修斯"
     ],
     "botCards": [
       "阿特拉斯",
@@ -50066,9 +49298,7 @@
     "question": "在西非和加勒比民间传说中，机智的诡计者阿南西最常化作什么动物？",
     "canonicalAnswer": "蜘蛛",
     "acceptedAnswers": [
-      "蜘蛛",
-      "Spider",
-      "a spider"
+      "蜘蛛"
     ],
     "botCards": [
       "乌鸦",
@@ -50087,8 +49317,7 @@
     "question": "统治古城乌鲁克、在现存最古老史诗中遍寻永生秘密的传奇国王是谁？",
     "canonicalAnswer": "吉尔伽美什",
     "acceptedAnswers": [
-      "吉尔伽美什",
-      "Gilgamesh"
+      "吉尔伽美什"
     ],
     "botCards": [
       "汉谟拉比",
@@ -50118,8 +49347,7 @@
     "canonicalAnswer": "芭芭雅嘎",
     "acceptedAnswers": [
       "芭芭雅嘎",
-      "巴巴雅加",
-      "Baba Yaga"
+      "巴巴雅加"
     ],
     "botCards": [
       "摩根勒菲",
@@ -50144,9 +49372,7 @@
     "canonicalAnswer": "大卫",
     "acceptedAnswers": [
       "大卫",
-      "大卫像",
-      "David",
-      "Statue of David"
+      "大卫像"
     ],
     "botCards": [
       "摩西",
@@ -50166,8 +49392,7 @@
     "canonicalAnswer": "6",
     "acceptedAnswers": [
       "6",
-      "六",
-      "six"
+      "六"
     ],
     "botCards": [
       "4",
@@ -50192,10 +49417,7 @@
     "canonicalAnswer": "克劳德·莫奈",
     "acceptedAnswers": [
       "克劳德·莫奈",
-      "莫奈",
-      "Claude Monet",
-      "Monet",
-      "Claude"
+      "莫奈"
     ],
     "botCards": [
       "皮埃尔-奥古斯特·雷诺阿",
@@ -50220,8 +49442,7 @@
     "canonicalAnswer": "88",
     "acceptedAnswers": [
       "88",
-      "八十八",
-      "eighty-eight"
+      "八十八"
     ],
     "botCards": [
       "76",
@@ -50246,10 +49467,7 @@
     "canonicalAnswer": "文森特·梵高",
     "acceptedAnswers": [
       "文森特·梵高",
-      "梵高",
-      "Vincent van Gogh",
-      "Van Gogh",
-      "Vincent"
+      "梵高"
     ],
     "botCards": [
       "伦勃朗",
@@ -50274,10 +49492,7 @@
     "canonicalAnswer": "哥特式建筑",
     "acceptedAnswers": [
       "哥特式建筑",
-      "哥特式",
-      "Gothic",
-      "Gothic architecture",
-      "French Gothic"
+      "哥特式"
     ],
     "botCards": [
       "罗马式建筑",
@@ -50303,10 +49518,7 @@
     "acceptedAnswers": [
       "沃尔夫冈·阿马德乌斯·莫扎特",
       "莫扎特",
-      "沃尔夫冈·莫扎特",
-      "Wolfgang Amadeus Mozart",
-      "Mozart",
-      "Wolfgang Mozart"
+      "沃尔夫冈·莫扎特"
     ],
     "botCards": [
       "约翰·塞巴斯蒂安·巴赫",
@@ -50332,7 +49544,6 @@
     "acceptedAnswers": [
       "马林巴琴",
       "马林巴",
-      "Marimba",
       "木琴"
     ],
     "botCards": [
@@ -50357,8 +49568,7 @@
     },
     "canonicalAnswer": "男高音",
     "acceptedAnswers": [
-      "男高音",
-      "tenor"
+      "男高音"
     ],
     "botCards": [
       "男中音",
@@ -50385,12 +49595,7 @@
       "钟表",
       "时钟",
       "怀表",
-      "手表",
-      "Clocks",
-      "Watches",
-      "Pocket watches",
-      "Clock",
-      "Watch"
+      "手表"
     ],
     "botCards": [
       "镜子",
@@ -50409,9 +49614,7 @@
     "question": "这张画面出自哪部电影？",
     "canonicalAnswer": "黑客帝国",
     "acceptedAnswers": [
-      "黑客帝国",
-      "The Matrix",
-      "Matrix"
+      "黑客帝国"
     ],
     "botCards": [
       "盗梦空间",
@@ -50435,10 +49638,7 @@
     "question": "这张画面出自哪部电影？",
     "canonicalAnswer": "泰坦尼克号",
     "acceptedAnswers": [
-      "泰坦尼克号",
-      "Titanic",
-      "Titanic 1997",
-      "The Titanic"
+      "泰坦尼克号"
     ],
     "botCards": [
       "珍珠港",
@@ -50462,9 +49662,7 @@
     "question": "这张画面出自哪部电影？",
     "canonicalAnswer": "闪灵",
     "acceptedAnswers": [
-      "闪灵",
-      "The Shining",
-      "Shining"
+      "闪灵"
     ],
     "botCards": [
       "惊魂记",
@@ -50488,9 +49686,7 @@
     "question": "这张画面出自哪部电影？",
     "canonicalAnswer": "阿凡达",
     "acceptedAnswers": [
-      "阿凡达",
-      "Avatar",
-      "Avatar 1"
+      "阿凡达"
     ],
     "botCards": [
       "银河护卫队",
@@ -50515,10 +49711,7 @@
     "canonicalAnswer": "布达佩斯大饭店",
     "acceptedAnswers": [
       "布达佩斯大饭店",
-      "布达佩斯酒店",
-      "The Grand Budapest Hotel",
-      "Grand Budapest Hotel",
-      "Budapest Hotel"
+      "布达佩斯酒店"
     ],
     "botCards": [
       "月升王国",
@@ -50542,9 +49735,7 @@
     "question": "这张画面出自哪部电影？",
     "canonicalAnswer": "银翼杀手2049",
     "acceptedAnswers": [
-      "银翼杀手2049",
-      "Blade Runner 2049",
-      "Blade Runner"
+      "银翼杀手2049"
     ],
     "botCards": [
       "沙丘",
@@ -50569,9 +49760,7 @@
     "canonicalAnswer": "查理·卓别林",
     "acceptedAnswers": [
       "查理·卓别林",
-      "卓别林",
-      "Charlie Chaplin",
-      "Chaplin"
+      "卓别林"
     ],
     "botCards": [
       "巴斯特·基顿",
@@ -50596,9 +49785,7 @@
     "canonicalAnswer": "埃尔维斯·普雷斯利",
     "acceptedAnswers": [
       "埃尔维斯·普雷斯利",
-      "猫王",
-      "Elvis Presley",
-      "Elvis"
+      "猫王"
     ],
     "botCards": [
       "巴迪·霍利",
@@ -50623,9 +49810,7 @@
     "canonicalAnswer": "玛丽莲·梦露",
     "acceptedAnswers": [
       "玛丽莲·梦露",
-      "梦露",
-      "Marilyn Monroe",
-      "Monroe"
+      "梦露"
     ],
     "botCards": [
       "格蕾丝·凯利",
@@ -50650,9 +49835,7 @@
     "canonicalAnswer": "阿尔弗雷德·希区柯克",
     "acceptedAnswers": [
       "阿尔弗雷德·希区柯克",
-      "希区柯克",
-      "Alfred Hitchcock",
-      "Hitchcock"
+      "希区柯克"
     ],
     "botCards": [
       "奥森·威尔斯",
@@ -50676,9 +49859,7 @@
     "question": "图中是哪一款任天堂家用游戏机？",
     "canonicalAnswer": "任天堂娱乐系统",
     "acceptedAnswers": [
-      "任天堂娱乐系统",
-      "NES",
-      "Nintendo Entertainment System"
+      "任天堂娱乐系统"
     ],
     "botCards": [
       "超级任天堂",
@@ -50828,9 +50009,7 @@
     "canonicalAnswer": "砖块",
     "acceptedAnswers": [
       "砖块",
-      "砖",
-      "Brick",
-      "Bricks"
+      "砖"
     ],
     "botCards": [
       "矿石",
@@ -50850,8 +50029,7 @@
     "canonicalAnswer": "五",
     "acceptedAnswers": [
       "五",
-      "5",
-      "five"
+      "5"
     ],
     "botCards": [
       "四",
@@ -50890,10 +50068,7 @@
     "canonicalAnswer": "暴击",
     "acceptedAnswers": [
       "暴击",
-      "致命一击",
-      "Critical hit",
-      "Crit",
-      "Critical"
+      "致命一击"
     ],
     "botCards": [
       "擦边命中",
@@ -50913,10 +50088,7 @@
     "canonicalAnswer": "中华人民共和国",
     "acceptedAnswers": [
       "中华人民共和国",
-      "中国",
-      "PRC",
-      "People's Republic of China",
-      "China"
+      "中国"
     ],
     "botCards": [
       "俄罗斯",
@@ -50941,10 +50113,7 @@
     "canonicalAnswer": "智利共和国",
     "acceptedAnswers": [
       "智利共和国",
-      "智利",
-      "Chile",
-      "Republic of Chile",
-      "República de Chile"
+      "智利"
     ],
     "botCards": [
       "古巴",
@@ -50968,8 +50137,7 @@
     "question": "地图上突出显示的是哪个国家？",
     "canonicalAnswer": "日本",
     "acceptedAnswers": [
-      "日本",
-      "Japan"
+      "日本"
     ],
     "botCards": [
       "东京",
@@ -50994,10 +50162,7 @@
     "canonicalAnswer": "老挝人民民主共和国",
     "acceptedAnswers": [
       "老挝人民民主共和国",
-      "老挝",
-      "Laos",
-      "Lao People's Democratic Republic",
-      "LPDR"
+      "老挝"
     ],
     "botCards": [
       "越南",
@@ -51022,9 +50187,7 @@
     "canonicalAnswer": "新加坡共和国",
     "acceptedAnswers": [
       "新加坡共和国",
-      "新加坡",
-      "Singapore",
-      "Republic of Singapore"
+      "新加坡"
     ],
     "botCards": [
       "印度尼西亚",
@@ -51048,8 +50211,7 @@
     "question": "地图上突出显示的是哪个国家？",
     "canonicalAnswer": "加拿大",
     "acceptedAnswers": [
-      "加拿大",
-      "Canada"
+      "加拿大"
     ],
     "botCards": [
       "美国",
@@ -51074,9 +50236,7 @@
     "canonicalAnswer": "斐济共和国",
     "acceptedAnswers": [
       "斐济共和国",
-      "斐济",
-      "Fiji",
-      "Republic of Fiji"
+      "斐济"
     ],
     "botCards": [
       "关岛",
@@ -51100,8 +50260,7 @@
     "question": "地图上突出显示的是哪个自治领地？",
     "canonicalAnswer": "格陵兰",
     "acceptedAnswers": [
-      "格陵兰",
-      "Greenland"
+      "格陵兰"
     ],
     "botCards": [
       "丹麦",
@@ -51126,9 +50285,7 @@
     "canonicalAnswer": "波兰共和国",
     "acceptedAnswers": [
       "波兰共和国",
-      "波兰",
-      "Poland",
-      "Republic of Poland"
+      "波兰"
     ],
     "botCards": [
       "匈牙利",
@@ -51153,9 +50310,7 @@
     "canonicalAnswer": "北马其顿共和国",
     "acceptedAnswers": [
       "北马其顿共和国",
-      "北马其顿",
-      "North Macedonia",
-      "Republic of North Macedonia"
+      "北马其顿"
     ],
     "botCards": [
       "阿尔巴尼亚",
@@ -51184,9 +50339,7 @@
     "canonicalAnswer": "大熊猫",
     "acceptedAnswers": [
       "大熊猫",
-      "熊猫",
-      "Giant panda",
-      "Panda"
+      "熊猫"
     ],
     "botCards": [
       "考拉",
@@ -51210,8 +50363,7 @@
     "question": "已知曾经生活在地球上的最大动物是什么？",
     "canonicalAnswer": "蓝鲸",
     "acceptedAnswers": [
-      "蓝鲸",
-      "Blue whale"
+      "蓝鲸"
     ],
     "botCards": [
       "非洲象",
@@ -51236,10 +50388,7 @@
     "canonicalAnswer": "美国",
     "acceptedAnswers": [
       "美国",
-      "美利坚合众国",
-      "United States",
-      "USA",
-      "America"
+      "美利坚合众国"
     ],
     "botCards": [
       "加拿大",
@@ -51264,9 +50413,7 @@
     "canonicalAnswer": "雄性",
     "acceptedAnswers": [
       "雄性",
-      "雄",
-      "Male",
-      "Males"
+      "雄"
     ],
     "botCards": [
       "雌性",
@@ -51290,9 +50437,7 @@
     "question": "受威胁时会蜷成带刺球状的是哪种小型哺乳动物？",
     "canonicalAnswer": "刺猬",
     "acceptedAnswers": [
-      "刺猬",
-      "Hedgehog",
-      "Hedgehogs"
+      "刺猬"
     ],
     "botCards": [
       "豪猪",
@@ -51317,8 +50462,7 @@
     "canonicalAnswer": "呼吸孔",
     "acceptedAnswers": [
       "呼吸孔",
-      "喷气孔",
-      "Blowhole"
+      "喷气孔"
     ],
     "botCards": [
       "鳃",
@@ -51340,11 +50484,7 @@
       "食物",
       "食物中的色素",
       "饮食",
-      "饮食中的色素",
-      "Food",
-      "Diet",
-      "Their food",
-      "Their diet"
+      "饮食中的色素"
     ],
     "botCards": [
       "阳光",
@@ -51365,10 +50505,7 @@
     "acceptedAnswers": [
       "后腿",
       "后肢",
-      "脚踝",
-      "Hind legs",
-      "Back legs",
-      "Ankles"
+      "脚踝"
     ],
     "botCards": [
       "尾巴",
@@ -51388,9 +50525,7 @@
     "canonicalAnswer": "鸦科",
     "acceptedAnswers": [
       "鸦科",
-      "鸦科鸟类",
-      "Corvids",
-      "Corvidae"
+      "鸦科鸟类"
     ],
     "botCards": [
       "猛禽",
@@ -51409,9 +50544,7 @@
     "question": "哪种带斑点的大型猫科动物以陆地上速度最快闻名？",
     "canonicalAnswer": "猎豹",
     "acceptedAnswers": [
-      "猎豹",
-      "Cheetah",
-      "Cheetahs"
+      "猎豹"
     ],
     "botCards": [
       "豹",
@@ -51435,11 +50568,7 @@
     "question": "法拉费除了通常使用鹰嘴豆之外，还常用哪一种豆类制作？",
     "canonicalAnswer": "蚕豆",
     "acceptedAnswers": [
-      "蚕豆",
-      "Fava beans",
-      "Fava bean",
-      "Broad beans",
-      "Broad bean"
+      "蚕豆"
     ],
     "botCards": [
       "扁豆",
@@ -51463,9 +50592,7 @@
     "question": "抹茶是哪一种茶的粉末形态？",
     "canonicalAnswer": "绿茶",
     "acceptedAnswers": [
-      "绿茶",
-      "Green tea",
-      "Tea"
+      "绿茶"
     ],
     "botCards": [
       "红茶",
@@ -51490,8 +50617,7 @@
     "canonicalAnswer": "马斯卡彭奶酪",
     "acceptedAnswers": [
       "马斯卡彭奶酪",
-      "马斯卡彭",
-      "Mascarpone"
+      "马斯卡彭"
     ],
     "botCards": [
       "意大利乳清干酪",
@@ -51516,11 +50642,7 @@
     "canonicalAnswer": "菲洛酥皮",
     "acceptedAnswers": [
       "菲洛酥皮",
-      "菲洛面皮",
-      "Filo",
-      "Phyllo",
-      "Filo pastry",
-      "Phyllo pastry"
+      "菲洛面皮"
     ],
     "botCards": [
       "千层酥皮",
@@ -51545,10 +50667,7 @@
     "canonicalAnswer": "大豆",
     "acceptedAnswers": [
       "大豆",
-      "黄豆",
-      "Soybean",
-      "Soybeans",
-      "Soya bean"
+      "黄豆"
     ],
     "botCards": [
       "鹰嘴豆",
@@ -51575,9 +50694,7 @@
       "冷的",
       "冷食",
       "冷着吃",
-      "凉的",
-      "Cold",
-      "Served cold"
+      "凉的"
     ],
     "botCards": [
       "热的",
@@ -51593,13 +50710,11 @@
     "type": "text",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "制作珍贵香料 saffron 的细丝取自哪种花？请用中文或英文作答。",
+    "question": "制作珍贵香料 saffron 的细丝取自哪种花？请用中文作答。",
     "canonicalAnswer": "番红花",
     "acceptedAnswers": [
       "番红花",
-      "藏红花",
-      "Crocus",
-      "Saffron crocus"
+      "藏红花"
     ],
     "botCards": [
       "郁金香",
@@ -51615,13 +50730,11 @@
     "type": "text",
     "theme": "Food and Drinks",
     "difficulty": "medium",
-    "question": "Tequila 由哪种植物制成？请用中文或英文作答。",
+    "question": "Tequila 由哪种植物制成？请用中文作答。",
     "canonicalAnswer": "蓝色龙舌兰",
     "acceptedAnswers": [
       "蓝色龙舌兰",
-      "龙舌兰",
-      "Blue agave",
-      "Agave"
+      "龙舌兰"
     ],
     "botCards": [
       "甘蔗",
@@ -51641,9 +50754,7 @@
     "canonicalAnswer": "乳酸菌",
     "acceptedAnswers": [
       "乳酸菌",
-      "乳酸杆菌",
-      "Lactic acid bacteria",
-      "Lactobacillus"
+      "乳酸杆菌"
     ],
     "botCards": [
       "大肠杆菌",
@@ -51663,9 +50774,7 @@
     "canonicalAnswer": "谷氨酸",
     "acceptedAnswers": [
       "谷氨酸",
-      "谷氨酸盐",
-      "Glutamate",
-      "Glutamic acid"
+      "谷氨酸盐"
     ],
     "botCards": [
       "咖啡因",
@@ -51684,10 +50793,7 @@
     "question": "图中的椭圆形球用于哪项运动？",
     "canonicalAnswer": "橄榄球",
     "acceptedAnswers": [
-      "橄榄球",
-      "Rugby",
-      "Rugby union",
-      "Rugby league"
+      "橄榄球"
     ],
     "botCards": [
       "板球",
@@ -51713,10 +50819,7 @@
     "acceptedAnswers": [
       "棒球手套",
       "手套",
-      "捕手手套",
-      "Glove",
-      "Baseball glove",
-      "Mitt"
+      "捕手手套"
     ],
     "botCards": [
       "头盔",
@@ -51740,8 +50843,7 @@
     "question": "花剑、重剑和佩剑属于哪项运动所使用的武器？",
     "canonicalAnswer": "击剑",
     "acceptedAnswers": [
-      "击剑",
-      "Fencing"
+      "击剑"
     ],
     "botCards": [
       "射箭",
@@ -51765,9 +50867,7 @@
     "question": "图中的球拍和小球属于哪项奥运项目？",
     "canonicalAnswer": "乒乓球",
     "acceptedAnswers": [
-      "乒乓球",
-      "Table tennis",
-      "Ping pong"
+      "乒乓球"
     ],
     "botCards": [
       "羽毛球",
@@ -51819,10 +50919,8 @@
       "42.195公里",
       "42公里",
       "26.2英里",
-      "42.2 kilometers",
       "42.195 km",
-      "42 km",
-      "26.2 miles"
+      "42 km"
     ],
     "botCards": [
       "21.1公里",
@@ -51843,7 +50941,6 @@
     "acceptedAnswers": [
       "五",
       "5",
-      "five",
       "五局三胜"
     ],
     "botCards": [
@@ -51864,8 +50961,7 @@
     "canonicalAnswer": "十二",
     "acceptedAnswers": [
       "十二",
-      "12",
-      "twelve"
+      "12"
     ],
     "botCards": [
       "十",
@@ -51887,9 +50983,7 @@
       "低于标准杆三杆",
       "低三杆",
       "3杆低于标准杆",
-      "-3",
-      "Three under par",
-      "3 under par"
+      "-3"
     ],
     "botCards": [
       "低于标准杆两杆",
@@ -51909,9 +51003,7 @@
     "canonicalAnswer": "鸭蛋",
     "acceptedAnswers": [
       "鸭蛋",
-      "鸭",
-      "Duck",
-      "A duck"
+      "鸭"
     ],
     "botCards": [
       "鹅蛋",
@@ -51931,9 +51023,7 @@
     "canonicalAnswer": "二维码",
     "acceptedAnswers": [
       "二维码",
-      "QR码",
-      "QR code",
-      "Quick response code"
+      "QR码"
     ],
     "botCards": [
       "条形码",
@@ -51982,9 +51072,7 @@
     "question": "这个标志代表哪个开放许可组织？",
     "canonicalAnswer": "知识共享",
     "acceptedAnswers": [
-      "知识共享",
-      "Creative Commons",
-      "CC"
+      "知识共享"
     ],
     "botCards": [
       "开放人工智能",
@@ -52009,8 +51097,7 @@
     "canonicalAnswer": "话题标签",
     "acceptedAnswers": [
       "话题标签",
-      "井号标签",
-      "Hashtag"
+      "井号标签"
     ],
     "botCards": [
       "用户标识",
@@ -52034,10 +51121,7 @@
     "question": "在电子邮件地址中，这个符号把用户名与什么分开？",
     "canonicalAnswer": "域名",
     "acceptedAnswers": [
-      "域名",
-      "Domain",
-      "Domain name",
-      "Host"
+      "域名"
     ],
     "botCards": [
       "密码",
@@ -52061,10 +51145,7 @@
     "question": "网站在浏览器中存储的小段数据通常叫什么？",
     "canonicalAnswer": "浏览器Cookie",
     "acceptedAnswers": [
-      "浏览器Cookie",
-      "Cookie",
-      "Cookies",
-      "Browser cookies"
+      "浏览器Cookie"
     ],
     "botCards": [
       "面包屑",
@@ -52105,10 +51186,7 @@
       "双因素认证",
       "双重认证",
       "两步验证",
-      "2FA",
-      "Two-factor authentication",
-      "Multi-factor authentication",
-      "MFA"
+      "2FA"
     ],
     "botCards": [
       "单点登录",
@@ -52166,9 +51244,7 @@
     "canonicalAnswer": "阿尔伯特·爱因斯坦",
     "acceptedAnswers": [
       "阿尔伯特·爱因斯坦",
-      "爱因斯坦",
-      "Albert Einstein",
-      "Einstein"
+      "爱因斯坦"
     ],
     "botCards": [
       "艾萨克·牛顿",
@@ -52193,9 +51269,7 @@
     "canonicalAnswer": "玛丽·居里",
     "acceptedAnswers": [
       "玛丽·居里",
-      "居里夫人",
-      "Marie Curie",
-      "Madame Curie"
+      "居里夫人"
     ],
     "botCards": [
       "罗莎琳德·富兰克林",
@@ -52244,9 +51318,7 @@
     "canonicalAnswer": "土星五号",
     "acceptedAnswers": [
       "土星五号",
-      "土星5号",
-      "Saturn V",
-      "Saturn 5"
+      "土星5号"
     ],
     "botCards": [
       "猎鹰9号",
@@ -52272,10 +51344,7 @@
     "acceptedAnswers": [
       "地球轨道",
       "近地轨道",
-      "轨道",
-      "Earth orbit",
-      "Orbit",
-      "Low Earth orbit"
+      "轨道"
     ],
     "botCards": [
       "月球",
@@ -52299,9 +51368,7 @@
     "question": "光在什么样的空间中传播速度最快？",
     "canonicalAnswer": "真空",
     "acceptedAnswers": [
-      "真空",
-      "Vacuum",
-      "A vacuum"
+      "真空"
     ],
     "botCards": [
       "水",
@@ -52321,9 +51388,7 @@
     "canonicalAnswer": "细胞核",
     "acceptedAnswers": [
       "细胞核",
-      "核",
-      "Nucleus",
-      "Cell nucleus"
+      "核"
     ],
     "botCards": [
       "核糖体",
@@ -52346,11 +51411,7 @@
       "相互移动",
       "移动",
       "位移",
-      "碰撞",
-      "Move past each other",
-      "Move",
-      "Shift",
-      "Collide"
+      "碰撞"
     ],
     "botCards": [
       "停止移动",
@@ -52370,9 +51431,7 @@
     "canonicalAnswer": "开尔文",
     "acceptedAnswers": [
       "开尔文",
-      "开尔文温标",
-      "Kelvin",
-      "Kelvin scale"
+      "开尔文温标"
     ],
     "botCards": [
       "摄氏度",
@@ -52392,9 +51451,7 @@
     "canonicalAnswer": "细菌",
     "acceptedAnswers": [
       "细菌",
-      "细菌感染",
-      "Bacteria",
-      "Bacterial infections"
+      "细菌感染"
     ],
     "botCards": [
       "病毒",
@@ -52413,8 +51470,7 @@
     "question": "哪位英雄以击败美杜莎闻名？",
     "canonicalAnswer": "珀耳修斯",
     "acceptedAnswers": [
-      "珀耳修斯",
-      "Perseus"
+      "珀耳修斯"
     ],
     "botCards": [
       "忒修斯",
@@ -52438,8 +51494,7 @@
     "question": "在罗马神话中，维纳斯是爱与什么的女神？",
     "canonicalAnswer": "美丽",
     "acceptedAnswers": [
-      "美丽",
-      "Beauty"
+      "美丽"
     ],
     "botCards": [
       "战争",
@@ -52465,8 +51520,7 @@
     "acceptedAnswers": [
       "姆乔尔尼尔",
       "妙尔尼尔",
-      "雷神之锤",
-      "Mjolnir"
+      "雷神之锤"
     ],
     "botCards": [
       "冈格尼尔",
@@ -52490,8 +51544,7 @@
     "question": "奥丁骑乘的八足马叫什么名字？",
     "canonicalAnswer": "斯莱普尼尔",
     "acceptedAnswers": [
-      "斯莱普尼尔",
-      "Sleipnir"
+      "斯莱普尼尔"
     ],
     "botCards": [
       "芬里尔",
@@ -52515,8 +51568,7 @@
     "question": "猫头鹰是哪位希腊女神的象征？",
     "canonicalAnswer": "雅典娜",
     "acceptedAnswers": [
-      "雅典娜",
-      "Athena"
+      "雅典娜"
     ],
     "botCards": [
       "阿耳忒弥斯",
@@ -52540,8 +51592,7 @@
     "question": "哪位希腊英雄的名字成为形容脚跟弱点的说法的一部分？",
     "canonicalAnswer": "阿喀琉斯",
     "acceptedAnswers": [
-      "阿喀琉斯",
-      "Achilles"
+      "阿喀琉斯"
     ],
     "botCards": [
       "奥德修斯",
@@ -52560,8 +51611,7 @@
     "question": "哪位北欧神话人物最以诡计之神闻名？",
     "canonicalAnswer": "洛基",
     "acceptedAnswers": [
-      "洛基",
-      "Loki"
+      "洛基"
     ],
     "botCards": [
       "巴德尔",
@@ -52580,9 +51630,7 @@
     "question": "弥诺陶洛斯被囚禁在克里特岛上的哪座传说建筑中？",
     "canonicalAnswer": "迷宫",
     "acceptedAnswers": [
-      "迷宫",
-      "Labyrinth",
-      "The labyrinth"
+      "迷宫"
     ],
     "botCards": [
       "冥界",
@@ -52603,10 +51651,7 @@
     "acceptedAnswers": [
       "来世",
       "冥界",
-      "死者的世界",
-      "Afterlife",
-      "Underworld",
-      "The dead"
+      "死者的世界"
     ],
     "botCards": [
       "海洋",
@@ -52622,13 +51667,11 @@
     "type": "text",
     "theme": "Mythology",
     "difficulty": "hard",
-    "question": "Quetzalcoatl 通常被描绘成哪种蛇？请用中文或英文作答。",
+    "question": "Quetzalcoatl 通常被描绘成哪种蛇？请用中文作答。",
     "canonicalAnswer": "羽蛇",
     "acceptedAnswers": [
       "羽蛇",
-      "羽毛蛇",
-      "Feathered serpent",
-      "Plumed serpent"
+      "羽毛蛇"
     ],
     "botCards": [
       "海蛇",
@@ -52653,9 +51696,7 @@
     "canonicalAnswer": "葛饰北斋",
     "acceptedAnswers": [
       "葛饰北斋",
-      "北斋",
-      "Hokusai",
-      "Katsushika Hokusai"
+      "北斋"
     ],
     "botCards": [
       "歌川广重",
@@ -52680,10 +51721,7 @@
     "canonicalAnswer": "西斯廷小堂",
     "acceptedAnswers": [
       "西斯廷小堂",
-      "西斯廷教堂",
-      "Sistine Chapel",
-      "The Sistine Chapel",
-      "Cappella Sistina"
+      "西斯廷教堂"
     ],
     "botCards": [
       "圣彼得大教堂",
@@ -52707,10 +51745,7 @@
     },
     "canonicalAnswer": "竖琴",
     "acceptedAnswers": [
-      "竖琴",
-      "Harp",
-      "Pedal harp",
-      "Concert harp"
+      "竖琴"
     ],
     "botCards": [
       "羽管键琴",
@@ -52730,9 +51765,7 @@
     "canonicalAnswer": "弗里达·卡罗",
     "acceptedAnswers": [
       "弗里达·卡罗",
-      "卡罗",
-      "Frida Kahlo",
-      "Kahlo"
+      "卡罗"
     ],
     "botCards": [
       "迭戈·里维拉",
@@ -52757,10 +51790,7 @@
     "canonicalAnswer": "四季",
     "acceptedAnswers": [
       "四季",
-      "维瓦尔第四季",
-      "The Four Seasons",
-      "Four Seasons",
-      "Le quattro stagioni"
+      "维瓦尔第四季"
     ],
     "botCards": [
       "行星组曲",
@@ -52790,9 +51820,7 @@
     "canonicalAnswer": "小号",
     "acceptedAnswers": [
       "小号",
-      "降B小号",
-      "Trumpet",
-      "B-flat trumpet"
+      "降B小号"
     ],
     "botCards": [
       "长号",
@@ -52817,9 +51845,7 @@
     "canonicalAnswer": "巴勃罗·毕加索",
     "acceptedAnswers": [
       "巴勃罗·毕加索",
-      "毕加索",
-      "Pablo Picasso",
-      "Picasso"
+      "毕加索"
     ],
     "botCards": [
       "乔治·布拉克",
@@ -52839,10 +51865,7 @@
     "canonicalAnswer": "彼得·伊里奇·柴可夫斯基",
     "acceptedAnswers": [
       "彼得·伊里奇·柴可夫斯基",
-      "柴可夫斯基",
-      "Pyotr Ilyich Tchaikovsky",
-      "Tchaikovsky",
-      "Peter Tchaikovsky"
+      "柴可夫斯基"
     ],
     "botCards": [
       "伊戈尔·斯特拉文斯基",
@@ -52867,8 +51890,7 @@
     "canonicalAnswer": "断奏",
     "acceptedAnswers": [
       "断奏",
-      "跳音",
-      "Staccato"
+      "跳音"
     ],
     "botCards": [
       "连奏",
@@ -52892,8 +51914,7 @@
     "question": "以《戴珍珠耳环的少女》等作品中精妙的室内光线闻名的荷兰黄金时代画家约翰内斯·维米尔，一生都在荷兰哪座城市创作？",
     "canonicalAnswer": "代尔夫特",
     "acceptedAnswers": [
-      "代尔夫特",
-      "Delft"
+      "代尔夫特"
     ],
     "botCards": [
       "阿姆斯特丹",
@@ -52918,9 +51939,7 @@
     "canonicalAnswer": "史蒂文·斯皮尔伯格",
     "acceptedAnswers": [
       "史蒂文·斯皮尔伯格",
-      "斯皮尔伯格",
-      "Steven Spielberg",
-      "Spielberg"
+      "斯皮尔伯格"
     ],
     "botCards": [
       "乔治·卢卡斯",
@@ -52945,9 +51964,7 @@
     "canonicalAnswer": "巴斯特·基顿",
     "acceptedAnswers": [
       "巴斯特·基顿",
-      "基顿",
-      "Buster Keaton",
-      "Keaton"
+      "基顿"
     ],
     "botCards": [
       "查理·卓别林",
@@ -52971,8 +51988,7 @@
     "question": "哪位漫画创作者因经常在漫威电影中客串而闻名？",
     "canonicalAnswer": "斯坦·李",
     "acceptedAnswers": [
-      "斯坦·李",
-      "Stan Lee"
+      "斯坦·李"
     ],
     "botCards": [
       "杰克·科比",
@@ -52996,9 +52012,7 @@
     "question": "在《神秘博士》中，博士那台蓝色时间机器叫什么？",
     "canonicalAnswer": "塔迪斯",
     "acceptedAnswers": [
-      "塔迪斯",
-      "TARDIS",
-      "The TARDIS"
+      "塔迪斯"
     ],
     "botCards": [
       "德罗宁",
@@ -53017,8 +52031,7 @@
     "question": "《辛普森一家》居住在哪座虚构小镇？",
     "canonicalAnswer": "斯普林菲尔德",
     "acceptedAnswers": [
-      "斯普林菲尔德",
-      "Springfield"
+      "斯普林菲尔德"
     ],
     "botCards": [
       "谢尔比维尔",
@@ -53037,8 +52050,7 @@
     "question": "戴面具的杀手“鬼脸”与哪个恐怖电影系列关系最密切？",
     "canonicalAnswer": "惊声尖叫",
     "acceptedAnswers": [
-      "惊声尖叫",
-      "Scream"
+      "惊声尖叫"
     ],
     "botCards": [
       "月光光心慌慌",
@@ -53057,8 +52069,7 @@
     "question": "在《黑豹》故事中，瓦坎达以蕴藏哪种虚构金属而闻名？",
     "canonicalAnswer": "振金",
     "acceptedAnswers": [
-      "振金",
-      "Vibranium"
+      "振金"
     ],
     "botCards": [
       "艾德曼合金",
@@ -53078,9 +52089,7 @@
     "canonicalAnswer": "瓦肯人",
     "acceptedAnswers": [
       "瓦肯人",
-      "瓦肯",
-      "Vulcans",
-      "Vulcan"
+      "瓦肯"
     ],
     "botCards": [
       "克林贡人",
@@ -53099,8 +52108,7 @@
     "question": "神秘词语“玫瑰花蕾”推动了哪部经典电影的故事？",
     "canonicalAnswer": "公民凯恩",
     "acceptedAnswers": [
-      "公民凯恩",
-      "Citizen Kane"
+      "公民凯恩"
     ],
     "botCards": [
       "卡萨布兰卡",
@@ -53119,8 +52127,7 @@
     "question": "哥斯拉最初出现的电影是由哪个国家制作的？",
     "canonicalAnswer": "日本",
     "acceptedAnswers": [
-      "日本",
-      "Japan"
+      "日本"
     ],
     "botCards": [
       "美国",
@@ -53139,9 +52146,7 @@
     "question": "图中这台早期家用游戏机叫什么？",
     "canonicalAnswer": "雅达利2600",
     "acceptedAnswers": [
-      "雅达利2600",
-      "Atari 2600",
-      "Atari VCS"
+      "雅达利2600"
     ],
     "botCards": [
       "科尔科视觉",
@@ -53166,7 +52171,6 @@
     "canonicalAnswer": "任天堂64",
     "acceptedAnswers": [
       "任天堂64",
-      "Nintendo 64",
       "N64"
     ],
     "botCards": [
@@ -53340,9 +52344,7 @@
     "canonicalAnswer": "厄尔诺·鲁比克",
     "acceptedAnswers": [
       "厄尔诺·鲁比克",
-      "鲁比克",
-      "Erno Rubik",
-      "Rubik"
+      "鲁比克"
     ],
     "botCards": [
       "阿列克谢·帕基特诺夫",
@@ -53366,9 +52368,7 @@
     "question": "图中这种头戴设备用于哪种沉浸式技术？",
     "canonicalAnswer": "虚拟现实",
     "acceptedAnswers": [
-      "虚拟现实",
-      "VR",
-      "Virtual reality"
+      "虚拟现实"
     ],
     "botCards": [
       "增强现实",
@@ -53392,8 +52392,7 @@
     "question": "这是哪个国家的国旗？",
     "canonicalAnswer": "巴巴多斯",
     "acceptedAnswers": [
-      "巴巴多斯",
-      "Barbados"
+      "巴巴多斯"
     ],
     "botCards": [
       "乌克兰",
@@ -53417,8 +52416,7 @@
     "question": "这是哪个国家的国旗？",
     "canonicalAnswer": "不丹",
     "acceptedAnswers": [
-      "不丹",
-      "Bhutan"
+      "不丹"
     ],
     "botCards": [
       "尼泊尔",
@@ -53443,9 +52441,7 @@
     "canonicalAnswer": "南极洲",
     "acceptedAnswers": [
       "南极洲",
-      "真南",
-      "Antarctica",
-      "True South"
+      "真南"
     ],
     "botCards": [
       "格陵兰",
@@ -53473,10 +52469,7 @@
     "question": "这是哪个地区的旗帜？",
     "canonicalAnswer": "马恩岛",
     "acceptedAnswers": [
-      "马恩岛",
-      "Isle of Man",
-      "Man",
-      "Mann"
+      "马恩岛"
     ],
     "botCards": [
       "威尔士",
@@ -53501,8 +52494,7 @@
     "canonicalAnswer": "奥兰群岛",
     "acceptedAnswers": [
       "奥兰群岛",
-      "奥兰",
-      "Åland"
+      "奥兰"
     ],
     "botCards": [
       "挪威",
@@ -53527,9 +52519,7 @@
     "canonicalAnswer": "埃塞俄比亚",
     "acceptedAnswers": [
       "埃塞俄比亚",
-      "埃塞俄比亚联邦民主共和国",
-      "Ethiopia",
-      "Federal Democratic Republic of Ethiopia"
+      "埃塞俄比亚联邦民主共和国"
     ],
     "botCards": [
       "乌干达",
@@ -53554,9 +52544,7 @@
     "canonicalAnswer": "希腊",
     "acceptedAnswers": [
       "希腊",
-      "希腊共和国",
-      "Greece",
-      "Hellenic Republic"
+      "希腊共和国"
     ],
     "botCards": [
       "美国",
@@ -53581,11 +52569,7 @@
     "canonicalAnswer": "瑙鲁",
     "acceptedAnswers": [
       "瑙鲁",
-      "瑙鲁共和国",
-      "Naoero",
-      "Nauru",
-      "Republic of Naoero",
-      "Republic of Nauru"
+      "瑙鲁共和国"
     ],
     "botCards": [
       "密克罗尼西亚",
@@ -53610,9 +52594,7 @@
     "canonicalAnswer": "尼泊尔",
     "acceptedAnswers": [
       "尼泊尔",
-      "尼泊尔联邦民主共和国",
-      "Nepal",
-      "Federal Democratic Republic of Nepal"
+      "尼泊尔联邦民主共和国"
     ],
     "botCards": [
       "不丹",
@@ -53636,8 +52618,7 @@
     "question": "这是哪个国家的国旗？",
     "canonicalAnswer": "图瓦卢",
     "acceptedAnswers": [
-      "图瓦卢",
-      "Tuvalu"
+      "图瓦卢"
     ],
     "botCards": [
       "密克罗尼西亚",
@@ -53661,9 +52642,7 @@
     "question": "图中是哪一种熊？",
     "canonicalAnswer": "北极熊",
     "acceptedAnswers": [
-      "北极熊",
-      "Polar bear",
-      "Polar bears"
+      "北极熊"
     ],
     "botCards": [
       "灰熊",
@@ -53688,10 +52667,7 @@
     "canonicalAnswer": "海龟",
     "acceptedAnswers": [
       "海龟",
-      "绿海龟",
-      "Sea turtle",
-      "Green sea turtle",
-      "Turtle"
+      "绿海龟"
     ],
     "botCards": [
       "海狮",
@@ -53715,9 +52691,7 @@
     "question": "霍加狓与哪种高大的非洲哺乳动物亲缘关系最近？",
     "canonicalAnswer": "长颈鹿",
     "acceptedAnswers": [
-      "长颈鹿",
-      "Giraffe",
-      "Giraffes"
+      "长颈鹿"
     ],
     "botCards": [
       "斑马",
@@ -53742,9 +52716,7 @@
     "canonicalAnswer": "新西兰",
     "acceptedAnswers": [
       "新西兰",
-      "奥特亚罗瓦",
-      "New Zealand",
-      "Aotearoa"
+      "奥特亚罗瓦"
     ],
     "botCards": [
       "澳大利亚",
@@ -53769,9 +52741,7 @@
     "canonicalAnswer": "螳螂虾",
     "acceptedAnswers": [
       "螳螂虾",
-      "口足类",
-      "Mantis shrimp",
-      "Stomatopod"
+      "口足类"
     ],
     "botCards": [
       "清洁虾",
@@ -53796,9 +52766,7 @@
     "canonicalAnswer": "袋獾",
     "acceptedAnswers": [
       "袋獾",
-      "塔斯马尼亚恶魔",
-      "Tasmanian devil",
-      "Devil"
+      "塔斯马尼亚恶魔"
     ],
     "botCards": [
       "袋熊",
@@ -53823,9 +52791,7 @@
     "canonicalAnswer": "美西螈",
     "acceptedAnswers": [
       "美西螈",
-      "六角恐龙",
-      "Axolotl",
-      "Axolotls"
+      "六角恐龙"
     ],
     "botCards": [
       "蝾螈",
@@ -53849,9 +52815,7 @@
     "question": "哪一类鸟以进食时能在空中悬停闻名？",
     "canonicalAnswer": "蜂鸟",
     "acceptedAnswers": [
-      "蜂鸟",
-      "Hummingbird",
-      "Hummingbirds"
+      "蜂鸟"
     ],
     "botCards": [
       "雨燕",
@@ -53876,9 +52840,7 @@
     "canonicalAnswer": "银背雄性",
     "acceptedAnswers": [
       "银背雄性",
-      "银背大猩猩",
-      "Silverback",
-      "Silverback male"
+      "银背大猩猩"
     ],
     "botCards": [
       "雌性首领",
@@ -53902,9 +52864,7 @@
     "question": "现存哪种鸟类产下的蛋最大？",
     "canonicalAnswer": "鸵鸟",
     "acceptedAnswers": [
-      "鸵鸟",
-      "Ostrich",
-      "Ostriches"
+      "鸵鸟"
     ],
     "botCards": [
       "鸸鹋",
@@ -53928,8 +52888,7 @@
     "question": "Pho 这种米粉汤来自哪个国家？",
     "canonicalAnswer": "越南",
     "acceptedAnswers": [
-      "越南",
-      "Vietnam"
+      "越南"
     ],
     "botCards": [
       "泰国",
@@ -53955,11 +52914,7 @@
     "acceptedAnswers": [
       "英国",
       "联合王国",
-      "英格兰",
-      "United Kingdom",
-      "UK",
-      "Britain",
-      "England"
+      "英格兰"
     ],
     "botCards": [
       "意大利",
@@ -53984,9 +52939,7 @@
     "canonicalAnswer": "玉米饼",
     "acceptedAnswers": [
       "玉米饼",
-      "墨西哥薄饼",
-      "Tortilla",
-      "Flour tortilla"
+      "墨西哥薄饼"
     ],
     "botCards": [
       "皮塔饼",
@@ -54010,8 +52963,7 @@
     "question": "Poutine 起源于哪个国家？",
     "canonicalAnswer": "加拿大",
     "acceptedAnswers": [
-      "加拿大",
-      "Canada"
+      "加拿大"
     ],
     "botCards": [
       "法国",
@@ -54036,10 +52988,7 @@
     "canonicalAnswer": "韩国",
     "acceptedAnswers": [
       "韩国",
-      "大韩民国",
-      "South Korea",
-      "Korea",
-      "Republic of Korea"
+      "大韩民国"
     ],
     "botCards": [
       "日本",
@@ -54063,8 +53012,7 @@
     "question": "库斯库斯传统上由哪一种小麦制品的细小颗粒制成？",
     "canonicalAnswer": "粗粒小麦粉",
     "acceptedAnswers": [
-      "粗粒小麦粉",
-      "Semolina"
+      "粗粒小麦粉"
     ],
     "botCards": [
       "玉米粉",
@@ -54089,10 +53037,7 @@
     "canonicalAnswer": "饺子",
     "acceptedAnswers": [
       "饺子",
-      "锅贴",
-      "Dumplings",
-      "Dumpling",
-      "Potstickers"
+      "锅贴"
     ],
     "botCards": [
       "面条",
@@ -54117,10 +53062,7 @@
     "canonicalAnswer": "甜菜根",
     "acceptedAnswers": [
       "甜菜根",
-      "甜菜",
-      "Beetroot",
-      "Beet",
-      "Beets"
+      "甜菜"
     ],
     "botCards": [
       "胡萝卜",
@@ -54144,9 +53086,7 @@
     "question": "芒果拉西通常由芒果和哪种乳制品基底制成？",
     "canonicalAnswer": "酸奶",
     "acceptedAnswers": [
-      "酸奶",
-      "Yogurt",
-      "Yoghurt"
+      "酸奶"
     ],
     "botCards": [
       "奶油奶酪",
@@ -54170,8 +53110,7 @@
     "question": "巴克拉瓦常浸在糖浆或哪种天然甜味剂中？",
     "canonicalAnswer": "蜂蜜",
     "acceptedAnswers": [
-      "蜂蜜",
-      "Honey"
+      "蜂蜜"
     ],
     "botCards": [
       "糖蜜",
@@ -54195,8 +53134,7 @@
     "question": "图中的球棒和球用于哪项运动？",
     "canonicalAnswer": "板球",
     "acceptedAnswers": [
-      "板球",
-      "Cricket"
+      "板球"
     ],
     "botCards": [
       "棒球",
@@ -54220,8 +53158,7 @@
     "question": "图中这种表面有凹坑的小球用于哪项运动？",
     "canonicalAnswer": "高尔夫",
     "acceptedAnswers": [
-      "高尔夫",
-      "Golf"
+      "高尔夫"
     ],
     "botCards": [
       "马球",
@@ -54245,8 +53182,7 @@
     "question": "图中正在进行的是哪项隔网运动？",
     "canonicalAnswer": "排球",
     "acceptedAnswers": [
-      "排球",
-      "Volleyball"
+      "排球"
     ],
     "botCards": [
       "手球",
@@ -54270,8 +53206,7 @@
     "question": "图中比赛场景展示的是哪种日本武术？",
     "canonicalAnswer": "空手道",
     "acceptedAnswers": [
-      "空手道",
-      "Karate"
+      "空手道"
     ],
     "botCards": [
       "跆拳道",
@@ -54295,9 +53230,7 @@
     "question": "这种冬季运动把长而窄的板固定在靴子上，称为什么？",
     "canonicalAnswer": "滑雪",
     "acceptedAnswers": [
-      "滑雪",
-      "Skiing",
-      "Ski"
+      "滑雪"
     ],
     "botCards": [
       "单板滑雪",
@@ -54322,9 +53255,7 @@
     "canonicalAnswer": "一级方程式赛车",
     "acceptedAnswers": [
       "一级方程式赛车",
-      "F1",
-      "Formula One",
-      "Formula 1"
+      "F1"
     ],
     "botCards": [
       "纳斯卡赛车",
@@ -54348,8 +53279,7 @@
     "question": "哪项团队运动在泳池中使用图中这种球进行比赛？",
     "canonicalAnswer": "水球",
     "acceptedAnswers": [
-      "水球",
-      "Water polo"
+      "水球"
     ],
     "botCards": [
       "跳水",
@@ -54374,9 +53304,7 @@
     "canonicalAnswer": "体操",
     "acceptedAnswers": [
       "体操",
-      "竞技体操",
-      "Gymnastics",
-      "Artistic gymnastics"
+      "竞技体操"
     ],
     "botCards": [
       "举重",
@@ -54401,8 +53329,7 @@
     "canonicalAnswer": "20",
     "acceptedAnswers": [
       "20",
-      "二十",
-      "twenty"
+      "二十"
     ],
     "botCards": [
       "1",
@@ -54426,8 +53353,7 @@
     "question": "哪项运动使用图中这种顶端带网兜的球杆？",
     "canonicalAnswer": "长曲棍球",
     "acceptedAnswers": [
-      "长曲棍球",
-      "Lacrosse"
+      "长曲棍球"
     ],
     "botCards": [
       "曲棍球",
@@ -54451,8 +53377,7 @@
     "question": "这个蓝色棱角符号代表哪种无线技术？",
     "canonicalAnswer": "蓝牙",
     "acceptedAnswers": [
-      "蓝牙",
-      "Bluetooth"
+      "蓝牙"
     ],
     "botCards": [
       "无线网络",
@@ -54526,9 +53451,7 @@
     "canonicalAnswer": "火狐浏览器",
     "acceptedAnswers": [
       "火狐浏览器",
-      "火狐",
-      "Firefox",
-      "Mozilla Firefox"
+      "火狐"
     ],
     "botCards": [
       "谷歌浏览器",
@@ -54552,8 +53475,7 @@
     "question": "这个标志属于哪个去中心化社交网络？",
     "canonicalAnswer": "长毛象",
     "acceptedAnswers": [
-      "长毛象",
-      "Mastodon"
+      "长毛象"
     ],
     "botCards": [
       "脆",
@@ -54577,10 +53499,7 @@
     "question": "这个洋葱图标代表哪个注重隐私的网络或浏览器项目？",
     "canonicalAnswer": "洋葱路由",
     "acceptedAnswers": [
-      "洋葱路由",
-      "Tor",
-      "Tor Browser",
-      "The Onion Router"
+      "洋葱路由"
     ],
     "botCards": [
       "欧朋浏览器",
@@ -54629,10 +53548,7 @@
     "question": "这个像古典建筑的标志属于哪个网页保存网站？",
     "canonicalAnswer": "互联网档案馆",
     "acceptedAnswers": [
-      "互联网档案馆",
-      "Internet Archive",
-      "Archive.org",
-      "Wayback Machine"
+      "互联网档案馆"
     ],
     "botCards": [
       "维基数据",
@@ -54656,9 +53572,7 @@
     "question": "这个由连接节点组成的符号与哪个去中心化社交网络生态有关？",
     "canonicalAnswer": "联邦宇宙",
     "acceptedAnswers": [
-      "联邦宇宙",
-      "Fediverse",
-      "The Fediverse"
+      "联邦宇宙"
     ],
     "botCards": [
       "元宇宙",
@@ -54707,9 +53621,7 @@
     "question": "这张 NASA 图像展示的是哪颗行星？",
     "canonicalAnswer": "地球",
     "acceptedAnswers": [
-      "地球",
-      "Earth",
-      "Planet Earth"
+      "地球"
     ],
     "botCards": [
       "火星",
@@ -54734,8 +53646,7 @@
     "canonicalAnswer": "水",
     "acceptedAnswers": [
       "水",
-      "H2O",
-      "Water"
+      "H2O"
     ],
     "botCards": [
       "过氧化氢",
@@ -54759,9 +53670,7 @@
     "question": "图中这张解剖图展示的是哪个器官？",
     "canonicalAnswer": "心脏",
     "acceptedAnswers": [
-      "心脏",
-      "Heart",
-      "Human heart"
+      "心脏"
     ],
     "botCards": [
       "肝脏",
@@ -54787,8 +53696,6 @@
     "acceptedAnswers": [
       "仙女座星系",
       "仙女座",
-      "Andromeda Galaxy",
-      "Andromeda",
       "M31"
     ],
     "botCards": [
@@ -54813,8 +53720,7 @@
     "question": "这个化学结构代表咖啡中哪种兴奋剂？",
     "canonicalAnswer": "咖啡因",
     "acceptedAnswers": [
-      "咖啡因",
-      "Caffeine"
+      "咖啡因"
     ],
     "botCards": [
       "尼古丁",
@@ -54838,9 +53744,7 @@
     "question": "图中这台大型物理机器属于哪一座粒子对撞机？",
     "canonicalAnswer": "大型强子对撞机",
     "acceptedAnswers": [
-      "大型强子对撞机",
-      "LHC",
-      "Large Hadron Collider"
+      "大型强子对撞机"
     ],
     "botCards": [
       "泰瓦特隆",
@@ -54864,9 +53768,7 @@
     "question": "这些形状展示的是哪种亚原子粒子的概率分布区域？",
     "canonicalAnswer": "电子",
     "acceptedAnswers": [
-      "电子",
-      "Electrons",
-      "Electron"
+      "电子"
     ],
     "botCards": [
       "质子",
@@ -54891,10 +53793,7 @@
     "canonicalAnswer": "背景",
     "acceptedAnswers": [
       "背景",
-      "宇宙微波背景",
-      "Background",
-      "Cosmic microwave background",
-      "CMB"
+      "宇宙微波背景"
     ],
     "botCards": [
       "前景",
@@ -54919,9 +53818,7 @@
     "canonicalAnswer": "能量",
     "acceptedAnswers": [
       "能量",
-      "动能",
-      "Energy",
-      "Kinetic energy"
+      "动能"
     ],
     "botCards": [
       "质量",
@@ -54947,10 +53844,7 @@
     "acceptedAnswers": [
       "詹姆斯·韦布空间望远镜",
       "韦布空间望远镜",
-      "韦布望远镜",
-      "James Webb Space Telescope",
-      "JWST",
-      "Webb Telescope"
+      "韦布望远镜"
     ],
     "botCards": [
       "哈勃空间望远镜",
@@ -54974,9 +53868,7 @@
     "question": "这个巨大木马的故事属于哪场古代战争？",
     "canonicalAnswer": "特洛伊战争",
     "acceptedAnswers": [
-      "特洛伊战争",
-      "Trojan War",
-      "The Trojan War"
+      "特洛伊战争"
     ],
     "botCards": [
       "伯罗奔尼撒战争",
@@ -55001,9 +53893,7 @@
     "canonicalAnswer": "赫拉克勒斯",
     "acceptedAnswers": [
       "赫拉克勒斯",
-      "海格力斯",
-      "Heracles",
-      "Hercules"
+      "海格力斯"
     ],
     "botCards": [
       "珀耳修斯",
@@ -55027,9 +53917,7 @@
     "question": "这位鹰首埃及神祇与太阳有关，他是谁？",
     "canonicalAnswer": "拉",
     "acceptedAnswers": [
-      "拉",
-      "Ra",
-      "Re"
+      "拉"
     ],
     "botCards": [
       "阿努比斯",
@@ -55053,8 +53941,7 @@
     "question": "哪位英雄带领阿尔戈英雄寻找金羊毛？",
     "canonicalAnswer": "伊阿宋",
     "acceptedAnswers": [
-      "伊阿宋",
-      "Jason"
+      "伊阿宋"
     ],
     "botCards": [
       "奥德修斯",
@@ -55079,10 +53966,7 @@
     "canonicalAnswer": "日本神话",
     "acceptedAnswers": [
       "日本神话",
-      "神道教",
-      "Japanese mythology",
-      "Japan",
-      "Shinto"
+      "神道教"
     ],
     "botCards": [
       "希腊神话",
@@ -55106,8 +53990,7 @@
     "question": "哪位印度教女神常被描绘为击败水牛魔王摩醯首罗？",
     "canonicalAnswer": "杜尔迦",
     "acceptedAnswers": [
-      "杜尔迦",
-      "Durga"
+      "杜尔迦"
     ],
     "botCards": [
       "拉克希米",
@@ -55132,10 +54015,7 @@
     "canonicalAnswer": "芬里尔",
     "acceptedAnswers": [
       "芬里尔",
-      "芬里斯狼",
-      "Fenrir",
-      "Fenris wolf",
-      "Fenris"
+      "芬里斯狼"
     ],
     "botCards": [
       "斯莱普尼尔",
@@ -55159,9 +54039,7 @@
     "question": "这幅拉维·瓦尔玛笔下气势强烈的绘画描绘的是哪位印度教女神？",
     "canonicalAnswer": "迦梨",
     "acceptedAnswers": [
-      "迦梨",
-      "Kali",
-      "Kaali"
+      "迦梨"
     ],
     "botCards": [
       "帕尔瓦蒂",
@@ -55186,10 +54064,7 @@
     "canonicalAnswer": "夏威夷神话",
     "acceptedAnswers": [
       "夏威夷神话",
-      "夏威夷",
-      "Hawaiian mythology",
-      "Hawaii",
-      "Hawaiian"
+      "夏威夷"
     ],
     "botCards": [
       "毛利神话",
@@ -55215,10 +54090,7 @@
     "acceptedAnswers": [
       "雷霆",
       "雷电",
-      "闪电",
-      "Thunderbolt",
-      "Lightning bolt",
-      "Bolt of lightning"
+      "闪电"
     ],
     "botCards": [
       "三叉戟",
@@ -55243,8 +54115,7 @@
     "canonicalAnswer": "马赛克",
     "acceptedAnswers": [
       "马赛克",
-      "镶嵌画",
-      "Mosaic"
+      "镶嵌画"
     ],
     "botCards": [
       "湿壁画",
@@ -55269,9 +54140,7 @@
     "canonicalAnswer": "列奥纳多·达·芬奇",
     "acceptedAnswers": [
       "列奥纳多·达·芬奇",
-      "达·芬奇",
-      "Leonardo da Vinci",
-      "Da Vinci"
+      "达·芬奇"
     ],
     "botCards": [
       "米开朗基罗",
@@ -55296,8 +54165,7 @@
     "canonicalAnswer": "新奥尔良",
     "acceptedAnswers": [
       "新奥尔良",
-      "新奥尔良市",
-      "New Orleans"
+      "新奥尔良市"
     ],
     "botCards": [
       "芝加哥",
@@ -55323,8 +54191,7 @@
     "acceptedAnswers": [
       "指挥",
       "乐队指挥",
-      "指挥家",
-      "Conductor"
+      "指挥家"
     ],
     "botCards": [
       "作曲家",
@@ -55348,8 +54215,7 @@
     "question": "许多传统芭蕾术语源自哪一种语言？",
     "canonicalAnswer": "法语",
     "acceptedAnswers": [
-      "法语",
-      "French"
+      "法语"
     ],
     "botCards": [
       "意大利语",
@@ -55375,9 +54241,7 @@
     "acceptedAnswers": [
       "每分钟节拍数",
       "每分钟节拍",
-      "每分钟拍数",
-      "Beats per minute",
-      "Beat per minute"
+      "每分钟拍数"
     ],
     "botCards": [
       "每小节拍数",
@@ -55401,9 +54265,7 @@
     "question": "巴勃罗·毕加索与哪一20世纪早期艺术运动联系最紧密？",
     "canonicalAnswer": "立体主义",
     "acceptedAnswers": [
-      "立体主义",
-      "Cubism",
-      "Cubist movement"
+      "立体主义"
     ],
     "botCards": [
       "超现实主义",
@@ -55429,9 +54291,7 @@
     "acceptedAnswers": [
       "弦乐器家族",
       "弦乐组",
-      "弦乐器",
-      "String family",
-      "String instruments"
+      "弦乐器"
     ],
     "botCards": [
       "木管乐器家族",
@@ -55456,9 +54316,7 @@
     "canonicalAnswer": "约翰内斯·维米尔",
     "acceptedAnswers": [
       "约翰内斯·维米尔",
-      "维米尔",
-      "Johannes Vermeer",
-      "Vermeer"
+      "维米尔"
     ],
     "botCards": [
       "伦勃朗",
@@ -55483,9 +54341,7 @@
     "canonicalAnswer": "路德维希·范·贝多芬",
     "acceptedAnswers": [
       "路德维希·范·贝多芬",
-      "贝多芬",
-      "Ludwig van Beethoven",
-      "Beethoven"
+      "贝多芬"
     ],
     "botCards": [
       "约翰·塞巴斯蒂安·巴赫",
@@ -55509,9 +54365,7 @@
     "question": "在漫威电影的讨论中，MCU 是哪一完整名称的缩写？",
     "canonicalAnswer": "漫威电影宇宙",
     "acceptedAnswers": [
-      "漫威电影宇宙",
-      "Marvel Cinematic Universe",
-      "The Marvel Cinematic Universe"
+      "漫威电影宇宙"
     ],
     "botCards": [
       "漫威漫画宇宙",
@@ -55535,8 +54389,7 @@
     "question": "《怪奇物语》最初由哪家流媒体服务推出？",
     "canonicalAnswer": "奈飞",
     "acceptedAnswers": [
-      "奈飞",
-      "Netflix"
+      "奈飞"
     ],
     "botCards": [
       "迪士尼+",
@@ -55561,9 +54414,7 @@
     "canonicalAnswer": "哥谭市",
     "acceptedAnswers": [
       "哥谭市",
-      "哥谭",
-      "Gotham City",
-      "Gotham"
+      "哥谭"
     ],
     "botCards": [
       "大都会",
@@ -55588,10 +54439,7 @@
     "canonicalAnswer": "辛普森",
     "acceptedAnswers": [
       "辛普森",
-      "辛普森一家",
-      "Simpson",
-      "The Simpsons",
-      "Simpsons"
+      "辛普森一家"
     ],
     "botCards": [
       "格里芬",
@@ -55616,8 +54464,7 @@
     "canonicalAnswer": "找球手",
     "acceptedAnswers": [
       "找球手",
-      "搜捕手",
-      "Seeker"
+      "搜捕手"
     ],
     "botCards": [
       "守门员",
@@ -55642,8 +54489,7 @@
     "canonicalAnswer": "美泰",
     "acceptedAnswers": [
       "美泰",
-      "美泰公司",
-      "Mattel"
+      "美泰公司"
     ],
     "botCards": [
       "孩之宝",
@@ -55667,8 +54513,7 @@
     "question": "超人的出生星球叫什么？",
     "canonicalAnswer": "氪星",
     "acceptedAnswers": [
-      "氪星",
-      "Krypton"
+      "氪星"
     ],
     "botCards": [
       "达克萨姆星",
@@ -55692,9 +54537,7 @@
     "question": "“凛冬将至”这句话因哪部奇幻电视剧而广为人知？",
     "canonicalAnswer": "权力的游戏",
     "acceptedAnswers": [
-      "权力的游戏",
-      "Game of Thrones",
-      "A Game of Thrones"
+      "权力的游戏"
     ],
     "botCards": [
       "猎魔人",
@@ -55719,9 +54562,7 @@
     "canonicalAnswer": "迈克尔·克莱顿",
     "acceptedAnswers": [
       "迈克尔·克莱顿",
-      "克莱顿",
-      "Michael Crichton",
-      "Crichton"
+      "克莱顿"
     ],
     "botCards": [
       "史蒂文·斯皮尔伯格",
@@ -55746,9 +54587,7 @@
     "canonicalAnswer": "夏洛克·福尔摩斯",
     "acceptedAnswers": [
       "夏洛克·福尔摩斯",
-      "福尔摩斯",
-      "Sherlock Holmes",
-      "Holmes"
+      "福尔摩斯"
     ],
     "botCards": [
       "赫尔克里·波洛",
@@ -55773,9 +54612,7 @@
     "canonicalAnswer": "碧姬公主",
     "acceptedAnswers": [
       "碧姬公主",
-      "桃花公主",
-      "Princess Peach",
-      "Peach"
+      "桃花公主"
     ],
     "botCards": [
       "黛西公主",
@@ -55800,9 +54637,7 @@
     "canonicalAnswer": "海拉鲁",
     "acceptedAnswers": [
       "海拉鲁",
-      "海拉尔",
-      "Hyrule",
-      "Kingdom of Hyrule"
+      "海拉尔"
     ],
     "botCards": [
       "塔米尼亚",
@@ -55827,9 +54662,7 @@
     "canonicalAnswer": "龙裔",
     "acceptedAnswers": [
       "龙裔",
-      "多瓦金",
-      "Dragonborn",
-      "Dovahkiin"
+      "多瓦金"
     ],
     "botCards": [
       "灰胡子",
@@ -55854,9 +54687,7 @@
     "canonicalAnswer": "铃钱",
     "acceptedAnswers": [
       "铃钱",
-      "铃铛",
-      "Bells",
-      "Bell"
+      "铃铛"
     ],
     "botCards": [
       "吉尔",
@@ -55880,9 +54711,7 @@
     "question": "《最终幻想》中反复出现、可供骑乘的鸟类生物叫什么？",
     "canonicalAnswer": "陆行鸟",
     "acceptedAnswers": [
-      "陆行鸟",
-      "Chocobo",
-      "Chocobos"
+      "陆行鸟"
     ],
     "botCards": [
       "莫古力",
@@ -55907,8 +54736,7 @@
     "canonicalAnswer": "魂",
     "acceptedAnswers": [
       "魂",
-      "灵魂",
-      "Souls"
+      "灵魂"
     ],
     "botCards": [
       "卢恩",
@@ -55933,9 +54761,7 @@
     "canonicalAnswer": "祖父",
     "acceptedAnswers": [
       "祖父",
-      "爷爷",
-      "Grandfather",
-      "Grandpa"
+      "爷爷"
     ],
     "botCards": [
       "刘易斯镇长",
@@ -55959,8 +54785,7 @@
     "question": "国际象棋中，哪种走法让王和车能在同一回合移动？",
     "canonicalAnswer": "王车易位",
     "acceptedAnswers": [
-      "王车易位",
-      "Castling"
+      "王车易位"
     ],
     "botCards": [
       "吃过路兵",
@@ -55984,8 +54809,7 @@
     "question": "哪款街机游戏中的幽灵包括布林基、平基、英基和克莱德？",
     "canonicalAnswer": "吃豆人",
     "acceptedAnswers": [
-      "吃豆人",
-      "Pac-Man"
+      "吃豆人"
     ],
     "botCards": [
       "青蛙过河",
@@ -56010,9 +54834,7 @@
     "canonicalAnswer": "桌上角色扮演游戏",
     "acceptedAnswers": [
       "桌上角色扮演游戏",
-      "桌游角色扮演游戏",
-      "Tabletop RPG",
-      "Tabletop role-playing game"
+      "桌游角色扮演游戏"
     ],
     "botCards": [
       "即时战略游戏",
@@ -56036,8 +54858,7 @@
     "question": "古罗马的主要语言是什么？",
     "canonicalAnswer": "拉丁语",
     "acceptedAnswers": [
-      "拉丁语",
-      "Latin"
+      "拉丁语"
     ],
     "botCards": [
       "希腊语",
@@ -56062,9 +54883,7 @@
     "canonicalAnswer": "斐迪南·麦哲伦",
     "acceptedAnswers": [
       "斐迪南·麦哲伦",
-      "麦哲伦",
-      "Ferdinand Magellan",
-      "Magellan"
+      "麦哲伦"
     ],
     "botCards": [
       "瓦斯科·达·伽马",
@@ -56088,8 +54907,7 @@
     "question": "1989 年倒塌的著名隔离墙位于哪座曾被分割的欧洲城市？",
     "canonicalAnswer": "柏林",
     "acceptedAnswers": [
-      "柏林",
-      "Berlin"
+      "柏林"
     ],
     "botCards": [
       "维也纳",
@@ -56114,9 +54932,7 @@
     "canonicalAnswer": "印加帝国",
     "acceptedAnswers": [
       "印加帝国",
-      "印加",
-      "Inca Empire",
-      "Inca"
+      "印加"
     ],
     "botCards": [
       "阿兹特克帝国",
@@ -56140,8 +54956,7 @@
     "question": "按面积计算，非洲最大的国家是哪个？",
     "canonicalAnswer": "阿尔及利亚",
     "acceptedAnswers": [
-      "阿尔及利亚",
-      "Algeria"
+      "阿尔及利亚"
     ],
     "botCards": [
       "苏丹",
@@ -56166,9 +54981,7 @@
     "canonicalAnswer": "波斯帝国",
     "acceptedAnswers": [
       "波斯帝国",
-      "阿契美尼德帝国",
-      "Persian Empire",
-      "Achaemenid Empire"
+      "阿契美尼德帝国"
     ],
     "botCards": [
       "罗马帝国",
@@ -56193,10 +55006,7 @@
     "canonicalAnswer": "明治天皇",
     "acceptedAnswers": [
       "明治天皇",
-      "睦仁",
-      "Emperor Meiji",
-      "Meiji",
-      "Mutsuhito"
+      "睦仁"
     ],
     "botCards": [
       "大正天皇",
@@ -56221,9 +55031,7 @@
     "canonicalAnswer": "汉萨同盟",
     "acceptedAnswers": [
       "汉萨同盟",
-      "汉萨",
-      "Hanseatic League",
-      "Hanse"
+      "汉萨"
     ],
     "botCards": [
       "神圣同盟",
@@ -56247,8 +55055,7 @@
     "question": "吴哥窟位于今天的哪个国家？",
     "canonicalAnswer": "柬埔寨",
     "acceptedAnswers": [
-      "柬埔寨",
-      "Cambodia"
+      "柬埔寨"
     ],
     "botCards": [
       "泰国",
@@ -56272,9 +55079,7 @@
     "question": "岩石凿成的古城佩特拉由哪个古代阿拉伯民族建造？",
     "canonicalAnswer": "纳巴泰人",
     "acceptedAnswers": [
-      "纳巴泰人",
-      "Nabataeans",
-      "Nabataean"
+      "纳巴泰人"
     ],
     "botCards": [
       "腓尼基人",
@@ -56298,9 +55103,7 @@
     "question": "唯一能够真正持续飞行的哺乳动物是什么？",
     "canonicalAnswer": "蝙蝠",
     "acceptedAnswers": [
-      "蝙蝠",
-      "Bat",
-      "Bats"
+      "蝙蝠"
     ],
     "botCards": [
       "鼯鼠",
@@ -56325,9 +55128,7 @@
     "canonicalAnswer": "飞行",
     "acceptedAnswers": [
       "飞行",
-      "飞翔",
-      "Flying",
-      "Flight"
+      "飞翔"
     ],
     "botCards": [
       "游泳",
@@ -56351,8 +55152,7 @@
     "question": "鲨鱼的骨骼主要由哪种柔韧材料构成？",
     "canonicalAnswer": "软骨",
     "acceptedAnswers": [
-      "软骨",
-      "Cartilage"
+      "软骨"
     ],
     "botCards": [
       "骨头",
@@ -56376,8 +55176,7 @@
     "question": "蜜蜂用哪种动作向同伴指示食物的位置？",
     "canonicalAnswer": "摇摆舞",
     "acceptedAnswers": [
-      "摇摆舞",
-      "Waggle dance"
+      "摇摆舞"
     ],
     "botCards": [
       "圆圈舞",
@@ -56402,9 +55201,7 @@
     "canonicalAnswer": "脂肪",
     "acceptedAnswers": [
       "脂肪",
-      "体脂肪",
-      "Fat",
-      "Body fat"
+      "体脂肪"
     ],
     "botCards": [
       "水",
@@ -56429,9 +55226,7 @@
     "canonicalAnswer": "海豚科",
     "acceptedAnswers": [
       "海豚科",
-      "海洋海豚科",
-      "Delphinidae",
-      "Dolphin family"
+      "海洋海豚科"
     ],
     "botCards": [
       "须鲸科",
@@ -56455,8 +55250,7 @@
     "question": "美西螈除了能再生四肢外，还能再生部分哪个器官？",
     "canonicalAnswer": "心脏",
     "acceptedAnswers": [
-      "心脏",
-      "Heart"
+      "心脏"
     ],
     "botCards": [
       "肝脏",
@@ -56481,9 +55275,7 @@
     "canonicalAnswer": "单孔目",
     "acceptedAnswers": [
       "单孔目",
-      "单孔类",
-      "Monotremes",
-      "Monotreme"
+      "单孔类"
     ],
     "botCards": [
       "有袋类",
@@ -56507,9 +55299,7 @@
     "question": "哪类特化皮肤细胞帮助变色龙改变可见颜色？",
     "canonicalAnswer": "色素细胞",
     "acceptedAnswers": [
-      "色素细胞",
-      "Chromatophores",
-      "chromatophore"
+      "色素细胞"
     ],
     "botCards": [
       "骨细胞",
@@ -56534,8 +55324,7 @@
     "canonicalAnswer": "漏斗",
     "acceptedAnswers": [
       "漏斗",
-      "虹吸管",
-      "Siphon"
+      "虹吸管"
     ],
     "botCards": [
       "鳃",
@@ -56560,9 +55349,7 @@
     "canonicalAnswer": "醋",
     "acceptedAnswers": [
       "醋",
-      "米醋",
-      "Vinegar",
-      "Rice vinegar"
+      "米醋"
     ],
     "botCards": [
       "酱油",
@@ -56587,11 +55374,7 @@
     "canonicalAnswer": "可可树",
     "acceptedAnswers": [
       "可可树",
-      "可可",
-      "Cacao",
-      "Cocoa",
-      "Cacao tree",
-      "Cocoa tree"
+      "可可"
     ],
     "botCards": [
       "咖啡树",
@@ -56615,9 +55398,7 @@
     "question": "浓缩咖啡最常与哪个国家联系在一起？",
     "canonicalAnswer": "意大利",
     "acceptedAnswers": [
-      "意大利",
-      "Italy",
-      "Italian"
+      "意大利"
     ],
     "botCards": [
       "法国",
@@ -56641,9 +55422,7 @@
     "question": "海鲜饭是一道起源于哪个国家的米饭料理？",
     "canonicalAnswer": "西班牙",
     "acceptedAnswers": [
-      "西班牙",
-      "Spain",
-      "Spanish"
+      "西班牙"
     ],
     "botCards": [
       "葡萄牙",
@@ -56669,9 +55448,7 @@
     "acceptedAnswers": [
       "滤除乳清",
       "过滤",
-      "沥干乳清",
-      "Strained",
-      "Strained yogurt"
+      "沥干乳清"
     ],
     "botCards": [
       "二次发酵",
@@ -56697,9 +55474,7 @@
     "acceptedAnswers": [
       "伍斯特酱",
       "伍斯特沙司",
-      "辣酱油",
-      "Worcestershire sauce",
-      "Worcester sauce"
+      "辣酱油"
     ],
     "botCards": [
       "HP酱",
@@ -56723,9 +55498,7 @@
     "question": "菲达奶酪最常与哪个国家联系在一起？",
     "canonicalAnswer": "希腊",
     "acceptedAnswers": [
-      "希腊",
-      "Greece",
-      "Greek"
+      "希腊"
     ],
     "botCards": [
       "土耳其",
@@ -56751,10 +55524,7 @@
     "acceptedAnswers": [
       "酵种",
       "天然酵种",
-      "酸面团酵头",
-      "Starter",
-      "Sourdough starter",
-      "Levain"
+      "酸面团酵头"
     ],
     "botCards": [
       "泡打粉",
@@ -56778,8 +55548,7 @@
     "question": "哪一种地中海食用油会按酸度和生产方法分级？",
     "canonicalAnswer": "橄榄油",
     "acceptedAnswers": [
-      "橄榄油",
-      "Olive oil"
+      "橄榄油"
     ],
     "botCards": [
       "葡萄籽油",
@@ -56803,8 +55572,7 @@
     "question": "哪种生长在地下、以浓郁香气闻名的真菌在欧洲料理中备受珍视？",
     "canonicalAnswer": "松露",
     "acceptedAnswers": [
-      "松露",
-      "Truffle"
+      "松露"
     ],
     "botCards": [
       "羊肚菌",
@@ -56830,9 +55598,7 @@
     "acceptedAnswers": [
       "6",
       "六",
-      "六分",
-      "Six",
-      "Six points"
+      "六分"
     ],
     "botCards": [
       "7",
@@ -56857,8 +55623,7 @@
     "canonicalAnswer": "40",
     "acceptedAnswers": [
       "40",
-      "四十",
-      "Forty"
+      "四十"
     ],
     "botCards": [
       "45",
@@ -56883,10 +55648,7 @@
     "canonicalAnswer": "守门员",
     "acceptedAnswers": [
       "守门员",
-      "门将",
-      "Goalkeeper",
-      "Goalie",
-      "Keeper"
+      "门将"
     ],
     "botCards": [
       "中后卫",
@@ -56912,9 +55674,7 @@
     "acceptedAnswers": [
       "24秒",
       "24",
-      "二十四秒",
-      "24 seconds",
-      "Twenty four seconds"
+      "二十四秒"
     ],
     "botCards": [
       "30秒",
@@ -56940,9 +55700,7 @@
     "acceptedAnswers": [
       "3",
       "三",
-      "三次",
-      "Three",
-      "Three touches"
+      "三次"
     ],
     "botCards": [
       "2",
@@ -56966,8 +55724,7 @@
     "question": "高尔夫中，表示一个球洞预期杆数的术语是什么？",
     "canonicalAnswer": "标准杆",
     "acceptedAnswers": [
-      "标准杆",
-      "Par"
+      "标准杆"
     ],
     "botCards": [
       "柏忌",
@@ -56991,8 +55748,7 @@
     "question": "英式橄榄球中，在得分区内把球压地的主要得分方式叫什么？",
     "canonicalAnswer": "达阵",
     "acceptedAnswers": [
-      "达阵",
-      "Try"
+      "达阵"
     ],
     "botCards": [
       "附加分",
@@ -57017,8 +55773,7 @@
     "canonicalAnswer": "三柱门",
     "acceptedAnswers": [
       "三柱门",
-      "门柱",
-      "Stumps"
+      "门柱"
     ],
     "botCards": [
       "横木",
@@ -57043,10 +55798,7 @@
     "canonicalAnswer": "冰壶",
     "acceptedAnswers": [
       "冰壶",
-      "冰壶石",
-      "Curling stone",
-      "Stone",
-      "Rock"
+      "冰壶石"
     ],
     "botCards": [
       "冰球",
@@ -57072,8 +55824,7 @@
     "acceptedAnswers": [
       "主集团",
       "车群",
-      "骑手大集团",
-      "Peloton"
+      "骑手大集团"
     ],
     "botCards": [
       "突围集团",
@@ -57097,8 +55848,7 @@
     "question": "允许用户协作编辑页面的网站通常叫什么？",
     "canonicalAnswer": "维基",
     "acceptedAnswers": [
-      "维基",
-      "Wiki"
+      "维基"
     ],
     "botCards": [
       "论坛",
@@ -57123,10 +55873,7 @@
     "canonicalAnswer": "井号",
     "acceptedAnswers": [
       "井号",
-      "#号",
-      "Hash sign",
-      "Hashtag",
-      "Number sign"
+      "#号"
     ],
     "botCards": [
       "@符号",
@@ -57151,8 +55898,7 @@
     "canonicalAnswer": "网络钓鱼",
     "acceptedAnswers": [
       "网络钓鱼",
-      "钓鱼攻击",
-      "Phishing"
+      "钓鱼攻击"
     ],
     "botCards": [
       "仿冒攻击",
@@ -57177,8 +55923,7 @@
     "canonicalAnswer": "验证码",
     "acceptedAnswers": [
       "验证码",
-      "人机验证",
-      "CAPTCHA"
+      "人机验证"
     ],
     "botCards": [
       "Cookie提示",
@@ -57203,9 +55948,7 @@
     "canonicalAnswer": "超文本传输安全协议",
     "acceptedAnswers": [
       "超文本传输安全协议",
-      "安全超文本传输协议",
-      "HTTPS",
-      "Hypertext Transfer Protocol Secure"
+      "安全超文本传输协议"
     ],
     "botCards": [
       "超文本传输协议",
@@ -57230,9 +55973,7 @@
     "canonicalAnswer": "图片宏",
     "acceptedAnswers": [
       "图片宏",
-      "图像宏",
-      "Image macro",
-      "Image macros"
+      "图像宏"
     ],
     "botCards": [
       "反应动图",
@@ -57281,9 +56022,7 @@
     "canonicalAnswer": "网页浏览器",
     "acceptedAnswers": [
       "网页浏览器",
-      "浏览器",
-      "Web browser",
-      "Browser"
+      "浏览器"
     ],
     "botCards": [
       "编译器",
@@ -57307,8 +56046,7 @@
     "question": "把数据和服务运行在远程联网服务器上的模式叫什么？",
     "canonicalAnswer": "云计算",
     "acceptedAnswers": [
-      "云计算",
-      "Cloud computing"
+      "云计算"
     ],
     "botCards": [
       "边缘打印",
@@ -57333,8 +56071,7 @@
     "canonicalAnswer": "开源",
     "acceptedAnswers": [
       "开源",
-      "开源软件",
-      "Open source"
+      "开源软件"
     ],
     "botCards": [
       "共享软件",
@@ -57359,8 +56096,7 @@
     "canonicalAnswer": "92",
     "acceptedAnswers": [
       "92",
-      "九十二",
-      "Ninety two"
+      "九十二"
     ],
     "botCards": [
       "238",
@@ -57386,7 +56122,6 @@
     "acceptedAnswers": [
       "氮气",
       "氮",
-      "Nitrogen",
       "N2"
     ],
     "botCards": [
@@ -57412,8 +56147,7 @@
     "canonicalAnswer": "恒星",
     "acceptedAnswers": [
       "恒星",
-      "星",
-      "Star"
+      "星"
     ],
     "botCards": [
       "行星",
@@ -57437,8 +56171,7 @@
     "question": "植物利用阳光制造糖分的过程叫什么？",
     "canonicalAnswer": "光合作用",
     "acceptedAnswers": [
-      "光合作用",
-      "Photosynthesis"
+      "光合作用"
     ],
     "botCards": [
       "呼吸作用",
@@ -57463,9 +56196,7 @@
     "canonicalAnswer": "阿伏伽德罗常数",
     "acceptedAnswers": [
       "阿伏伽德罗常数",
-      "阿伏伽德罗数",
-      "Avogadro constant",
-      "Avogadro number"
+      "阿伏伽德罗数"
     ],
     "botCards": [
       "玻尔兹曼常数",
@@ -57489,8 +56220,7 @@
     "question": "熔融物质冷却并凝固后形成的岩石类型叫什么？",
     "canonicalAnswer": "火成岩",
     "acceptedAnswers": [
-      "火成岩",
-      "Igneous rock"
+      "火成岩"
     ],
     "botCards": [
       "沉积岩",
@@ -57514,8 +56244,7 @@
     "question": "从地球看，月球受光的一面完全可见时的月相叫什么？",
     "canonicalAnswer": "满月",
     "acceptedAnswers": [
-      "满月",
-      "Full moon"
+      "满月"
     ],
     "botCards": [
       "新月",
@@ -57540,8 +56269,7 @@
     "canonicalAnswer": "带电太阳粒子",
     "acceptedAnswers": [
       "带电太阳粒子",
-      "太阳风带电粒子",
-      "Charged solar particles"
+      "太阳风带电粒子"
     ],
     "botCards": [
       "海洋潮汐",
@@ -57565,8 +56293,7 @@
     "question": "古代生物留下的遗骸或印痕保存下来后称为什么？",
     "canonicalAnswer": "化石",
     "acceptedAnswers": [
-      "化石",
-      "Fossil"
+      "化石"
     ],
     "botCards": [
       "矿脉",
@@ -57590,9 +56317,7 @@
     "question": "建造珊瑚礁碳酸钙结构的微小动物叫什么？",
     "canonicalAnswer": "珊瑚虫",
     "acceptedAnswers": [
-      "珊瑚虫",
-      "Coral polyps",
-      "Coral polyp"
+      "珊瑚虫"
     ],
     "botCards": [
       "硅藻",
@@ -57617,10 +56342,7 @@
     "canonicalAnswer": "狮鹫",
     "acceptedAnswers": [
       "狮鹫",
-      "格里芬",
-      "Griffin",
-      "Griffon",
-      "Gryphon"
+      "格里芬"
     ],
     "botCards": [
       "斯芬克斯",
@@ -57644,8 +56366,7 @@
     "question": "统治冥界的是哪位希腊神祇？",
     "canonicalAnswer": "哈迪斯",
     "acceptedAnswers": [
-      "哈迪斯",
-      "Hades"
+      "哈迪斯"
     ],
     "botCards": [
       "阿瑞斯",
@@ -57670,9 +56391,7 @@
     "canonicalAnswer": "埃及神话",
     "acceptedAnswers": [
       "埃及神话",
-      "古埃及神话",
-      "Egyptian mythology",
-      "Ancient Egyptian mythology"
+      "古埃及神话"
     ],
     "botCards": [
       "希腊神话",
@@ -57696,10 +56415,7 @@
     "question": "为了获得智慧而牺牲一只眼睛的是哪位北欧神祇？",
     "canonicalAnswer": "奥丁",
     "acceptedAnswers": [
-      "奥丁",
-      "Wotan",
-      "Woden",
-      "Odin"
+      "奥丁"
     ],
     "botCards": [
       "洛基",
@@ -57723,8 +56439,7 @@
     "question": "传说中会从自己的灰烬中重生的神鸟是什么？",
     "canonicalAnswer": "凤凰",
     "acceptedAnswers": [
-      "凤凰",
-      "Phoenix"
+      "凤凰"
     ],
     "botCards": [
       "大鹏鸟",
@@ -57748,8 +56463,7 @@
     "question": "哪位希腊英雄进入迷宫并击败了牛头怪？",
     "canonicalAnswer": "忒修斯",
     "acceptedAnswers": [
-      "忒修斯",
-      "Theseus"
+      "忒修斯"
     ],
     "botCards": [
       "珀耳修斯",
@@ -57775,8 +56489,7 @@
     "acceptedAnswers": [
       "化为石头",
       "变成石头",
-      "变成石像",
-      "Turned to stone"
+      "变成石像"
     ],
     "botCards": [
       "陷入沉睡",
@@ -57801,8 +56514,7 @@
     "canonicalAnswer": "世界树",
     "acceptedAnswers": [
       "世界树",
-      "宇宙树",
-      "World tree"
+      "宇宙树"
     ],
     "botCards": [
       "彩虹桥",
@@ -57827,8 +56539,7 @@
     "canonicalAnswer": "弹奏里拉琴",
     "acceptedAnswers": [
       "弹奏里拉琴",
-      "演奏里拉琴",
-      "Playing the lyre"
+      "演奏里拉琴"
     ],
     "botCards": [
       "吹奏长笛",
@@ -57853,8 +56564,7 @@
     "canonicalAnswer": "羽毛和蜡",
     "acceptedAnswers": [
       "羽毛和蜡",
-      "羽毛与蜡",
-      "Feathers and wax"
+      "羽毛与蜡"
     ],
     "botCards": [
       "皮革和绳索",
@@ -57879,9 +56589,7 @@
     "canonicalAnswer": "古斯塔夫·克里姆特",
     "acceptedAnswers": [
       "古斯塔夫·克里姆特",
-      "克里姆特",
-      "Gustav Klimt",
-      "Klimt"
+      "克里姆特"
     ],
     "botCards": [
       "埃贡·席勒",
@@ -57906,8 +56614,7 @@
     "canonicalAnswer": "巴洛克时期",
     "acceptedAnswers": [
       "巴洛克时期",
-      "巴洛克",
-      "Baroque"
+      "巴洛克"
     ],
     "botCards": [
       "浪漫主义时期",
@@ -57927,8 +56634,7 @@
     "canonicalAnswer": "三原色",
     "acceptedAnswers": [
       "三原色",
-      "原色",
-      "Primary colors"
+      "原色"
     ],
     "botCards": [
       "互补色",
@@ -57947,8 +56653,7 @@
     "question": "歌剧中由一位歌手独唱的曲段通常叫什么？",
     "canonicalAnswer": "咏叹调",
     "acceptedAnswers": [
-      "咏叹调",
-      "Aria"
+      "咏叹调"
     ],
     "botCards": [
       "奏鸣曲",
@@ -57968,9 +56673,7 @@
     "canonicalAnswer": "即兴演奏",
     "acceptedAnswers": [
       "即兴演奏",
-      "即兴创作",
-      "Improvisation",
-      "Improv"
+      "即兴创作"
     ],
     "botCards": [
       "管弦乐编配",
@@ -57990,8 +56693,7 @@
     "canonicalAnswer": "5-7-5",
     "acceptedAnswers": [
       "5-7-5",
-      "五七五",
-      "Five seven five"
+      "五七五"
     ],
     "botCards": [
       "4-4-4",
@@ -58011,9 +56713,7 @@
     "canonicalAnswer": "约翰·塞巴斯蒂安·巴赫",
     "acceptedAnswers": [
       "约翰·塞巴斯蒂安·巴赫",
-      "巴赫",
-      "Johann Sebastian Bach",
-      "Bach"
+      "巴赫"
     ],
     "botCards": [
       "亨德尔",
@@ -58038,9 +56738,7 @@
     "canonicalAnswer": "伦勃朗",
     "acceptedAnswers": [
       "伦勃朗",
-      "伦勃朗·凡·莱因",
-      "Rembrandt",
-      "Rembrandt van Rijn"
+      "伦勃朗·凡·莱因"
     ],
     "botCards": [
       "维米尔",
@@ -58066,10 +56764,7 @@
     "acceptedAnswers": [
       "路易斯·阿姆斯特朗",
       "阿姆斯特朗",
-      "沙奇莫",
-      "Louis Armstrong",
-      "Armstrong",
-      "Satchmo"
+      "沙奇莫"
     ],
     "botCards": [
       "艾灵顿公爵",
@@ -58094,9 +56789,7 @@
     "canonicalAnswer": "迭戈·委拉斯开兹",
     "acceptedAnswers": [
       "迭戈·委拉斯开兹",
-      "委拉斯开兹",
-      "Diego Velazquez",
-      "Velazquez"
+      "委拉斯开兹"
     ],
     "botCards": [
       "埃尔·格列柯",
@@ -58121,9 +56814,7 @@
     "canonicalAnswer": "哥斯拉",
     "acceptedAnswers": [
       "哥斯拉",
-      "哥吉拉",
-      "Godzilla",
-      "Gojira"
+      "哥吉拉"
     ],
     "botCards": [
       "金刚",
@@ -58149,9 +56840,7 @@
     "acceptedAnswers": [
       "披头士乐队",
       "披头士",
-      "甲壳虫乐队",
-      "The Beatles",
-      "Beatles"
+      "甲壳虫乐队"
     ],
     "botCards": [
       "滚石乐队",
@@ -58176,9 +56865,7 @@
     "canonicalAnswer": "德古拉",
     "acceptedAnswers": [
       "德古拉",
-      "德古拉伯爵",
-      "Dracula",
-      "Count Dracula"
+      "德古拉伯爵"
     ],
     "botCards": [
       "诺斯费拉图",
@@ -58204,11 +56891,7 @@
     "acceptedAnswers": [
       "詹姆斯·T·柯克舰长",
       "柯克舰长",
-      "詹姆斯·柯克",
-      "Captain Kirk",
-      "James T Kirk",
-      "James Kirk",
-      "Kirk"
+      "詹姆斯·柯克"
     ],
     "botCards": [
       "让-吕克·皮卡德",
@@ -58232,9 +56915,7 @@
     "question": "这张宣传 1933 年电影的海报主角是哪只巨型猩猩？",
     "canonicalAnswer": "金刚",
     "acceptedAnswers": [
-      "金刚",
-      "King Kong",
-      "Kong"
+      "金刚"
     ],
     "botCards": [
       "巨人乔·杨",
@@ -58258,9 +56939,7 @@
     "question": "谁执导了 1927 年科幻电影《大都会》？",
     "canonicalAnswer": "弗里茨·朗",
     "acceptedAnswers": [
-      "弗里茨·朗",
-      "Fritz Lang",
-      "Lang"
+      "弗里茨·朗"
     ],
     "botCards": [
       "F·W·茂瑙",
@@ -58285,9 +56964,7 @@
     "canonicalAnswer": "劳莱与哈代",
     "acceptedAnswers": [
       "劳莱与哈代",
-      "斯坦·劳莱与奥利弗·哈代",
-      "Laurel and Hardy",
-      "Stan Laurel and Oliver Hardy"
+      "斯坦·劳莱与奥利弗·哈代"
     ],
     "botCards": [
       "艾伯特与科斯特洛",
@@ -58312,8 +56989,7 @@
     "canonicalAnswer": "梅丽尔·斯特里普",
     "acceptedAnswers": [
       "梅丽尔·斯特里普",
-      "梅丽尔·史翠普",
-      "Meryl Streep"
+      "梅丽尔·史翠普"
     ],
     "botCards": [
       "格伦·克洛斯",
@@ -58338,8 +57014,7 @@
     "canonicalAnswer": "碧昂丝",
     "acceptedAnswers": [
       "碧昂丝",
-      "碧昂斯",
-      "Beyonce"
+      "碧昂斯"
     ],
     "botCards": [
       "蕾哈娜",
@@ -58363,8 +57038,7 @@
     "question": "迪士尼动画电影《阿拉丁》中，为精灵配音的是哪位演员？",
     "canonicalAnswer": "罗宾·威廉斯",
     "acceptedAnswers": [
-      "罗宾·威廉斯",
-      "Robin Williams"
+      "罗宾·威廉斯"
     ],
     "botCards": [
       "比利·克里斯托",
@@ -58389,10 +57063,7 @@
     "canonicalAnswer": "金环",
     "acceptedAnswers": [
       "金环",
-      "金色圆环",
-      "Rings",
-      "Gold rings",
-      "Golden rings"
+      "金色圆环"
     ],
     "botCards": [
       "金币",
@@ -58417,8 +57088,7 @@
     "canonicalAnswer": "精灵球",
     "acceptedAnswers": [
       "精灵球",
-      "宝可梦球",
-      "Poke Ball"
+      "宝可梦球"
     ],
     "botCards": [
       "大卢恩",
@@ -58442,8 +57112,7 @@
     "question": "在《传送门》中，讽刺刻薄的人工智能反派叫什么？",
     "canonicalAnswer": "格拉多斯",
     "acceptedAnswers": [
-      "格拉多斯",
-      "GLaDOS"
+      "格拉多斯"
     ],
     "botCards": [
       "科塔娜",
@@ -58468,9 +57137,7 @@
     "canonicalAnswer": "鲁比克",
     "acceptedAnswers": [
       "鲁比克",
-      "厄尔诺·鲁比克",
-      "Rubik",
-      "Ernő Rubik"
+      "厄尔诺·鲁比克"
     ],
     "botCards": [
       "埃尔德什",
@@ -58544,8 +57211,7 @@
     "question": "为鼓励儿童学习编程而创立的微型计算机家族叫什么？",
     "canonicalAnswer": "树莓派",
     "acceptedAnswers": [
-      "树莓派",
-      "Raspberry Pi"
+      "树莓派"
     ],
     "botCards": [
       "阿杜诺",
@@ -58570,9 +57236,7 @@
     "canonicalAnswer": "任天堂娱乐系统",
     "acceptedAnswers": [
       "任天堂娱乐系统",
-      "红白机",
-      "NES",
-      "Nintendo Entertainment System"
+      "红白机"
     ],
     "botCards": [
       "超级任天堂",
@@ -58597,8 +57261,7 @@
     "canonicalAnswer": "角色扮演",
     "acceptedAnswers": [
       "角色扮演",
-      "角色扮演装扮",
-      "Cosplay"
+      "角色扮演装扮"
     ],
     "botCards": [
       "真人角色扮演",
@@ -58622,8 +57285,7 @@
     "question": "这种电脑输入设备因最初的线缆像尾巴而得名，它叫什么？",
     "canonicalAnswer": "鼠标",
     "acceptedAnswers": [
-      "鼠标",
-      "Mouse"
+      "鼠标"
     ],
     "botCards": [
       "摇杆",
@@ -58648,9 +57310,7 @@
     "canonicalAnswer": "玛雅文明",
     "acceptedAnswers": [
       "玛雅文明",
-      "玛雅",
-      "Maya",
-      "Mayan"
+      "玛雅"
     ],
     "botCards": [
       "印加文明",
@@ -58674,8 +57334,7 @@
     "question": "这座帆状地标位于澳大利亚哪座城市？",
     "canonicalAnswer": "悉尼",
     "acceptedAnswers": [
-      "悉尼",
-      "Sydney"
+      "悉尼"
     ],
     "botCards": [
       "墨尔本",
@@ -58699,8 +57358,7 @@
     "question": "新西兰的首都是什么？",
     "canonicalAnswer": "惠灵顿",
     "acceptedAnswers": [
-      "惠灵顿",
-      "Wellington"
+      "惠灵顿"
     ],
     "botCards": [
       "奥克兰",
@@ -58719,8 +57377,7 @@
     "question": "古迦太基位于今天的哪个国家？",
     "canonicalAnswer": "突尼斯",
     "acceptedAnswers": [
-      "突尼斯",
-      "Tunisia"
+      "突尼斯"
     ],
     "botCards": [
       "摩洛哥",
@@ -58740,8 +57397,7 @@
     "canonicalAnswer": "1989",
     "acceptedAnswers": [
       "1989",
-      "一九八九",
-      "Nineteen eighty nine"
+      "一九八九"
     ],
     "botCards": [
       "1979",
@@ -58760,8 +57416,7 @@
     "question": "百年战争主要发生在英格兰与哪个国家之间？",
     "canonicalAnswer": "法国",
     "acceptedAnswers": [
-      "法国",
-      "France"
+      "法国"
     ],
     "botCards": [
       "西班牙",
@@ -58781,8 +57436,7 @@
     "canonicalAnswer": "南达科他州",
     "acceptedAnswers": [
       "南达科他州",
-      "南达科他",
-      "South Dakota"
+      "南达科他"
     ],
     "botCards": [
       "北达科他州",
@@ -58806,8 +57460,7 @@
     "question": "这座斜塔坐落于意大利哪座城市？",
     "canonicalAnswer": "比萨",
     "acceptedAnswers": [
-      "比萨",
-      "Pisa"
+      "比萨"
     ],
     "botCards": [
       "佛罗伦萨",
@@ -58831,8 +57484,7 @@
     "question": "圣家堂是西班牙哪座城市的地标？",
     "canonicalAnswer": "巴塞罗那",
     "acceptedAnswers": [
-      "巴塞罗那",
-      "Barcelona"
+      "巴塞罗那"
     ],
     "botCards": [
       "马德里",
@@ -58856,8 +57508,7 @@
     "question": "这些石砌遗址给哪个现代国家带来了国名？",
     "canonicalAnswer": "津巴布韦",
     "acceptedAnswers": [
-      "津巴布韦",
-      "Zimbabwe"
+      "津巴布韦"
     ],
     "botCards": [
       "赞比亚",
@@ -58881,8 +57532,7 @@
     "question": "许多蝙蝠在黑暗中捕猎时使用什么生物导航系统？",
     "canonicalAnswer": "回声定位",
     "acceptedAnswers": [
-      "回声定位",
-      "Echolocation"
+      "回声定位"
     ],
     "botCards": [
       "磁感应",
@@ -58906,8 +57556,7 @@
     "question": "穿山甲身上重叠的保护性覆盖物由什么构成？",
     "canonicalAnswer": "角蛋白",
     "acceptedAnswers": [
-      "角蛋白",
-      "Keratin"
+      "角蛋白"
     ],
     "botCards": [
       "碳酸钙",
@@ -58933,9 +57582,7 @@
     "acceptedAnswers": [
       "长牙",
       "獠牙",
-      "牙齿",
-      "Tusk",
-      "A tusk"
+      "牙齿"
     ],
     "botCards": [
       "角",
@@ -58959,8 +57606,7 @@
     "question": "科莫多巨蜥原产于印度尼西亚的哪个群岛？",
     "canonicalAnswer": "小巽他群岛",
     "acceptedAnswers": [
-      "小巽他群岛",
-      "Lesser Sunda Islands"
+      "小巽他群岛"
     ],
     "botCards": [
       "加拉帕戈斯群岛",
@@ -58984,9 +57630,7 @@
     "canonicalAnswer": "小山羊",
     "acceptedAnswers": [
       "小山羊",
-      "幼山羊",
-      "Kid",
-      "A kid"
+      "幼山羊"
     ],
     "botCards": [
       "马驹",
@@ -59006,9 +57650,7 @@
     "acceptedAnswers": [
       "蓝黑色",
       "蓝黑",
-      "深蓝色",
-      "Blue-black",
-      "Dark blue"
+      "深蓝色"
     ],
     "botCards": [
       "鲜红色",
@@ -59026,9 +57668,7 @@
     "question": "美西螈原产于墨西哥哪座城市附近的湖泊？",
     "canonicalAnswer": "墨西哥城",
     "acceptedAnswers": [
-      "墨西哥城",
-      "Mexico City",
-      "Ciudad de Mexico"
+      "墨西哥城"
     ],
     "botCards": [
       "瓜达拉哈拉",
@@ -59048,9 +57688,7 @@
     "acceptedAnswers": [
       "后肢毒距",
       "脚踝距",
-      "毒距",
-      "Ankle spurs",
-      "Spurs"
+      "毒距"
     ],
     "botCards": [
       "尖牙",
@@ -59068,9 +57706,7 @@
     "question": "哪种动物以发出所有现存生物中最响亮的声音之一而闻名？",
     "canonicalAnswer": "抹香鲸",
     "acceptedAnswers": [
-      "抹香鲸",
-      "Sperm whale",
-      "Sperm whales"
+      "抹香鲸"
     ],
     "botCards": [
       "蓝鲸",
@@ -59088,9 +57724,7 @@
     "question": "独角鲸的长牙其实是哪个身体部位的放大形态？",
     "canonicalAnswer": "牙齿",
     "acceptedAnswers": [
-      "牙齿",
-      "Tooth",
-      "A tooth"
+      "牙齿"
     ],
     "botCards": [
       "角",
@@ -59110,8 +57744,7 @@
     "canonicalAnswer": "野生酵母和乳酸菌",
     "acceptedAnswers": [
       "野生酵母和乳酸菌",
-      "野生酵母与乳酸菌",
-      "Wild yeast and lactic-acid bacteria"
+      "野生酵母与乳酸菌"
     ],
     "botCards": [
       "霉菌和醋酸杆菌",
@@ -59136,8 +57769,7 @@
     "canonicalAnswer": "法棍",
     "acceptedAnswers": [
       "法棍",
-      "法式长棍面包",
-      "Baguette"
+      "法式长棍面包"
     ],
     "botCards": [
       "布里欧修",
@@ -59161,8 +57793,7 @@
     "question": "微生物将糖转化为酒精或酸的过程叫什么？",
     "canonicalAnswer": "发酵",
     "acceptedAnswers": [
-      "发酵",
-      "Fermentation"
+      "发酵"
     ],
     "botCards": [
       "乳化",
@@ -59188,8 +57819,7 @@
     "acceptedAnswers": [
       "寿司饭",
       "醋饭",
-      "酢饭",
-      "Sumeshi"
+      "酢饭"
     ],
     "botCards": [
       "年糕",
@@ -59213,10 +57843,7 @@
     "canonicalAnswer": "鹰嘴豆",
     "acceptedAnswers": [
       "鹰嘴豆",
-      "鸡豆",
-      "Chickpea",
-      "Chickpeas",
-      "Garbanzo bean"
+      "鸡豆"
     ],
     "botCards": [
       "小扁豆",
@@ -59235,9 +57862,7 @@
     "canonicalAnswer": "出汁",
     "acceptedAnswers": [
       "出汁",
-      "日式高汤",
-      "Dashi",
-      "Dashi stock"
+      "日式高汤"
     ],
     "botCards": [
       "椰奶",
@@ -59255,9 +57880,7 @@
     "question": "羊角面包虽然与法国关系密切，最初却源自哪个国家的糕点传统？",
     "canonicalAnswer": "奥地利",
     "acceptedAnswers": [
-      "奥地利",
-      "Austria",
-      "Austrian"
+      "奥地利"
     ],
     "botCards": [
       "比利时",
@@ -59276,8 +57899,7 @@
     "canonicalAnswer": "黑皮诺",
     "acceptedAnswers": [
       "黑皮诺",
-      "黑比诺",
-      "Pinot Noir"
+      "黑比诺"
     ],
     "botCards": [
       "赤霞珠",
@@ -59297,10 +57919,8 @@
     "acceptedAnswers": [
       "舍利",
       "沙利",
-      "Shari",
       "しゃり",
-      "寿司饭",
-      "Sushi rice"
+      "寿司饭"
     ],
     "botCards": [
       "海苔",
@@ -59318,8 +57938,7 @@
     "question": "墨西哥酱 mole poblano 的名称中包含哪座城市？",
     "canonicalAnswer": "普埃布拉",
     "acceptedAnswers": [
-      "普埃布拉",
-      "Puebla"
+      "普埃布拉"
     ],
     "botCards": [
       "瓦哈卡",
@@ -59339,8 +57958,7 @@
     "canonicalAnswer": "三柱门",
     "acceptedAnswers": [
       "三柱门",
-      "门柱",
-      "Wicket"
+      "门柱"
     ],
     "botCards": [
       "击球线",
@@ -59365,8 +57983,7 @@
     "canonicalAnswer": "大本营",
     "acceptedAnswers": [
       "大本营",
-      "得分区",
-      "House"
+      "得分区"
     ],
     "botCards": [
       "圆圈",
@@ -59391,8 +58008,7 @@
     "canonicalAnswer": "10英尺",
     "acceptedAnswers": [
       "10英尺",
-      "3.05米",
-      "10 feet"
+      "3.05米"
     ],
     "botCards": [
       "8英尺",
@@ -59417,8 +58033,7 @@
     "canonicalAnswer": "果岭",
     "acceptedAnswers": [
       "果岭",
-      "推杆果岭",
-      "Putting green"
+      "推杆果岭"
     ],
     "botCards": [
       "球道",
@@ -59442,8 +58057,7 @@
     "question": "英式橄榄球中，轻微犯规如前传后常以哪种定式重新开始比赛？",
     "canonicalAnswer": "争球",
     "acceptedAnswers": [
-      "争球",
-      "Scrum"
+      "争球"
     ],
     "botCards": [
       "抱团推进",
@@ -59468,8 +58082,7 @@
     "canonicalAnswer": "4",
     "acceptedAnswers": [
       "4",
-      "四",
-      "Four"
+      "四"
     ],
     "botCards": [
       "3",
@@ -59493,8 +58106,7 @@
     "question": "哪项冬季运动从大型跳台起跳，并按距离与姿态评分？",
     "canonicalAnswer": "跳台滑雪",
     "acceptedAnswers": [
-      "跳台滑雪",
-      "Ski jumping"
+      "跳台滑雪"
     ],
     "botCards": [
       "冬季两项",
@@ -59520,8 +58132,7 @@
     "acceptedAnswers": [
       "8",
       "八",
-      "八人",
-      "Eight"
+      "八人"
     ],
     "botCards": [
       "6",
@@ -59565,8 +58176,7 @@
     "question": "网球一局中双方都达到 40 分时称为什么？",
     "canonicalAnswer": "平分",
     "acceptedAnswers": [
-      "平分",
-      "Deuce"
+      "平分"
     ],
     "botCards": [
       "抢七",
@@ -59585,8 +58195,7 @@
     "question": "哪种技术以相连区块组成的分布式链来记录加密货币交易？",
     "canonicalAnswer": "区块链",
     "acceptedAnswers": [
-      "区块链",
-      "Blockchain"
+      "区块链"
     ],
     "botCards": [
       "哈希表",
@@ -59676,9 +58285,7 @@
     "canonicalAnswer": "无线信号",
     "acceptedAnswers": [
       "无线信号",
-      "无线电波",
-      "Wireless signal",
-      "Radio waves"
+      "无线电波"
     ],
     "botCards": [
       "电池电量",
@@ -59715,9 +58322,7 @@
     "question": "以 https 开头的网址中，最后的 S 代表什么？",
     "canonicalAnswer": "安全",
     "acceptedAnswers": [
-      "安全",
-      "Secure",
-      "Security"
+      "安全"
     ],
     "botCards": [
       "服务器",
@@ -59754,8 +58359,7 @@
     "canonicalAnswer": "128",
     "acceptedAnswers": [
       "128",
-      "一百二十八",
-      "One hundred twenty-eight"
+      "一百二十八"
     ],
     "botCards": [
       "64",
@@ -59774,9 +58378,7 @@
     "canonicalAnswer": "理查德·道金斯",
     "acceptedAnswers": [
       "理查德·道金斯",
-      "道金斯",
-      "Richard Dawkins",
-      "Dawkins"
+      "道金斯"
     ],
     "botCards": [
       "斯蒂芬·杰伊·古尔德",
@@ -59795,8 +58397,7 @@
     "question": "储存生物遗传指令的是哪种分子？",
     "canonicalAnswer": "脱氧核糖核酸",
     "acceptedAnswers": [
-      "脱氧核糖核酸",
-      "DNA"
+      "脱氧核糖核酸"
     ],
     "botCards": [
       "核糖核酸",
@@ -59821,8 +58422,7 @@
     "canonicalAnswer": "哈勃空间望远镜",
     "acceptedAnswers": [
       "哈勃空间望远镜",
-      "哈勃望远镜",
-      "Hubble Space Telescope"
+      "哈勃望远镜"
     ],
     "botCards": [
       "斯皮策空间望远镜",
@@ -59847,8 +58447,7 @@
     "canonicalAnswer": "棒旋星系",
     "acceptedAnswers": [
       "棒旋星系",
-      "棒状螺旋星系",
-      "Barred spiral galaxy"
+      "棒状螺旋星系"
     ],
     "botCards": [
       "椭圆星系",
@@ -59872,8 +58471,7 @@
     "question": "哪种亚原子粒子决定元素的原子序数？",
     "canonicalAnswer": "质子",
     "acceptedAnswers": [
-      "质子",
-      "Proton"
+      "质子"
     ],
     "botCards": [
       "电子",
@@ -59898,8 +58496,7 @@
     "acceptedAnswers": [
       "100",
       "一百",
-      "100摄氏度",
-      "100°C"
+      "100摄氏度"
     ],
     "botCards": [
       "90",
@@ -59917,8 +58514,7 @@
     "question": "奥林帕斯山具体属于哪种地质分类？",
     "canonicalAnswer": "盾状火山",
     "acceptedAnswers": [
-      "盾状火山",
-      "Shield volcano"
+      "盾状火山"
     ],
     "botCards": [
       "层状火山",
@@ -59937,8 +58533,7 @@
     "canonicalAnswer": "汞",
     "acceptedAnswers": [
       "汞",
-      "水银",
-      "Mercury"
+      "水银"
     ],
     "botCards": [
       "镓",
@@ -59956,8 +58551,7 @@
     "question": "哪种仪器测量空气湿度？",
     "canonicalAnswer": "湿度计",
     "acceptedAnswers": [
-      "湿度计",
-      "Hygrometer"
+      "湿度计"
     ],
     "botCards": [
       "气压计",
@@ -59975,8 +58569,7 @@
     "question": "太阳系中哪颗行星的已记录风速最快？",
     "canonicalAnswer": "海王星",
     "acceptedAnswers": [
-      "海王星",
-      "Neptune"
+      "海王星"
     ],
     "botCards": [
       "木星",
@@ -60015,8 +58608,7 @@
     "question": "荷鲁斯之母、奥西里斯之妻是哪位埃及女神？",
     "canonicalAnswer": "伊西斯",
     "acceptedAnswers": [
-      "伊西斯",
-      "Isis"
+      "伊西斯"
     ],
     "botCards": [
       "哈托尔",
@@ -60040,8 +58632,7 @@
     "canonicalAnswer": "阿佛洛狄忒",
     "acceptedAnswers": [
       "阿佛洛狄忒",
-      "阿芙罗狄忒",
-      "Aphrodite"
+      "阿芙罗狄忒"
     ],
     "botCards": [
       "赫拉",
@@ -60060,9 +58651,7 @@
     "canonicalAnswer": "阿坎人",
     "acceptedAnswers": [
       "阿坎人",
-      "阿坎",
-      "Akan",
-      "The Akan"
+      "阿坎"
     ],
     "botCards": [
       "约鲁巴人",
@@ -60080,8 +58669,7 @@
     "question": "哪位埃及神祇常被描绘为鹰首并戴着太阳圆盘？",
     "canonicalAnswer": "荷鲁斯",
     "acceptedAnswers": [
-      "荷鲁斯",
-      "Horus"
+      "荷鲁斯"
     ],
     "botCards": [
       "阿努比斯",
@@ -60099,8 +58687,7 @@
     "question": "亚瑟王传说中的巫师顾问叫什么？",
     "canonicalAnswer": "梅林",
     "acceptedAnswers": [
-      "梅林",
-      "Merlin"
+      "梅林"
     ],
     "botCards": [
       "莫德雷德",
@@ -60118,8 +58705,7 @@
     "question": "在伊萨卡等待奥德修斯归来的妻子叫什么？",
     "canonicalAnswer": "佩涅洛佩",
     "acceptedAnswers": [
-      "佩涅洛佩",
-      "Penelope"
+      "佩涅洛佩"
     ],
     "botCards": [
       "海伦",
@@ -60137,9 +58723,7 @@
     "question": "哪位印度教女神是恒河的人格化身？",
     "canonicalAnswer": "恒河女神",
     "acceptedAnswers": [
-      "恒河女神",
-      "Ganga",
-      "Ganges"
+      "恒河女神"
     ],
     "botCards": [
       "萨拉斯瓦蒂",
@@ -60158,9 +58742,7 @@
     "canonicalAnswer": "须佐之男",
     "acceptedAnswers": [
       "须佐之男",
-      "素戋呜尊",
-      "Susanoo",
-      "Susanowo"
+      "素戋呜尊"
     ],
     "botCards": [
       "雷神",
@@ -60178,8 +58760,7 @@
     "question": "哪位希腊神话国王的名字后来形容无尽而徒劳的任务？",
     "canonicalAnswer": "西西弗斯",
     "acceptedAnswers": [
-      "西西弗斯",
-      "Sisyphus"
+      "西西弗斯"
     ],
     "botCards": [
       "坦塔罗斯",
@@ -60197,8 +58778,7 @@
     "question": "北欧神话中，洛基的哪位女儿统治着以自己名字命名的亡者国度？",
     "canonicalAnswer": "赫尔",
     "acceptedAnswers": [
-      "赫尔",
-      "Hel"
+      "赫尔"
     ],
     "botCards": [
       "芙蕾雅",
@@ -60220,9 +58800,7 @@
       "弗里达·卡罗",
       "弗里达·卡洛",
       "卡罗",
-      "卡洛",
-      "Frida Kahlo",
-      "Kahlo"
+      "卡洛"
     ],
     "botCards": [
       "乔治亚·欧姬芙",
@@ -60248,9 +58826,7 @@
     "acceptedAnswers": [
       "木管乐器组",
       "木管乐器",
-      "木管组",
-      "Woodwind",
-      "Woodwind family"
+      "木管组"
     ],
     "botCards": [
       "铜管乐器组",
@@ -60275,9 +58851,7 @@
     "canonicalAnswer": "克洛德·莫奈",
     "acceptedAnswers": [
       "克洛德·莫奈",
-      "莫奈",
-      "Claude Monet",
-      "Monet"
+      "莫奈"
     ],
     "botCards": [
       "埃德加·德加",
@@ -60302,9 +58876,7 @@
     "canonicalAnswer": "皮特·蒙德里安",
     "acceptedAnswers": [
       "皮特·蒙德里安",
-      "蒙德里安",
-      "Piet Mondrian",
-      "Mondrian"
+      "蒙德里安"
     ],
     "botCards": [
       "卡济米尔·马列维奇",
@@ -60330,9 +58902,7 @@
     "acceptedAnswers": [
       "艾灵顿公爵",
       "杜克·艾灵顿",
-      "艾灵顿",
-      "Duke Ellington",
-      "Ellington"
+      "艾灵顿"
     ],
     "botCards": [
       "贝西伯爵",
@@ -60357,9 +58927,7 @@
     "canonicalAnswer": "爱德华·蒙克",
     "acceptedAnswers": [
       "爱德华·蒙克",
-      "蒙克",
-      "Edvard Munch",
-      "Munch"
+      "蒙克"
     ],
     "botCards": [
       "古斯塔夫·克里姆特",
@@ -60386,9 +58954,7 @@
       "乔治亚·欧姬芙",
       "乔治亚·欧基芙",
       "欧姬芙",
-      "欧基芙",
-      "Georgia O'Keeffe",
-      "O'Keeffe"
+      "欧基芙"
     ],
     "botCards": [
       "玛丽·卡萨特",
@@ -60414,9 +58980,7 @@
     "acceptedAnswers": [
       "弦乐器组",
       "弦乐器",
-      "弦乐组",
-      "String family",
-      "Strings"
+      "弦乐组"
     ],
     "botCards": [
       "木管乐器组",
@@ -60441,9 +59005,7 @@
     "canonicalAnswer": "文森特·梵高",
     "acceptedAnswers": [
       "文森特·梵高",
-      "梵高",
-      "Vincent van Gogh",
-      "Van Gogh"
+      "梵高"
     ],
     "botCards": [
       "克洛德·莫奈",
@@ -60469,9 +59031,7 @@
     "acceptedAnswers": [
       "葛饰北斋",
       "北斋",
-      "葛飾北齋",
-      "Hokusai",
-      "Katsushika Hokusai"
+      "葛飾北齋"
     ],
     "botCards": [
       "歌川广重",
@@ -60496,8 +59056,7 @@
     "canonicalAnswer": "印象派",
     "acceptedAnswers": [
       "印象派",
-      "印象主义",
-      "Impressionism"
+      "印象主义"
     ],
     "botCards": [
       "立体主义",
@@ -60522,9 +59081,7 @@
     "canonicalAnswer": "文森特·梵高",
     "acceptedAnswers": [
       "文森特·梵高",
-      "梵高",
-      "Vincent van Gogh",
-      "Van Gogh"
+      "梵高"
     ],
     "botCards": [
       "保罗·高更",
@@ -60549,9 +59106,7 @@
     "canonicalAnswer": "路德维希·范·贝多芬",
     "acceptedAnswers": [
       "路德维希·范·贝多芬",
-      "贝多芬",
-      "Ludwig van Beethoven",
-      "Beethoven"
+      "贝多芬"
     ],
     "botCards": [
       "弗朗茨·舒伯特",
@@ -60576,8 +59131,7 @@
     "canonicalAnswer": "萨克斯管",
     "acceptedAnswers": [
       "萨克斯管",
-      "萨克斯",
-      "Saxophone"
+      "萨克斯"
     ],
     "botCards": [
       "单簧管",
@@ -60602,8 +59156,7 @@
     "canonicalAnswer": "哥特式",
     "acceptedAnswers": [
       "哥特式",
-      "哥特式建筑",
-      "Gothic"
+      "哥特式建筑"
     ],
     "botCards": [
       "巴洛克式",
@@ -60628,9 +59181,7 @@
     "canonicalAnswer": "巴勃罗·毕加索",
     "acceptedAnswers": [
       "巴勃罗·毕加索",
-      "毕加索",
-      "Pablo Picasso",
-      "Picasso"
+      "毕加索"
     ],
     "botCards": [
       "胡安·米罗",
@@ -60654,8 +59205,7 @@
     "question": "勃兰登堡门坐落于哪座欧洲首都？",
     "canonicalAnswer": "柏林",
     "acceptedAnswers": [
-      "柏林",
-      "Berlin"
+      "柏林"
     ],
     "botCards": [
       "维也纳",
@@ -60680,9 +59230,7 @@
     "canonicalAnswer": "伊斯坦布尔",
     "acceptedAnswers": [
       "伊斯坦布尔",
-      "君士坦丁堡",
-      "Istanbul",
-      "Constantinople"
+      "君士坦丁堡"
     ],
     "botCards": [
       "安卡拉",
@@ -60702,9 +59250,7 @@
     "canonicalAnswer": "复活节岛",
     "acceptedAnswers": [
       "复活节岛",
-      "拉帕努伊岛",
-      "Easter Island",
-      "Rapa Nui"
+      "拉帕努伊岛"
     ],
     "botCards": [
       "西西里岛",
@@ -60729,9 +59275,7 @@
     "canonicalAnswer": "伊斯坦布尔",
     "acceptedAnswers": [
       "伊斯坦布尔",
-      "君士坦丁堡",
-      "Istanbul",
-      "Constantinople"
+      "君士坦丁堡"
     ],
     "botCards": [
       "雅典",
@@ -60755,8 +59299,7 @@
     "question": "圣米歇尔山位于哪个国家？",
     "canonicalAnswer": "法国",
     "acceptedAnswers": [
-      "法国",
-      "France"
+      "法国"
     ],
     "botCards": [
       "比利时",
@@ -60780,8 +59323,7 @@
     "question": "这座设有高墙和塔楼的建筑群位于哪座首都？",
     "canonicalAnswer": "莫斯科",
     "acceptedAnswers": [
-      "莫斯科",
-      "Moscow"
+      "莫斯科"
     ],
     "botCards": [
       "基辅",
@@ -60805,8 +59347,7 @@
     "question": "拉利贝拉的岩凿教堂位于哪个国家？",
     "canonicalAnswer": "埃塞俄比亚",
     "acceptedAnswers": [
-      "埃塞俄比亚",
-      "Ethiopia"
+      "埃塞俄比亚"
     ],
     "botCards": [
       "埃及",
@@ -60830,8 +59371,7 @@
     "question": "阿尔罕布拉宫建筑群位于西班牙哪座城市？",
     "canonicalAnswer": "格拉纳达",
     "acceptedAnswers": [
-      "格拉纳达",
-      "Granada"
+      "格拉纳达"
     ],
     "botCards": [
       "科尔多瓦",
@@ -60855,10 +59395,7 @@
     "question": "哪条河流对古埃及文明发展至关重要？",
     "canonicalAnswer": "尼罗河",
     "acceptedAnswers": [
-      "尼罗河",
-      "Nile",
-      "Nile River",
-      "River Nile"
+      "尼罗河"
     ],
     "botCards": [
       "底格里斯河",
@@ -60882,8 +59419,7 @@
     "question": "日本的首都是什么？",
     "canonicalAnswer": "东京",
     "acceptedAnswers": [
-      "东京",
-      "Tokyo"
+      "东京"
     ],
     "botCards": [
       "京都",
@@ -60908,8 +59444,7 @@
     "canonicalAnswer": "印加文明",
     "acceptedAnswers": [
       "印加文明",
-      "印加",
-      "Inca"
+      "印加"
     ],
     "botCards": [
       "玛雅文明",
@@ -60934,8 +59469,7 @@
     "canonicalAnswer": "古罗马人",
     "acceptedAnswers": [
       "古罗马人",
-      "罗马人",
-      "Romans"
+      "罗马人"
     ],
     "botCards": [
       "古希腊人",
@@ -60960,9 +59494,7 @@
     "canonicalAnswer": "复活节岛",
     "acceptedAnswers": [
       "复活节岛",
-      "拉帕努伊岛",
-      "Easter Island",
-      "Rapa Nui"
+      "拉帕努伊岛"
     ],
     "botCards": [
       "萨摩亚",
@@ -60986,8 +59518,7 @@
     "question": "哪条贸易网络横跨欧亚大陆，将中国与地中海地区连接起来？",
     "canonicalAnswer": "丝绸之路",
     "acceptedAnswers": [
-      "丝绸之路",
-      "Silk Road"
+      "丝绸之路"
     ],
     "botCards": [
       "琥珀之路",
@@ -61011,8 +59542,7 @@
     "question": "奥斯曼帝国征服前，伊斯坦布尔叫什么？",
     "canonicalAnswer": "君士坦丁堡",
     "acceptedAnswers": [
-      "君士坦丁堡",
-      "Constantinople"
+      "君士坦丁堡"
     ],
     "botCards": [
       "安提阿",
@@ -61037,9 +59567,7 @@
     "canonicalAnswer": "新西兰",
     "acceptedAnswers": [
       "新西兰",
-      "阿奥特阿罗阿",
-      "New Zealand",
-      "Aotearoa"
+      "阿奥特阿罗阿"
     ],
     "botCards": [
       "澳大利亚",
@@ -61063,8 +59591,7 @@
     "question": "哪种奇特哺乳动物会产卵，并在觅食时使用电感受能力？",
     "canonicalAnswer": "鸭嘴兽",
     "acceptedAnswers": [
-      "鸭嘴兽",
-      "Platypus"
+      "鸭嘴兽"
     ],
     "botCards": [
       "水獭",
@@ -61089,8 +59616,7 @@
     "canonicalAnswer": "美西螈",
     "acceptedAnswers": [
       "美西螈",
-      "六角恐龙",
-      "Axolotl"
+      "六角恐龙"
     ],
     "botCards": [
       "蝾螈",
@@ -61115,8 +59641,7 @@
     "canonicalAnswer": "摇摆舞",
     "acceptedAnswers": [
       "摇摆舞",
-      "摆尾舞",
-      "Waggle dance"
+      "摆尾舞"
     ],
     "botCards": [
       "圆舞",
@@ -61140,8 +59665,7 @@
     "question": "哪种南美啮齿动物是现存最大的啮齿动物？",
     "canonicalAnswer": "水豚",
     "acceptedAnswers": [
-      "水豚",
-      "Capybara"
+      "水豚"
     ],
     "botCards": [
       "海狸",
@@ -61165,8 +59689,7 @@
     "canonicalAnswer": "夜行性",
     "acceptedAnswers": [
       "夜行性",
-      "夜行性动物",
-      "Nocturnal"
+      "夜行性动物"
     ],
     "botCards": [
       "昼行性",
@@ -61185,9 +59708,7 @@
     "canonicalAnswer": "木蛙",
     "acceptedAnswers": [
       "木蛙",
-      "林蛙",
-      "Wood frog",
-      "Rana sylvatica"
+      "林蛙"
     ],
     "botCards": [
       "牛蛙",
@@ -61206,8 +59727,7 @@
     "canonicalAnswer": "三趾树懒",
     "acceptedAnswers": [
       "三趾树懒",
-      "三趾懒",
-      "Three-toed sloth"
+      "三趾懒"
     ],
     "botCards": [
       "考拉",
@@ -61226,9 +59746,7 @@
     "canonicalAnswer": "类胡萝卜素",
     "acceptedAnswers": [
       "类胡萝卜素",
-      "类胡萝卜素类",
-      "Carotenoids",
-      "Carotenoid"
+      "类胡萝卜素类"
     ],
     "botCards": [
       "黑色素",
@@ -61247,8 +59765,7 @@
     "question": "这个被禁止符号划掉的幽灵标志属于哪个电影系列？",
     "canonicalAnswer": "捉鬼敢死队",
     "acceptedAnswers": [
-      "捉鬼敢死队",
-      "Ghostbusters"
+      "捉鬼敢死队"
     ],
     "botCards": [
       "甲壳虫汁",
@@ -61272,9 +59789,7 @@
     "question": "图中的黑泽明在哪个国家拍摄了经典电影？",
     "canonicalAnswer": "日本",
     "acceptedAnswers": [
-      "日本",
-      "Japan",
-      "Japanese cinema"
+      "日本"
     ],
     "botCards": [
       "法国",
@@ -61299,10 +59814,7 @@
     "canonicalAnswer": "红色药丸",
     "acceptedAnswers": [
       "红色药丸",
-      "红药丸",
-      "Red pill",
-      "The red pill",
-      "Red"
+      "红药丸"
     ],
     "botCards": [
       "蓝色药丸",
@@ -61326,8 +59838,7 @@
     "question": "哪位日本导演共同创立吉卜力工作室，并执导了《千与千寻》？",
     "canonicalAnswer": "宫崎骏",
     "acceptedAnswers": [
-      "宫崎骏",
-      "Hayao Miyazaki"
+      "宫崎骏"
     ],
     "botCards": [
       "今敏",
@@ -61351,8 +59862,7 @@
     "question": "2016 年电影《奇异博士》中饰演古一法师的是哪位演员？",
     "canonicalAnswer": "蒂尔达·斯文顿",
     "acceptedAnswers": [
-      "蒂尔达·斯文顿",
-      "Tilda Swinton"
+      "蒂尔达·斯文顿"
     ],
     "botCards": [
       "杨紫琼",
@@ -61377,8 +59887,7 @@
     "canonicalAnswer": "漫威漫画",
     "acceptedAnswers": [
       "漫威漫画",
-      "漫威",
-      "Marvel Comics"
+      "漫威"
     ],
     "botCards": [
       "DC 漫画",
@@ -61402,8 +59911,7 @@
     "question": "哪位演员在《皇家赌场》和《大破天幕杀机》中饰演詹姆斯·邦德？",
     "canonicalAnswer": "丹尼尔·克雷格",
     "acceptedAnswers": [
-      "丹尼尔·克雷格",
-      "Daniel Craig"
+      "丹尼尔·克雷格"
     ],
     "botCards": [
       "麦斯·米科尔森",
@@ -61428,8 +59936,7 @@
     "canonicalAnswer": "齐格·星尘",
     "acceptedAnswers": [
       "齐格·星尘",
-      "吉吉·星尘",
-      "Ziggy Stardust"
+      "吉吉·星尘"
     ],
     "botCards": [
       "汤姆少校",
@@ -61453,8 +59960,7 @@
     "question": "基努·里维斯在《黑客帝国》中饰演的角色使用什么黑客代号？",
     "canonicalAnswer": "尼奥",
     "acceptedAnswers": [
-      "尼奥",
-      "Neo"
+      "尼奥"
     ],
     "botCards": [
       "崔妮蒂",
@@ -61479,8 +59985,7 @@
     "canonicalAnswer": "21",
     "acceptedAnswers": [
       "21",
-      "二十一",
-      "Twenty-one"
+      "二十一"
     ],
     "botCards": [
       "19",
@@ -61505,9 +60010,7 @@
     "canonicalAnswer": "羽蛇",
     "acceptedAnswers": [
       "羽蛇",
-      "羽毛蛇",
-      "Feathered serpent",
-      "Plumed serpent"
+      "羽毛蛇"
     ],
     "botCards": [
       "海蛇",
@@ -61533,10 +60036,7 @@
     "acceptedAnswers": [
       "海洋",
       "海",
-      "大海",
-      "Sea",
-      "Ocean",
-      "Oceans"
+      "大海"
     ],
     "botCards": [
       "冥界",
@@ -61560,8 +60060,7 @@
     "question": "西非和加勒比故事中的阿南西通常与哪种动物形态有关？",
     "canonicalAnswer": "蜘蛛",
     "acceptedAnswers": [
-      "蜘蛛",
-      "Spider"
+      "蜘蛛"
     ],
     "botCards": [
       "乌鸦",
@@ -61585,8 +60084,7 @@
     "question": "天照大神是神道教中掌管什么的女神？",
     "canonicalAnswer": "太阳",
     "acceptedAnswers": [
-      "太阳",
-      "Sun"
+      "太阳"
     ],
     "botCards": [
       "月亮",
@@ -61612,9 +60110,7 @@
     "acceptedAnswers": [
       "3",
       "三",
-      "三颗头",
-      "Three",
-      "Three heads"
+      "三颗头"
     ],
     "botCards": [
       "2",
@@ -61638,8 +60134,7 @@
     "question": "哪位希腊女神传统上与智慧和战略战争有关？",
     "canonicalAnswer": "雅典娜",
     "acceptedAnswers": [
-      "雅典娜",
-      "Athena"
+      "雅典娜"
     ],
     "botCards": [
       "阿佛洛狄忒",
@@ -61664,8 +60159,7 @@
     "canonicalAnswer": "妙尔尼尔",
     "acceptedAnswers": [
       "妙尔尼尔",
-      "雷神之锤",
-      "Mjolnir"
+      "雷神之锤"
     ],
     "botCards": [
       "冈格尼尔",
@@ -61689,8 +60183,7 @@
     "question": "哪位长着胡狼头的埃及神祇与丧葬仪式有关？",
     "canonicalAnswer": "阿努比斯",
     "acceptedAnswers": [
-      "阿努比斯",
-      "Anubis"
+      "阿努比斯"
     ],
     "botCards": [
       "拉",
@@ -61715,8 +60208,7 @@
     "canonicalAnswer": "斯芬克斯",
     "acceptedAnswers": [
       "斯芬克斯",
-      "狮身人面像",
-      "Sphinx"
+      "狮身人面像"
     ],
     "botCards": [
       "奇美拉",
@@ -61739,8 +60231,7 @@
     "question": "阿喀琉斯的海洋仙女母亲叫什么？",
     "canonicalAnswer": "忒提斯",
     "acceptedAnswers": [
-      "忒提斯",
-      "Thetis"
+      "忒提斯"
     ],
     "botCards": [
       "卡吕普索",
@@ -61760,10 +60251,7 @@
     "canonicalAnswer": "韩国",
     "acceptedAnswers": [
       "韩国",
-      "大韩民国",
-      "Korea",
-      "South Korea",
-      "Korean"
+      "大韩民国"
     ],
     "botCards": [
       "日本",
@@ -61787,8 +60275,7 @@
     "question": "用 Camellia sinensis 植物叶片冲泡制成的饮品是什么？",
     "canonicalAnswer": "茶",
     "acceptedAnswers": [
-      "茶",
-      "Tea"
+      "茶"
     ],
     "botCards": [
       "咖啡",
@@ -61812,8 +60299,7 @@
     "question": "哪种香料取自番红花干燥的柱头，并因颜色而珍贵？",
     "canonicalAnswer": "藏红花",
     "acceptedAnswers": [
-      "藏红花",
-      "Saffron"
+      "藏红花"
     ],
     "botCards": [
       "姜黄",
@@ -61837,8 +60323,7 @@
     "question": "这种热带果实种子加工后得到的主要原料是什么？",
     "canonicalAnswer": "可可",
     "acceptedAnswers": [
-      "可可",
-      "Cocoa"
+      "可可"
     ],
     "botCards": [
       "香草",
@@ -61863,8 +60348,7 @@
     "canonicalAnswer": "马苏里拉奶酪",
     "acceptedAnswers": [
       "马苏里拉奶酪",
-      "马苏里拉",
-      "Mozzarella"
+      "马苏里拉"
     ],
     "botCards": [
       "戈贡佐拉奶酪",
@@ -61888,8 +60372,7 @@
     "question": "加工 Camellia sinensis 的叶片制成的饮品是什么？",
     "canonicalAnswer": "茶",
     "acceptedAnswers": [
-      "茶",
-      "Tea"
+      "茶"
     ],
     "botCards": [
       "路易波士茶",
@@ -61914,10 +60397,7 @@
     "acceptedAnswers": [
       "亚洲棕榈狸",
       "麝香猫",
-      "棕榈狸",
-      "Asian palm civet",
-      "Palm civet",
-      "Civet"
+      "棕榈狸"
     ],
     "botCards": [
       "长鼻浣熊",
@@ -61937,9 +60417,7 @@
     "acceptedAnswers": [
       "兰科植物",
       "兰花",
-      "兰科",
-      "Orchid",
-      "Orchids"
+      "兰科"
     ],
     "botCards": [
       "百合",
@@ -61958,9 +60436,7 @@
     "canonicalAnswer": "凤尾鱼",
     "acceptedAnswers": [
       "凤尾鱼",
-      "鳀鱼",
-      "Anchovy",
-      "Anchovies"
+      "鳀鱼"
     ],
     "botCards": [
       "沙丁鱼",
@@ -61979,10 +60455,7 @@
     "canonicalAnswer": "水煮",
     "acceptedAnswers": [
       "水煮",
-      "煮制",
-      "Boiling",
-      "Boil in water",
-      "Boiled"
+      "煮制"
     ],
     "botCards": [
       "蒸制",
@@ -62001,9 +60474,7 @@
     "question": "哪种击剑武器可用剑刃和剑尖得分？",
     "canonicalAnswer": "佩剑",
     "acceptedAnswers": [
-      "佩剑",
-      "Sabre",
-      "Saber"
+      "佩剑"
     ],
     "botCards": [
       "花剑",
@@ -62027,8 +60498,7 @@
     "question": "哪种击剑武器的有效得分区最大，包括全身？",
     "canonicalAnswer": "重剑",
     "acceptedAnswers": [
-      "重剑",
-      "Epee"
+      "重剑"
     ],
     "botCards": [
       "花剑",
@@ -62052,9 +60522,7 @@
     "canonicalAnswer": "无得分回合",
     "acceptedAnswers": [
       "无得分回合",
-      "无失分回合",
-      "Maiden",
-      "Maiden over"
+      "无失分回合"
     ],
     "botCards": [
       "鸭蛋",
@@ -62073,8 +60541,7 @@
     "canonicalAnswer": "5",
     "acceptedAnswers": [
       "5",
-      "五",
-      "Five"
+      "五"
     ],
     "botCards": [
       "4",
@@ -62092,9 +60559,7 @@
     "question": "棒球中，垒上满员时击出的全垒打叫什么？",
     "canonicalAnswer": "满垒全垒打",
     "acceptedAnswers": [
-      "满垒全垒打",
-      "Grand slam",
-      "A grand slam"
+      "满垒全垒打"
     ],
     "botCards": [
       "再见全垒打",
@@ -62113,9 +60578,7 @@
     "canonicalAnswer": "环法自行车赛",
     "acceptedAnswers": [
       "环法自行车赛",
-      "环法",
-      "Tour de France",
-      "Le Tour de France"
+      "环法"
     ],
     "botCards": [
       "环意自行车赛",
@@ -62135,9 +60598,7 @@
     "acceptedAnswers": [
       "信天翁球",
       "双老鹰",
-      "双鹰",
-      "Albatross",
-      "Double eagle"
+      "双鹰"
     ],
     "botCards": [
       "老鹰球",
@@ -62156,9 +60617,7 @@
     "canonicalAnswer": "西尔维奥·加扎尼加",
     "acceptedAnswers": [
       "西尔维奥·加扎尼加",
-      "加扎尼加",
-      "Silvio Gazzaniga",
-      "Gazzaniga"
+      "加扎尼加"
     ],
     "botCards": [
       "朱塞佩·佩利扎",
@@ -62177,9 +60636,7 @@
     "canonicalAnswer": "罗杰·费德勒",
     "acceptedAnswers": [
       "罗杰·费德勒",
-      "费德勒",
-      "Roger Federer",
-      "Federer"
+      "费德勒"
     ],
     "botCards": [
       "诺瓦克·德约科维奇",
@@ -62199,10 +60656,7 @@
     "acceptedAnswers": [
       "朱塞佩·法里纳",
       "尼诺·法里纳",
-      "法里纳",
-      "Giuseppe Farina",
-      "Nino Farina",
-      "Farina"
+      "法里纳"
     ],
     "botCards": [
       "胡安·曼努埃尔·范吉奥",
@@ -62222,9 +60676,7 @@
     "canonicalAnswer": "浏览器 Cookie",
     "acceptedAnswers": [
       "浏览器 Cookie",
-      "Cookie",
-      "网页 Cookie",
-      "HTTP Cookie"
+      "网页 Cookie"
     ],
     "botCards": [
       "缓存文件",
@@ -62277,9 +60729,7 @@
       "双重身份验证",
       "两步验证",
       "双步骤验证",
-      "2FA",
-      "Two-factor authentication",
-      "Two step verification"
+      "2FA"
     ],
     "botCards": [
       "密码管理器",
@@ -62303,8 +60753,7 @@
     "question": "图中的拼图地球标志代表哪部在线百科全书？",
     "canonicalAnswer": "维基百科",
     "acceptedAnswers": [
-      "维基百科",
-      "Wikipedia"
+      "维基百科"
     ],
     "botCards": [
       "大英百科全书",
@@ -62329,8 +60778,7 @@
     "canonicalAnswer": "二维码",
     "acceptedAnswers": [
       "二维码",
-      "QR 码",
-      "QR code"
+      "QR 码"
     ],
     "botCards": [
       "条形码",
@@ -62355,8 +60803,7 @@
     "canonicalAnswer": "人机验证",
     "acceptedAnswers": [
       "人机验证",
-      "验证码",
-      "CAPTCHA"
+      "验证码"
     ],
     "botCards": [
       "浏览器 Cookie",
@@ -62381,8 +60828,7 @@
     "canonicalAnswer": "话题标签",
     "acceptedAnswers": [
       "话题标签",
-      "井号标签",
-      "Hashtag"
+      "井号标签"
     ],
     "botCards": [
       "提及",
@@ -62442,9 +60888,7 @@
     "canonicalAnswer": "克里斯·梅西纳",
     "acceptedAnswers": [
       "克里斯·梅西纳",
-      "梅西纳",
-      "Chris Messina",
-      "Messina"
+      "梅西纳"
     ],
     "botCards": [
       "杰克·多尔西",
@@ -62490,9 +60934,7 @@
     "canonicalAnswer": "光",
     "acceptedAnswers": [
       "光",
-      "光线",
-      "Light",
-      "The speed of light"
+      "光线"
     ],
     "botCards": [
       "声音",
@@ -62517,8 +60959,7 @@
     "canonicalAnswer": "双螺旋",
     "acceptedAnswers": [
       "双螺旋",
-      "双螺旋结构",
-      "Double helix"
+      "双螺旋结构"
     ],
     "botCards": [
       "螺旋星系",
@@ -62542,9 +60983,7 @@
     "question": "哪种细胞器常被称为细胞的动力工厂？",
     "canonicalAnswer": "线粒体",
     "acceptedAnswers": [
-      "线粒体",
-      "Mitochondria",
-      "Mitochondrion"
+      "线粒体"
     ],
     "botCards": [
       "核糖体",
@@ -62568,9 +61007,7 @@
     "question": "哪种亚原子粒子带负电荷？",
     "canonicalAnswer": "电子",
     "acceptedAnswers": [
-      "电子",
-      "Electron",
-      "Electrons"
+      "电子"
     ],
     "botCards": [
       "质子",
@@ -62594,8 +61031,7 @@
     "question": "哪种仪器利用透镜放大肉眼难以清楚看到的微小样本？",
     "canonicalAnswer": "显微镜",
     "acceptedAnswers": [
-      "显微镜",
-      "Microscope"
+      "显微镜"
     ],
     "botCards": [
       "望远镜",
@@ -62619,9 +61055,7 @@
     "canonicalAnswer": "中生代",
     "acceptedAnswers": [
       "中生代",
-      "中生代时期",
-      "Mesozoic",
-      "Mesozoic Era"
+      "中生代时期"
     ],
     "botCards": [
       "古生代",
@@ -62640,8 +61074,7 @@
     "canonicalAnswer": "氧",
     "acceptedAnswers": [
       "氧",
-      "氧气",
-      "Oxygen"
+      "氧气"
     ],
     "botCards": [
       "碳",
@@ -62662,11 +61095,7 @@
       "会增高",
       "增加",
       "变高",
-      "高度增加",
-      "It increases",
-      "Increases",
-      "It gets taller",
-      "Taller"
+      "高度增加"
     ],
     "botCards": [
       "会降低",
@@ -62686,8 +61115,6 @@
     "acceptedAnswers": [
       "钾",
       "钾-40",
-      "Potassium",
-      "Potassium-40",
       "K-40"
     ],
     "botCards": [
@@ -62707,8 +61134,7 @@
     "question": "哪群航海民族使用长船，在北欧各地劫掠并进行贸易？",
     "canonicalAnswer": "维京人",
     "acceptedAnswers": [
-      "维京人",
-      "Vikings"
+      "维京人"
     ],
     "botCards": [
       "法兰克人",
@@ -62733,8 +61159,7 @@
     "canonicalAnswer": "秦始皇",
     "acceptedAnswers": [
       "秦始皇",
-      "嬴政",
-      "Qin Shi Huang"
+      "嬴政"
     ],
     "botCards": [
       "忽必烈",
@@ -62758,8 +61183,7 @@
     "question": "1215 年哪份文件限制了英格兰国王约翰的权力？",
     "canonicalAnswer": "大宪章",
     "acceptedAnswers": [
-      "大宪章",
-      "Magna Carta"
+      "大宪章"
     ],
     "botCards": [
       "末日审判书",
@@ -62783,8 +61207,7 @@
     "question": "冷战时期，分隔东柏林和西柏林的是哪道屏障？",
     "canonicalAnswer": "柏林墙",
     "acceptedAnswers": [
-      "柏林墙",
-      "Berlin Wall"
+      "柏林墙"
     ],
     "botCards": [
       "铁幕",
@@ -62808,8 +61231,7 @@
     "question": "哪位民权活动家拒绝让出公交车座位，从而帮助引发蒙哥马利公交抵制运动？",
     "canonicalAnswer": "罗莎·帕克斯",
     "acceptedAnswers": [
-      "罗莎·帕克斯",
-      "Rosa Parks"
+      "罗莎·帕克斯"
     ],
     "botCards": [
       "埃拉·贝克",
@@ -62832,8 +61254,7 @@
     "question": "泰姬陵位于哪个国家？",
     "canonicalAnswer": "印度",
     "acceptedAnswers": [
-      "印度",
-      "India"
+      "印度"
     ],
     "botCards": [
       "巴基斯坦",
@@ -62852,8 +61273,7 @@
     "canonicalAnswer": "1961",
     "acceptedAnswers": [
       "1961",
-      "一九六一",
-      "Nineteen sixty-one"
+      "一九六一"
     ],
     "botCards": [
       "1945",
@@ -62872,10 +61292,7 @@
     "canonicalAnswer": "大西洋和太平洋",
     "acceptedAnswers": [
       "大西洋和太平洋",
-      "太平洋和大西洋",
-      "Atlantic and Pacific",
-      "Pacific and Atlantic",
-      "Atlantic Ocean and Pacific Ocean"
+      "太平洋和大西洋"
     ],
     "botCards": [
       "北冰洋和大西洋",
@@ -62893,8 +61310,7 @@
     "question": "哪座古代美索不达米亚城市传统上与空中花园有关？",
     "canonicalAnswer": "巴比伦",
     "acceptedAnswers": [
-      "巴比伦",
-      "Babylon"
+      "巴比伦"
     ],
     "botCards": [
       "尼尼微",
@@ -62913,9 +61329,7 @@
     "canonicalAnswer": "杜桑·卢维杜尔",
     "acceptedAnswers": [
       "杜桑·卢维杜尔",
-      "卢维杜尔",
-      "Toussaint Louverture",
-      "Louverture"
+      "卢维杜尔"
     ],
     "botCards": [
       "让-雅克·德萨林",
@@ -62933,9 +61347,7 @@
     "question": "现今乌兹别克斯坦哪座城市以雷吉斯坦广场闻名，并曾是丝绸之路重镇？",
     "canonicalAnswer": "撒马尔罕",
     "acceptedAnswers": [
-      "撒马尔罕",
-      "Samarkand",
-      "Samarqand"
+      "撒马尔罕"
     ],
     "botCards": [
       "布哈拉",
@@ -62953,9 +61365,7 @@
     "question": "哪项 1783 年条约正式承认美国脱离英国独立？",
     "canonicalAnswer": "巴黎条约",
     "acceptedAnswers": [
-      "巴黎条约",
-      "Treaty of Paris",
-      "Paris Treaty"
+      "巴黎条约"
     ],
     "botCards": [
       "根特条约",
@@ -62973,8 +61383,7 @@
     "question": "哪座欧洲小国自称是世界上仍存续的最古老共和国，建于公元 301 年？",
     "canonicalAnswer": "圣马力诺",
     "acceptedAnswers": [
-      "圣马力诺",
-      "San Marino"
+      "圣马力诺"
     ],
     "botCards": [
       "安道尔",
@@ -62993,9 +61402,7 @@
     "canonicalAnswer": "西班牙和摩洛哥",
     "acceptedAnswers": [
       "西班牙和摩洛哥",
-      "摩洛哥和西班牙",
-      "Spain and Morocco",
-      "Morocco and Spain"
+      "摩洛哥和西班牙"
     ],
     "botCards": [
       "比利时和荷兰",
@@ -63014,8 +61421,7 @@
     "canonicalAnswer": "13",
     "acceptedAnswers": [
       "13",
-      "十三",
-      "Thirteen"
+      "十三"
     ],
     "botCards": [
       "12",
@@ -63034,8 +61440,7 @@
     "question": "哪种铜管乐器用三个活塞改变音高，并在爵士乐中十分常见？",
     "canonicalAnswer": "小号",
     "acceptedAnswers": [
-      "小号",
-      "Trumpet"
+      "小号"
     ],
     "botCards": [
       "长号",
@@ -63059,8 +61464,7 @@
     "question": "哪种日本木版画传统在 19 世纪末影响了欧洲艺术家？",
     "canonicalAnswer": "浮世绘",
     "acceptedAnswers": [
-      "浮世绘",
-      "Ukiyo-e"
+      "浮世绘"
     ],
     "botCards": [
       "金继",
@@ -63085,8 +61489,7 @@
     "canonicalAnswer": "芭蕾舞",
     "acceptedAnswers": [
       "芭蕾舞",
-      "芭蕾",
-      "Ballet"
+      "芭蕾"
     ],
     "botCards": [
       "歌剧",
@@ -63111,9 +61514,7 @@
     "canonicalAnswer": "菲利波·布鲁内莱斯基",
     "acceptedAnswers": [
       "菲利波·布鲁内莱斯基",
-      "布鲁内莱斯基",
-      "Filippo Brunelleschi",
-      "Brunelleschi"
+      "布鲁内莱斯基"
     ],
     "botCards": [
       "莱昂·巴蒂斯塔·阿尔伯蒂",
@@ -63137,9 +61538,7 @@
     "canonicalAnswer": "格兰特·伍德",
     "acceptedAnswers": [
       "格兰特·伍德",
-      "伍德",
-      "Grant Wood",
-      "Wood"
+      "伍德"
     ],
     "botCards": [
       "爱德华·霍珀",
@@ -63157,8 +61556,7 @@
     "question": "《魔笛》中作为主角的王子叫什么？",
     "canonicalAnswer": "塔米诺",
     "acceptedAnswers": [
-      "塔米诺",
-      "Tamino"
+      "塔米诺"
     ],
     "botCards": [
       "帕帕盖诺",
@@ -63177,9 +61575,7 @@
     "canonicalAnswer": "埃德加·德加",
     "acceptedAnswers": [
       "埃德加·德加",
-      "德加",
-      "Edgar Degas",
-      "Degas"
+      "德加"
     ],
     "botCards": [
       "克洛德·莫奈",
@@ -63198,9 +61594,7 @@
     "canonicalAnswer": "阿道夫·萨克斯",
     "acceptedAnswers": [
       "阿道夫·萨克斯",
-      "萨克斯",
-      "Adolphe Sax",
-      "Sax"
+      "萨克斯"
     ],
     "botCards": [
       "安托万·约瑟夫·萨克斯",
@@ -63219,8 +61613,7 @@
     "canonicalAnswer": "1937",
     "acceptedAnswers": [
       "1937",
-      "一九三七",
-      "Nineteen thirty-seven"
+      "一九三七"
     ],
     "botCards": [
       "1927",
@@ -63238,9 +61631,7 @@
     "question": "作曲家弗雷德里克·肖邦最常与哪个国家联系在一起？",
     "canonicalAnswer": "波兰",
     "acceptedAnswers": [
-      "波兰",
-      "Poland",
-      "Polish"
+      "波兰"
     ],
     "botCards": [
       "奥地利",
@@ -63259,10 +61650,7 @@
     "canonicalAnswer": "安魂曲",
     "acceptedAnswers": [
       "安魂曲",
-      "莫扎特安魂曲",
-      "Requiem",
-      "Mozart's Requiem",
-      "Mozart Requiem"
+      "莫扎特安魂曲"
     ],
     "botCards": [
       "《魔笛》",
@@ -63281,9 +61669,7 @@
     "canonicalAnswer": "纽约现代艺术博物馆",
     "acceptedAnswers": [
       "纽约现代艺术博物馆",
-      "现代艺术博物馆",
-      "Museum of Modern Art",
-      "MoMA"
+      "现代艺术博物馆"
     ],
     "botCards": [
       "卢浮宫",
@@ -63304,9 +61690,7 @@
       "卡洛斯·卡萨赫马斯",
       "卡洛斯·卡萨格马斯",
       "卡萨赫马斯",
-      "卡萨格马斯",
-      "Carlos Casagemas",
-      "Casagemas"
+      "卡萨格马斯"
     ],
     "botCards": [
       "乔治·布拉克",
@@ -63325,9 +61709,7 @@
     "canonicalAnswer": "天佑国王",
     "acceptedAnswers": [
       "天佑国王",
-      "天佑女王",
-      "God Save the King",
-      "God Save the Queen"
+      "天佑女王"
     ],
     "botCards": [
       "统治吧，不列颠尼亚",
