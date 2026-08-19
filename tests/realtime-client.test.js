@@ -670,6 +670,31 @@ async function testRejectedResultDoesNotFinishTheWait() {
   assert.equal(waitedForSyncEvent, true);
 }
 
+function testInventoryHydrationCommitsQueuedSpendsBeforeLoadingServerBalance() {
+  const hydrationStart = source.indexOf("async function hydrateSignedInUserStorage");
+  const hydrationEnd = source.indexOf("const audioAssets", hydrationStart);
+  assert.ok(hydrationStart >= 0 && hydrationEnd > hydrationStart, "inventory hydration should exist");
+  const hydrationSource = source.slice(hydrationStart, hydrationEnd);
+  const queueDrainIndex = hydrationSource.indexOf("await queueFlushPromise");
+  const serverFetchIndex = hydrationSource.indexOf("fetchServerUserInventory(user)");
+
+  assert.ok(queueDrainIndex >= 0, "inventory hydration should drain pending work");
+  assert.ok(serverFetchIndex > queueDrainIndex, "inventory hydration must fetch server state after pending work commits");
+  assert.match(hydrationSource, /hasPendingUserInventoryWork\(userId\)/);
+  assert.match(hydrationSource, /cacheCurrentUserInventoryState\(user\)/);
+  assert.doesNotMatch(hydrationSource, /mergeUserInventoriesForHydration\(user,/);
+  assert.doesNotMatch(hydrationSource, /enqueueInventoryRecoveryOpsForUser\(user,/);
+
+  const mergeSource = getFunctionSource("mergeUserInventoriesForHydration", "enqueueCurrentUserInventoryStateForUser");
+  assert.match(mergeSource, /coins: Math\.max\(0, Math\.floor\(Number\(sources\[0\]\.coins\) \|\| 0\)\)/);
+  assert.doesNotMatch(mergeSource, /coins: Math\.max\(\.\.\.sources\.map/);
+
+  const displaySnapshotSource = getFunctionSource("getDisplayUserStorageSnapshot", "saveRemoteUserStorageSnapshotForUser");
+  assert.match(displaySnapshotSource, /const hasLocalCoinBalance = localStorage\.getItem\(currencyStorageKey\) !== null/);
+  assert.match(displaySnapshotSource, /coins: hasLocalCoinBalance \? localCoins : sourceCoins/);
+  assert.doesNotMatch(displaySnapshotSource, /coins: Math\.max\(sourceCoins, localCoins\)/);
+}
+
 (async () => {
   testRoomChannelIsReadyBeforeSubscribeCallback();
   await testGuestRoomJoinInitializesRealtimeWithoutAuth();
@@ -695,6 +720,7 @@ async function testRejectedResultDoesNotFinishTheWait() {
   testWaitingHostResultUsesImmediateAuthoritativeRecovery();
   testPendingAuthoritativeResultSurvivesStaleLocalMatch();
   await testRejectedResultDoesNotFinishTheWait();
+  testInventoryHydrationCommitsQueuedSpendsBeforeLoadingServerBalance();
   console.log("Realtime client synchronization tests passed.");
 })().catch((error) => {
   console.error(error);

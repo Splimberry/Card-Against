@@ -1782,8 +1782,7 @@ function getUserStorageSnapshotWeight(snapshot = {}) {
     : 0;
   const milestoneCount = Array.isArray(achievements.claimedMilestones) ? achievements.claimedMilestones.length : 0;
   return (
-    Math.max(0, Number(source.currencyDisplayCache?.coins) || 0)
-    + purchases.length * 1000
+    purchases.length * 1000
     + unlockedCount * 1000
     + progressCount * 100
     + milestoneCount * 250
@@ -2387,15 +2386,23 @@ async function postUserInventoryPurchase(userId, type, id, opId = "", options = 
       if (rejected) {
         forgetPendingInventoryMutation(userId, mutation.opId);
       }
-      if (result.inventory && !loadUserInventoryQueue(userId).length) {
-        applyServerUserInventory(result.inventory, { authoritative: true });
+      if (result.inventory) {
+        if (hasPendingUserInventoryWork(userId)) {
+          cacheCurrentUserInventoryState({ id: userId });
+        } else {
+          applyServerUserInventory(result.inventory, { authoritative: true });
+        }
       }
       throw new Error(result.error || result.purchase?.reason || "Could not save purchase.");
     }
-    if (result.inventory) {
-      applyServerUserInventory(result.inventory, { authoritative: true });
-    }
     forgetPendingInventoryMutation(userId, mutation.opId);
+    if (result.inventory) {
+      if (hasPendingUserInventoryWork(userId)) {
+        cacheCurrentUserInventoryState({ id: userId });
+      } else {
+        applyServerUserInventory(result.inventory, { authoritative: true });
+      }
+    }
     return result;
   })());
 }
@@ -2422,16 +2429,27 @@ async function postUserInventoryMilestone(userId, milestoneId, opId = "", option
       body: JSON.stringify({ userId, milestoneId, opId: mutation.opId })
     });
     const result = await response.json().catch(() => ({}));
-    if (result.inventory) {
-      applyServerUserInventory(result.inventory, { authoritative: true });
-    }
     if (!response.ok) {
       if ([400, 409].includes(response.status)) {
         forgetPendingInventoryMutation(userId, mutation.opId);
       }
+      if (result.inventory) {
+        if (hasPendingUserInventoryWork(userId)) {
+          cacheCurrentUserInventoryState({ id: userId });
+        } else {
+          applyServerUserInventory(result.inventory, { authoritative: true });
+        }
+      }
       throw new Error(result.error || result.milestone?.reason || "Could not save milestone.");
     }
     forgetPendingInventoryMutation(userId, mutation.opId);
+    if (result.inventory) {
+      if (hasPendingUserInventoryWork(userId)) {
+        cacheCurrentUserInventoryState({ id: userId });
+      } else {
+        applyServerUserInventory(result.inventory, { authoritative: true });
+      }
+    }
     return result;
   })());
 }
@@ -2598,7 +2616,13 @@ async function flushUserInventoryQueue(options = {}) {
       saveUserInventoryQueue(loadUserInventoryQueue(userId).filter((op) => !completedIds.has(normalizeInventoryOpId(op.id))), userId);
     }
     if (result.inventory) {
-      applyServerUserInventory(result.inventory, { authoritative: true });
+      if (hasPendingUserInventoryWork(userId)) {
+        // This response predates another durable local operation. Keep the
+        // optimistic balance until every queued spend/purchase is committed.
+        cacheCurrentUserInventoryState({ id: userId });
+      } else {
+        applyServerUserInventory(result.inventory, { authoritative: true });
+      }
     }
     if (loadUserInventoryQueue(userId).length) {
       window.setTimeout(() => flushUserInventoryQueue(options), 750);
@@ -2992,7 +3016,9 @@ function mergeUserInventoriesForHydration(user, inventories = []) {
   }
   const mergedInventory = {
     userId,
-    coins: Math.max(...sources.map((source) => Math.max(0, Math.floor(Number(source.coins) || 0)))),
+    // Coins can move in either direction. The first source is the caller's
+    // authoritative inventory; taking the largest balance would undo spends.
+    coins: Math.max(0, Math.floor(Number(sources[0].coins) || 0)),
     coinTransactions: [],
     cosmetics: [...new Set(sources.flatMap((source) => Array.isArray(source.cosmetics) ? source.cosmetics : [])
       .map(normalizeInventoryKey)
@@ -3134,12 +3160,15 @@ function getDisplayUserStorageSnapshot(snapshot = getUserStorageSnapshot()) {
     ...(Array.isArray(achievements.claimedMilestones) ? achievements.claimedMilestones : []),
     ...loadClaimedAchievementMilestones()
   ].map(normalizeInventoryKey).filter(Boolean))];
+  const hasLocalCoinBalance = localStorage.getItem(currencyStorageKey) !== null;
   const sourceCoins = Math.max(0, Math.floor(Number(source.currencyDisplayCache?.coins) || 0));
   const localCoins = Math.max(0, Math.floor(Number(localStorage.getItem(currencyStorageKey)) || 0));
   return {
     ...source,
     currencyDisplayCache: {
-      coins: Math.max(sourceCoins, localCoins)
+      // The inventory API owns signed-in balances. A profile snapshot may be
+      // older, so it must never win merely because it has more coins.
+      coins: hasLocalCoinBalance ? localCoins : sourceCoins
     },
     unlockedCosmeticsCache: {
       purchases,
@@ -3236,7 +3265,6 @@ async function hydrateSignedInUserStorage(user) {
   }, profileHydrationVisibleBudgetMs);
   let cachedInventory = null;
   let remoteSnapshotPromise = null;
-  let inventoryPromise = null;
   let queueFlushPromise = null;
   try {
     state.userStorageHydrating = true;
@@ -3245,37 +3273,16 @@ async function hydrateSignedInUserStorage(user) {
     try {
       localSnapshot = hasCachedProfile ? localSnapshot : loadUserStorageCacheForUser(userId);
       cachedInventory = loadUserInventoryCache(userId);
-      const canTrustCurrentBrowserInventory = doesActiveUserStorageCacheBelongToUser(user);
-      const currentBrowserInventory = canTrustCurrentBrowserInventory
-        ? getLocalUserInventorySnapshot(user)
-        : null;
-      const initialRecoverySources = [
-        cachedInventory,
-        getInventoryFromUserStorageSnapshot(localSnapshot, userId),
-        currentBrowserInventory
-      ];
-      enqueueInventoryRecoveryOpsForUser(user, initialRecoverySources);
       remoteSnapshotPromise = withTimeout(
         loadRemoteUserStorageSnapshot(user),
         profileHydrationRemoteTimeoutMs,
         null,
         "Remote profile snapshot load"
       );
-      inventoryPromise = withTimeout(
-        fetchServerUserInventory(user),
-        profileHydrationRemoteTimeoutMs,
-        null,
-        "Server inventory load"
-      );
-      queueFlushPromise = withTimeout(
-        (async () => {
-          await flushPendingUserInventoryWrites({ user });
-          await flushPendingUserInventoryMutations({ user });
-        })(),
-        profileHydrationQueueTimeoutMs,
-        null,
-        "Pending inventory sync"
-      );
+      queueFlushPromise = (async () => {
+        await flushPendingUserInventoryWrites({ user });
+        await flushPendingUserInventoryMutations({ user });
+      })();
       const remoteSnapshot = await remoteSnapshotPromise;
       if (!stillActiveUser()) {
         return;
@@ -3293,77 +3300,52 @@ async function hydrateSignedInUserStorage(user) {
       state.userStorageHydrating = false;
     }
     try {
-      cachedInventory = loadUserInventoryCache(userId);
-      const canTrustCurrentBrowserInventory = doesActiveUserStorageCacheBelongToUser(user);
-      const currentBrowserInventory = canTrustCurrentBrowserInventory
-        ? getLocalUserInventorySnapshot(user)
-        : null;
-      const recoverySources = [
-        cachedInventory,
-        getInventoryFromUserStorageSnapshot(localSnapshot, userId),
-        getInventoryFromUserStorageSnapshot(chosenSnapshot, userId)
-      ];
-      if (currentBrowserInventory) {
-        recoverySources.unshift(currentBrowserInventory);
-      }
-      enqueueInventoryRecoveryOpsForUser(user, recoverySources);
-      void queueFlushPromise;
-      let inventory = await (inventoryPromise || withTimeout(
-        fetchServerUserInventory(user),
-        profileHydrationRemoteTimeoutMs,
-        null,
-        "Server inventory load"
-      ));
+      await queueFlushPromise;
       if (!stillActiveUser()) {
         return;
       }
-      cachedInventory = loadUserInventoryCache(userId);
-      let migrationOps = isServerInventoryEmpty(inventory) ? getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, userId) : [];
-      if (!migrationOps.length && isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
-        migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId, prefix: "cache" });
-      }
-      if (migrationOps.length) {
-        const migrated = await withTimeout(
-          postUserInventoryOps(userId, migrationOps),
-          profileHydrationQueueTimeoutMs,
-          {},
-          "Inventory migration"
-        );
-        inventory = migrated.inventory || inventory;
-      }
-      if (inventory) {
-        const mergedInventory = mergeUserInventoriesForHydration(user, [
-          inventory,
-          cachedInventory,
-          getInventoryFromUserStorageSnapshot(localSnapshot, userId),
-          getInventoryFromUserStorageSnapshot(chosenSnapshot, userId),
-          currentBrowserInventory
-        ]);
-        const inventoryToApply = mergedInventory || (
-          isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)
-            ? cachedInventory
-            : inventory
-        );
-        applyServerUserInventory(inventoryToApply, { includeLocalSnapshot: canTrustCurrentBrowserInventory });
-        const recoveryOps = getInventoryStateOpsFromInventory(inventoryToApply, {
-          userId,
-          prefix: "hydration",
-          coveredCoinOps: getCoveredCoinOpsForInventoryQueue(userId)
-        });
-        if (recoveryOps.length) {
-          enqueueUserInventoryOpsForUser(user, recoveryOps);
-          void flushPendingUserInventoryWrites({ user });
-        }
+      if (hasPendingUserInventoryWork(userId)) {
+        // A failed/offline operation must remain visible locally. Applying an
+        // older server snapshot here would resurrect coins that were spent.
+        cacheCurrentUserInventoryState(user);
       } else {
-        if (cachedInventory) {
-          applyServerUserInventory(cachedInventory, { includeLocalSnapshot: canTrustCurrentBrowserInventory });
+        let inventory = await withTimeout(
+          fetchServerUserInventory(user),
+          profileHydrationRemoteTimeoutMs,
+          null,
+          "Server inventory load"
+        );
+        if (!stillActiveUser()) {
+          return;
+        }
+        cachedInventory = loadUserInventoryCache(userId);
+        let migrationOps = [];
+        if (isServerInventoryEmpty(inventory) && cachedInventory && !isServerInventoryEmpty(cachedInventory)) {
+          migrationOps = getInventoryStateOpsFromInventory(cachedInventory, { userId, prefix: "cache" });
+        }
+        if (!migrationOps.length && isServerInventoryEmpty(inventory)) {
+          migrationOps = getInventoryMigrationOpsFromSnapshot(chosenSnapshot || {}, userId);
+        }
+        if (migrationOps.length) {
+          const migrated = await withTimeout(
+            postUserInventoryOps(userId, migrationOps),
+            profileHydrationQueueTimeoutMs,
+            {},
+            "Inventory migration"
+          );
+          inventory = migrated.inventory || inventory;
+        }
+        if (inventory) {
+          applyServerUserInventory(inventory, { authoritative: true });
+        } else if (cachedInventory) {
+          applyServerUserInventory(cachedInventory, { authoritative: true });
         }
       }
     } catch (error) {
       console.warn("Server inventory hydration failed:", error.message || error);
       const cachedInventory = loadUserInventoryCache(userId);
       if (cachedInventory && stillActiveUser()) {
-        applyServerUserInventory(cachedInventory);
+        applyServerUserInventory(cachedInventory, { authoritative: true });
       }
     }
     if (restoredSnapshot) {
