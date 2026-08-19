@@ -235,6 +235,8 @@
     "Your username": "你的使用者名稱",
     "Upload profile picture": "上傳頭像",
     "Sign in to edit your username, upload a profile picture, and save card customizations.": "登入後可編輯名稱、上傳頭像並儲存卡牌外觀。",
+    "Guest profile name and picture are saved on this device. Sign in to keep your progress across devices.": "访客名称和头像会保存在这台设备上。登录后可在不同设备保留进度。",
+    "Sign in to keep your profile, progress, and cosmetics across devices.": "登录后可在不同设备保留你的档案、进度和外观。",
     "Choose a card look, then save.": "選擇卡牌外觀後儲存。",
     "Undo": "復原",
     "Redo": "重做",

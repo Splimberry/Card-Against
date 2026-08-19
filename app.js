@@ -34,6 +34,7 @@ const unseenAchievementStorageKey = "cardsAgainstAiUnseenAchievements";
 const disabledAchievementStorageKey = "cardsAgainstAiDebugDisabledAchievements";
 const equippedAchievementStorageKey = "cardsAgainstAiEquippedAchievement";
 const profileCustomizationStorageKey = "cardsAgainstAiProfileCustomization";
+const guestProfileAvatarStorageKey = "cardsAgainstAiGuestProfileAvatar";
 const profileCustomizationDebugStorageKey = "cardsAgainstAiDebugProfileCustomizations";
 const profileSpecialBadgeDebugStorageKey = "cardsAgainstAiDebugSpecialBadges";
 const creatorApprovedCountStorageKey = "cardsAgainstAiCreatorApprovedCount";
@@ -1662,6 +1663,12 @@ function normalizeGuestNameCasing(value = "") {
   return name;
 }
 
+function normalizeProfileDisplayName(value = "") {
+  return normalizeGuestNameCasing(
+    String(value ?? "").replace(/[\r\n\t]/g, " ").trim().slice(0, 16)
+  );
+}
+
 function createGuestName() {
   const fallback = Math.floor(Math.random() * 1000000);
   if (globalThis.crypto?.getRandomValues) {
@@ -1673,11 +1680,10 @@ function createGuestName() {
 }
 
 function loadGuestName() {
-  const saved = String(localStorage.getItem("cardsAgainstAiGuestName") || "").trim();
-  if (/^guest\d{6}$/i.test(saved)) {
-    const migrated = normalizeGuestNameCasing(saved);
-    localStorage.setItem("cardsAgainstAiGuestName", migrated);
-    return migrated;
+  const saved = normalizeProfileDisplayName(localStorage.getItem("cardsAgainstAiGuestName"));
+  if (saved) {
+    localStorage.setItem("cardsAgainstAiGuestName", saved);
+    return saved;
   }
   const guestName = createGuestName();
   localStorage.setItem("cardsAgainstAiGuestName", guestName);
@@ -1686,7 +1692,7 @@ function loadGuestName() {
 
 const savedGuestName = loadGuestName();
 const savedProfileName = savedGuestName;
-const savedProfileAvatar = "";
+const savedProfileAvatar = getCacheableAvatar(localStorage.getItem(guestProfileAvatarStorageKey) || "");
 const savedEquippedAchievementId = achievementTitleMap[localStorage.getItem(equippedAchievementStorageKey) || ""]
   ? localStorage.getItem(equippedAchievementStorageKey)
   : "";
@@ -3038,6 +3044,7 @@ function isServerInventoryEmpty(inventory = {}) {
 function resetSignedOutAccountState() {
   const guestName = createGuestName();
   localStorage.setItem("cardsAgainstAiGuestName", guestName);
+  localStorage.removeItem(guestProfileAvatarStorageKey);
   [
     profileCustomizationDebugStorageKey,
     profileSpecialBadgeDebugStorageKey,
@@ -18216,48 +18223,38 @@ function isPlayerSignedIn() {
 function syncProfileEditControls() {
   const signedIn = isPlayerSignedIn();
   const loading = Boolean(state.profileLoading || state.supabaseAuthResolving);
-  const signInMessage = "Sign in to customize your card.";
   if (elements.profileCustomizeControl) {
-    elements.profileCustomizeControl.dataset.disabled = String(!signedIn);
-    if (signedIn) {
-      delete elements.profileCustomizeControl.dataset.tooltip;
-      elements.profileCustomizeControl.removeAttribute("tabindex");
-    } else {
-      elements.profileCustomizeControl.dataset.tooltip = signInMessage;
-      elements.profileCustomizeControl.tabIndex = 0;
-    }
+    elements.profileCustomizeControl.dataset.disabled = String(loading);
+    delete elements.profileCustomizeControl.dataset.tooltip;
+    elements.profileCustomizeControl.removeAttribute("tabindex");
   }
   if (elements.profileCustomizeButton) {
-    elements.profileCustomizeButton.disabled = !signedIn || loading;
+    elements.profileCustomizeButton.disabled = loading;
     elements.profileCustomizeButton.removeAttribute("title");
-    elements.profileCustomizeButton.setAttribute("aria-disabled", String(!signedIn));
+    elements.profileCustomizeButton.setAttribute("aria-disabled", String(loading));
   }
   if (elements.profileNameInput) {
     const profileNameTooltipTarget = elements.profileNameInput.closest(".profile-name-editor");
-    elements.profileNameInput.disabled = !signedIn || loading;
+    elements.profileNameInput.disabled = loading;
     elements.profileNameInput.removeAttribute("title");
     if (profileNameTooltipTarget) {
-      if (signedIn) {
-        delete profileNameTooltipTarget.dataset.tooltip;
-        profileNameTooltipTarget.removeAttribute("tabindex");
-      } else {
-        profileNameTooltipTarget.dataset.tooltip = "Sign in to edit your username.";
-        profileNameTooltipTarget.tabIndex = 0;
-      }
+      delete profileNameTooltipTarget.dataset.tooltip;
+      profileNameTooltipTarget.removeAttribute("tabindex");
     }
   }
   if (elements.profileAvatarInput) {
-    elements.profileAvatarInput.disabled = !signedIn || loading;
+    elements.profileAvatarInput.disabled = loading;
   }
   if (elements.profileShopButton) {
     elements.profileShopButton.disabled = loading;
   }
   if (elements.profileLoginNote) {
     elements.profileLoginNote.hidden = signedIn;
+    elements.profileLoginNote.textContent = "Guest profile name and picture are saved on this device. Sign in to keep your progress across devices.";
   }
   const uploadLabel = document.querySelector(".profile-custom-upload");
   if (uploadLabel) {
-    uploadLabel.dataset.disabled = String(!signedIn);
+    uploadLabel.dataset.disabled = String(loading);
   }
 }
 
@@ -18285,7 +18282,7 @@ function renderSupabaseAuthControls() {
     ? "Loading your saved profile..."
     : signedIn
     ? `Signed in as ${state.supabaseUser.email || state.profile.name || "player"}`
-    : "Sign in to customize your card, username, and profile picture.";
+    : "Sign in to keep your profile, progress, and cosmetics across devices.";
   syncProfileAuthPanelControls();
   syncProfileEditControls();
 }
@@ -22521,14 +22518,11 @@ async function completeSupabaseSignOut({ client, user, session, snapshot } = {})
 }
 
 function updateProfileName(value) {
-  if (!isPlayerSignedIn()) {
-    if (elements.profileNameInput) {
-      elements.profileNameInput.value = state.profile.name;
-    }
-    return;
-  }
-  state.profile.name = String(value ?? "").replace(/[\r\n\t]/g, " ").slice(0, 16) || "You";
-  localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "name"), state.profile.name);
+  state.profile.name = normalizeProfileDisplayName(value) || "You";
+  localStorage.setItem(
+    isPlayerSignedIn() ? getUserProfileStorageKey(state.supabaseUser, "name") : "cardsAgainstAiGuestName",
+    state.profile.name
+  );
   scheduleUserStorageSnapshot();
   syncProfileToPlayer();
   renderProfile();
@@ -22546,15 +22540,12 @@ function updateProfileName(value) {
       applyProfileFontToElement(elements.profileFontLivePreview, getProfileFont(getProfileCustomizationDraft().fontId));
     }
   }
+  if (hasActiveRoomContext()) {
+    publishProfileIdentityUpdate();
+  }
 }
 
 async function updateProfileAvatar(file) {
-  if (!isPlayerSignedIn()) {
-    if (elements.profileAvatarInput) {
-      elements.profileAvatarInput.value = "";
-    }
-    return;
-  }
   if (!file || !file.type.startsWith("image/")) {
     return;
   }
@@ -22570,17 +22561,23 @@ async function updateProfileAvatar(file) {
       renderAvatar(elements.profileAvatarPreview, { ...state.profile, avatar: previewUrl });
       renderAvatar(elements.roomProfileAvatarPreview, { ...state.profile, avatar: previewUrl });
     }
+    const signedIn = isPlayerSignedIn();
     let savedAvatar = "";
-    try {
-      savedAvatar = await uploadProfileAvatarToSupabase(file);
-    } catch (uploadError) {
-      console.warn("Supabase avatar upload failed; using compressed local avatar:", uploadError.message || uploadError);
+    if (signedIn) {
+      try {
+        savedAvatar = await uploadProfileAvatarToSupabase(file);
+      } catch (uploadError) {
+        console.warn("Supabase avatar upload failed; using compressed local avatar:", uploadError.message || uploadError);
+      }
     }
     if (!savedAvatar) {
       savedAvatar = await compressProfileImage(file, { maxSize: 128, maxBytes: 60000 });
     }
     state.profile.avatar = savedAvatar;
-    localStorage.setItem(getUserProfileStorageKey(state.supabaseUser, "avatar"), state.profile.avatar);
+    localStorage.setItem(
+      signedIn ? getUserProfileStorageKey(state.supabaseUser, "avatar") : guestProfileAvatarStorageKey,
+      state.profile.avatar
+    );
     scheduleUserStorageSnapshot();
     syncProfileToPlayer();
     renderProfile();
@@ -22593,7 +22590,7 @@ async function updateProfileAvatar(file) {
       publishProfileIdentityUpdate();
     }
     if (elements.profileCustomStatus) {
-      elements.profileCustomStatus.textContent = state.profile.avatar.startsWith("data:")
+      elements.profileCustomStatus.textContent = !signedIn || state.profile.avatar.startsWith("data:")
         ? "Profile picture compressed and saved locally."
         : "Profile picture uploaded and saved.";
     }
@@ -26883,14 +26880,6 @@ function renderProfileCustomizationModal() {
 }
 
 function openProfileCustomization() {
-  if (!isPlayerSignedIn()) {
-    if (elements.profileAuthStatus) {
-      setHidden(elements.profileAuthStatus, false);
-      elements.profileAuthStatus.textContent = "Sign in to customize your card.";
-    }
-    openProfileAuthPanel();
-    return;
-  }
   const draft = {
     ...normalizeProfileCustomization(state.profile.cardCustomization),
     equippedTitleId: state.profile.equippedTitleId || ""
@@ -45244,7 +45233,9 @@ async function joinHostedRoom(code, options = {}) {
     return;
   }
   setJoinRoomBusy(true, normalizedCode);
-  let room = state.hostedRooms.find((entry) => entry.code === normalizedCode);
+  let room = normalizeJoinRoomCode(options.initialRoom?.code) === normalizedCode
+    ? options.initialRoom
+    : state.hostedRooms.find((entry) => entry.code === normalizedCode);
   try {
     if (!room) {
       const lookup = await fetchRoomByCode(normalizedCode);
@@ -45402,7 +45393,7 @@ async function processInitialRoomInvite() {
   setJoinInviteStatus(`Finding room ${getRoomShortCode(inviteCode) || inviteCode}...`);
   let lookup;
   try {
-    await ensureSupabaseAuthReady({ realtime: true });
+    await ensureSupabaseAuthReady({ realtime: true, preserveGuest: true });
     lookup = await fetchRoomByCode(inviteCode);
   } catch (error) {
     console.warn("Could not open room invite:", error.message || error);
@@ -45425,14 +45416,14 @@ async function processInitialRoomInvite() {
     source: "initial-invite-lookup",
     syncActive: false
   });
-  elements.joinRoomCodeInput.value = getRoomShortCode(inviteCode) || inviteCode;
   if (lookup.room.settings?.private) {
+    elements.joinRoomCodeInput.value = getRoomShortCode(inviteCode) || inviteCode;
     setJoinInviteStatus(`Room ${getRoomShortCode(inviteCode)} is private. Enter the password to join.`);
     focusInvitePasswordField();
     return;
   }
   setJoinInviteStatus("Room found. Joining...", "success");
-  await joinHostedRoom(inviteCode, { fromInvite: true });
+  await joinHostedRoom(inviteCode, { fromInvite: true, initialRoom: lookup.room });
 }
 
 function getRoomOpenSlotCount() {
