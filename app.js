@@ -45699,6 +45699,7 @@ function openLobbySettings() {
   syncRoomControls();
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.roomScreen, false);
+  renderRoomChat();
   playSound("click");
 }
 
@@ -46726,7 +46727,8 @@ async function startRoomGame() {
 function renderRoomChat() {
   const active = isRoomMode() || state.currentRoomStatus === "draft";
   const inGameRoom = active && !elements.gameStage.classList.contains("hidden");
-  const inCreateRoom = state.currentRoomStatus === "draft" && !elements.roomScreen.classList.contains("hidden");
+  const inCreateRoom = ["draft", "lobby"].includes(state.currentRoomStatus)
+    && !elements.roomScreen.classList.contains("hidden");
   setHidden(elements.roomChat, !inGameRoom);
   setHidden(elements.createRoomChat, !inCreateRoom);
   elements.gameStage.classList.toggle("room-active", inGameRoom);
