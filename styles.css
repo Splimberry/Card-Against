@@ -1305,18 +1305,19 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .room-game-settings-actions {
   display: grid;
-  grid-template-columns: minmax(14rem, 1.15fr) repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 0.7rem;
   padding-top: 0.2rem;
 }
 
-.room-game-settings-actions .room-theme-control {
-  min-width: 0;
-}
-
+.room-game-settings-actions .room-theme-control,
 .room-game-settings-actions .room-password-row {
   grid-column: 1 / -1;
+}
+
+.room-game-settings-actions .room-theme-control {
+  min-width: 0;
 }
 
 @media (max-width: 60rem) {
@@ -1324,9 +1325,9 @@ body[data-performance-mode="minimal"] .menu-video-bg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .room-game-settings-actions .room-theme-control,
-  .room-game-settings-actions .room-password-row {
-    grid-column: 1 / -1;
+  .room-game-settings-actions > .room-setting-toggle:nth-of-type(3) {
+    border-left: 0;
+    padding-left: 0;
   }
 }
 
@@ -1342,6 +1343,11 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
   .room-theme-control .secondary-button {
     width: 100%;
+  }
+
+  .room-game-settings-actions > .room-setting-toggle + .room-setting-toggle {
+    border-left: 0;
+    padding-left: 0;
   }
 }
 
