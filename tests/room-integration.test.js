@@ -1385,7 +1385,7 @@ async function testAnswerSurvivesReconnectCommand() {
   assert.equal(host.remainingTime, 12);
 }
 
-async function testLateJoinerReceivesRoundState() {
+async function testLateJoinerIsRejectedButSpectatorReceivesRoundState() {
   const code = makeCode(8104);
   const game = {
     matchId: `${code}-match`,
@@ -1410,7 +1410,7 @@ async function testLateJoinerReceivesRoundState() {
     game
   }));
 
-  const presence = await roomPresenceCommand(code, {
+  const latePlayer = await roomPresenceCommand(code, {
     participant: {
       id: "joiner-client",
       name: "Joiner",
@@ -1418,15 +1418,29 @@ async function testLateJoinerReceivesRoundState() {
       status: "joined"
     }
   });
-  assert.equal(presence.response.status, 200, presence.payload.error);
-  assert.equal(presence.payload.room.status, "in-progress");
-  assert.equal(presence.payload.room.game.round, 1);
-  assert.equal(presence.payload.room.game.setup.blackCard, "Round 1 question?");
-  assert.equal(presence.payload.room.game.powerState.hands[0].participantId, "host-client");
-  assert.deepEqual(presence.payload.room.game.powerState.hands[0].hand, ["software_downgrade", "xray_hacks"]);
-  assert.ok(presence.payload.room.revision >= 2);
-  assert.equal(presence.payload.room.game.matchId, game.matchId);
-  assert.equal(presence.payload.room.game.round, 1);
+  assert.equal(latePlayer.response.status, 409);
+  assert.equal(latePlayer.payload.ok, false);
+  assert.equal(latePlayer.payload.error, "This match already started. Join as a spectator instead.");
+
+  const spectator = await roomPresenceCommand(code, {
+    participant: {
+      id: "spectator-client",
+      name: "Spectator",
+      role: "spectator",
+      spectator: true,
+      active: true,
+      status: "spectating"
+    }
+  });
+  assert.equal(spectator.response.status, 200, spectator.payload.error);
+  assert.equal(spectator.payload.room.status, "in-progress");
+  assert.equal(spectator.payload.room.game.round, 1);
+  assert.equal(spectator.payload.room.game.setup.blackCard, "Round 1 question?");
+  assert.equal(spectator.payload.room.game.powerState.hands[0].participantId, "host-client");
+  assert.deepEqual(spectator.payload.room.game.powerState.hands[0].hand, ["software_downgrade", "xray_hacks"]);
+  assert.ok(spectator.payload.room.revision >= 2);
+  assert.equal(spectator.payload.room.game.matchId, game.matchId);
+  assert.equal(spectator.payload.room.game.round, 1);
 }
 
 async function testRoomChatPreservesMessageIds() {
@@ -7589,7 +7603,7 @@ async function main() {
   await testHostReconnectTimeoutPromotesOldestPlayer();
   await testCreatingSecondRoomTransfersOlderRoomHost();
   await testAnswerSurvivesReconnectCommand();
-  await testLateJoinerReceivesRoundState();
+  await testLateJoinerIsRejectedButSpectatorReceivesRoundState();
   await testRoomChatPreservesMessageIds();
   await testCompactRoomDeltasAvoidFullRoomPayloads();
   await testCompactPresenceCanIncludeAuthoritativeRoomSnapshot();

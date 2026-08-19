@@ -695,6 +695,20 @@ function testInventoryHydrationCommitsQueuedSpendsBeforeLoadingServerBalance() {
   assert.doesNotMatch(displaySnapshotSource, /coins: Math\.max\(sourceCoins, localCoins\)/);
 }
 
+function testJoinDirectoryTracksMatchStartImmediately() {
+  const eventSource = getFunctionSource("shouldRealtimeRefreshJoinDirectory", "scheduleRealtimeJoinRefresh");
+  assert.match(eventSource, /"round-advancing"/);
+  assert.match(eventSource, /"round-started"/);
+  assert.match(eventSource, /"round-setup-failed"/);
+
+  const statusDeltaSource = getFunctionSource("applyHostedRoomStatusDelta", "applyHostedRoomParticipantLeft");
+  assert.match(statusDeltaSource, /\["lobby", "in-progress", "complete"\]/);
+  assert.match(statusDeltaSource, /room\.status = status/);
+
+  const roomEventSource = getFunctionSource("applyRoomEventPayload", "getRoomServerEventCode");
+  assert.match(roomEventSource, /applyHostedRoomStatusDelta\(normalizedPayload\)/);
+}
+
 (async () => {
   testRoomChannelIsReadyBeforeSubscribeCallback();
   await testGuestRoomJoinInitializesRealtimeWithoutAuth();
@@ -721,6 +735,7 @@ function testInventoryHydrationCommitsQueuedSpendsBeforeLoadingServerBalance() {
   testPendingAuthoritativeResultSurvivesStaleLocalMatch();
   await testRejectedResultDoesNotFinishTheWait();
   testInventoryHydrationCommitsQueuedSpendsBeforeLoadingServerBalance();
+  testJoinDirectoryTracksMatchStartImmediately();
   console.log("Realtime client synchronization tests passed.");
 })().catch((error) => {
   console.error(error);

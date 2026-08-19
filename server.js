@@ -2636,6 +2636,8 @@ function shouldBroadcastRoomServerEventToLobby(event = {}) {
     "room-created",
     "room-updated",
     "room-closed",
+    "round-advancing",
+    "round-started",
     "round-setup-failed",
     "room-deleted"
   ].includes(eventType);
@@ -3710,6 +3712,7 @@ async function handleRoomCommandStartRound(req, res, room, command, rawBody = {}
   });
   stampRoomEvent(room, "round_started", {
     clientEventId: command.clientEventId,
+    status: room.status,
     round,
     matchId,
     game: room.game
@@ -4013,6 +4016,7 @@ async function handleRoomCommandPrepareRound(req, res, room, command, rawBody = 
   });
   stampRoomEvent(room, "round_started", {
     clientEventId: command.clientEventId,
+    status: room.status,
     round,
     matchId,
     game: room.game
@@ -4880,6 +4884,17 @@ async function handleRoomCommandParticipantPresence(req, res, room, command, raw
     existingIndex = sameProfileIndex;
   }
 
+  if (activeRoom.status !== "lobby" && existingIndex < 0 && isGameplayParticipant(participant)) {
+    sendJson(res, 409, {
+      ok: false,
+      error: "This match already started. Join as a spectator instead.",
+      roomCode: activeRoom.code,
+      revision: getRoomRevision(activeRoom),
+      events: []
+    });
+    return;
+  }
+
   const hostAuthenticated = hasRoomHostAuth(req, activeRoom, body);
   if (reclaimingInactiveProfile && normalizeParticipantRole(sameProfileParticipant) === "host" && (normalizeParticipantRole(participant) !== "host" || !hostAuthenticated)) {
     sendJson(res, 403, { ok: false, error: "Only the host can reclaim the host slot." });
@@ -5578,6 +5593,7 @@ function applyRoomRoundPreparationState(room, options = {}) {
   if (options.stampEvent !== false) {
     stampRoomEvent(room, "round_advancing", {
       clientEventId: getRoomClientEventId(options),
+      status: room.status,
       round,
       matchId,
       hostParticipantId: String(options.hostParticipantId || "").slice(0, 80),

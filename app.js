@@ -20241,6 +20241,8 @@ function applyRoomEventPayload(payload = {}, source = {}) {
           ? applyRealtimeHostTransferred(normalizedPayload)
           : normalizedPayload.eventType === "room-settings"
             ? applyRealtimeRoomSettings(normalizedPayload)
+            : ["round-advancing", "round-started", "round-setup-failed"].includes(normalizedPayload.eventType)
+              ? applyHostedRoomStatusDelta(normalizedPayload)
             : false;
     applied = applied || appliedJoinDelta;
     const appliedRoomSnapshot = !appliedJoinDelta && normalizedPayload.room
@@ -21278,6 +21280,25 @@ function applyHostedRoomParticipantDelta(payload = {}) {
   return true;
 }
 
+function applyHostedRoomStatusDelta(payload = {}) {
+  const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
+  const room = state.hostedRooms.find((entry) => entry.code === code);
+  const status = String(payload.status || payload.room?.status || "").trim().toLowerCase();
+  if (!room || !["lobby", "in-progress", "complete"].includes(status)) {
+    return false;
+  }
+  if (isStaleRoomRevisionPayload({ ...payload, code })) {
+    return false;
+  }
+  room.status = status;
+  room.revision = Number(payload.revision) || Number(room.revision) || 0;
+  room.updatedAt = Number(payload.updatedAt) || Date.now();
+  if (!elements.joinScreen.classList.contains("hidden")) {
+    renderHostedRooms();
+  }
+  return true;
+}
+
 function applyHostedRoomParticipantLeft(payload = {}) {
   const code = String(payload.code || payload.room?.code || "").trim().toUpperCase();
   const participantId = String(payload.participantId || "").slice(0, 80);
@@ -22129,7 +22150,10 @@ function shouldRealtimeRefreshJoinDirectory(eventType = "") {
     "participant-reconnected",
     "participant-moderated",
     "host-transferred",
-    "room-settings"
+    "room-settings",
+    "round-advancing",
+    "round-started",
+    "round-setup-failed"
   ].includes(String(eventType || ""));
 }
 
