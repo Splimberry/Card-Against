@@ -2243,7 +2243,7 @@ function sanitizeRoomEventForClient(event, options = {}) {
 
 function sanitizeRoomSettingsForClient(settings = {}, options = {}) {
   const sanitized = { ...(settings && typeof settings === "object" ? settings : {}) };
-  const hasPassword = Boolean(String(sanitized.password || ""));
+  const hasPassword = Boolean(String(sanitized.password || "").trim());
   sanitized.passwordRequired = Boolean(sanitized.private && hasPassword);
   delete sanitized.password;
   return sanitized;
@@ -4896,7 +4896,7 @@ async function handleRoomCommandParticipantPresence(req, res, room, command, raw
     sendJson(res, 403, { ok: false, error: "This participant is banned from the room." });
     return;
   }
-  if (activeRoom.settings?.private && existingIndex < 0 && !hostAuthenticated) {
+  if (activeRoom.settings?.private && String(activeRoom.settings?.password || "").trim() && existingIndex < 0 && !hostAuthenticated) {
     const password = String(body.password || body.roomPassword || "").trim();
     if (!secureEqual(password, activeRoom.settings.password || "")) {
       sendJson(res, 403, { ok: false, error: "Invalid room password." });

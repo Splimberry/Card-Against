@@ -860,6 +860,32 @@ async function testPrivateRoomPasswordIsRedactedAndServerValidated() {
   assert.equal(Object.hasOwn(settingsEvent.payload.settings, "password"), false);
 }
 
+async function testPrivateToggleWithoutPasswordRemainsPublic() {
+  const code = makeCode(8128);
+  await upsertRoom(makeRoom(code, {
+    settings: {
+      ...makeRoom(code).settings,
+      private: true,
+      password: "   "
+    }
+  }));
+
+  const direct = await request("GET", `/api/rooms/${code}`, undefined, { cookie: "" });
+  assert.equal(direct.response.status, 200, direct.payload.error);
+  assert.equal(direct.payload.room.settings.passwordRequired, false);
+
+  const guest = await roomPresenceCommand(code, {
+    compact: true,
+    participant: {
+      id: "toggle-without-password-guest",
+      name: "Guest",
+      active: true,
+      status: "joined"
+    }
+  }, { cookie: "" });
+  assert.equal(guest.response.status, 200, guest.payload.error);
+}
+
 async function testHostCookieRequiredForPrivilegedRoomActions() {
   const code = makeCode(8121);
   await upsertRoom(makeRoom(code));
@@ -7471,6 +7497,7 @@ async function main() {
   await testRoomDirectoryAcceptsProfileImagePayload();
   await testRoomDirectoryPreservesProfileStyleFields();
   await testPrivateRoomPasswordIsRedactedAndServerValidated();
+  await testPrivateToggleWithoutPasswordRemainsPublic();
   await testHostCookieRequiredForPrivilegedRoomActions();
   await testParticipantCookieRequiredForRoomActions();
   await testRoomAnswersAreRedactedFromPublicFetches();

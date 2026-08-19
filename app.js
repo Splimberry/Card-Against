@@ -4419,6 +4419,7 @@ const elements = {
   lobbyHostNamePreview: document.querySelector("#lobbyHostNamePreview"),
   lobbyRoomCode: document.querySelector("#lobbyRoomCode"),
   lobbyRoomSummary: document.querySelector("#lobbyRoomSummary"),
+  lobbyThemeSummary: document.querySelector("#lobbyThemeSummary"),
   copyLobbyInviteButton: document.querySelector("#copyLobbyInviteButton"),
   beginRoomButton: document.querySelector("#beginRoomButton"),
   lobbySoundToggleButton: document.querySelector("#lobbySoundToggleButton"),
@@ -12175,12 +12176,7 @@ function renderThemeSummary() {
   const enabled = Array.isArray(state.roomSettings.enabledThemes)
     ? state.roomSettings.enabledThemes.filter((theme) => triviaThemes.includes(theme))
     : [...triviaThemes];
-  if (enabled.length === triviaThemes.length) {
-    elements.themeSummary.textContent = "All trivia themes enabled.";
-    return;
-  }
-
-  elements.themeSummary.textContent = `${enabled.length}/${triviaThemes.length} themes enabled: ${enabled.join(", ")}.`;
+  elements.themeSummary.textContent = `${enabled.length}/${triviaThemes.length} themes enabled.`;
 }
 
 function renderThemePicker() {
@@ -13048,13 +13044,21 @@ function isRoomMode() {
   return state.mode === "room";
 }
 
+function isRoomPasswordRequired(settings = {}) {
+  const source = settings && typeof settings === "object" ? settings : {};
+  if (Object.hasOwn(source, "passwordRequired")) {
+    return Boolean(source.passwordRequired);
+  }
+  return Boolean(source.private && String(source.password || "").trim());
+}
+
 function isPublicNonSelfHostedRoom() {
   const hasPublishedRoom = state.roomSettings.code && state.roomSettings.code !== "CAI-0000";
-  return isRoomMode() && hasPublishedRoom && !state.roomSettings.private;
+  return isRoomMode() && hasPublishedRoom && !isRoomPasswordRequired(state.roomSettings);
 }
 
 function isPublicAchievementMatch() {
-  return isRoomMode() && !state.roomSettings.private && state.maxRounds >= 10;
+  return isRoomMode() && !isRoomPasswordRequired(state.roomSettings) && state.maxRounds >= 10;
 }
 
 function isCompletedPublicAchievementMatch(wasExited = false) {
@@ -13600,7 +13604,7 @@ const roomSettingIndicatorDefinitions = [
     id: "private",
     label: "Private Room",
     icon: "assets/modifiers/padlock.svg",
-    enabled: (settings) => Boolean(settings.private)
+    enabled: (settings) => isRoomPasswordRequired(settings)
   },
   {
     id: "autoAdvance",
@@ -18817,8 +18821,7 @@ function stopRoomRealtime() {
 function getRealtimeRoomSettingsPayload(settings = {}) {
   const source = settings && typeof settings === "object" ? settings : {};
   const sanitized = { ...source };
-  const hasPassword = Boolean(String(source.password || ""));
-  sanitized.passwordRequired = Boolean(source.private && (hasPassword || source.passwordRequired));
+  sanitized.passwordRequired = isRoomPasswordRequired(source);
   delete sanitized.password;
   return sanitized;
 }
@@ -19638,7 +19641,7 @@ function getRoomMatchSettingsPayload(settings = state.roomSettings) {
     randomModifiers: classicMode ? false : Boolean(source.randomModifiers),
     autoAdvance: source.autoAdvance !== false,
     enabledThemes: enabledThemes.length ? enabledThemes : [...triviaThemes],
-    private: Boolean(source.private),
+    private: isRoomPasswordRequired(source),
     code: String(source.code || state.roomSettings.code || "").trim().toUpperCase()
   };
 }
@@ -44929,7 +44932,7 @@ function getHostedRoomsRenderSignature(visibleRooms = []) {
     activePlayers: getHostedRoomActivePlayerCount(room),
     maxPlayers: getRoomMaxPlayers(room.settings),
     spectators: Number(room.spectators) || 0,
-    private: Boolean(room.settings?.private),
+    private: isRoomPasswordRequired(room.settings),
     questionLanguage: getRoomQuestionLanguage(room.settings),
     mode: getRoomModeLabel(room.settings),
     host: {
@@ -45034,7 +45037,7 @@ function renderHostedRooms(options = {}) {
     const meta = document.createElement("div");
     meta.className = "join-room-meta";
     const activePlayers = getHostedRoomActivePlayerCount(room);
-    [room.settings.private ? "Private" : "Public", `${activePlayers}/${getRoomMaxPlayers(room.settings)} players`, `${room.spectators} spectators`, room.status].forEach((label) => {
+    [room.code, isRoomPasswordRequired(room.settings) ? "Private" : "Public", `${activePlayers}/${getRoomMaxPlayers(room.settings)} players`, `${room.spectators} spectators`, room.status].forEach((label) => {
       const chip = document.createElement("span");
       chip.textContent = label;
       meta.appendChild(chip);
@@ -45083,7 +45086,7 @@ function renderHostedRooms(options = {}) {
         ? "This room is full, but you can still watch as a spectator."
         : currentProfileIsHost
           ? "Rejoin your hosted room."
-          : room.settings.private ? "Enter the room password to join before the match starts." : "Join this lobby as an active player before the match starts."
+          : isRoomPasswordRequired(room.settings) ? "Enter the room password to join before the match starts." : "Join this lobby as an active player before the match starts."
       : currentProfileIsHost
         ? "Rejoin your active room as host."
         : currentProfileCanReconnectAsPlayer
@@ -45096,7 +45099,7 @@ function renderHostedRooms(options = {}) {
     spectateButton.dataset.roomAction = "spectate";
     spectateButton.dataset.joinRoom = room.code;
     spectateButton.textContent = "Spectate";
-    setFloatingButtonHint(spectateButton, room.settings.private ? "Enter the password to watch this private room." : "Watch the game without taking a player slot.");
+    setFloatingButtonHint(spectateButton, isRoomPasswordRequired(room.settings) ? "Enter the password to watch this private room." : "Watch the game without taking a player slot.");
     actions.append(joinButton, spectateButton);
     card.append(details, actions);
     elements.joinRoomList.appendChild(card);
@@ -45234,7 +45237,7 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
     compactResponse: !needsFullRoomState,
     includeRoomSnapshot: true,
     includeError: true,
-    optimisticRealtime: !room.settings?.private,
+    optimisticRealtime: !isRoomPasswordRequired(room.settings),
     optimisticEventType: "participant-joined",
     ...(Object.hasOwn(options, "roomPassword") ? { roomPassword: options.roomPassword } : {})
   });
@@ -45246,7 +45249,7 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
       addSystemChat("This profile is already active in that room. Use the existing tab, or wait for it to disconnect before rejoining.", { private: true, sync: false });
       return null;
     }
-    if (room.settings?.private) {
+    if (isRoomPasswordRequired(room.settings)) {
       elements.joinRoomPasswordInput.focus();
       setJoinInviteStatus("That password did not work. Try again or return to the main menu.", "error");
       addSystemChat("Room password did not match.", { private: true, sync: false });
@@ -45256,7 +45259,7 @@ async function syncJoinedRoomPresence(room, expectedSessionId = state.roomSessio
     return null;
   }
   if (!serverRoom) {
-    if (room.settings?.private) {
+    if (isRoomPasswordRequired(room.settings)) {
       elements.joinRoomPasswordInput.focus();
       setJoinInviteStatus("That password did not work. Try again or return to the main menu.", "error");
       addSystemChat("Room password did not match.", { private: true, sync: false });
@@ -45357,7 +45360,7 @@ async function joinHostedRoom(code, options = {}) {
       return;
     }
     let typedPassword = "";
-    if (room.settings.private) {
+    if (isRoomPasswordRequired(room.settings)) {
       typedPassword = cleanChatInput(options.password || elements.joinRoomPasswordInput.value);
       if (!typedPassword) {
         openJoinScreen({ inviteCode: normalizedCode, checked: true });
@@ -45485,7 +45488,7 @@ async function processInitialRoomInvite() {
     source: "initial-invite-lookup",
     syncActive: false
   });
-  if (lookup.room.settings?.private) {
+  if (isRoomPasswordRequired(lookup.room.settings)) {
     elements.joinRoomCodeInput.value = getRoomShortCode(inviteCode) || inviteCode;
     setJoinInviteStatus(`Room ${getRoomShortCode(inviteCode)} is private. Enter the password to join.`);
     focusInvitePasswordField();
@@ -45673,7 +45676,11 @@ function renderRoomLobby() {
   elements.lobbyRoomCodeLabel.textContent = state.roomSettings.code;
   syncRoomInviteButtons();
   renderModifierIconLabel(elements.lobbyRoomVariantLabel);
-  elements.lobbyRoomSummary.textContent = `${state.roomSettings.private ? "Private" : "Public"} ${getRoomModeLabel()} room. ${state.roomSettings.rounds} rounds, ${state.roomSettings.timerSeconds}s timer, ${getRoomMaxPlayers()} player limit.`;
+  elements.lobbyRoomSummary.textContent = `${isRoomPasswordRequired(state.roomSettings) ? "Private" : "Public"} ${getRoomModeLabel()} room. ${state.roomSettings.rounds} rounds, ${state.roomSettings.timerSeconds}s timer, ${getRoomMaxPlayers()} player limit.`;
+  const enabledThemes = getEnabledTriviaThemes();
+  elements.lobbyThemeSummary.textContent = enabledThemes.length === triviaThemes.length
+    ? `Themes: All ${triviaThemes.length} enabled.`
+    : `Themes (${enabledThemes.length}/${triviaThemes.length}): ${enabledThemes.join(", ")}.`;
   const hostParticipant = state.roomParticipants.find(isRoomParticipantHost)
     || getRoomParticipantsFromPlayers("lobby").find(isRoomParticipantHost)
     || getCurrentParticipant({ host: true, status: "host" });
@@ -45731,11 +45738,6 @@ async function beginRoomMatch() {
   }
 
   updateRoomVariants({ publish: false });
-  if (state.roomSettings.private && !state.roomSettings.password) {
-    elements.roomPasswordInput.focus();
-    return;
-  }
-
   if (getActiveRoomPlayerCount() < 2) {
     addSystemChat("Need at least 2 players before starting the match.", { private: true });
     renderRoomHostActions();

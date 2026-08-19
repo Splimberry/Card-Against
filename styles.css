@@ -1295,6 +1295,14 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   margin: 0;
 }
 
+.lobby-theme-summary {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .room-game-settings-actions {
   display: grid;
   grid-template-columns: minmax(14rem, 1.15fr) repeat(2, minmax(0, 1fr));
@@ -1308,7 +1316,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 .room-game-settings-actions .room-password-row {
-  grid-column: 2 / -1;
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 60rem) {
