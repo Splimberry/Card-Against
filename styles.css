@@ -1253,10 +1253,12 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 #roomScreen .room-create-column {
   display: grid;
-  grid-template-rows: minmax(20rem, 0.85fr) minmax(19rem, 1.15fr);
+  grid-template-rows: minmax(15.5rem, 0.85fr) minmax(17rem, 1.15fr);
   gap: 1rem;
+  align-self: start;
   min-width: 0;
-  min-height: min(72vh, 54rem);
+  height: min(72vh, 54rem);
+  min-height: 0;
 }
 
 #roomScreen .create-room-chat {
@@ -17989,7 +17991,8 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   }
 
   #roomScreen .room-create-column {
-    grid-template-rows: minmax(19rem, auto) minmax(20rem, auto);
+    grid-template-rows: minmax(15.5rem, auto) minmax(17rem, auto);
+    height: auto;
     min-height: 0;
   }
 
