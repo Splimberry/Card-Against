@@ -21146,13 +21146,17 @@ function applyRealtimeHostTransferred(payload = {}) {
       renderRoomPlayers();
       renderScore();
       renderSubmissionStatus();
-      void resumeRoomAfterHostTransfer(room || state.joiningRoom || {
-        code,
-        status: state.currentRoomStatus,
-        settings: state.roomSettings,
-        participants: state.roomParticipants,
-        game: state.roomGame
-      });
+      if (["draft", "lobby"].includes(state.currentRoomStatus)) {
+        showHostedRoomSetup();
+      } else {
+        void resumeRoomAfterHostTransfer(room || state.joiningRoom || {
+          code,
+          status: state.currentRoomStatus,
+          settings: state.roomSettings,
+          participants: state.roomParticipants,
+          game: state.roomGame
+        });
+      }
       applied = true;
     } else if (previousHostId === state.clientId) {
       stopRoomHeartbeat();
