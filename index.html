@@ -244,7 +244,10 @@
               </label>
             </div>
 
-            <button type="button" id="startRoomButton">Create Room</button>
+            <div class="room-host-actions" aria-label="Room actions">
+              <button type="button" class="secondary-button" id="roomAddBotButton">Add Bot</button>
+              <button type="button" id="beginRoomButton">Begin Match</button>
+            </div>
           </section>
 
           <div class="room-create-column">
@@ -257,7 +260,7 @@
               <div class="room-host-profile" id="roomHostProfile" aria-label="Room host profile">
                 <div class="profile-avatar" id="roomProfileAvatarPreview">Y</div>
                 <div>
-                  <p class="eyebrow">Creating as</p>
+                  <p class="eyebrow">Host</p>
                   <strong id="roomProfileNamePreview">You</strong>
                 </div>
               </div>
@@ -317,7 +320,6 @@
             <h1 id="roomLobbyTitle">ROOM LOBBY</h1>
           </div>
           <div class="lobby-actions">
-            <button type="button" class="icon-button" id="lobbySettingsButton">Settings</button>
             <button type="button" class="icon-button" id="lobbySoundToggleButton" aria-pressed="false">Sound On</button>
             <button type="button" class="icon-button danger-button" id="leaveLobbyButton">Leave</button>
           </div>
@@ -337,10 +339,6 @@
                 <p class="eyebrow">Host</p>
                 <strong id="lobbyHostNamePreview">Host</strong>
               </div>
-            </div>
-            <div class="lobby-room-actions">
-              <button type="button" class="secondary-button" id="lobbyAddBotButton">Add Bot</button>
-              <button type="button" id="beginRoomButton">Begin Match</button>
             </div>
             <div class="room-player-list" id="roomLobbyPlayerList" aria-label="Lobby players"></div>
           </section>

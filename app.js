@@ -4387,7 +4387,7 @@ const elements = {
   joinSoundToggleButton: document.querySelector("#joinSoundToggleButton"),
   refreshJoinRoomsButton: document.querySelector("#refreshJoinRoomsButton"),
   createFromJoinButton: document.querySelector("#createFromJoinButton"),
-  startRoomButton: document.querySelector("#startRoomButton"),
+  roomAddBotButton: document.querySelector("#roomAddBotButton"),
   roomRoundsSlider: document.querySelector("#roomRoundsSlider"),
   roomRoundsValue: document.querySelector("#roomRoundsValue"),
   roomTimerSlider: document.querySelector("#roomTimerSlider"),
@@ -4421,8 +4421,6 @@ const elements = {
   lobbyRoomSummary: document.querySelector("#lobbyRoomSummary"),
   copyLobbyInviteButton: document.querySelector("#copyLobbyInviteButton"),
   beginRoomButton: document.querySelector("#beginRoomButton"),
-  lobbyAddBotButton: document.querySelector("#lobbyAddBotButton"),
-  lobbySettingsButton: document.querySelector("#lobbySettingsButton"),
   lobbySoundToggleButton: document.querySelector("#lobbySoundToggleButton"),
   leaveLobbyButton: document.querySelector("#leaveLobbyButton"),
   joinRoomList: document.querySelector("#joinRoomList"),
@@ -41982,10 +41980,10 @@ function syncRoomControls() {
   renderModifierIconLabel(elements.roomVariantLabel);
   renderModifierIconLabel(elements.lobbyRoomVariantLabel);
   elements.roomCodePreview.textContent = state.roomSettings.code;
-  elements.startRoomButton.textContent = state.currentRoomStatus === "lobby" ? "Continue" : "Create Room";
   setHidden(elements.roomHostProfile, Boolean(state.joiningRoom));
   syncRoomInviteButtons();
   renderRoomPlayers();
+  renderRoomHostActions();
 }
 
 function openRoomScreen() {
@@ -42029,8 +42027,11 @@ function openRoomScreen() {
 }
 
 function closeRoomScreen() {
-  const returnToLobby = state.currentRoomStatus === "lobby";
-  if (state.currentRoomStatus === "draft" && state.publishedDraftRoomCode === state.roomSettings.code) {
+  const hostedPreMatchRoom = !state.joiningRoom
+    && !state.isSpectator
+    && ["draft", "lobby"].includes(state.currentRoomStatus);
+  const returnToLobby = state.currentRoomStatus === "lobby" && !hostedPreMatchRoom;
+  if (hostedPreMatchRoom && state.roomSettings.code && state.roomSettings.code !== "CAI-0000") {
     leavePublishedRoom({ keepalive: true });
     clearLocalRoomState();
     stopRoomPresenceMaintenance();
@@ -45192,10 +45193,7 @@ async function rejoinHostedRoomAsHost(room) {
   setHidden(elements.joinScreen, true);
   setHidden(elements.gameStage, true);
   if (state.currentRoomStatus === "lobby") {
-    setPlayersForMode("room");
-    renderRoomLobby();
-    startRoomPresenceMaintenance();
-    setHidden(elements.roomLobbyScreen, false);
+    openRoomLobby();
   } else if (!resumeSyncedRoomGame(activeRoom, { host: true })) {
     startGame("room");
   }
@@ -45587,14 +45585,43 @@ function getRandomRoomBotName() {
   return `Room_Bot_${state.roomParticipants.filter(isRoomParticipantBot).length + 1}`;
 }
 
+function renderRoomHostActions() {
+  const isHostedPreMatchRoom = Boolean(
+    !state.joiningRoom
+    && !state.isSpectator
+    && isCurrentHost()
+    && ["draft", "lobby"].includes(state.currentRoomStatus)
+  );
+  const activePlayerCount = getActiveRoomPlayerCount();
+  const hasOpenSlot = getRoomOpenSlotCount() > 0;
+
+  setHidden(elements.roomAddBotButton, !isHostedPreMatchRoom);
+  elements.roomAddBotButton.disabled = !isHostedPreMatchRoom || !hasOpenSlot;
+  setButtonHint(
+    elements.roomAddBotButton,
+    !hasOpenSlot
+      ? getPendingRoomBotAddCount() > 0 ? "Waiting for the server to confirm the pending bot." : "This room is full."
+      : "Add a bot to occupy an empty player slot for multiplayer testing."
+  );
+
+  setHidden(elements.beginRoomButton, !isHostedPreMatchRoom);
+  elements.beginRoomButton.disabled = !isHostedPreMatchRoom || activePlayerCount < 2;
+  setButtonHint(
+    elements.beginRoomButton,
+    activePlayerCount < 2
+      ? "Waiting for one more active player before the host can start."
+      : "Start the match for everyone in this room."
+  );
+}
+
 async function addBotToRoom() {
-  if (!isCurrentHost() || state.currentRoomStatus !== "lobby") {
-    addSystemChat("Only the host can add bots while the room is in the lobby.", { private: true });
+  if (!isCurrentHost() || !["draft", "lobby"].includes(state.currentRoomStatus)) {
+    addSystemChat("Only the host can add bots before the match begins.", { private: true });
     return;
   }
   if (getRoomOpenSlotCount() <= 0) {
     addSystemChat("This room is full.", { private: true });
-    renderRoomLobby();
+    renderRoomHostActions();
     return;
   }
   if (!state.randomUsernames.length) {
@@ -45612,7 +45639,8 @@ async function addBotToRoom() {
     status: "bot"
   };
   rememberPendingRoomBotAdd({ id: botId, name: botName });
-  renderRoomLobby();
+  renderRoomPlayers();
+  renderRoomHostActions();
   const data = await roomSync.sendCommand("add_bot", {
     botId,
     name: botName,
@@ -45628,10 +45656,12 @@ async function addBotToRoom() {
   clearPendingRoomBotAdd(botId);
   if (!data?.ok) {
     addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
-    renderRoomLobby();
+    renderRoomPlayers();
+    renderRoomHostActions();
     return;
   }
-  renderRoomLobby();
+  renderRoomPlayers();
+  renderRoomHostActions();
   playSound("click");
 }
 
@@ -45657,24 +45687,7 @@ function renderRoomLobby() {
   }, hostParticipant.name || "Host");
   renderAvatar(elements.lobbyHostAvatarPreview, { label: hostParticipant.name || "Host", avatar: hostParticipant.avatar || "" });
   applyProfileCustomizationSurface(elements.lobbyHostProfile, hostParticipant.cardCustomization || defaultProfileCustomization);
-  setHidden(elements.beginRoomButton, !isCurrentHost());
-  elements.beginRoomButton.disabled = isCurrentHost() && getActiveRoomPlayerCount() < 2;
-  setButtonHint(
-    elements.beginRoomButton,
-    getActiveRoomPlayerCount() < 2
-      ? "Waiting for one more active player before the host can start."
-      : "Start the match for everyone in this lobby."
-  );
-  setHidden(elements.lobbyAddBotButton, !isCurrentHost());
-  elements.lobbyAddBotButton.disabled = state.currentRoomStatus !== "lobby" || getRoomOpenSlotCount() <= 0;
-  elements.lobbyAddBotButton.textContent = "Add Bot";
-  setButtonHint(
-    elements.lobbyAddBotButton,
-    getRoomOpenSlotCount() <= 0
-      ? getPendingRoomBotAddCount() > 0 ? "Waiting for the server to confirm the pending bot." : "This room is full."
-      : "Add a bot to occupy an empty player slot for multiplayer testing."
-  );
-  setHidden(elements.lobbySettingsButton, !isCurrentHost());
+  renderRoomHostActions();
   renderRoomPlayers();
   renderRoomChat();
 }
@@ -45686,6 +45699,11 @@ function openRoomLobby() {
   }
   setPlayersForMode("room");
   setRoomInviteUrlPath(state.roomSettings.code);
+  if (!state.joiningRoom && !state.isSpectator && isCurrentHost()) {
+    startRoomPresenceMaintenance();
+    showHostedRoomSetup();
+    return;
+  }
   renderRoomLobby();
   startRoomPresenceMaintenance();
   setHidden(elements.modeScreen, true);
@@ -45695,26 +45713,36 @@ function openRoomLobby() {
   setHidden(elements.roomLobbyScreen, false);
 }
 
-function openLobbySettings() {
+function showHostedRoomSetup() {
   syncRoomControls();
+  setHidden(elements.modeScreen, true);
+  setHidden(elements.joinScreen, true);
+  setHidden(elements.gameStage, true);
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.roomScreen, false);
   renderRoomChat();
-  playSound("click");
+  scheduleRoomPanelHeightSync();
 }
 
 async function beginRoomMatch() {
-  if (!isCurrentHost()) {
+  if (!isCurrentHost() || !["draft", "lobby"].includes(state.currentRoomStatus)) {
     addSystemChat("Only the host can begin the match.", { private: true });
+    return;
+  }
+
+  updateRoomVariants({ publish: false });
+  if (state.roomSettings.private && !state.roomSettings.password) {
+    elements.roomPasswordInput.focus();
     return;
   }
 
   if (getActiveRoomPlayerCount() < 2) {
     addSystemChat("Need at least 2 players before starting the match.", { private: true });
-    renderRoomLobby();
+    renderRoomHostActions();
     return;
   }
   state.currentRoomStatus = "in-progress";
+  renderRoomHostActions();
   state.roomMatchStartGuardUntil = Date.now() + 25000;
   state.roomGame = null;
   state.roomRoundResult = null;
@@ -45968,6 +45996,7 @@ function renderRoomPlayers() {
   if (!hasAnimatedListChange && !playerLists.some((target) => target.dataset.roomPlayerExitAnimating)) {
     scheduleRoomPanelHeightSync();
   }
+  renderRoomHostActions();
 }
 
 function getRoomPlayerCardRects(target) {
@@ -46631,97 +46660,6 @@ function handleRoomPlayerAction(action, owner, participantId = "") {
   if (action === "kick-bot") {
     kickRoomBot(owner, participantId);
   }
-}
-
-async function hydrateDraftRoomBeforeLobby(expectedSessionId, expectedCode) {
-  const code = String(expectedCode || "").trim().toUpperCase();
-  if (!code || code === "CAI-0000") {
-    return false;
-  }
-
-  const lookup = await fetchRoomByCode(code);
-  if (
-    expectedSessionId !== state.roomSessionId
-    || state.currentRoomStatus !== "draft"
-    || state.roomSettings.code !== code
-  ) {
-    return false;
-  }
-  if (lookup.status !== "found" || !lookup.room) {
-    return false;
-  }
-
-  // The draft screen can receive participant/chat events before the host
-  // reveals the lobby. Apply the latest snapshot first so that chat history
-  // is complete before the lobby is rendered.
-  applyRoomSnapshot(lookup.room, {
-    source: "draft-to-lobby-hydration",
-    skipHeartbeat: true
-  });
-  if (Array.isArray(lookup.room.chat)) {
-    mergeRoomChatMessages(lookup.room.chat);
-  }
-  return true;
-}
-
-async function startRoomGame() {
-  updateRoomVariants({ publish: false });
-  if (state.roomSettings.private && !state.roomSettings.password) {
-    elements.roomPasswordInput.focus();
-    return;
-  }
-  if (state.currentRoomStatus === "lobby") {
-    upsertHostedRoom("lobby");
-    setRoomInviteUrlPath(state.roomSettings.code);
-    renderRoomLobby();
-    setHidden(elements.roomScreen, true);
-    setHidden(elements.roomLobbyScreen, false);
-    playSound("click");
-    return;
-  }
-
-  const draftSessionId = state.roomSessionId;
-  const draftRoomCode = state.roomSettings.code;
-  if (state.currentRoomStatus === "draft") {
-    if (state.roomLobbyTransitionInProgress) {
-      return;
-    }
-    state.roomLobbyTransitionInProgress = true;
-    elements.startRoomButton.disabled = true;
-    try {
-      await hydrateDraftRoomBeforeLobby(draftSessionId, draftRoomCode);
-    } finally {
-      state.roomLobbyTransitionInProgress = false;
-      elements.startRoomButton.disabled = false;
-    }
-    if (
-      draftSessionId !== state.roomSessionId
-      || state.currentRoomStatus !== "draft"
-      || state.roomSettings.code !== draftRoomCode
-    ) {
-      return;
-    }
-  }
-
-  state.mode = "room";
-  state.currentOwner = "player";
-  state.joiningRoom = null;
-  state.isSpectator = false;
-  state.roomGame = null;
-  resetRoomPowerSyncClocks();
-  state.roomSessionId += 1;
-  state.roomMissingSince = 0;
-  state.roomClosedNotice = "";
-  state.currentRoomStatus = "lobby";
-  state.roomModeration.voteBans = {};
-  if (!state.roomModeration.bannedByRoom[state.roomSettings.code]) {
-    state.roomModeration.bannedByRoom[state.roomSettings.code] = [];
-  }
-  setPlayersForMode("room");
-  resetChatCooldown();
-  addSystemChat(`Room ${state.roomSettings.code} created with ${getRoomVariantNames().join(" + ")} rules.`);
-  upsertHostedRoom("lobby");
-  openRoomLobby();
 }
 
 function renderRoomChat() {
@@ -50891,10 +50829,8 @@ elements.backToMenuButton.addEventListener("click", closeRoomScreen);
 elements.backFromJoinButton.addEventListener("click", closeJoinScreen);
 elements.copyRoomInviteButton?.addEventListener("click", (event) => copyCurrentRoomInviteLink(event.currentTarget));
 elements.copyLobbyInviteButton?.addEventListener("click", (event) => copyCurrentRoomInviteLink(event.currentTarget));
-elements.startRoomButton.addEventListener("click", startRoomGame);
 elements.beginRoomButton.addEventListener("click", beginRoomMatch);
-elements.lobbyAddBotButton.addEventListener("click", addBotToRoom);
-elements.lobbySettingsButton.addEventListener("click", openLobbySettings);
+elements.roomAddBotButton.addEventListener("click", addBotToRoom);
 elements.leaveLobbyButton.addEventListener("click", openLeaveConfirm);
 elements.roomRoundsSlider.addEventListener("input", (event) => updateRoomRounds(event.target.value));
 elements.roomTimerSlider.addEventListener("input", (event) => updateRoomTimer(event.target.value));
@@ -51063,11 +50999,15 @@ function returnToRoomLobbyAfterMatch(options = {}) {
       });
     }
   }
-  renderRoomLobby();
   setRoomInviteUrlPath(state.roomSettings.code);
   startRoomRealtime(state.roomSettings.code);
   startRoomPresenceMaintenance();
-  setHidden(elements.roomLobbyScreen, false);
+  if (!state.joiningRoom && !state.isSpectator && isCurrentHost()) {
+    showHostedRoomSetup();
+  } else {
+    renderRoomLobby();
+    setHidden(elements.roomLobbyScreen, false);
+  }
 }
 
 elements.changeModeButton.addEventListener("click", () => {

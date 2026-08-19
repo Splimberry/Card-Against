@@ -1976,7 +1976,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   font-size: 0.66rem;
 }
 
-.lobby-room-actions {
+.room-host-actions {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
   gap: 0.55rem;
