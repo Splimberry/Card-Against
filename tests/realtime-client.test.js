@@ -709,6 +709,40 @@ function testJoinDirectoryTracksMatchStartImmediately() {
   assert.match(roomEventSource, /applyHostedRoomStatusDelta\(normalizedPayload\)/);
 }
 
+function testMembershipCommandsUseRealtimeFirstReconciliation() {
+  const membershipBroadcastSource = getFunctionSource("broadcastAndApplyOptimisticRoomMembershipChange", "isExplicitRoomCommandRejection");
+  assert.match(membershipBroadcastSource, /broadcastAndApplyOptimisticRoomChange/);
+  assert.match(membershipBroadcastSource, /forceRoomChannel: true/);
+  assert.match(membershipBroadcastSource, /forceLobbyChannel: true/);
+
+  const presenceSource = getFunctionSource("updateRoomPresence", "normalizeRoomParticipantDelta");
+  assert.match(presenceSource, /options\.optimisticRealtime/);
+  assert.match(presenceSource, /broadcastAndApplyOptimisticRoomMembershipChange\(optimisticEventType/);
+  assert.match(presenceSource, /rollbackOptimisticRoomParticipantJoin/);
+  assert.ok(
+    presenceSource.indexOf("broadcastAndApplyOptimisticRoomMembershipChange")
+      < presenceSource.indexOf('roomSync.sendCommand(commandType'),
+    "Presence must render and broadcast before its server command resolves."
+  );
+
+  const addBotSource = getFunctionSource("addBotToRoom", "renderRoomLobby");
+  assert.match(addBotSource, /broadcastAndApplyOptimisticRoomMembershipChange\("participant-joined"/);
+  assert.ok(
+    addBotSource.indexOf("broadcastAndApplyOptimisticRoomMembershipChange")
+      < addBotSource.indexOf('roomSync.sendCommand("add_bot"'),
+    "Bot additions must reach the room before waiting for server confirmation."
+  );
+  assert.match(addBotSource, /isExplicitRoomCommandRejection\(data\)/);
+
+  const moderationSource = getFunctionSource("publishRoomModeration", "canModerateCurrentRoom");
+  assert.match(moderationSource, /broadcastAndApplyOptimisticRoomMembershipChange\("participant-left"/);
+  assert.match(moderationSource, /restoreOptimisticRoomParticipant/);
+
+  const snapshotSource = getFunctionSource("applyRoomSnapshot", "removeHostedRoom");
+  assert.match(snapshotSource, /getPendingRoomClientEventSnapshotBlocker/);
+  assert.match(snapshotSource, /isRoomMembershipEventType\(pendingMembershipBlocker\.eventType\)/);
+}
+
 (async () => {
   testRoomChannelIsReadyBeforeSubscribeCallback();
   await testGuestRoomJoinInitializesRealtimeWithoutAuth();
@@ -736,6 +770,7 @@ function testJoinDirectoryTracksMatchStartImmediately() {
   await testRejectedResultDoesNotFinishTheWait();
   testInventoryHydrationCommitsQueuedSpendsBeforeLoadingServerBalance();
   testJoinDirectoryTracksMatchStartImmediately();
+  testMembershipCommandsUseRealtimeFirstReconciliation();
   console.log("Realtime client synchronization tests passed.");
 })().catch((error) => {
   console.error(error);

@@ -19262,6 +19262,74 @@ function broadcastAndApplyOptimisticRoomChange(eventType, roomOrCode = state.roo
   return Boolean(roomSync?.applyEvent(payload, { source: "optimistic" }));
 }
 
+function isRoomMembershipEventType(eventType = "") {
+  return roomMembershipSnapshotEventTypes.includes(normalizeRoomEventType(eventType));
+}
+
+function broadcastAndApplyOptimisticRoomMembershipChange(eventType, roomOrCode = state.roomSettings.code, details = {}) {
+  return broadcastAndApplyOptimisticRoomChange(eventType, roomOrCode, {
+    ...details,
+    forceRoomChannel: true,
+    forceLobbyChannel: true
+  });
+}
+
+function isExplicitRoomCommandRejection(result = {}) {
+  const status = Number(result?.status) || 0;
+  return status >= 400 && status < 500 && ![408, 429].includes(status);
+}
+
+function rollbackOptimisticRoomParticipantJoin(participant, code = state.roomSettings.code, clientEventId = "") {
+  const normalizedParticipant = normalizeRoomParticipantDelta(participant);
+  const roomCode = String(code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!normalizedParticipant || !roomCode || roomCode === "CAI-0000") {
+    return false;
+  }
+  const rollbackPayload = broadcastRealtimeRoomChange("participant-left", roomCode, {
+    clientEventId,
+    actorId: state.clientId,
+    participantId: normalizedParticipant.id,
+    participantName: normalizedParticipant.name || "A player",
+    participant: normalizedParticipant,
+    status: "left",
+    silent: true,
+    optimisticRollback: true,
+    forceRoomChannel: true,
+    forceLobbyChannel: true
+  });
+  if (!rollbackPayload) {
+    return false;
+  }
+  return roomSync.applyEvent(rollbackPayload, { source: "optimistic-rollback" });
+}
+
+function restoreOptimisticRoomParticipant(participant, code = state.roomSettings.code, clientEventId = "") {
+  const normalizedParticipant = normalizeRoomParticipantDelta(participant);
+  const roomCode = String(code || state.roomSettings.code || "").trim().toUpperCase();
+  if (!normalizedParticipant || !roomCode || roomCode === "CAI-0000") {
+    return false;
+  }
+  const restorePayload = broadcastRealtimeRoomChange("participant-joined", roomCode, {
+    clientEventId,
+    actorId: state.clientId,
+    participantId: normalizedParticipant.id,
+    participantName: normalizedParticipant.name || "A player",
+    role: normalizedParticipant.role,
+    host: Boolean(normalizedParticipant.host),
+    spectator: Boolean(normalizedParticipant.spectator),
+    status: normalizedParticipant.status,
+    participant: normalizedParticipant,
+    silent: true,
+    optimisticRollback: true,
+    forceRoomChannel: true,
+    forceLobbyChannel: true
+  });
+  if (!restorePayload) {
+    return false;
+  }
+  return roomSync.applyEvent(restorePayload, { source: "optimistic-rollback" });
+}
+
 function broadcastRealtimeAppEvent(eventType, details = {}) {
   if (!state.supabaseClient || !state.realtimeLobbyChannel) {
     return;
@@ -20931,6 +20999,17 @@ function applyRoomSnapshot(room = {}, source = {}) {
     });
     return false;
   }
+  const pendingMembershipBlocker = !options.forceRecovery
+    ? getPendingRoomClientEventSnapshotBlocker(room, options)
+    : null;
+  if (pendingMembershipBlocker && isRoomMembershipEventType(pendingMembershipBlocker.eventType)) {
+    recordRoomDiagnosticEvent("snapshot-blocked", room, {
+      source: options.source || "snapshot",
+      eventType: "room-snapshot",
+      reason: `Room snapshot ignored while optimistic ${pendingMembershipBlocker.eventType} is awaiting server confirmation.`
+    });
+    return false;
+  }
   const merged = mergeRealtimeRoomPayload(room);
   if (!merged || (!options.forceRecovery && isStaleRoomSnapshot(merged, options))) {
     recordRoomDiagnosticEvent(merged ? "snapshot-stale" : "snapshot-ignored", merged || room, {
@@ -21443,7 +21522,7 @@ function applyRealtimeParticipantLeft(payload = {}) {
     }
   }
   const participantName = String(payload.participantName || participant?.name || removedPlayer?.label || "A player").trim();
-  if (participantId !== state.clientId && participantName) {
+  if (!payload.silent && participantId !== state.clientId && participantName) {
     addSystemChat(`${participantName} left and was removed from the room.`, { sync: false });
   }
   renderRoomPlayers();
@@ -43199,6 +43278,25 @@ async function updateRoomPresence(room, options = {}) {
     const commandType = options.commandType
       || (options.active === false ? "disconnect_participant" : options.rejoin ? "rejoin_room" : "join_room");
     const optimisticEventType = normalizeRoomEventType(options.optimisticEventType || (commandType === "join_room" ? "participant-joined" : "participant-updated"));
+    const optimisticParticipantJoin = Boolean(
+      options.optimisticRealtime
+      && optimisticEventType === "participant-joined"
+      && !state.roomParticipants.some((entry) => entry.id === participant.id)
+    );
+    if (options.optimisticRealtime && isRoomMembershipEventType(optimisticEventType)) {
+      broadcastAndApplyOptimisticRoomMembershipChange(optimisticEventType, room.code, {
+        clientEventId,
+        actorId: participant.id,
+        participantId: participant.id,
+        participantName: participant.name || "A player",
+        role: participant.role,
+        host: Boolean(participant.host),
+        spectator: Boolean(participant.spectator),
+        status: participant.status,
+        participant,
+        updatedAt: Date.now()
+      });
+    }
     const data = await roomSync.sendCommand(commandType, {
       clientEventId,
       participantId: participant.id,
@@ -43214,6 +43312,9 @@ async function updateRoomPresence(room, options = {}) {
       broadcast: options.skipRealtimeBroadcast ? false : undefined
     });
     if (!data?.ok) {
+      if (optimisticParticipantJoin && isExplicitRoomCommandRejection(data)) {
+        rollbackOptimisticRoomParticipantJoin(participant, room.code, clientEventId);
+      }
       state.roomDirectoryOnline = false;
       if (options.includeError) {
         return {
@@ -45662,6 +45763,17 @@ async function addBotToRoom() {
     status: "bot"
   };
   rememberPendingRoomBotAdd({ id: botId, name: botName });
+  broadcastAndApplyOptimisticRoomMembershipChange("participant-joined", state.roomSettings.code, {
+    clientEventId,
+    actorId: state.clientId,
+    participantId: botId,
+    participantName: botName,
+    role: "bot",
+    bot: true,
+    status: "bot",
+    participant: optimisticBotParticipant,
+    updatedAt: Date.now()
+  });
   renderRoomPlayers();
   renderRoomHostActions();
   const data = await roomSync.sendCommand("add_bot", {
@@ -45676,13 +45788,17 @@ async function addBotToRoom() {
   }, {
     clientEventId
   });
-  clearPendingRoomBotAdd(botId);
   if (!data?.ok) {
+    if (isExplicitRoomCommandRejection(data)) {
+      rollbackOptimisticRoomParticipantJoin(optimisticBotParticipant, state.roomSettings.code, clientEventId);
+      clearPendingRoomBotAdd(botId);
+    }
     addSystemChat(`Could not add ${botName}: ${data?.error || "room sync failed."}`, { private: true });
     renderRoomPlayers();
     renderRoomHostActions();
     return;
   }
+  clearPendingRoomBotAdd(botId);
   renderRoomPlayers();
   renderRoomHostActions();
   playSound("click");
@@ -46520,6 +46636,22 @@ function publishRoomModeration(action, participantId, options = {}) {
   const clientEventId = String(options.clientEventId || createRoomSyncCommandId("moderate-participant", code)).slice(0, 160);
   const normalizedAction = String(action || "").slice(0, 32);
   const muted = normalizedAction === "mute" ? true : normalizedAction === "unmute" ? false : Boolean(options.muted);
+  const removedParticipant = ["kick", "ban"].includes(normalizedAction)
+    ? state.roomParticipants.find((entry) => entry.id === participantId) || null
+    : null;
+  if (removedParticipant) {
+    broadcastAndApplyOptimisticRoomMembershipChange("participant-left", code, {
+      clientEventId,
+      actorId: state.clientId,
+      participantId,
+      participantName: removedParticipant.name || "A player",
+      participant: removedParticipant,
+      action: normalizedAction,
+      status: normalizedAction === "ban" ? "banned" : "kicked",
+      silent: true,
+      updatedAt: Date.now()
+    });
+  }
   return roomSync.sendCommand("moderate_participant", {
     clientEventId,
     action: normalizedAction,
@@ -46533,6 +46665,9 @@ function publishRoomModeration(action, participantId, options = {}) {
     clientEventId
   }).then((data) => {
     if (!data?.ok) {
+      if (removedParticipant && isExplicitRoomCommandRejection(data)) {
+        restoreOptimisticRoomParticipant(removedParticipant, code, clientEventId);
+      }
       return options.includeError
         ? { ok: false, status: data?.status || 0, error: data?.error || "Room moderation failed." }
         : null;
