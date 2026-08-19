@@ -134,27 +134,33 @@
 
         <div class="room-setup-grid">
           <section class="room-settings-panel">
-            <h2 class="room-settings-section-title">Game Settings</h2>
-            <label class="slider-row" for="roomRoundsSlider">
-              <span>Rounds</span>
-              <input id="roomRoundsSlider" type="range" min="1" max="10" step="1" value="10">
-              <strong id="roomRoundsValue">10</strong>
-            </label>
+            <div class="room-game-settings">
+              <h2 class="room-settings-section-title room-game-settings-title">Game Settings</h2>
+              <div class="room-game-settings-controls">
+                <label class="slider-row" for="roomRoundsSlider">
+                  <span>Rounds</span>
+                  <input id="roomRoundsSlider" type="range" min="1" max="10" step="1" value="10">
+                  <strong id="roomRoundsValue">10</strong>
+                </label>
 
-            <label class="slider-row" for="roomTimerSlider">
-              <span>Timer</span>
-              <input id="roomTimerSlider" type="range" min="10" max="60" step="5" value="30">
-              <strong id="roomTimerValue">30s</strong>
-            </label>
+                <label class="slider-row" for="roomTimerSlider">
+                  <span>Timer</span>
+                  <input id="roomTimerSlider" type="range" min="10" max="60" step="5" value="30">
+                  <strong id="roomTimerValue">30s</strong>
+                </label>
 
-            <label class="slider-row" for="roomPlayerLimitSlider">
-              <span>Players</span>
-              <input id="roomPlayerLimitSlider" type="range" min="2" max="10" step="1" value="5">
-              <strong id="roomPlayerLimitValue">5</strong>
-            </label>
+                <label class="slider-row" for="roomPlayerLimitSlider">
+                  <span>Players</span>
+                  <input id="roomPlayerLimitSlider" type="range" min="2" max="10" step="1" value="5">
+                  <strong id="roomPlayerLimitValue">5</strong>
+                </label>
+              </div>
 
-            <button type="button" class="secondary-button full-width-button" id="selectThemesButton">Select Themes</button>
-            <p class="theme-summary" id="themeSummary">All trivia themes enabled.</p>
+              <div class="room-theme-control">
+                <button type="button" class="secondary-button" id="selectThemesButton">Select Themes</button>
+                <p class="theme-summary" id="themeSummary">All trivia themes enabled.</p>
+              </div>
+            </div>
 
             <div class="room-privacy-options" aria-label="Room privacy">
               <label class="mode-toggle">

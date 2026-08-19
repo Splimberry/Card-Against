@@ -1241,6 +1241,75 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   margin-top: -0.15rem;
 }
 
+.room-game-settings {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.room-game-settings-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.1vw, 1.8rem);
+  line-height: 1;
+}
+
+.room-game-settings-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.room-game-settings-controls .slider-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 0.32rem 0.6rem;
+  padding: 0.18rem 0;
+  border-top: 0;
+}
+
+.room-game-settings-controls .slider-row span {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.room-game-settings-controls .slider-row strong {
+  grid-column: 2;
+  grid-row: 1;
+  color: var(--paper);
+  text-align: right;
+}
+
+.room-game-settings-controls .slider-row input[type="range"] {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+}
+
+.room-theme-control {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.room-theme-control .theme-summary {
+  margin: 0;
+}
+
+@media (max-width: 34rem) {
+  .room-game-settings-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .room-theme-control {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .room-theme-control .secondary-button {
+    width: 100%;
+  }
+}
+
 #roomScreen .room-preview {
   display: grid;
   grid-template-rows: auto auto auto auto;
