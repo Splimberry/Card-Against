@@ -13607,12 +13607,6 @@ const roomSettingIndicatorDefinitions = [
     label: "Private Room",
     icon: "assets/modifiers/padlock.svg",
     enabled: (settings) => isRoomPasswordRequired(settings)
-  },
-  {
-    id: "autoAdvance",
-    label: "Auto Advance",
-    icon: "assets/modifiers/fast-forward.svg",
-    enabled: (settings) => settings.autoAdvance !== false
   }
 ];
 
