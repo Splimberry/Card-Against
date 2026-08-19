@@ -18226,3 +18226,25 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
     min-height: 11rem;
   }
 }
+
+/* Profile-theme layers also position direct card children for their visuals.
+   Keep answer-state affordances as independent overlays in every card style. */
+.game-stage .white-card[data-card-custom="true"] > :is(.spectator-submitted-pill, .answer-hint-marker) {
+  position: absolute;
+  top: 0.58rem;
+  right: 0.58rem;
+  bottom: auto;
+  left: auto;
+}
+
+.game-stage .white-card[data-card-custom="true"] > .spectator-submitted-pill {
+  z-index: 8;
+}
+
+.game-stage .white-card[data-card-custom="true"] > .answer-hint-marker {
+  z-index: 7;
+}
+
+.game-stage .white-card[data-card-custom="true"]:has(> .spectator-submitted-pill) > .answer-hint-marker {
+  right: 4.55rem;
+}
