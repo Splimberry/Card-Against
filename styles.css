@@ -480,7 +480,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 /* Motion polish groups. Remove one selector group here to revert a specific section. */
-.room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview),
+.room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview, .create-room-chat),
 .join-screen:not(.hidden) :is(.room-header, .join-code-form, .join-room-card),
 .room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
 .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
@@ -511,7 +511,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   --motion-polish-delay: 120ms;
 }
 
-.room-screen:not(.hidden) .room-preview,
+.room-screen:not(.hidden) :is(.room-preview, .create-room-chat),
 .join-screen:not(.hidden) .join-room-card,
 .room-lobby-screen:not(.hidden) .lobby-chat,
 .dev-tool-screen:not(.hidden) .dev-tool-panel {
@@ -1197,6 +1197,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   align-items: stretch;
 }
 
+#roomScreen .room-setup-grid {
+  grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.95fr);
+}
+
 .room-settings-panel,
 .room-preview,
 .room-chat {
@@ -1241,9 +1245,24 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
   align-content: stretch;
-  min-height: min(72vh, 54rem);
+  min-height: 0;
+  height: 100%;
   overflow: hidden;
   transition: height 460ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#roomScreen .room-create-column {
+  display: grid;
+  grid-template-rows: minmax(20rem, 0.85fr) minmax(19rem, 1.15fr);
+  gap: 1rem;
+  min-width: 0;
+  min-height: min(72vh, 54rem);
+}
+
+#roomScreen .create-room-chat {
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
 }
 
 .room-lobby-screen .room-setup-grid {
@@ -1729,6 +1748,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 #roomPlayerList {
   --room-player-list-max-height: none;
+  height: 100%;
 }
 
 #roomLobbyPlayerList {
@@ -16626,7 +16646,7 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
   }
 
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .mode-screen:not(.hidden) :is(.mode-title-stack, .profile-card, .menu-actions, .mode-grid > *, .menu-help-button),
-  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview),
+  body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-screen:not(.hidden) :is(.room-header, .room-settings-panel, .room-preview, .create-room-chat),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .join-screen:not(.hidden) :is(.room-header, .join-code-form, .join-room-card),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .room-lobby-screen:not(.hidden) :is(.room-header, .lobby-panel, .lobby-chat),
   body:not([data-performance-mode="full"]):not([data-performance-mode="balanced"]) .dev-tool-screen:not(.hidden) :is(.room-header, .dev-tool-tabs, .dev-tool-panel),
@@ -17966,6 +17986,11 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
     height: auto;
     max-height: min(92vh, 52rem);
     overflow: auto;
+  }
+
+  #roomScreen .room-create-column {
+    grid-template-rows: minmax(19rem, auto) minmax(20rem, auto);
+    min-height: 0;
   }
 
   .profile-custom-layout {

@@ -58,6 +58,7 @@ const setupCacheStorageKey = "cardsAgainstAiRecentQuestionCache:v1";
 const publicCatalogCacheStorageKey = "cardsAgainstAiPublicCatalog:v1";
 const helpSeenFlagsStorageKey = "cardsAgainstAiHelpSeenFlags:v1";
 const hostedRoomSessionStorageKey = "cardsAgainstAiHostedRoomSession:v1";
+const appHistoryRouteStateKey = "cardsAgainstAiHistoryRoute";
 const roomTabSessionIdPrefix = "room-tab-";
 const userStorageWriteDelayMs = 450;
 const setupCacheLimit = 30;
@@ -4223,6 +4224,7 @@ const state = {
     code: "",
     checked: false
   },
+  roomInviteNavigationId: 0,
   roomHeartbeatTimerId: null,
   roomHostReconnectTimerId: null,
   roomHostReconnectKey: "",
@@ -4757,7 +4759,14 @@ const elements = {
   lobbyRoomConnectionStatus: document.querySelector("#lobbyRoomConnectionStatus"),
   lobbyChatLog: document.querySelector("#lobbyChatLog"),
   lobbyChatForm: document.querySelector("#lobbyChatForm"),
-  lobbyChatInput: document.querySelector("#lobbyChatInput")
+  lobbyChatInput: document.querySelector("#lobbyChatInput"),
+  createRoomChat: document.querySelector("#createRoomChat"),
+  createRoomCodeLabel: document.querySelector("#createRoomCodeLabel"),
+  createRoomVariantLabel: document.querySelector("#createRoomVariantLabel"),
+  createRoomConnectionStatus: document.querySelector("#createRoomConnectionStatus"),
+  createRoomChatLog: document.querySelector("#createRoomChatLog"),
+  createRoomChatForm: document.querySelector("#createRoomChatForm"),
+  createRoomChatInput: document.querySelector("#createRoomChatInput")
 };
 
 function initAudio() {
@@ -6443,6 +6452,7 @@ function renderRoomConnectionStatus() {
   [
     elements.roomConnectionStatus,
     elements.lobbyRoomConnectionStatus,
+    elements.createRoomConnectionStatus,
     elements.gameRoomConnectionStatus
   ].filter(Boolean).forEach((pill) => {
     pill.textContent = label;
@@ -14145,7 +14155,7 @@ function getChatInputDefaultPlaceholder(input) {
 }
 
 function restoreChatCooldownPlaceholders() {
-  [elements.chatInput, elements.lobbyChatInput].filter(Boolean).forEach((input) => {
+  [elements.chatInput, elements.lobbyChatInput, elements.createRoomChatInput].filter(Boolean).forEach((input) => {
     if (String(input.placeholder || "").startsWith("Chat cooldown:")) {
       input.placeholder = getChatInputDefaultPlaceholder(input);
     }
@@ -14178,7 +14188,7 @@ function updateChatCooldownPlaceholder(input) {
 }
 
 function updateChatCooldownPlaceholders(primaryInput = null) {
-  const inputs = [...new Set([primaryInput, elements.chatInput, elements.lobbyChatInput].filter(Boolean))];
+  const inputs = [...new Set([primaryInput, elements.chatInput, elements.lobbyChatInput, elements.createRoomChatInput].filter(Boolean))];
   let active = false;
   inputs.forEach((input) => {
     active = updateChatCooldownPlaceholder(input) || active;
@@ -14210,7 +14220,7 @@ function showLocalChatCooldownNotice(input = elements.chatInput) {
     input.value = "";
   }
   clearChatCooldownPlaceholderTimer({ restore: true });
-  [elements.chatInput, elements.lobbyChatInput].filter(Boolean).forEach(getChatInputDefaultPlaceholder);
+  [elements.chatInput, elements.lobbyChatInput, elements.createRoomChatInput].filter(Boolean).forEach(getChatInputDefaultPlaceholder);
   updateChatCooldownPlaceholders(input);
   state.chatCooldownPlaceholderTimerId = window.setInterval(() => {
     updateChatCooldownPlaceholders(input);
@@ -41784,6 +41794,27 @@ function getInitialRoomInviteCodeFromPath() {
   return hashMatch ? `CAI-${hashMatch[1]}` : "";
 }
 
+function getAppHistoryState(route = "home", code = "") {
+  return {
+    [appHistoryRouteStateKey]: route,
+    roomCode: getRoomShortCode(code)
+  };
+}
+
+function ensureInitialRoomInviteHistoryEntry(code) {
+  const shortCode = getRoomShortCode(code);
+  if (!shortCode || !window.history?.replaceState || !window.history?.pushState) {
+    return;
+  }
+  const nextPath = `/${shortCode}`;
+  const currentPath = decodeURIComponent(String(window.location.pathname || "/")).replace(/\/+$/, "") || "/";
+  if (currentPath !== nextPath || window.history.state?.[appHistoryRouteStateKey] === "room") {
+    return;
+  }
+  window.history.replaceState(getAppHistoryState("home"), document.title, `${window.location.origin}/`);
+  window.history.pushState(getAppHistoryState("room", code), document.title, `${window.location.origin}${nextPath}`);
+}
+
 function setRoomInviteUrlPath(code = state.roomSettings.code, options = {}) {
   const shortCode = getRoomShortCode(code);
   if (!shortCode || !window.history?.replaceState) {
@@ -41795,14 +41826,45 @@ function setRoomInviteUrlPath(code = state.roomSettings.code, options = {}) {
     return;
   }
   const method = options.push ? "pushState" : "replaceState";
-  window.history[method]({}, document.title, `${window.location.origin}${nextPath}`);
+  window.history[method](getAppHistoryState("room", code), document.title, `${window.location.origin}${nextPath}`);
 }
 
 function clearRoomInviteUrlPath() {
   if (!getInitialRoomInviteCodeFromPath() || !window.history?.replaceState) {
     return;
   }
-  window.history.replaceState({}, document.title, `${window.location.origin}/`);
+  window.history.replaceState(getAppHistoryState("home"), document.title, `${window.location.origin}/`);
+}
+
+function showMainMenuFromBrowserHistory() {
+  setJoinInviteMode(false);
+  setHidden(elements.gameStage, true);
+  setHidden(elements.roomChat, true);
+  setHidden(elements.roomLobbyScreen, true);
+  setHidden(elements.roomScreen, true);
+  setHidden(elements.joinScreen, true);
+  elements.gameStage.classList.remove("room-active");
+  setHidden(elements.modeScreen, false);
+}
+
+function handleBrowserHistoryNavigation() {
+  state.roomInviteNavigationId += 1;
+  const inviteCode = getInitialRoomInviteCodeFromPath();
+  if (inviteCode) {
+    const currentCode = normalizeJoinRoomCode(state.roomSettings.code);
+    const hasMatchingRoom = hasActiveRoomContext() && currentCode === inviteCode;
+    if (!hasMatchingRoom) {
+      state.roomInvite = { active: false, code: "", checked: false };
+      void processInitialRoomInvite();
+    }
+    return;
+  }
+
+  if (hasActiveRoomContext()) {
+    void leaveCurrentRoom({ playSound: false });
+    return;
+  }
+  showMainMenuFromBrowserHistory();
 }
 
 async function copyTextToClipboard(text = "") {
@@ -41952,7 +42014,7 @@ function openRoomScreen() {
   state.roomChat = [];
   resetChatCooldown();
   rememberHostedRoomSession(state.roomSettings.code);
-  setRoomInviteUrlPath(state.roomSettings.code);
+  setRoomInviteUrlPath(state.roomSettings.code, { push: true });
   startRoomRealtime(state.roomSettings.code);
   syncRoomControls();
   publishDraftRoom();
@@ -41962,6 +42024,7 @@ function openRoomScreen() {
   setHidden(elements.gameStage, true);
   setHidden(elements.roomLobbyScreen, true);
   setHidden(elements.roomScreen, false);
+  renderRoomChat();
   playSound("click");
 }
 
@@ -45107,7 +45170,7 @@ async function rejoinHostedRoomAsHost(room) {
   setCurrentRoomMatchId(room.game?.matchId || "");
   state.roomGame = room.game || null;
   rememberHostedRoomSession(room.code);
-  setRoomInviteUrlPath(room.code);
+  setRoomInviteUrlPath(room.code, { push: true });
   const updatedRoom = await updateRoomPresence(room, {
     host: true,
     status: "host",
@@ -45357,7 +45420,7 @@ async function joinHostedRoom(code, options = {}) {
       ? `${state.profile.name || "Guest"} reconnected to the match.`
       : `${state.profile.name || "Guest"} joined ${state.isSpectator ? "as a spectator" : "the room"}.`);
     setJoinInviteMode(false);
-    setRoomInviteUrlPath(normalizedCode);
+    setRoomInviteUrlPath(normalizedCode, { push: true });
     setHidden(elements.modeScreen, true);
     setHidden(elements.roomScreen, true);
     setHidden(elements.joinScreen, true);
@@ -45389,15 +45452,23 @@ async function processInitialRoomInvite() {
   if (!inviteCode || state.roomInvite.checked) {
     return;
   }
+  const navigationId = ++state.roomInviteNavigationId;
+  ensureInitialRoomInviteHistoryEntry(inviteCode);
   openJoinScreen({ inviteCode, checked: true, playSound: false });
   setJoinInviteStatus(`Finding room ${getRoomShortCode(inviteCode) || inviteCode}...`);
   let lookup;
   try {
     await ensureSupabaseAuthReady({ realtime: true, preserveGuest: true });
+    if (navigationId !== state.roomInviteNavigationId || getInitialRoomInviteCodeFromPath() !== inviteCode) {
+      return;
+    }
     lookup = await fetchRoomByCode(inviteCode);
   } catch (error) {
     console.warn("Could not open room invite:", error.message || error);
     setJoinInviteStatus("Could not open this invite. Check your connection, then try again.", "error");
+    return;
+  }
+  if (navigationId !== state.roomInviteNavigationId || getInitialRoomInviteCodeFromPath() !== inviteCode) {
     return;
   }
   if (lookup.status === "closed") {
@@ -45661,8 +45732,8 @@ async function beginRoomMatch() {
   void startGame("room");
 }
 
-async function leaveCurrentRoom() {
-  const isLeavingRoom = isRoomMode() || state.currentRoomStatus === "lobby";
+async function leaveCurrentRoom(options = {}) {
+  const isLeavingRoom = isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft";
   const isLeavingActiveMatch = !elements.gameStage.classList.contains("hidden");
   if (!isLeavingRoom && !isLeavingActiveMatch) {
     return;
@@ -45697,7 +45768,9 @@ async function leaveCurrentRoom() {
   setHidden(elements.joinScreen, true);
   elements.gameStage.classList.remove("room-active");
   setHidden(elements.modeScreen, false);
-  playSound("click");
+  if (options.playSound !== false) {
+    playSound("click");
+  }
 }
 
 function animateRoomPlayerListChange(target, renderList, options = {}) {
@@ -46679,9 +46752,11 @@ async function startRoomGame() {
 }
 
 function renderRoomChat() {
-  const active = isRoomMode();
+  const active = isRoomMode() || state.currentRoomStatus === "draft";
   const inGameRoom = active && !elements.gameStage.classList.contains("hidden");
+  const inCreateRoom = state.currentRoomStatus === "draft" && !elements.roomScreen.classList.contains("hidden");
   setHidden(elements.roomChat, !inGameRoom);
+  setHidden(elements.createRoomChat, !inCreateRoom);
   elements.gameStage.classList.toggle("room-active", inGameRoom);
   elements.gameStage.classList.toggle("spectator-mode", Boolean(active && state.isSpectator));
   elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
@@ -46695,8 +46770,11 @@ function renderRoomChat() {
   renderModifierIconLabel(elements.roomVariantLabel);
   elements.lobbyRoomCodeLabel.textContent = state.roomSettings.code;
   renderModifierIconLabel(elements.lobbyRoomVariantLabel);
+  elements.createRoomCodeLabel.textContent = state.roomSettings.code;
+  renderModifierIconLabel(elements.createRoomVariantLabel);
   renderChatLog(elements.chatLog);
   renderChatLog(elements.lobbyChatLog);
+  renderChatLog(elements.createRoomChatLog);
 }
 
 function renderChatLog(target) {
@@ -51322,12 +51400,18 @@ elements.lobbyChatForm.addEventListener("submit", (event) => {
   event.preventDefault();
   sendChatMessage(elements.lobbyChatInput.value, elements.lobbyChatInput);
 });
+elements.createRoomChatForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendChatMessage(elements.createRoomChatInput.value, elements.createRoomChatInput);
+});
 elements.chatLog.addEventListener("click", handleChatProfileClick);
 elements.lobbyChatLog.addEventListener("click", handleChatProfileClick);
+elements.createRoomChatLog?.addEventListener("click", handleChatProfileClick);
 document.addEventListener("click", playFallbackClickIfSilent);
 document.addEventListener("visibilitychange", handleRoomVisibilityChange);
 window.addEventListener("pagehide", handleWindowPageHide);
 window.addEventListener("beforeunload", handleWindowBeforeUnload);
+window.addEventListener("popstate", handleBrowserHistoryNavigation);
 window.addEventListener("resize", scheduleRoomPanelHeightSync);
 
 cleanupReloadedHostedRoomSession();

@@ -247,21 +247,42 @@
             <button type="button" id="startRoomButton">Create Room</button>
           </section>
 
-          <section class="room-preview">
-            <p class="eyebrow">Room code</p>
-            <div class="room-code-share">
-              <h2 id="roomCodePreview">CAI-0000</h2>
-              <button type="button" class="secondary-button invite-copy-button" id="copyRoomInviteButton">Copy Invite Link</button>
-            </div>
-            <div class="room-host-profile" id="roomHostProfile" aria-label="Room host profile">
-              <div class="profile-avatar" id="roomProfileAvatarPreview">Y</div>
-              <div>
-                <p class="eyebrow">Creating as</p>
-                <strong id="roomProfileNamePreview">You</strong>
+          <div class="room-create-column">
+            <section class="room-preview">
+              <p class="eyebrow">Room code</p>
+              <div class="room-code-share">
+                <h2 id="roomCodePreview">CAI-0000</h2>
+                <button type="button" class="secondary-button invite-copy-button" id="copyRoomInviteButton">Copy Invite Link</button>
               </div>
-            </div>
-            <div class="room-player-list" id="roomPlayerList" aria-label="Room players"></div>
-          </section>
+              <div class="room-host-profile" id="roomHostProfile" aria-label="Room host profile">
+                <div class="profile-avatar" id="roomProfileAvatarPreview">Y</div>
+                <div>
+                  <p class="eyebrow">Creating as</p>
+                  <strong id="roomProfileNamePreview">You</strong>
+                </div>
+              </div>
+              <div class="room-player-list" id="roomPlayerList" aria-label="Room players"></div>
+            </section>
+
+            <aside class="room-chat create-room-chat" id="createRoomChat" aria-label="Room chat">
+              <div class="room-chat-header">
+                <div>
+                  <p class="eyebrow">Room chat</p>
+                  <strong id="createRoomCodeLabel">CAI-0000</strong>
+                </div>
+                <div class="room-chat-header-meta">
+                  <span class="room-connection-pill" id="createRoomConnectionStatus" data-status="connected" data-tooltip="Room sync is ready.">Connected</span>
+                  <span id="createRoomVariantLabel">Classic Match</span>
+                </div>
+              </div>
+              <div class="chat-log" id="createRoomChatLog" aria-live="polite"></div>
+              <form class="chat-form" id="createRoomChatForm">
+                <label class="sr-only" for="createRoomChatInput">Chat message</label>
+                <input id="createRoomChatInput" maxlength="160" autocomplete="off" placeholder="Room chat">
+                <button type="submit">Send</button>
+              </form>
+            </aside>
+          </div>
         </div>
       </section>
 
