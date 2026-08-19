@@ -1243,27 +1243,27 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 #roomScreen .room-preview {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  align-content: stretch;
+  grid-template-rows: auto auto auto auto;
+  align-content: start;
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
+  height: auto;
+  overflow: visible;
   transition: height 460ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #roomScreen .room-create-column {
   display: grid;
-  grid-template-rows: minmax(15.5rem, 0.85fr) minmax(17rem, 1.15fr);
   gap: 1rem;
   align-self: start;
+  align-content: start;
   min-width: 0;
-  height: min(72vh, 54rem);
+  height: auto;
   min-height: 0;
 }
 
 #roomScreen .create-room-chat {
   min-height: 0;
-  height: auto;
+  height: clamp(20rem, 38vh, 28rem);
   overflow: hidden;
 }
 
@@ -1749,8 +1749,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 }
 
 #roomPlayerList {
-  --room-player-list-max-height: none;
-  height: 100%;
+  --room-player-list-max-height: clamp(11rem, 28vh, 19rem);
+  height: auto;
 }
 
 #roomLobbyPlayerList {
@@ -17988,12 +17988,6 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
     height: auto;
     max-height: min(92vh, 52rem);
     overflow: auto;
-  }
-
-  #roomScreen .room-create-column {
-    grid-template-rows: minmax(15.5rem, auto) minmax(17rem, auto);
-    height: auto;
-    min-height: 0;
   }
 
   .profile-custom-layout {
