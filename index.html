@@ -156,31 +156,30 @@
                 </label>
               </div>
 
-              <div class="room-theme-control">
-                <button type="button" class="secondary-button" id="selectThemesButton">Select Themes</button>
-                <p class="theme-summary" id="themeSummary">All trivia themes enabled.</p>
+              <div class="room-game-settings-actions" aria-label="Room preferences">
+                <div class="room-theme-control">
+                  <button type="button" class="secondary-button" id="selectThemesButton">Select Themes</button>
+                  <p class="theme-summary" id="themeSummary">All trivia themes enabled.</p>
+                </div>
+                <label class="room-setting-toggle">
+                  <input id="autoAdvanceToggle" type="checkbox" checked>
+                  <span>
+                    <strong class="mode-toggle-title">Auto Advance <img class="mode-toggle-icon" src="assets/modifiers/fast-forward.svg" alt="" loading="lazy" decoding="async"></strong>
+                    <small>Automatically move on after 30 seconds during grading.</small>
+                  </span>
+                </label>
+                <label class="room-setting-toggle">
+                  <input id="privateRoomToggle" type="checkbox">
+                  <span>
+                    <strong class="mode-toggle-title">Private Room <img class="mode-toggle-icon" src="assets/modifiers/padlock.svg" alt="" loading="lazy" decoding="async"></strong>
+                    <small>Require a password before joining.</small>
+                  </span>
+                </label>
+                <label class="slider-row room-password-row collapsed" for="roomPasswordInput" id="roomPasswordRow">
+                  <span>Password</span>
+                  <input id="roomPasswordInput" type="text" maxlength="32" autocomplete="off" placeholder="Room password">
+                </label>
               </div>
-            </div>
-
-            <div class="room-setup-options" aria-label="Room preferences">
-              <label class="room-setting-toggle">
-                <input id="autoAdvanceToggle" type="checkbox" checked>
-                <span>
-                  <strong class="mode-toggle-title">Auto Advance <img class="mode-toggle-icon" src="assets/modifiers/fast-forward.svg" alt="" loading="lazy" decoding="async"></strong>
-                  <small>Automatically move on after 30 seconds during grading.</small>
-                </span>
-              </label>
-              <label class="room-setting-toggle">
-                <input id="privateRoomToggle" type="checkbox">
-                <span>
-                  <strong class="mode-toggle-title">Private Room <img class="mode-toggle-icon" src="assets/modifiers/padlock.svg" alt="" loading="lazy" decoding="async"></strong>
-                  <small>Require a password before joining.</small>
-                </span>
-              </label>
-              <label class="slider-row room-password-row collapsed" for="roomPasswordInput" id="roomPasswordRow">
-                <span>Password</span>
-                <input id="roomPasswordInput" type="text" maxlength="32" autocomplete="off" placeholder="Room password">
-              </label>
             </div>
 
             <h2 class="room-settings-section-title">Modifiers</h2>

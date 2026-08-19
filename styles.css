@@ -1295,7 +1295,38 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   margin: 0;
 }
 
+.room-game-settings-actions {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1.15fr) repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.7rem;
+  padding-top: 0.2rem;
+}
+
+.room-game-settings-actions .room-theme-control {
+  min-width: 0;
+}
+
+.room-game-settings-actions .room-password-row {
+  grid-column: 2 / -1;
+}
+
+@media (max-width: 60rem) {
+  .room-game-settings-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-game-settings-actions .room-theme-control,
+  .room-game-settings-actions .room-password-row {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 34rem) {
+  .room-game-settings-actions {
+    grid-template-columns: 1fr;
+  }
+
   .room-theme-control {
     grid-template-columns: 1fr;
     gap: 0.4rem;
@@ -1375,8 +1406,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   justify-content: flex-end;
 }
 
-.room-mode-options,
-.room-setup-options {
+.room-mode-options {
   display: grid;
   gap: 0.65rem;
   margin: 0;
@@ -1384,12 +1414,6 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .room-mode-options {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.room-setup-options {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem 0.9rem;
-  padding: 0.1rem 0 0.2rem;
 }
 
 .room-setting-toggle {
@@ -1424,10 +1448,6 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .room-setting-toggle small {
   color: var(--muted);
   line-height: 1.24;
-}
-
-.room-setup-options .room-password-row {
-  grid-column: 1 / -1;
 }
 
 .room-password-row {
