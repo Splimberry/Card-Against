@@ -18132,16 +18132,21 @@ function renderProfile() {
     specialBadges: state.profile.specialBadges,
     cardCustomization: state.profile.cardCustomization
   }, state.profile.name || "You");
+  renderRoomHostProfilePreview();
+  renderSupabaseAuthControls();
+}
+
+function renderRoomHostProfilePreview() {
   renderPlayerNameWithTitle(elements.roomProfileNamePreview, {
     owner: state.currentOwner || "player",
     label: state.profile.name || "You",
+    host: Boolean(!state.joiningRoom && !state.isSpectator && isCurrentHost()),
     equippedTitleId: state.profile.equippedTitleId,
     specialBadges: state.profile.specialBadges,
     cardCustomization: state.profile.cardCustomization
   }, state.profile.name || "You");
   renderAvatar(elements.roomProfileAvatarPreview, state.profile);
   applyProfileCustomizationSurface(elements.roomHostProfile, state.profile.cardCustomization);
-  renderSupabaseAuthControls();
 }
 
 function getProfileLoadingCopy() {
@@ -41991,6 +41996,7 @@ function syncRoomControls() {
   renderModifierIconLabel(elements.lobbyRoomVariantLabel);
   elements.roomCodePreview.textContent = state.roomSettings.code;
   setHidden(elements.roomHostProfile, Boolean(state.joiningRoom));
+  renderRoomHostProfilePreview();
   syncRoomInviteButtons();
   renderRoomPlayers();
   renderRoomHostActions();
