@@ -2718,7 +2718,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   .effect-badge:hover::after,
   .power-play[data-description]:hover::after,
   .result-power-pill[data-description]:hover::after,
-  .floating-description-tooltip {
+  .floating-description-tooltip,
+  .profile-special-styles[data-open="true"] .profile-style-option[data-special-style-option="true"] {
     animation: none;
   }
 
@@ -12207,7 +12208,7 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   height: min(86vh, 52rem);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .round-help-panel {
@@ -14224,7 +14225,17 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .profile-custom-controls {
   align-content: start;
   overflow-y: auto;
-  padding-right: 0.35rem;
+  padding: 0.4rem 0.7rem 1rem 0.45rem;
+}
+
+.profile-theme-section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.profile-theme-choice-stack {
+  display: grid;
+  gap: 0;
 }
 
 .profile-custom-preview {
@@ -14865,11 +14876,15 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 .profile-theme-variant-card {
   display: grid;
   gap: 0.55rem;
-  margin-top: 0.55rem;
+  margin-top: 0;
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.18);
+}
+
+.profile-theme-variant-picker[data-open="true"] .profile-theme-variant-card {
+  margin-top: 0.55rem;
 }
 
 .profile-classic-colour-grid {
@@ -14918,7 +14933,29 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 }
 
 .profile-special-styles-content > div {
+  padding-top: 0;
+  transition: padding-top 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.profile-special-styles[data-open="true"] .profile-special-styles-content > div {
   padding-top: 0.35rem;
+}
+
+.profile-special-styles[data-open="true"] .profile-style-option[data-special-style-option="true"] {
+  animation: profileSpecialStyleOptionIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(45ms + (var(--profile-special-option-index) * 48ms));
+}
+
+@keyframes profileSpecialStyleOptionIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.55rem) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .gradient-picker h3 {

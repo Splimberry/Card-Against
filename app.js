@@ -236,6 +236,8 @@ const profileCardColours = [
 const profileCardColourMap = Object.fromEntries(profileCardColours.map((colour) => [colour.id, colour]));
 const profileCardStyles = [
   { id: "default", name: "Classic", kind: "solid", colorId: "grey", unlockedByDefault: true, condition: "Always unlocked." },
+  { id: "grey", name: "Grey", kind: "solid", colorId: "grey", unlockedByDefault: true, condition: "Always unlocked." },
+  { id: "white", name: "White", kind: "solid", colorId: "white", unlockedByDefault: true, condition: "Always unlocked." },
   { id: "blue", name: "Blue", kind: "solid", colorId: "blue", condition: "Unlock 10 Rare achievements.", unlockType: "rarityAchievements", rarity: "blue", target: 10 },
   { id: "purple", name: "Purple", kind: "solid", colorId: "purple", condition: "Unlock 10 Epic achievements.", unlockType: "rarityAchievements", rarity: "purple", target: 10 },
   { id: "gold", name: "Gold", kind: "solid", colorId: "gold", condition: "Unlock 10 Legendary achievements.", unlockType: "rarityAchievements", rarity: "gold", target: 10 },
@@ -26637,6 +26639,10 @@ function createProfileStyleButton(style, records, progress, options = {}) {
   button.dataset.profileStyle = style.id;
   button.dataset.profileStyleKind = style.kind;
   button.dataset.selected = String(options.selected ?? draft.styleId === style.id);
+  if (Number.isInteger(options.entranceIndex)) {
+    button.dataset.specialStyleOption = "true";
+    button.style.setProperty("--profile-special-option-index", options.entranceIndex);
+  }
   button.dataset.locked = String(!status.unlocked);
   button.dataset.description = getProfileCustomizationStatusText(style, "style", records, progress);
   const swatch = getProfileStyleSwatch(style, draft);
@@ -26993,7 +26999,9 @@ function renderProfileCustomizationModal() {
     selected: style.id === "default" ? classicStyleSelected : draft.styleId === style.id
   })));
   elements.profileClassicColourGrid?.replaceChildren(...classicColourStyles.map((style) => createProfileStyleButton(style, records, progress)));
-  elements.profileSpecialStyleGrid?.replaceChildren(...specialStyles.map((style) => createProfileStyleButton(style, records, progress)));
+  elements.profileSpecialStyleGrid?.replaceChildren(...specialStyles.map((style, index) => createProfileStyleButton(style, records, progress, {
+    entranceIndex: index
+  })));
   elements.profileEffectGrid?.replaceChildren(...profileCardEffects.map((effect) => createProfileEffectButton(effect, records, progress)));
   elements.profilePatternGrid?.replaceChildren(...profileCardPatterns.map((pattern) => createProfilePatternButton(pattern, records, progress)));
   elements.profileFontGrid?.replaceChildren(...profileFonts.map((font) => createProfileFontButton(font, records, progress)));
