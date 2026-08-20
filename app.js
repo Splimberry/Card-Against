@@ -4864,8 +4864,6 @@ function primeAudioPlayback() {
   if (soundState.ctx?.state === "suspended") {
     soundState.ctx.resume().catch(() => {});
   }
-  preloadSfxAudioAssets();
-  startMusic();
 }
 
 function armMusicUnlockListeners() {
@@ -8130,6 +8128,10 @@ let menuBackgroundStartupReady = false;
 
 function scheduleMenuBackgroundStartup() {
   const startWhenIdle = () => {
+    if (state.profileLoading || state.supabaseAuthResolving) {
+      window.addEventListener("trivia-profile-ready", startWhenIdle, { once: true });
+      return;
+    }
     const start = () => {
       menuBackgroundStartupReady = true;
       syncMenuBackgroundVideo();
@@ -12503,11 +12505,9 @@ async function startBotsGame() {
   }
   state.localMatchStartPromise = (async () => {
     if (!state.randomUsernames.length) {
-      try {
-        await loadRandomUsernames();
-      } catch (error) {
-        console.warn("Username preload failed:", error.message || error);
-      }
+      // Bot setup can use fallback names immediately. Do not make the match
+      // wait on this optional cosmetic list when the connection is slow.
+      void loadRandomUsernames();
     }
     return startGame("bots");
   })();
@@ -18240,6 +18240,9 @@ function setProfileLoading(loading, options = {}) {
   }
   syncProfileLoadingState();
   renderSupabaseAuthControls();
+  if (!state.profileLoading) {
+    window.dispatchEvent(new Event("trivia-profile-ready"));
+  }
 }
 
 function syncProfileLoadingState() {
@@ -36495,7 +36498,7 @@ function applyRoundSetup(setup, options = {}) {
   state.recentBlackCards = [...state.recentBlackCards, state.blackCard].slice(-20);
   state.recentTriviaThemes = [...state.recentTriviaThemes, state.triviaTheme].filter(Boolean).slice(-triviaThemes.length);
   recordQuestionUsage(setup);
-  preloadRoundExperience(setup);
+  preloadQuestionImage(setup);
   if (!shouldRender) {
     syncCurrentRoundSetupMetadata(setup);
     if (!options.skipPublish) {
@@ -36506,6 +36509,8 @@ function applyRoundSetup(setup, options = {}) {
       }
     }
     scheduleNextSetupPrefetch();
+    void preloadSfxAudioAssets();
+    startMusic();
     tryPlayPendingRoomRoundResult();
     return;
   }
@@ -36525,6 +36530,8 @@ function applyRoundSetup(setup, options = {}) {
     }
   }
   scheduleNextSetupPrefetch();
+  void preloadSfxAudioAssets();
+  startMusic();
   playSound("reveal");
   tryPlayPendingRoomRoundResult();
 }
@@ -41835,7 +41842,6 @@ async function startGame(mode) {
     ? getPendingRoomRoundTransition(1)
     : null;
   initAudio();
-  startMusic();
   playSound("click");
   clearRoomAutoResolve();
   stopRoomPresenceMaintenance();
@@ -51688,10 +51694,10 @@ if (menuBackgroundMotionQuery?.addEventListener) {
 }
 document.addEventListener("visibilitychange", syncMenuBackgroundVideo);
 applyPerformanceMode(state.performanceMode);
-scheduleMenuBackgroundStartup();
 renderProfile();
 syncSpecialBadgesToProfile();
 scheduleInitialSupabaseAuth();
+scheduleMenuBackgroundStartup();
 updateAchievementNotificationDot();
 state.timerRemaining = state.timerSeconds;
 renderTimer();
