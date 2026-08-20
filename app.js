@@ -35507,6 +35507,7 @@ function canUseBotPowerDebugPanel() {
   return Boolean(
     state.adminAuthenticated
     && state.mode === "bots"
+    && !isClassicModeEnabled()
     && !state.matchEnded
     && elements.botPowerDebugModal
     && !elements.gameStage.classList.contains("hidden")
@@ -35521,6 +35522,7 @@ function canUseRoomPowerDebugPanel() {
   return Boolean(
     state.adminAuthenticated
     && isRoomMode()
+    && !isClassicModeEnabled()
     && !state.matchEnded
     && state.roomGame?.status === "playing"
     && elements.roomPowerDebugModal
@@ -36384,6 +36386,7 @@ function updateModeUi() {
   document.body?.toggleAttribute("data-game-active", isGameScreenActive());
   const isDuel = isDuelMode();
   const multipleChoice = isMultipleChoiceRound();
+  elements.gameStage.classList.toggle("classic-mode", isClassicModeEnabled());
   elements.gameStage.classList.toggle("wild-fire-active", isMatchModifierEnabled("wildFire"));
   elements.gameStage.classList.toggle("spectator-mode", Boolean(state.isSpectator && isRoomMode()));
   applyTableEventStageClasses();

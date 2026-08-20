@@ -3733,6 +3733,21 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   padding: clamp(0.8rem, 1.8vw, 1.45rem);
 }
 
+/* Classic has no power or status surfaces, so center the remaining answer stack. */
+.game-stage.classic-mode:not(.spectator-mode) .table-surface {
+  grid-template-rows: auto auto;
+}
+
+.game-stage.classic-mode:not(.spectator-mode) .input-panel {
+  grid-row: 1;
+  align-self: end;
+}
+
+.game-stage.classic-mode:not(.spectator-mode) .answer-progress {
+  grid-row: 2;
+  align-self: start;
+}
+
 .game-stage.spectator-mode.room-active .table-surface {
   grid-template-columns: minmax(17rem, 0.58fr) minmax(22rem, 1.42fr);
   grid-template-rows: minmax(0, 1fr);
@@ -17956,6 +17971,14 @@ body[data-performance-mode="minimal"] .stat-flash-panel::before {
     min-height: auto;
     height: auto;
     overflow: visible;
+  }
+
+  .game-stage.classic-mode:not(.spectator-mode) .table-surface {
+    grid-template-rows: none;
+  }
+
+  .game-stage.classic-mode:not(.spectator-mode) :is(.input-panel, .answer-progress) {
+    grid-row: auto;
   }
 
   .question-card-stack,
