@@ -4023,6 +4023,7 @@ const state = {
   profileCustomizationHistory: [],
   profileCustomizationHistoryIndex: 0,
   profileCustomizationSpecialOpen: false,
+  profileCustomizationDrawerEntrance: "",
   roundProgress: [],
   performanceMode: savedPerformanceMode,
   powerSuggestionsEnabled: savedPowerSuggestionsEnabled,
@@ -25545,7 +25546,10 @@ function saveDebugDisabledAchievements(ids) {
 }
 
 function normalizeProfileCustomization(value = {}) {
-  const styleId = profileCardStyleMap[value.styleId] ? value.styleId : "default";
+  // Grey remains a visible Classic choice in the picker, but it is not a
+  // separate card state. This also migrates older saved Grey selections.
+  const requestedStyleId = value.styleId === "grey" ? "default" : value.styleId;
+  const styleId = profileCardStyleMap[requestedStyleId] ? requestedStyleId : "default";
   const gradientTop = profileCardColourMap[value.gradientTop] ? value.gradientTop : "blue";
   const gradientBottom = profileCardColourMap[value.gradientBottom] ? value.gradientBottom : "pink";
   const effectIds = [...new Set((Array.isArray(value.effectIds) ? value.effectIds : []).filter((id) => profileCardEffectMap[id]))];
@@ -26633,15 +26637,16 @@ function renderProfileCustomizationPreview() {
 function createProfileStyleButton(style, records, progress, options = {}) {
   const draft = getProfileCustomizationDraft();
   const status = getProfileUnlockStatus(style, "style", records, progress);
+  const styleId = options.styleId || style.id;
   const button = document.createElement("button");
   button.type = "button";
   button.className = "profile-style-option";
-  button.dataset.profileStyle = style.id;
+  button.dataset.profileStyle = styleId;
   button.dataset.profileStyleKind = style.kind;
-  button.dataset.selected = String(options.selected ?? draft.styleId === style.id);
+  button.dataset.selected = String(options.selected ?? draft.styleId === styleId);
   if (Number.isInteger(options.entranceIndex)) {
-    button.dataset.specialStyleOption = "true";
-    button.style.setProperty("--profile-special-option-index", options.entranceIndex);
+    button.classList.add("profile-theme-option-entering");
+    button.style.setProperty("--profile-theme-option-index", options.entranceIndex);
   }
   button.dataset.locked = String(!status.unlocked);
   button.dataset.description = getProfileCustomizationStatusText(style, "style", records, progress);
@@ -26654,7 +26659,7 @@ function createProfileStyleButton(style, records, progress, options = {}) {
   return button;
 }
 
-function createProfileColourButton(colour, role, records, progress) {
+function createProfileColourButton(colour, role, records, progress, options = {}) {
   const draft = getProfileCustomizationDraft();
   const status = getProfileUnlockStatus(colour, "color", records, progress);
   const button = document.createElement("button");
@@ -26665,6 +26670,10 @@ function createProfileColourButton(colour, role, records, progress) {
   button.dataset.selected = String(draft[role] === colour.id);
   button.dataset.locked = String(!status.unlocked);
   button.dataset.description = getProfileCustomizationStatusText(colour, "color", records, progress);
+  if (Number.isInteger(options.entranceIndex)) {
+    button.classList.add("profile-theme-option-entering");
+    button.style.setProperty("--profile-theme-option-index", options.entranceIndex);
+  }
   button.style.setProperty("--swatch-color", colour.value);
   button.setAttribute("aria-label", `${colour.name}. ${button.dataset.description}`);
   attachFloatingDescriptionTooltip(button);
@@ -26991,6 +27000,7 @@ function renderProfileCustomizationModal() {
   const records = loadUnlockedAchievements();
   const progress = loadAchievementProgress();
   const draft = getProfileCustomizationDraft();
+  const drawerEntrance = state.profileCustomizationDrawerEntrance;
   const classicStyleSelected = profileClassicCardStyleIds.has(draft.styleId);
   const primaryStyles = profileCardStyles.filter((style) => profilePrimaryCardStyleIds.has(style.id));
   const classicColourStyles = profileCardStyles.filter((style) => profileClassicColourStyleIds.has(style.id));
@@ -26998,15 +27008,21 @@ function renderProfileCustomizationModal() {
   elements.profileCardStyleGrid.replaceChildren(...primaryStyles.map((style) => createProfileStyleButton(style, records, progress, {
     selected: style.id === "default" ? classicStyleSelected : draft.styleId === style.id
   })));
-  elements.profileClassicColourGrid?.replaceChildren(...classicColourStyles.map((style) => createProfileStyleButton(style, records, progress)));
-  elements.profileSpecialStyleGrid?.replaceChildren(...specialStyles.map((style, index) => createProfileStyleButton(style, records, progress, {
-    entranceIndex: index
+  elements.profileClassicColourGrid?.replaceChildren(...classicColourStyles.map((style, index) => createProfileStyleButton(style, records, progress, {
+    styleId: style.id === "grey" ? "default" : style.id,
+    selected: style.id === "grey" ? draft.styleId === "default" : draft.styleId === style.id,
+    entranceIndex: drawerEntrance === "classic" ? index : undefined
   })));
+  elements.profileSpecialStyleGrid?.replaceChildren(...specialStyles.map((style) => createProfileStyleButton(style, records, progress)));
   elements.profileEffectGrid?.replaceChildren(...profileCardEffects.map((effect) => createProfileEffectButton(effect, records, progress)));
   elements.profilePatternGrid?.replaceChildren(...profileCardPatterns.map((pattern) => createProfilePatternButton(pattern, records, progress)));
   elements.profileFontGrid?.replaceChildren(...profileFonts.map((font) => createProfileFontButton(font, records, progress)));
-  elements.profileGradientTopGrid.replaceChildren(...profileCardColours.map((colour) => createProfileColourButton(colour, "gradientTop", records, progress)));
-  elements.profileGradientBottomGrid.replaceChildren(...profileCardColours.map((colour) => createProfileColourButton(colour, "gradientBottom", records, progress)));
+  elements.profileGradientTopGrid.replaceChildren(...profileCardColours.map((colour, index) => createProfileColourButton(colour, "gradientTop", records, progress, {
+    entranceIndex: drawerEntrance === "gradient" ? index : undefined
+  })));
+  elements.profileGradientBottomGrid.replaceChildren(...profileCardColours.map((colour, index) => createProfileColourButton(colour, "gradientBottom", records, progress, {
+    entranceIndex: drawerEntrance === "gradient" ? index : undefined
+  })));
   elements.profileClassicColourPicker?.setAttribute("data-open", String(classicStyleSelected));
   elements.profileGradientPicker.dataset.open = String(draft.styleId === "gradient");
   setProfileCustomizationSpecialOpen(state.profileCustomizationSpecialOpen);
@@ -27020,6 +27036,7 @@ function renderProfileCustomizationModal() {
     ? `Ready to save.${specialNotice}`
     : `Previewing a locked customization. Locked choices will not be saved.${specialNotice}`;
   updateProfileHistoryButtons();
+  state.profileCustomizationDrawerEntrance = "";
 }
 
 function openProfileCustomization() {
@@ -27031,6 +27048,11 @@ function openProfileCustomization() {
   state.profileCustomizationHistory = [cloneProfileCustomizationDraft(draft)];
   state.profileCustomizationHistoryIndex = 0;
   state.profileCustomizationSpecialOpen = false;
+  state.profileCustomizationDrawerEntrance = profileClassicCardStyleIds.has(draft.styleId)
+    ? "classic"
+    : draft.styleId === "gradient"
+      ? "gradient"
+      : "";
   renderProfileCustomizationModal();
   setHidden(elements.profileCustomModal, false);
   playSound("click");
@@ -27062,6 +27084,7 @@ async function closeProfileCustomization(options = {}) {
   state.profileCustomizationHistory = [];
   state.profileCustomizationHistoryIndex = 0;
   state.profileCustomizationSpecialOpen = false;
+  state.profileCustomizationDrawerEntrance = "";
   hideModalWithMotion(elements.profileCustomModal);
 }
 
@@ -27069,6 +27092,20 @@ function setProfileCustomizationSpecialOpen(open) {
   state.profileCustomizationSpecialOpen = Boolean(open);
   elements.profileSpecialStyles?.setAttribute("data-open", String(state.profileCustomizationSpecialOpen));
   elements.profileSpecialStylesToggle?.setAttribute("aria-expanded", String(state.profileCustomizationSpecialOpen));
+}
+
+function markProfileSpecialStyleEntrance() {
+  elements.profileSpecialStyleGrid?.querySelectorAll(".profile-style-option").forEach((option, index) => {
+    option.classList.add("profile-theme-option-entering");
+    option.style.setProperty("--profile-theme-option-index", index);
+  });
+}
+
+function getProfileThemeDrawer(styleId) {
+  if (profileClassicCardStyleIds.has(styleId)) {
+    return "classic";
+  }
+  return styleId === "gradient" ? "gradient" : "";
 }
 
 function sanitizeProfileCustomizationForSave(draft) {
@@ -27166,6 +27203,11 @@ function handleProfileCustomizationClick(event) {
   const titleButton = event.target.closest("[data-profile-title]");
   const titleColourButton = event.target.closest("[data-profile-title-colour]");
   if (styleButton) {
+    const currentDrawer = getProfileThemeDrawer(getProfileCustomizationDraft().styleId);
+    const nextDrawer = getProfileThemeDrawer(styleButton.dataset.profileStyle);
+    if (nextDrawer && nextDrawer !== currentDrawer) {
+      state.profileCustomizationDrawerEntrance = nextDrawer;
+    }
     commitProfileCustomizationDraft((draft) => {
       draft.styleId = styleButton.dataset.profileStyle;
     });
@@ -51361,7 +51403,11 @@ elements.profileGradientBottomGrid?.addEventListener("click", handleProfileCusto
 elements.profileTitleGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profileTitleColourGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profileSpecialStylesToggle?.addEventListener("click", () => {
-  setProfileCustomizationSpecialOpen(!state.profileCustomizationSpecialOpen);
+  const nextOpen = !state.profileCustomizationSpecialOpen;
+  if (nextOpen) {
+    markProfileSpecialStyleEntrance();
+  }
+  setProfileCustomizationSpecialOpen(nextOpen);
   playSound("click");
 });
 elements.profileTitleRgbToggle?.addEventListener("change", (event) => {

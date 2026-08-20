@@ -2719,7 +2719,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   .power-play[data-description]:hover::after,
   .result-power-pill[data-description]:hover::after,
   .floating-description-tooltip,
-  .profile-special-styles[data-open="true"] .profile-style-option[data-special-style-option="true"] {
+  .profile-theme-option-entering {
     animation: none;
   }
 
@@ -14841,7 +14841,8 @@ button.profile-auth-password-toggle:active:not(:disabled) {
 
 .profile-style-option[data-locked="true"],
 .colour-swatch[data-locked="true"] {
-  opacity: 0.48;
+  --profile-theme-option-opacity: 0.48;
+  opacity: var(--profile-theme-option-opacity);
   filter: saturate(0.55) brightness(0.82);
 }
 
@@ -14941,20 +14942,27 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   padding-top: 0.35rem;
 }
 
-.profile-special-styles[data-open="true"] .profile-style-option[data-special-style-option="true"] {
-  animation: profileSpecialStyleOptionIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(45ms + (var(--profile-special-option-index) * 48ms));
+.profile-theme-variant-picker[data-open="true"] .profile-theme-option-entering,
+.profile-special-styles[data-open="true"] .profile-theme-option-entering {
+  transform-origin: center top;
+  animation: profileThemeDrawerOptionIn 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(35ms + (var(--profile-theme-option-index) * 42ms));
+  will-change: opacity, transform;
 }
 
-@keyframes profileSpecialStyleOptionIn {
+@keyframes profileThemeDrawerOptionIn {
   from {
     opacity: 0;
-    transform: translateY(-0.55rem) scale(0.94);
+    transform: translate3d(0.8rem, 0.12rem, 0) scale(0.975);
+  }
+
+  62% {
+    opacity: var(--profile-theme-option-opacity, 1);
   }
 
   to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    opacity: var(--profile-theme-option-opacity, 1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
