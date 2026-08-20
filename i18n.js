@@ -1997,6 +1997,8 @@
     "Multilingual Answers": "多语言答案",
     "Accept answers in other available languages.": "接受其他可用语言作答。",
     "Online Room": "在线房间",
+    "multiplayer room": "多人房间",
+    "MULTIPLAYER ROOM": "多人房间",
     "Multiplayer setup": "多人游戏设置",
     "Game Settings": "游戏设置",
     "Room privacy": "房间隐私",
@@ -2020,6 +2022,10 @@
     "Themes: All enabled.": "主题：全部启用。",
     "Round effects": "回合效果",
     "Round tools": "回合工具",
+    "POWER-UPS": "能力卡",
+    "Power-Ups": "能力卡",
+    "YOUR POWER-UPS": "你的能力卡",
+    "Classic mode is disabled.": "经典模式已停用。",
     "Molotov": "燃烧瓶",
     "Extinguish": "熄灭",
     "Round paused.": "回合已暂停。",
@@ -2078,6 +2084,20 @@
     "A Mutation effect that changes future round resolution.": "会改变之后回合结算的变异效果。",
     "Permanent Mutation": "永久突变",
     "This changes the table for a round; it is not a player Status Effect.": "这会改变全场一回合，不是玩家状态效果。"
+  });
+
+  Object.assign(zhHans, {
+    // Trivia themes can be rendered dynamically on the question card.
+    "Pop Culture": "流行文化",
+    "Gaming and Geek Culture": "游戏与极客文化",
+    "Geo and History": "地理与历史",
+    "Animals": "动物",
+    "Food and Drinks": "美食与饮品",
+    "Sports": "体育",
+    "Internet Culture": "网络文化",
+    "Science": "科学",
+    "Mythology": "神话",
+    "Art and Music": "艺术与音乐"
   });
 
   Object.assign(zhHans, {
@@ -2531,6 +2551,7 @@
       [/^(.+) (enabled|disabled|reset)\.$/, (match) => `${translateCore(match[1], "zh-Hans")}已${match[2] === "enabled" ? "启用" : match[2] === "disabled" ? "停用" : "重置"}。`],
       [/^(.+) progress set\.$/, (match) => `${translateCore(match[1], "zh-Hans")}进度已设置。`],
       [/^(\d+)-round (.+)$/i, (match) => `${match[1]} 回合 ${translateCore(match[2], "zh-Hans")}`],
+      [/^Waiting for (.+)$/i, (match) => `正在等待 ${match[1]}`],
       [/^Round (\d+): (.+)$/i, (match) => `第 ${match[1]} 回合：${translateCore(match[2], "zh-Hans")}`],
       [/^(.+) · (easy|medium|hard) · (.+)$/i, (match) => `${translateCore(match[1], "zh-Hans")} · ${translateCore(match[2], "zh-Hans")} · ${translateCore(match[3], "zh-Hans")}`],
       [/^(\d+)\/(\d+) answered$/, (match) => `${match[1]}/${match[2]} 已回答`],
