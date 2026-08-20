@@ -283,6 +283,7 @@
     "Restore these quick-start settings.": "還原快速開始設定。",
     "Bots": "機器人",
     "End game": "結束遊戲",
+    "End this match?": "要结束这场对战吗？",
     "Leave this match?": "要離開這場對戰嗎？",
     "Leave this room?": "要離開這個房間嗎？",
     "Leave game": "離開遊戲",

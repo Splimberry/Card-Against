@@ -12277,7 +12277,7 @@ function openConfirmDialog(options = "end") {
   const isLeave = action === "leave";
   const isLeavingRoom = isRoomMode() || state.currentRoomStatus === "lobby";
   elements.confirmEndEyebrow.textContent = config.eyebrow || (isLeave ? (isLeavingRoom ? "Leave room" : "Leave game") : "End game");
-  elements.confirmEndTitle.textContent = config.title || (isLeave ? (isLeavingRoom ? "Leave this room?" : "Leave this match?") : "Leave this match?");
+  elements.confirmEndTitle.textContent = config.title || (isLeave ? (isLeavingRoom ? "Leave this room?" : "Leave this match?") : "End this match?");
   elements.confirmEndCopy.textContent = config.copy || (isLeave
     ? isLeavingRoom
       ? "You will return to the main menu and a leave message will be posted in chat."
