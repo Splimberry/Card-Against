@@ -8126,6 +8126,28 @@ function shouldPlayMenuBackgroundVideo() {
   return !(typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 
+let menuBackgroundStartupReady = false;
+
+function scheduleMenuBackgroundStartup() {
+  const startWhenIdle = () => {
+    const start = () => {
+      menuBackgroundStartupReady = true;
+      syncMenuBackgroundVideo();
+    };
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(start, { timeout: 2000 });
+    } else {
+      window.setTimeout(start, 900);
+    }
+  };
+
+  if (document.readyState === "complete") {
+    startWhenIdle();
+  } else {
+    window.addEventListener("load", startWhenIdle, { once: true });
+  }
+}
+
 function syncMenuBackgroundVideoSource(video = elements.menuBackgroundVideo) {
   if (!video) {
     return false;
@@ -8150,6 +8172,10 @@ function syncMenuBackgroundVideo() {
   const shouldPlay = shouldPlayMenuBackgroundVideo();
   document.body?.toggleAttribute("data-menu-active", shouldPlay);
   if (!video) {
+    return;
+  }
+  if (!menuBackgroundStartupReady) {
+    video.pause();
     return;
   }
   syncMenuBackgroundVideoSource(video);
@@ -51637,13 +51663,6 @@ updateSoundButton();
 syncSettingsControls();
 if (!soundState.muted) {
   armMusicUnlockListeners();
-  window.setTimeout(startOpeningMusic, 0);
-  const warmSfx = () => preloadSfxAudioAssets();
-  if ("requestIdleCallback" in window) {
-    soundState.sfxPreloadIdleId = window.requestIdleCallback(warmSfx, { timeout: 1800 });
-  } else {
-    window.setTimeout(warmSfx, 900);
-  }
 }
 syncRoomControls();
 syncBotAdvancedControls();
@@ -51669,6 +51688,7 @@ if (menuBackgroundMotionQuery?.addEventListener) {
 }
 document.addEventListener("visibilitychange", syncMenuBackgroundVideo);
 applyPerformanceMode(state.performanceMode);
+scheduleMenuBackgroundStartup();
 renderProfile();
 syncSpecialBadgesToProfile();
 scheduleInitialSupabaseAuth();
