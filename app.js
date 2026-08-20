@@ -41582,6 +41582,8 @@ function resetMatch(mode) {
     state.roomRoundResultPendingPlayback = null;
     state.roomRoundResolving = false;
     state.isSpectator = false;
+    state.roomChat = [];
+    resetChatCooldown();
     setCurrentRoomMatchId("");
   }
   resetHintStateForMatch(mode === "room" ? getCurrentRoomMatchId() : `local-${state.matchWorkToken}`);
@@ -46947,10 +46949,14 @@ function handleRoomPlayerAction(action, owner, participantId = "") {
 }
 
 function renderRoomChat() {
-  const active = isRoomMode() || state.currentRoomStatus === "draft";
-  const inGameRoom = active && !elements.gameStage.classList.contains("hidden");
-  const inCreateRoom = ["draft", "lobby"].includes(state.currentRoomStatus)
+  const hasPublishedRoomCode = Boolean(
+    state.roomSettings.code && state.roomSettings.code !== "CAI-0000"
+  );
+  const inCreateRoom = hasPublishedRoomCode
+    && ["draft", "lobby"].includes(state.currentRoomStatus)
     && !elements.roomScreen.classList.contains("hidden");
+  const active = isRoomMode() || inCreateRoom;
+  const inGameRoom = isRoomMode() && !elements.gameStage.classList.contains("hidden");
   setHidden(elements.roomChat, !inGameRoom);
   setHidden(elements.createRoomChat, !inCreateRoom);
   elements.gameStage.classList.toggle("room-active", inGameRoom);
