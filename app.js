@@ -9672,7 +9672,8 @@ function getStatusBarEntryOrder(entry, mutationMode) {
 }
 
 function shouldRenderEffectPanel() {
-  return !state.gradingActive
+  return !isClassicModeEnabled()
+    && !state.gradingActive
     && !state.matchEnded
     && !elements.gameStage.classList.contains("hidden")
     && !elements.inputPanel.classList.contains("hidden");
@@ -34463,6 +34464,12 @@ function appendPowerSuggestionBubble(button, suggestion) {
 
 function renderPowerUps() {
   renderRoomPowerDebugPanel();
+  if (isClassicModeEnabled()) {
+    elements.powerPanel.replaceChildren();
+    elements.powerPanel.dataset.handSize = "0";
+    setHidden(elements.powerPanel, true);
+    return;
+  }
   const owner = getCurrentPowerOwner();
   const hand = state.powerHands[owner] || [];
   elements.powerPanel.dataset.handSize = String(hand.length);
@@ -34472,10 +34479,10 @@ function renderPowerUps() {
   const layoutSnapshot = panelVisible ? capturePowerHandLayoutSnapshot(owner) : null;
   const activeSuggestion = getActivePowerSuggestion(owner, hand);
   playPowerSuggestionExitAnimation(activeSuggestion);
-  const powersBlocked = isClassicModeEnabled() || isTableEventActive("power_outage");
+  const powersBlocked = isTableEventActive("power_outage");
   const label = isDuelMode() ? `${getOwnerLabel(owner)} power-ups` : "Your power-ups";
   const hint = powersBlocked
-    ? isClassicModeEnabled() ? "Disabled in Classic." : "Power Outage this round."
+    ? "Power Outage this round."
     : isTableEventActive("black_market") ? "Black Market: unlimited use." : hand.length ? "Pick one before locking in." : "";
 
   elements.powerPanel.replaceChildren();
@@ -36339,9 +36346,9 @@ function renderRound() {
   renderMultipleChoiceOptions();
   renderTableEventControls();
   setHidden(elements.answerProgressPanel, false);
-  setHidden(elements.powerPanel, false);
+  setHidden(elements.powerPanel, isClassicModeEnabled());
   renderBotPowerDebugPanel();
-  setHidden(elements.effectPanel, false);
+  setHidden(elements.effectPanel, isClassicModeEnabled());
   setHidden(elements.loadingPanel, true);
   setHidden(elements.cardsArea, true);
   setHidden(elements.verdictPanel, true);
