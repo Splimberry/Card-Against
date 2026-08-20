@@ -300,17 +300,17 @@ const profileCardPatternAliases = {
 };
 const profileFonts = [
   { id: "default", name: "Default", kind: "default", family: "", unlockedByDefault: true, condition: "Always unlocked." },
-  { id: "techno", name: "Techno", kind: "techno", family: "\"ProfileFontTechno\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "techno", name: "Techno", kind: "techno", family: "\"ProfileFontTechno\", Inter, sans-serif", sizeOffset: "-0.08em", letterSpacing: "0.02em", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
   { id: "pop", name: "Pop", kind: "pop", family: "\"ProfileFontPop\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
   { id: "comic", name: "Comic", kind: "comic", family: "\"ProfileFontComic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
-  { id: "cursive", name: "Cursive", kind: "cursive", family: "\"ProfileFontCursive\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "cursive", name: "Cursive", kind: "cursive", family: "\"ProfileFontCursive\", Inter, sans-serif", sizeOffset: "0.08em", letterSpacing: "0.01em", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
   { id: "minimalistic", name: "Minimalistic", kind: "minimalistic", family: "\"ProfileFontMinimalistic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
-  { id: "neon", name: "Neon", kind: "neon", family: "\"ProfileFontNeon\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
-  { id: "chunky", name: "Chunky", kind: "chunky", family: "\"ProfileFontChunky\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "neon", name: "Neon", kind: "neon", family: "\"ProfileFontNeon\", Inter, sans-serif", sizeOffset: "0.06em", letterSpacing: "0.01em", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "chunky", name: "Chunky", kind: "chunky", family: "\"ProfileFontChunky\", Inter, sans-serif", sizeOffset: "0.1em", letterSpacing: "0.04em", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
   { id: "poofy", name: "Poofy", kind: "poofy", family: "\"ProfileFontPoofy\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
-  { id: "cutesy", name: "cutesy", kind: "cutesy", family: "\"ProfileFontCutesy\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
-  { id: "bubble", name: "bubble", kind: "bubble", family: "\"ProfileFontBubble\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
-  { id: "gothic", name: "gothic", kind: "gothic", family: "\"ProfileFontGothic\", Inter, sans-serif", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 }
+  { id: "cutesy", name: "cutesy", kind: "cutesy", family: "\"ProfileFontCutesy\", Inter, sans-serif", sizeOffset: "0.045em", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "bubble", name: "bubble", kind: "bubble", family: "\"ProfileFontBubble\", Inter, sans-serif", letterSpacing: "0.035em", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 },
+  { id: "gothic", name: "gothic", kind: "gothic", family: "\"ProfileFontGothic\", Inter, sans-serif", letterSpacing: "0.03em", condition: "Buy in Profile Shop for 100 coins.", unlockType: "shop", cost: 100 }
 ];
 const profileFontMap = Object.fromEntries(profileFonts.map((font) => [font.id, font]));
 const profileShopItems = [
@@ -26196,9 +26196,13 @@ function applyProfileFontToElement(element, font) {
   }
   if (font?.family) {
     element.style.fontFamily = font.family;
+    element.style.setProperty("--profile-font-size-offset", font.sizeOffset || "0em");
+    element.style.setProperty("--profile-font-letter-spacing", font.letterSpacing || "0em");
     element.dataset.profileFont = font.id;
   } else {
     element.style.removeProperty("font-family");
+    element.style.removeProperty("--profile-font-size-offset");
+    element.style.removeProperty("--profile-font-letter-spacing");
     delete element.dataset.profileFont;
   }
 }

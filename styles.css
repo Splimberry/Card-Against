@@ -717,10 +717,10 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 
 .profile-name-display .name-with-title-text {
   color: var(--ink);
-  font-size: 1.32rem;
+  font-size: calc(1.32rem + var(--profile-font-size-offset, 0em));
   font-weight: 780;
   line-height: 1.05;
-  letter-spacing: 0;
+  letter-spacing: var(--profile-font-letter-spacing, 0em);
   text-transform: none;
 }
 
@@ -2747,7 +2747,8 @@ body[data-performance-mode="minimal"] .menu-video-bg {
   position: relative;
   z-index: 10;
   min-width: 0;
-  font-size: 1.06em;
+  font-size: calc(1.06em + var(--profile-font-size-offset, 0em));
+  letter-spacing: var(--profile-font-letter-spacing, 0em);
   overflow: visible;
   text-overflow: clip;
   white-space: nowrap;
@@ -2803,7 +2804,7 @@ body[data-performance-mode="minimal"] .menu-video-bg {
 .scoreboard .name-with-title-text,
 .chat-message .name-with-title-text {
   color: inherit;
-  font-size: 1.04em;
+  font-size: calc(1.04em + var(--profile-font-size-offset, 0em));
   font-weight: inherit;
   text-transform: none;
 }
@@ -8242,7 +8243,11 @@ input:focus {
 
 .game-stage.spectator-mode .cards-area.spectator-answer-mode .answer-owner .name-with-title-text {
   max-width: 100%;
-  font-size: clamp(0.72rem, 0.95vw, 0.92rem);
+  font-size: clamp(
+    calc(0.72rem + var(--profile-font-size-offset, 0em)),
+    calc(0.95vw + var(--profile-font-size-offset, 0em)),
+    calc(0.92rem + var(--profile-font-size-offset, 0em))
+  );
   line-height: 1.05;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -10851,7 +10856,7 @@ input:focus {
   position: relative;
   z-index: 10;
   color: #6a6156;
-  font-size: 0.96rem;
+  font-size: calc(0.96rem + var(--profile-font-size-offset, 0em));
   font-weight: 900;
   line-height: 1.05;
   overflow: visible;
@@ -11306,7 +11311,11 @@ input:focus {
 }
 
 .trivia-results-list .trivia-result-row .name-with-title-text {
-  font-size: clamp(0.78rem, 0.98vw, 0.88rem);
+  font-size: clamp(
+    calc(0.78rem + var(--profile-font-size-offset, 0em)),
+    calc(0.98vw + var(--profile-font-size-offset, 0em)),
+    calc(0.88rem + var(--profile-font-size-offset, 0em))
+  );
 }
 
 :is(.leaderboard-player, .trivia-result-row, .final-leaderboard-row)[data-card-custom="true"]
@@ -14491,9 +14500,10 @@ button.profile-auth-password-toggle:active:not(:disabled) {
     linear-gradient(135deg, rgba(34, 211, 238, 0.11), rgba(255, 255, 255, 0.045)),
     rgba(255, 255, 255, 0.04);
   color: var(--ink);
-  font-size: 1.02rem;
+  font-size: calc(1.02rem + var(--profile-font-size-offset, 0em));
   font-weight: 950;
   line-height: 1.1;
+  letter-spacing: var(--profile-font-letter-spacing, 0em);
   overflow: hidden;
   text-align: center;
   text-overflow: ellipsis;
@@ -14514,9 +14524,10 @@ button.profile-auth-password-toggle:active:not(:disabled) {
   background: rgba(0, 0, 0, 0.16);
   overflow: hidden;
   color: var(--ink);
-  font-size: 0.96rem;
+  font-size: calc(0.96rem + var(--profile-font-size-offset, 0em));
   font-weight: 950;
   line-height: 1.1;
+  letter-spacing: var(--profile-font-letter-spacing, 0em);
   text-align: center;
   text-overflow: ellipsis;
   overflow-wrap: anywhere;
