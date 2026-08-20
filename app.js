@@ -41838,6 +41838,7 @@ async function startGame(mode) {
     initializePermanentMutations();
   }
   const matchToken = state.matchWorkToken;
+  ensureLocalMatchHistoryEntry(mode);
   setHidden(elements.modeScreen, true);
   setHidden(elements.roomScreen, true);
   setHidden(elements.joinScreen, true);
@@ -42023,6 +42024,32 @@ function clearRoomInviteUrlPath() {
   window.history.replaceState(getAppHistoryState("home"), document.title, `${window.location.origin}/`);
 }
 
+function ensureLocalMatchHistoryEntry(mode) {
+  if (!["bots", "local"].includes(mode) || !window.history?.replaceState || !window.history?.pushState) {
+    return;
+  }
+  if (window.history.state?.[appHistoryRouteStateKey] === "match") {
+    return;
+  }
+  const homeUrl = `${window.location.origin}/`;
+  window.history.replaceState(getAppHistoryState("home"), document.title, homeUrl);
+  window.history.pushState({
+    ...getAppHistoryState("match"),
+    matchMode: mode
+  }, document.title, homeUrl);
+}
+
+function clearLocalMatchHistoryEntry() {
+  if (window.history?.state?.[appHistoryRouteStateKey] !== "match" || !window.history?.replaceState) {
+    return;
+  }
+  window.history.replaceState(getAppHistoryState("home"), document.title, `${window.location.origin}/`);
+}
+
+function hasActiveLocalMatch() {
+  return !elements.gameStage.classList.contains("hidden") && ["bots", "local"].includes(state.mode);
+}
+
 function showMainMenuFromBrowserHistory() {
   setJoinInviteMode(false);
   setHidden(elements.gameStage, true);
@@ -42048,6 +42075,10 @@ function handleBrowserHistoryNavigation() {
   }
 
   if (hasActiveRoomContext()) {
+    void leaveCurrentRoom({ playSound: false });
+    return;
+  }
+  if (hasActiveLocalMatch()) {
     void leaveCurrentRoom({ playSound: false });
     return;
   }
@@ -45991,7 +46022,7 @@ async function beginRoomMatch() {
   void startGame("room");
 }
 
-async function leaveCurrentRoom(options = {}) {
+function leaveCurrentRoom(options = {}) {
   const isLeavingRoom = isRoomMode() || state.currentRoomStatus === "lobby" || state.currentRoomStatus === "draft";
   const isLeavingActiveMatch = !elements.gameStage.classList.contains("hidden");
   if (!isLeavingRoom && !isLeavingActiveMatch) {
@@ -46014,11 +46045,14 @@ async function leaveCurrentRoom(options = {}) {
   const leavePromise = isLeavingRoom
     ? leavePublishedRoom({ reason: "manual" })
     : Promise.resolve(null);
-  if (isLeavingRoom) {
-    await leavePromise.catch(() => null);
-  }
+  // Navigation is local-first. The command has already captured the room and
+  // participant ids, so it can finish in the background without trapping a
+  // player in a room while their connection is slow.
+  cancelActiveMatchWork({ stopRoomSync: isLeavingRoom });
+  clearRoomMatchScopedStateForLobby();
   clearLocalRoomState({ clearHostedSession: true });
   clearRoomInviteUrlPath();
+  clearLocalMatchHistoryEntry();
 
   setHidden(elements.gameStage, true);
   setHidden(elements.roomChat, true);
@@ -46030,6 +46064,7 @@ async function leaveCurrentRoom(options = {}) {
   if (options.playSound !== false) {
     playSound("click");
   }
+  return leavePromise;
 }
 
 function animateRoomPlayerListChange(target, renderList, options = {}) {
@@ -51289,6 +51324,7 @@ elements.changeModeButton.addEventListener("click", () => {
   setHidden(elements.roomChat, true);
   elements.gameStage.classList.remove("room-active");
   setHidden(elements.modeScreen, false);
+  clearLocalMatchHistoryEntry();
   ensureQuestionReserve({ enabledThemes: state.enabledThemes });
 });
 elements.menuSoundToggleButton.addEventListener("click", () => setMuted(!soundState.muted));
