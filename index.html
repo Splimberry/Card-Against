@@ -730,19 +730,40 @@
                 <p class="eyebrow">Theme</p>
                 <div class="card-style-grid" id="profileCardStyleGrid"></div>
               </div>
-              <div class="gradient-picker" id="profileGradientPicker">
-                <div class="gradient-picker-inner">
-                  <div class="dev-panel-heading">
-                    <div>
-                      <p class="eyebrow">Gradient colours</p>
-                      <h3>Top colour</h3>
-                    </div>
+              <div class="profile-theme-variant-picker" id="profileClassicColourPicker" data-open="false">
+                <div class="profile-theme-variant-collapsible">
+                  <div class="profile-theme-variant-card">
+                    <p class="eyebrow">Classic colours</p>
+                    <div class="card-style-grid profile-classic-colour-grid" id="profileClassicColourGrid"></div>
                   </div>
-                  <div class="colour-swatch-grid" id="profileGradientTopGrid"></div>
-                  <h3>Bottom colour</h3>
-                  <div class="colour-swatch-grid" id="profileGradientBottomGrid"></div>
                 </div>
               </div>
+              <div class="gradient-picker profile-theme-variant-picker" id="profileGradientPicker" data-open="false">
+                <div class="profile-theme-variant-collapsible">
+                  <div class="gradient-picker-inner profile-theme-variant-card">
+                    <div class="dev-panel-heading">
+                      <div>
+                        <p class="eyebrow">Gradient colours</p>
+                        <h3>Top colour</h3>
+                      </div>
+                    </div>
+                    <div class="colour-swatch-grid" id="profileGradientTopGrid"></div>
+                    <h3>Bottom colour</h3>
+                    <div class="colour-swatch-grid" id="profileGradientBottomGrid"></div>
+                  </div>
+                </div>
+              </div>
+              <section class="profile-special-styles" id="profileSpecialStyles" data-open="false">
+                <button type="button" class="profile-special-styles-toggle" id="profileSpecialStylesToggle" aria-expanded="false">
+                  <span>Special</span>
+                  <i aria-hidden="true"></i>
+                </button>
+                <div class="profile-special-styles-content">
+                  <div>
+                    <div class="card-style-grid" id="profileSpecialStyleGrid"></div>
+                  </div>
+                </div>
+              </section>
               <div>
                 <p class="eyebrow">Styles · Effects</p>
                 <div class="card-style-grid profile-effect-grid" id="profileEffectGrid"></div>

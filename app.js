@@ -257,6 +257,20 @@ const profileCardStyles = [
   { id: "abyssal", name: "Abyssal", kind: "abyssal", condition: "Buy in Profile Shop for 1,200 coins.", unlockType: "shop", cost: 1200 }
 ];
 const profileCardStyleMap = Object.fromEntries(profileCardStyles.map((style) => [style.id, style]));
+const profilePrimaryCardStyleIds = new Set(["default", "gradient", "chromatic"]);
+const profileClassicCardStyleIds = new Set(
+  profileCardStyles
+    .filter((style) => style.id === "default" || style.kind === "solid" || style.kind === "black")
+    .map((style) => style.id)
+);
+const profileClassicColourStyleIds = new Set(
+  [...profileClassicCardStyleIds].filter((styleId) => styleId !== "default")
+);
+const profileSpecialCardStyleIds = new Set(
+  profileCardStyles
+    .filter((style) => !profilePrimaryCardStyleIds.has(style.id) && !profileClassicCardStyleIds.has(style.id))
+    .map((style) => style.id)
+);
 const profileCardEffects = [
   { id: "neon", name: "Neon", kind: "neon", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-40" },
   { id: "rgb", name: "RGB", kind: "rgb", condition: "Claim in Achievement Milestones.", unlockType: "milestone", milestoneId: "achievements-55" },
@@ -4006,6 +4020,7 @@ const state = {
   finalTitlesByOwner: {},
   profileCustomizationHistory: [],
   profileCustomizationHistoryIndex: 0,
+  profileCustomizationSpecialOpen: false,
   roundProgress: [],
   performanceMode: savedPerformanceMode,
   powerSuggestionsEnabled: savedPowerSuggestionsEnabled,
@@ -4594,6 +4609,11 @@ const elements = {
   profileCustomModal: document.querySelector("#profileCustomModal"),
   closeProfileCustomButton: document.querySelector("#closeProfileCustomButton"),
   profileCardStyleGrid: document.querySelector("#profileCardStyleGrid"),
+  profileClassicColourPicker: document.querySelector("#profileClassicColourPicker"),
+  profileClassicColourGrid: document.querySelector("#profileClassicColourGrid"),
+  profileSpecialStyles: document.querySelector("#profileSpecialStyles"),
+  profileSpecialStylesToggle: document.querySelector("#profileSpecialStylesToggle"),
+  profileSpecialStyleGrid: document.querySelector("#profileSpecialStyleGrid"),
   profileEffectGrid: document.querySelector("#profileEffectGrid"),
   profilePatternGrid: document.querySelector("#profilePatternGrid"),
   profileFontGrid: document.querySelector("#profileFontGrid"),
@@ -26608,7 +26628,7 @@ function renderProfileCustomizationPreview() {
   }, displayName);
 }
 
-function createProfileStyleButton(style, records, progress) {
+function createProfileStyleButton(style, records, progress, options = {}) {
   const draft = getProfileCustomizationDraft();
   const status = getProfileUnlockStatus(style, "style", records, progress);
   const button = document.createElement("button");
@@ -26616,7 +26636,7 @@ function createProfileStyleButton(style, records, progress) {
   button.className = "profile-style-option";
   button.dataset.profileStyle = style.id;
   button.dataset.profileStyleKind = style.kind;
-  button.dataset.selected = String(draft.styleId === style.id);
+  button.dataset.selected = String(options.selected ?? draft.styleId === style.id);
   button.dataset.locked = String(!status.unlocked);
   button.dataset.description = getProfileCustomizationStatusText(style, "style", records, progress);
   const swatch = getProfileStyleSwatch(style, draft);
@@ -26965,13 +26985,23 @@ function renderProfileCustomizationModal() {
   const records = loadUnlockedAchievements();
   const progress = loadAchievementProgress();
   const draft = getProfileCustomizationDraft();
-  elements.profileCardStyleGrid.replaceChildren(...profileCardStyles.map((style) => createProfileStyleButton(style, records, progress)));
+  const classicStyleSelected = profileClassicCardStyleIds.has(draft.styleId);
+  const primaryStyles = profileCardStyles.filter((style) => profilePrimaryCardStyleIds.has(style.id));
+  const classicColourStyles = profileCardStyles.filter((style) => profileClassicColourStyleIds.has(style.id));
+  const specialStyles = profileCardStyles.filter((style) => profileSpecialCardStyleIds.has(style.id));
+  elements.profileCardStyleGrid.replaceChildren(...primaryStyles.map((style) => createProfileStyleButton(style, records, progress, {
+    selected: style.id === "default" ? classicStyleSelected : draft.styleId === style.id
+  })));
+  elements.profileClassicColourGrid?.replaceChildren(...classicColourStyles.map((style) => createProfileStyleButton(style, records, progress)));
+  elements.profileSpecialStyleGrid?.replaceChildren(...specialStyles.map((style) => createProfileStyleButton(style, records, progress)));
   elements.profileEffectGrid?.replaceChildren(...profileCardEffects.map((effect) => createProfileEffectButton(effect, records, progress)));
   elements.profilePatternGrid?.replaceChildren(...profileCardPatterns.map((pattern) => createProfilePatternButton(pattern, records, progress)));
   elements.profileFontGrid?.replaceChildren(...profileFonts.map((font) => createProfileFontButton(font, records, progress)));
   elements.profileGradientTopGrid.replaceChildren(...profileCardColours.map((colour) => createProfileColourButton(colour, "gradientTop", records, progress)));
   elements.profileGradientBottomGrid.replaceChildren(...profileCardColours.map((colour) => createProfileColourButton(colour, "gradientBottom", records, progress)));
+  elements.profileClassicColourPicker?.setAttribute("data-open", String(classicStyleSelected));
   elements.profileGradientPicker.dataset.open = String(draft.styleId === "gradient");
+  setProfileCustomizationSpecialOpen(state.profileCustomizationSpecialOpen);
   renderProfileTitleGrid(records);
   renderProfileTitleColourControls();
   renderProfileCustomizationPreview();
@@ -26992,6 +27022,7 @@ function openProfileCustomization() {
   state.profileCustomizationDraft = cloneProfileCustomizationDraft(draft);
   state.profileCustomizationHistory = [cloneProfileCustomizationDraft(draft)];
   state.profileCustomizationHistoryIndex = 0;
+  state.profileCustomizationSpecialOpen = false;
   renderProfileCustomizationModal();
   setHidden(elements.profileCustomModal, false);
   playSound("click");
@@ -27022,7 +27053,14 @@ async function closeProfileCustomization(options = {}) {
   state.profileCustomizationDraft = null;
   state.profileCustomizationHistory = [];
   state.profileCustomizationHistoryIndex = 0;
+  state.profileCustomizationSpecialOpen = false;
   hideModalWithMotion(elements.profileCustomModal);
+}
+
+function setProfileCustomizationSpecialOpen(open) {
+  state.profileCustomizationSpecialOpen = Boolean(open);
+  elements.profileSpecialStyles?.setAttribute("data-open", String(state.profileCustomizationSpecialOpen));
+  elements.profileSpecialStylesToggle?.setAttribute("aria-expanded", String(state.profileCustomizationSpecialOpen));
 }
 
 function sanitizeProfileCustomizationForSave(draft) {
@@ -51305,6 +51343,8 @@ elements.closeProfileCustomButton?.addEventListener("click", () => closeProfileC
 elements.closeProfileShopButton?.addEventListener("click", closeProfileShop);
 elements.closeBotAdvancedButton?.addEventListener("click", closeBotAdvancedPanel);
 elements.profileCardStyleGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileClassicColourGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileSpecialStyleGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profileEffectGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profilePatternGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profileFontGrid?.addEventListener("click", handleProfileCustomizationClick);
@@ -51312,6 +51352,10 @@ elements.profileGradientTopGrid?.addEventListener("click", handleProfileCustomiz
 elements.profileGradientBottomGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profileTitleGrid?.addEventListener("click", handleProfileCustomizationClick);
 elements.profileTitleColourGrid?.addEventListener("click", handleProfileCustomizationClick);
+elements.profileSpecialStylesToggle?.addEventListener("click", () => {
+  setProfileCustomizationSpecialOpen(!state.profileCustomizationSpecialOpen);
+  playSound("click");
+});
 elements.profileTitleRgbToggle?.addEventListener("change", (event) => {
   commitProfileCustomizationDraft((draft) => {
     draft.titleRgb = Boolean(event.target.checked);

@@ -218,6 +218,8 @@
     "Achievement can only be earned/progressed in public 10-round matches, bot rounds and local 1v1 will not contribute to unlocking achievements.": "成就只會在公開 10 回合多人對戰中取得或推進；機器人和本地 1v1 不會計入。",
     "Card cosmetic": "卡牌外觀",
     "Theme": "主題",
+    "Classic colours": "经典颜色",
+    "Special": "特殊",
     "Gradient colours": "漸層顏色",
     "Top colour": "上方顏色",
     "Bottom colour": "下方顏色",
