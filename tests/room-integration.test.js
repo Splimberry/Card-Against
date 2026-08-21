@@ -7108,6 +7108,36 @@ async function testDebugQuestionDeleteUsesBackendStorage() {
   assert.equal(questions.some((entry) => entry.id === question.id), false);
 }
 
+async function testBrokenQuestionReportsPersistForAdminReview() {
+  const question = makeQuestion("science-broken-question-report-test", {
+    question: "Which question should be reported for review?"
+  });
+  const created = await request("POST", "/api/debug/questions", question, adminHeaders());
+  assert.equal(created.response.status, 201, created.payload.error);
+
+  const unauthorized = await request("GET", "/api/debug/broken-questions");
+  assert.equal(unauthorized.response.status, 401);
+
+  const first = await request("POST", `/api/debug/broken-questions/${question.id}`, undefined, adminHeaders());
+  assert.equal(first.response.status, 201, first.payload.error);
+  assert.equal(first.payload.report.questionId, question.id);
+  assert.equal(first.payload.report.question, question.question);
+
+  const duplicate = await request("POST", `/api/debug/broken-questions/${question.id}`, undefined, adminHeaders());
+  assert.equal(duplicate.response.status, 201, duplicate.payload.error);
+
+  const listed = await request("GET", "/api/debug/broken-questions", undefined, adminHeaders());
+  assert.equal(listed.response.status, 200, listed.payload.error);
+  assert.equal(listed.payload.reports.filter((report) => report.questionId === question.id).length, 1);
+
+  const resolved = await request("DELETE", `/api/debug/broken-questions/${question.id}`, undefined, adminHeaders());
+  assert.equal(resolved.response.status, 200, resolved.payload.error);
+
+  const afterResolve = await request("GET", "/api/debug/broken-questions", undefined, adminHeaders());
+  assert.equal(afterResolve.response.status, 200, afterResolve.payload.error);
+  assert.equal(afterResolve.payload.reports.some((report) => report.questionId === question.id), false);
+}
+
 async function testRoundUsesLocalGraderWithoutApiKey() {
   const previousAiKey = process.env.AI_API_KEY;
   const previousComputingerKey = process.env.COMPUTINGER_API_KEY;
@@ -7702,6 +7732,7 @@ async function main() {
   await testDebugQuestionCreateUsesBackendStorage();
   await testDebugQuestionUpdateUsesBackendStorage();
   await testDebugQuestionDeleteUsesBackendStorage();
+  await testBrokenQuestionReportsPersistForAdminReview();
   await testRoundUsesLocalGraderWithoutApiKey();
   await testRoundAiSecondOpinionReviewsNearMissesTogether();
   await testRoundDebugLocalModeSkipsAiOverride();

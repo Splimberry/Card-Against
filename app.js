@@ -4156,6 +4156,7 @@ const state = {
   pointLossSoundToken: 0,
   questionDebugBank: [],
   questionDebugFiltered: [],
+  questionDebugBrokenReports: [],
   questionDebugIndex: 0,
   questionDebugThemes: [...triviaThemes],
   questionDebugImageIssues: [],
@@ -4478,6 +4479,7 @@ const elements = {
   devQuestionToolsResults: null,
   devQuestionFindDuplicatesButton: null,
   devQuestionCheckImagesButton: null,
+  devQuestionBrokenButton: null,
   devQuestionLeastSeenButton: null,
   devQuestionMostRepeatedButton: null,
   devQuestionGradeAnswer: null,
@@ -4692,6 +4694,7 @@ const elements = {
   blackCardText: document.querySelector("#blackCardText"),
   questionHint: document.querySelector("#questionHint"),
   blackCard: document.querySelector("#blackCard"),
+  questionReportButton: document.querySelector("#questionReportButton"),
   questionCardPile: document.querySelector("#questionCardPile"),
   questionThemeBadge: document.querySelector("#questionThemeBadge"),
   questionDifficultyBadge: document.querySelector("#questionDifficultyBadge"),
@@ -35815,6 +35818,7 @@ function getBlackCardElement() {
 function sanitizeQuestionCardSnapshot(card) {
   card.removeAttribute("id");
   card.removeAttribute("aria-labelledby");
+  card.querySelector(".question-report-button")?.remove();
   delete card.dataset.questionStacked;
   card.setAttribute("aria-hidden", "true");
   card.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
@@ -36066,6 +36070,7 @@ function resetRoundUiForLoading(options = {}) {
   elements.judgeBio.textContent = "Generating a trivia question.";
   elements.judgeTags.replaceChildren();
   elements.questionThemeBadge.textContent = "Loading...";
+  renderQuestionReportButton();
   renderQuestionImagePlaceholder();
   elements.blackCardText.textContent = "Loading the next trivia card...";
   showQuestionHint("");
@@ -36302,6 +36307,7 @@ function renderRound() {
     })
   );
   elements.blackCardText.textContent = state.blackCard;
+  renderQuestionReportButton();
   showQuestionHint("");
   elements.questionThemeBadge.textContent = state.triviaTheme || "Mixed Trivia";
   elements.questionDifficultyBadge.textContent = getDifficultyLabel(difficulty);
@@ -36507,6 +36513,7 @@ function applyRoundSetup(setup, options = {}) {
   state.roomRoundResult = existingRoomResult;
   state.questionId = setup.id || "";
   state.blackCard = setup.blackCard;
+  renderQuestionReportButton();
   removeReservedQuestionSetup(setup);
   removeCachedRoundSetup(setup);
   state.questionType = setup.type === "text" ? "text" : "image";
@@ -36619,6 +36626,7 @@ function buildDevToolScreen() {
         <div class="dev-question-tool-actions">
           <button type="button" class="icon-button" id="devQuestionFindDuplicatesButton">Duplicate Detector</button>
           <button type="button" class="icon-button" id="devQuestionCheckImagesButton">Broken Image Check</button>
+          <button type="button" class="icon-button" id="devQuestionBrokenButton">Broken Questions</button>
           <button type="button" class="icon-button" id="devQuestionLeastSeenButton">Least Seen</button>
           <button type="button" class="icon-button" id="devQuestionMostRepeatedButton">Most Repeated</button>
           <button type="button" class="icon-button" id="devQuestionPassNewButton">Pass New Batch</button>
@@ -37006,6 +37014,7 @@ function buildDevToolScreen() {
   elements.devQuestionToolsResults = screen.querySelector("#devQuestionToolsResults");
   elements.devQuestionFindDuplicatesButton = screen.querySelector("#devQuestionFindDuplicatesButton");
   elements.devQuestionCheckImagesButton = screen.querySelector("#devQuestionCheckImagesButton");
+  elements.devQuestionBrokenButton = screen.querySelector("#devQuestionBrokenButton");
   elements.devQuestionLeastSeenButton = screen.querySelector("#devQuestionLeastSeenButton");
   elements.devQuestionMostRepeatedButton = screen.querySelector("#devQuestionMostRepeatedButton");
   elements.devQuestionGradeAnswer = screen.querySelector("#devQuestionGradeAnswer");
@@ -37169,11 +37178,17 @@ function bindDevToolEvents() {
   elements.devQuestionDeleteButton.addEventListener("click", deleteSelectedDebugQuestion);
   elements.devQuestionFindDuplicatesButton.addEventListener("click", renderDuplicateQuestionReport);
   elements.devQuestionCheckImagesButton.addEventListener("click", checkQuestionImageUrls);
+  elements.devQuestionBrokenButton.addEventListener("click", renderBrokenQuestionReport);
   elements.devQuestionLeastSeenButton.addEventListener("click", () => renderQuestionUsageReport("least"));
   elements.devQuestionMostRepeatedButton.addEventListener("click", () => renderQuestionUsageReport("most"));
   elements.devQuestionPassNewButton.addEventListener("click", passNewQuestionBatch);
   elements.devQuestionUndoNewButton.addEventListener("click", undoLastQuestionBatch);
   elements.devQuestionToolsResults.addEventListener("click", (event) => {
+    const resolveButton = event.target.closest("[data-broken-question-resolve]");
+    if (resolveButton) {
+      void resolveBrokenQuestion(resolveButton.dataset.brokenQuestionResolve);
+      return;
+    }
     const button = event.target.closest("[data-question-tool-focus]");
     if (button) {
       focusQuestionDebugById(button.dataset.questionToolFocus);
@@ -39500,6 +39515,7 @@ function updateAdminControls() {
   if (elements.adminLogoutButton) {
     setHidden(elements.adminLogoutButton, !state.adminAuthenticated);
   }
+  renderQuestionReportButton();
   renderBotPowerDebugPanel();
   renderRoomPowerDebugPanel();
 }
@@ -39623,6 +39639,7 @@ async function closeDevToolScreen() {
 
 async function loadQuestionDebugBank(force = false) {
   if (state.questionDebugBank.length && !force) {
+    await loadBrokenQuestionReports();
     filterQuestionDebugBank();
     return;
   }
@@ -39645,11 +39662,118 @@ async function loadQuestionDebugBank(force = false) {
     state.questionDebugBank = Array.isArray(payload.questions) ? payload.questions : [];
     state.questionDebugThemes = Array.isArray(payload.themes) ? payload.themes : triviaThemes;
     renderQuestionDebugCounts(payload.counts || {});
+    await loadBrokenQuestionReports();
     filterQuestionDebugBank();
   } catch (error) {
     console.warn(error);
     elements.devQuestionStatus.textContent = error.message || "Could not load question bank.";
     playSound("error");
+  }
+}
+
+function getBrokenQuestionReport(questionId = state.questionId) {
+  const normalizedId = String(questionId || "").trim();
+  return state.questionDebugBrokenReports.find((report) => String(report?.questionId || "").trim() === normalizedId) || null;
+}
+
+function updateBrokenQuestionButton() {
+  if (!elements.devQuestionBrokenButton) {
+    return;
+  }
+  const count = state.questionDebugBrokenReports.length;
+  elements.devQuestionBrokenButton.textContent = count
+    ? `Broken Questions (${count})`
+    : "Broken Questions";
+}
+
+async function loadBrokenQuestionReports() {
+  if (!state.adminAuthenticated) {
+    state.questionDebugBrokenReports = [];
+    updateBrokenQuestionButton();
+    return [];
+  }
+  try {
+    const response = await fetch("/api/debug/broken-questions", { credentials: "same-origin", cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401) {
+        state.adminAuthenticated = false;
+        state.adminUser = null;
+        updateAdminControls();
+      }
+      throw new Error(payload.error || `Broken question reports failed with status ${response.status}.`);
+    }
+    state.questionDebugBrokenReports = Array.isArray(payload.reports) ? payload.reports : [];
+    updateBrokenQuestionButton();
+    renderQuestionReportButton();
+    return state.questionDebugBrokenReports;
+  } catch (error) {
+    console.warn("Could not load broken question reports:", error);
+    updateBrokenQuestionButton();
+    return state.questionDebugBrokenReports;
+  }
+}
+
+function renderQuestionReportButton() {
+  const button = elements.questionReportButton;
+  if (!button) {
+    return;
+  }
+  const report = getBrokenQuestionReport();
+  const visible = Boolean(
+    state.adminAuthenticated
+      && state.questionId
+      && state.blackCard
+      && !state.matchEnded
+      && elements.gameStage
+      && !elements.gameStage.classList.contains("hidden")
+  );
+  setHidden(button, !visible);
+  button.disabled = !visible;
+  button.classList.toggle("reported", Boolean(report));
+  button.dataset.tooltip = report
+    ? "Already in Broken Questions"
+    : "Add this question to Broken Questions";
+  button.setAttribute("aria-label", report ? "Question is in Broken Questions" : "Report question issue");
+}
+
+async function reportCurrentQuestionAsBroken() {
+  const questionId = String(state.questionId || "").trim();
+  if (!state.adminAuthenticated || !questionId || !elements.questionReportButton?.isConnected) {
+    return;
+  }
+  const button = elements.questionReportButton;
+  button.disabled = true;
+  try {
+    const response = await fetch(`/api/debug/broken-questions/${encodeURIComponent(questionId)}`, {
+      method: "POST",
+      credentials: "same-origin"
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401) {
+        state.adminAuthenticated = false;
+        state.adminUser = null;
+        updateAdminControls();
+      }
+      throw new Error(payload.error || "Could not report this question.");
+    }
+    const report = payload.report;
+    if (report?.questionId) {
+      state.questionDebugBrokenReports = [
+        report,
+        ...state.questionDebugBrokenReports.filter((entry) => entry.questionId !== report.questionId)
+      ];
+    }
+    updateBrokenQuestionButton();
+    renderQuestionReportButton();
+    playSound("reveal");
+  } catch (error) {
+    console.warn("Could not report broken question:", error);
+    button.dataset.tooltip = error.message || "Could not add this question to Broken Questions";
+    playSound("error");
+  } finally {
+    renderQuestionReportButton();
   }
 }
 
@@ -40484,6 +40608,7 @@ function clearQuestionToolSelection(selectedButton) {
   [
     elements.devQuestionFindDuplicatesButton,
     elements.devQuestionCheckImagesButton,
+    elements.devQuestionBrokenButton,
     elements.devQuestionLeastSeenButton,
     elements.devQuestionMostRepeatedButton
   ].forEach((button) => button?.classList.toggle("selected", button === selectedButton));
@@ -40512,6 +40637,71 @@ function createQuestionToolItem(question, metaText, detailText = "") {
   action.textContent = "View";
   item.append(top, detail, action);
   return item;
+}
+
+function renderBrokenQuestionReport() {
+  clearQuestionToolSelection(elements.devQuestionBrokenButton);
+  elements.devQuestionToolsResults.replaceChildren();
+  const reports = [...state.questionDebugBrokenReports]
+    .sort((left, right) => Number(right.reportedAt || right.updatedAt || 0) - Number(left.reportedAt || left.updatedAt || 0));
+  if (!reports.length) {
+    elements.devQuestionToolsStatus.textContent = "No questions have been flagged for review.";
+    return;
+  }
+  reports.forEach((report) => {
+    const question = state.questionDebugBank.find((entry) => entry.id === report.questionId) || null;
+    const reportQuestion = question || {
+      id: report.questionId,
+      question: report.question,
+      canonicalAnswer: report.questionId
+    };
+    const reportedAt = Number(report.reportedAt || report.updatedAt || 0);
+    const item = createQuestionToolItem(
+      reportQuestion,
+      [report.theme, report.difficulty, report.type, report.questionStyle === MULTIPLE_CHOICE_STYLE ? "multiple choice" : ""].filter(Boolean).join(" · "),
+      report.question || report.questionId
+    );
+    const viewButton = item.querySelector("[data-question-tool-focus]");
+    viewButton.disabled = !question;
+    const resolveButton = document.createElement("button");
+    resolveButton.type = "button";
+    resolveButton.className = "icon-button";
+    resolveButton.dataset.brokenQuestionResolve = report.questionId;
+    resolveButton.textContent = "Mark Fixed";
+    item.appendChild(resolveButton);
+    if (reportedAt) {
+      item.dataset.tooltip = `Flagged ${new Date(reportedAt).toLocaleString()}`;
+    }
+    elements.devQuestionToolsResults.appendChild(item);
+  });
+  elements.devQuestionToolsStatus.textContent = `${reports.length} question${reports.length === 1 ? "" : "s"} flagged for review.`;
+}
+
+async function resolveBrokenQuestion(questionId = "") {
+  const normalizedId = String(questionId || "").trim();
+  if (!normalizedId) {
+    return;
+  }
+  try {
+    const response = await fetch(`/api/debug/broken-questions/${encodeURIComponent(normalizedId)}`, {
+      method: "DELETE",
+      credentials: "same-origin"
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "Could not mark this question as fixed.");
+    }
+    state.questionDebugBrokenReports = state.questionDebugBrokenReports
+      .filter((report) => String(report.questionId || "") !== normalizedId);
+    updateBrokenQuestionButton();
+    renderQuestionReportButton();
+    renderBrokenQuestionReport();
+    playSound("click");
+  } catch (error) {
+    console.warn("Could not resolve broken question:", error);
+    elements.devQuestionToolsStatus.textContent = error.message || "Could not mark this question as fixed.";
+    playSound("error");
+  }
 }
 
 function getDuplicateQuestionGroups() {
@@ -51643,6 +51833,9 @@ elements.sfxVolumeSlider.addEventListener("change", (event) => updateSfxVolume(e
 elements.musicVolumeSlider.addEventListener("change", (event) => updateMusicSetting(event.target.value));
 elements.performanceModeSelect?.addEventListener("change", (event) => updatePerformanceMode(event.target.value));
 elements.powerSuggestionsToggle?.addEventListener("change", (event) => updatePowerSuggestionSetting(event.target.checked));
+elements.questionReportButton?.addEventListener("click", () => {
+  void reportCurrentQuestionAsBroken();
+});
 elements.timerSecondsSlider?.addEventListener("input", (event) => updateTimerSetting(event.target.value));
 elements.roundsSlider?.addEventListener("input", (event) => updateRoundsSetting(event.target.value));
 elements.powerPanel.addEventListener("click", (event) => {

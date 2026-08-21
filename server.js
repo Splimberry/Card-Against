@@ -273,6 +273,31 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/debug/broken-questions") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
+      await handleListBrokenQuestionReports(res);
+      return;
+    }
+
+    const brokenQuestionReportMatch = url.pathname.match(/^\/api\/debug\/broken-questions\/([^/]+)$/);
+    if (brokenQuestionReportMatch && req.method === "POST") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
+      await handleReportBrokenQuestion(res, decodeURIComponent(brokenQuestionReportMatch[1]));
+      return;
+    }
+
+    if (brokenQuestionReportMatch && req.method === "DELETE") {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
+      await handleResolveBrokenQuestion(res, decodeURIComponent(brokenQuestionReportMatch[1]));
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/debug/ai-shield") {
       if (!requireAdmin(req, res)) {
         return;
@@ -1802,6 +1827,62 @@ async function handleDebugQuestions(res) {
       rejectedAnswers: question.rejectedAnswers || []
     }))
   });
+}
+
+function getBrokenQuestionReportSnapshot(question = {}) {
+  return {
+    questionId: String(question.id || "").trim(),
+    question: String(question.blackCard || "").trim(),
+    theme: String(question.theme || "").trim(),
+    difficulty: String(question.difficulty || "").trim(),
+    type: question.type === "image" ? "image" : "text",
+    questionStyle: question.questionStyle === "multiple-choice" ? "multiple-choice" : "standard",
+    language: normalizeQuestionLanguage(question.language),
+    imageUrl: String(question.image?.url || "").trim()
+  };
+}
+
+async function handleListBrokenQuestionReports(res) {
+  try {
+    const reports = await backendStore.listBrokenQuestionReports();
+    reports.sort((left, right) => Number(right.reportedAt || right.updatedAt || 0) - Number(left.reportedAt || left.updatedAt || 0));
+    sendJson(res, 200, { reports });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message || "Could not load broken question reports." });
+  }
+}
+
+async function handleReportBrokenQuestion(res, questionId) {
+  try {
+    const normalizedId = normalizeQuestionText(questionId);
+    const runtimeQuestionBank = await getRuntimeQuestionBank();
+    const question = runtimeQuestionBank.find((entry) => normalizeQuestionText(entry.id) === normalizedId);
+    if (!question) {
+      sendJson(res, 404, { error: `Question id not found: ${questionId}` });
+      return;
+    }
+    const report = await backendStore.upsertBrokenQuestionReport({
+      ...getBrokenQuestionReportSnapshot(question),
+      reportedAt: Date.now()
+    });
+    sendJson(res, 201, { report });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message || "Could not report this question." });
+  }
+}
+
+async function handleResolveBrokenQuestion(res, questionId) {
+  try {
+    const questionIdToResolve = String(questionId || "").trim();
+    if (!questionIdToResolve) {
+      sendJson(res, 400, { error: "Missing question id." });
+      return;
+    }
+    const resolved = await backendStore.deleteBrokenQuestionReport(questionIdToResolve);
+    sendJson(res, 200, { ok: true, resolved, questionId: questionIdToResolve });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message || "Could not resolve this broken question." });
+  }
 }
 
 async function handleCreateDebugQuestion(req, res) {
