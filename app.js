@@ -76,7 +76,11 @@ const roomHostReconnectCheckBufferMs = 1500;
 const roomDirectoryFetchTimeoutMs = 4500;
 const roomLookupFetchTimeoutMs = 4500;
 const roomPresenceFetchTimeoutMs = 5000;
+const roomCommandFetchTimeoutMs = 8000;
 const roomLeaveFetchTimeoutMs = 2500;
+const roomCommandDeliveryMaxAttempts = 6;
+const roomCommandRetryBaseDelayMs = 180;
+const roomCommandRetryMaxDelayMs = 2500;
 const roomPreparingSetupWaitMs = 90000;
 const roomRoundCommandTimeoutMs = roomPreparingSetupWaitMs + 5000;
 const localRoundSetupTimeoutMs = 15000;
@@ -6318,6 +6322,14 @@ function createHttpRequestError(message, response = null, payload = null) {
 
 function isRetryableRoomCommandStatus(status) {
   return [408, 429, 500, 502, 503, 504].includes(Number(status));
+}
+
+function getRoomCommandRetryDelay(attempt = 1) {
+  const retryAttempt = Math.max(1, Number(attempt) || 1);
+  return Math.min(
+    roomCommandRetryMaxDelayMs,
+    roomCommandRetryBaseDelayMs * (2 ** Math.max(0, retryAttempt - 1))
+  );
 }
 
 function waitForRoomCommandRetry(delayMs = 125) {
@@ -22028,11 +22040,17 @@ const roomSync = {
           payload: commandPayload
         })
       };
-      const commandTimeoutMs = options.timeoutMs || roomPresenceFetchTimeoutMs;
+      const commandTimeoutMs = options.timeoutMs || roomCommandFetchTimeoutMs;
       const canRetry = options.retry !== false;
+      const maxDeliveryAttempts = canRetry
+        ? Math.max(1, Math.min(
+          roomCommandDeliveryMaxAttempts,
+          Number(options.maxDeliveryAttempts) || roomCommandDeliveryMaxAttempts
+        ))
+        : 1;
       let response = null;
       let requestError = null;
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+      for (let attempt = 0; attempt < maxDeliveryAttempts; attempt += 1) {
         try {
           response = await fetchWithTimeout(
             `/api/rooms/${encodeURIComponent(roomCode)}/commands`,
@@ -22040,7 +22058,7 @@ const roomSync = {
             commandTimeoutMs
           );
           requestError = null;
-          if (!canRetry || response.ok || !isRetryableRoomCommandStatus(response.status) || attempt > 0) {
+          if (!canRetry || response.ok || !isRetryableRoomCommandStatus(response.status) || attempt >= maxDeliveryAttempts - 1) {
             break;
           }
           recordRoomDiagnosticEvent("command-retry", {
@@ -22061,10 +22079,10 @@ const roomSync = {
             message: `${getRoomCommandLabel(commandType)} is taking longer than usual...`,
             resetAfterMs: 0
           });
-          await waitForRoomCommandRetry();
+          await waitForRoomCommandRetry(getRoomCommandRetryDelay(attempt + 1));
         } catch (error) {
           requestError = error;
-          if (!canRetry || attempt > 0) {
+          if (!canRetry || attempt >= maxDeliveryAttempts - 1) {
             throw error;
           }
           recordRoomDiagnosticEvent("command-retry", {
@@ -22085,7 +22103,7 @@ const roomSync = {
             error: getFriendlyRoomCommandError(error, error?.status, commandType),
             resetAfterMs: 0
           });
-          await waitForRoomCommandRetry();
+          await waitForRoomCommandRetry(getRoomCommandRetryDelay(attempt + 1));
         }
       }
       if (!response) {

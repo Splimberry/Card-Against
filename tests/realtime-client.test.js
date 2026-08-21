@@ -743,6 +743,20 @@ function testMembershipCommandsUseRealtimeFirstReconciliation() {
   assert.match(snapshotSource, /isRoomMembershipEventType\(pendingMembershipBlocker\.eventType\)/);
 }
 
+function testRoomCommandDeliveryRetriesWithoutChangingItsEventId() {
+  const commandStart = source.indexOf("async sendCommand(type = \"\", payload = {}, options = {})");
+  const commandEnd = source.indexOf("\n  }\n};\n\nif (typeof window", commandStart);
+  assert.ok(commandStart >= 0 && commandEnd > commandStart, "room command sender should exist");
+  const commandSource = source.slice(commandStart, commandEnd);
+
+  assert.match(commandSource, /roomCommandDeliveryMaxAttempts/);
+  assert.match(commandSource, /for \(let attempt = 0; attempt < maxDeliveryAttempts; attempt \+= 1\)/);
+  assert.match(commandSource, /getRoomCommandRetryDelay\(attempt \+ 1\)/);
+  assert.match(commandSource, /clientEventId,/);
+  assert.match(commandSource, /body: JSON\.stringify\(\{[\s\S]*clientEventId,/);
+  assert.doesNotMatch(commandSource, /createRoomSyncCommandId\(commandType, roomCode\).*for \(let attempt/);
+}
+
 (async () => {
   testRoomChannelIsReadyBeforeSubscribeCallback();
   await testGuestRoomJoinInitializesRealtimeWithoutAuth();
@@ -771,6 +785,7 @@ function testMembershipCommandsUseRealtimeFirstReconciliation() {
   testInventoryHydrationCommitsQueuedSpendsBeforeLoadingServerBalance();
   testJoinDirectoryTracksMatchStartImmediately();
   testMembershipCommandsUseRealtimeFirstReconciliation();
+  testRoomCommandDeliveryRetriesWithoutChangingItsEventId();
   console.log("Realtime client synchronization tests passed.");
 })().catch((error) => {
   console.error(error);

@@ -24,6 +24,7 @@ const imageCache = new Map();
 const imageCacheTtlMs = 15 * 60 * 1000;
 const imageCacheMaxEntries = 120;
 const imageCacheMaxBytes = 48 * 1024 * 1024;
+const serverRealtimeBroadcastTimeoutMs = 2500;
 let imageCacheBytes = 0;
 const adminCookieName = "cai_admin_session";
 const roomHostCookiePrefix = "cai_room_host_";
@@ -2690,15 +2691,20 @@ async function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], o
   if (!messages.length) {
     return false;
   }
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), serverRealtimeBroadcastTimeoutMs)
+    : null;
   try {
     const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: token,
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ messages })
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: token,
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ messages }),
+      signal: controller?.signal
     });
     if (!response.ok) {
       throw new Error(`Supabase realtime broadcast failed with HTTP ${response.status}.`);
@@ -2707,6 +2713,10 @@ async function scheduleServerRoomRealtimeBroadcast(roomCode = "", events = [], o
   } catch (error) {
     console.warn("Server realtime broadcast failed:", error?.message || error);
     return false;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
